@@ -540,3 +540,26 @@ dln_load(const char *file)
 
     return 0;			/* dummy return */
 }
+
+#define DESTRUCT_FUNC_PREFIX EXTERNAL_PREFIX"Destruct_"
+
+void
+dln_unload(const char *file, void *handle)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    struct string_part extname = init_funcname_len(file);
+    const size_t plen = sizeof(DESTRUCT_FUNC_PREFIX) - 1;
+    char *const destruct_func_name = ALLOCA_N(char, plen + extname.len + 1);
+    memcpy(destruct_func_name, DESTRUCT_FUNC_PREFIX, plen);
+    memcpy(destruct_func_name + plen, extname.ptr, extname.len);
+    destruct_func_name[plen + extname.len] = '\0';
+
+    void *symbol = dln_sym(handle, destruct_func_name);
+
+    if (symbol) {
+        ((void (*)(void))symbol)();
+    }
+#else
+    dln_notimplement();
+#endif
+}

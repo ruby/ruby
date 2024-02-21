@@ -119,6 +119,7 @@
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/io.h"
+#include "internal/load.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -4275,7 +4276,6 @@ rb_objspace_free_objects(rb_objspace_t *objspace)
     }
 }
 
-
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
@@ -4340,14 +4340,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
               case T_FILE:
                 obj_free(objspace, vp);
                 break;
-              case T_SYMBOL:
-              case T_ARRAY:
-              case T_NONE:
-                break;
               default:
-                if (rb_free_at_exit) {
-                    obj_free(objspace, vp);
-                }
                 break;
             }
             if (poisoned) {
@@ -4358,6 +4351,38 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     }
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
+
+    if (rb_free_at_exit) {
+        rb_ext_call_destruct();
+
+        for (i = 0; i < heap_allocated_pages; i++) {
+            struct heap_page *page = heap_pages_sorted[i];
+            short stride = page->slot_size;
+
+            uintptr_t p = (uintptr_t)page->start;
+            uintptr_t pend = p + page->total_slots * stride;
+            for (; p < pend; p += stride) {
+                VALUE vp = (VALUE)p;
+                void *poisoned = asan_unpoison_object_temporary(vp);
+                switch (BUILTIN_TYPE(vp)) {
+                  case T_DATA:
+                  case T_FILE:
+                  case T_SYMBOL:
+                  case T_ARRAY:
+                  case T_NONE:
+                  case T_ZOMBIE:
+                    break;
+                  default:
+                    obj_free(objspace, vp);
+                    break;
+                }
+                if (poisoned) {
+                    GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
+                    asan_poison_object(vp);
+                }
+            }
+        }
+    }
 
     finalize_deferred_heap_pages(objspace);
 

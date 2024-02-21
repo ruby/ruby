@@ -1580,6 +1580,20 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     return dln_symbol((void *)NUM2SVALUE(handle), symbol);
 }
 
+static int
+rb_ext_call_destruct_i(VALUE path, VALUE handle, VALUE _arg)
+{
+    dln_unload(RSTRING_PTR(path), (void *)NUM2SVALUE(handle));
+
+    return ST_CONTINUE;
+}
+
+void
+rb_ext_call_destruct(void)
+{
+    rb_hash_foreach(ruby_dln_libmap, rb_ext_call_destruct_i, 0);
+}
+
 void
 Init_load(void)
 {

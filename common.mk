@@ -7207,6 +7207,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/gc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/hash.h
 gc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 gc.$(OBJEXT): $(top_srcdir)/internal/io.h
+gc.$(OBJEXT): $(top_srcdir)/internal/load.h
 gc.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 gc.$(OBJEXT): $(top_srcdir)/internal/object.h
 gc.$(OBJEXT): $(top_srcdir)/internal/proc.h
