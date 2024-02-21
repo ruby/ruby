@@ -1,3 +1,6 @@
+// This file is used by miniruby, not ruby.
+// ruby uses dln.c.
+
 #include "ruby/ruby.h"
 
 NORETURN(void *dln_load(const char *));
