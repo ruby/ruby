@@ -116,6 +116,35 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal(false, @foo)
   end
 
+  def test_exact_option
+    @opt.def_option('-F', '--zrs=IRS', 'zrs')
+    %w(--zrs --zr --z -zfoo -z -F -Ffoo).each do |arg|
+      result = {}
+      @opt.parse([arg, 'foo'], into: result)
+      assert_equal({zrs: 'foo'}, result)
+    end
+
+    [%w(--zrs foo), %w(--zrs=foo), %w(-F foo), %w(-Ffoo)].each do |args|
+      result = {}
+      @opt.parse(args, into: result, exact: true)
+      assert_equal({zrs: 'foo'}, result)
+    end
+
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(--zr foo), exact: true)}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(--z foo), exact: true)}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zrs foo), exact: true)}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo), exact: true)}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo), exact: true)}
+
+    @opt.def_option('-f', '--[no-]foo', 'foo') {|arg| @foo = arg}
+    @opt.parse(%w[-f], exact: true)
+    assert_equal(true, @foo)
+    @opt.parse(%w[--foo], exact: true)
+    assert_equal(true, @foo)
+    @opt.parse(%w[--no-foo], exact: true)
+    assert_equal(false, @foo)
+  end
+
   def test_raise_unknown
     @opt.def_option('--my-foo [ARG]') {|arg| @foo = arg}
     assert @opt.raise_unknown
