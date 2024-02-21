@@ -646,6 +646,10 @@ module Prism
       assert_location(NilNode, "nil")
     end
 
+    def test_NoBlockParameterNode
+      assert_location(NoBlockParameterNode, "def foo(&nil); end", 8...12) { |node| node.parameters.block }
+    end
+
     def test_NoKeywordsParameterNode
       assert_location(NoKeywordsParameterNode, "def foo(**nil); end", 8...13) { |node| node.parameters.keyword_rest }
     end
