@@ -6098,10 +6098,16 @@ fn gen_send_cfunc(
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
             // We don't push a frame for specialized cfunc codegen, so the generated code must be leaf.
             // However, the interpreter doesn't push a frame on opt_* instruction either, so we allow
-            // non-send instructions to break this rule as an exception.
-            if asm.with_leaf_ccall(jit.is_sendish(), |asm|
+            // non-sendish instructions to break this rule as an exception.
+            let cfunc_codegen = if jit.is_sendish() {
+                asm.with_leaf_ccall(|asm|
+                    perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
+                )
+            } else {
                 perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
-            ) {
+            };
+
+            if cfunc_codegen {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so

@@ -2009,11 +2009,11 @@ impl Assembler {
         out
     }
 
-    /// Verify the leafness of the given block if leaf_ccall is true.
-    pub fn with_leaf_ccall<F, R>(&mut self, leaf_ccall: bool, mut block: F) -> R
+    /// Verify the leafness of the given block
+    pub fn with_leaf_ccall<F, R>(&mut self, mut block: F) -> R
     where F: FnMut(&mut Self) -> R {
         let old_leaf_ccall = self.leaf_ccall;
-        self.leaf_ccall = leaf_ccall;
+        self.leaf_ccall = true;
         let ret = block(self);
         self.leaf_ccall = old_leaf_ccall;
         ret
