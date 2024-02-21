@@ -15,7 +15,7 @@ module Gem
       end
 
       def visit_Hash(o)
-        super(o.dup.delete_if {|_, v| v.nil? })
+        super(o.compact)
       end
 
       # Noop this out so there are no anchors
