@@ -2903,7 +2903,7 @@ program		:  {
                     }
                 ;
 
-top_compstmt	: top_stmts opt_terms
+top_compstmt	: top_stmts terms?
                     {
                         $$ = void_stmts(p, $1);
                     }
@@ -2980,7 +2980,7 @@ bodystmt	: compstmt[body]
                     }
                 ;
 
-compstmt	: stmts opt_terms
+compstmt	: stmts terms?
                     {
                         $$ = void_stmts(p, $1);
                     }
@@ -4473,7 +4473,7 @@ primary		: literal
                         fixpos($$, $2);
                     /*% ripper: until!($:2, $:3) %*/
                     }
-                | k_case expr_value opt_terms
+                | k_case expr_value terms?
                     {
                         $<val>$ = p->case_labels;
                         p->case_labels = Qnil;
@@ -4487,7 +4487,7 @@ primary		: literal
                         fixpos($$, $2);
                     /*% ripper: case!($:2, $:5) %*/
                     }
-                | k_case opt_terms
+                | k_case terms?
                     {
                         $<val>$ = p->case_labels;
                         p->case_labels = 0;
@@ -4500,7 +4500,7 @@ primary		: literal
                         $$ = NEW_CASE2($4, &@$);
                     /*% ripper: case!(Qnil, $:4) %*/
                     }
-                | k_case expr_value opt_terms
+                | k_case expr_value terms?
                   p_case_body
                   k_end
                     {
@@ -6940,10 +6940,6 @@ call_op 	: '.'
 
 call_op2	: call_op
                 | tCOLON2
-                ;
-
-opt_terms	: /* none */
-                | terms
                 ;
 
 opt_nl		: /* none */
