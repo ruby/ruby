@@ -190,7 +190,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_HASH_VALUE]                         = { "expected a value in the hash literal", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HEREDOC_TERM]                       = { "could not find a terminator for the heredoc", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_QUESTION_MARK]           = { "incomplete expression at `?`", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3_0]    = { "`%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "'%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0] = { "`%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "'%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_FATAL },
@@ -202,14 +204,10 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PERCENT]                    = { "invalid `%` token", PM_ERROR_LEVEL_FATAL }, // TODO WHAT?
-<<<<<<< HEAD:prism/diagnostic.c
+    [PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0]      = { "`%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "'%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_IT_NOT_ALLOWED]                     = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
-=======
-    [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "`%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_IT_NOT_ALLOWED_NUMBERED]            = { "`it` is not allowed when an numbered parameter is defined", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_IT_NOT_ALLOWED_ORDINARY]            = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
->>>>>>> 7f1aadd057 (Support ItParametersNode):src/diagnostic.c
     [PM_ERR_LAMBDA_OPEN]                        = { "expected a `do` keyword or a `{` to open the lambda block", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_BRACE]                  = { "expected a lambda block beginning with `{` to end with `}`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_END]                    = { "expected a lambda block beginning with `do` to end with `end`", PM_ERROR_LEVEL_FATAL },
