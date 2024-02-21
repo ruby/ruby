@@ -5398,12 +5398,8 @@ fn jit_rb_str_byteslice(
         return false
     }
 
-    let len = asm.stack_opnd(0);
-    let beg = asm.stack_opnd(1);
-    let recv = asm.stack_opnd(2);
-
     // rb_str_byte_substr should be leaf if indexes are fixnums
-    match (asm.ctx.get_opnd_type(beg.into()), asm.ctx.get_opnd_type(len.into())) {
+    match (asm.ctx.get_opnd_type(StackOpnd(0)), asm.ctx.get_opnd_type(StackOpnd(1))) {
         (Type::Fixnum, Type::Fixnum) => {},
         // Raises when non-integers are passed in, which requires the method frame
         // to be pushed for the backtrace
@@ -5413,6 +5409,11 @@ fn jit_rb_str_byteslice(
 
     // rb_str_byte_substr allocates a substring
     jit_prepare_call_with_gc(jit, asm);
+
+    // Get stack operands after potential SP change
+    let len = asm.stack_opnd(0);
+    let beg = asm.stack_opnd(1);
+    let recv = asm.stack_opnd(2);
 
     let ret_opnd = asm.ccall(rb_str_byte_substr as *const u8, vec![recv, beg, len]);
     asm.stack_pop(3);
