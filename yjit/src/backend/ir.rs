@@ -1086,6 +1086,12 @@ impl Assembler
                 }
                 // Set current ctx.reg_temps to Opnd::Stack.
                 Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps: None } => {
+                    assert_eq!(
+                        self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
+                        *stack_size as i16 - *sp_offset as i16,
+                        "Opnd::Stack (stack_size: {}, sp_offset: {}) expects a different SP position from asm.ctx (stack_size: {}, sp_offset: {})",
+                        *stack_size, *sp_offset, self.ctx.get_stack_size(), self.ctx.get_sp_offset(),
+                    );
                     *opnd = Opnd::Stack {
                         idx: *idx,
                         num_bits: *num_bits,
