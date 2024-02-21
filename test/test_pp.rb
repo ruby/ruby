@@ -238,7 +238,8 @@ if defined?(RubyVM)
     AST = RubyVM::AbstractSyntaxTree
     def test_lasgn_literal
       ast = AST.parse("_=1")
-      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (INTEGER@1:2-1:3 1)))"
+      integer = RUBY_VERSION >= "3.4." ? "INTEGER" : "LIT"
+      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (#{integer}@1:2-1:3 1)))"
       assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
     end
   end
