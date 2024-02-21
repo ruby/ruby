@@ -3064,8 +3064,8 @@ fn gen_concatstrings(
 ) -> Option<CodegenStatus> {
     let n = jit.get_arg(0).as_usize();
 
-    // Save the PC and SP because we are allocating
-    jit_prepare_call_with_gc(jit, asm);
+    // rb_str_concat_literals may raise Encoding::CompatibilityError
+    jit_prepare_non_leaf_call(jit, asm);
 
     let values_ptr = asm.lea(asm.ctx.sp_opnd(-(SIZEOF_VALUE_I32 * n as i32)));
 
