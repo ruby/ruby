@@ -217,7 +217,7 @@ literal_hash(st_data_t a)
         /* Same with NODE_STR */
         return rb_parser_str_hash(RNODE_FILE(node)->path);
       case NODE_ENCODING:
-        return rb_node_encoding_val(node);
+        return (st_index_t)RNODE_ENCODING(node)->enc;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(type));
     }
