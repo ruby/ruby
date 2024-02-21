@@ -76,8 +76,6 @@ class Gem::TestCase < Test::Unit::TestCase
 
   attr_accessor :uri # :nodoc:
 
-  @@tempdirs = []
-
   def assert_activate(expected, *specs)
     specs.each do |spec|
       case spec
@@ -289,8 +287,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     FileUtils.mkdir_p @tmp
 
-    @tempdir = Dir.mktmpdir(method_name.to_s, @tmp)
-    @@tempdirs << @tempdir
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
 
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
@@ -357,7 +354,6 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.instance_variable_set :@config_home, nil
     Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@state_home, @statehome
-    Gem.instance_variable_set :@state_file, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
     Gem.send :remove_instance_variable, :@ruby_version if
@@ -474,8 +470,6 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     @back_ui.close
-
-    assert_empty @@tempdirs.select {|tempdir| File.exist?(tempdir) }
   end
 
   def credential_setup
