@@ -91,8 +91,15 @@ $ ruby -an -Fs -e 'p $F' desiderata.txt
 ["be on good term", " with all per", "on", ".\n"]
 ```
 
-The argument may be a regular expression;
-see String#split.
+The argument may be a regular expression:
+
+```
+$ ruby -an -F'[.,]\s*' -e 'p $F' desiderata.txt
+["Go placidly amid the noise and the haste"]
+["and remember what peace there may be in silence"]
+["As far as possible", "without surrender"]
+["be on good terms with all persons"]
+```
 
 ### Option `-l`
 
