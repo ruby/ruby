@@ -233,6 +233,23 @@ vm_check_frame(VALUE type,
 static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
+// Return the index of the instruction right before the given PC.
+// This is needed because insn_entry advances PC before the insn body.
+static unsigned int
+previous_insn_index(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    unsigned int pos = 0;
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int opcode = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[pos]);
+        unsigned int next_pos = pos + insn_len(opcode);
+        if (ISEQ_BODY(iseq)->iseq_encoded + next_pos == pc) {
+            return pos;
+        }
+        pos = next_pos;
+    }
+    rb_bug("failed to find the previous insn");
+}
+
 void
 rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
@@ -259,8 +276,7 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     }
 
     const VALUE *orig = rb_iseq_original_iseq(iseq);
-    const VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
-    const ptrdiff_t pos = GET_PC() - encoded;
+    const ptrdiff_t pos = previous_insn_index(iseq, GET_PC());
     const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
     const char *name = insn_name(insn);
     const VALUE iseqw = rb_iseqw_new(iseq);
