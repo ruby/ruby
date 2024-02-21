@@ -7290,7 +7290,8 @@ lex_numeric(pm_parser_t *parser) {
 static pm_token_type_t
 lex_global_variable(pm_parser_t *parser) {
     if (parser->current.end >= parser->end) {
-        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_ERR_INVALID_VARIABLE_GLOBAL);
+        pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, diag_id);
         return PM_TOKEN_GLOBAL_VARIABLE;
     }
 
@@ -7331,7 +7332,8 @@ lex_global_variable(pm_parser_t *parser) {
                 } while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);
 
                 // $0 isn't allowed to be followed by anything.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_ERR_INVALID_VARIABLE_GLOBAL);
+                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, diag_id);
             }
 
             return PM_TOKEN_GLOBAL_VARIABLE;
@@ -7362,7 +7364,8 @@ lex_global_variable(pm_parser_t *parser) {
             } else {
                 // If we get here, then we have a $ followed by something that isn't
                 // recognized as a global variable.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_ERR_INVALID_VARIABLE_GLOBAL);
+                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, diag_id);
             }
 
             return PM_TOKEN_GLOBAL_VARIABLE;
@@ -8268,6 +8271,10 @@ lex_at_variable(pm_parser_t *parser) {
         }
     } else {
         pm_diagnostic_id_t diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE;
+        if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0) {
+            diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3_0 : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0;
+        }
+
         size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
         PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, (int) ((parser->current.end + width) - parser->current.start), (const char *) parser->current.start);
     }
