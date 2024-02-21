@@ -607,31 +607,48 @@ thread_do_start(rb_thread_t *th)
     native_set_thread_name(th);
     VALUE result = Qundef;
 
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+    rb_execution_context_t *ec = th->ec;
+    int state;
 
-    switch (th->invoke_type) {
-      case thread_invoke_type_proc:
-        result = thread_do_start_proc(th);
-        break;
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 
-      case thread_invoke_type_ractor_proc:
-        result = thread_do_start_proc(th);
-        rb_ractor_atexit(th->ec, result);
-        break;
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        switch (th->invoke_type) {
+        case thread_invoke_type_proc:
+            result = thread_do_start_proc(th);
+            break;
 
-      case thread_invoke_type_func:
-        result = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
-        break;
+        case thread_invoke_type_ractor_proc:
+            result = thread_do_start_proc(th);
+            rb_ractor_atexit(th->ec, result);
+            break;
 
-      case thread_invoke_type_none:
-        rb_bug("unreachable");
+        case thread_invoke_type_func:
+            result = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
+            break;
+
+        case thread_invoke_type_none:
+            rb_bug("unreachable");
+        }
+    }
+
+    EC_POP_TAG();
+    VALUE errinfo = ec->errinfo;
+
+    if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
+        ec->errinfo = Qnil;
     }
 
     rb_fiber_scheduler_set(Qnil);
+    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+
+    ec->errinfo = errinfo;
+
+    if (state)
+        EC_JUMP_TAG(ec, state);
 
     th->value = result;
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
