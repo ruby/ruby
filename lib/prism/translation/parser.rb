@@ -116,7 +116,7 @@ module Prism
           diagnostics.process(Diagnostic.new(error.message, :error, location))
         end
         result.warnings.each do |warning|
-          next unless valid_error?(warning)
+          next unless valid_warning?(warning)
 
           location = build_range(warning.location, offset_cache)
           diagnostics.process(Diagnostic.new(warning.message, :warning, location))
