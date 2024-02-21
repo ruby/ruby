@@ -1736,7 +1736,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
-    iseq = pm_iseq_new_eval(&result.node, name, fname, fname, line, parent, 0);
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0);
 
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
