@@ -202,8 +202,14 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PERCENT]                    = { "invalid `%` token", PM_ERROR_LEVEL_FATAL }, // TODO WHAT?
+<<<<<<< HEAD:prism/diagnostic.c
     [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "'%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_IT_NOT_ALLOWED]                     = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
+=======
+    [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "`%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_IT_NOT_ALLOWED_NUMBERED]            = { "`it` is not allowed when an numbered parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_IT_NOT_ALLOWED_ORDINARY]            = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
+>>>>>>> 7f1aadd057 (Support ItParametersNode):src/diagnostic.c
     [PM_ERR_LAMBDA_OPEN]                        = { "expected a `do` keyword or a `{` to open the lambda block", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_BRACE]                  = { "expected a lambda block beginning with `{` to end with `}`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_END]                    = { "expected a lambda block beginning with `do` to end with `end`", PM_ERROR_LEVEL_FATAL },
@@ -225,7 +231,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_NOT_EXPRESSION]                     = { "expected an expression after `not`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NO_LOCAL_VARIABLE]                  = { "%.*s: no such local variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NUMBER_LITERAL_UNDERSCORE]          = { "number literal ending with a `_`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED]     = { "numbered parameters are not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_NUMBERED_PARAMETER_IT]              = { "numbered parameters are not allowed when an 'it' parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_NUMBERED_PARAMETER_ORDINARY]        = { "numbered parameters are not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = { "numbered parameter is already used in outer scope", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_OPERATOR_MULTI_ASSIGN]              = { "unexpected operator for a multiple assignment", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_OPERATOR_WRITE_ARGUMENTS]           = { "unexpected operator after a call with arguments", PM_ERROR_LEVEL_FATAL },

@@ -450,37 +450,31 @@ typedef struct {
  * into their parent scopes, while others cannot.
  */
 typedef struct pm_scope {
-    /** The IDs of the locals in the given scope. */
-    pm_constant_id_list_t locals;
-
     /** A pointer to the previous scope in the linked list. */
     struct pm_scope *previous;
 
-    /**
-     * A boolean indicating whether or not this scope can see into its parent.
-     * If closed is true, then the scope cannot see into its parent.
-     */
-    bool closed;
+    /** The IDs of the locals in the given scope. */
+    pm_constant_id_list_t locals;
 
     /**
-     * A boolean indicating whether or not this scope has explicit parameters.
-     * This is necessary to determine whether or not numbered parameters are
-     * allowed.
-     */
-    bool explicit_params;
-
-    /**
-     * Booleans indicating whether the parameters for this scope have declared
-     * forwarding parameters.
+     * This is a bitfield that indicates the parameters that are being used in
+     * this scope. It is a combination of the PM_SCOPE_PARAMS_* constants. There
+     * are three different kinds of parameters that can be used in a scope:
      *
-     * For example, some combinations of:
-     *   def foo(*); end
-     *   def foo(**); end
-     *   def foo(&); end
-     *   def foo(...); end
+     * - Ordinary parameters (e.g., def foo(bar); end)
+     * - Numbered parameters (e.g., def foo; _1; end)
+     * - The it parameter (e.g., def foo; it; end)
+     *
+     * If ordinary parameters are being used, then certain parameters can be
+     * forwarded to another method/structure. Those are indicated by four
+     * additional bits in the params field. For example, some combinations of:
+     *
+     * - def foo(*); end
+     * - def foo(**); end
+     * - def foo(&); end
+     * - def foo(...); end
      */
-
-    uint8_t forwarding_params;
+    uint8_t parameters;
 
     /**
      * An integer indicating the number of numbered parameters on this scope.
@@ -489,13 +483,27 @@ typedef struct pm_scope {
      * about how many numbered parameters exist.
      */
     int8_t numbered_parameters;
+
+    /**
+     * A boolean indicating whether or not this scope can see into its parent.
+     * If closed is true, then the scope cannot see into its parent.
+     */
+    bool closed;
 } pm_scope_t;
 
-static const uint8_t PM_FORWARDING_POSITIONALS = 0x1;
-static const uint8_t PM_FORWARDING_KEYWORDS = 0x2;
-static const uint8_t PM_FORWARDING_BLOCK = 0x4;
-static const uint8_t PM_FORWARDING_ALL = 0x8;
-static const int8_t PM_NUMBERED_PARAMETERS_DISALLOWED = -1;
+static const uint8_t PM_SCOPE_PARAMETERS_NONE = 0x0;
+static const uint8_t PM_SCOPE_PARAMETERS_ORDINARY = 0x1;
+static const uint8_t PM_SCOPE_PARAMETERS_NUMBERED = 0x2;
+static const uint8_t PM_SCOPE_PARAMETERS_IT = 0x4;
+static const uint8_t PM_SCOPE_PARAMETERS_TYPE_MASK = 0x7;
+
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS = 0x8;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS = 0x10;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_BLOCK = 0x20;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x40;
+
+static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED = -1;
+static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_NONE = 0;
 
 /**
  * This struct represents the overall parser. It contains a reference to the
