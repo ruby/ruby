@@ -2413,49 +2413,6 @@ pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
-// Codegen for setting an instance variable.
-// Preconditions:
-//   - receiver is in REG0
-//   - receiver has the same class as CLASS_OF(comptime_receiver)
-//   - no stack push or pops to ctx since the entry to the codegen of the instruction being compiled
-fn gen_set_ivar(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    ivar_name: ID,
-    flags: u32,
-    argc: i32,
-) -> Option<CodegenStatus> {
-
-    // This is a .send call and we need to adjust the stack
-    if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc);
-    }
-
-    // Save the PC and SP because the callee may allocate or raise FrozenError
-    // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_non_leaf_call(jit, asm);
-
-    // Get the operands from the stack
-    let val_opnd = asm.stack_opnd(0);
-    let recv_opnd = asm.stack_opnd(1);
-
-    // Call rb_vm_set_ivar_id with the receiver, the ivar name, and the value
-    let val = asm.ccall(
-        rb_vm_set_ivar_id as *const u8,
-        vec![
-            recv_opnd,
-            Opnd::UImm(ivar_name),
-            val_opnd,
-        ],
-    );
-    asm.stack_pop(2); // Keep them on stack during ccall for GC
-
-    let out_opnd = asm.stack_push(Type::Unknown);
-    asm.mov(out_opnd, val);
-
-    Some(KeepCompiling)
-}
-
 // Codegen for getting an instance variable.
 // Preconditions:
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
@@ -2678,7 +2635,32 @@ fn gen_setinstancevariable(
     }
 
     let ivar_name = jit.get_arg(0).as_u64();
+    let ic = jit.get_arg(1).as_ptr();
     let comptime_receiver = jit.peek_at_self();
+    gen_set_ivar(
+        jit,
+        asm,
+        ocb,
+        comptime_receiver,
+        ivar_name,
+        SelfOpnd,
+        Some(ic),
+    )
+}
+
+/// Set an instance variable on setinstancevariable or attr_writer.
+/// It switches the behavior based on what recv_opnd is given.
+/// * SelfOpnd: setinstancevariable, which doesn't push a result onto the stack.
+/// * StackOpnd: attr_writer, which pushes a result onto the stack.
+fn gen_set_ivar(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    comptime_receiver: VALUE,
+    ivar_name: ID,
+    recv_opnd: YARVOpnd,
+    ic: Option<*const iseq_inline_iv_cache_entry>,
+) -> Option<CodegenStatus> {
     let comptime_val_klass = comptime_receiver.class_of();
 
     // If the comptime receiver is frozen, writing an IV will raise an exception
@@ -2759,10 +2741,6 @@ fn gen_setinstancevariable(
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
     if !receiver_t_object || uses_custom_allocator || shape_too_complex || new_shape_too_complex || megamorphic {
-        asm_comment!(asm, "call rb_vm_setinstancevariable()");
-
-        let ic = jit.get_arg(1).as_u64(); // type IVC
-
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -2770,22 +2748,37 @@ fn gen_setinstancevariable(
         // Get the operands from the stack
         let val_opnd = asm.stack_opnd(0);
 
-        // Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
-        asm.ccall(
-            rb_vm_setinstancevariable as *const u8,
-            vec![
-                Opnd::const_ptr(jit.iseq as *const u8),
-                Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
-                ivar_name.into(),
-                val_opnd,
-                Opnd::const_ptr(ic as *const u8),
-            ]
-        );
+        if let StackOpnd(index) = recv_opnd { // attr_writer
+            let recv = asm.stack_opnd(index as i32);
+            asm_comment!(asm, "call rb_vm_set_ivar_id()");
+            asm.ccall(
+                rb_vm_set_ivar_id as *const u8,
+                vec![
+                    recv,
+                    Opnd::UImm(ivar_name),
+                    val_opnd,
+                ],
+            );
+        } else { // setinstancevariable
+            asm_comment!(asm, "call rb_vm_setinstancevariable()");
+            asm.ccall(
+                rb_vm_setinstancevariable as *const u8,
+                vec![
+                    Opnd::const_ptr(jit.iseq as *const u8),
+                    Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
+                    ivar_name.into(),
+                    val_opnd,
+                    Opnd::const_ptr(ic.unwrap() as *const u8),
+                ],
+            );
+        }
     } else {
         // Get the receiver
-        let mut recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
-
-        let recv_opnd = SelfOpnd;
+        let mut recv = asm.load(if let StackOpnd(index) = recv_opnd {
+            asm.stack_opnd(index as i32)
+        } else {
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
+        });
 
         // Upgrade type
         guard_object_is_heap(asm, recv, recv_opnd, Counter::setivar_not_heap);
@@ -2829,7 +2822,11 @@ fn gen_setinstancevariable(
                     );
 
                     // Load the receiver again after the function call
-                    recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
+                    recv = asm.load(if let StackOpnd(index) = recv_opnd {
+                        asm.stack_opnd(index as i32)
+                    } else {
+                        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
+                    });
                 }
 
                 write_val = asm.stack_opnd(0);
@@ -2880,7 +2877,16 @@ fn gen_setinstancevariable(
             asm.write_label(skip_wb);
         }
     }
-    asm.stack_pop(1); // Keep it on stack during ccall for GC
+    let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
+
+    // If it's attr_writer, i.e. recv_opnd is StackOpnd, we need to pop
+    // the receiver and push the written value onto the stack.
+    if let StackOpnd(_) = recv_opnd {
+        asm.stack_pop(1); // Pop receiver
+
+        let out_opnd = asm.stack_push(Type::Unknown); // Push a return value
+        asm.mov(out_opnd, write_val);
+    }
 
     Some(KeepCompiling)
 }
@@ -8046,9 +8052,9 @@ fn gen_send_general(
                 ) };
             }
             VM_METHOD_TYPE_IVAR => {
-                // This is a .send call not supported right now for getters
+                // This is a .send call not supported right now for attr_reader
                 if flags & VM_CALL_OPT_SEND != 0 {
-                    gen_counter_incr(asm, Counter::send_send_getter);
+                    gen_counter_incr(asm, Counter::send_send_attr_reader);
                     return None;
                 }
 
@@ -8114,6 +8120,11 @@ fn gen_send_general(
                 );
             }
             VM_METHOD_TYPE_ATTRSET => {
+                // This is a .send call not supported right now for attr_writer
+                if flags & VM_CALL_OPT_SEND != 0 {
+                    gen_counter_incr(asm, Counter::send_send_attr_writer);
+                    return None;
+                }
                 if flags & VM_CALL_ARGS_SPLAT != 0 {
                     gen_counter_incr(asm, Counter::send_args_splat_attrset);
                     return None;
@@ -8134,7 +8145,7 @@ fn gen_send_general(
                     return None;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-                    return gen_set_ivar(jit, asm, ivar_name, flags, argc);
+                    return gen_set_ivar(jit, asm, ocb, comptime_recv, ivar_name, StackOpnd(1), None);
                 }
             }
             // Block method, e.g. define_method(:foo) { :my_block }
