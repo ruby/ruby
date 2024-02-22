@@ -57,13 +57,6 @@ module Prism
 
   private_constant :HeredocQuery
 
-  class FloatNode < Node
-    # Returns the value of the node as a Ruby Float.
-    def value
-      Float(slice)
-    end
-  end
-
   class ImaginaryNode < Node
     # Returns the value of the node as a Ruby Complex.
     def value

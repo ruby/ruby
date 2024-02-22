@@ -22,6 +22,7 @@
         │   │           │   │   @ StatementsNode (location: (1,5)-(1,9))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ FloatNode (location: (1,5)-(1,9))
+        │   │           │   │           └── value: -1.3
         │   │           │   ├── opening_loc: (1,4)-(1,5) = "("
         │   │           │   └── closing_loc: (1,9)-(1,10) = ")"
         │   │           ├── call_operator_loc: (1,10)-(1,11) = "."
@@ -52,6 +53,7 @@
             │           │   │   @ StatementsNode (location: (3,6)-(3,10))
             │           │   │   └── body: (length: 1)
             │           │   │       └── @ FloatNode (location: (3,6)-(3,10))
+            │           │   │           └── value: -1.3
             │           │   ├── opening_loc: (3,5)-(3,6) = "("
             │           │   └── closing_loc: (3,10)-(3,11) = ")"
             │           ├── call_operator_loc: (3,11)-(3,12) = "."

@@ -156,6 +156,8 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     }
                     pm_buffer_append_string(output_buffer, "]\n", 2);
                 }
+            <%- when Prism::DoubleField -%>
+                pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>

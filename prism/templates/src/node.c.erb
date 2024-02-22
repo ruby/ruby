@@ -56,12 +56,12 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            <%- if node.fields.any? { |field| ![Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField].include?(field.class) } -%>
+            <%- if node.fields.any? { |field| ![Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField, Prism::DoubleField].include?(field.class) } -%>
             pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField -%>
+            <%- when Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField, Prism::DoubleField -%>
             <%- when Prism::NodeField -%>
             pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
             <%- when Prism::OptionalNodeField -%>
@@ -107,7 +107,7 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
             memsize->memsize += sizeof(*cast);
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::LocationField, Prism::OptionalLocationField -%>
+            <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::LocationField, Prism::OptionalLocationField, Prism::DoubleField -%>
             <%- when Prism::NodeField -%>
             pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
             <%- when Prism::OptionalNodeField -%>
@@ -276,6 +276,8 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
                     pm_buffer_append_string(buffer, "]}", 2);
                 }
             }
+            <%- when Prism::DoubleField -%>
+            pm_buffer_append_format(buffer, "%f", cast-><%= field.name %>);
             <%- else -%>
             <%- raise %>
             <%- end -%>

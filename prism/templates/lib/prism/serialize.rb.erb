@@ -183,6 +183,10 @@ module Prism
         value
       end
 
+      def load_double
+        io.read(8).unpack1("D")
+      end
+
       def load_serialized_length
         io.read(4).unpack1("L")
       end
@@ -300,6 +304,7 @@ module Prism
               when Prism::UInt8Field then "io.getbyte"
               when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
               when Prism::IntegerField then "load_integer"
+              when Prism::DoubleField then "load_double"
               else raise
               end
             } + ["location"]).join(", ") -%>)
@@ -336,6 +341,7 @@ module Prism
                 when Prism::UInt8Field then "io.getbyte"
                 when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
                 when Prism::IntegerField then "load_integer"
+                when Prism::DoubleField then "load_double"
                 else raise
                 end
               } + ["location"]).join(", ") -%>)

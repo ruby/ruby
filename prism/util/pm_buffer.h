@@ -130,6 +130,14 @@ void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
 void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
 /**
+ * Append a double to the buffer.
+ *
+ * @param buffer The buffer to append to.
+ * @param value The double to append.
+ */
+void pm_buffer_append_double(pm_buffer_t *buffer, double value);
+
+/**
  * The different types of escaping that can be performed by the buffer when
  * appending a slice of Ruby source code.
  */

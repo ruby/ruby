@@ -270,6 +270,22 @@ module Prism
     end
   end
 
+  # This represents a double-precision floating point number. When it gets to
+  # Ruby it will be a Float.
+  class DoubleField < Field
+    def rbs_class
+      "Float"
+    end
+
+    def rbi_class
+      "Float"
+    end
+
+    def java_type
+      "double"
+    end
+  end
+
   # This class represents a node in the tree, configured by the config.yml file
   # in YAML format. It contains information about the name of the node and the
   # various child nodes it contains.
@@ -332,6 +348,7 @@ module Prism
       when "uint32"     then UInt32Field
       when "flags"      then FlagsField
       when "integer"    then IntegerField
+      when "double"     then DoubleField
       else raise("Unknown field type: #{name.inspect}")
       end
     end

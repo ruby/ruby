@@ -10,6 +10,7 @@
         │   ├── flags: decimal
         │   └── value: 1
         ├── @ FloatNode (location: (5,0)-(5,3))
+        │   └── value: 1.0
         ├── @ IntegerNode (location: (7,0)-(7,1))
         │   ├── flags: decimal
         │   └── value: 2
@@ -81,11 +82,13 @@
         ├── @ RationalNode (location: (47,0)-(47,4))
         │   └── numeric:
         │       @ FloatNode (location: (47,0)-(47,3))
+        │       └── value: 1.2
         ├── @ ImaginaryNode (location: (49,0)-(49,5))
         │   └── numeric:
         │       @ RationalNode (location: (49,0)-(49,4))
         │       └── numeric:
         │           @ FloatNode (location: (49,0)-(49,3))
+        │           └── value: 1.2
         ├── @ ImaginaryNode (location: (51,0)-(51,4))
         │   └── numeric:
         │       @ RationalNode (location: (51,0)-(51,3))
@@ -96,11 +99,13 @@
         ├── @ RationalNode (location: (53,0)-(53,5))
         │   └── numeric:
         │       @ FloatNode (location: (53,0)-(53,4))
+        │       └── value: -1.2
         ├── @ ImaginaryNode (location: (55,0)-(55,6))
         │   └── numeric:
         │       @ RationalNode (location: (55,0)-(55,5))
         │       └── numeric:
         │           @ FloatNode (location: (55,0)-(55,4))
+        │           └── value: -1.2
         ├── @ RationalNode (location: (57,0)-(57,4))
         │   └── numeric:
         │       @ IntegerNode (location: (57,0)-(57,3))

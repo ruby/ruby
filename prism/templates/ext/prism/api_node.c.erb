@@ -213,6 +213,9 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- when Prism::IntegerField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_integer_new(&cast-><%= field.name %>);
+                    <%- when Prism::DoubleField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+                    argv[<%= index %>] = DBL2NUM(cast-><%= field.name %>);
                     <%- else -%>
                     <%- raise -%>
                     <%- end -%>
