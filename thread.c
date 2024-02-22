@@ -664,7 +664,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 
-        SAVE_ROOT_JMPBUF(th, result = thread_do_start(th));
+        result = thread_do_start(th);
     }
 
     if (!fiber_scheduler_closed) {
