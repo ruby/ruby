@@ -3234,7 +3234,7 @@ endless_command : command
                         $$ = rescued_expr(p, $1, $4, &@1, &@2, &@4);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-                | keyword_not opt_nl endless_command
+                | keyword_not '\n'? endless_command
                     {
                         $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
@@ -3268,7 +3268,7 @@ expr		: command_call
                         $$ = logop(p, idOR, $1, $3, &@2, &@$);
                     /*% ripper: binary!($:1, ID2VAL(idOR), $:3) %*/
                     }
-                | keyword_not opt_nl expr
+                | keyword_not '\n'? expr
                     {
                         $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
@@ -3988,13 +3988,13 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         $$ = logop(p, idOROP, $1, $3, &@2, &@$);
                     /*% ripper: binary!($:1, ID2VAL(idOROP), $:3) %*/
                     }
-                | keyword_defined opt_nl begin_defined arg
+                | keyword_defined '\n'? begin_defined arg
                     {
                         p->ctxt.in_defined = $3.in_defined;
                         $$ = new_defined(p, $4, &@$);
                     /*% ripper: defined!($:4) %*/
                     }
-                | arg '?' arg opt_nl ':' arg
+                | arg '?' arg '\n'? ':' arg
                     {
                         value_expr($1);
                         $$ = new_if(p, $1, $3, $6, &@$);
@@ -4044,7 +4044,7 @@ endless_arg	: arg %prec modifier_rescue
                         $$ = rescued_expr(p, $1, $4, &@1, &@2, &@4);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-                | keyword_not opt_nl endless_arg
+                | keyword_not '\n'? endless_arg
                     {
                         $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
@@ -4408,7 +4408,7 @@ primary		: literal
                         $$ = NEW_YIELD(0, &@$);
                     /*% ripper: yield0! %*/
                     }
-                | keyword_defined opt_nl '(' begin_defined expr rparen
+                | keyword_defined '\n'? '(' begin_defined expr rparen
                     {
                         p->ctxt.in_defined = $4.in_defined;
                         $$ = new_defined(p, $5, &@$);
@@ -5095,12 +5095,12 @@ block_param_def	: '|' opt_bv_decl '|'
                 ;
 
 
-opt_bv_decl	: opt_nl
+opt_bv_decl	: '\n'?
                     {
                         $$ = 0;
                     /*% ripper: Qfalse %*/
                     }
-                | opt_nl ';' bv_decls opt_nl
+                | '\n'? ';' bv_decls '\n'?
                     {
                         $$ = 0;
                     /*% ripper: get_value($:3) %*/
@@ -6942,20 +6942,16 @@ call_op2	: call_op
                 | tCOLON2
                 ;
 
-opt_nl		: /* none */
-                | '\n'
+rparen		: '\n'? ')'
                 ;
 
-rparen		: opt_nl ')'
+rbracket	: '\n'? ']'
                 ;
 
-rbracket	: opt_nl ']'
+rbrace		: '\n'? '}'
                 ;
 
-rbrace		: opt_nl '}'
-                ;
-
-trailer		: opt_nl
+trailer		: '\n'?
                 | ','
                 ;
 
