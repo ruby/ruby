@@ -122,21 +122,27 @@ init_funcname_len(const char **file)
     return (dot ? dot : p) - base;
 }
 
-static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
+static inline char *
+concat_funcname(char *buf, const char *prefix, size_t plen, const char *base, size_t flen)
+{
+    if (!buf) {
+        dln_memerror();
+    }
+    memcpy(buf, prefix, plen);
+    memcpy(buf + plen, base, flen);
+    buf[plen + flen] = '\0';
+    return buf;
+}
 
-#define init_funcname(buf, file) do {\
+#define build_funcname(prefix, buf, file) do {\
     const char *base = (file);\
     const size_t flen = init_funcname_len(&base);\
-    const size_t plen = sizeof(funcname_prefix);\
+    const size_t plen = sizeof(prefix "") - 1;\
     char *const tmp = ALLOCA_N(char, plen+flen+1);\
-    if (!tmp) {\
-        dln_memerror();\
-    }\
-    memcpy(tmp, funcname_prefix, plen);\
-    memcpy(tmp+plen, base, flen);\
-    tmp[plen+flen] = '\0';\
-    *(buf) = tmp;\
+    *(buf) = concat_funcname(tmp, prefix, plen, base, flen);\
 } while (0)
+
+#define init_funcname(buf, file) build_funcname(FUNCNAME_PREFIX, buf, file)
 #endif
 
 #ifdef USE_DLN_DLOPEN
