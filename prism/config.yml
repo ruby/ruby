@@ -1867,6 +1867,9 @@ nodes:
       - name: flags
         type: flags
         kind: IntegerBaseFlags
+      - name: value
+        type: integer
+        comment: The value of the integer literal as a number.
     comment: |
       Represents an integer number literal.
 

@@ -966,8 +966,8 @@ module Prism
         ParametersNode(
           [RequiredParameterNode(0, :a)],
           [
-            OptionalParameterNode(0, :b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
-            OptionalParameterNode(0, :d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
+            OptionalParameterNode(0, :b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 1)),
+            OptionalParameterNode(0, :d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 2))
           ],
           nil,
           [RequiredParameterNode(0, :c), RequiredParameterNode(0, :e)],
@@ -1024,7 +1024,7 @@ module Prism
         Location(),
         nil,
         nil,
-        StatementsNode([IntegerNode(IntegerBaseFlags::DECIMAL)]),
+        StatementsNode([IntegerNode(IntegerBaseFlags::DECIMAL, 42)]),
         [],
         Location(),
         nil,
@@ -1214,7 +1214,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([], [OptionalParameterNode(0, :a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], RestParameterNode(0, :c, Location(), Location()), [RequiredParameterNode(0, :b)], [], nil, nil),
+        ParametersNode([], [OptionalParameterNode(0, :a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 1))], RestParameterNode(0, :c, Location(), Location()), [RequiredParameterNode(0, :b)], [], nil, nil),
         nil,
         [:a, :b, :c],
         Location(),

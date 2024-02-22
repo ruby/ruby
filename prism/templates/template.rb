@@ -254,6 +254,22 @@ module Prism
     end
   end
 
+  # This represents an arbitrarily-sized integer. When it gets to Ruby it will
+  # be an Integer.
+  class IntegerField < Field
+    def rbs_class
+      "Integer"
+    end
+
+    def rbi_class
+      "Integer"
+    end
+
+    def java_type
+      "VariableInteger"
+    end
+  end
+
   # This class represents a node in the tree, configured by the config.yml file
   # in YAML format. It contains information about the name of the node and the
   # various child nodes it contains.
@@ -315,6 +331,7 @@ module Prism
       when "uint8"      then UInt8Field
       when "uint32"     then UInt32Field
       when "flags"      then FlagsField
+      when "integer"    then IntegerField
       else raise("Unknown field type: #{name.inspect}")
       end
     end

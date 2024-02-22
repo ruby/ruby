@@ -71,13 +71,6 @@ module Prism
     end
   end
 
-  class IntegerNode < Node
-    # Returns the value of the node as a Ruby Integer.
-    def value
-      Integer(slice)
-    end
-  end
-
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
     def value
