@@ -157,7 +157,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_str_new                        p->config->str_new
 #undef rb_str_new_cstr
 #define rb_str_new_cstr                   p->config->str_new_cstr
-#define rb_fstring                        p->config->fstring
+#define rb_str_to_interned_str            p->config->str_to_interned_str
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
 #define rb_enc_str_buf_cat                p->config->enc_str_buf_cat

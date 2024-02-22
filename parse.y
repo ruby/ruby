@@ -7637,7 +7637,7 @@ yycompile(struct parser_params *p, VALUE fname, int line)
         p->ruby_sourcefile = "(none)";
     }
     else {
-        p->ruby_sourcefile_string = rb_fstring(fname);
+        p->ruby_sourcefile_string = rb_str_to_interned_str(fname);
         p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
@@ -13485,7 +13485,7 @@ rb_parser_trace_lex_state(struct parser_params *p, enum lex_state_e from,
 VALUE
 rb_parser_lex_state_name(struct parser_params *p, enum lex_state_e state)
 {
-    return rb_fstring(append_lex_state_name(p, state, rb_str_new(0, 0)));
+    return rb_str_to_interned_str(append_lex_state_name(p, state, rb_str_new(0, 0)));
 }
 
 static void
@@ -14026,13 +14026,13 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         return value;
 
       case NODE_STR:
-        lit = rb_fstring(rb_node_str_string_val(value));
+        lit = rb_str_to_interned_str(rb_node_str_string_val(value));
         value = NEW_LIT(lit, loc);
         RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
         return value;
 
       case NODE_FILE:
-        lit = rb_fstring(rb_node_file_path_val(value));
+        lit = rb_str_to_interned_str(rb_node_file_path_val(value));
         value = NEW_LIT(lit, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(value)->nd_lit);
         return value;
