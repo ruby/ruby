@@ -602,9 +602,6 @@ class Socket < BasicSocket
   RESOLUTION_DELAY = 0.05
   private_constant :RESOLUTION_DELAY
 
-  PATIENTLY_RESOLUTION_DELAY = 3
-  private_constant :PATIENTLY_RESOLUTION_DELAY
-
   CONNECTION_ATTEMPT_DELAY = 0.25
   private_constant :CONNECTION_ATTEMPT_DELAY
 
@@ -668,7 +665,7 @@ class Socket < BasicSocket
     hostname_resolution_threads = []
     hostname_resolution_queue = nil
     hostname_resolution_waiting = nil
-    wait_for_hostname_resolution_patiently = false
+    hostname_resolution_expires_at = nil
     selectable_addrinfos = SelectableAddrinfos.new
     connecting_sockets = ConnectingSockets.new
     local_addrinfos = []
@@ -700,7 +697,7 @@ class Socket < BasicSocket
         resolving_family_names = ADDRESS_FAMILIES.keys
         hostname_resolution_queue = HostnameResolutionQueue.new(resolving_family_names.size)
         hostname_resolution_waiting = hostname_resolution_queue.waiting_pipe
-        hostname_resolution_started_at = current_clocktime
+        hostname_resolution_started_at = current_clocktime if resolv_timeout
         hostname_resolution_args = [host, port, hostname_resolution_queue]
 
         hostname_resolution_threads.concat(
@@ -713,6 +710,7 @@ class Socket < BasicSocket
         )
 
         hostname_resolution_retry_count = resolving_family_names.size - 1
+        hostname_resolution_expires_at = hostname_resolution_started_at + resolv_timeout if resolv_timeout
 
         while hostname_resolution_retry_count >= 0
           remaining = resolv_timeout ? second_to_timeout(hostname_resolution_started_at + resolv_timeout) : nil
@@ -769,21 +767,20 @@ class Socket < BasicSocket
           local_addrinfo = local_addrinfos.find { |lai| lai.afamily == addrinfo.afamily }
 
           if local_addrinfo.nil?
-            if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-              if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
-                wait_for_hostname_resolution_patiently = true
-                connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
-                state = :v46w
-              else
-                last_error = SocketError.new 'no appropriate local address'
-                state = :failure
-              end
+            if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.closed?
+              last_error = SocketError.new 'no appropriate local address'
+              state = :failure
             elsif selectable_addrinfos.any?
               # Try other Addrinfo in next loop
             else
-              # Wait for connection to be established or hostname resolution in next loop
-              connection_attempt_delay_expires_at = nil
-              state = :v46w
+              if resolv_timeout && hostname_resolution_queue.opened? &&
+                  (current_clocktime >= hostname_resolution_expires_at)
+                state = :timeout
+              else
+                # Wait for connection to be established or hostname resolution in next loop
+                connection_attempt_delay_expires_at = nil
+                state = :v46w
+              end
             end
             next
           end
@@ -793,7 +790,7 @@ class Socket < BasicSocket
 
         begin
           result = if specified_family_name && selectable_addrinfos.empty? &&
-                       connecting_sockets.empty? && hostname_resolution_queue.empty?
+                       connecting_sockets.empty? && hostname_resolution_queue.closed?
                      local_addrinfo ?
                        addrinfo.connect_from(local_addrinfo, timeout: connect_timeout) :
                        addrinfo.connect(timeout: connect_timeout)
@@ -818,20 +815,19 @@ class Socket < BasicSocket
           last_error = e
           socket.close if socket && !socket.closed?
 
-          if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-            if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
-              wait_for_hostname_resolution_patiently = true
-              connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
-              state = :v46w
-            else
-              state = :failure
-            end
+          if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.closed?
+            state = :failure
           elsif selectable_addrinfos.any?
             # Try other Addrinfo in next loop
           else
-            # Wait for connection to be established or hostname resolution in next loop
-            connection_attempt_delay_expires_at = nil
-            state = :v46w
+            if resolv_timeout && hostname_resolution_queue.opened? &&
+                (current_clocktime >= hostname_resolution_expires_at)
+              state = :timeout
+            else
+              # Wait for connection to be established or hostname resolution in next loop
+              connection_attempt_delay_expires_at = nil
+              state = :v46w
+            end
           end
         end
 
@@ -873,33 +869,38 @@ class Socket < BasicSocket
 
               next if connectable_sockets.any?
 
-              if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-                if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
-                  wait_for_hostname_resolution_patiently = true
-                  connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
-                else
-                  state = :failure
-                end
+              if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.closed?
+                state = :failure
               elsif selectable_addrinfos.any?
                 # Wait for connection attempt delay timeout in next loop
               else
-                # Wait for connection to be established or hostname resolution in next loop
-                connection_attempt_delay_expires_at = nil
+                if resolv_timeout && hostname_resolution_queue.opened? &&
+                    (current_clocktime >= hostname_resolution_expires_at)
+                  state = :timeout
+                else
+                  # Wait for connection to be established or hostname resolution in next loop
+                  connection_attempt_delay_expires_at = nil
+                end
               end
             end
           end
         elsif hostname_resolved&.any?
           family_name, res = hostname_resolution_queue.get
           selectable_addrinfos.add(family_name, res) unless res.is_a? Exception
-          connection_attempt_delay_expires_at = nil if wait_for_hostname_resolution_patiently
-          state = :v46w
         else
-          if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
+          if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.closed?
             state = :failure
           elsif selectable_addrinfos.any?
+            # Try other Addrinfo in next loop
             state = :v46c
           else
-            connection_attempt_delay_expires_at = nil
+            if resolv_timeout && hostname_resolution_queue.opened? &&
+                (current_clocktime >= hostname_resolution_expires_at)
+              state = :timeout
+            else
+              # Wait for connection to be established or hostname resolution in next loop
+              connection_attempt_delay_expires_at = nil
+            end
           end
         end
 
@@ -1027,8 +1028,8 @@ class Socket < BasicSocket
       nil
     end
 
-    def empty?
-      true
+    def opened?
+      false
     end
 
     def closed?
@@ -1083,12 +1084,12 @@ class Socket < BasicSocket
       res
     end
 
-    def empty?
-      @queue.empty?
-    end
-
     def closed?
       @rpipe.closed?
+    end
+
+    def opened?
+      !closed?
     end
 
     def close_all

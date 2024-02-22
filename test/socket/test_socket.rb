@@ -903,6 +903,30 @@ class TestSocket < Test::Unit::TestCase
     end;
   end
 
+  def test_tcp_socket_resolv_timeout_with_connection_failure
+    opts = %w[-rsocket -W1]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+
+    begin;
+      server = TCPServer.new("127.0.0.1", 12345)
+      _, port, = server.addr
+
+      Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
+        if family == Socket::AF_INET6
+          sleep
+        else
+          [Addrinfo.tcp("127.0.0.1", port)]
+        end
+      end
+
+      server.close
+
+      assert_raise(Errno::ETIMEDOUT) do
+        Socket.tcp("localhost", port, resolv_timeout: 0.01)
+      end
+    end;
+  end
+
   def test_tcp_socket_one_hostname_resolution_succeeded_at_least
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
