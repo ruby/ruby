@@ -1166,7 +1166,7 @@ rb_free_generic_ivar(VALUE obj)
     }
 }
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_generic_ivar_memsize(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
@@ -2546,7 +2546,7 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-RUBY_FUNC_EXPORTED void
+void
 rb_autoload(VALUE module, ID name, const char *feature)
 {
     if (!feature || !*feature) {

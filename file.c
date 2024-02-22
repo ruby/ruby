@@ -2463,7 +2463,7 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-RUBY_FUNC_EXPORTED VALUE
+VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
     statx_data st;

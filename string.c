@@ -1578,7 +1578,7 @@ rb_str_free(VALUE str)
     }
 }
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_str_memsize(VALUE str)
 {
     if (FL_TEST(str, STR_NOEMBED|STR_SHARED|STR_NOFREE) == STR_NOEMBED) {

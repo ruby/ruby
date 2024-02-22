@@ -5622,7 +5622,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
 }
 #define rb_io_fptr_finalize(fptr) rb_io_fptr_finalize_internal(fptr)
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_io_memsize(const rb_io_t *fptr)
 {
     size_t size = sizeof(rb_io_t);
