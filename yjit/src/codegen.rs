@@ -2648,6 +2648,10 @@ fn gen_setinstancevariable(
     )
 }
 
+/// Set an instance variable on setinstancevariable or attr_writer.
+/// It switches the behavior based on what recv_opnd is given.
+/// * SelfOpnd: setinstancevariable, which doesn't push a result onto the stack.
+/// * StackOpnd: attr_writer, which pushes a result onto the stack.
 fn gen_set_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -2873,13 +2877,15 @@ fn gen_set_ivar(
             asm.write_label(skip_wb);
         }
     }
-    let val = asm.stack_pop(1); // Keep it on stack during ccall for GC
+    let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
 
-    if recv_opnd != SelfOpnd {
+    // If it's attr_writer, i.e. recv_opnd is StackOpnd, we need to pop
+    // the receiver and push the written value onto the stack.
+    if let StackOpnd(_) = recv_opnd {
         asm.stack_pop(1); // Pop receiver
 
         let out_opnd = asm.stack_push(Type::Unknown); // Push a return value
-        asm.mov(out_opnd, val);
+        asm.mov(out_opnd, write_val);
     }
 
     Some(KeepCompiling)
