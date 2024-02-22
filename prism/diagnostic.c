@@ -179,6 +179,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_EXPECT_STRING_CONTENT]              = { "expected string content after opening string delimiter", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_WHEN_DELIMITER]              = { "expected a delimiter after the predicates of a `when` clause", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPRESSION_BARE_HASH]               = { "unexpected bare hash in expression", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_FLOAT_PARSE]                        = { "could not parse the float '%.*s'", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_COLLECTION]                     = { "expected a collection after the `in` in a `for` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_INDEX]                          = { "expected an index after `for`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_IN]                             = { "expected an `in` after the index in a `for` statement", PM_ERROR_LEVEL_FATAL },
@@ -307,6 +308,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_AMBIGUOUS_SLASH]                   = { "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_END_IN_METHOD]                     = { "END in method; use at_exit", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_FLOAT_OUT_OF_RANGE]                = { "Float %.*s%s out of range", PM_WARNING_LEVEL_VERBOSE }
 };
 
 static inline const char *

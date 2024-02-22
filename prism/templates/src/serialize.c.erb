@@ -127,6 +127,8 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             pm_buffer_append_varuint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
             <%- when Prism::IntegerField -%>
             pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when Prism::DoubleField -%>
+            pm_buffer_append_double(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>

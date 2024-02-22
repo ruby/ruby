@@ -51,6 +51,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (3,7)-(3,10))
+        │   │   └── value: 1.0
         │   └── operator_loc: (3,4)-(3,6) = "=>"
         ├── @ MatchRequiredNode (location: (4,0)-(4,9))
         │   ├── value:
@@ -544,8 +545,10 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ FloatNode (location: (29,7)-(29,10))
+        │   │   │   └── value: 1.0
         │   │   ├── right:
         │   │   │   @ FloatNode (location: (29,14)-(29,17))
+        │   │   │   └── value: 1.0
         │   │   └── operator_loc: (29,11)-(29,13) = ".."
         │   └── operator_loc: (29,4)-(29,6) = "=>"
         ├── @ MatchRequiredNode (location: (30,0)-(30,15))
@@ -2426,6 +2429,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (106,7)-(106,10))
+        │   │   └── value: 1.0
         │   └── operator_loc: (106,4)-(106,6) = "in"
         ├── @ MatchPredicateNode (location: (107,0)-(107,9))
         │   ├── value:
@@ -2966,6 +2970,7 @@
         │   │   └── @ InNode (location: (137,10)-(137,21))
         │   │       ├── pattern:
         │   │       │   @ FloatNode (location: (137,13)-(137,16))
+        │   │       │   └── value: 1.0
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (137,10)-(137,12) = "in"
         │   │       └── then_loc: (137,17)-(137,21) = "then"
@@ -3681,6 +3686,7 @@
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,16))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ FloatNode (location: (164,13)-(164,16))
+        │   │       │   │           └── value: 1.0
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅

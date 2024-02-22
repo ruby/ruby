@@ -7,6 +7,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ FloatNode (location: (1,0)-(1,4))
+        │   │   └── value: 2.0
         │   ├── call_operator_loc: ∅
         │   ├── name: :**
         │   ├── message_loc: (1,5)-(1,7) = "**"
@@ -56,6 +57,7 @@
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ FloatNode (location: (5,1)-(5,4))
+            │   │   └── value: 2.0
             │   ├── call_operator_loc: ∅
             │   ├── name: :**
             │   ├── message_loc: (5,5)-(5,7) = "**"

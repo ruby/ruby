@@ -164,6 +164,15 @@ pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value) {
 }
 
 /**
+ * Append a double to the buffer.
+ */
+void
+pm_buffer_append_double(pm_buffer_t *buffer, double value) {
+    const void *source = &value;
+    pm_buffer_append(buffer, source, sizeof(double));
+}
+
+/**
  * Append a slice of source code to the buffer.
  */
 void

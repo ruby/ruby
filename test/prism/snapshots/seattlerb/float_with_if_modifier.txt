@@ -12,5 +12,6 @@
             │   @ StatementsNode (location: (1,0)-(1,3))
             │   └── body: (length: 1)
             │       └── @ FloatNode (location: (1,0)-(1,3))
+            │           └── value: 1.0
             ├── consequent: ∅
             └── end_keyword_loc: ∅

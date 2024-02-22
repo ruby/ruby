@@ -185,6 +185,7 @@ typedef struct pm_<%= node.human %> {
     when Prism::UInt8Field then "uint8_t #{field.name}"
     when Prism::UInt32Field then "uint32_t #{field.name}"
     when Prism::IntegerField then "pm_integer_t #{field.name}"
+    when Prism::DoubleField then "double #{field.name}"
     else raise field.class.name
     end
     %>;

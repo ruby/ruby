@@ -3139,6 +3139,70 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
 }
 
 /**
+ * Parse the value of a double, add appropriate errors if there is an issue, and
+ * return the value that should be saved on the PM_FLOAT_NODE node.
+ */
+static double
+pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
+    ptrdiff_t diff = token->end - token->start;
+    if (diff <= 0) return 0.0;
+
+    // First, get a buffer of the content.
+    size_t length = (size_t) diff;
+    char *buffer = malloc(sizeof(char) * (length + 1));
+    memcpy((void *) buffer, token->start, length);
+
+    // Next, handle underscores by removing them from the buffer.
+    for (size_t index = 0; index < length; index++) {
+        if (buffer[index] == '_') {
+            memmove((void *) (buffer + index), (void *) (buffer + index + 1), length - index);
+            length--;
+        }
+    }
+
+    // Null-terminate the buffer so that strtod cannot read off the end.
+    buffer[length] = '\0';
+
+    // Now, call strtod to parse the value. Note that CRuby has their own
+    // version of strtod which avoids locales. We're okay using the locale-aware
+    // version because we've already validated through the parser that the token
+    // is in a valid format.
+    errno = 0;
+    char *eptr;
+    double value = strtod(buffer, &eptr);
+
+    // This should never happen, because we've already checked that the token
+    // is in a valid format. However it's good to be safe.
+    if ((eptr != buffer + length) || (errno != 0 && errno != ERANGE)) {
+        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, (*token), PM_ERR_FLOAT_PARSE);
+        free((void *) buffer);
+        return 0.0;
+    }
+
+    // If errno is set, then it should only be ERANGE. At this point we need to
+    // check if it's infinity (it should be).
+    if (errno == ERANGE) {
+        int warn_width;
+        const char *ellipsis;
+
+        if (length > 20) {
+            warn_width = 20;
+            ellipsis = "...";
+        } else {
+            warn_width = (int) length;
+            ellipsis = "";
+        }
+
+        pm_diagnostic_list_append_format(&parser->warning_list, token->start, token->end, PM_WARN_FLOAT_OUT_OF_RANGE, warn_width, (const char *) token->start, ellipsis);
+        value = (value < 0x0) ? -HUGE_VAL : HUGE_VAL;
+    }
+
+    // Finally we can free the buffer and return the value.
+    free((void *) buffer);
+    return value;
+}
+
+/**
  * Allocate and initialize a new FloatNode node.
  */
 static pm_float_node_t *
@@ -3146,11 +3210,14 @@ pm_float_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_FLOAT);
     pm_float_node_t *node = PM_ALLOC_NODE(parser, pm_float_node_t);
 
-    *node = (pm_float_node_t) {{
-        .type = PM_FLOAT_NODE,
-        .flags = PM_NODE_FLAG_STATIC_LITERAL,
-        .location = PM_LOCATION_TOKEN_VALUE(token)
-    }};
+    *node = (pm_float_node_t) {
+        {
+            .type = PM_FLOAT_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
+            .location = PM_LOCATION_TOKEN_VALUE(token)
+        },
+        .value = pm_double_parse(parser, token)
+    };
 
     return node;
 }
@@ -14293,13 +14360,18 @@ parse_pattern(pm_parser_t *parser, bool top_pattern, pm_diagnostic_id_t diag_id)
 static inline void
 parse_negative_numeric(pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
-        case PM_INTEGER_NODE:
-            node->location.start--;
-            ((pm_integer_node_t *) node)->value.negative = true;
+        case PM_INTEGER_NODE: {
+            pm_integer_node_t *cast = (pm_integer_node_t *) node;
+            cast->base.location.start--;
+            cast->value.negative = true;
             break;
-        case PM_FLOAT_NODE:
-            node->location.start--;
+        }
+        case PM_FLOAT_NODE: {
+            pm_float_node_t *cast = (pm_float_node_t *) node;
+            cast->base.location.start--;
+            cast->value = -cast->value;
             break;
+        }
         case PM_RATIONAL_NODE:
             node->location.start--;
             parse_negative_numeric(((pm_rational_node_t *) node)->numeric);
