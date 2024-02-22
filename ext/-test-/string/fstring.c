@@ -2,12 +2,10 @@
 #include "ruby/encoding.h"
 #include "internal/string.h"
 
-VALUE rb_fstring(VALUE str);
-
 VALUE
 bug_s_fstring(VALUE self, VALUE str)
 {
-    return rb_fstring(str);
+    return rb_str_to_interned_str(str);
 }
 
 VALUE
@@ -15,7 +13,7 @@ bug_s_fstring_fake_str(VALUE self)
 {
     static const char literal[] = "abcdefghijklmnopqrstuvwxyz";
     struct RString fake_str;
-    return rb_fstring(rb_setup_fake_str(&fake_str, literal, sizeof(literal) - 1, 0));
+    return rb_str_to_interned_str(rb_setup_fake_str(&fake_str, literal, sizeof(literal) - 1, 0));
 }
 
 VALUE

@@ -398,7 +398,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
     }
 }
 
-RUBY_FUNC_EXPORTED
 VALUE
 rb_fstring(VALUE str)
 {
