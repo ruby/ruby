@@ -98,6 +98,19 @@ module Prism
     end
   end
 
+  class ConstantWriteNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    def full_name_parts
+      [name]
+    end
+
+    # Returns the full name of this constant. For example: "Foo"
+    def full_name
+      name.to_s
+    end
+  end
+
   class ConstantPathNode < Node
     # An error class raised when dynamic parts are found while computing a
     # constant path's full name. For example:
