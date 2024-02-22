@@ -2850,7 +2850,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
-%type <node> mlhs_head mlhs_item mlhs_node mlhs_post
+%type <node> mlhs_head mlhs_item mlhs_node
 %type <node_masgn> mlhs mlhs_basic mlhs_inner
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
@@ -3596,7 +3596,7 @@ mlhs_basic	: mlhs_head
                         $$ = NEW_MASGN($1, $3, &@$);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
-                | mlhs_head tSTAR mlhs_node ',' mlhs_post
+                | mlhs_head tSTAR mlhs_node ',' mlhs_separated_nonempty_list(',', mlhs_item)
                     {
                         $$ = NEW_MASGN($1, NEW_POSTARG($3,$5,&@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
@@ -3606,7 +3606,7 @@ mlhs_basic	: mlhs_head
                         $$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
                     /*% ripper: mlhs_add_star!($:1, Qnil) %*/
                     }
-                | mlhs_head tSTAR ',' mlhs_post
+                | mlhs_head tSTAR ',' mlhs_separated_nonempty_list(',', mlhs_item)
                     {
                         $$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, Qnil), $:4) %*/
@@ -3616,7 +3616,7 @@ mlhs_basic	: mlhs_head
                         $$ = NEW_MASGN(0, $2, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:2) %*/
                     }
-                | tSTAR mlhs_node ',' mlhs_post
+                | tSTAR mlhs_node ',' mlhs_separated_nonempty_list(',', mlhs_item)
                     {
                         $$ = NEW_MASGN(0, NEW_POSTARG($2,$4,&@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:2), $:4) %*/
@@ -3626,7 +3626,7 @@ mlhs_basic	: mlhs_head
                         $$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
                     }
-                | tSTAR ',' mlhs_post
+                | tSTAR ',' mlhs_separated_nonempty_list(',', mlhs_item)
                     {
                         $$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $:3) %*/
@@ -3650,18 +3650,6 @@ mlhs_head	: mlhs_item ','
                     {
                         $$ = list_append(p, $1, $2);
                     /*% ripper: mlhs_add!($:1, $:2) %*/
-                    }
-                ;
-
-mlhs_post	: mlhs_item
-                    {
-                        $$ = NEW_LIST($1, &@$);
-                    /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
-                    }
-                | mlhs_post ',' mlhs_item
-                    {
-                        $$ = list_append(p, $1, $3);
-                    /*% ripper: mlhs_add!($:1, $:3) %*/
                     }
                 ;
 
