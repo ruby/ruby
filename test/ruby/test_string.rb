@@ -909,6 +909,7 @@ CODE
   end
 
   def test_undump_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     EnvUtil.under_gc_compact_stress do
       assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
@@ -1284,6 +1285,7 @@ CODE
   end
 
   def test_gsub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
   end
 
@@ -1331,6 +1333,7 @@ CODE
   end
 
   def test_gsub_bang_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       a = S("hello")
       a.gsub!(/([aeiou])/, S('<\1>'))
@@ -1672,6 +1675,7 @@ CODE
   end
 
   def test_scan_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
@@ -2103,6 +2107,7 @@ CODE
   end
 
   def test_sub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
       assert_equal("amp", m["foo"])
