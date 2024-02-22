@@ -39,8 +39,7 @@ jobs:
       security-events: write # for github/codeql-action/autobuild to send a status report
     # CodeQL fails to run pull requests from dependabot due to missing write access to upload results.
     if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
+      ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
@@ -58,14 +57,14 @@ jobs:
             os: ubuntu-latest
           # ruby analysis used large memory. We need to use a larger runner.
           - language: ruby
-            os: macos-arm-oss
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install libraries
-        if: ${{ matrix.os == 'macos-arm-oss' }}
+        if: ${{ contains(matrix.os, 'macos') }}
         uses: ./.github/actions/setup/macos
 
       - name: Install libraries

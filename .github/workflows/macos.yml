@@ -25,12 +25,15 @@ jobs:
     strategy:
       matrix:
         test_task: ['check']
-        os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
+        os:
+          - macos-12
+          - macos-13
+          - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
           - test_task: test-all TESTS=--repeat-count=2
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundled-gems
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
 
     env:
