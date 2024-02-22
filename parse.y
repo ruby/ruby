@@ -2840,7 +2840,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_args> f_arglist f_opt_paren_args f_paren_args f_args
 %type <node_args_aux> f_arg f_arg_item
 %type <node_opt_arg> f_optarg
-%type <node> f_marg f_marg_list f_rest_marg
+%type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
@@ -4981,29 +4981,17 @@ f_marg		: f_norm_arg
                     }
                 ;
 
-f_marg_list	: f_marg
-                    {
-                        $$ = NEW_LIST($1, &@$);
-                    /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
-                    }
-                | f_marg_list ',' f_marg
-                    {
-                        $$ = list_append(p, $1, $3);
-                    /*% ripper: mlhs_add!($:1, $:3) %*/
-                    }
-                ;
-
-f_margs		: f_marg_list
+f_margs		: mlhs_separated_nonempty_list(',', f_marg)
                     {
                         $$ = NEW_MASGN($1, 0, &@$);
                     /*% ripper: get_value($:1) %*/
                     }
-                | f_marg_list ',' f_rest_marg
+                | mlhs_separated_nonempty_list(',', f_marg) ',' f_rest_marg
                     {
                         $$ = NEW_MASGN($1, $3, &@$);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
-                | f_marg_list ',' f_rest_marg ',' f_marg_list
+                | mlhs_separated_nonempty_list(',', f_marg) ',' f_rest_marg ',' mlhs_separated_nonempty_list(',', f_marg)
                     {
                         $$ = NEW_MASGN($1, NEW_POSTARG($3, $5, &@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
@@ -5013,7 +5001,7 @@ f_margs		: f_marg_list
                         $$ = NEW_MASGN(0, $1, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:1) %*/
                     }
-                | f_rest_marg ',' f_marg_list
+                | f_rest_marg ',' mlhs_separated_nonempty_list(',', f_marg)
                     {
                         $$ = NEW_MASGN(0, NEW_POSTARG($1, $3, &@$), &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:1), $:3) %*/
