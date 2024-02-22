@@ -279,7 +279,6 @@ rb_ec_exec_node(rb_execution_context_t *ec, void *n)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_thread_t *const th = rb_ec_thread_ptr(ec);
         rb_iseq_eval_main(iseq);
     }
     EC_POP_TAG();
