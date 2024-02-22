@@ -107,39 +107,42 @@ dln_loaderror(const char *format, ...)
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-static size_t
-init_funcname_len(const char **file)
+struct string_part {
+    const char *ptr;
+    size_t len;
+};
+
+static struct string_part
+init_funcname_len(const char *file)
 {
-    const char *p = *file, *base, *dot = NULL;
+    const char *p = file, *base, *dot = NULL;
 
     /* Load the file as an object one */
     for (base = p; *p; p++) { /* Find position of last '/' */
         if (*p == '.' && !dot) dot = p;
         if (isdirsep(*p)) base = p+1, dot = NULL;
     }
-    *file = base;
     /* Delete suffix if it exists */
-    return (dot ? dot : p) - base;
+    const size_t len = (dot ? dot : p) - base;
+    return (struct string_part){base, len};
 }
 
 static inline char *
-concat_funcname(char *buf, const char *prefix, size_t plen, const char *base, size_t flen)
+concat_funcname(char *buf, const char *prefix, size_t plen, const struct string_part base)
 {
     if (!buf) {
         dln_memerror();
     }
     memcpy(buf, prefix, plen);
-    memcpy(buf + plen, base, flen);
-    buf[plen + flen] = '\0';
+    memcpy(buf + plen, base.ptr, base.len);
+    buf[plen + base.len] = '\0';
     return buf;
 }
 
 #define build_funcname(prefix, buf, file) do {\
-    const char *base = (file);\
-    const size_t flen = init_funcname_len(&base);\
+    const struct string_part f = init_funcname_len(file);\
     const size_t plen = sizeof(prefix "") - 1;\
-    char *const tmp = ALLOCA_N(char, plen+flen+1);\
-    *(buf) = concat_funcname(tmp, prefix, plen, base, flen);\
+    *(buf) = concat_funcname(ALLOCA_N(char, plen+f.len+1), prefix, plen, f);\
 } while (0)
 
 #define init_funcname(buf, file) build_funcname(FUNCNAME_PREFIX, buf, file)
