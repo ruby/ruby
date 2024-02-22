@@ -36,12 +36,13 @@ to be added to the array in global variable `$LOAD_PATH`;
 the option may be given more than once:
 
 ```sh
-$ pushd C:/
+$ pushd /tmp
 $ ruby -e 'p $LOAD_PATH.size'
 8
-$ $ ruby -I my_lib -I some_lib -e 'p $LOAD_PATH.size; p $LOAD_PATH[0..1]'
+$ ruby -I my_lib -I some_lib -e 'p $LOAD_PATH.size'
 10
-["C:/my_lib", "C:/some_lib"]
+$ ruby -I my_lib -I some_lib -e 'p $LOAD_PATH.take(2)'
+["/tmp/my_lib", "/tmp/some_lib"]
 $ popd
 ```
 
@@ -114,17 +115,18 @@ true
 
 ### Option '-w'
 
-Option `-w` (lowercase letter) is equivalentto option `-W1` (uppercase letter).
+Option `-w` (lowercase letter) is equivalent to option `-W1` (uppercase letter).
 
 ### Option `-W`
 
-Ruby code can create a <i>warning message</i> by calling method Kernel#warn;
-this may cause a message to be printed on `$stderr`
+Any Ruby code can create a <i>warning message</i> by calling method Kernel#warn;
+methods in the Ruby core and standard libraries can also create warning messages.
+Such a message may be printed on `$stderr`
 (or not, depending on certain settings).
 
 Option `-W` helps determine whether a particular warning message
 will be written,
-by setting the initial value of environment variable `$-W`:
+by setting the initial value of global variable `$-W`:
 
 - `-W0`: Sets `$-W` to `0` (silent; no warnings).
 - `-W1`: Sets `$-W` to `1` (moderate verbosity).
@@ -136,24 +138,12 @@ The value of `$-W`, in turn, determines which warning messages (if any)
 are to be printed to `$stdout` (see Kernel#warn):
 
 ```sh
-$ ruby -W0 -e 'p $-W; p IO::Buffer.new' # Silent; no warning message.
-0
-#<IO::Buffer>
-$ ruby -W1 -e 'p $-W; p IO::Buffer.new'
-1
--e:1: warning: IO::Buffer is experimental and both the Ruby and C interface may change in the future!
-#<IO::Buffer>
-$ ruby -W2 -e 'p $-W; p IO::Buffer.new'
-2
--e:1: warning: IO::Buffer is experimental and both the Ruby and C interface may change in the future!
-#<IO::Buffer>
+$ ruby -W1 -e 'p $foo'
+nil
+$ ruby -W2 -e 'p $foo'
+-e:1: warning: global variable `$foo' not initialized
+nil
 ```
-
-Note
-: Some of the examples above elicit level-1 warning messages
-  from the experimental method `IO::Buffer.new`
-  as it exists in Ruby version 3.3.0;
-  that method (being experimental) may not work the same way in other versions of Ruby.
 
 Ruby code may also define warnings for certain categories;
 these are the default settings for the defined categories:
@@ -178,4 +168,3 @@ $ ruby -W:no-experimental -e 'p IO::Buffer.new'
 #<IO::Buffer>
 ```
 
-See also {Field Processing}[rdoc-ref:command_line/field_processing.md].
