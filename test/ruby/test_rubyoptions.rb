@@ -112,7 +112,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
 
-    categories = {"deprecated"=>1, "experimental"=>0, "performance"=>2}
+    categories = {deprecated: 1, experimental: 0, performance: 2}
+    assert_equal categories.keys.sort, Warning.categories.sort
 
     categories.each do |category, level|
       assert_in_out_err(["-W:#{category}", "-e", "p Warning[:#{category}]"], "", %w(true), [])

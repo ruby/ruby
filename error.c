@@ -254,6 +254,26 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
 
 /*
  * call-seq:
+ *   categories  -> array
+ *
+ * Returns a list of the supported category symbols.
+ */
+
+static VALUE
+rb_warning_s_categories(VALUE mod)
+{
+    st_index_t num = warning_categories.id2enum->num_entries;
+    ID *ids = ALLOCA_N(ID, num);
+    num = st_keys(warning_categories.id2enum, ids, num);
+    VALUE ary = rb_ary_new_capa(num);
+    for (st_index_t i = 0; i < num; ++i) {
+        rb_ary_push(ary, ID2SYM(ids[i]));
+    }
+    return rb_ary_freeze(ary);
+}
+
+/*
+ * call-seq:
  *    warn(msg, category: nil)  -> nil
  *
  * Writes warning message +msg+ to $stderr. This method is called by
@@ -3413,6 +3433,7 @@ Init_Exception(void)
     rb_mWarning = rb_define_module("Warning");
     rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
     rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
+    rb_define_singleton_method(rb_mWarning, "categories", rb_warning_s_categories, 0);
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, -1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
