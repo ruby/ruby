@@ -36,7 +36,7 @@ module Prism
 
     # Create a new Location object
     def Location(source = nil, start_offset = 0, length = 0)
-      Location.new(source, start_offset, length)
+      Location.new(source, start_offset, length) # steep:ignore
     end
     <%- nodes.each do |node| -%>
 

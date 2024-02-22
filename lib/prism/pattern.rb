@@ -84,7 +84,7 @@ module Prism
     # matches the pattern. If no block is given, an enumerator will be returned
     # that will yield each node that matches the pattern.
     def scan(root)
-      return to_enum(__method__ || raise, root) unless block_given?
+      return to_enum(:scan, root) unless block_given?
 
       @compiled ||= compile
       queue = [root]
@@ -182,8 +182,7 @@ module Prism
       preprocessed =
         node.elements.to_h do |element|
           key = element.key
-          if key.respond_to?(:unescaped)
-            # @type var key: SymbolNode
+          if key.is_a?(SymbolNode)
             [key.unescaped.to_sym, compile_node(element.value)]
           else
             raise CompilationError, element.inspect
