@@ -609,7 +609,8 @@
         │       @ StatementsNode (location: (59,2)-(59,3))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (59,2)-(59,3))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 3
         ├── @ WhileNode (location: (61,0)-(64,3))
         │   ├── flags: ∅
         │   ├── keyword_loc: (61,0)-(61,5) = "while"
@@ -663,7 +664,8 @@
         │       @ StatementsNode (location: (68,2)-(68,3))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (68,2)-(68,3))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 3
         └── @ UntilNode (location: (70,0)-(73,3))
             ├── flags: ∅
             ├── keyword_loc: (70,0)-(70,5) = "until"

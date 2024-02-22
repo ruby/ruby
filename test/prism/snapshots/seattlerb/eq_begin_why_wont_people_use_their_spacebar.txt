@@ -40,7 +40,8 @@
             │           │   @ StatementsNode (location: (2,7)-(2,9))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,7)-(2,9))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 42
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅

@@ -22,7 +22,8 @@
         │   │           │   │   @ StatementsNode (location: (1,4)-(1,9))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (1,4)-(1,9))
-        │   │           │   │           └── flags: decimal
+        │   │           │   │           ├── flags: decimal
+        │   │           │   │           └── value: 1500
         │   │           │   ├── opening_loc: (1,3)-(1,4) = "("
         │   │           │   └── closing_loc: (1,9)-(1,10) = ")"
         │   │           ├── call_operator_loc: (1,10)-(1,11) = "."

@@ -185,7 +185,8 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (22,9)-(22,10))
-        │   │   │   │           └── flags: decimal
+        │   │   │   │           ├── flags: decimal
+        │   │   │   │           └── value: 1
         │   │   │   ├── closing_loc: (22,10)-(22,11) = ")"
         │   │   │   └── block: ∅
         │   │   ├── opening_loc: (22,4)-(22,5) = "("

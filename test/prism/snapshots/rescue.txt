@@ -76,7 +76,8 @@
         │       │   @ NilNode (location: (12,11)-(12,14))
         │       ├── right:
         │       │   @ IntegerNode (location: (12,18)-(12,19))
-        │       │   └── flags: decimal
+        │       │   ├── flags: decimal
+        │       │   └── value: 1
         │       └── operator_loc: (12,15)-(12,17) = "||"
         ├── @ RescueModifierNode (location: (14,0)-(14,22))
         │   ├── expression:
@@ -101,7 +102,8 @@
         │       │   @ StatementsNode (location: (14,17)-(14,18))
         │       │   └── body: (length: 1)
         │       │       └── @ IntegerNode (location: (14,17)-(14,18))
-        │       │           └── flags: decimal
+        │       │           ├── flags: decimal
+        │       │           └── value: 1
         │       ├── consequent:
         │       │   @ ElseNode (location: (14,19)-(14,22))
         │       │   ├── else_keyword_loc: (14,19)-(14,20) = ":"
@@ -109,7 +111,8 @@
         │       │   │   @ StatementsNode (location: (14,21)-(14,22))
         │       │   │   └── body: (length: 1)
         │       │   │       └── @ IntegerNode (location: (14,21)-(14,22))
-        │       │   │           └── flags: decimal
+        │       │   │           ├── flags: decimal
+        │       │   │           └── value: 2
         │       │   └── end_keyword_loc: ∅
         │       └── end_keyword_loc: ∅
         ├── @ BeginNode (location: (16,0)-(16,24))
@@ -306,7 +309,8 @@
         │   │           │   │   ├── flags: ∅
         │   │           │   │   └── arguments: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (26,31)-(26,33))
-        │   │           │   │           └── flags: decimal
+        │   │           │   │           ├── flags: decimal
+        │   │           │   │           └── value: 42
         │   │           │   ├── closing_loc: ∅
         │   │           │   └── block: ∅
         │   │           ├── keyword_loc: (26,34)-(26,40) = "rescue"

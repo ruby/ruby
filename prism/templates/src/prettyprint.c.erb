@@ -127,19 +127,19 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 if (!found) pm_buffer_append_string(output_buffer, " nil", 4);
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- when Prism::IntegerField -%>
-                const pm_number_t *number = &cast-><%= field.name %>;
-                if (number->length == 0) {
+                const pm_integer_t *integer = &cast-><%= field.name %>;
+                if (integer->length == 0) {
                     pm_buffer_append_byte(output_buffer, ' ');
-                    if (number->negative) pm_buffer_append_byte(output_buffer, '-');
-                    pm_buffer_append_string(output_buffer, "%" PRIu32 "\n", number->head.value);
-                } else if (number->length == 1) {
+                    if (integer->negative) pm_buffer_append_byte(output_buffer, '-');
+                    pm_buffer_append_format(output_buffer, "%" PRIu32 "\n", integer->head.value);
+                } else if (integer->length == 1) {
                     pm_buffer_append_byte(output_buffer, ' ');
-                    if (number->negative) pm_buffer_append_byte(output_buffer, '-');
-                    pm_buffer_append_string(output_buffer, "%" PRIu64 "\n", ((uint64_t) number->head.value) | (((uint64_t) number->head.next->value) << 32));
+                    if (integer->negative) pm_buffer_append_byte(output_buffer, '-');
+                    pm_buffer_append_format(output_buffer, "%" PRIu64 "\n", ((uint64_t) integer->head.value) | (((uint64_t) integer->head.next->value) << 32));
                 } else {
                     pm_buffer_append_byte(output_buffer, ' ');
 
-                    const pm_number_node_t *node = &number->head;
+                    const pm_integer_word_t *node = &integer->head;
                     uint32_t index = 0;
 
                     while (node != NULL) {

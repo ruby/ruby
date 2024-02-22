@@ -20,7 +20,8 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,9)-(1,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (1,12)-(1,14))

@@ -75,7 +75,7 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
             <%- when Prism::ConstantListField -%>
             pm_constant_id_list_free(&cast-><%= field.name %>);
             <%- when Prism::IntegerField -%>
-            pm_number_free(&cast-><%= field.name %>);
+            pm_integer_free(&cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -121,7 +121,7 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
             <%- when Prism::ConstantListField -%>
             memsize->memsize += (pm_constant_id_list_memsize(&cast-><%= field.name %>) - sizeof(pm_constant_id_list_t));
             <%- when Prism::IntegerField -%>
-            memsize->memsize += (pm_number_memsize(&cast-><%= field.name %>) - sizeof(pm_number_t));
+            memsize->memsize += (pm_integer_memsize(&cast-><%= field.name %>) - sizeof(pm_integer_t));
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -255,19 +255,19 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             pm_buffer_append_byte(buffer, ']');
             <%- when Prism::IntegerField -%>
             {
-                const pm_number_t *number = &cast-><%= field.name %>;
-                if (number->length == 0) {
-                    if (number->negative) pm_buffer_append_byte(buffer, '-');
-                    pm_buffer_append_string(buffer, "%" PRIu32, number->head.value);
-                } else if (number->length == 1) {
-                    if (number->negative) pm_buffer_append_byte(buffer, '-');
-                    pm_buffer_append_format(buffer, "%" PRIu64, ((uint64_t) number->head.value) | (((uint64_t) number->head.next->value) << 32));
+                const pm_integer_t *integer = &cast-><%= field.name %>;
+                if (integer->length == 0) {
+                    if (integer->negative) pm_buffer_append_byte(buffer, '-');
+                    pm_buffer_append_string(buffer, "%" PRIu32, integer->head.value);
+                } else if (integer->length == 1) {
+                    if (integer->negative) pm_buffer_append_byte(buffer, '-');
+                    pm_buffer_append_format(buffer, "%" PRIu64, ((uint64_t) integer->head.value) | (((uint64_t) integer->head.next->value) << 32));
                 } else {
                     pm_buffer_append_byte(buffer, '{');
-                    pm_buffer_append_format(buffer, "\"negative\": %s", number->negative ? "true" : "false");
+                    pm_buffer_append_format(buffer, "\"negative\": %s", integer->negative ? "true" : "false");
                     pm_buffer_append_string(buffer, ",\"values\":[", 11);
 
-                    const pm_number_node_t *node = &number->head;
+                    const pm_integer_word_t *node = &integer->head;
                     while (node != NULL) {
                         pm_buffer_append_format(buffer, "%" PRIu32, node->value);
                         node = node->next;

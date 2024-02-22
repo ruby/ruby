@@ -3812,16 +3812,16 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
         .value = { 0 }
     };
 
-    pm_number_base_t number_base;
+    pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
     switch (base) {
-        case PM_INTEGER_BASE_FLAGS_BINARY: number_base = PM_NUMBER_BASE_BINARY; break;
-        case PM_INTEGER_BASE_FLAGS_OCTAL: number_base = PM_NUMBER_BASE_OCTAL; break;
-        case PM_INTEGER_BASE_FLAGS_DECIMAL: number_base = PM_NUMBER_BASE_DECIMAL; break;
-        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: number_base = PM_NUMBER_BASE_HEXADECIMAL; break;
-        default: assert(false && "unreachable");
+        case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
+        case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
+        case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
+        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
+        default: assert(false && "unreachable"); break;
     }
 
-    pm_number_parse(&node->value, number_base, token->start, token->end);
+    pm_integer_parse(&node->value, integer_base, token->start, token->end);
     return node;
 }
 

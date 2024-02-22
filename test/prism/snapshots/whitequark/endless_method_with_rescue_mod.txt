@@ -14,11 +14,13 @@
         │   │       └── @ RescueModifierNode (location: (1,10)-(1,20))
         │   │           ├── expression:
         │   │           │   @ IntegerNode (location: (1,10)-(1,11))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           ├── keyword_loc: (1,12)-(1,18) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ IntegerNode (location: (1,19)-(1,20))
-        │   │               └── flags: decimal
+        │   │               ├── flags: decimal
+        │   │               └── value: 2
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
@@ -38,11 +40,13 @@
             │       └── @ RescueModifierNode (location: (3,15)-(3,25))
             │           ├── expression:
             │           │   @ IntegerNode (location: (3,15)-(3,16))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 1
             │           ├── keyword_loc: (3,17)-(3,23) = "rescue"
             │           └── rescue_expression:
             │               @ IntegerNode (location: (3,24)-(3,25))
-            │               └── flags: decimal
+            │               ├── flags: decimal
+            │               └── value: 2
             ├── locals: []
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: (3,8)-(3,9) = "."

@@ -17,7 +17,8 @@
         │   │   @ StatementsNode (location: (10,6)-(10,7))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (10,6)-(10,7))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── keyword_loc: (10,0)-(10,3) = "END"
         │   ├── opening_loc: (10,4)-(10,5) = "{"
         │   └── closing_loc: (10,8)-(10,9) = "}"
@@ -26,7 +27,8 @@
             │   @ StatementsNode (location: (12,8)-(12,9))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (12,8)-(12,9))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── keyword_loc: (12,0)-(12,5) = "BEGIN"
             ├── opening_loc: (12,6)-(12,7) = "{"
             └── closing_loc: (12,10)-(12,11) = "}"

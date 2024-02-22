@@ -43,7 +43,8 @@
         │   │   │   │   @ StatementsNode (location: (3,0)-(4,4))
         │   │   │   │   └── body: (length: 2)
         │   │   │   │       ├── @ IntegerNode (location: (3,0)-(3,1))
-        │   │   │   │       │   └── flags: decimal
+        │   │   │   │       │   ├── flags: decimal
+        │   │   │   │       │   └── value: 0
         │   │   │   │       └── @ TrueNode (location: (4,0)-(4,4))
         │   │   │   ├── in_loc: (2,0)-(2,2) = "in"
         │   │   │   └── then_loc: ∅
@@ -74,7 +75,8 @@
         │   │       │   @ StatementsNode (location: (6,0)-(7,4))
         │   │       │   └── body: (length: 2)
         │   │       │       ├── @ IntegerNode (location: (6,0)-(6,1))
-        │   │       │       │   └── flags: decimal
+        │   │       │       │   ├── flags: decimal
+        │   │       │       │   └── value: 0
         │   │       │       └── @ TrueNode (location: (7,0)-(7,4))
         │   │       ├── in_loc: (5,0)-(5,2) = "in"
         │   │       └── then_loc: ∅
@@ -115,7 +117,8 @@
         │   │                   │   └── unescaped: "foo"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (11,0)-(11,1))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 1
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -153,7 +156,8 @@
             │                   │   └── unescaped: "foo"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (14,0)-(14,1))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block: ∅

@@ -425,7 +425,8 @@
             │       │           │   ├── flags: ∅
             │       │           │   └── arguments: (length: 1)
             │       │           │       └── @ IntegerNode (location: (36,14)-(36,15))
-            │       │           │           └── flags: decimal
+            │       │           │           ├── flags: decimal
+            │       │           │           └── value: 1
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
             │       └── statements: ∅

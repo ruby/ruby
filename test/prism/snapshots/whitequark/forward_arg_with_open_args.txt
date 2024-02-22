@@ -251,7 +251,8 @@
         │   │   │       ├── operator_loc: (18,13)-(18,14) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (18,15)-(18,16))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -281,7 +282,8 @@
         │   │   │       ├── operator_loc: (21,10)-(21,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (21,12)-(21,13))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -327,7 +329,8 @@
         │   │   │       ├── operator_loc: (25,10)-(25,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (25,12)-(25,13))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)

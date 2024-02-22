@@ -313,7 +313,8 @@
         │   ├── name_loc: (39,0)-(39,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (39,4)-(39,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (39,2)-(39,3) = "="
         └── @ CallNode (location: (40,0)-(40,24))
             ├── flags: ignore_visibility

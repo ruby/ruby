@@ -16,7 +16,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (1,8)-(1,10))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 10
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,8))
@@ -26,7 +27,8 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (3,1)-(3,2))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :**
         │   │   ├── message_loc: (3,3)-(3,5) = "**"
@@ -36,7 +38,8 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (3,6)-(3,8))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 10
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── call_operator_loc: ∅
@@ -62,7 +65,8 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (5,8)-(5,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 10
             │   ├── closing_loc: ∅
             │   └── block: ∅
             ├── call_operator_loc: ∅

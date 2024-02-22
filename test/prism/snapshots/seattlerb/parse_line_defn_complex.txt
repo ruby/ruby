@@ -43,7 +43,8 @@
             │       │   ├── operator_loc: (3,4)-(3,6) = "*="
             │       │   ├── value:
             │       │   │   @ IntegerNode (location: (3,7)-(3,8))
-            │       │   │   └── flags: decimal
+            │       │   │   ├── flags: decimal
+            │       │   │   └── value: 2
             │       │   ├── name: :y
             │       │   ├── operator: :*
             │       │   └── depth: 0

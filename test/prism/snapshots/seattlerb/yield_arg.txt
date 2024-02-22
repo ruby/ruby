@@ -11,5 +11,6 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,6)-(1,8))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 42
             └── rparen_loc: ∅

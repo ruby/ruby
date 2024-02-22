@@ -31,7 +31,8 @@
                 │   │   │       ├── operator_loc: (1,9)-(1,10) = "="
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,10)-(1,12))
-                │   │   │           └── flags: decimal
+                │   │   │           ├── flags: decimal
+                │   │   │           └── value: 42
                 │   │   ├── rest: ∅
                 │   │   ├── posts: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,14)-(1,15))

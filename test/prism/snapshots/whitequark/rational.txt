@@ -9,4 +9,5 @@
         └── @ RationalNode (location: (3,0)-(3,3))
             └── numeric:
                 @ IntegerNode (location: (3,0)-(3,2))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 42

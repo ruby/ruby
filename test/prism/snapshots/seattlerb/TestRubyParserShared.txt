@@ -203,7 +203,8 @@
         │   │           │           ├── name_loc: (61,4)-(61,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (61,8)-(61,10))
-        │   │           │           │   └── flags: decimal
+        │   │           │           │   ├── flags: decimal
+        │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (61,6)-(61,7) = "="
         │   │           ├── end_keyword_loc: (62,2)-(62,5) = "end"
         │   │           └── name: :Y
@@ -326,7 +327,8 @@
         │   │           │           ├── name_loc: (84,4)-(84,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (84,8)-(84,10))
-        │   │           │           │   └── flags: decimal
+        │   │           │           │   ├── flags: decimal
+        │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (84,6)-(84,7) = "="
         │   │           ├── end_keyword_loc: (85,2)-(85,5) = "end"
         │   │           └── name: :Y
