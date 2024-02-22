@@ -20,7 +20,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      fail NotImplementedError, "gets"
+      fail NotImplementedError
     end
     public :gets
 

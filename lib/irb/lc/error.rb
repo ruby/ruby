@@ -12,11 +12,6 @@ module IRB
       super("Unrecognized switch: #{val}")
     end
   end
-  class NotImplementedError < StandardError
-    def initialize(val)
-      super("Need to define `#{val}'")
-    end
-  end
   class CantReturnToNormalMode < StandardError
     def initialize
       super("Can't return to normal mode.")

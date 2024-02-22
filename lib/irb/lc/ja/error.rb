@@ -12,11 +12,6 @@ module IRB
       super("スイッチ(#{val})が分りません")
     end
   end
-  class NotImplementedError < StandardError
-    def initialize(val)
-      super("`#{val}'の定義が必要です")
-    end
-  end
   class CantReturnToNormalMode < StandardError
     def initialize
       super("Normalモードに戻れません.")
