@@ -74,17 +74,20 @@ The optional argument to the option must be octal digits,
 each in the range `0..7`;
 these digits are prefixed with digit `0` to form an octal value:
 
-- If that value is in range `(0..0377)`,
+- If no argument is given, the input record separator is `0x00`.
+- If the argument is `0`, the input record separator is `''`;
+  see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values].
+- If the argument is in range `(1..0377)`,
   it becomes the character value of the input record separator `$/`.
 - Otherwise, the input record separator is `nil`.
-
-If no argument is given, the input record separator is `0x00`.
 
 Examples:
 
 ```sh
 $ ruby -0 -e 'p $/'
 "\x00"
+ruby -00 -e 'p $/'
+""
 $ ruby -012 -e 'p $/'
 "\n"
 $ ruby -015 -e 'p $/'
@@ -141,7 +144,7 @@ are to be printed to `$stdout` (see Kernel#warn):
 $ ruby -W1 -e 'p $foo'
 nil
 $ ruby -W2 -e 'p $foo'
--e:1: warning: global variable `$foo' not initialized
+-e:1: warning: global variable '$foo' not initialized
 nil
 ```
 
