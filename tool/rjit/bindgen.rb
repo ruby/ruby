@@ -141,12 +141,10 @@ class BindingGenerator
     # Define variables
     @values.each do |type, values|
       values.each do |value|
-        println "  def C.#{value}"
-        println "    Primitive.cexpr! %q{ #{type}2NUM(#{value}) }"
-        println "  end"
-        println
+        println "  def C.#{value} = Primitive.cexpr!(%q{ #{type}2NUM(#{value}) })"
       end
     end
+    println
 
     # Define function pointers
     @funcs.each do |func|

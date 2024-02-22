@@ -16,6 +16,7 @@ use std::cell::Cell;
 use std::cmp;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
 use std::os::raw::c_int;
@@ -101,6 +102,9 @@ pub struct JITState {
 
     /// Address range for Linux perf's [JIT interface](https://github.com/torvalds/linux/blob/master/tools/perf/Documentation/jit-interface.txt)
     perf_map: Rc::<RefCell::<Vec<(CodePtr, Option<CodePtr>, String)>>>,
+
+    /// Stack of symbol names for --yjit-perf
+    perf_stack: Vec<String>,
 }
 
 impl JITState {
@@ -123,6 +127,7 @@ impl JITState {
             stable_constant_names_assumption: None,
             block_assumes_single_ractor: false,
             perf_map: Rc::default(),
+            perf_stack: vec![],
         }
     }
 
@@ -241,9 +246,27 @@ impl JITState {
         self.pending_outgoing.push(branch)
     }
 
+    /// Push a symbol for --yjit-perf
+    fn perf_symbol_push(&mut self, asm: &mut Assembler, symbol_name: &str) {
+        if !self.perf_stack.is_empty() {
+            self.perf_symbol_range_end(asm);
+        }
+        self.perf_stack.push(symbol_name.to_string());
+        self.perf_symbol_range_start(asm, symbol_name);
+    }
+
+    /// Pop the stack-top symbol for --yjit-perf
+    fn perf_symbol_pop(&mut self, asm: &mut Assembler) {
+        self.perf_symbol_range_end(asm);
+        self.perf_stack.pop();
+        if let Some(symbol_name) = self.perf_stack.get(0) {
+            self.perf_symbol_range_start(asm, symbol_name);
+        }
+    }
+
     /// Mark the start address of a symbol to be reported to perf
     fn perf_symbol_range_start(&self, asm: &mut Assembler, symbol_name: &str) {
-        let symbol_name = symbol_name.to_string();
+        let symbol_name = format!("[JIT] {}", symbol_name);
         let syms = self.perf_map.clone();
         asm.pos_marker(move |start, _| syms.borrow_mut().push((start, None, symbol_name.clone())));
     }
@@ -261,6 +284,7 @@ impl JITState {
 
     /// Flush addresses and symbols to /tmp/perf-{pid}.map
     fn flush_perf_symbols(&self, cb: &CodeBlock) {
+        assert_eq!(0, self.perf_stack.len());
         let path = format!("/tmp/perf-{}.map", std::process::id());
         let mut f = std::fs::File::options().create(true).append(true).open(path).unwrap();
         for sym in self.perf_map.borrow().iter() {
@@ -274,6 +298,52 @@ impl JITState {
             }
         }
     }
+
+    /// Return true if we're compiling a send-like instruction, not an opt_* instruction.
+    pub fn is_sendish(&self) -> bool {
+        match unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) } as u32 {
+            YARVINSN_send |
+            YARVINSN_opt_send_without_block |
+            YARVINSN_invokesuper => true,
+            _ => false,
+        }
+    }
+}
+
+/// Macro to call jit.perf_symbol_push() without evaluating arguments when
+/// the option is turned off, which is useful for avoiding string allocation.
+macro_rules! jit_perf_symbol_push {
+    ($jit:expr, $asm:expr, $symbol_name:expr, $perf_map:expr) => {
+        if get_option!(perf_map) == Some($perf_map) {
+            $jit.perf_symbol_push($asm, $symbol_name);
+        }
+    };
+}
+
+/// Macro to call jit.perf_symbol_pop(), for consistency with jit_perf_symbol_push!().
+macro_rules! jit_perf_symbol_pop {
+    ($jit:expr, $asm:expr, $perf_map:expr) => {
+        if get_option!(perf_map) == Some($perf_map) {
+            $jit.perf_symbol_pop($asm);
+        }
+    };
+}
+
+/// Macro to push and pop a perf symbol around a function call.
+macro_rules! perf_call {
+    // perf_call!("prefix: ", func(...)) uses "prefix: func" as a symbol.
+    ($prefix:expr, $func_name:ident($jit:expr, $asm:expr$(, $arg:expr)*$(,)?) ) => {
+        {
+            jit_perf_symbol_push!($jit, $asm, &format!("{}{}", $prefix, stringify!($func_name)), PerfMap::Codegen);
+            let ret = $func_name($jit, $asm, $($arg),*);
+            jit_perf_symbol_pop!($jit, $asm, PerfMap::Codegen);
+            ret
+        }
+    };
+    // perf_call! { func(...) } uses "func" as a symbol.
+    { $func_name:ident($jit:expr, $asm:expr$(, $arg:expr)*$(,)?) } => {
+        perf_call!("", $func_name($jit, $asm, $($arg),*))
+    };
 }
 
 use crate::codegen::JCCKinds::*;
@@ -332,7 +402,7 @@ fn gen_save_sp(asm: &mut Assembler) {
 fn gen_save_sp_with_offset(asm: &mut Assembler, offset: i8) {
     if asm.ctx.get_sp_offset() != -offset {
         asm_comment!(asm, "save SP to CFP");
-        let stack_pointer = asm.ctx.sp_opnd((offset as i32 * SIZEOF_VALUE_I32) as isize);
+        let stack_pointer = asm.ctx.sp_opnd(offset as i32 * SIZEOF_VALUE_I32);
         let sp_addr = asm.lea(stack_pointer);
         asm.mov(SP, sp_addr);
         let cfp_sp_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
@@ -351,8 +421,10 @@ fn jit_prepare_non_leaf_call(
     jit: &mut JITState,
     asm: &mut Assembler
 ) {
-    // Prepare for GC. This also sets PC, which prepares for showing a backtrace.
-    jit_prepare_call_with_gc(jit, asm);
+    // Prepare for GC. Setting PC also prepares for showing a backtrace.
+    jit.record_boundary_patch_point = true; // VM lock could trigger invalidation
+    jit_save_pc(jit, asm); // for allocation tracing
+    gen_save_sp(asm); // protect objects from GC
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding, rb_debug_inspector API, and other means.
@@ -369,6 +441,9 @@ fn jit_prepare_call_with_gc(
     jit.record_boundary_patch_point = true; // VM lock could trigger invalidation
     jit_save_pc(jit, asm); // for allocation tracing
     gen_save_sp(asm); // protect objects from GC
+
+    // Expect a leaf ccall(). You should use jit_prepare_non_leaf_call() if otherwise.
+    asm.expect_leaf_ccall();
 }
 
 /// Record the current codeblock write position for rewriting into a jump into
@@ -943,18 +1018,8 @@ pub fn gen_single_block(
         asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
     }
 
-    // Mark the start of a method name symbol for --yjit-perf
-    if get_option!(perf_map) {
-        let comptime_recv_class = jit.peek_at_self().class_of();
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_class)) };
-        match (class_name, unsafe { rb_iseq_label(iseq) }) {
-            (Some(class_name), iseq_label) if iseq_label != Qnil => {
-                let iseq_label = ruby_str_to_rust(iseq_label);
-                jit.perf_symbol_range_start(&mut asm, &format!("[JIT] {}#{}", class_name, iseq_label));
-            }
-            _ => {},
-        }
-    }
+    // Mark the start of an ISEQ for --yjit-perf
+    jit_perf_symbol_push!(jit, &mut asm, &get_iseq_name(iseq), PerfMap::ISEQ);
 
     if asm.ctx.is_return_landing() {
         // Continuation of the end of gen_leave().
@@ -1030,7 +1095,12 @@ pub fn gen_single_block(
             }
 
             // Call the code generation function
+            jit_perf_symbol_push!(jit, &mut asm, &insn_name(opcode), PerfMap::Codegen);
             status = gen_fn(&mut jit, &mut asm, ocb);
+            jit_perf_symbol_pop!(jit, &mut asm, PerfMap::Codegen);
+
+            #[cfg(debug_assertions)]
+            assert!(!asm.get_leaf_ccall(), "ccall() wasn't used after leaf_ccall was set in {}", insn_name(opcode));
         }
 
         // If we can't compile this instruction
@@ -1077,17 +1147,15 @@ pub fn gen_single_block(
         asm.pad_inval_patch();
     }
 
-    // Mark the end of a method name symbol for --yjit-perf
-    if get_option!(perf_map) {
-        jit.perf_symbol_range_end(&mut asm);
-    }
+    // Mark the end of an ISEQ for --yjit-perf
+    jit_perf_symbol_pop!(jit, &mut asm, PerfMap::ISEQ);
 
     // Compile code into the code block
     let (_, gc_offsets) = asm.compile(cb, Some(ocb)).ok_or(())?;
     let end_addr = cb.get_write_ptr();
 
     // Flush perf symbols after asm.compile() writes addresses
-    if get_option!(perf_map) {
+    if get_option!(perf_map).is_some() {
         jit.flush_perf_symbols(cb);
     }
 
@@ -1173,11 +1241,11 @@ fn gen_swap(
 
 fn stack_swap(
     asm: &mut Assembler,
-    offset0: u16,
-    offset1: u16,
+    offset0: i32,
+    offset1: i32,
 ) {
-    let stack0_mem = asm.stack_opnd(offset0 as i32);
-    let stack1_mem = asm.stack_opnd(offset1 as i32);
+    let stack0_mem = asm.stack_opnd(offset0);
+    let stack1_mem = asm.stack_opnd(offset1);
 
     let mapping0 = asm.ctx.get_opnd_mapping(stack0_mem.into());
     let mapping1 = asm.ctx.get_opnd_mapping(stack1_mem.into());
@@ -1373,7 +1441,7 @@ fn gen_newarray(
     } else {
         asm_comment!(asm, "load pointer to array elements");
         let offset_magnitude = (SIZEOF_VALUE as u32) * n;
-        let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+        let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
         asm.lea(values_opnd)
     };
 
@@ -1480,8 +1548,21 @@ fn gen_splatkw(
         // If a compile-time hash operand is T_HASH, just guard that it's T_HASH.
         let hash_opnd = asm.stack_opnd(1);
         guard_object_is_hash(asm, hash_opnd, hash_opnd.into(), Counter::splatkw_not_hash);
+    } else if comptime_hash.nil_p() {
+        // Speculate we'll see nil if compile-time hash operand is nil
+        let hash_opnd = asm.stack_opnd(1);
+        let hash_opnd_type = asm.ctx.get_opnd_type(hash_opnd.into());
+
+        if hash_opnd_type != Type::Nil {
+            asm.cmp(hash_opnd, Qnil.into());
+            asm.jne(Target::side_exit(Counter::splatkw_not_nil));
+
+            if Type::Nil.diff(hash_opnd_type) != TypeDiff::Incompatible {
+                asm.ctx.upgrade_opnd_type(hash_opnd.into(), Type::Nil);
+            }
+        }
     } else {
-        // Otherwise, call #to_hash operand to get T_HASH.
+        // Otherwise, call #to_hash on the operand if it's not nil.
 
         // Save the PC and SP because the callee may call #to_hash
         jit_prepare_non_leaf_call(jit, asm);
@@ -1491,10 +1572,19 @@ fn gen_splatkw(
         let block_type = asm.ctx.get_opnd_type(block_opnd.into());
         let hash_opnd = asm.stack_opnd(1);
 
-        let hash = asm.ccall(rb_to_hash_type as *const u8, vec![hash_opnd]);
+        c_callable! {
+            fn to_hash_if_not_nil(mut obj: VALUE) -> VALUE {
+                if obj != Qnil {
+                    obj = unsafe { rb_to_hash_type(obj) };
+                }
+                obj
+            }
+        }
+
+        let hash = asm.ccall(to_hash_if_not_nil as _, vec![hash_opnd]);
         asm.stack_pop(2); // Keep it on stack during ccall for GC
 
-        let stack_ret = asm.stack_push(Type::THash);
+        let stack_ret = asm.stack_push(Type::Unknown);
         asm.mov(stack_ret, hash);
         asm.stack_push(block_type);
         // Leave block_opnd spilled by ccall as is
@@ -1565,7 +1655,7 @@ fn gen_pushtoarray(
 
     // Get the operands from the stack
     let ary_opnd = asm.stack_opnd(num as i32);
-    let objp_opnd = asm.lea(asm.ctx.sp_opnd(-(num as isize) * SIZEOF_VALUE as isize));
+    let objp_opnd = asm.lea(asm.ctx.sp_opnd(-(num as i32) * SIZEOF_VALUE_I32));
 
     let ary = asm.ccall(rb_ary_cat as *const u8, vec![ary_opnd, objp_opnd, num.into()]);
     asm.stack_pop(num as usize + 1); // Keep it on stack during ccall for GC
@@ -1657,7 +1747,7 @@ fn guard_object_is_array(
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
     asm.jne(Target::side_exit(counter));
 
-    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
+    if Type::TArray.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TArray);
     }
 }
@@ -1689,7 +1779,7 @@ fn guard_object_is_hash(
     asm.cmp(flags_opnd, (RUBY_T_HASH as u64).into());
     asm.jne(Target::side_exit(counter));
 
-    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
+    if Type::THash.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::THash);
     }
 }
@@ -1721,7 +1811,7 @@ fn guard_object_is_string(
     asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
     asm.jne(Target::side_exit(counter));
 
-    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
+    if Type::TString.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TString);
     }
 }
@@ -2691,7 +2781,6 @@ fn gen_setinstancevariable(
                 Opnd::const_ptr(ic as *const u8),
             ]
         );
-        asm.stack_pop(1); // Keep it on stack during ccall for GC
     } else {
         // Get the receiver
         let mut recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
@@ -2716,7 +2805,6 @@ fn gen_setinstancevariable(
             Counter::setivar_megamorphic,
         );
 
-        asm.spill_temps(); // for ccall (must be done before write_val is popped)
         let write_val;
 
         match ivar_index {
@@ -2744,7 +2832,7 @@ fn gen_setinstancevariable(
                     recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
                 }
 
-                write_val = asm.stack_pop(1);
+                write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
 
                 asm_comment!(asm, "write shape");
@@ -2762,7 +2850,7 @@ fn gen_setinstancevariable(
                 // the iv index by searching up the shape tree.  If we've
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
-                write_val = asm.stack_pop(1);
+                write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
             },
         }
@@ -2770,6 +2858,7 @@ fn gen_setinstancevariable(
         // If we know the stack value is an immediate, there's no need to
         // generate WB code.
         if !stack_type.is_imm() {
+            asm.spill_temps(); // for ccall (unconditionally spill them for RegTemps consistency)
             let skip_wb = asm.new_label("skip_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
@@ -2791,6 +2880,7 @@ fn gen_setinstancevariable(
             asm.write_label(skip_wb);
         }
     }
+    asm.stack_pop(1); // Keep it on stack during ccall for GC
 
     Some(KeepCompiling)
 }
@@ -2984,10 +3074,10 @@ fn gen_concatstrings(
 ) -> Option<CodegenStatus> {
     let n = jit.get_arg(0).as_usize();
 
-    // Save the PC and SP because we are allocating
-    jit_prepare_call_with_gc(jit, asm);
+    // rb_str_concat_literals may raise Encoding::CompatibilityError
+    jit_prepare_non_leaf_call(jit, asm);
 
-    let values_ptr = asm.lea(asm.ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n as isize)));
+    let values_ptr = asm.lea(asm.ctx.sp_opnd(-(SIZEOF_VALUE_I32 * n as i32)));
 
     // call rb_str_concat_literals(size_t n, const VALUE *strings);
     let return_value = asm.ccall(
@@ -3296,7 +3386,7 @@ fn gen_opt_neq(
     // opt_neq is passed two rb_call_data as arguments:
     // first for ==, second for !=
     let cd = jit.get_arg(1).as_ptr();
-    return gen_send_general(jit, asm, ocb, cd, None);
+    perf_call! { gen_send_general(jit, asm, ocb, cd, None) }
 }
 
 fn gen_opt_aref(
@@ -3854,7 +3944,7 @@ fn gen_opt_newarray_max(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -3907,7 +3997,7 @@ fn gen_opt_newarray_hash(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -3942,7 +4032,7 @@ fn gen_opt_newarray_min(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -5294,8 +5384,47 @@ fn jit_rb_str_bytesize(
     true
 }
 
-fn jit_rb_str_getbyte(
+fn jit_rb_str_byteslice(
     jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    if argc != 2 {
+        return false
+    }
+
+    let len = asm.stack_opnd(0);
+    let beg = asm.stack_opnd(1);
+    let recv = asm.stack_opnd(2);
+
+    // rb_str_byte_substr should be leaf if indexes are fixnums
+    match (asm.ctx.get_opnd_type(beg.into()), asm.ctx.get_opnd_type(len.into())) {
+        (Type::Fixnum, Type::Fixnum) => {},
+        // Raises when non-integers are passed in, which requires the method frame
+        // to be pushed for the backtrace
+        _ => return false,
+    }
+    asm_comment!(asm, "String#byteslice");
+
+    // rb_str_byte_substr allocates a substring
+    jit_prepare_call_with_gc(jit, asm);
+
+    let ret_opnd = asm.ccall(rb_str_byte_substr as *const u8, vec![recv, beg, len]);
+    asm.stack_pop(3);
+
+    let out_opnd = asm.stack_push(Type::Unknown);
+    asm.mov(out_opnd, ret_opnd);
+
+    true
+}
+
+fn jit_rb_str_getbyte(
+    _jit: &mut JITState,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
@@ -5304,15 +5433,21 @@ fn jit_rb_str_getbyte(
     _argc: i32,
     _known_recv_class: Option<VALUE>,
 ) -> bool {
-    asm_comment!(asm, "String#getbyte");
     extern "C" {
         fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     }
-    // Raises when non-integers are passed in
-    jit_prepare_non_leaf_call(jit, asm);
 
     let index = asm.stack_opnd(0);
     let recv = asm.stack_opnd(1);
+
+    // rb_str_getbyte should be leaf if the index is a fixnum
+    if asm.ctx.get_opnd_type(index.into()) != Type::Fixnum {
+        // Raises when non-integers are passed in, which requires the method frame
+        // to be pushed for the backtrace
+        return false;
+    }
+    asm_comment!(asm, "String#getbyte");
+
     let ret_opnd = asm.ccall(rb_str_getbyte as *const u8, vec![recv, index]);
     asm.stack_pop(2); // Keep them on stack during ccall for GC
 
@@ -5399,9 +5534,9 @@ fn jit_rb_str_concat(
     // Guard that the concat argument is a string
     guard_object_is_string(asm, asm.stack_opnd(0), StackOpnd(0), Counter::guard_send_not_string);
 
-    // Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
-    // other Ractors may trigger global invalidation, so we need ctx.clear_local_types().
-    // PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
+    // Guard buffers from GC since rb_str_buf_append may allocate.
+    // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
+    // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
@@ -5929,6 +6064,9 @@ fn gen_send_cfunc(
         return None;
     }
 
+    exit_if_kwsplat_non_nil(asm, flags, Counter::send_cfunc_kw_splat_non_nil)?;
+    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
         0
@@ -5951,11 +6089,25 @@ fn gen_send_cfunc(
     gen_counter_incr(asm, Counter::num_send_cfunc);
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
-        let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
+    if kw_arg.is_null() &&
+            !kw_splat &&
+            flags & VM_CALL_OPT_SEND == 0 &&
+            flags & VM_CALL_ARGS_SPLAT == 0 &&
+            (cfunc_argc == -1 || argc == cfunc_argc) {
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
-        if let Some(known_cfunc_codegen) = codegen_p {
-            if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class) {
+        if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
+            // We don't push a frame for specialized cfunc codegen, so the generated code must be leaf.
+            // However, the interpreter doesn't push a frame on opt_* instruction either, so we allow
+            // non-sendish instructions to break this rule as an exception.
+            let cfunc_codegen = if jit.is_sendish() {
+                asm.with_leaf_ccall(|asm|
+                    perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
+                )
+            } else {
+                perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
+            };
+
+            if cfunc_codegen {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
@@ -5966,32 +6118,6 @@ fn gen_send_cfunc(
         }
     }
 
-    // Log the name of the method we're calling to,
-    // note that we intentionally don't do this for inlined cfuncs
-    if get_option!(gen_stats) {
-        // TODO: extract code to get method name string into its own function
-
-        // Assemble the method name string
-        let mid = unsafe { vm_ci_mid(ci) };
-        let class_name = if let Some(class) = recv_known_class {
-            unsafe { cstr_to_rust_string(rb_class2name(class)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let method_name = if mid != 0 {
-            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let name_str = format!("{}#{}", class_name, method_name);
-
-        // Get an index for this cfunc name
-        let cfunc_idx = get_cfunc_idx(&name_str);
-
-        // Increment the counter for this cfunc
-        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
-    }
-
     // Check for interrupts
     gen_check_ints(asm, Counter::guard_send_interrupted);
 
@@ -5999,7 +6125,7 @@ fn gen_send_cfunc(
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     // REG_CFP <= REG_SP + 4 * SIZEOF_VALUE + sizeof(rb_control_frame_t)
     asm_comment!(asm, "stack overflow check");
-    let stack_limit = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize));
+    let stack_limit = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as i32));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
@@ -6010,6 +6136,11 @@ fn gen_send_cfunc(
     } else {
         argc - kw_arg_num + 1
     };
+
+    // Exclude the kw_splat hash from arity check
+    if kw_splat {
+        passed_argc -= 1;
+    }
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {
@@ -6060,6 +6191,14 @@ fn gen_send_cfunc(
         }
     }
 
+    // Pop the empty kw_splat hash
+    if kw_splat {
+        // Only `**nil` is supported right now. Checked in exit_if_kwsplat_non_nil()
+        assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
+        asm.stack_pop(1);
+        argc -= 1;
+    }
+
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
         assert!(cfunc_argc >= 0);
@@ -6093,7 +6232,7 @@ fn gen_send_cfunc(
 
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
-    let sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
+    let sp = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * 3));
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
         SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
@@ -6106,7 +6245,7 @@ fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
-    gen_push_frame(jit, asm, ControlFrame {
+    perf_call!("gen_send_cfunc: ", gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -6118,7 +6257,7 @@ fn gen_send_cfunc(
             None     // Leave PC uninitialized as cfuncs shouldn't read it
         },
         iseq: None,
-    });
+    }));
 
     asm_comment!(asm, "set ec->cfp");
     let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
@@ -6157,7 +6296,7 @@ fn gen_send_cfunc(
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
         vec![
             Opnd::Imm(passed_argc.into()),
-            asm.lea(asm.ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize)),
+            asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32)),
             asm.stack_opnd(argc),
         ]
     }
@@ -6179,6 +6318,20 @@ fn gen_send_cfunc(
     // Push the return value on the Ruby stack
     let stack_ret = asm.stack_push(Type::Unknown);
     asm.mov(stack_ret, ret);
+
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined cfuncs.
+    // We also do this after the C call to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) {
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let name_str = get_method_name(recv_known_class, mid);
+
+        // Get an index for this cfunc name
+        let cfunc_idx = get_cfunc_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
+    }
 
     // Pop the stack frame (ec->cfp++)
     // Instead of recalculating, we can reuse the previous CFP, which is stored in a callee-saved
@@ -6358,7 +6511,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
+    perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None) }
 }
 
 /// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
@@ -6414,14 +6567,17 @@ fn gen_send_iseq(
     // that the callee could use to know which keywords are unspecified
     // (see the `checkkeyword` instruction and check `ruby --dump=insn -e 'def foo(k:itself)=k'`).
     // We always need to set up this local if the call goes through.
-    let doing_kw_call = unsafe { get_iseq_flags_has_kw(iseq) };
+    let has_kwrest = unsafe { get_iseq_flags_has_kwrest(iseq) };
+    let doing_kw_call = unsafe { get_iseq_flags_has_kw(iseq) } || has_kwrest;
     let supplying_kws = unsafe { vm_ci_flag(ci) & VM_CALL_KWARG } != 0;
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
+    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+    let splat_call = flags & VM_CALL_ARGS_SPLAT != 0;
 
     // For computing offsets to callee locals
-    let num_params = unsafe { get_iseq_body_param_size(iseq) };
+    let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 };
 
     let mut start_pc_offset: u16 = 0;
@@ -6436,8 +6592,9 @@ fn gen_send_iseq(
         unsafe { get_cikw_keyword_len(kw_arg) }
     };
 
-    // Arity handling and optional parameter setup
-    let mut opts_filled = argc - required_num - kw_arg_num;
+    // Arity handling and optional parameter setup for positional arguments.
+    // Splats are handled later.
+    let mut opts_filled = argc - required_num - kw_arg_num - i32::from(kw_splat) - i32::from(splat_call);
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     // With a rest parameter or a yield to a block,
     // callers can pass more than required + optional.
@@ -6448,15 +6605,17 @@ fn gen_send_iseq(
     let mut opts_missing: i32 = opt_num - opts_filled;
 
     let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
+    // Stack index of the splat array
+    let splat_pos = i32::from(block_arg) + i32::from(kw_splat) + kw_arg_num;
 
     exit_if_stack_too_large(iseq)?;
     exit_if_tail_call(asm, ci)?;
     exit_if_has_post(asm, iseq)?;
-    exit_if_has_kwrest(asm, iseq)?;
-    exit_if_kw_splat(asm, flags)?;
+    exit_if_kwsplat_non_nil(asm, flags, Counter::send_iseq_kw_splat_non_nil)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
-    exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
-    exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
+    exit_if_has_kwrest_and_captured(asm, has_kwrest, captured_opnd)?;
+    exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, supplying_kws)?;
+    exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, doing_kw_call)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
     exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
@@ -6483,80 +6642,14 @@ fn gen_send_iseq(
         }
     }
 
+    // Check that required keyword arguments are supplied and find any extras
+    // that should go into the keyword rest parameter (**kw_rest).
     if doing_kw_call {
-        // Here we're calling a method with keyword arguments and specifying
-        // keyword arguments at this call site.
-
-        // This struct represents the metadata about the callee-specified
-        // keyword parameters.
-        let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
-        let keyword_num: usize = unsafe { (*keyword).num }.try_into().unwrap();
-        let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
-
-        let mut required_kwargs_filled = 0;
-
-        if keyword_num > 30 {
-            // We have so many keywords that (1 << num) encoded as a FIXNUM
-            // (which shifts it left one more) no longer fits inside a 32-bit
-            // immediate.
-            gen_counter_incr(asm, Counter::send_iseq_too_many_kwargs);
-            return None;
-        }
-
-        // Check that the kwargs being passed are valid
-        if supplying_kws {
-            // This is the list of keyword arguments that the callee specified
-            // in its initial declaration.
-            // SAFETY: see compile.c for sizing of this slice.
-            let callee_kwargs = unsafe { slice::from_raw_parts((*keyword).table, keyword_num) };
-
-            // Here we're going to build up a list of the IDs that correspond to
-            // the caller-specified keyword arguments. If they're not in the
-            // same order as the order specified in the callee declaration, then
-            // we're going to need to generate some code to swap values around
-            // on the stack.
-            let kw_arg_keyword_len: usize =
-                unsafe { get_cikw_keyword_len(kw_arg) }.try_into().unwrap();
-            let mut caller_kwargs: Vec<ID> = vec![0; kw_arg_keyword_len];
-            for kwarg_idx in 0..kw_arg_keyword_len {
-                let sym = unsafe { get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap()) };
-                caller_kwargs[kwarg_idx] = unsafe { rb_sym2id(sym) };
-            }
-
-            // First, we're going to be sure that the names of every
-            // caller-specified keyword argument correspond to a name in the
-            // list of callee-specified keyword parameters.
-            for caller_kwarg in caller_kwargs {
-                let search_result = callee_kwargs
-                    .iter()
-                    .enumerate() // inject element index
-                    .find(|(_, &kwarg)| kwarg == caller_kwarg);
-
-                match search_result {
-                    None => {
-                        // If the keyword was never found, then we know we have a
-                        // mismatch in the names of the keyword arguments, so we need to
-                        // bail.
-                        gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
-                        return None;
-                    }
-                    Some((callee_idx, _)) if callee_idx < keyword_required_num => {
-                        // Keep a count to ensure all required kwargs are specified
-                        required_kwargs_filled += 1;
-                    }
-                    _ => (),
-                }
-            }
-        }
-        assert!(required_kwargs_filled <= keyword_required_num);
-        if required_kwargs_filled != keyword_required_num {
-            gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
-            return None;
-        }
+        gen_iseq_kw_call_checks(asm, iseq, kw_arg, has_kwrest, kw_arg_num)?;
     }
 
-    let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 {
-        let array = jit.peek_at_stack(&asm.ctx, if block_arg { 1 } else { 0 }) ;
+    let splat_array_length = if splat_call {
+        let array = jit.peek_at_stack(&asm.ctx, splat_pos as isize);
         let array_length = if array == Qnil {
             0
         } else if unsafe { !RB_TYPE_P(array, RUBY_T_ARRAY) } {
@@ -6569,7 +6662,7 @@ fn gen_send_iseq(
         // Arity check accounting for size of the splat. When callee has rest parameters, we insert
         // runtime guards later in copy_splat_args_for_rest_callee()
         if !iseq_has_rest {
-            let supplying = argc - 1 + array_length as i32;
+            let supplying = argc - 1 - i32::from(kw_splat) + array_length as i32;
             if (required_num..=required_num + opt_num).contains(&supplying) == false {
                 gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
                 return None;
@@ -6585,7 +6678,7 @@ fn gen_send_iseq(
             // On a normal splat without rest and option args this is handled
             // elsewhere depending on the case
             asm_comment!(asm, "Side exit if length doesn't not equal compile time length");
-            let array_len_opnd = get_array_len(asm, asm.stack_opnd(if block_arg { 1 } else { 0 }));
+            let array_len_opnd = get_array_len(asm, asm.stack_opnd(splat_pos));
             asm.cmp(array_len_opnd, array_length.into());
             asm.jne(Target::side_exit(Counter::guard_send_splatarray_length_not_equal));
         }
@@ -6609,7 +6702,7 @@ fn gen_send_iseq(
     if block_arg0_splat {
         // If block_arg0_splat, we still need side exits after splat, but
         // the splat modifies the stack which breaks side exits. So bail out.
-        if flags & VM_CALL_ARGS_SPLAT != 0 {
+        if splat_call {
             gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_args_splat);
             return None;
         }
@@ -6627,7 +6720,7 @@ fn gen_send_iseq(
     if let Some(len) = splat_array_length {
         assert_eq!(kw_arg_num, 0); // Due to exit_if_doing_kw_and_splat().
                                    // Simplifies calculation below.
-        let num_args = (argc - 1) + len as i32;
+        let num_args = argc - 1 - i32::from(kw_splat) + len as i32;
 
         opts_filled = if num_args >= required_num {
             min(num_args - required_num, opt_num)
@@ -6650,12 +6743,16 @@ fn gen_send_iseq(
         }
     }
 
+    // Increment total ISEQ send count
+    gen_counter_incr(asm, Counter::num_send_iseq);
+
     // Shortcut for special `Primitive.attr! :leaf` builtins
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
     let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
     let opt_send_call = flags & VM_CALL_OPT_SEND != 0; // .send call is not currently supported for builtins
-    if let (None, Some(builtin_info), true, false) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call) {
+    if let (None, Some(builtin_info), true, false, None | Some(0)) =
+           (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call, splat_array_length) {
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             // We pop the block arg without using it because:
@@ -6670,8 +6767,18 @@ fn gen_send_iseq(
                 asm.stack_pop(1);
             }
 
+            // Pop empty kw_splat hash which passes nothing (exit_if_kwsplat_non_nil())
+            if kw_splat {
+                asm.stack_pop(1);
+            }
+
+            // Pop empty splat array which passes nothing
+            if let Some(0) = splat_array_length {
+                asm.stack_pop(1);
+            }
+
             asm_comment!(asm, "inlined leaf builtin");
-            gen_counter_incr(asm, Counter::num_send_leaf_builtin);
+            gen_counter_incr(asm, Counter::num_send_iseq_leaf);
 
             // The callee may allocate, e.g. Integer#abs on a Bignum.
             // Save SP for GC, save PC for allocation tracing, and prepare
@@ -6705,7 +6812,7 @@ fn gen_send_iseq(
     // Inline simple ISEQs whose return value is known at compile time
     if let (Some(value), None, false) = (iseq_get_return_value(iseq), block_arg_type, opt_send_call) {
         asm_comment!(asm, "inlined simple ISEQ");
-        gen_counter_incr(asm, Counter::num_send_inline);
+        gen_counter_incr(asm, Counter::num_send_iseq_inline);
 
         // Pop receiver and arguments
         asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
@@ -6726,19 +6833,17 @@ fn gen_send_iseq(
     let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
     let locals_offs =
         SIZEOF_VALUE_I32 * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
-    let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
+    let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
-        let splat_pos = i32::from(block_arg) + kw_arg_num;
-
+    if iseq_has_rest && splat_call {
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
         // that will come later. We will have made changes to
         // the stack by spilling or handling __send__ shifting
         // by the time we get to that code, so we need the
         // guard here where we can still side exit.
-        let non_rest_arg_count = argc - 1;
+        let non_rest_arg_count = argc - i32::from(kw_splat) - 1;
         if non_rest_arg_count < required_num + opt_num {
             let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
                 .try_into().unwrap();
@@ -6797,13 +6902,20 @@ fn gen_send_iseq(
                 return None;
             }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
-            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
+            let callee_specval = asm.ctx.sp_opnd(callee_specval * SIZEOF_VALUE_I32);
             asm.store(callee_specval, proc);
         }
         None => {
             // Nothing to do
         }
         _ => unreachable!(),
+    }
+
+    if kw_splat {
+        // Only `**nil` is supported right now. Checked in exit_if_kwsplat_non_nil()
+        assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
+        asm.stack_pop(1);
+        argc -= 1;
     }
 
     // push_splat_args does stack manipulation so we can no longer side exit
@@ -6832,7 +6944,7 @@ fn gen_send_iseq(
         jit_save_pc(jit, asm);
         gen_save_sp(asm);
 
-        let rest_param_array = if flags & VM_CALL_ARGS_SPLAT != 0 {
+        let rest_param_array = if splat_call {
             let non_rest_arg_count = argc - 1;
             // We start by dupping the array because someone else might have
             // a reference to it. This also normalizes to an ::Array instance.
@@ -6855,7 +6967,7 @@ fn gen_send_iseq(
                 // diff is >0 so no need to worry about null pointer
                 asm_comment!(asm, "load pointer to array elements");
                 let offset_magnitude = SIZEOF_VALUE as u32 * diff;
-                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
                 let values_ptr = asm.lea(values_opnd);
 
                 asm_comment!(asm, "prepend stack values to rest array");
@@ -6900,7 +7012,7 @@ fn gen_send_iseq(
             } else {
                 asm_comment!(asm, "load pointer to array elements");
                 let offset_magnitude = SIZEOF_VALUE as u32 * n;
-                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
                 asm.lea(values_opnd)
             };
 
@@ -6953,142 +7065,9 @@ fn gen_send_iseq(
         }
     }
 
+    // Keyword argument passing
     if doing_kw_call {
-        // Here we're calling a method with keyword arguments and specifying
-        // keyword arguments at this call site.
-
-        // Number of positional arguments the callee expects before the first
-        // keyword argument
-        let args_before_kw = required_num + opt_num;
-
-        // This struct represents the metadata about the caller-specified
-        // keyword arguments.
-        let ci_kwarg = unsafe { vm_ci_kwarg(ci) };
-        let caller_keyword_len: usize = if ci_kwarg.is_null() {
-            0
-        } else {
-            unsafe { get_cikw_keyword_len(ci_kwarg) }
-                .try_into()
-                .unwrap()
-        };
-
-        // This struct represents the metadata about the callee-specified
-        // keyword parameters.
-        let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
-
-        asm_comment!(asm, "keyword args");
-
-        // This is the list of keyword arguments that the callee specified
-        // in its initial declaration.
-        let callee_kwargs = unsafe { (*keyword).table };
-        let total_kwargs: usize = unsafe { (*keyword).num }.try_into().unwrap();
-
-        // Here we're going to build up a list of the IDs that correspond to
-        // the caller-specified keyword arguments. If they're not in the
-        // same order as the order specified in the callee declaration, then
-        // we're going to need to generate some code to swap values around
-        // on the stack.
-        let mut caller_kwargs: Vec<ID> = vec![0; total_kwargs];
-
-        for kwarg_idx in 0..caller_keyword_len {
-            let sym = unsafe { get_cikw_keywords_idx(ci_kwarg, kwarg_idx.try_into().unwrap()) };
-            caller_kwargs[kwarg_idx] = unsafe { rb_sym2id(sym) };
-        }
-        let mut kwarg_idx = caller_keyword_len;
-
-        let mut unspecified_bits = 0;
-
-        let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
-        for callee_idx in keyword_required_num..total_kwargs {
-            let mut already_passed = false;
-            let callee_kwarg = unsafe { *(callee_kwargs.offset(callee_idx.try_into().unwrap())) };
-
-            for caller_idx in 0..caller_keyword_len {
-                if caller_kwargs[caller_idx] == callee_kwarg {
-                    already_passed = true;
-                    break;
-                }
-            }
-
-            if !already_passed {
-                // Reserve space on the stack for each default value we'll be
-                // filling in (which is done in the next loop). Also increments
-                // argc so that the callee's SP is recorded correctly.
-                argc += 1;
-                let default_arg = asm.stack_push(Type::Unknown);
-
-                // callee_idx - keyword->required_num is used in a couple of places below.
-                let req_num: isize = unsafe { (*keyword).required_num }.try_into().unwrap();
-                let callee_idx_isize: isize = callee_idx.try_into().unwrap();
-                let extra_args = callee_idx_isize - req_num;
-
-                //VALUE default_value = keyword->default_values[callee_idx - keyword->required_num];
-                let mut default_value = unsafe { *((*keyword).default_values.offset(extra_args)) };
-
-                if default_value == Qundef {
-                    // Qundef means that this value is not constant and must be
-                    // recalculated at runtime, so we record it in unspecified_bits
-                    // (Qnil is then used as a placeholder instead of Qundef).
-                    unspecified_bits |= 0x01 << extra_args;
-                    default_value = Qnil;
-                }
-
-                asm.mov(default_arg, default_value.into());
-
-                caller_kwargs[kwarg_idx] = callee_kwarg;
-                kwarg_idx += 1;
-            }
-        }
-
-        assert!(kwarg_idx == total_kwargs);
-
-        // Next, we're going to loop through every keyword that was
-        // specified by the caller and make sure that it's in the correct
-        // place. If it's not we're going to swap it around with another one.
-        for kwarg_idx in 0..total_kwargs {
-            let kwarg_idx_isize: isize = kwarg_idx.try_into().unwrap();
-            let callee_kwarg = unsafe { *(callee_kwargs.offset(kwarg_idx_isize)) };
-
-            // If the argument is already in the right order, then we don't
-            // need to generate any code since the expected value is already
-            // in the right place on the stack.
-            if callee_kwarg == caller_kwargs[kwarg_idx] {
-                continue;
-            }
-
-            // In this case the argument is not in the right place, so we
-            // need to find its position where it _should_ be and swap with
-            // that location.
-            for swap_idx in (kwarg_idx + 1)..total_kwargs {
-                if callee_kwarg == caller_kwargs[swap_idx] {
-                    // First we're going to generate the code that is going
-                    // to perform the actual swapping at runtime.
-                    let swap_idx_i32: i32 = swap_idx.try_into().unwrap();
-                    let kwarg_idx_i32: i32 = kwarg_idx.try_into().unwrap();
-                    let offset0: u16 = (argc - 1 - swap_idx_i32 - args_before_kw)
-                        .try_into()
-                        .unwrap();
-                    let offset1: u16 = (argc - 1 - kwarg_idx_i32 - args_before_kw)
-                        .try_into()
-                        .unwrap();
-                    stack_swap(asm, offset0, offset1);
-
-                    // Next we're going to do some bookkeeping on our end so
-                    // that we know the order that the arguments are
-                    // actually in now.
-                    caller_kwargs.swap(kwarg_idx, swap_idx);
-
-                    break;
-                }
-            }
-        }
-
-        // Keyword arguments cause a special extra local variable to be
-        // pushed onto the stack that represents the parameters that weren't
-        // explicitly given a value and have a non-constant default.
-        let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-        asm.ctx.dealloc_temp_reg(asm.stack_opnd(-1).stack_idx()); // avoid using a register for unspecified_bits
-        asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
+        argc = gen_iseq_kw_call(jit, asm, kw_arg, iseq, argc, has_kwrest);
     }
 
     // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
@@ -7120,14 +7099,14 @@ fn gen_send_iseq(
         argc = lead_num;
     }
 
-    fn nil_fill(comment: &'static str, fill_range: std::ops::Range<isize>, asm: &mut Assembler) {
+    fn nil_fill(comment: &'static str, fill_range: std::ops::Range<i32>, asm: &mut Assembler) {
         if fill_range.is_empty() {
             return;
         }
 
         asm_comment!(asm, "{}", comment);
         for i in fill_range {
-            let value_slot = asm.ctx.sp_opnd(i * SIZEOF_VALUE as isize);
+            let value_slot = asm.ctx.sp_opnd(i * SIZEOF_VALUE_I32);
             asm.store(value_slot, Qnil.into());
         }
     }
@@ -7136,8 +7115,8 @@ fn gen_send_iseq(
     nil_fill(
         "nil-initialize missing optionals",
         {
-            let begin = -(argc as isize) + required_num as isize + opts_filled as isize;
-            let end   = -(argc as isize) + required_num as isize + opt_num as isize;
+            let begin = -argc + required_num + opts_filled;
+            let end   = -argc + required_num + opt_num;
 
             begin..end
         },
@@ -7146,7 +7125,7 @@ fn gen_send_iseq(
     // Nil-initialize the block parameter. It's the last parameter local
     if iseq_has_block_param {
         let block_param = asm.ctx.sp_opnd(
-            SIZEOF_VALUE as isize * (-(argc as isize) + num_params as isize - 1)
+            SIZEOF_VALUE_I32 * (-argc + num_params - 1)
         );
         asm.store(block_param, Qnil.into());
     }
@@ -7154,8 +7133,8 @@ fn gen_send_iseq(
     nil_fill(
         "nil-initialize locals",
         {
-            let begin = -(argc as isize) + num_params as isize;
-            let end   = -(argc as isize) + num_locals as isize;
+            let begin = -argc + num_params;
+            let end   = -argc + num_locals;
 
             begin..end
         },
@@ -7168,20 +7147,18 @@ fn gen_send_iseq(
         _ => asm.stack_opnd(argc),
     };
     let captured_self = captured_opnd.is_some();
-    let sp_offset = (argc as isize) + if captured_self { 0 } else { 1 };
+    let sp_offset = argc + if captured_self { 0 } else { 1 };
 
     // Store the updated SP on the current frame (pop arguments and receiver)
     asm_comment!(asm, "store caller sp");
-    let caller_sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * -sp_offset));
+    let caller_sp = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * -sp_offset));
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
 
     // Store the next PC in the current frame
     jit_save_pc(jit, asm);
 
     // Adjust the callee's stack pointer
-    let offs = (SIZEOF_VALUE as isize) * (
-        -(argc as isize) + num_locals as isize + VM_ENV_DATA_SIZE as isize
-    );
+    let offs = SIZEOF_VALUE_I32 * (-argc + num_locals + VM_ENV_DATA_SIZE as i32);
     let callee_sp = asm.lea(asm.ctx.sp_opnd(offs));
 
     let specval = if let Some(prev_ep) = prev_ep {
@@ -7200,7 +7177,7 @@ fn gen_send_iseq(
     };
 
     // Setup the new frame
-    gen_push_frame(jit, asm, ControlFrame {
+    perf_call!("gen_send_iseq: ", gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -7208,7 +7185,20 @@ fn gen_send_iseq(
         sp: callee_sp,
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
-    });
+    }));
+
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
+    // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) {
+        // Assemble the ISEQ name string
+        let name_str = get_iseq_name(iseq);
+
+        // Get an index for this ISEQ name
+        let iseq_idx = get_iseq_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
+    }
 
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
@@ -7288,6 +7278,326 @@ fn gen_send_iseq(
     Some(EndBlock)
 }
 
+// Check if we can handle a keyword call
+fn gen_iseq_kw_call_checks(
+    asm: &mut Assembler,
+    iseq: *const rb_iseq_t,
+    kw_arg: *const rb_callinfo_kwarg,
+    has_kwrest: bool,
+    caller_kw_num: i32
+) -> Option<()> {
+    // This struct represents the metadata about the callee-specified
+    // keyword parameters.
+    let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
+    let keyword_num: usize = unsafe { (*keyword).num }.try_into().unwrap();
+    let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
+
+    let mut required_kwargs_filled = 0;
+
+    if keyword_num > 30 || caller_kw_num > 64 {
+        // We have so many keywords that (1 << num) encoded as a FIXNUM
+        // (which shifts it left one more) no longer fits inside a 32-bit
+        // immediate. Similarly, we use a u64 in case of keyword rest parameter.
+        gen_counter_incr(asm, Counter::send_iseq_too_many_kwargs);
+        return None;
+    }
+
+    // Check that the kwargs being passed are valid
+    if caller_kw_num > 0 {
+        // This is the list of keyword arguments that the callee specified
+        // in its initial declaration.
+        // SAFETY: see compile.c for sizing of this slice.
+        let callee_kwargs = if keyword_num == 0 {
+            &[]
+        } else {
+            unsafe { slice::from_raw_parts((*keyword).table, keyword_num) }
+        };
+
+        // Here we're going to build up a list of the IDs that correspond to
+        // the caller-specified keyword arguments. If they're not in the
+        // same order as the order specified in the callee declaration, then
+        // we're going to need to generate some code to swap values around
+        // on the stack.
+        let kw_arg_keyword_len = caller_kw_num as usize;
+        let mut caller_kwargs: Vec<ID> = vec![0; kw_arg_keyword_len];
+        for kwarg_idx in 0..kw_arg_keyword_len {
+            let sym = unsafe { get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap()) };
+            caller_kwargs[kwarg_idx] = unsafe { rb_sym2id(sym) };
+        }
+
+        // First, we're going to be sure that the names of every
+        // caller-specified keyword argument correspond to a name in the
+        // list of callee-specified keyword parameters.
+        for caller_kwarg in caller_kwargs {
+            let search_result = callee_kwargs
+                .iter()
+                .enumerate() // inject element index
+                .find(|(_, &kwarg)| kwarg == caller_kwarg);
+
+            match search_result {
+                None if !has_kwrest => {
+                    // If the keyword was never found, then we know we have a
+                    // mismatch in the names of the keyword arguments, so we need to
+                    // bail.
+                    gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
+                    return None;
+                }
+                Some((callee_idx, _)) if callee_idx < keyword_required_num => {
+                    // Keep a count to ensure all required kwargs are specified
+                    required_kwargs_filled += 1;
+                }
+                _ => (),
+            }
+        }
+    }
+    assert!(required_kwargs_filled <= keyword_required_num);
+    if required_kwargs_filled != keyword_required_num {
+        gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
+        return None;
+    }
+
+    Some(())
+}
+
+// Codegen for keyword argument handling. Essentially private to gen_send_iseq() since
+// there are a lot of preconditions to check before reaching this code.
+fn gen_iseq_kw_call(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ci_kwarg: *const rb_callinfo_kwarg,
+    iseq: *const rb_iseq_t,
+    mut argc: i32,
+    has_kwrest: bool,
+) -> i32 {
+    let caller_keyword_len_i32: i32 = if ci_kwarg.is_null() {
+        0
+    } else {
+        unsafe { get_cikw_keyword_len(ci_kwarg) }
+    };
+    let caller_keyword_len: usize = caller_keyword_len_i32.try_into().unwrap();
+    let anon_kwrest = unsafe { rb_get_iseq_flags_anon_kwrest(iseq) };
+
+    // This struct represents the metadata about the callee-specified
+    // keyword parameters.
+    let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
+
+    asm_comment!(asm, "keyword args");
+
+    // This is the list of keyword arguments that the callee specified
+    // in its initial declaration.
+    let callee_kwargs = unsafe { (*keyword).table };
+    let callee_kw_count_i32: i32 = unsafe { (*keyword).num };
+    let callee_kw_count: usize = callee_kw_count_i32.try_into().unwrap();
+    let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
+
+    // Here we're going to build up a list of the IDs that correspond to
+    // the caller-specified keyword arguments. If they're not in the
+    // same order as the order specified in the callee declaration, then
+    // we're going to need to generate some code to swap values around
+    // on the stack.
+    let mut kwargs_order: Vec<ID> = vec![0; cmp::max(caller_keyword_len, callee_kw_count)];
+    for kwarg_idx in 0..caller_keyword_len {
+        let sym = unsafe { get_cikw_keywords_idx(ci_kwarg, kwarg_idx.try_into().unwrap()) };
+        kwargs_order[kwarg_idx] = unsafe { rb_sym2id(sym) };
+    }
+
+    let mut unspecified_bits = 0;
+
+    // The stack_opnd() index to the 0th keyword argument.
+    let kwargs_stack_base = caller_keyword_len_i32 - 1;
+
+    // Build the keyword rest parameter hash before we make any changes to the order of
+    // the supplied keyword arguments
+    let kwrest_type = if has_kwrest {
+        c_callable! {
+            fn build_kw_rest(rest_mask: u64, stack_kwargs: *const VALUE, keywords: *const rb_callinfo_kwarg) -> VALUE {
+                if keywords.is_null() {
+                    return unsafe { rb_hash_new() };
+                }
+
+                // Use the total number of supplied keywords as a size upper bound
+                let keyword_len = unsafe { (*keywords).keyword_len } as usize;
+                let hash = unsafe { rb_hash_new_with_size(keyword_len as u64) };
+
+                // Put pairs into the kwrest hash as the mask describes
+                for kwarg_idx in 0..keyword_len {
+                    if (rest_mask & (1 << kwarg_idx)) != 0 {
+                        unsafe {
+                            let keyword_symbol = (*keywords).keywords.as_ptr().add(kwarg_idx).read();
+                            let keyword_value = stack_kwargs.add(kwarg_idx).read();
+                            rb_hash_aset(hash, keyword_symbol, keyword_value);
+                        }
+                    }
+                }
+                return hash;
+            }
+        }
+
+        asm_comment!(asm, "build kwrest hash");
+
+        // Make a bit mask describing which keywords should go into kwrest.
+        let mut rest_mask: u64 = 0;
+        // Index for one argument that will go into kwrest.
+        let mut rest_collected_idx = None;
+        for (supplied_kw_idx, &supplied_kw) in kwargs_order.iter().take(caller_keyword_len).enumerate() {
+            let mut found = false;
+            for callee_idx in 0..callee_kw_count {
+                let callee_kw = unsafe { callee_kwargs.add(callee_idx).read() };
+                if callee_kw == supplied_kw {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                rest_mask |= 1 << supplied_kw_idx;
+                if rest_collected_idx.is_none() {
+                    rest_collected_idx = Some(supplied_kw_idx as i32);
+                }
+            }
+        }
+
+        let (kwrest, kwrest_type) = if rest_mask == 0 && anon_kwrest {
+            // In case the kwrest hash should be empty and is anonymous in the callee,
+            // we can pass nil instead of allocating. Anonymous kwrest can only be
+            // delegated, and nil is the same as an empty hash when delegating.
+            (Qnil.into(), Type::Nil)
+        } else {
+            // Save PC and SP before allocating
+            jit_save_pc(jit, asm);
+            gen_save_sp(asm);
+
+            // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
+            let kwargs_start = asm.lea(asm.ctx.sp_opnd(-caller_keyword_len_i32 * SIZEOF_VALUE_I32));
+            let hash = asm.ccall(
+                build_kw_rest as _,
+                vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
+            );
+            (hash, Type::THash)
+        };
+
+        // The kwrest parameter sits after `unspecified_bits` if the callee specifies any
+        // keywords.
+        let stack_kwrest_idx = kwargs_stack_base - callee_kw_count_i32 - i32::from(callee_kw_count > 0);
+        let stack_kwrest = asm.stack_opnd(stack_kwrest_idx);
+        // If `stack_kwrest` already has another argument there, we need to stow it elsewhere
+        // first before putting kwrest there. Use `rest_collected_idx` because that value went
+        // into kwrest so the slot is now free.
+        let kwrest_idx = callee_kw_count + usize::from(callee_kw_count > 0);
+        if let (Some(rest_collected_idx), true) = (rest_collected_idx, kwrest_idx < caller_keyword_len) {
+            let rest_collected = asm.stack_opnd(kwargs_stack_base - rest_collected_idx);
+            let mapping = asm.ctx.get_opnd_mapping(stack_kwrest.into());
+            asm.mov(rest_collected, stack_kwrest);
+            asm.ctx.set_opnd_mapping(rest_collected.into(), mapping);
+            // Update our bookkeeping to inform the reordering step later.
+            kwargs_order[rest_collected_idx as usize] = kwargs_order[kwrest_idx];
+            kwargs_order[kwrest_idx] = 0;
+        }
+        // Put kwrest straight into memory, since we might pop it later
+        asm.ctx.dealloc_temp_reg(stack_kwrest.stack_idx());
+        asm.mov(stack_kwrest, kwrest);
+        if stack_kwrest_idx >= 0 {
+            asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
+        }
+
+        Some(kwrest_type)
+    } else {
+        None
+    };
+
+    // Ensure the stack is large enough for the callee
+    for _ in caller_keyword_len..callee_kw_count {
+        argc += 1;
+        asm.stack_push(Type::Unknown);
+    }
+    // Now this is the stack_opnd() index to the 0th keyword argument.
+    let kwargs_stack_base = kwargs_order.len() as i32 - 1;
+
+    // Next, we're going to loop through every keyword that was
+    // specified by the caller and make sure that it's in the correct
+    // place. If it's not we're going to swap it around with another one.
+    for kwarg_idx in 0..callee_kw_count {
+        let callee_kwarg = unsafe { callee_kwargs.add(kwarg_idx).read() };
+
+        // If the argument is already in the right order, then we don't
+        // need to generate any code since the expected value is already
+        // in the right place on the stack.
+        if callee_kwarg == kwargs_order[kwarg_idx] {
+            continue;
+        }
+
+        // In this case the argument is not in the right place, so we
+        // need to find its position where it _should_ be and swap with
+        // that location.
+        for swap_idx in 0..kwargs_order.len() {
+            if callee_kwarg == kwargs_order[swap_idx] {
+                // First we're going to generate the code that is going
+                // to perform the actual swapping at runtime.
+                let swap_idx_i32: i32 = swap_idx.try_into().unwrap();
+                let kwarg_idx_i32: i32 = kwarg_idx.try_into().unwrap();
+                let offset0 = kwargs_stack_base - swap_idx_i32;
+                let offset1 = kwargs_stack_base - kwarg_idx_i32;
+                stack_swap(asm, offset0, offset1);
+
+                // Next we're going to do some bookkeeping on our end so
+                // that we know the order that the arguments are
+                // actually in now.
+                kwargs_order.swap(kwarg_idx, swap_idx);
+
+                break;
+            }
+        }
+    }
+
+    // Now that every caller specified kwarg is in the right place, filling
+    // in unspecified default paramters won't overwrite anything.
+    for kwarg_idx in keyword_required_num..callee_kw_count {
+        if kwargs_order[kwarg_idx] != unsafe { callee_kwargs.add(kwarg_idx).read() } {
+            let default_param_idx = kwarg_idx - keyword_required_num;
+            let mut default_value = unsafe { (*keyword).default_values.add(default_param_idx).read() };
+
+            if default_value == Qundef {
+                // Qundef means that this value is not constant and must be
+                // recalculated at runtime, so we record it in unspecified_bits
+                // (Qnil is then used as a placeholder instead of Qundef).
+                unspecified_bits |= 0x01 << default_param_idx;
+                default_value = Qnil;
+            }
+
+            let default_param = asm.stack_opnd(kwargs_stack_base - kwarg_idx as i32);
+            let param_type = Type::from(default_value);
+            asm.mov(default_param, default_value.into());
+            asm.ctx.set_opnd_mapping(default_param.into(), TempMapping::map_to_stack(param_type));
+        }
+    }
+
+    // Pop extra arguments that went into kwrest now that they're at stack top
+    if has_kwrest && caller_keyword_len > callee_kw_count {
+        let extra_kwarg_count = caller_keyword_len - callee_kw_count;
+        asm.stack_pop(extra_kwarg_count);
+        argc = argc - extra_kwarg_count as i32;
+    }
+
+    // Keyword arguments cause a special extra local variable to be
+    // pushed onto the stack that represents the parameters that weren't
+    // explicitly given a value and have a non-constant default.
+    if callee_kw_count > 0 {
+        let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
+        let top = asm.stack_push(Type::Fixnum);
+        asm.mov(top, unspec_opnd.into());
+        argc += 1;
+    }
+
+    // The kwrest parameter sits after `unspecified_bits`
+    if let Some(kwrest_type) = kwrest_type {
+        let kwrest = asm.stack_push(kwrest_type);
+        // We put the kwrest parameter in memory earlier
+        asm.ctx.dealloc_temp_reg(kwrest.stack_idx());
+        argc += 1;
+    }
+
+    argc
+}
+
 /// This is a helper function to allow us to exit early
 /// during code generation if a predicate is true.
 /// We return Option<()> here because we will be able to
@@ -7313,13 +7623,10 @@ fn exit_if_has_post(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
 }
 
 #[must_use]
-fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
-    exit_if(asm, unsafe { get_iseq_flags_has_kwrest(iseq) }, Counter::send_iseq_has_kwrest)
-}
-
-#[must_use]
-fn exit_if_kw_splat(asm: &mut Assembler, flags: u32) -> Option<()> {
-    exit_if(asm, flags & VM_CALL_KW_SPLAT != 0, Counter::send_iseq_kw_splat)
+fn exit_if_kwsplat_non_nil(asm: &mut Assembler, flags: u32, counter: Counter) -> Option<()> {
+    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+    let kw_splat_stack = StackOpnd((flags & VM_CALL_ARGS_BLOCKARG != 0).into());
+    exit_if(asm, kw_splat && asm.ctx.get_opnd_type(kw_splat_stack) != Type::Nil, counter)
 }
 
 #[must_use]
@@ -7328,22 +7635,31 @@ fn exit_if_has_rest_and_captured(asm: &mut Assembler, iseq_has_rest: bool, captu
 }
 
 #[must_use]
-fn exit_if_has_rest_and_supplying_kws(asm: &mut Assembler, iseq_has_rest: bool, iseq: *const rb_iseq_t, supplying_kws: bool) -> Option<()> {
+fn exit_if_has_kwrest_and_captured(asm: &mut Assembler, iseq_has_kwrest: bool, captured_opnd: Option<Opnd>) -> Option<()> {
+    // We need to call a C function to allocate the kwrest hash, but also need to hold the captred
+    // block across the call, which we can't do.
+    exit_if(asm, iseq_has_kwrest && captured_opnd.is_some(), Counter::send_iseq_has_kwrest_and_captured)
+}
+
+#[must_use]
+fn exit_if_has_rest_and_supplying_kws(asm: &mut Assembler, iseq_has_rest: bool, supplying_kws: bool) -> Option<()> {
+    // There can be a gap between the rest parameter array and the supplied keywords, or
+    // no space to put the rest array (e.g. `def foo(*arr, k:) = arr; foo(k: 1)` 1 is
+    // sitting where the rest array should be).
     exit_if(
         asm,
-        iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws,
+        iseq_has_rest && supplying_kws,
         Counter::send_iseq_has_rest_and_kw_supplied,
     )
 }
 
 #[must_use]
-fn exit_if_supplying_kw_and_has_no_kw(asm: &mut Assembler, supplying_kws: bool, iseq: *const rb_iseq_t) -> Option<()> {
-    // If we have keyword arguments being passed to a callee that only takes
-    // positionals, then we need to allocate a hash. For now we're going to
-    // call that too complex and bail.
+fn exit_if_supplying_kw_and_has_no_kw(asm: &mut Assembler, supplying_kws: bool, callee_kws: bool) -> Option<()> {
+    // Passing keyword arguments to a callee means allocating a hash and treating
+    // that as a positional argument. Bail for now.
     exit_if(
         asm,
-        supplying_kws && !unsafe { get_iseq_flags_has_kw(iseq) },
+        supplying_kws && !callee_kws,
         Counter::send_iseq_has_no_kw,
     )
 }
@@ -7557,6 +7873,7 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     if unsafe { vm_ci_flag((*cd).ci) } & VM_CALL_TAILCALL != 0 {
         return None;
     }
+    jit_perf_symbol_push!(jit, asm, "gen_send_dynamic", PerfMap::Codegen);
 
     // Rewind stack_size using ctx.with_stack_size to allow stack_size changes
     // before you return None.
@@ -7579,6 +7896,8 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), SP);
 
     gen_counter_incr(asm, Counter::num_send_dynamic);
+
+    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
     Some(KeepCompiling)
 }
 
@@ -7603,12 +7922,6 @@ fn gen_send_general(
     let mut argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
     let mut mid = unsafe { vm_ci_mid(ci) };
     let mut flags = unsafe { vm_ci_flag(ci) };
-
-    // Don't JIT calls with keyword splat
-    if flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr(asm, Counter::send_kw_splat);
-        return None;
-    }
 
     // Defer compilation so we can specialize on class of receiver
     if !jit.at_current_insn() {
@@ -7639,16 +7952,7 @@ fn gen_send_general(
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
-    {
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_klass)) };
-        let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) };
-        match (class_name, method_name) {
-            (Some(class_name), Some(method_name)) => {
-                asm_comment!(asm, "call to {}#{}", class_name, method_name);
-            }
-            _ => {}
-        }
-    }
+    asm_comment!(asm, "call to {}", get_method_name(Some(comptime_recv_klass), mid));
 
     // Gather some statistics about sends
     gen_counter_incr(asm, Counter::num_send);
@@ -7664,7 +7968,7 @@ fn gen_send_general(
         return None;
     }
 
-    jit_guard_known_klass(
+    perf_call!("gen_send_general: ", jit_guard_known_klass(
         jit,
         asm,
         ocb,
@@ -7674,7 +7978,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         Counter::guard_send_klass_megamorphic,
-    );
+    ));
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -7682,6 +7986,10 @@ fn gen_send_general(
         gen_counter_incr(asm, Counter::send_cme_not_found);
         return None;
     }
+
+    // Load an overloaded cme if applicable. See vm_search_cc().
+    // It allows you to use a faster ISEQ if possible.
+    cme = unsafe { rb_check_overloaded_cme(cme, ci) };
 
     let visi = unsafe { METHOD_ENTRY_VISI(cme) };
     match visi {
@@ -7721,10 +8029,10 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None);
+                return perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None) };
             }
             VM_METHOD_TYPE_CFUNC => {
-                return gen_send_cfunc(
+                return perf_call! { gen_send_cfunc(
                     jit,
                     asm,
                     ocb,
@@ -7734,7 +8042,7 @@ fn gen_send_general(
                     Some(comptime_recv_klass),
                     flags,
                     argc,
-                );
+                ) };
             }
             VM_METHOD_TYPE_IVAR => {
                 // This is a .send call not supported right now for getters
@@ -7875,13 +8183,9 @@ fn gen_send_general(
 
                         let compile_time_name = jit.peek_at_stack(&asm.ctx, argc as isize);
 
-                        if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
-                            gen_counter_incr(asm, Counter::send_send_chain_not_string_or_sym);
-                            return None;
-                        }
-
                         mid = unsafe { rb_get_symbol_id(compile_time_name) };
                         if mid == 0 {
+                            // This also rejects method names that need convserion
                             gen_counter_incr(asm, Counter::send_send_null_mid);
                             return None;
                         }
@@ -7896,40 +8200,15 @@ fn gen_send_general(
 
                         jit.assume_method_lookup_stable(asm, ocb, cme);
 
-                        let (known_class, type_mismatch_counter) = {
-                            if compile_time_name.string_p() {
-                                (
-                                    unsafe { rb_cString },
-                                    Counter::guard_send_send_chain_not_string,
-                                )
-                            } else {
-                                (
-                                    unsafe { rb_cSymbol },
-                                    Counter::guard_send_send_chain_not_sym,
-                                )
-                            }
-                        };
-
-                        let name_opnd = asm.stack_opnd(argc);
-                        jit_guard_known_klass(
-                            jit,
+                        asm_comment!(
                             asm,
-                            ocb,
-                            known_class,
-                            name_opnd,
-                            name_opnd.into(),
-                            compile_time_name,
-                            2, // We have string or symbol, so max depth is 2
-                            type_mismatch_counter
+                            "guard sending method name \'{}\'",
+                            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap_or_else(|| "<unknown>".to_owned()),
                         );
 
-                        // Need to do this here so we don't have too many live
-                        // values for the register allocator.
-                        let name_opnd = asm.load(name_opnd);
-
+                        let name_opnd = asm.stack_opnd(argc);
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
-                        asm_comment!(asm, "chain_guard_send");
                         asm.cmp(symbol_id_opnd, mid.into());
                         jit_chain_guard(
                             JCC_JNE,
@@ -7937,7 +8216,7 @@ fn gen_send_general(
                             asm,
                             ocb,
                             SEND_MAX_DEPTH,
-                            Counter::guard_send_send_chain,
+                            Counter::guard_send_send_name_chain,
                         );
 
                         // We have changed the argc, flags, mid, and cme, so we need to re-enter the match
@@ -8069,6 +8348,27 @@ fn gen_send_general(
     }
 }
 
+/// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
+fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
+    let class_name = class.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string());
+    let method_name = if mid != 0 {
+        unsafe { cstr_to_rust_string(rb_id2name(mid)) }
+    } else {
+        None
+    }.unwrap_or_else(|| "Unknown".to_string());
+    format!("{}#{}", class_name, method_name)
+}
+
+/// Assemble "{label}@{iseq_path}:{lineno}" (iseq_inspect() format) from an ISEQ
+fn get_iseq_name(iseq: IseqPtr) -> String {
+    let c_string = unsafe { rb_yjit_iseq_inspect(iseq) };
+    let string = unsafe { CStr::from_ptr(c_string) }.to_str()
+        .unwrap_or_else(|_| "not UTF-8").to_string();
+    unsafe { ruby_xfree(c_string as *mut c_void); }
+    string
+}
 
 /// Shifts the stack for send in order to remove the name of the method
 /// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
@@ -8102,7 +8402,7 @@ fn gen_opt_send_without_block(
 ) -> Option<CodegenStatus> {
     // Generate specialized code if possible
     let cd = jit.get_arg(0).as_ptr();
-    if let Some(status) = gen_send_general(jit, asm, ocb, cd, None) {
+    if let Some(status) = perf_call! { gen_send_general(jit, asm, ocb, cd, None) } {
         return Some(status);
     }
 
@@ -8126,7 +8426,7 @@ fn gen_send(
     // Generate specialized code if possible
     let cd = jit.get_arg(0).as_ptr();
     let block = jit.get_arg(1).as_optional_ptr().map(|iseq| BlockHandler::BlockISeq(iseq));
-    if let Some(status) = gen_send_general(jit, asm, ocb, cd, block) {
+    if let Some(status) = perf_call! { gen_send_general(jit, asm, ocb, cd, block) } {
         return Some(status);
     }
 
@@ -8239,20 +8539,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        gen_send_iseq(
-            jit,
-            asm,
-            ocb,
-            comptime_iseq,
-            ci,
-            VM_FRAME_MAGIC_BLOCK,
-            None,
-            0 as _,
-            None,
-            flags,
-            argc,
-            Some(captured_opnd),
-        )
+        perf_call! { gen_send_iseq(jit, asm, ocb, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd)) }
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -8290,7 +8577,7 @@ fn gen_invokeblock_specialized(
         }
         asm_comment!(asm, "call ifunc");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
-        let argv = asm.lea(asm.ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize));
+        let argv = asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32));
         let ret = asm.ccall(
             rb_vm_yield_with_cfunc as *const u8,
             vec![EC, captured_opnd, argc.into(), argv],
@@ -8465,10 +8752,10 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
+            perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None) }
         }
         VM_METHOD_TYPE_CFUNC => {
-            gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc)
+            perf_call! { gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc) }
         }
         _ => unreachable!(),
     }
@@ -8607,7 +8894,7 @@ fn gen_objtostring(
         Some(KeepCompiling)
     } else {
         let cd = jit.get_arg(0).as_ptr();
-        gen_send_general(jit, asm, ocb, cd, None)
+        perf_call! { gen_send_general(jit, asm, ocb, cd, None) }
     }
 }
 
@@ -8642,7 +8929,7 @@ fn gen_toregexp(
     // raise an exception.
     jit_prepare_non_leaf_call(jit, asm);
 
-    let values_ptr = asm.lea(asm.ctx.sp_opnd(-((SIZEOF_VALUE as isize) * (cnt as isize))));
+    let values_ptr = asm.lea(asm.ctx.sp_opnd(-(SIZEOF_VALUE_I32 * cnt as i32)));
 
     let ary = asm.ccall(
         rb_ary_tmp_new_from_values as *const u8,
@@ -9394,6 +9681,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "size", jit_rb_str_length);
         yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
         yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
+        yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 

@@ -128,7 +128,7 @@ describe "Refinement#import_methods" do
         using self
         -> {
           "foo".indent(3)
-        }.should raise_error(NoMethodError, /undefined method `indent' for ("foo":String|an instance of String)/)
+        }.should raise_error(NoMethodError, /undefined method [`']indent' for ("foo":String|an instance of String)/)
       end
     end
 
@@ -214,7 +214,7 @@ describe "Refinement#import_methods" do
         using self
         -> {
           String.indent(3)
-        }.should raise_error(NoMethodError, /undefined method `indent' for (String:Class|class String)/)
+        }.should raise_error(NoMethodError, /undefined method [`']indent' for (String:Class|class String)/)
       end
     end
 

@@ -246,6 +246,13 @@ extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
 #define PM_ENCODING_US_ASCII_ENTRY (&pm_encodings[PM_ENCODING_US_ASCII])
 
 /**
+ * This is the ASCII-8BIT encoding. We need a reference to it so that pm_strpbrk
+ * can compare against it because invalid multibyte characters are not a thing
+ * in this encoding.
+ */
+#define PM_ENCODING_ASCII_8BIT_ENTRY (&pm_encodings[PM_ENCODING_ASCII_8BIT])
+
+/**
  * Parse the given name of an encoding and return a pointer to the corresponding
  * encoding struct if one can be found, otherwise return NULL.
  *

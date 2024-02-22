@@ -54,27 +54,6 @@ static const rb_data_type_t parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-ID
-ripper_get_id(VALUE v)
-{
-    NODE *nd;
-    if (!RB_TYPE_P(v, T_NODE)) return 0;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return 0;
-    return RNODE_RIPPER(nd)->nd_vid;
-}
-
-VALUE
-ripper_get_value(VALUE v)
-{
-    NODE *nd;
-    if (UNDEF_P(v)) return Qnil;
-    if (!RB_TYPE_P(v, T_NODE)) return v;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
-    return RNODE_RIPPER(nd)->nd_rval;
-}
-
 static VALUE
 ripper_lex_get_generic(struct parser_params *p, VALUE src)
 {
@@ -498,6 +477,37 @@ ripper_raw_value(VALUE self, VALUE obj)
 {
     return ULONG2NUM(obj);
 }
+
+/* :nodoc: */
+static VALUE
+ripper_validate_object(VALUE self, VALUE x)
+{
+    if (x == Qfalse) return x;
+    if (x == Qtrue) return x;
+    if (NIL_P(x)) return x;
+    if (UNDEF_P(x))
+        rb_raise(rb_eArgError, "Qundef given");
+    if (FIXNUM_P(x)) return x;
+    if (SYMBOL_P(x)) return x;
+    switch (BUILTIN_TYPE(x)) {
+      case T_STRING:
+      case T_OBJECT:
+      case T_ARRAY:
+      case T_BIGNUM:
+      case T_FLOAT:
+      case T_COMPLEX:
+      case T_RATIONAL:
+        break;
+      default:
+        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
+                 (void *)x, rb_obj_classname(x));
+    }
+    if (!RBASIC_CLASS(x)) {
+        rb_raise(rb_eArgError, "hidden ruby object: %p (%s)",
+                 (void *)x, rb_builtin_type_name(TYPE(x)));
+    }
+    return x;
+}
 #endif
 
 #ifdef UNIVERSAL_PARSER
@@ -607,5 +617,8 @@ InitVM_ripper(void)
      */
     rb_define_global_const("SCRIPT_LINES__", Qnil);
 #endif
+    rb_ripper_none = rb_obj_alloc(rb_cObject);
+    rb_obj_freeze(rb_ripper_none);
+    rb_gc_register_mark_object(rb_ripper_none);
 
 }

@@ -119,15 +119,12 @@ module Prism
 
       # Initialize a new buffer and yield it to the block. The buffer will be
       # automatically freed when the block returns.
-      def self.with(&block)
-        pointer = FFI::MemoryPointer.new(SIZEOF)
-
-        begin
+      def self.with
+        FFI::MemoryPointer.new(SIZEOF) do |pointer|
           raise unless LibRubyParser.pm_buffer_init(pointer)
-          yield new(pointer)
+          return yield new(pointer)
         ensure
           LibRubyParser.pm_buffer_free(pointer)
-          pointer.free
         end
       end
     end
@@ -137,39 +134,47 @@ module Prism
     class PrismString # :nodoc:
       SIZEOF = LibRubyParser.pm_string_sizeof
 
-      attr_reader :pointer
+      attr_reader :pointer, :length
 
-      def initialize(pointer)
+      def initialize(pointer, length, from_string)
         @pointer = pointer
-      end
-
-      def source
-        LibRubyParser.pm_string_source(pointer)
-      end
-
-      def length
-        LibRubyParser.pm_string_length(pointer)
+        @length = length
+        @from_string = from_string
       end
 
       def read
-        source.read_string(length)
+        raise "should use the original String instead" if @from_string
+        @pointer.read_string(@length)
       end
 
       # Yields a pm_string_t pointer to the given block.
-      def self.with(filepath, &block)
-        pointer = FFI::MemoryPointer.new(SIZEOF)
+      def self.with_string(string)
+        raise TypeError unless string.is_a?(String)
 
-        begin
-          raise TypeError unless filepath.is_a?(String)
+        length = string.bytesize
+        # + 1 to never get an address of 0, which pm_parser_init() asserts
+        FFI::MemoryPointer.new(:char, length + 1, false) do |pointer|
+          pointer.write_string(string)
+          # since we have the extra byte we might as well \0-terminate
+          pointer.put_char(length, 0)
+          return yield new(pointer, length, true)
+        end
+      end
 
-          if LibRubyParser.pm_string_mapped_init(pointer, filepath)
-            yield new(pointer)
+      # Yields a pm_string_t pointer to the given block.
+      def self.with_file(filepath)
+        raise TypeError unless filepath.is_a?(String)
+
+        FFI::MemoryPointer.new(SIZEOF) do |pm_string|
+          if LibRubyParser.pm_string_mapped_init(pm_string, filepath)
+            pointer = LibRubyParser.pm_string_source(pm_string)
+            length = LibRubyParser.pm_string_length(pm_string)
+            return yield new(pointer, length, false)
           else
             raise SystemCallError.new(filepath, FFI.errno)
           end
         ensure
-          LibRubyParser.pm_string_free(pointer)
-          pointer.free
+          LibRubyParser.pm_string_free(pm_string)
         end
       end
     end
@@ -185,52 +190,100 @@ module Prism
   class << self
     # Mirror the Prism.dump API by using the serialization API.
     def dump(code, **options)
-      LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_serialize_parse(buffer.pointer, code, code.bytesize, dump_options(options))
-        buffer.read
-      end
+      LibRubyParser::PrismString.with_string(code) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.dump_file API by using the serialization API.
     def dump_file(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        dump(string.read, **options, filepath: filepath)
-      end
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.lex API by using the serialization API.
     def lex(code, **options)
-      LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_serialize_lex(buffer.pointer, code, code.bytesize, dump_options(options))
-        Serialize.load_tokens(Source.new(code), buffer.read)
-      end
+      LibRubyParser::PrismString.with_string(code) { |string| lex_common(string, code, options) }
     end
 
     # Mirror the Prism.lex_file API by using the serialization API.
     def lex_file(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        lex(string.read, **options, filepath: filepath)
-      end
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| lex_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse API by using the serialization API.
     def parse(code, **options)
-      Prism.load(code, dump(code, **options))
+      LibRubyParser::PrismString.with_string(code) { |string| parse_common(string, code, options) }
     end
 
     # Mirror the Prism.parse_file API by using the serialization API. This uses
     # native strings instead of Ruby strings because it allows us to use mmap when
     # it is available.
     def parse_file(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        parse(string.read, **options, filepath: filepath)
-      end
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| parse_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_comments API by using the serialization API.
     def parse_comments(code, **options)
+      LibRubyParser::PrismString.with_string(code) { |string| parse_comments_common(string, code, options) }
+    end
+
+    # Mirror the Prism.parse_file_comments API by using the serialization
+    # API. This uses native strings instead of Ruby strings because it allows us
+    # to use mmap when it is available.
+    def parse_file_comments(filepath, **options)
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| parse_comments_common(string, string.read, options) }
+    end
+
+    # Mirror the Prism.parse_lex API by using the serialization API.
+    def parse_lex(code, **options)
+      LibRubyParser::PrismString.with_string(code) { |string| parse_lex_common(string, code, options) }
+    end
+
+    # Mirror the Prism.parse_lex_file API by using the serialization API.
+    def parse_lex_file(filepath, **options)
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| parse_lex_common(string, string.read, options) }
+    end
+
+    # Mirror the Prism.parse_success? API by using the serialization API.
+    def parse_success?(code, **options)
+      LibRubyParser::PrismString.with_string(code) { |string| parse_file_success_common(string, options) }
+    end
+
+    # Mirror the Prism.parse_file_success? API by using the serialization API.
+    def parse_file_success?(filepath, **options)
+      options[:filepath] = filepath
+      LibRubyParser::PrismString.with_file(filepath) { |string| parse_file_success_common(string, options) }
+    end
+
+    private
+
+    def dump_common(string, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_serialize_parse_comments(buffer.pointer, code, code.bytesize, dump_options(options))
+        LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
+        buffer.read
+      end
+    end
+
+    def lex_common(string, code, options) # :nodoc:
+      serialized = LibRubyParser::PrismBuffer.with do |buffer|
+        LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
+        buffer.read
+      end
+
+      Serialize.load_tokens(Source.new(code), serialized)
+    end
+
+    def parse_common(string, code, options) # :nodoc:
+      serialized = dump_common(string, options)
+      Prism.load(code, serialized)
+    end
+
+    def parse_comments_common(string, code, options) # :nodoc:
+      LibRubyParser::PrismBuffer.with do |buffer|
+        LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
 
         source = Source.new(code)
         loader = Serialize::Loader.new(source, buffer.read)
@@ -242,19 +295,9 @@ module Prism
       end
     end
 
-    # Mirror the Prism.parse_file_comments API by using the serialization
-    # API. This uses native strings instead of Ruby strings because it allows us
-    # to use mmap when it is available.
-    def parse_file_comments(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        parse_comments(string.read, **options, filepath: filepath)
-      end
-    end
-
-    # Mirror the Prism.parse_lex API by using the serialization API.
-    def parse_lex(code, **options)
+    def parse_lex_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_serialize_parse_lex(buffer.pointer, code, code.bytesize, dump_options(options))
+        LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
 
         source = Source.new(code)
         loader = Serialize::Loader.new(source, buffer.read)
@@ -267,26 +310,9 @@ module Prism
       end
     end
 
-    # Mirror the Prism.parse_lex_file API by using the serialization API.
-    def parse_lex_file(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        parse_lex(string.read, **options, filepath: filepath)
-      end
+    def parse_file_success_common(string, options) # :nodoc:
+      LibRubyParser.pm_parse_success_p(string.pointer, string.length, dump_options(options))
     end
-
-    # Mirror the Prism.parse_success? API by using the serialization API.
-    def parse_success?(code, **options)
-      LibRubyParser.pm_parse_success_p(code, code.bytesize, dump_options(options))
-    end
-
-    # Mirror the Prism.parse_file_success? API by using the serialization API.
-    def parse_file_success?(filepath, **options)
-      LibRubyParser::PrismString.with(filepath) do |string|
-        parse_success?(string.read, **options, filepath: filepath)
-      end
-    end
-
-    private
 
     # Convert the given options into a serialized options string.
     def dump_options(options)
@@ -317,7 +343,7 @@ module Prism
       values << (options.fetch(:frozen_string_literal, false) ? 1 : 0)
 
       template << "C"
-      values << { nil => 0, "3.3.0" => 1, "latest" => 0 }.fetch(options[:version])
+      values << { nil => 0, "3.3.0" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
 
       template << "L"
       if (scopes = options[:scopes])

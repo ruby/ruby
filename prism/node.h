@@ -8,6 +8,7 @@
 
 #include "prism/defines.h"
 #include "prism/parser.h"
+#include "prism/util/pm_buffer.h"
 
 /**
  * Append a new node onto the end of the node list.

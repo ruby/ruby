@@ -112,6 +112,10 @@ pub use autogened::*;
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    pub fn rb_check_overloaded_cme(
+        me: *const rb_callable_method_entry_t,
+        ci: *const rb_callinfo,
+    ) -> *const rb_callable_method_entry_t;
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -137,6 +141,7 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
+    pub fn rb_vm_stack_canary() -> VALUE;
 }
 
 // Renames
@@ -256,6 +261,18 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
+/// Return a poison value to be set above the stack top to verify leafness.
+#[cfg(not(test))]
+pub fn vm_stack_canary() -> u64 {
+    unsafe { rb_vm_stack_canary() }.as_u64()
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn vm_stack_canary() -> u64 {
+    0
+}
+
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
 pub struct rb_execution_context_struct {
@@ -286,13 +303,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque call-info type from vm_callinfo.h
-#[repr(C)]
-pub struct rb_callinfo_kwarg {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }

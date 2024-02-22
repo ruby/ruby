@@ -854,7 +854,7 @@ raise_closed_queue_error(VALUE self)
 static VALUE
 queue_closed_result(VALUE self, struct rb_queue *q)
 {
-    assert(queue_length(self, q) == 0);
+    RUBY_ASSERT(queue_length(self, q) == 0);
     return Qnil;
 }
 
@@ -1081,8 +1081,8 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
         else {
             rb_execution_context_t *ec = GET_EC();
 
-            assert(RARRAY_LEN(q->que) == 0);
-            assert(queue_closed_p(self) == 0);
+            RUBY_ASSERT(RARRAY_LEN(q->que) == 0);
+            RUBY_ASSERT(queue_closed_p(self) == 0);
 
             struct queue_waiter queue_waiter = {
                 .w = {.self = self, .th = ec->thread_ptr, .fiber = nonblocking_fiber(ec->fiber_ptr)},

@@ -378,10 +378,10 @@ class TestParse < Test::Unit::TestCase
 
   def assert_disallowed_variable(type, noname, invalid)
     noname.each do |name|
-      assert_syntax_error("proc{a = #{name} }", "`#{noname[0]}' without identifiers is not allowed as #{type} variable name")
+      assert_syntax_error("proc{a = #{name} }", "'#{noname[0]}' without identifiers is not allowed as #{type} variable name")
     end
     invalid.each do |name|
-      assert_syntax_error("proc {a = #{name} }", "`#{name}' is not allowed as #{type} variable name")
+      assert_syntax_error("proc {a = #{name} }", "'#{name}' is not allowed as #{type} variable name")
     end
   end
 
@@ -797,6 +797,20 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    e = assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: foo
+      END
+    end
+    assert_include(e.message, "# coding: foo\n          ^~~")
+
+    e = assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = foo
+      END
+    end
+    assert_include(e.message, "# coding = foo\n           ^~~")
   end
 
   def test_utf8_bom
@@ -840,7 +854,7 @@ x = __ENCODING__
 
   def test_float
     assert_predicate(assert_warning(/out of range/) {eval("1e10000")}, :infinite?)
-    assert_syntax_error('1_E', /trailing `_'/)
+    assert_syntax_error('1_E', /trailing '_'/)
     assert_syntax_error('1E1E1', /unexpected constant/)
   end
 
@@ -868,7 +882,7 @@ x = __ENCODING__
 
   def test_invalid_char
     bug10117 = '[ruby-core:64243] [Bug #10117]'
-    invalid_char = /Invalid char `\\x01'/
+    invalid_char = /Invalid char '\\x01'/
     x = 1
     assert_in_out_err(%W"-e \x01x", "", [], invalid_char, bug10117)
     assert_syntax_error("\x01x", invalid_char, bug10117)
@@ -938,14 +952,14 @@ x = __ENCODING__
 
   def test_assign_in_conditional
     # multiple assignment
-    assert_warning(/`= literal' in conditional/) do
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END
     end
 
     # instance variable assignment
-    assert_warning(/`= literal' in conditional/) do
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         if @x = true
           1
@@ -956,7 +970,7 @@ x = __ENCODING__
     end
 
     # local variable assignment
-    assert_warning(/`= literal' in conditional/) do
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         def m
           if x = true
@@ -970,7 +984,7 @@ x = __ENCODING__
 
     # global variable assignment
     assert_separately([], <<-RUBY)
-      assert_warning(/`= literal' in conditional/) do
+      assert_warning(/'= literal' in conditional/) do
         eval <<-END, nil, __FILE__, __LINE__+1
           if $x = true
             1
@@ -982,7 +996,7 @@ x = __ENCODING__
     RUBY
 
     # dynamic variable assignment
-    assert_warning(/`= literal' in conditional/) do
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         y = 1
 
@@ -997,7 +1011,7 @@ x = __ENCODING__
     end
 
     # class variable assignment
-    assert_warning(/`= literal' in conditional/) do
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         c = Class.new
         class << c
@@ -1009,7 +1023,7 @@ x = __ENCODING__
 
     # constant declaration
     assert_separately([], <<-RUBY)
-      assert_warning(/`= literal' in conditional/) do
+      assert_warning(/'= literal' in conditional/) do
         eval <<-END, nil, __FILE__, __LINE__+1
           if Const = true
             1
@@ -1537,11 +1551,70 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_unshareable_literal
-    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C = ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C ||= ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to ...::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      def self.expr; B; end
+      expr::C ||= ["Not " + "shareable"]
     end;
   end
 

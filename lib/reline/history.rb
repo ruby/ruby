@@ -62,7 +62,7 @@ class Reline::History < Array
   private def check_index(index)
     index += size if index < 0
     if index < -2147483648 or 2147483647 < index
-      raise RangeError.new("integer #{index} too big to convert to `int'")
+      raise RangeError.new("integer #{index} too big to convert to 'int'")
     end
     # If history_size is negative, history size is unlimited.
     if @config.history_size.positive?

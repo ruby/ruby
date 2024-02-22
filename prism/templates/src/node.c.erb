@@ -160,3 +160,113 @@ pm_node_type_to_str(pm_node_type_t node_type)
     }
     return "";
 }
+
+static void
+pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
+    const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
+    pm_buffer_append_byte(buffer, '"');
+    pm_buffer_append_source(buffer, constant->start, constant->length, PM_BUFFER_ESCAPING_JSON);
+    pm_buffer_append_byte(buffer, '"');
+}
+
+static void
+pm_dump_json_location(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_location_t *location) {
+    uint32_t start = (uint32_t) (location->start - parser->start);
+    uint32_t end = (uint32_t) (location->end - parser->start);
+    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"end\":%" PRIu32 "}", start, end);
+}
+
+/**
+ * Dump JSON to the given buffer.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        case <%= node.type %>: {
+            pm_buffer_append_string(buffer, "{\"type\":\"<%= node.name %>\",\"location\":", <%= node.name.bytesize + 22 %>);
+
+            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+            pm_dump_json_location(buffer, parser, &cast->base.location);
+            <%- node.fields.each_with_index do |field, index| -%>
+
+            // Dump the <%= field.name %> field
+            pm_buffer_append_byte(buffer, ',');
+            pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
+            <%- case field -%>
+            <%- when Prism::NodeField -%>
+            pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
+            <%- when Prism::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::NodeListField -%>
+            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '[');
+
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                if (index != 0) pm_buffer_append_byte(buffer, ',');
+                pm_dump_json(buffer, parser, <%= field.name %>->nodes[index]);
+            }
+            pm_buffer_append_byte(buffer, ']');
+            <%- when Prism::StringField -%>
+            const pm_string_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '"');
+            pm_buffer_append_source(buffer, pm_string_source(<%= field.name %>), pm_string_length(<%= field.name %>), PM_BUFFER_ESCAPING_JSON);
+            pm_buffer_append_byte(buffer, '"');
+            <%- when Prism::ConstantField -%>
+            pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
+            <%- when Prism::OptionalConstantField -%>
+            if (cast-><%= field.name %> != PM_CONSTANT_ID_UNSET) {
+                pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::ConstantListField -%>
+            const pm_constant_id_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '[');
+
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                if (index != 0) pm_buffer_append_byte(buffer, ',');
+                pm_dump_json_constant(buffer, parser, <%= field.name %>->ids[index]);
+            }
+            pm_buffer_append_byte(buffer, ']');
+            <%- when Prism::LocationField -%>
+            pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            <%- when Prism::OptionalLocationField -%>
+            if (cast-><%= field.name %>.start != NULL) {
+                pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::UInt8Field -%>
+            pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
+            <%- when Prism::UInt32Field -%>
+            pm_buffer_append_format(buffer, "%" PRIu32, cast-><%= field.name %>);
+            <%- when Prism::FlagsField -%>
+            size_t flags = 0;
+            pm_buffer_append_byte(buffer, '[');
+            <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
+            <%- found.values.each_with_index do |value, index| -%>
+            if (PM_NODE_FLAG_P(cast, PM_<%= found.human.upcase %>_<%= value.name %>)) {
+                if (flags != 0) pm_buffer_append_byte(buffer, ',');
+                pm_buffer_append_string(buffer, "\"<%= value.name %>\"", <%= value.name.bytesize + 2 %>);
+                flags++;
+            }
+            <%- end -%>
+            pm_buffer_append_byte(buffer, ']');
+            <%- else -%>
+            <%- raise %>
+            <%- end -%>
+            <%- end -%>
+
+            pm_buffer_append_byte(buffer, '}');
+            break;
+        }
+        <%- end -%>
+        case PM_SCOPE_NODE:
+            break;
+    }
+}

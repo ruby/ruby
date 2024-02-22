@@ -186,7 +186,7 @@ class Delegator < BasicObject
   # method calls are being delegated to.
   #
   def __getobj__
-    __raise__ ::NotImplementedError, "need to define `__getobj__'"
+    __raise__ ::NotImplementedError, "need to define '__getobj__'"
   end
 
   #
@@ -194,7 +194,7 @@ class Delegator < BasicObject
   # to _obj_.
   #
   def __setobj__(obj)
-    __raise__ ::NotImplementedError, "need to define `__setobj__'"
+    __raise__ ::NotImplementedError, "need to define '__setobj__'"
   end
 
   #

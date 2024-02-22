@@ -94,7 +94,7 @@ module Prism
 
     # Returns the full name of this constant. For example: "Foo"
     def full_name
-      name.name
+      name.to_s
     end
   end
 
@@ -135,12 +135,35 @@ module Prism
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
-      (parent&.full_name_parts || [:""]).push(child.name)
+      parts = case parent
+      when ConstantPathNode, ConstantReadNode
+        parent.full_name_parts
+      when nil
+        [:""]
+      else
+        raise ConstantPathNode::DynamicPartsInConstantPathError,
+          "Constant path target contains dynamic parts. Cannot compute full name"
+      end
+
+      parts.push(child.name)
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
     def full_name
       full_name_parts.join("::")
+    end
+  end
+
+  class ConstantTargetNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    def full_name_parts
+      [name]
+    end
+
+    # Returns the full name of this constant. For example: "Foo"
+    def full_name
+      name.to_s
     end
   end
 

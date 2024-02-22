@@ -59,7 +59,7 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     it "returns nil" do
       location = nil
       tap { location = caller_locations(1, 1)[0] }
-      location.label.should == "tap"
+      location.label.should =~ /\A(?:Kernel#)?tap\z/
       if location.path.start_with?("<internal:")
         location.absolute_path.should == nil
       else

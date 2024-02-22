@@ -82,7 +82,9 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
     // Initialize the scopes array.
     size_t scopes_count = RARRAY_LEN(scopes);
-    pm_options_scopes_init(options, scopes_count);
+    if (!pm_options_scopes_init(options, scopes_count)) {
+        rb_raise(rb_eNoMemError, "failed to allocate memory");
+    }
 
     // Iterate over the scopes and add them to the options.
     for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
@@ -97,7 +99,9 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
         // Initialize the scope array.
         size_t locals_count = RARRAY_LEN(scope);
         pm_options_scope_t *options_scope = &options->scopes[scope_index];
-        pm_options_scope_init(options_scope, locals_count);
+        if (!pm_options_scope_init(options_scope, locals_count)) {
+            rb_raise(rb_eNoMemError, "failed to allocate memory");
+        }
 
         // Iterate over the locals and add them to the scope.
         for (size_t local_index = 0; local_index < locals_count; local_index++) {
@@ -542,8 +546,9 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
+    VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new((const char *) pm_string_source(input), pm_string_length(input)), ULONG2NUM(parser.start_line), offsets };
+    VALUE source_argv[] = { source_string, LONG2NUM(parser.start_line), offsets };
     VALUE source = rb_class_new_instance(3, source_argv, rb_cPrismSource);
 
     parse_lex_data_t parse_lex_data = {
@@ -561,17 +566,21 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     parser.lex_callback = &lex_callback;
     pm_node_t *node = pm_parse(&parser);
 
-    // Here we need to update the source range to have the correct newline
-    // offsets. We do it here because we've already created the object and given
-    // it over to all of the tokens.
+    // Here we need to update the Source object to have the correct
+    // encoding for the source string and the correct newline offsets.
+    // We do it here because we've already created the Source object and given
+    // it over to all of the tokens, and both of these are only set after pm_parse().
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    rb_enc_associate(source_string, encoding);
+
     for (size_t index = 0; index < parser.newline_list.size; index++) {
-        rb_ary_push(offsets, INT2FIX(parser.newline_list.offsets[index]));
+        rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
     }
 
     VALUE value;
     if (return_nodes) {
         value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding));
+        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source));
         rb_ary_push(value, parse_lex_data.tokens);
     } else {
         value = parse_lex_data.tokens;
@@ -650,7 +659,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE result_argv[] = {
-        pm_ast_new(&parser, node, encoding),
+        pm_ast_new(&parser, node, encoding, source),
         parser_comments(&parser, source),
         parser_magic_comments(&parser, source),
         parser_data_loc(&parser, source),

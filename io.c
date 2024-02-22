@@ -1704,7 +1704,6 @@ make_writeconv(rb_io_t *fptr)
 /* writing functions */
 struct binwrite_arg {
     rb_io_t *fptr;
-    VALUE str;
     const char *ptr;
     long length;
 };
@@ -1854,7 +1853,7 @@ io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
 }
 
 static long
-io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
+io_binwrite(const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
     if (len <= 0) return len;
 
@@ -1867,7 +1866,6 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         struct binwrite_arg arg;
 
         arg.fptr = fptr;
-        arg.str = str;
         arg.ptr = ptr;
         arg.length = len;
 
@@ -1977,7 +1975,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 
     tmp = rb_str_tmp_frozen_no_embed_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
-    n = io_binwrite(tmp, ptr, len, fptr, nosync);
+    n = io_binwrite(ptr, len, fptr, nosync);
     rb_str_tmp_frozen_release(str, tmp);
 
     return n;
@@ -1990,7 +1988,7 @@ rb_io_bufwrite(VALUE io, const void *buf, size_t size)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    return (ssize_t)io_binwrite(0, buf, (long)size, fptr, 0);
+    return (ssize_t)io_binwrite(buf, (long)size, fptr, 0);
 }
 
 static VALUE
@@ -4302,11 +4300,8 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns the next line as determined by line separator +sep+,
- *    or +nil+ if none.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4455,10 +4450,8 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.close
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns lines as determined by line separator +sep+.
- *  - But returns no more bytes in a line than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4578,10 +4571,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "ne\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Calls with the next line as determined by line separator +sep+.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -8612,7 +8603,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn_deprecated("`%s'", NULL, rb_id2name(id));
+        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
     }
     *var = val;
 }
@@ -10473,8 +10464,9 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    $cat t.txt | ruby -e "p readlines 12"
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *
- *  With arguments +sep+ and +limit+ given, combines the two behaviors;
- *  see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit].
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -11985,7 +11977,7 @@ io_s_foreach(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]):
  *
  *    File.foreach('t.txt', 7) {|line| p line }
  *
@@ -12001,10 +11993,9 @@ io_s_foreach(VALUE v)
  *    "Fourth l"
  *    "line\n"
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12077,15 +12068,14 @@ io_s_readlines(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -13235,7 +13225,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, stp->src_fptr);
         if (stp->dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
+            if (io_binwrite(RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
                 rb_sys_fail_on_write(stp->dst_fptr);
         }
         else /* others such as StringIO */
@@ -14866,7 +14856,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
  *
  * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
- * (exception: see {Special Case}[rdoc-ref:ARGF@Special+Case]):
+ * (exception:
+ * see {Specifying $stdin in ARGV}[rdoc-ref:ARGF@Specifying+-24stdin+in+ARGV]):
  *
  * - Command and output:
  *
@@ -15224,6 +15215,18 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.rus') {|f| f.gets(2).size } # => 1
  *    File.open('t.rus') {|f| f.gets(3).size } # => 2
  *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *
+ *  ===== Line Separator and Line Limit
+ *
+ *  With arguments +sep+ and +limit+ given, combines the two behaviors:
+ *
+ *  - Returns the next line as determined by line separator +sep+.
+ *  - But returns no more bytes than are allowed by the limit +limit+.
+ *
+ *  Example:
+ *
+ *    File.open('t.txt') {|f| f.gets('li', 20) } # => "First li"
+ *    File.open('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
  *
  *  ===== Line Number
  *

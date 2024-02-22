@@ -28,6 +28,7 @@ begin
 rescue LoadError
   $" << "zlib.rb"
 end
+require_relative 'lib/path'
 
 INDENT = " "*36
 STDOUT.sync = true
@@ -360,6 +361,13 @@ rubyw_install_name = CONFIG["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
+if CONFIG["libdirname"] == "archlibdir"
+  libexecdir = MAKEFILE_CONFIG["archlibdir"].dup
+  unless libexecdir.sub!(/\$\(lib\K(?=dir\))/) {"exec"}
+    libexecdir = "$(libexecdir)/$(arch)"
+  end
+  archbindir = RbConfig.expand(libexecdir) + "/bin"
+end
 libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
 archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + CONFIG['arch'])
@@ -384,22 +392,34 @@ load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
 rdoc_noinst = %w[created.rid]
 
 install?(:local, :arch, :bin, :'bin-arch') do
-  prepare "binary commands", bindir
+  prepare "binary commands", (dest = archbindir || bindir)
 
-  install ruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+  def (bins = []).add(name)
+    push(name)
+    name
+  end
+
+  install bins.add(ruby_install_name+exeext), dest, :mode => $prog_mode, :strip => $strip
   if rubyw_install_name and !rubyw_install_name.empty?
-    install rubyw_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install bins.add(rubyw_install_name+exeext), dest, :mode => $prog_mode, :strip => $strip
   end
   # emcc produces ruby and ruby.wasm, the first is a JavaScript file of runtime support
   # to load and execute the second .wasm file. Both are required to execute ruby
   if RUBY_PLATFORM =~ /emscripten/ and File.exist? ruby_install_name+".wasm"
-    install ruby_install_name+".wasm", bindir, :mode => $prog_mode, :strip => $strip
+    install bins.add(ruby_install_name+".wasm"), dest, :mode => $prog_mode, :strip => $strip
   end
   if File.exist? goruby_install_name+exeext
-    install goruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install bins.add(goruby_install_name+exeext), dest, :mode => $prog_mode, :strip => $strip
   end
   if enable_shared and dll != lib
-    install dll, bindir, :mode => $prog_mode, :strip => $strip
+    install bins.add(dll), dest, :mode => $prog_mode, :strip => $strip
+  end
+  if archbindir
+    prepare "binary command links", bindir
+    relpath = Path.relative(archbindir, bindir)
+    bins.each do |f|
+      ln_sf(File.join(relpath, f), File.join(bindir, f))
+    end
   end
 end
 
@@ -428,6 +448,11 @@ install?(:local, :arch, :data) do
   if pc and File.file?(pc) and File.size?(pc)
     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
     install pc, pkgconfigdir, :mode => $data_mode
+    if (pkgconfig_base = CONFIG["libdir", true]) != libdir
+      prepare "pkgconfig data link", File.join(pkgconfig_base, "pkgconfig")
+      ln_sf(File.join("..", Path.relative(pkgconfigdir, pkgconfig_base), pc),
+            File.join(pkgconfig_base, "pkgconfig", pc))
+    end
   end
 end
 
@@ -690,7 +715,7 @@ end
 install?(:dbg, :nodefault) do
   prepare "debugger commands", bindir
   prepare "debugger scripts", rubylibdir
-  conf = RbConfig::MAKEFILE_CONFIG.merge({"prefix"=>"${prefix#/}"})
+  conf = MAKEFILE_CONFIG.merge({"prefix"=>"${prefix#/}"})
   Dir.glob(File.join(srcdir, "template/ruby-*db.in")) do |src|
     cmd = $script_installer.transform(File.basename(src, ".in"))
     open_for_install(File.join(bindir, cmd), $script_mode) {
@@ -707,9 +732,9 @@ install?(:dbg, :nodefault) do
   install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
   if $debug_symbols
     {
-      ruby_install_name => bindir,
-      rubyw_install_name => bindir,
-      goruby_install_name => bindir,
+      ruby_install_name => archbindir || bindir,
+      rubyw_install_name => archbindir || bindir,
+      goruby_install_name => archbindir || bindir,
       dll => libdir,
     }.each do |src, dest|
       next if src.empty?
@@ -1040,16 +1065,22 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
+    gem = $1
     gem_name = "#$1-#$2"
-    # Try to find the gemspec file for C ext gems
-    # ex .bundle/gems/debug-1.7.1/debug-1.7.1.gemspec
-    # This gemspec keep the original dependencies
-    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
+    # Try to find the original gemspec file
+    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem}.gemspec"
     unless File.exist?(path)
-      path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
+      # Try to find the gemspec file for C ext gems
+      # ex .bundle/gems/debug-1.7.1/debug-1.7.1.gemspec
+      # This gemspec keep the original dependencies
+      path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
       unless File.exist?(path)
-         skipped[gem_name] = "gemspec not found"
-         next
+        # Try to find the gemspec file for gems that hasn't own gemspec
+        path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
+        unless File.exist?(path)
+          skipped[gem_name] = "gemspec not found"
+          next
+        end
       end
     end
     spec = load_gemspec(path, "#{srcdir}/.bundle/gems/#{gem_name}")

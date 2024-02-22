@@ -20,7 +20,7 @@ module Prism
 
     # The minor version of prism that we are expecting to find in the serialized
     # strings.
-    MINOR_VERSION = 22
+    MINOR_VERSION = 24
 
     # The patch version of prism that we are expecting to find in the serialized
     # strings.
@@ -79,11 +79,15 @@ module Prism
       end
 
       def load_start_line
-        source.start_line = load_varsint
+        source.instance_variable_set :@start_line, load_varsint
+      end
+
+      def load_line_offsets
+        source.instance_variable_set :@offsets, Array.new(load_varuint) { load_varuint }
       end
 
       def load_comments
-        load_varuint.times.map do
+        Array.new(load_varuint) do
           case load_varuint
           when 0 then InlineComment.new(load_location)
           when 1 then EmbDocComment.new(load_location)
@@ -94,10 +98,10 @@ module Prism
 
       def load_metadata
         comments = load_comments
-        magic_comments = load_varuint.times.map { MagicComment.new(load_location, load_location) }
+        magic_comments = Array.new(load_varuint) { MagicComment.new(load_location, load_location) }
         data_loc = load_optional_location
-        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location, load_error_level) }
-        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -108,7 +112,7 @@ module Prism
           length = load_varuint
           lex_state = load_varuint
           location = Location.new(@source, start, length)
-          tokens << [Prism::Token.new(type, location.slice, location), lex_state]
+          tokens << [Prism::Token.new(source, type, location.slice, location), lex_state]
         end
 
         tokens
@@ -118,6 +122,7 @@ module Prism
         tokens = load_tokens
         encoding = load_encoding
         load_start_line
+        load_line_offsets
         comments, magic_comments, data_loc, errors, warnings = load_metadata
         tokens.each { |token,| token.value.force_encoding(encoding) }
 
@@ -129,6 +134,7 @@ module Prism
         load_header
         load_encoding
         load_start_line
+        load_line_offsets
 
         comments, magic_comments, data_loc, errors, warnings = load_metadata
 
@@ -268,7 +274,8 @@ module Prism
             <%- if node.needs_serialized_length? -%>
             load_serialized_length
             <%- end -%>
-            <%= node.name %>.new(<%= (node.fields.map { |field|
+            <%= node.name %>.new(
+              source, <%= (node.fields.map { |field|
               case field
               when Prism::NodeField then "load_node"
               when Prism::OptionalNodeField then "load_optional_node"
@@ -302,7 +309,8 @@ module Prism
               <%- if node.needs_serialized_length? -%>
               load_serialized_length
               <%- end -%>
-              <%= node.name %>.new(<%= (node.fields.map { |field|
+              <%= node.name %>.new(
+                source, <%= (node.fields.map { |field|
                 case field
                 when Prism::NodeField then "load_node"
                 when Prism::OptionalNodeField then "load_optional_node"

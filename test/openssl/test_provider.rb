@@ -11,7 +11,7 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
     end;
   end
 
-  def test_openssl_provider_name
+  def test_openssl_provider_names
     omit if /freebsd/ =~ RUBY_PLATFORM
 
     with_openssl <<-'end;'

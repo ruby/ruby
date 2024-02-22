@@ -117,7 +117,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
     assert_in_out_err(%w(-W -e) + ['p Warning[:performance]'], "", %w(false), [])
     assert_in_out_err(%w(-W:performance -e) + ['p Warning[:performance]'], "", %w(true), [])
-    assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
+    assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: 'qux'/)
     assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
@@ -204,7 +204,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(%w(--enable=all --disable=rjit -e) + [""], "", [], [])
     end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
-                      /unknown argument for --enable: `foobarbazqux'/)
+                      /unknown argument for --enable: 'foobarbazqux'/)
     assert_in_out_err(%w(--enable), "", [], /missing argument for --enable/)
   end
 
@@ -213,7 +213,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--disable-all -e) + [""], "", [], [])
     assert_in_out_err(%w(--disable=all -e) + [""], "", [], [])
     assert_in_out_err(%w(--disable foobarbazqux -e) + [""], "", [],
-                      /unknown argument for --disable: `foobarbazqux'/)
+                      /unknown argument for --disable: 'foobarbazqux'/)
     assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
     assert_in_out_err(%w(-e) + ['p defined? Gem'], "", ["nil"], [])
     assert_in_out_err(%w(--disable-did_you_mean -e) + ['p defined? DidYouMean'], "", ["nil"], [])
@@ -296,13 +296,15 @@ class TestRubyOptions < Test::Unit::TestCase
     warning = /compiler based on the Prism parser is currently experimental/
 
     assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
+    assert_in_out_err(%w(--parser=prism -W:no-experimental -e) + ["puts :hi"], "", %w(hi), [])
+    assert_in_out_err(%w(--parser=prism -W:no-experimental --dump=parsetree -e :hi), "", /"hi"/, [])
 
     assert_in_out_err(%w(--parser=parse.y -e) + ["puts :hi"], "", %w(hi), [])
     assert_norun_with_rflag('--parser=parse.y', '--version', "")
 
     assert_in_out_err(%w(--parser=notreal -e) + ["puts :hi"], "", [], /unknown parser notreal/)
 
-    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, warning)
+    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, [])
   end
 
   def test_eval
@@ -443,7 +445,7 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-W:no-experimental'
     assert_in_out_err(%w(), "p Warning[:experimental]", ["false"])
     ENV['RUBYOPT'] = '-W:qux'
-    assert_in_out_err(%w(), "", [], /unknown warning category: `qux'/)
+    assert_in_out_err(%w(), "", [], /unknown warning category: 'qux'/)
 
     ENV['RUBYOPT'] = 'w'
     assert_in_out_err(%w(), "p $VERBOSE", ["true"])
@@ -558,7 +560,7 @@ class TestRubyOptions < Test::Unit::TestCase
       t.puts "  end"
       t.puts "end"
       t.flush
-      warning = ' warning: found `= literal\' in conditional, should be =='
+      warning = ' warning: found \'= literal\' in conditional, should be =='
       err = ["#{t.path}:1:#{warning}",
              "#{t.path}:4:#{warning}",
             ]
@@ -820,8 +822,8 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-        (?:-e:1:in\s\`(?:block\sin\s)?<main>\'\n)*
-        -e:1:in\s\`kill\'\n
+        (?:-e:1:in\s\'(?:block\sin\s)?<main>\'\n)*
+        -e:1:in\s\'kill\'\n
         \n
         )?
       )x,

@@ -15,9 +15,9 @@ module Prism
 
       assert_equal <<~'ERROR', Debug.format_errors('"%W"\u"', false)
         > 1 | "%W"\u"
-            |     ^ expected a newline or semicolon after the statement
             |     ^ invalid character `\`
-            |        ^ expected a closing delimiter for the string literal
+            |      ^ unexpected local variable or method, expecting end-of-input
+            |        ^ unterminated string meets end of file
       ERROR
     end
   end

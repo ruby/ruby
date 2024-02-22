@@ -318,4 +318,10 @@ rb_thread_sched_mark_zombies(rb_vm_t *vm)
     // do nothing
 }
 
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

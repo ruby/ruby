@@ -54,6 +54,8 @@ jobs:
 
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
+        env:
+          CHECK_LEAKS: true
 
       - uses: ./.github/actions/slack
         with:

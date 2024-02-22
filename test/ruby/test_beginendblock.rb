@@ -67,7 +67,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
     bug8501 = '[ruby-core:55365] [Bug #8501]'
     args = ['-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
             '-e', 'at_exit{o.nope}']
-    status = assert_in_out_err(args, '', [], /undefined method `nope'/, bug8501)
+    status = assert_in_out_err(args, '', [], /undefined method 'nope'/, bug8501)
     assert_not_predicate(status, :success?, bug8501)
   end
 

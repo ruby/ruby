@@ -150,7 +150,7 @@ hash_table_raw_insert(struct rb_id_table *tbl, id_key_t key, VALUE val)
     int mask = tbl->capa - 1;
     int ix = key & mask;
     int d = 1;
-    assert(key != 0);
+    RUBY_ASSERT(key != 0);
     while (ITEM_KEY_ISSET(tbl, ix)) {
         ITEM_SET_COLLIDED(tbl, ix);
         ix = (ix + d) & mask;
@@ -276,7 +276,7 @@ rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, v
         if (ITEM_KEY_ISSET(tbl, i)) {
             const id_key_t key = ITEM_GET_KEY(tbl, i);
             enum rb_id_table_iterator_result ret = (*func)(key2id(key), tbl->items[i].val, data);
-            assert(key != 0);
+            RUBY_ASSERT(key != 0);
 
             if (ret == ID_TABLE_DELETE)
                 hash_delete_index(tbl, i);

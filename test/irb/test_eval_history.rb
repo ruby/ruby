@@ -37,7 +37,7 @@ module TestIRB
       )
 
       assert_empty(err)
-      assert_match(/undefined local variable or method `__'/, out)
+      assert_match(/undefined local variable or method (`|')__'/, out)
     end
 
     def test_eval_history_can_be_retrieved_with_double_underscore

@@ -990,7 +990,7 @@ rb_define_class(const char *name, VALUE super)
         return klass;
     }
     if (!super) {
-        rb_raise(rb_eArgError, "no super class for `%s'", name);
+        rb_raise(rb_eArgError, "no super class for '%s'", name);
     }
     klass = rb_define_class_id(id, super);
     rb_vm_add_root_module(klass);
@@ -1030,7 +1030,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
         return klass;
     }
     if (!super) {
-        rb_raise(rb_eArgError, "no super class for `%"PRIsVALUE"::%"PRIsVALUE"'",
+        rb_raise(rb_eArgError, "no super class for '%"PRIsVALUE"::%"PRIsVALUE"'",
                  rb_class_path(outer), rb_id2str(id));
     }
     klass = rb_define_class_id(id, super);
@@ -1706,7 +1706,7 @@ VALUE
 rb_class_attached_object(VALUE klass)
 {
     if (!FL_TEST(klass, FL_SINGLETON)) {
-        rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
+        rb_raise(rb_eTypeError, "'%"PRIsVALUE"' is not a singleton class", klass);
     }
 
     return RCLASS_ATTACHED_OBJECT(klass);

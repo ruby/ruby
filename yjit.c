@@ -660,6 +660,12 @@ rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 }
 
 bool
+rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.anon_kwrest;
+}
+
+bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
@@ -893,6 +899,30 @@ rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));
+}
+
+// Get the number of digits required to print an integer
+static int
+num_digits(int integer)
+{
+    int num = 1;
+    while (integer /= 10) {
+        num++;
+    }
+    return num;
+}
+
+// Allocate a C string that formats an ISEQ label like iseq_inspect()
+char *
+rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
+{
+    const char *label = RSTRING_PTR(iseq->body->location.label);
+    const char *path = RSTRING_PTR(rb_iseq_path(iseq));
+    int lineno = iseq->body->location.code_location.beg_pos.lineno;
+
+    char *buf = ZALLOC_N(char, strlen(label) + strlen(path) + num_digits(lineno) + 3);
+    sprintf(buf, "%s@%s:%d", label, path, lineno);
+    return buf;
 }
 
 // The FL_TEST() macro

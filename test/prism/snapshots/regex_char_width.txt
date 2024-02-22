@@ -1,0 +1,50 @@
+@ ProgramNode (location: (2,0)-(3,6))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (2,0)-(3,6))
+    └── body: (length: 2)
+        ├── @ MatchWriteNode (location: (2,0)-(2,36))
+        │   ├── call:
+        │   │   @ CallNode (location: (2,0)-(2,36))
+        │   │   ├── flags: ∅
+        │   │   ├── receiver:
+        │   │   │   @ RegularExpressionNode (location: (2,0)-(2,22))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (2,0)-(2,1) = "/"
+        │   │   │   ├── content_loc: (2,1)-(2,21) = "\x{E285}\xA7(?<a>.)\x{E285}\xA9(?<b>.)"
+        │   │   │   ├── closing_loc: (2,21)-(2,22) = "/"
+        │   │   │   └── unescaped: "\x{E285}\xA7(?<a>.)\x{E285}\xA9(?<b>.)"
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :=~
+        │   │   ├── message_loc: (2,23)-(2,25) = "=~"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (2,26)-(2,36))
+        │   │   │   ├── flags: ∅
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ StringNode (location: (2,26)-(2,36))
+        │   │   │           ├── flags: ∅
+        │   │   │           ├── opening_loc: (2,26)-(2,27) = "'"
+        │   │   │           ├── content_loc: (2,27)-(2,35) = "\x{E285}\xA7a\x{E285}\xA9b"
+        │   │   │           ├── closing_loc: (2,35)-(2,36) = "'"
+        │   │   │           └── unescaped: "\x{E285}\xA7a\x{E285}\xA9b"
+        │   │   ├── closing_loc: ∅
+        │   │   └── block: ∅
+        │   └── targets: (length: 2)
+        │       ├── @ LocalVariableTargetNode (location: (2,7)-(2,8))
+        │       │   ├── name: :a
+        │       │   └── depth: 0
+        │       └── @ LocalVariableTargetNode (location: (2,17)-(2,18))
+        │           ├── name: :b
+        │           └── depth: 0
+        └── @ ArrayNode (location: (3,0)-(3,6))
+            ├── flags: ∅
+            ├── elements: (length: 2)
+            │   ├── @ LocalVariableReadNode (location: (3,1)-(3,2))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   └── @ LocalVariableReadNode (location: (3,4)-(3,5))
+            │       ├── name: :b
+            │       └── depth: 0
+            ├── opening_loc: (3,0)-(3,1) = "["
+            └── closing_loc: (3,5)-(3,6) = "]"

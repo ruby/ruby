@@ -32,15 +32,6 @@ describe "Time.at" do
       t2.nsec.should == t.nsec
     end
 
-    ruby_version_is ""..."3.4" do
-      describe "passed BigDecimal" do
-        it "doesn't round input value" do
-          require 'bigdecimal'
-          Time.at(BigDecimal('1.1')).to_f.should == 1.1
-        end
-      end
-    end
-
     describe "passed Rational" do
       it "returns Time with correct microseconds" do
         t = Time.at(Rational(1_486_570_508_539_759, 1_000_000))

@@ -62,22 +62,17 @@ static VALUE util_spec_rb_get_kwargs(VALUE self, VALUE keyword_hash, VALUE keys,
   int len = RARRAY_LENINT(keys);
 
   int values_len = req + (opt < 0 ? -1 - opt : opt);
-  int i = 0;
 
-  ID *ids = (ID*) malloc(sizeof(VALUE) * len);
-  VALUE *results = (VALUE*) malloc(sizeof(VALUE) * values_len);
-  int extracted = 0;
-  VALUE ary = Qundef;
+  ID *ids = (ID *)alloca(sizeof(VALUE) * len);
+  VALUE *results = (VALUE *)alloca(sizeof(VALUE) * values_len);
 
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     ids[i] = SYM2ID(rb_ary_entry(keys, i));
   }
 
-  extracted = rb_get_kwargs(keyword_hash, ids, req, opt, results);
-  ary = rb_ary_new_from_values(extracted, results);
-  free(results);
-  free(ids);
-  return ary;
+  int extracted = rb_get_kwargs(keyword_hash, ids, req, opt, results);
+
+  return rb_ary_new_from_values(extracted, results);
 }
 
 static VALUE util_spec_rb_long2int(VALUE self, VALUE n) {

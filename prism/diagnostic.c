@@ -159,7 +159,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_ESCAPE_INVALID_UNICODE_LONG]        = { "invalid Unicode escape sequence; maximum length is 6 digits", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_ESCAPE_INVALID_UNICODE_TERM]        = { "invalid Unicode escape sequence; needs closing `}`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_ARGUMENT]                    = { "expected an argument", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_EXPECT_EOL_AFTER_STATEMENT]         = { "expected a newline or semicolon after the statement", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_EXPECT_EOL_AFTER_STATEMENT]         = { "unexpected %s, expecting end-of-input", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ]   = { "expected an expression after `&&=`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ] = { "expected an expression after `||=`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA]      = { "expected an expression after `,`", PM_ERROR_LEVEL_FATAL },
@@ -184,14 +184,14 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_FOR_IN]                             = { "expected an `in` after the index in a `for` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_TERM]                           = { "expected an `end` to close the `for` loop", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HASH_EXPRESSION_AFTER_LABEL]        = { "expected an expression after the label in a hash", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_HASH_KEY]                           = { "expected a key in the hash literal", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_HASH_KEY]                           = { "unexpected %s, expecting '}' or a key in the hash literal", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HASH_ROCKET]                        = { "expected a `=>` between the hash key and value", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HASH_TERM]                          = { "expected a `}` to close the hash literal", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HASH_VALUE]                         = { "expected a value in the hash literal", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HEREDOC_TERM]                       = { "could not find a terminator for the heredoc", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_QUESTION_MARK]           = { "incomplete expression at `?`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "incomplete class variable", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "incomplete instance variable", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "'%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "'%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_DECIMAL]             = { "invalid decimal number", PM_ERROR_LEVEL_FATAL },
@@ -202,7 +202,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PERCENT]                    = { "invalid `%` token", PM_ERROR_LEVEL_FATAL }, // TODO WHAT?
-    [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "invalid global variable", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "'%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_IT_NOT_ALLOWED]                     = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_OPEN]                        = { "expected a `do` keyword or a `{` to open the lambda block", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_BRACE]                  = { "expected a lambda block beginning with `{` to end with `}`", PM_ERROR_LEVEL_FATAL },
@@ -221,6 +221,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_MODULE_NAME]                        = { "expected a constant name after `module`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_MODULE_TERM]                        = { "expected an `end` to close the `module` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_MULTI_ASSIGN_MULTI_SPLATS]          = { "multiple splats in multiple assignment", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_MULTI_ASSIGN_UNEXPECTED_REST]       = { "unexpected '%.*s' resulting in multiple splats in multiple assignment", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NOT_EXPRESSION]                     = { "expected an expression after `not`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NO_LOCAL_VARIABLE]                  = { "%.*s: no such local variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NUMBER_LITERAL_UNDERSCORE]          = { "number literal ending with a `_`", PM_ERROR_LEVEL_FATAL },
@@ -274,7 +275,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_STATEMENT_UNDEF]                    = { "unexpected an `undef` at a non-statement position", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_STRING_CONCATENATION]               = { "expected a string for concatenation", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_STRING_INTERPOLATED_TERM]           = { "expected a closing delimiter for the interpolated string", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_STRING_LITERAL_TERM]                = { "expected a closing delimiter for the string literal", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_STRING_LITERAL_EOF]                 = { "unterminated string meets end of file", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_STRING_LITERAL_TERM]                = { "unexpected %s, expected a string literal terminator", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_SYMBOL_INVALID]                     = { "invalid symbol", PM_ERROR_LEVEL_FATAL }, // TODO expected symbol? prism.c ~9719
     [PM_ERR_SYMBOL_TERM_DYNAMIC]                = { "expected a closing delimiter for the dynamic symbol", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_SYMBOL_TERM_INTERPOLATED]           = { "expected a closing delimiter for the interpolated symbol", PM_ERROR_LEVEL_FATAL },
@@ -282,17 +284,14 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_TERNARY_EXPRESSION_FALSE]           = { "expected an expression after `:` in the ternary operator", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_TERNARY_EXPRESSION_TRUE]            = { "expected an expression after `?` in the ternary operator", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNDEF_ARGUMENT]                     = { "invalid argument being passed to `undef`; expected a bare word, constant, or symbol argument", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_UNARY_RECEIVER_BANG]                = { "expected a receiver for unary `!`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_UNARY_RECEIVER_MINUS]               = { "expected a receiver for unary `-`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_UNARY_RECEIVER_PLUS]                = { "expected a receiver for unary `+`", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_UNARY_RECEIVER]                     = { "unexpected %s, expected a receiver for unary `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT]     = { "unexpected %s, assuming it is closing the parent %s", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNEXPECTED_TOKEN_IGNORE]            = { "unexpected %s, ignoring it", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_UNARY_RECEIVER_TILDE]               = { "expected a receiver for unary `~`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNTIL_TERM]                         = { "expected an `end` to close the `until` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_VOID_EXPRESSION]                    = { "unexpected void value expression", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_WHILE_TERM]                         = { "expected an `end` to close the `while` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_WRITE_TARGET_IN_METHOD]             = { "dynamic constant assignment", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_WRITE_TARGET_READONLY]              = { "immutable variable as a write target", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_WRITE_TARGET_READONLY]              = { "Can't set variable %.*s", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_WRITE_TARGET_UNEXPECTED]            = { "unexpected write target", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_XSTRING_TERM]                       = { "expected a closing delimiter for the `%x` or backtick string", PM_ERROR_LEVEL_FATAL },
 
@@ -301,6 +300,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = { "ambiguous first argument; put parentheses or a space even after `+` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_PREFIX_STAR]             = { "ambiguous `*` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_SLASH]                   = { "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_END_IN_METHOD]                     = { "END in method; use at_exit", PM_WARNING_LEVEL_DEFAULT },
 };
 
@@ -389,13 +389,14 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
  */
 void
 pm_diagnostic_list_free(pm_list_t *list) {
-    pm_list_node_t *node, *next;
+    pm_diagnostic_t *node = (pm_diagnostic_t *) list->head;
 
-    for (node = list->head; node != NULL; node = next) {
-        next = node->next;
-        pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) node;
+    while (node != NULL) {
+        pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
 
-        if (diagnostic->owned) free((void *) diagnostic->message);
-        free(diagnostic);
+        if (node->owned) free((void *) node->message);
+        free(node);
+
+        node = next;
     }
 }

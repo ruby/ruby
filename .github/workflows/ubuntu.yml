@@ -70,6 +70,11 @@ jobs:
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
 
+      - uses: ruby/setup-ruby@22fdc77bf4148f810455b226c90fb81b5cbc00a7 # v1.171.0
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
       - name: Run configure
         env:
           arch: ${{ matrix.arch }}
@@ -92,7 +97,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests
@@ -118,6 +123,7 @@ jobs:
     needs: [make]
     steps:
       - run: exit 1
+        working-directory:
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
