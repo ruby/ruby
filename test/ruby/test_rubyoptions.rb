@@ -111,28 +111,36 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
-    assert_in_out_err(%w(-W:deprecated -e) + ['p Warning[:deprecated]'], "", %w(true), [])
-    assert_in_out_err(%w(-W:no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
-    assert_in_out_err(%w(-W:experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
-    assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
-    assert_in_out_err(%w(-W -e) + ['p Warning[:performance]'], "", %w(false), [])
-    assert_in_out_err(%w(-W:performance -e) + ['p Warning[:performance]'], "", %w(true), [])
+
+    categories = {"deprecated"=>1, "experimental"=>0, "performance"=>2}
+
+    categories.each do |category, level|
+      assert_in_out_err(["-W:#{category}", "-e", "p Warning[:#{category}]"], "", %w(true), [])
+      assert_in_out_err(["-W:no-#{category}", "-e", "p Warning[:#{category}]"], "", %w(false), [])
+      assert_in_out_err(["-e", "p Warning[:#{category}]"], "", level > 0 ? %w(false) : %w(true), [])
+      assert_in_out_err(["-w", "-e", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
+      assert_in_out_err(["-W", "-e", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
+      assert_in_out_err(["-We", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
+    end
     assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: 'qux'/)
-    assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
-    assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
-    assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
-    assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
-    assert_in_out_err(%w(-w -e) + ['p Warning[:performance]'], "", %w(false), [])
-    assert_in_out_err(%w(-W -e) + ['p Warning[:performance]'], "", %w(false), [])
-    code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}:#{Warning[:performance]}"'
+
+    def categories.expected(lev = 1, **warnings)
+      [
+        (lev > 1).to_s,
+        *map {|category, level| warnings.fetch(category, lev > level).to_s}
+      ].join(':')
+    end
+    code = ['#{$VERBOSE}', *categories.map {|category, | "\#{Warning[:#{category}]}"}].join(':')
+    code = %[puts "#{code}"]
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
       t.puts code
       t.close
-      assert_in_out_err(["-r#{t.path}", '-e', code], "", %w(false:false:true:false false:false:true:false), [])
-      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true:false true:true:true:false), [])
-      assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true:false false:true:true:false), [])
-      assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false:false false:false:false:false), [])
-      assert_in_out_err(["-r#{t.path}", '-W:performance', '-e', code], "", %w(false:false:true:true false:false:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '-e', code], "", [categories.expected(1)]*2, [])
+      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", [categories.expected(2)]*2, [])
+      categories.each do |category, |
+        assert_in_out_err(["-r#{t.path}", "-W:#{category}", '-e', code], "", [categories.expected(category => 'true')]*2, [])
+        assert_in_out_err(["-r#{t.path}", "-W:no-#{category}", '-e', code], "", [categories.expected(category => 'false')]*2, [])
+      end
     end
   ensure
     ENV['RUBYOPT'] = save_rubyopt
