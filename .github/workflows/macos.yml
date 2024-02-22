@@ -73,14 +73,14 @@ jobs:
 
       - name: Set test options for skipped tests
         run: |
-          set -ex
+          set -x
           TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$(echo "$TESTS")"}
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
@@ -89,11 +89,10 @@ jobs:
 
       - name: make skipped tests
         run: |
-          make -s test-all TESTS="$(echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|')"
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
-          TESTS: ${{ matrix.skipped_tests }}
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
