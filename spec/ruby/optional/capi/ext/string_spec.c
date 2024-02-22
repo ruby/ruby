@@ -51,10 +51,8 @@ VALUE string_spec_rb_str_set_len_RSTRING_LEN(VALUE self, VALUE str, VALUE len) {
   return INT2FIX(RSTRING_LEN(str));
 }
 
-VALUE rb_fstring(VALUE str); /* internal.h, used in ripper */
-
 VALUE string_spec_rb_str_fstring(VALUE self, VALUE str) {
-  return rb_fstring(str);
+  return rb_str_to_interned_str(str);
 }
 
 VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
