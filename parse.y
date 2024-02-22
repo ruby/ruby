@@ -2959,6 +2959,22 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 
 %token tLAST_TOKEN
 
+/*
+ * parameterizing rules
+ */
+
+%rule mlhs_separated_nonempty_list(separator, X): X
+                                                        {
+                                                            $$ = NEW_LIST($1, &@$);
+                                                        /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
+                                                        }
+                                                    | mlhs_separated_nonempty_list(separator, X) separator X
+                                                        {
+                                                            $$ = list_append(p, $1, $3);
+                                                            /*% ripper: mlhs_add!($:1, $:3) %*/
+                                                        }
+                                                ;
+
 %%
 program		:  {
                         SET_LEX_STATE(EXPR_BEG);
