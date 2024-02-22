@@ -3803,12 +3803,25 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
     assert(token->type == PM_TOKEN_INTEGER);
     pm_integer_node_t *node = PM_ALLOC_NODE(parser, pm_integer_node_t);
 
-    *node = (pm_integer_node_t) {{
-        .type = PM_INTEGER_NODE,
-        .flags = base | PM_NODE_FLAG_STATIC_LITERAL,
-        .location = PM_LOCATION_TOKEN_VALUE(token)
-    }};
+    *node = (pm_integer_node_t) {
+        {
+            .type = PM_INTEGER_NODE,
+            .flags = base | PM_NODE_FLAG_STATIC_LITERAL,
+            .location = PM_LOCATION_TOKEN_VALUE(token)
+        },
+        .value = { 0 }
+    };
 
+    pm_number_base_t number_base;
+    switch (base) {
+        case PM_INTEGER_BASE_FLAGS_BINARY: number_base = PM_NUMBER_BASE_BINARY; break;
+        case PM_INTEGER_BASE_FLAGS_OCTAL: number_base = PM_NUMBER_BASE_OCTAL; break;
+        case PM_INTEGER_BASE_FLAGS_DECIMAL: number_base = PM_NUMBER_BASE_DECIMAL; break;
+        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: number_base = PM_NUMBER_BASE_HEXADECIMAL; break;
+        default: assert(false && "unreachable");
+    }
+
+    pm_number_parse(&node->value, number_base, token->start, token->end);
     return node;
 }
 
@@ -14281,6 +14294,9 @@ static inline void
 parse_negative_numeric(pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
+            node->location.start--;
+            ((pm_integer_node_t *) node)->value.negative = true;
+            break;
         case PM_FLOAT_NODE:
             node->location.start--;
             break;

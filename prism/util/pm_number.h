@@ -85,6 +85,14 @@ typedef enum {
 PRISM_EXPORTED_FUNCTION void pm_number_parse(pm_number_t *number, pm_number_base_t base, const uint8_t *start, const uint8_t *end);
 
 /**
+ * Return the memory size of the number.
+ *
+ * @param number The number to get the memory size of.
+ * @return The size of the memory associated with the number.
+ */
+size_t pm_number_memsize(const pm_number_t *number);
+
+/**
  * Free the internal memory of a number. This memory will only be allocated if
  * the number exceeds the size of a single node in the linked list.
  *

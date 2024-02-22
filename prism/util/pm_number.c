@@ -87,17 +87,11 @@ pm_number_parse_digit(const uint8_t character) {
  */
 PRISM_EXPORTED_FUNCTION void
 pm_number_parse(pm_number_t *number, pm_number_base_t base, const uint8_t *start, const uint8_t *end) {
-    switch (*start) {
-        case '-':
-            number->negative = true;
-        /* fallthrough */
-        case '+':
-            start++;
-            break;
-        default:
-            break;
-    }
+    // Ignore unary +. Unary + is parsed differently and will not end up here.
+    // Instead, it will modify the parsed number later.
+    if (*start == '+') start++;
 
+    // Determine the multiplier from the base, and skip past any prefixes.
     uint32_t multiplier;
     switch (base) {
         case PM_NUMBER_BASE_BINARY:
@@ -133,11 +127,27 @@ pm_number_parse(pm_number_t *number, pm_number_base_t base, const uint8_t *start
             break;
     }
 
-    for (pm_number_add(number, pm_number_parse_digit(*start++)); start < end; start++) {
+    // It's possible that we've consumed everything at this point if there is an
+    // invalid number. If this is the case, we'll just return 0.
+    if (start >= end) return;
+
+    // Add the first digit to the number.
+    pm_number_add(number, pm_number_parse_digit(*start++));
+
+    // Add the subsequent digits to the number.
+    for (; start < end; start++) {
         if (*start == '_') continue;
         pm_number_multiply(number, multiplier);
         pm_number_add(number, pm_number_parse_digit(*start));
     }
+}
+
+/**
+ * Return the memory size of the number.
+ */
+size_t
+pm_number_memsize(const pm_number_t *number) {
+    return sizeof(pm_number_t) + number->length * sizeof(pm_number_node_t);
 }
 
 /**
