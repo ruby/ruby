@@ -25,7 +25,6 @@ jobs:
     strategy:
       matrix:
         test_task: ['check']
-        configure: ['']
         os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
         include:
           - test_task: test-all TESTS=--repeat-count=2
@@ -64,7 +63,7 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+        run: ../src/configure -C --disable-install-doc
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
@@ -99,7 +98,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
