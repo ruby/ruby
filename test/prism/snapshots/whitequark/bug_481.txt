@@ -33,7 +33,8 @@
             ├── flags: ∅
             ├── receiver:
             │   @ IntegerNode (location: (1,16)-(1,17))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── call_operator_loc: (1,17)-(1,18) = "."
             ├── name: :tap
             ├── message_loc: (1,18)-(1,21) = "tap"

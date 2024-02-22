@@ -24,7 +24,8 @@
             │       │   │   @ StatementsNode (location: (1,17)-(1,19))
             │       │   │   └── body: (length: 1)
             │       │   │       └── @ IntegerNode (location: (1,17)-(1,19))
-            │       │   │           └── flags: decimal
+            │       │   │           ├── flags: decimal
+            │       │   │           └── value: 42
             │       │   ├── consequent: ∅
             │       │   └── end_keyword_loc: (1,20)-(1,23) = "end"
             │       └── operator_loc: ∅

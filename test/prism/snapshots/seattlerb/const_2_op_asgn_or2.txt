@@ -20,4 +20,5 @@
             ├── operator_loc: (1,7)-(1,10) = "||="
             └── value:
                 @ IntegerNode (location: (1,11)-(1,12))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 1

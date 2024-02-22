@@ -42,9 +42,11 @@
             │   │               ├── flags: ∅
             │   │               ├── elements: (length: 2)
             │   │               │   ├── @ IntegerNode (location: (3,20)-(3,21))
-            │   │               │   │   └── flags: decimal
+            │   │               │   │   ├── flags: decimal
+            │   │               │   │   └── value: 1
             │   │               │   └── @ IntegerNode (location: (3,23)-(3,24))
-            │   │               │       └── flags: decimal
+            │   │               │       ├── flags: decimal
+            │   │               │       └── value: 2
             │   │               ├── opening_loc: (3,19)-(3,20) = "["
             │   │               └── closing_loc: (3,24)-(3,25) = "]"
             │   ├── opening_loc: (3,9)-(3,10) = "("

@@ -177,11 +177,14 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 3)
         │   │       ├── @ IntegerNode (location: (15,3)-(15,4))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       ├── @ IntegerNode (location: (15,6)-(15,7))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 2
         │   │       └── @ IntegerNode (location: (15,9)-(15,10))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 3
         │   ├── closing_loc: (15,10)-(15,11) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (17,0)-(17,4))
@@ -259,7 +262,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (21,10)-(21,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (23,0)-(23,2))
@@ -543,9 +547,11 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (41,19)-(41,20))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (41,22)-(41,23))
-        │       │       └── flags: decimal
+        │       │       ├── flags: decimal
+        │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (43,0)-(43,4))
@@ -850,7 +856,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (62,3)-(62,6))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 123
         │   │       └── @ HashNode (location: (62,8)-(62,49))
         │   │           ├── opening_loc: (62,8)-(62,9) = "{"
         │   │           ├── elements: (length: 3)
@@ -1335,7 +1342,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (89,10)-(89,11))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ KeywordHashNode (location: (89,13)-(89,21))
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
@@ -1349,7 +1357,8 @@
         │   │                   │   └── unescaped: "kwarg"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (89,20)-(89,21))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 2
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -1367,7 +1376,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (91,15)-(91,17))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 10
         │   ├── closing_loc: (91,17)-(91,18) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (93,0)-(93,10))
@@ -1537,7 +1547,8 @@
         │   │                   │   └── unescaped: "a"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (103,9)-(103,11))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: -1
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: (103,11)-(103,12) = ")"
         │   └── block: ∅
@@ -1845,7 +1856,8 @@
         │   │           │           ├── flags: ∅
         │   │           │           ├── receiver:
         │   │           │           │   @ IntegerNode (location: (117,8)-(117,9))
-        │   │           │           │   └── flags: decimal
+        │   │           │           │   ├── flags: decimal
+        │   │           │           │   └── value: 1
         │   │           │           ├── call_operator_loc: (117,9)-(117,10) = "."
         │   │           │           ├── name: :times
         │   │           │           ├── message_loc: (117,10)-(117,15) = "times"
@@ -1860,7 +1872,8 @@
         │   │           │               │   @ StatementsNode (location: (117,19)-(117,20))
         │   │           │               │   └── body: (length: 1)
         │   │           │               │       └── @ IntegerNode (location: (117,19)-(117,20))
-        │   │           │               │           └── flags: decimal
+        │   │           │               │           ├── flags: decimal
+        │   │           │               │           └── value: 1
         │   │           │               ├── opening_loc: (117,16)-(117,18) = "do"
         │   │           │               └── closing_loc: (117,21)-(117,24) = "end"
         │   │           ├── rescue_clause: ∅
@@ -2340,7 +2353,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (151,4)-(151,5))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ CallNode (location: (151,7)-(151,16))
         │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
@@ -2358,7 +2372,8 @@
         │   │               │   @ StatementsNode (location: (151,13)-(151,14))
         │   │               │   └── body: (length: 1)
         │   │               │       └── @ IntegerNode (location: (151,13)-(151,14))
-        │   │               │           └── flags: decimal
+        │   │               │           ├── flags: decimal
+        │   │               │           └── value: 1
         │   │               ├── opening_loc: (151,11)-(151,12) = "{"
         │   │               └── closing_loc: (151,15)-(151,16) = "}"
         │   ├── closing_loc: ∅
@@ -2369,7 +2384,8 @@
         │   ├── name_loc: (153,0)-(153,3) = "foo"
         │   ├── value:
         │   │   @ IntegerNode (location: (153,6)-(153,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (153,4)-(153,5) = "="
         ├── @ CallNode (location: (154,0)-(154,6))
         │   ├── flags: ignore_visibility
@@ -2433,7 +2449,8 @@
             │                   │   └── closing_loc: (156,14)-(156,16) = "\":"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (156,17)-(156,19))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 42
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block: ∅

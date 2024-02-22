@@ -23,7 +23,8 @@
             │   │       ├── name_loc: (1,9)-(1,11) = "b:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,11)-(1,12))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅

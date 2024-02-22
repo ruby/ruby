@@ -643,7 +643,8 @@
         │   │   │       ├── name_loc: (74,8)-(74,12) = "bar:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (74,13)-(74,14))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅

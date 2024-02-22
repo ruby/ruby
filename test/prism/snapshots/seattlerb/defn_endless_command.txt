@@ -23,7 +23,8 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (1,31)-(1,33))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 42
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── locals: []

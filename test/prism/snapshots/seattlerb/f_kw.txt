@@ -20,7 +20,8 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "k:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,8)-(1,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 42
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅

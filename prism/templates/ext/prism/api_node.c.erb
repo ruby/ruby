@@ -38,16 +38,16 @@ pm_string_new(const pm_string_t *string, rb_encoding *encoding) {
 }
 
 static VALUE
-pm_integer_new(const pm_number_t *number) {
-    VALUE result = UINT2NUM(number->head.value);
+pm_integer_new(const pm_integer_t *integer) {
+    VALUE result = UINT2NUM(integer->head.value);
     size_t shift = 0;
 
-    for (const pm_number_node_t *node = number->head.next; node != NULL; node = node->next) {
+    for (const pm_integer_word_t *node = integer->head.next; node != NULL; node = node->next) {
         VALUE receiver = rb_funcall(UINT2NUM(node->value), rb_intern("<<"), 1, ULONG2NUM(++shift * 32));
         result = rb_funcall(receiver, rb_intern("|"), 1, result);
     }
 
-    if (number->negative) {
+    if (integer->negative) {
         result = rb_funcall(result, rb_intern("-@"), 0);
     }
 

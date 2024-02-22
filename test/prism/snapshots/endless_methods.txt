@@ -12,7 +12,8 @@
         │   │   @ StatementsNode (location: (1,10)-(1,11))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
@@ -69,7 +70,8 @@
             │           │   ├── flags: ∅
             │           │   ├── receiver:
             │           │   │   @ IntegerNode (location: (5,13)-(5,14))
-            │           │   │   └── flags: decimal
+            │           │   │   ├── flags: decimal
+            │           │   │   └── value: 1
             │           │   ├── call_operator_loc: ∅
             │           │   ├── name: :+
             │           │   ├── message_loc: (5,15)-(5,16) = "+"
@@ -79,7 +81,8 @@
             │           │   │   ├── flags: ∅
             │           │   │   └── arguments: (length: 1)
             │           │   │       └── @ IntegerNode (location: (5,17)-(5,18))
-            │           │   │           └── flags: decimal
+            │           │   │           ├── flags: decimal
+            │           │   │           └── value: 2
             │           │   ├── closing_loc: ∅
             │           │   └── block: ∅
             │           ├── call_operator_loc: ∅
@@ -91,7 +94,8 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (5,21)-(5,22))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 3
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── locals: []

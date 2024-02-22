@@ -266,7 +266,7 @@ module Prism
     end
 
     def java_type
-      "VariableInteger"
+      "Object"
     end
   end
 

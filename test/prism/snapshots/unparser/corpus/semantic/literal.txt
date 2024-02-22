@@ -9,11 +9,14 @@
         ├── @ RationalNode (location: (2,0)-(2,3))
         │   └── numeric:
         │       @ IntegerNode (location: (2,0)-(2,2))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 0
         ├── @ IntegerNode (location: (3,0)-(3,3))
-        │   └── flags: hexadecimal
+        │   ├── flags: hexadecimal
+        │   └── value: 1
         ├── @ IntegerNode (location: (4,0)-(4,5))
-        │   └── flags: decimal
+        │   ├── flags: decimal
+        │   └── value: 1000
         ├── @ FloatNode (location: (5,0)-(5,4))
         ├── @ FloatNode (location: (6,0)-(6,14))
         ├── @ FloatNode (location: (7,0)-(7,15))

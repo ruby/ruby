@@ -111,7 +111,8 @@
             │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ IntegerNode (location: (5,7)-(5,8))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 1
             │           ├── call_operator_loc: (5,8)-(5,9) = "."
             │           ├── name: :tap
             │           ├── message_loc: (5,9)-(5,12) = "tap"
@@ -166,6 +167,7 @@
             │   │   @ StatementsNode (location: (5,30)-(5,31))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (5,30)-(5,31))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 0
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

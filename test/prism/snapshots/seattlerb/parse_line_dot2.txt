@@ -7,10 +7,12 @@
         │   ├── flags: ∅
         │   ├── left:
         │   │   @ IntegerNode (location: (1,0)-(1,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 0
         │   ├── right:
         │   │   @ IntegerNode (location: (2,0)-(2,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 4
         │   └── operator_loc: (1,1)-(1,3) = ".."
         ├── @ RangeNode (location: (3,0)-(4,1))
         │   ├── flags: ∅

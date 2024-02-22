@@ -7,7 +7,8 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (1,1)-(1,2))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :!
         │   ├── message_loc: (1,0)-(1,1) = "!"
@@ -19,7 +20,8 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (3,1)-(3,2))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :~
         │   ├── message_loc: (3,0)-(3,1) = "~"
@@ -31,7 +33,8 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (5,0)-(5,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :!=
         │   ├── message_loc: (5,2)-(5,4) = "!="
@@ -41,14 +44,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (5,5)-(5,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (7,0)-(7,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (7,0)-(7,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :!~
         │   ├── message_loc: (7,2)-(7,4) = "!~"
@@ -58,14 +63,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (7,5)-(7,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (9,0)-(9,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (9,0)-(9,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :%
         │   ├── message_loc: (9,2)-(9,3) = "%"
@@ -75,14 +82,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (9,4)-(9,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (11,0)-(11,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (11,0)-(11,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :&
         │   ├── message_loc: (11,2)-(11,3) = "&"
@@ -92,14 +101,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (13,0)-(13,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (13,0)-(13,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :*
         │   ├── message_loc: (13,2)-(13,3) = "*"
@@ -109,14 +120,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (13,4)-(13,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (15,0)-(15,4))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (15,0)-(15,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :**
         │   ├── message_loc: (15,1)-(15,3) = "**"
@@ -126,14 +139,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (15,3)-(15,4))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (17,0)-(17,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (17,0)-(17,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :+
         │   ├── message_loc: (17,2)-(17,3) = "+"
@@ -143,14 +158,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (17,4)-(17,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (19,0)-(19,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (19,0)-(19,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :-
         │   ├── message_loc: (19,2)-(19,3) = "-"
@@ -160,14 +177,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (19,4)-(19,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (21,0)-(21,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (21,0)-(21,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :/
         │   ├── message_loc: (21,2)-(21,3) = "/"
@@ -177,7 +196,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (21,4)-(21,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (23,0)-(23,5))
@@ -187,7 +207,8 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (23,0)-(23,1))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :/
         │   │   ├── message_loc: (23,1)-(23,2) = "/"
@@ -197,7 +218,8 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (23,2)-(23,3))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── call_operator_loc: ∅
@@ -209,14 +231,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (23,4)-(23,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 3
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (25,0)-(25,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :<
         │   ├── message_loc: (25,2)-(25,3) = "<"
@@ -226,14 +250,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (25,4)-(25,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (27,0)-(27,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (27,0)-(27,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :<<
         │   ├── message_loc: (27,2)-(27,4) = "<<"
@@ -243,14 +269,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (27,5)-(27,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (29,0)-(29,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (29,0)-(29,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :<=
         │   ├── message_loc: (29,2)-(29,4) = "<="
@@ -260,14 +288,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (29,5)-(29,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (31,0)-(31,7))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (31,0)-(31,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :<=>
         │   ├── message_loc: (31,2)-(31,5) = "<=>"
@@ -277,14 +307,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (31,6)-(31,7))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (33,0)-(33,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (33,0)-(33,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :==
         │   ├── message_loc: (33,2)-(33,4) = "=="
@@ -294,14 +326,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (33,5)-(33,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,7))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (35,0)-(35,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :===
         │   ├── message_loc: (35,2)-(35,5) = "==="
@@ -311,14 +345,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (35,6)-(35,7))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (37,0)-(37,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (37,0)-(37,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :=~
         │   ├── message_loc: (37,2)-(37,4) = "=~"
@@ -328,14 +364,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (37,5)-(37,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (39,0)-(39,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :>
         │   ├── message_loc: (39,2)-(39,3) = ">"
@@ -345,14 +383,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (39,4)-(39,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (41,0)-(41,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (41,0)-(41,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :>=
         │   ├── message_loc: (41,2)-(41,4) = ">="
@@ -362,14 +402,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (41,5)-(41,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (43,0)-(43,6))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (43,0)-(43,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :>>
         │   ├── message_loc: (43,2)-(43,4) = ">>"
@@ -379,14 +421,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (43,5)-(43,6))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (45,0)-(45,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :^
         │   ├── message_loc: (45,2)-(45,3) = "^"
@@ -396,14 +440,16 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (45,4)-(45,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (47,0)-(47,5))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (47,0)-(47,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :|
         │   ├── message_loc: (47,2)-(47,3) = "|"
@@ -413,30 +459,36 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (47,4)-(47,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ AndNode (location: (49,0)-(49,6))
         │   ├── left:
         │   │   @ IntegerNode (location: (49,0)-(49,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (49,5)-(49,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   └── operator_loc: (49,2)-(49,4) = "&&"
         ├── @ AndNode (location: (51,0)-(51,7))
         │   ├── left:
         │   │   @ IntegerNode (location: (51,0)-(51,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (51,6)-(51,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   └── operator_loc: (51,2)-(51,5) = "and"
         ├── @ CallNode (location: (53,0)-(53,10))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (53,0)-(53,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :*
         │   ├── message_loc: (53,2)-(53,3) = "*"
@@ -449,7 +501,8 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (53,4)-(53,5))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 2
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :**
         │   │           ├── message_loc: (53,6)-(53,8) = "**"
@@ -459,7 +512,8 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (53,9)-(53,10))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 3
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── closing_loc: ∅
@@ -471,7 +525,8 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (55,0)-(55,1))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :*
         │   │   ├── message_loc: (55,2)-(55,3) = "*"
@@ -481,7 +536,8 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (55,4)-(55,5))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── call_operator_loc: ∅
@@ -493,30 +549,36 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (55,8)-(55,9))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 3
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ OrNode (location: (57,0)-(57,6))
         │   ├── left:
         │   │   @ IntegerNode (location: (57,0)-(57,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (57,5)-(57,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   └── operator_loc: (57,2)-(57,4) = "or"
         ├── @ OrNode (location: (59,0)-(59,6))
         │   ├── left:
         │   │   @ IntegerNode (location: (59,0)-(59,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (59,5)-(59,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   └── operator_loc: (59,2)-(59,4) = "||"
         ├── @ CallNode (location: (61,0)-(61,9))
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (61,0)-(61,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :+
         │   ├── message_loc: (61,2)-(61,3) = "+"
@@ -529,7 +591,8 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (61,4)-(61,5))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 2
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :*
         │   │           ├── message_loc: (61,6)-(61,7) = "*"
@@ -539,7 +602,8 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (61,8)-(61,9))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 3
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── closing_loc: ∅
@@ -552,7 +616,8 @@
             │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ IntegerNode (location: (63,1)-(63,2))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 1
             │           ├── call_operator_loc: ∅
             │           ├── name: :+
             │           ├── message_loc: (63,3)-(63,4) = "+"
@@ -562,7 +627,8 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (63,5)-(63,6))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 1
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── opening_loc: (63,0)-(63,1) = "("

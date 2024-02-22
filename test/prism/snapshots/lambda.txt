@@ -118,7 +118,8 @@
         │   │   │   │           │   ├── flags: ∅
         │   │   │   │           │   └── arguments: (length: 1)
         │   │   │   │           │       └── @ IntegerNode (location: (7,10)-(7,11))
-        │   │   │   │           │           └── flags: decimal
+        │   │   │   │           │           ├── flags: decimal
+        │   │   │   │           │           └── value: 3
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── block: ∅
         │   │   │   ├── keyword_rest: ∅

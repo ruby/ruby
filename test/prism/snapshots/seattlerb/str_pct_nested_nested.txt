@@ -26,7 +26,8 @@
             │   │   │           │       │   @ StatementsNode (location: (1,11)-(1,12))
             │   │   │           │       │   └── body: (length: 1)
             │   │   │           │       │       └── @ IntegerNode (location: (1,11)-(1,12))
-            │   │   │           │       │           └── flags: decimal
+            │   │   │           │       │           ├── flags: decimal
+            │   │   │           │       │           └── value: 1
             │   │   │           │       └── closing_loc: (1,12)-(1,13) = "}"
             │   │   │           └── closing_loc: (1,13)-(1,14) = "\""
             │   │   └── closing_loc: (1,15)-(1,16) = "}"

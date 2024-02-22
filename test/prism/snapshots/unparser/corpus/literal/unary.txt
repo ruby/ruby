@@ -7,7 +7,8 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (1,1)-(1,2))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :!
         │   ├── message_loc: (1,0)-(1,1) = "!"
@@ -26,7 +27,8 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ IntegerNode (location: (2,3)-(2,4))
-        │   │   │           │   └── flags: decimal
+        │   │   │           │   ├── flags: decimal
+        │   │   │           │   └── value: 1
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :!
         │   │   │           ├── message_loc: (2,2)-(2,3) = "!"
@@ -113,7 +115,8 @@
         │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── receiver:
         │   │   │   │           │   @ IntegerNode (location: (4,3)-(4,4))
-        │   │   │   │           │   └── flags: decimal
+        │   │   │   │           │   ├── flags: decimal
+        │   │   │   │           │   └── value: 1
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :!
         │   │   │   │           ├── message_loc: (4,2)-(4,3) = "!"

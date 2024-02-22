@@ -42,7 +42,8 @@
             │                   │   └── unescaped: "a"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,20)-(1,21))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block:

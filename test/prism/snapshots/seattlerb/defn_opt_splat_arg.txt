@@ -18,7 +18,8 @@
             │   │       ├── operator_loc: (1,9)-(1,10) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,11)-(1,12))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,14)-(1,16))
             │   │   ├── flags: ∅

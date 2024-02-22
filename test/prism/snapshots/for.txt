@@ -13,10 +13,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (1,9)-(1,10))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (1,12)-(1,14))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 10
         │   │   └── operator_loc: (1,10)-(1,12) = ".."
         │   ├── statements:
         │   │   @ StatementsNode (location: (2,0)-(2,1))
@@ -38,10 +40,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (5,9)-(5,10))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (5,12)-(5,14))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 10
         │   │   └── operator_loc: (5,10)-(5,12) = ".."
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,16)-(5,17))
@@ -72,10 +76,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (7,11)-(7,12))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (7,14)-(7,16))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 10
         │   │   └── operator_loc: (7,12)-(7,14) = ".."
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,0)-(8,1))
@@ -109,10 +115,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (11,13)-(11,14))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (11,16)-(11,18))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 10
         │   │   └── operator_loc: (11,14)-(11,16) = ".."
         │   ├── statements:
         │   │   @ StatementsNode (location: (12,0)-(12,1))
@@ -134,10 +142,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (15,9)-(15,10))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (15,12)-(15,14))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 10
         │   │   └── operator_loc: (15,10)-(15,12) = ".."
         │   ├── statements:
         │   │   @ StatementsNode (location: (16,0)-(16,1))
@@ -159,10 +169,12 @@
             │   ├── flags: ∅
             │   ├── left:
             │   │   @ IntegerNode (location: (19,9)-(19,10))
-            │   │   └── flags: decimal
+            │   │   ├── flags: decimal
+            │   │   └── value: 1
             │   ├── right:
             │   │   @ IntegerNode (location: (19,12)-(19,14))
-            │   │   └── flags: decimal
+            │   │   ├── flags: decimal
+            │   │   └── value: 10
             │   └── operator_loc: (19,10)-(19,12) = ".."
             ├── statements:
             │   @ StatementsNode (location: (19,16)-(19,17))
