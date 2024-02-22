@@ -24,11 +24,10 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
     if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
+      ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
