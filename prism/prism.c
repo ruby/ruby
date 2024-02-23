@@ -9829,7 +9829,7 @@ parser_lex(pm_parser_t *parser) {
                         )
                     {
                         // Since we know we're about to add an __END__ comment, we know we
-                        // need at add all of the newlines to get the correct column
+                        // need to add all of the newlines to get the correct column
                         // information for it.
                         const uint8_t *cursor = parser->current.end;
                         while ((cursor = next_newline(cursor, parser->end - cursor)) != NULL) {
