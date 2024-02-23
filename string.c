@@ -1883,7 +1883,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
                 char *new_ptr = ALLOC_N(char, size);
-                if (STR_EMBED_P(str)) RUBY_ASSERT(osize <= str_embed_capa(str));
+                if (STR_EMBED_P(str)) RUBY_ASSERT((long)osize <= str_embed_capa(str));
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
