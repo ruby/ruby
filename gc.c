@@ -3143,7 +3143,7 @@ static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
     struct RZombie *zombie = RZOMBIE(obj);
-    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & FL_SEEN_OBJ_ID);
+    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & (FL_SEEN_OBJ_ID | FL_FINALIZE));
     zombie->dfree = dfree;
     zombie->data = data;
     VALUE prev, next = heap_pages_deferred_final;
@@ -4115,15 +4115,22 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 static void
 run_final(rb_objspace_t *objspace, VALUE zombie)
 {
-    st_data_t key, table;
-
     if (RZOMBIE(zombie)->dfree) {
         RZOMBIE(zombie)->dfree(RZOMBIE(zombie)->data);
     }
 
-    key = (st_data_t)zombie;
-    if (st_delete(finalizer_table, &key, &table)) {
-        run_finalizer(objspace, zombie, (VALUE)table);
+    st_data_t key = (st_data_t)zombie;
+    if (FL_TEST_RAW(zombie, FL_FINALIZE)) {
+        st_data_t table;
+        if (st_delete(finalizer_table, &key, &table)) {
+            run_finalizer(objspace, zombie, (VALUE)table);
+        }
+        else {
+            rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
+        }
+    }
+    else {
+        GC_ASSERT(!st_lookup(finalizer_table, key, NULL));
     }
 }
 
@@ -4299,9 +4306,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
         while (list) {
             struct force_finalize_list *curr = list;
-            st_data_t obj = (st_data_t)curr->obj;
             run_finalizer(objspace, curr->obj, curr->table);
+            FL_UNSET(curr->obj, FL_FINALIZE);
+
+            st_data_t obj = (st_data_t)curr->obj;
             st_delete(finalizer_table, &obj, 0);
+
             list = curr->next;
             xfree(curr);
         }
