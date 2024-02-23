@@ -13017,10 +13017,12 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
           case NODE_REGX:
             {
                 const VALUE lit = rb_node_regx_string_val(n);
-                NODE *match = NEW_MATCH2(node1, node2, loc);
-                RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc);
-                nd_set_line(match, line);
-                return match;
+                if (!NIL_P(lit)) {
+                    NODE *match = NEW_MATCH2(node1, node2, loc);
+                    RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc);
+                    nd_set_line(match, line);
+                    return match;
+                }
             }
         }
     }
