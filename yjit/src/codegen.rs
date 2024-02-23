@@ -429,12 +429,12 @@ fn jit_prepare_lazy_cfunc_frame(
     match pc_to_cfunc.get(&pc) {
         Some(&pc_cme) if pc_cme != cme => {
             // Bail out if it's not the only cme on this callsite.
-            incr_counter!(num_cfunc_multi_cme);
+            incr_counter!(lazy_frame_failure);
             return false;
         }
         _ => {
-            // Let rb_yjit_check_pc() lazily push a C frame on this PC.
-            incr_counter!(num_cfunc_lazy_frame);
+            // Let rb_yjit_lazy_push_frame() lazily push a C frame on this PC.
+            incr_counter!(lazy_frame_count);
             pc_to_cfunc.insert(pc, cme);
         }
     }
@@ -9841,7 +9841,7 @@ pub struct CodegenGlobals {
     ocb_pages: Vec<usize>,
 
     /// Map of cfunc YARC PCs to CMEs, used to lazily push a frame when
-    /// rb_yjit_check_pc() is called with a PC in this HashMap
+    /// rb_yjit_lazy_push_frame() is called with a PC in this HashMap
     pc_to_cfunc: HashMap<*mut VALUE, *const rb_callable_method_entry_t>,
 }
 

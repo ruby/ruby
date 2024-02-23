@@ -583,10 +583,10 @@ make_counters! {
     num_throw_retry,
     num_throw_return,
 
-    num_cfunc_lazy_frame,
-    num_cfunc_check_pc,
-    num_cfunc_check_pc_push,
-    num_cfunc_multi_cme,
+    num_lazy_frame_check,
+    num_lazy_frame_push,
+    lazy_frame_count,
+    lazy_frame_failure,
 
     iseq_stack_too_large,
     iseq_too_long,
