@@ -153,6 +153,29 @@ pm_integer_memsize(const pm_integer_t *integer) {
 }
 
 /**
+ * Compare two integers. This function returns -1 if the left integer is less
+ * than the right integer, 0 if they are equal, and 1 if the left integer is
+ * greater than the right integer.
+ */
+int
+pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
+    if (left->length < right->length) return -1;
+    if (left->length > right->length) return 1;
+
+    for (
+        const pm_integer_word_t *left_word = &left->head, *right_word = &right->head;
+        left_word != NULL && right_word != NULL;
+        left_word = left_word->next, right_word = right_word->next
+    ) {
+        if (left_word->value < right_word->value) return -1;
+        if (left_word->value > right_word->value) return 1;
+    }
+
+    return 0;
+
+}
+
+/**
  * Recursively destroy the linked list of an integer.
  */
 static void

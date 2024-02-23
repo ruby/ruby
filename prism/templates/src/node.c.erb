@@ -17,32 +17,55 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
 }
 
 /**
+ * Attempts to grow the node list to the next size. If there is already
+ * capacity in the list, this function does nothing. Otherwise it reallocates
+ * the list to be twice as large as it was before. If the reallocation fails,
+ * this function returns false, otherwise it returns true.
+ */
+bool
+pm_node_list_grow(pm_node_list_t *list) {
+    if (list->size == list->capacity) {
+        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        list->nodes = (pm_node_t **) realloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+        return list->nodes != NULL;
+    }
+    return true;
+}
+
+/**
  * Append a new node onto the end of the node list.
  */
 void
 pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
-    if (list->size == list->capacity) {
-        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
-        list->nodes = (pm_node_t **) realloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+    if (pm_node_list_grow(list)) {
+        list->nodes[list->size++] = node;
     }
-    list->nodes[list->size++] = node;
+}
+
+/**
+ * Free the internal memory associated with the given node list.
+ */
+void
+pm_node_list_free(pm_node_list_t *list) {
+    if (list->capacity > 0) {
+        free(list->nodes);
+        *list = (pm_node_list_t) { 0 };
+    }
 }
 
 PRISM_EXPORTED_FUNCTION void
 pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
 
 /**
- * Deallocate the inner memory of a list of nodes. The parser argument is not
- * used, but is here for the future possibility of pre-allocating memory pools.
+ * Destroy the nodes that are contained within the given node list.
  */
 static void
-pm_node_list_free(pm_parser_t *parser, pm_node_list_t *list) {
-    if (list->capacity > 0) {
-        for (size_t index = 0; index < list->size; index++) {
-            pm_node_destroy(parser, list->nodes[index]);
-        }
-        free(list->nodes);
+pm_node_list_destroy(pm_parser_t *parser, pm_node_list_t *list) {
+    for (size_t index = 0; index < list->size; index++) {
+        pm_node_destroy(parser, list->nodes[index]);
     }
+
+    pm_node_list_free(list);
 }
 
 /**
@@ -71,7 +94,7 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
             <%- when Prism::StringField -%>
             pm_string_free(&cast-><%= field.name %>);
             <%- when Prism::NodeListField -%>
-            pm_node_list_free(parser, &cast-><%= field.name %>);
+            pm_node_list_destroy(parser, &cast-><%= field.name %>);
             <%- when Prism::ConstantListField -%>
             pm_constant_id_list_free(&cast-><%= field.name %>);
             <%- when Prism::IntegerField -%>
