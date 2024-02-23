@@ -118,61 +118,51 @@ pm_node_line_number(const pm_parser_t *parser, const pm_node_t *node)
     return (int) pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line;
 }
 
+/**
+ * Convert the value of an integer node into a Ruby Integer.
+ */
 static VALUE
 parse_integer(const pm_integer_node_t *node)
 {
-    char *start = (char *) node->base.location.start;
-    char *end = (char *) node->base.location.end;
+    const pm_integer_t *integer = &node->value;
 
-    size_t length = end - start;
-    int base = -10;
+    VALUE result = UINT2NUM(integer->head.value);
+    size_t shift = 0;
 
-    switch (node->base.flags & (PM_INTEGER_BASE_FLAGS_BINARY | PM_INTEGER_BASE_FLAGS_DECIMAL | PM_INTEGER_BASE_FLAGS_OCTAL | PM_INTEGER_BASE_FLAGS_HEXADECIMAL)) {
-      case PM_INTEGER_BASE_FLAGS_BINARY:
-        base = 2;
-        break;
-      case PM_INTEGER_BASE_FLAGS_DECIMAL:
-        base = 10;
-        break;
-      case PM_INTEGER_BASE_FLAGS_OCTAL:
-        base = 8;
-        break;
-      case PM_INTEGER_BASE_FLAGS_HEXADECIMAL:
-        base = 16;
-        break;
-      default:
-        rb_bug("Unreachable");
+    for (pm_integer_word_t *node = integer->head.next; node != NULL; node = node->next) {
+        VALUE receiver = rb_funcall(UINT2NUM(node->value), rb_intern("<<"), 1, ULONG2NUM(++shift * 32));
+        result = rb_funcall(receiver, rb_intern("|"), 1, result);
     }
 
-    return rb_int_parse_cstr(start, length, &end, NULL, base, RB_INT_PARSE_DEFAULT);
+    if (integer->negative) result = rb_funcall(result, rb_intern("-@"), 0);
+    return result;
 }
 
+/**
+ * Convert the value of a float node into a Ruby Float.
+ */
 static VALUE
-parse_float(const pm_node_t *node)
+parse_float(const pm_float_node_t *node)
 {
-    const uint8_t *start = node->location.start;
-    const uint8_t *end = node->location.end;
-    size_t length = end - start;
-
-    char *buffer = malloc(length + 1);
-    memcpy(buffer, start, length);
-
-    buffer[length] = '\0';
-    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 0));
-
-    free(buffer);
-    return number;
+    return DBL2NUM(node->value);
 }
 
+/**
+ * Convert the value of a rational node into a Ruby Rational. Rational nodes can
+ * either be wrapping an integer node or a float node. If it's an integer node,
+ * we can reuse our parsing. If it's not, then we'll parse the numerator and
+ * then parse the denominator and create the rational from those two values.
+ */
 static VALUE
-parse_rational(const pm_node_t *node)
+parse_rational(const pm_rational_node_t *node)
 {
-    const uint8_t *start = node->location.start;
-    const uint8_t *end = node->location.end - 1;
-    size_t length = end - start;
+    VALUE result;
 
-    VALUE res;
-    if (PM_NODE_TYPE_P(((pm_rational_node_t *)node)->numeric, PM_FLOAT_NODE)) {
+    if (PM_NODE_TYPE_P(node->numeric, PM_FLOAT_NODE)) {
+        const uint8_t *start = node->base.location.start;
+        const uint8_t *end = node->base.location.end - 1;
+        size_t length = end - start;
+
         char *buffer = malloc(length + 1);
         memcpy(buffer, start, length);
 
@@ -184,35 +174,41 @@ parse_rational(const pm_node_t *node)
         size_t fraclen = length - seen_decimal - 1;
         memmove(decimal, decimal + 1, fraclen + 1);
 
-        VALUE v = rb_cstr_to_inum(buffer, 10, false);
-        res = rb_rational_new(v, rb_int_positive_pow(10, fraclen));
+        VALUE numerator = rb_cstr_to_inum(buffer, 10, false);
+        result = rb_rational_new(numerator, rb_int_positive_pow(10, fraclen));
 
         free(buffer);
     }
     else {
-        RUBY_ASSERT(PM_NODE_TYPE_P(((pm_rational_node_t *)node)->numeric, PM_INTEGER_NODE));
-        VALUE number = rb_int_parse_cstr((const char *)start, length, NULL, NULL, -10, RB_INT_PARSE_DEFAULT);
-        res = rb_rational_raw(number, INT2FIX(1));
+        RUBY_ASSERT(PM_NODE_TYPE_P(node->numeric, PM_INTEGER_NODE));
+        VALUE numerator = parse_integer((const pm_integer_node_t *) node->numeric);
+        result = rb_rational_raw(numerator, INT2FIX(1));
     }
 
-    return res;
+    return result;
 }
 
+/**
+ * Convert the value of an imaginary node into a Ruby Complex. Imaginary nodes
+ * can be wrapping an integer node, a float node, or a rational node. In all
+ * cases we will reuse parsing functions seen above to get the inner value, and
+ * then convert into an imaginary with rb_complex_raw.
+ */
 static VALUE
 parse_imaginary(pm_imaginary_node_t *node)
 {
     VALUE imaginary_part;
     switch (PM_NODE_TYPE(node->numeric)) {
       case PM_FLOAT_NODE: {
-        imaginary_part = parse_float(node->numeric);
+        imaginary_part = parse_float((const pm_float_node_t *) node->numeric);
         break;
       }
       case PM_INTEGER_NODE: {
-        imaginary_part = parse_integer((pm_integer_node_t *) node->numeric);
+        imaginary_part = parse_integer((const pm_integer_node_t *) node->numeric);
         break;
       }
       case PM_RATIONAL_NODE: {
-        imaginary_part = parse_rational(node->numeric);
+        imaginary_part = parse_rational((const pm_rational_node_t *) node->numeric);
         break;
       }
       default:
@@ -409,7 +405,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       case PM_FALSE_NODE:
         return Qfalse;
       case PM_FLOAT_NODE:
-        return parse_float(node);
+        return parse_float((const pm_float_node_t *) node);
       case PM_HASH_NODE: {
         pm_hash_node_t *cast = (pm_hash_node_t *) node;
         pm_node_list_t *elements = &cast->elements;
@@ -432,11 +428,11 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       case PM_IMAGINARY_NODE:
         return parse_imaginary((pm_imaginary_node_t *) node);
       case PM_INTEGER_NODE:
-        return parse_integer((pm_integer_node_t *) node);
+        return parse_integer((const pm_integer_node_t *) node);
       case PM_NIL_NODE:
         return Qnil;
       case PM_RATIONAL_NODE:
-        return parse_rational(node);
+        return parse_rational((const pm_rational_node_t *) node);
       case PM_REGULAR_EXPRESSION_NODE: {
         pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
 
@@ -5474,7 +5470,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_FLOAT_NODE: {
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_float(node));
+            ADD_INSN1(ret, &dummy_line_node, putobject, parse_float((const pm_float_node_t *) node));
         }
         return;
       }
@@ -5919,7 +5915,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTEGER_NODE: {
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer((pm_integer_node_t *) node));
+            ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer((const pm_integer_node_t *) node));
         }
         return;
       }
@@ -6623,7 +6619,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // 1r
         // ^^
         if (!popped) {
-            PUSH_INSN1(ret, location, putobject, parse_rational(node));
+            PUSH_INSN1(ret, location, putobject, parse_rational((const pm_rational_node_t *) node));
         }
         return;
       }
