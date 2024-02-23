@@ -13,6 +13,10 @@ module Prism
       assert_warning((2**32).to_s(10), "0x#{(2**32).to_s(16)}")
       assert_warning((2**64).to_s(10), "0x#{(2**64).to_s(16)}")
 
+      refute_warning("1", "-1")
+      refute_warning((2**32).to_s(10), "-0x#{(2**32).to_s(16)}")
+      refute_warning((2**64).to_s(10), "-0x#{(2**64).to_s(16)}")
+
       assert_warning("__LINE__", "2")
       assert_warning("3", "__LINE__")
 
@@ -33,6 +37,7 @@ module Prism
       assert_warning("\"#{__FILE__}\"", "__FILE__")
 
       assert_warning("/foo/")
+
       refute_warning("/foo/", "/foo/i")
 
       assert_warning(":foo")
