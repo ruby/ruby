@@ -6,6 +6,14 @@
 
 #include "ruby.h"
 
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#else
+/* This is the fallback definition from Ruby 3.0.5. */
+typedef unsigned char _Bool
+#define bool _Bool
+#endif
+
 #ifdef HAVE_RUBY_RE_H
 #include "ruby/re.h"
 #else
@@ -22,10 +30,7 @@
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
-static void unicode_escape(char *buf, UTF16 character);
-static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16 character);
-static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char script_safe);
-static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char script_safe);
+static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_ascii_only, bool out_script_safe);
 static char *fstrndup(const char *ptr, unsigned long len);
 
 /* ruby api and some helpers */
