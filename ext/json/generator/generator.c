@@ -43,7 +43,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
     unsigned long in_utf8_len = RSTRING_LEN(in_string);
     bool in_is_ascii_only = rb_enc_str_asciionly_p(in_string);
 
-    unsigned long pos;
+    unsigned long beg = 0, pos;
 
     for (pos =  0; pos < in_utf8_len;) {
         uint32_t ch;
@@ -89,6 +89,9 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
 
         /* JSON encoding */
         if (should_escape) {
+            if (pos > beg)
+                fbuffer_append(out_buffer, &in_utf8_str[beg], pos - beg);
+            beg = pos + ch_len;
             switch (ch) {
                 case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
                 case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
@@ -124,12 +127,12 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
                         fbuffer_append(out_buffer, scratch, 12);
                     }
             }
-        } else {
-            fbuffer_append(out_buffer, &in_utf8_str[pos], ch_len);
         }
 
         pos += ch_len;
     }
+    if (beg < in_utf8_len)
+        fbuffer_append(out_buffer, &in_utf8_str[beg], in_utf8_len - beg);
     RB_GC_GUARD(in_string);
 }
 
