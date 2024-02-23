@@ -413,7 +413,7 @@ fn gen_save_sp_with_offset(asm: &mut Assembler, offset: i8) {
 
 /// Basically jit_prepare_non_leaf_call(), but this registers the current PC
 /// to lazily push a C method frame when it's necessary.
-fn jit_prepare_lazy_cfunc_frame(
+fn jit_prepare_lazy_frame_call(
     jit: &mut JITState,
     asm: &mut Assembler,
     cme: *const rb_callable_method_entry_t,
@@ -5516,7 +5516,7 @@ fn jit_rb_str_setbyte(
     _known_recv_class: Option<VALUE>,
 ) -> bool {
     // Raises when index is out of range. Lazily push a frame in that case.
-    if !jit_prepare_lazy_cfunc_frame(jit, asm, cme, StackOpnd(2)) {
+    if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(2)) {
         return false;
     }
     asm_comment!(asm, "String#setbyte");
