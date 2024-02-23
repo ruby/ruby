@@ -159,16 +159,19 @@ pm_integer_memsize(const pm_integer_t *integer) {
  */
 int
 pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
-    if (left->length < right->length) return -1;
-    if (left->length > right->length) return 1;
+    if (left->negative != right->negative) return left->negative ? -1 : 1;
+    int negative = left->negative ? -1 : 1;
+
+    if (left->length < right->length) return -1 * negative;
+    if (left->length > right->length) return 1 * negative;
 
     for (
         const pm_integer_word_t *left_word = &left->head, *right_word = &right->head;
         left_word != NULL && right_word != NULL;
         left_word = left_word->next, right_word = right_word->next
     ) {
-        if (left_word->value < right_word->value) return -1;
-        if (left_word->value > right_word->value) return 1;
+        if (left_word->value < right_word->value) return -1 * negative;
+        if (left_word->value > right_word->value) return 1 * negative;
     }
 
     return 0;
