@@ -64,11 +64,10 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
 
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
     if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
+      ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
@@ -136,9 +135,9 @@ jobs:
         if: ${{ failure() }}
 
   result:
-    if: ${{ always() && github.repository == 'ruby/ruby' }}
+    if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
     needs: [make]
     steps:
       - run: exit 1
