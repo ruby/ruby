@@ -1216,9 +1216,9 @@ XXX
   #
   # Directs to reject specified class argument.
   #
-  # +t+:: Argument class specifier, any object including Class.
+  # +type+:: Argument class specifier, any object including Class.
   #
-  #   reject(t)
+  #   reject(type)
   #
   def reject(*args, &blk) top.reject(*args, &blk) end
   #
@@ -1346,6 +1346,9 @@ XXX
 
   #
   # Pushes a new List.
+  #
+  # If a block is given, yields +self+ and returns the result of the
+  # block, otherwise returns +self+.
   #
   def new
     @stack.push(List.new)
@@ -1570,6 +1573,12 @@ XXX
       nolong
   end
 
+  # ----
+  # Option definition phase methods
+  #
+  # These methods are used to define options, or to construct an
+  # OptionParser instance in other words.
+
   # :call-seq:
   #   define(*params, &block)
   #
@@ -1644,6 +1653,13 @@ XXX
   def separator(string)
     top.append(string, nil, nil)
   end
+
+  # ----
+  # Arguments parse phase methods
+  #
+  # These methods parse +argv+, convert, and store the results by
+  # calling handlers.  As these methods do not modify +self+, +self+
+  # can be frozen.
 
   #
   # Parses command line arguments +argv+ in order. When a block is given,
