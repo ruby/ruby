@@ -46,23 +46,36 @@ module Prism
 
     private
 
-    def parse_warning(left, right)
-      source = <<~RUBY
+    def parse_warnings(left, right)
+      warnings = []
+
+      warnings << Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first
         {
           #{left} => 1,
           #{right} => 2
         }
       RUBY
 
-      Prism.parse(source, filepath: __FILE__).warnings.first
+      warnings << Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first
+        case foo
+        when #{left}
+        when #{right}
+        end
+      RUBY
+
+      warnings
     end
 
     def assert_warning(left, right = left)
-      assert_match %r{key #{Regexp.escape(left)} .+ line 3}, parse_warning(left, right)&.message
+      hash_keys, when_clauses = parse_warnings(left, right)
+
+      assert_include hash_keys.message, left
+      assert_include hash_keys.message, "line 3"
+      assert_include when_clauses.message, "line 3"
     end
 
     def refute_warning(left, right)
-      assert_nil parse_warning(left, right)
+      assert_empty parse_warnings(left, right).compact
     end
   end
 end

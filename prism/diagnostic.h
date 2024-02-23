@@ -307,6 +307,7 @@ typedef enum {
     PM_WARN_EQUAL_IN_CONDITIONAL,
     PM_WARN_END_IN_METHOD,
     PM_WARN_DUPLICATED_HASH_KEY,
+    PM_WARN_DUPLICATED_WHEN_CLAUSE,
     PM_WARN_FLOAT_OUT_OF_RANGE,
 
     // This is the number of diagnostic codes.

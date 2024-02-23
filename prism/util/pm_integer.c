@@ -172,7 +172,6 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     }
 
     return 0;
-
 }
 
 /**
