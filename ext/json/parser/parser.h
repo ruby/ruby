@@ -19,18 +19,6 @@
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
-/* unicode */
-
-typedef unsigned long UTF32;  /* at least 32 bits */
-typedef unsigned short UTF16; /* at least 16 bits */
-typedef unsigned char UTF8;   /* typically 8 bits */
-
-#define UNI_REPLACEMENT_CHAR (UTF32)0x0000FFFD
-#define UNI_SUR_HIGH_START  (UTF32)0xD800
-#define UNI_SUR_HIGH_END    (UTF32)0xDBFF
-#define UNI_SUR_LOW_START   (UTF32)0xDC00
-#define UNI_SUR_LOW_END     (UTF32)0xDFFF
-
 typedef struct JSON_ParserStruct {
     VALUE Vsource;
     char *source;
