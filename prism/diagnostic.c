@@ -307,6 +307,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_AMBIGUOUS_PREFIX_STAR]             = { "ambiguous `*` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_SLASH]                   = { "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_DUPLICATED_HASH_KEY]               = { "key %.*s is duplicated and overwritten on line %" PRIi32, PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_DUPLICATED_WHEN_CLAUSE]            = { "duplicated 'when' clause with line %" PRIi32 " is ignored", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_END_IN_METHOD]                     = { "END in method; use at_exit", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_FLOAT_OUT_OF_RANGE]                = { "Float %.*s%s out of range", PM_WARNING_LEVEL_VERBOSE }

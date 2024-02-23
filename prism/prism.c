@@ -11698,6 +11698,23 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
 }
 
 /**
+ * Add a node to a set of static literals that holds a set of hash keys. If the
+ * node is a duplicate, then add an appropriate warning.
+ */
+static void
+pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
+    if (pm_static_literals_add(parser, literals, node) != NULL) {
+        pm_diagnostic_list_append_format(
+            &parser->warning_list,
+            node->location.start,
+            node->location.end,
+            PM_WARN_DUPLICATED_WHEN_CLAUSE,
+            pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line
+        );
+    }
+}
+
+/**
  * Parse all of the elements of a hash. returns true if a double splat was found.
  */
 static bool
@@ -15335,10 +15352,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if (match1(parser, PM_TOKEN_KEYWORD_WHEN)) {
                 pm_case_node_t *case_node = pm_case_node_create(parser, &case_keyword, predicate, &end_keyword);
+                pm_static_literals_t literals = { 0 };
 
                 // At this point we've seen a when keyword, so we know this is a
-                // case-when node. We will continue to parse the when nodes until we hit
-                // the end of the list.
+                // case-when node. We will continue to parse the when nodes
+                // until we hit the end of the list.
                 while (accept1(parser, PM_TOKEN_KEYWORD_WHEN)) {
                     pm_token_t when_keyword = parser->previous;
                     pm_when_node_t *when_node = pm_when_node_create(parser, &when_keyword);
@@ -15356,7 +15374,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             pm_node_t *condition = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_CASE_EXPRESSION_AFTER_WHEN);
                             pm_when_node_conditions_append(when_node, condition);
 
+                            // If we found a missing node, then this is a syntax
+                            // error and we should stop looping.
                             if (PM_NODE_TYPE_P(condition, PM_MISSING_NODE)) break;
+
+                            // If this is a string node, then we need to mark it
+                            // as frozen because when clause strings are frozen.
+                            if (PM_NODE_TYPE_P(condition, PM_STRING_NODE)) {
+                                pm_node_flag_set(condition, PM_STRING_FLAGS_FROZEN | PM_NODE_FLAG_STATIC_LITERAL);
+                            }
+
+                            pm_when_clause_static_literals_add(parser, &literals, condition);
                         }
                     } while (accept1(parser, PM_TOKEN_COMMA));
 
@@ -15382,6 +15410,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_parser_err_token(parser, &case_keyword, PM_ERR_CASE_MISSING_CONDITIONS);
                 }
 
+                pm_static_literals_free(&literals);
                 node = (pm_node_t *) case_node;
             } else {
                 pm_case_match_node_t *case_node = pm_case_match_node_create(parser, &case_keyword, predicate, &end_keyword);
