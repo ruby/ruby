@@ -166,6 +166,18 @@ module IRB
       IRB.conf[:USE_TRACER] = val
     end
 
+    def eval_history=(val)
+      self.class.remove_method(__method__)
+      require_relative "ext/eval_history"
+      __send__(__method__, val)
+    end
+
+    def use_loader=(val)
+      self.class.remove_method(__method__)
+      require_relative "ext/use-loader"
+      __send__(__method__, val)
+    end
+
     private def build_completor
       completor_type = IRB.conf[:COMPLETOR]
       case completor_type

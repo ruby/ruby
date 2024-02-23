@@ -4,7 +4,7 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require_relative "../cmd/load"
+require_relative "../command/load"
 require_relative "loader"
 
 class Object
@@ -49,7 +49,7 @@ module IRB
       if IRB.conf[:USE_LOADER] != opt
         IRB.conf[:USE_LOADER] = opt
         if opt
-          if !$".include?("irb/cmd/load")
+          if !$".include?("irb/command/load")
           end
           (class<<@workspace.main;self;end).instance_eval {
             alias_method :load, :irb_load
