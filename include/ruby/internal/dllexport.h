@@ -54,7 +54,11 @@
 #endif
 
 #ifndef RUBY_FUNC_EXPORTED
-# define RUBY_FUNC_EXPORTED /* void */
+# ifdef _WIN32
+#  define RUBY_FUNC_EXPORTED __declspec(dllexport)
+# else
+#  define RUBY_FUNC_EXPORTED /* void */
+# endif
 #endif
 
 /** @endcond */

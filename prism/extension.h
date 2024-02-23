@@ -13,6 +13,6 @@ VALUE pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *
 
 void Init_prism_api_node(void);
 void Init_prism_pack(void);
-PRISM_EXPORTED_FUNCTION void Init_prism(void);
+RUBY_FUNC_EXPORTED void Init_prism(void);
 
 #endif
