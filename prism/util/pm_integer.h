@@ -94,6 +94,17 @@ PRISM_EXPORTED_FUNCTION void pm_integer_parse(pm_integer_t *integer, pm_integer_
 size_t pm_integer_memsize(const pm_integer_t *integer);
 
 /**
+ * Compare two integers. This function returns -1 if the left integer is less
+ * than the right integer, 0 if they are equal, and 1 if the left integer is
+ * greater than the right integer.
+ *
+ * @param left The left integer to compare.
+ * @param right The right integer to compare.
+ * @return The result of the comparison.
+ */
+int pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right);
+
+/**
  * Free the internal memory of an integer. This memory will only be allocated if
  * the integer exceeds the size of a single node in the linked list.
  *
