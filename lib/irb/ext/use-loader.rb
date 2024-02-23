@@ -49,8 +49,6 @@ module IRB
       if IRB.conf[:USE_LOADER] != opt
         IRB.conf[:USE_LOADER] = opt
         if opt
-          if !$".include?("irb/command/load")
-          end
           (class<<@workspace.main;self;end).instance_eval {
             alias_method :load, :irb_load
             alias_method :require, :irb_require
