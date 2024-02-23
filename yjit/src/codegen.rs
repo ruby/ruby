@@ -2857,6 +2857,7 @@ fn gen_set_ivar(
         if !stack_type.is_imm() {
             asm.spill_temps(); // for ccall (unconditionally spill them for RegTemps consistency)
             let skip_wb = asm.new_label("skip_wb");
+            let run_wb = asm.new_label("run_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
             asm.jnz(skip_wb);
@@ -2865,7 +2866,23 @@ fn gen_set_ivar(
             asm.cmp(write_val, Qnil.into());
             asm.jbe(skip_wb);
 
+            // If the receiver is old, we need to run the WB
+            let flags_opnd = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+            let anded = asm.and(flags_opnd, (RUBY_FL_PROMOTED as u64).into());
+            asm.cmp(anded, (RUBY_FL_PROMOTED as u64).into());
+            asm.je(run_wb);
+
+            // If the GC is doing incremental marking, we need to run the WB
+            let global_ptr = asm.load(unsafe { &rb_yjit_should_run_wb as *const _ as usize }.into());
+            let must_wb_opnd = asm.load(Opnd::mem(8, global_ptr, 0));
+            asm.cmp(must_wb_opnd, 0.into());
+            asm.jne(run_wb); // Unlikely, CPU will predict not taken by default because it's a forward branch
+
+            asm.jmp(skip_wb); // Unconditional branch, we skip the WB by default
+
             asm_comment!(asm, "write barrier");
+            asm.write_label(run_wb);
+
             asm.ccall(
                 rb_gc_writebarrier as *const u8,
                 vec![
