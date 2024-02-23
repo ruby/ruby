@@ -6,26 +6,32 @@
  */
 static pm_node_t *
 pm_node_list_insert(const pm_parser_t *parser, pm_node_list_t *list, pm_node_t *node, int (*compare)(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right)) {
-    // TODO: This would be much more efficient with a binary search.
-    size_t index = 0;
-    while (index < list->size) {
-        int result = compare(parser, list->nodes[index], node);
+    size_t low = 0;
+    size_t high = list->size;
 
-        // If we find a match, then replace the node and return the old one.
+    while (low < high) {
+        size_t mid = (low + high) / 2;
+        int result = compare(parser, list->nodes[mid], node);
+
+        // If we find a match, then replace the old node with the new one and
+        // return the old one.
         if (result == 0) {
-            pm_node_t *result = list->nodes[index];
-            list->nodes[index] = node;
+            pm_node_t *result = list->nodes[mid];
+            list->nodes[mid] = node;
             return result;
         }
 
-        if (result > 0) break;
-        index++;
+        if (result < 0) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
     }
 
     pm_node_list_grow(list);
-    memmove(&list->nodes[index + 1], &list->nodes[index], (list->size - index) * sizeof(pm_node_t *));
+    memmove(&list->nodes[low + 1], &list->nodes[low], (list->size - low) * sizeof(pm_node_t *));
 
-    list->nodes[index] = node;
+    list->nodes[low] = node;
     list->size++;
 
     return NULL;
