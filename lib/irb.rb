@@ -1138,7 +1138,6 @@ module IRB
       end
       if @context.io.respond_to?(:dynamic_prompt)
         @context.io.dynamic_prompt do |lines|
-          lines << '' if lines.empty?
           tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
           line_results = IRB::NestingParser.parse_by_line(tokens)
           tokens_until_line = []
