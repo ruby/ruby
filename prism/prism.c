@@ -3181,7 +3181,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
 
     // If errno is set, then it should only be ERANGE. At this point we need to
     // check if it's infinity (it should be).
-    if (errno == ERANGE) {
+    if (errno == ERANGE && isinf(value)) {
         int warn_width;
         const char *ellipsis;
 
@@ -3194,7 +3194,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
         }
 
         pm_diagnostic_list_append_format(&parser->warning_list, token->start, token->end, PM_WARN_FLOAT_OUT_OF_RANGE, warn_width, (const char *) token->start, ellipsis);
-        value = (value < 0x0) ? -HUGE_VAL : HUGE_VAL;
+        value = (value < 0.0) ? -HUGE_VAL : HUGE_VAL;
     }
 
     // Finally we can free the buffer and return the value.
