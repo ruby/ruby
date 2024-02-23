@@ -20,26 +20,28 @@ static const signed char digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1
 };
 
-static UTF32 unescape_unicode(const unsigned char *p)
+static uint32_t unescape_unicode(const unsigned char *p)
 {
+    const uint32_t replacement_char = 0xFFFD;
+
     signed char b;
-    UTF32 result = 0;
+    uint32_t result = 0;
     b = digit_values[p[0]];
-    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    if (b < 0) return replacement_char;
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[1]];
-    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    if (b < 0) return replacement_char;
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[2]];
-    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    if (b < 0) return replacement_char;
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[3]];
-    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    if (b < 0) return replacement_char;
     result = (result << 4) | (unsigned char)b;
     return result;
 }
 
-static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
+static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 {
     int len = 1;
     if (ch <= 0x7F) {
@@ -493,9 +495,19 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                         "incomplete unicode character escape sequence at '%s'", p
                       );
                     } else {
-                        UTF32 ch = unescape_unicode((unsigned char *) ++pe);
+                        uint32_t ch = unescape_unicode((unsigned char *) ++pe);
                         pe += 3;
-                        if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
+                        /* To handle values above U+FFFF, we take a sequence of
+                         * \uXXXX escapes in the U+D800..U+DBFF then
+                         * U+DC00..U+DFFF ranges, take the low 10 bits from each
+                         * to make a 20-bit number, then add 0x10000 to get the
+                         * final codepoint.
+                         *
+                         * See Unicode 15: §3.8 "Surrogates", §5.3 "Handling
+                         * Surrogate Pairs in UTF-16", and §23.6 "Surrogates
+                         * Area".
+                         */
+                        if ((ch & 0xFC00) == 0xD800) {
                             pe++;
                             if (pe > stringEnd - 6) {
                               if (bufferSize > MAX_STACK_BUFFER_SIZE) {
@@ -507,7 +519,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                                 );
                             }
                             if (pe[0] == '\\' && pe[1] == 'u') {
-                                UTF32 sur = unescape_unicode((unsigned char *) pe + 2);
+                                uint32_t sur = unescape_unicode((unsigned char *) pe + 2);
                                 ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
                                         | (sur & 0x3FF));
                                 pe += 5;

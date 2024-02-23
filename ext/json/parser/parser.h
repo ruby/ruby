@@ -48,8 +48,8 @@ typedef struct JSON_ParserStruct {
 #define MinusInfinity "-Infinity"
 #define EVIL 0x666
 
-static UTF32 unescape_unicode(const unsigned char *p);
-static int convert_UTF32_to_UTF8(char *buf, UTF32 ch);
+static uint32_t unescape_unicode(const unsigned char *p);
+static int convert_UTF32_to_UTF8(char *buf, uint32_t ch);
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);

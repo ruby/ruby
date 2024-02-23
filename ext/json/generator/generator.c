@@ -18,50 +18,119 @@ static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
           i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth,
           i_buffer_initial_length, i_dup, i_script_safe, i_escape_slash, i_strict;
 
-/* Escapes the UTF16 character and stores the result in the buffer buf. */
-static void unicode_escape(char *buf, UTF16 character)
+/* Converts in_string to a JSON string (without the wrapping '"'
+ * characters) in FBuffer out_buffer.
+ *
+ * Character are JSON-escaped according to:
+ *
+ * - Always: ASCII control characters (0x00-0x1F), dquote, and
+ *   backslash.
+ *
+ * - If out_ascii_only: non-ASCII characters (>0x7F)
+ *
+ * - If out_script_safe: forwardslash, line separator (U+2028), and
+ *   paragraph separator (U+2029)
+ *
+ * Everything else (should be UTF-8) is just passed through and
+ * appended to the result.
+ */
+static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_ascii_only, bool out_script_safe)
 {
-    const char *digits = "0123456789abcdef";
+    const char *hexdig = "0123456789abcdef";
+    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
 
-    buf[2] = digits[character >> 12];
-    buf[3] = digits[(character >> 8) & 0xf];
-    buf[4] = digits[(character >> 4) & 0xf];
-    buf[5] = digits[character & 0xf];
-}
+    const char *in_utf8_str = RSTRING_PTR(in_string);
+    unsigned long in_utf8_len = RSTRING_LEN(in_string);
+    bool in_is_ascii_only = rb_enc_str_asciionly_p(in_string);
 
-/* Escapes the UTF16 character and stores the result in the buffer buf, then
- * the buffer buf is appended to the FBuffer buffer. */
-static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16
-        character)
-{
-    unicode_escape(buf, character);
-    fbuffer_append(buffer, buf, 6);
-}
+    unsigned long pos;
 
-/* Converts string to a JSON string in FBuffer buffer, where all but the ASCII
- * and control characters are JSON escaped. */
-static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char script_safe)
-{
-    const UTF8 *source = (UTF8 *) RSTRING_PTR(string);
-    const UTF8 *sourceEnd = source + RSTRING_LEN(string);
-    char buf[6] = { '\\', 'u' };
+    for (pos =  0; pos < in_utf8_len;) {
+        uint32_t ch;
+        unsigned long ch_len;
+        bool should_escape;
 
-    RB_GC_GUARD(string);
-}
+        /* UTF-8 decoding */
+        if (in_is_ascii_only) {
+            ch = in_utf8_str[pos];
+            ch_len = 1;
+        } else {
+            short i;
+            if      ((in_utf8_str[pos] & 0x80) == 0x00) { ch_len = 1; ch = in_utf8_str[pos];        } /* leading 1 bit is   0b0     */
+            else if ((in_utf8_str[pos] & 0xE0) == 0xC0) { ch_len = 2; ch = in_utf8_str[pos] & 0x1F; } /* leading 3 bits are 0b110   */
+            else if ((in_utf8_str[pos] & 0xF0) == 0xE0) { ch_len = 3; ch = in_utf8_str[pos] & 0x0F; } /* leading 4 bits are 0b1110  */
+            else if ((in_utf8_str[pos] & 0xF8) == 0xF0) { ch_len = 4; ch = in_utf8_str[pos] & 0x07; } /* leading 5 bits are 0b11110 */
+            else
+                rb_raise(rb_path2class("JSON::GeneratorError"),
+                         "source sequence is illegal/malformed utf-8");
+            if ((pos+ch_len) > in_utf8_len)
+                rb_raise(rb_path2class("JSON::GeneratorError"),
+                         "partial character in source, but hit end");
+            for (i = 1; i < ch_len; i++) {
+                if ((in_utf8_str[pos+i] & 0xC0) != 0x80) /* leading 2 bits should be 0b10 */
+                    rb_raise(rb_path2class("JSON::GeneratorError"),
+                             "source sequence is illegal/malformed utf-8");
+                ch = (ch<<6) | (in_utf8_str[pos+i] & 0x3F);
+            }
+            if (ch > 0x10FFFF)
+                rb_raise(rb_path2class("JSON::GeneratorError"),
+                         "source sequence is illegal/malformed utf-8");
+        }
 
-/* Converts string to a JSON string in FBuffer buffer, where only the
- * characters required by the JSON standard are JSON escaped. The remaining
- * characters (should be UTF8) are just passed through and appended to the
- * result. */
-static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char script_safe)
-{
-    const char *ptr = RSTRING_PTR(string), *p;
-    unsigned long len = RSTRING_LEN(string), start = 0, end = 0;
-    const char *escape = NULL;
-    int escape_len;
-    unsigned char c;
-    char buf[6] = { '\\', 'u' };
-    int ascii_only = rb_enc_str_asciionly_p(string);
+        /* JSON policy */
+        should_escape =
+            (ch < 0x20) ||
+            (ch == '"') ||
+            (ch == '\\') ||
+            (out_ascii_only && (ch > 0x7F)) ||
+            (out_script_safe && (ch == '/')) ||
+            (out_script_safe && (ch == 0x2028)) ||
+            (out_script_safe && (ch == 0x2029));
+
+        /* JSON encoding */
+        if (should_escape) {
+            switch (ch) {
+                case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
+                case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
+                case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
+                case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
+                case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
+                case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
+                case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
+                case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
+                default:
+                    if (ch <= 0xFFFF) {
+                        scratch[2] = hexdig[ch >> 12];
+                        scratch[3] = hexdig[(ch >> 8) & 0xf];
+                        scratch[4] = hexdig[(ch >> 4) & 0xf];
+                        scratch[5] = hexdig[ch & 0xf];
+                        fbuffer_append(out_buffer, scratch, 6);
+                    } else {
+			uint16_t hi, lo;
+                        ch -= 0x10000;
+                        hi = 0xD800 + (uint16_t)(ch >> 10);
+                        lo = 0xDC00 + (uint16_t)(ch & 0x3FF);
+
+                        scratch[2] = hexdig[hi >> 12];
+                        scratch[3] = hexdig[(hi >> 8) & 0xf];
+                        scratch[4] = hexdig[(hi >> 4) & 0xf];
+                        scratch[5] = hexdig[hi & 0xf];
+
+                        scratch[8] = hexdig[lo >> 12];
+                        scratch[9] = hexdig[(lo >> 8) & 0xf];
+                        scratch[10] = hexdig[(lo >> 4) & 0xf];
+                        scratch[11] = hexdig[lo & 0xf];
+
+                        fbuffer_append(out_buffer, scratch, 12);
+                    }
+            }
+        } else {
+            fbuffer_append(out_buffer, &in_utf8_str[pos], ch_len);
+        }
+
+        pos += ch_len;
+    }
+    RB_GC_GUARD(in_string);
 }
 
 static char *fstrndup(const char *ptr, unsigned long len) {
@@ -698,12 +767,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
         obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
-
-    if (state->ascii_only) {
-        convert_UTF8_to_JSON_ASCII(buffer, obj, state->script_safe);
-    } else {
-        convert_UTF8_to_JSON(buffer, obj, state->script_safe);
-    }
+    convert_UTF8_to_JSON(buffer, obj, state->ascii_only, state->script_safe);
     fbuffer_append_char(buffer, '"');
 }
 
