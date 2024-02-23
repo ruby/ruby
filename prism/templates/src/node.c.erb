@@ -277,28 +277,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             <%- end -%>
             pm_buffer_append_byte(buffer, ']');
             <%- when Prism::IntegerField -%>
-            {
-                const pm_integer_t *integer = &cast-><%= field.name %>;
-                if (integer->length == 0) {
-                    if (integer->negative) pm_buffer_append_byte(buffer, '-');
-                    pm_buffer_append_string(buffer, "%" PRIu32, integer->head.value);
-                } else if (integer->length == 1) {
-                    if (integer->negative) pm_buffer_append_byte(buffer, '-');
-                    pm_buffer_append_format(buffer, "%" PRIu64, ((uint64_t) integer->head.value) | (((uint64_t) integer->head.next->value) << 32));
-                } else {
-                    pm_buffer_append_byte(buffer, '{');
-                    pm_buffer_append_format(buffer, "\"negative\": %s", integer->negative ? "true" : "false");
-                    pm_buffer_append_string(buffer, ",\"values\":[", 11);
-
-                    const pm_integer_word_t *node = &integer->head;
-                    while (node != NULL) {
-                        pm_buffer_append_format(buffer, "%" PRIu32, node->value);
-                        node = node->next;
-                        if (node != NULL) pm_buffer_append_byte(buffer, ',');
-                    }
-                    pm_buffer_append_string(buffer, "]}", 2);
-                }
-            }
+            pm_integer_string(buffer, &cast-><%= field.name %>);
             <%- when Prism::DoubleField -%>
             pm_buffer_append_format(buffer, "%f", cast-><%= field.name %>);
             <%- else -%>

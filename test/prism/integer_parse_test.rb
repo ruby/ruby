@@ -31,7 +31,9 @@ module Prism
     private
 
     def assert_integer_parse(expected, source = expected.to_s)
-      assert_equal expected, Debug.integer_parse(source)
+      integer, string = Debug.integer_parse(source)
+      assert_equal expected, integer
+      assert_equal expected.to_s, string
     end
   end
 end

@@ -953,9 +953,10 @@ named_captures(VALUE self, VALUE source) {
 
 /**
  * call-seq:
- *   Debug::integer_parse(source) -> Integer
+ *   Debug::integer_parse(source) -> [Integer, String]
  *
- * Parses the given source string and returns the integer it represents.
+ * Parses the given source string and returns the integer it represents, as well
+ * as a decimal string representation.
  */
 static VALUE
 integer_parse(VALUE self, VALUE source) {
@@ -965,16 +966,26 @@ integer_parse(VALUE self, VALUE source) {
     pm_integer_t integer = { 0 };
     pm_integer_parse(&integer, PM_INTEGER_BASE_UNKNOWN, start, start + length);
 
-    VALUE result = UINT2NUM(integer.head.value);
+    VALUE number = UINT2NUM(integer.head.value);
     size_t shift = 0;
 
     for (pm_integer_word_t *node = integer.head.next; node != NULL; node = node->next) {
         VALUE receiver = rb_funcall(UINT2NUM(node->value), rb_intern("<<"), 1, ULONG2NUM(++shift * 32));
-        result = rb_funcall(receiver, rb_intern("|"), 1, result);
+        number = rb_funcall(receiver, rb_intern("|"), 1, number);
     }
 
-    if (integer.negative) result = rb_funcall(result, rb_intern("-@"), 0);
+    if (integer.negative) number = rb_funcall(number, rb_intern("-@"), 0);
+
+    pm_buffer_t buffer = { 0 };
+    pm_integer_string(&buffer, &integer);
+
+    VALUE string = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+    pm_buffer_free(&buffer);
     pm_integer_free(&integer);
+
+    VALUE result = rb_ary_new_capa(2);
+    rb_ary_push(result, number);
+    rb_ary_push(result, string);
 
     return result;
 }

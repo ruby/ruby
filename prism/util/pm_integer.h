@@ -7,6 +7,7 @@
 #define PRISM_NUMBER_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_buffer.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -103,6 +104,14 @@ size_t pm_integer_memsize(const pm_integer_t *integer);
  * @return The result of the comparison.
  */
 int pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right);
+
+/**
+ * Convert an integer to a decimal string.
+ *
+ * @param buffer The buffer to append the string to.
+ * @param integer The integer to convert to a string.
+ */
+PRISM_EXPORTED_FUNCTION void pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer);
 
 /**
  * Free the internal memory of an integer. This memory will only be allocated if

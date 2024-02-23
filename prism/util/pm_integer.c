@@ -15,6 +15,31 @@ pm_integer_node_create(pm_integer_t *integer, uint32_t value) {
 }
 
 /**
+ * Copy one integer onto another.
+ */
+static void
+pm_integer_copy(pm_integer_t *dest, const pm_integer_t *src) {
+    dest->negative = src->negative;
+    dest->length = 0;
+
+    dest->head.value = src->head.value;
+    dest->head.next = NULL;
+
+    pm_integer_word_t *dest_current = &dest->head;
+    const pm_integer_word_t *src_current = src->head.next;
+
+    while (src_current != NULL) {
+        dest_current->next = pm_integer_node_create(dest, src_current->value);
+        if (dest_current->next == NULL) return;
+
+        dest_current = dest_current->next;
+        src_current = src_current->next;
+    }
+
+    dest_current->next = NULL;
+}
+
+/**
  * Add a 32-bit integer to an integer.
  */
 static void
@@ -56,6 +81,37 @@ pm_integer_multiply(pm_integer_t *integer, uint32_t multiplier) {
             break;
         }
     }
+}
+
+/**
+ * Divide an individual word by a 32-bit integer. This will recursively divide
+ * any subsequent nodes in the linked list.
+ */
+static uint32_t
+pm_integer_divide_word(pm_integer_t *integer, pm_integer_word_t *word, uint32_t dividend) {
+    uint32_t remainder = 0;
+    if (word->next != NULL) {
+        remainder = pm_integer_divide_word(integer, word->next, dividend);
+
+        if (integer->length > 0 && word->next->value == 0) {
+            free(word->next);
+            word->next = NULL;
+            integer->length--;
+        }
+    }
+
+    uint64_t value = ((uint64_t) remainder << 32) | word->value;
+    word->value = (uint32_t) (value / dividend);
+    return (uint32_t) (value % dividend);
+}
+
+/**
+ * Divide an integer by a 32-bit integer. In practice, this is only 10 so that
+ * we can format it as a string. It returns the remainder of the division.
+ */
+static uint32_t
+pm_integer_divide(pm_integer_t *integer, uint32_t dividend) {
+    return pm_integer_divide_word(integer, &integer->head, dividend);
 }
 
 /**
@@ -175,6 +231,55 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     }
 
     return 0;
+}
+
+/**
+ * Convert an integer to a decimal string.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
+    if (integer->negative) {
+        pm_buffer_append_byte(buffer, '-');
+    }
+
+    switch (integer->length) {
+        case 0: {
+            const uint32_t value = integer->head.value;
+            pm_buffer_append_format(buffer, "%" PRIu32, value);
+            return;
+        }
+        case 1: {
+            const uint64_t value = ((uint64_t) integer->head.value) | (((uint64_t) integer->head.next->value) << 32);
+            pm_buffer_append_format(buffer, "%" PRIu64, value);
+            return;
+        }
+        default: {
+            // First, allocate a buffer that we'll copy the decimal digits into.
+            size_t length = (integer->length + 1) * 10;
+            char *digits = calloc(length, sizeof(char));
+            if (digits == NULL) return;
+
+            // Next, create a new integer that we'll use to store the result of
+            // the division and modulo operations.
+            pm_integer_t copy;
+            pm_integer_copy(&copy, integer);
+
+            // Then, iterate through the integer, dividing by 10 and storing the
+            // result in the buffer.
+            char *ending = digits + length - 1;
+            char *current = ending;
+
+            while (copy.length > 0 || copy.head.value > 0) {
+                uint32_t remainder = pm_integer_divide(&copy, 10);
+                *current-- = (char) ('0' + remainder);
+            }
+
+            // Finally, append the string to the buffer and free the digits.
+            pm_buffer_append_string(buffer, current + 1, (size_t) (ending - current));
+            free(digits);
+            return;
+        }
+    }
 }
 
 /**
