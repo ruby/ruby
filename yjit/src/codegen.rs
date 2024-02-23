@@ -9840,7 +9840,7 @@ pub struct CodegenGlobals {
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
 
-    /// Map of cfunc YARC PCs to CMEs, used to lazily push a frame when
+    /// Map of cfunc YARV PCs to CMEs, used to lazily push a frame when
     /// rb_yjit_lazy_push_frame() is called with a PC in this HashMap
     pc_to_cfunc: HashMap<*mut VALUE, *const rb_callable_method_entry_t>,
 }
