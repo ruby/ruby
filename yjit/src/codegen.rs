@@ -5471,11 +5471,11 @@ fn jit_rb_str_byteslice(
 }
 
 fn jit_rb_str_getbyte(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
+    cme: *const rb_callable_method_entry_t,
     _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: Option<VALUE>,
@@ -5484,16 +5484,18 @@ fn jit_rb_str_getbyte(
         fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     }
 
-    let index = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-
     // rb_str_getbyte should be leaf if the index is a fixnum
-    if asm.ctx.get_opnd_type(index.into()) != Type::Fixnum {
+    if asm.ctx.get_opnd_type(StackOpnd(0)) != Type::Fixnum {
         // Raises when non-integers are passed in, which requires the method frame
         // to be pushed for the backtrace
-        return false;
+        if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(1)) {
+            return false;
+        }
     }
     asm_comment!(asm, "String#getbyte");
+
+    let index = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
 
     let ret_opnd = asm.ccall(rb_str_getbyte as *const u8, vec![recv, index]);
     asm.stack_pop(2); // Keep them on stack during ccall for GC
