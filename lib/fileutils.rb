@@ -792,13 +792,13 @@ module FileUtils
   #   File.file?('dest1/dir1/t2.txt') # => true
   #   File.file?('dest1/dir1/t3.txt') # => true
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference_root: true</tt> - dereferences +src+ if it is a symbolic link.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
+  # - +dereference_root+ - dereferences +src+ if it is a symbolic link (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before creating links (+false+ by default).
   #
   # Raises an exception if +dest+ is the path to an existing file or directory
-  # and keyword argument <tt>remove_destination: true</tt> is not given.
+  # and optional argument +remove_destination+ is not given.
   #
   # Related: FileUtils.ln (has different options).
   #
@@ -1021,12 +1021,12 @@ module FileUtils
   # directories, and symbolic links;
   # other file types (FIFO streams, device files, etc.) are not supported.
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference_root: true</tt> - if +src+ is a symbolic link,
-  #   follows the link.
-  # - <tt>preserve: true</tt> - preserves file times.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
+  # - +dereference_root+ - if +src+ is a symbolic link,
+  #   follows the link (+false+ by default).
+  # - +preserve+ - preserves file times (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before copying files (+false+ by default).
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1057,12 +1057,12 @@ module FileUtils
   #   FileUtils.copy_file('src0.txt', 'dest0.txt')
   #   File.file?('dest0.txt') # => true
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference: false</tt> - if +src+ is a symbolic link,
-  #   does not follow the link.
-  # - <tt>preserve: true</tt> - preserves file times.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
+  # - +dereference+ - if +src+ is a symbolic link,
+  #   follows the link (+true+ by default).
+  # - +preserve+ - preserves file times (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before copying files (+false+ by default).
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
