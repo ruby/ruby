@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/version.rb - irb version definition file
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)

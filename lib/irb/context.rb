@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/context.rb - irb context
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
