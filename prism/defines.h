@@ -10,6 +10,7 @@
 #define PRISM_DEFINES_H
 
 #include <ctype.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -111,6 +112,17 @@
 #   ifdef _POSIX_MAPPED_FILES
 #       define PRISM_HAS_MMAP
 #   endif
+#endif
+
+/**
+ * isinf on Windows is defined as accepting a float, but on POSIX systems it
+ * accepts a float, a double, or a long double. We want to mirror this behavior
+ * on windows.
+ */
+#ifdef _WIN32
+#   include <float.h>
+#   undef isinf
+#   define isinf(x) (sizeof(x) == sizeof(float) ? !_finitef(x) : !_finite(x))
 #endif
 
 #endif
