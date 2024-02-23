@@ -419,6 +419,12 @@ fn jit_prepare_lazy_frame_call(
     cme: *const rb_callable_method_entry_t,
     recv_opnd: YARVOpnd,
 ) -> bool {
+    // We can use this only when the receiver is on stack.
+    let recv_idx = match recv_opnd {
+        StackOpnd(recv_idx) => recv_idx,
+        _ => unreachable!("recv_opnd must be on stack, but got: {:?}", recv_opnd),
+    };
+
     // Get the next PC. jit_save_pc() saves that PC.
     let pc: *mut VALUE = unsafe {
         let cur_insn_len = insn_len(jit.get_opcode()) as isize;
@@ -427,7 +433,7 @@ fn jit_prepare_lazy_frame_call(
 
     let pc_to_cfunc = CodegenGlobals::get_pc_to_cfunc();
     match pc_to_cfunc.get(&pc) {
-        Some(&pc_cme) if pc_cme != cme => {
+        Some(&(other_cme, _)) if other_cme != cme => {
             // Bail out if it's not the only cme on this callsite.
             incr_counter!(lazy_frame_failure);
             return false;
@@ -435,7 +441,7 @@ fn jit_prepare_lazy_frame_call(
         _ => {
             // Let rb_yjit_lazy_push_frame() lazily push a C frame on this PC.
             incr_counter!(lazy_frame_count);
-            pc_to_cfunc.insert(pc, cme);
+            pc_to_cfunc.insert(pc, (cme, recv_idx));
         }
     }
 
@@ -443,9 +449,11 @@ fn jit_prepare_lazy_frame_call(
     // The C func may call a method that doesn't raise, so prepare for invalidation too.
     jit_prepare_non_leaf_call(jit, asm);
 
-    // Make sure we're ready for calling vm_push_cfunc_frame().
+    // Make sure we're ready for calling rb_vm_push_cfunc_frame().
     let cfunc_argc = unsafe { get_mct_argc(get_cme_def_body_cfunc(cme)) };
-    assert_eq!(recv_opnd, StackOpnd(cfunc_argc as u8)); // We use this for cfp->self
+    if cfunc_argc != -1 {
+        assert_eq!(recv_idx as i32, cfunc_argc); // verify the receiver index if possible
+    }
     assert!(asm.get_leaf_ccall()); // It checks the stack canary we set for known_cfunc_codegen.
 
     true
@@ -5435,7 +5443,7 @@ fn jit_rb_str_byteslice(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
+    cme: *const rb_callable_method_entry_t,
     _block: Option<BlockHandler>,
     argc: i32,
     _known_recv_class: Option<VALUE>,
@@ -5449,7 +5457,9 @@ fn jit_rb_str_byteslice(
         (Type::Fixnum, Type::Fixnum) => {},
         // Raises when non-integers are passed in, which requires the method frame
         // to be pushed for the backtrace
-        _ => return false,
+        _ => if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(2)) {
+            return false;
+        }
     }
     asm_comment!(asm, "String#byteslice");
 
@@ -9842,9 +9852,9 @@ pub struct CodegenGlobals {
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
 
-    /// Map of cfunc YARV PCs to CMEs, used to lazily push a frame when
-    /// rb_yjit_lazy_push_frame() is called with a PC in this HashMap
-    pc_to_cfunc: HashMap<*mut VALUE, *const rb_callable_method_entry_t>,
+    /// Map of cfunc YARV PCs to CMEs and receiver indexes, used to lazily push
+    /// a frame when rb_yjit_lazy_push_frame() is called with a PC in this HashMap.
+    pc_to_cfunc: HashMap<*mut VALUE, (*const rb_callable_method_entry_t, u8)>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -10016,7 +10026,7 @@ impl CodegenGlobals {
         &CodegenGlobals::get_instance().ocb_pages
     }
 
-    pub fn get_pc_to_cfunc() -> &'static mut HashMap<*mut VALUE, *const rb_callable_method_entry_t> {
+    pub fn get_pc_to_cfunc() -> &'static mut HashMap<*mut VALUE, (*const rb_callable_method_entry_t, u8)> {
         &mut CodegenGlobals::get_instance().pc_to_cfunc
     }
 }

@@ -218,8 +218,8 @@ pub extern "C" fn rb_yjit_lazy_push_frame(pc: *mut VALUE) {
     }
 
     incr_counter!(num_lazy_frame_check);
-    if let Some(&cme) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
+    if let Some(&(cme, recv_idx)) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
         incr_counter!(num_lazy_frame_push);
-        unsafe { rb_vm_push_cfunc_frame(cme) }
+        unsafe { rb_vm_push_cfunc_frame(cme, recv_idx as i32) }
     }
 }
