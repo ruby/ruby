@@ -583,6 +583,11 @@ make_counters! {
     num_throw_retry,
     num_throw_return,
 
+    num_lazy_frame_check,
+    num_lazy_frame_push,
+    lazy_frame_count,
+    lazy_frame_failure,
+
     iseq_stack_too_large,
     iseq_too_long,
 

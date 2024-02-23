@@ -332,6 +332,10 @@ module RubyVM::YJIT
       out.puts "num_throw_break:       " + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])
       out.puts "num_throw_retry:       " + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])
       out.puts "num_throw_return:      " + format_number_pct(13, stats[:num_throw_return], stats[:num_throw])
+      out.puts "num_lazy_frame_check:  " + format_number(13, stats[:num_lazy_frame_check])
+      out.puts "num_lazy_frame_push:   " + format_number_pct(13, stats[:num_lazy_frame_push], stats[:num_lazy_frame_check])
+      out.puts "lazy_frame_count:      " + format_number(13, stats[:lazy_frame_count])
+      out.puts "lazy_frame_failure:    " + format_number(13, stats[:lazy_frame_failure])
 
       out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
       out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])

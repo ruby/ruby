@@ -117,6 +117,7 @@ extern "C" {
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -142,6 +143,7 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
     pub fn rb_vm_stack_canary() -> VALUE;
+    pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
 }
 
 // Renames

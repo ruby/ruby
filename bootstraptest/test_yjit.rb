@@ -2046,6 +2046,57 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
 } unless rjit_enabled? # Not yet working on RJIT
 
+# Basic test for String#setbyte
+assert_equal 'AoZ', %q{
+  s = "foo"
+  s.setbyte(0, 65)
+  s.setbyte(-1, 90)
+  s
+}
+
+# String#setbyte IndexError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(1, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte TypeError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(nil, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte FrozenError
+assert_equal 'String#setbyte', %q{
+  def ccall = "a".freeze.setbyte(0, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# non-leaf String#setbyte
+assert_equal 'String#setbyte', %q{
+  def to_int
+    @caller = caller
+    0
+  end
+
+  def ccall = "a".setbyte(self, 98)
+  ccall
+
+  @caller.first.split("'").last
+}
+
 # non-leaf String#byteslice
 assert_equal 'TypeError', %q{
   def ccall = "".byteslice(nil, nil)

@@ -3535,6 +3535,24 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
     return val;
 }
 
+// Push a C method frame for a given cme. This is called when JIT code skipped
+// pushing a frame but the C method reached a point where a frame is needed.
+void
+rb_vm_push_cfunc_frame(const rb_callable_method_entry_t *cme, int recv_idx)
+{
+    VM_ASSERT(cme->def->type == VM_METHOD_TYPE_CFUNC);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE *sp = ec->cfp->sp;
+    VALUE recv = *(sp - recv_idx - 1);
+    VALUE frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    VALUE block_handler = VM_BLOCK_HANDLER_NONE;
+#if VM_CHECK_MODE > 0
+    // Clean up the stack canary since we're about to satisfy the "leaf or lazy push" assumption
+    *(GET_EC()->cfp->sp) = Qfalse;
+#endif
+    vm_push_frame(ec, NULL, frame_type, recv, block_handler, (VALUE)cme, 0, ec->cfp->sp, 0, 0);
+}
+
 // If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
 bool
 rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
