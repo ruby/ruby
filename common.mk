@@ -96,6 +96,7 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/prettyprint.$(OBJEXT) \
 		prism/regexp.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
+		prism/static_literals.$(OBJEXT) \
 		prism/token_type.$(OBJEXT) \
 		prism/util/pm_buffer.$(OBJEXT) \
 		prism/util/pm_char.$(OBJEXT) \
@@ -2242,6 +2243,7 @@ ast.$(OBJEXT): $(top_srcdir)/prism/parser.h
 ast.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 ast.$(OBJEXT): $(top_srcdir)/prism/prism.h
 ast.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+ast.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -2678,6 +2680,7 @@ builtin.$(OBJEXT): $(top_srcdir)/prism/parser.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/prism.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -3311,6 +3314,7 @@ compile.$(OBJEXT): $(top_srcdir)/prism/parser.h
 compile.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 compile.$(OBJEXT): $(top_srcdir)/prism/prism.h
 compile.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+compile.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -3774,6 +3778,7 @@ cont.$(OBJEXT): $(top_srcdir)/prism/parser.h
 cont.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 cont.$(OBJEXT): $(top_srcdir)/prism/prism.h
 cont.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+cont.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -6744,6 +6749,7 @@ eval.$(OBJEXT): $(top_srcdir)/prism/parser.h
 eval.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 eval.$(OBJEXT): $(top_srcdir)/prism/prism.h
 eval.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+eval.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -7224,6 +7230,7 @@ gc.$(OBJEXT): $(top_srcdir)/prism/parser.h
 gc.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 gc.$(OBJEXT): $(top_srcdir)/prism/prism.h
 gc.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+gc.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -7480,6 +7487,7 @@ goruby.$(OBJEXT): $(top_srcdir)/prism/parser.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/prism.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -7723,6 +7731,7 @@ hash.$(OBJEXT): $(top_srcdir)/prism/parser.h
 hash.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 hash.$(OBJEXT): $(top_srcdir)/prism/prism.h
 hash.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+hash.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -8758,6 +8767,7 @@ iseq.$(OBJEXT): $(top_srcdir)/prism/parser.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/prism.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+iseq.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -9014,6 +9024,7 @@ load.$(OBJEXT): $(top_srcdir)/prism/parser.h
 load.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 load.$(OBJEXT): $(top_srcdir)/prism/prism.h
 load.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+load.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -10344,6 +10355,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/prism/parser.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/prism.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -11926,6 +11938,7 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12121,6 +12134,7 @@ prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12329,6 +12343,7 @@ prism/extension.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/extension.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12568,6 +12583,7 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/prism.c
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/prism.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12611,6 +12627,7 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/serialize.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12627,6 +12644,23 @@ prism/serialize.$(OBJEXT): {$(VPATH)}config.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/serialize.c
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/version.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/node.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/options.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/static_literals.c
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+prism/static_literals.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
@@ -12718,6 +12752,7 @@ prism_init.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism_init.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12934,6 +12969,7 @@ proc.$(OBJEXT): $(top_srcdir)/prism/parser.h
 proc.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 proc.$(OBJEXT): $(top_srcdir)/prism/prism.h
 proc.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+proc.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -15417,6 +15453,7 @@ rjit.$(OBJEXT): $(top_srcdir)/prism/parser.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/prism.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -15670,6 +15707,7 @@ rjit_c.$(OBJEXT): $(top_srcdir)/prism/parser.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/prism.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -15949,6 +15987,7 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/parser.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/prism.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+ruby.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -18390,6 +18429,7 @@ thread.$(OBJEXT): $(top_srcdir)/prism/parser.h
 thread.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 thread.$(OBJEXT): $(top_srcdir)/prism/prism.h
 thread.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+thread.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -19651,6 +19691,7 @@ vm.$(OBJEXT): $(top_srcdir)/prism/parser.h
 vm.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 vm.$(OBJEXT): $(top_srcdir)/prism/prism.h
 vm.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -19909,6 +19950,7 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/parser.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/prism.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -20139,6 +20181,7 @@ vm_dump.$(OBJEXT): $(top_srcdir)/prism/parser.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/prism.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -20580,6 +20623,7 @@ vm_trace.$(OBJEXT): $(top_srcdir)/prism/parser.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/prism.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -21021,6 +21065,7 @@ yjit.$(OBJEXT): $(top_srcdir)/prism/parser.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/prism.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
