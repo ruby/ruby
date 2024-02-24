@@ -790,7 +790,8 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
-		i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
+	    i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" \
+	    LIBPATHENV="$(LIBPATHENV)" PRELOADENV="$(PRELOADENV)" LIBRUBY_SO="$(LIBRUBY_SO)"
 
 noarch-fake.rb: # prerequisite of yes-fake
 	$(Q) exit > $@

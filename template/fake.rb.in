@@ -52,6 +52,9 @@ class Object
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
+libpathenv = libpathenv = "<%=arg['LIBPATHENV']%>"
+preloadenv = preloadenv = "<%=arg['PRELOADENV']%>"
+libruby_so = libruby_so = "<%=arg['LIBRUBY_SO']%>"
 srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
