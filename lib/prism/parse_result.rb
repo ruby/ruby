@@ -67,7 +67,7 @@ module Prism
     # concept of code units that differs from the number of characters in other
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
-      byteslice = source.byteslice(0, byte_offset).encode(encoding)
+      byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding)
       (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
     end
 
