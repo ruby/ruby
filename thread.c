@@ -527,9 +527,6 @@ void
 ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     native_thread_init_stack(th, local_in_parent_frame);
-#ifdef RUBY_ASAN_ENABLED
-    th->asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
-#endif
 }
 
 const VALUE *

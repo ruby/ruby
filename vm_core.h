@@ -1044,6 +1044,10 @@ struct rb_execution_context_struct {
         VALUE *stack_end;
         size_t stack_maxsize;
         RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
+
+#ifdef RUBY_ASAN_ENABLED
+        void *asan_fake_stack_handle;
+#endif
     } machine;
 };
 
@@ -1164,11 +1168,6 @@ typedef struct rb_thread_struct {
     void **specific_storage;
 
     struct rb_ext_config ext_config;
-
-#ifdef RUBY_ASAN_ENABLED
-    void *asan_fake_stack_handle;
-#endif
-
 } rb_thread_t;
 
 static inline unsigned int
