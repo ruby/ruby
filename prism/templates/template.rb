@@ -10,6 +10,39 @@ module Prism
   JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
   JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
 
+  # This module contains methods for escaping characters in JavaDoc comments.
+  module JavaDoc
+    ESCAPES = {
+      "'" => "&#39;",
+      "\"" => "&quot;",
+      "@" => "&#64;",
+      "&" => "&amp;",
+      "<" => "&lt;",
+      ">" => "&gt;"
+    }.freeze
+
+    def self.escape(value)
+      value.gsub(/['&"<>@]/, ESCAPES)
+    end
+  end
+
+  # A comment attached to a field or node.
+  class Comment
+    attr_reader :value
+
+    def initialize(value)
+      @value = value
+    end
+
+    def each_line(&block)
+      value.each_line { |line| yield line.prepend(" ").rstrip }
+    end
+
+    def each_java_line(&block)
+      Comment.new(JavaDoc.escape(value)).each_line(&block)
+    end
+  end
+
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
   class Field
@@ -21,8 +54,12 @@ module Prism
       @options = options
     end
 
-    def each_comment_line
-      comment.each_line { |line| yield line.prepend(" ").rstrip } if comment
+    def each_comment_line(&block)
+      Comment.new(comment).each_line(&block) if comment
+    end
+
+    def each_comment_java_line(&block)
+      Comment.new(comment).each_java_line(&block) if comment
     end
 
     def semantic_field?
@@ -317,8 +354,12 @@ module Prism
       @comment = config.fetch("comment")
     end
 
-    def each_comment_line
-      comment.each_line { |line| yield line.prepend(" ").rstrip }
+    def each_comment_line(&block)
+      Comment.new(comment).each_line(&block)
+    end
+
+    def each_comment_java_line(&block)
+      Comment.new(comment).each_java_line(&block)
     end
 
     def semantic_fields
