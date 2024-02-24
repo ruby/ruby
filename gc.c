@@ -6410,7 +6410,7 @@ gc_mark_machine_stack_location_maybe(rb_objspace_t *objspace, VALUE obj)
     void *fake_frame_start;
     void *fake_frame_end;
     bool is_fake_frame = asan_get_fake_stack_extents(
-        ec->thread_ptr->asan_fake_stack_handle, obj,
+        ec->machine.asan_fake_stack_handle, obj,
         ec->machine.stack_start, ec->machine.stack_end,
         &fake_frame_start, &fake_frame_end
     );
