@@ -115,7 +115,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@871daa956ca9ea99f3c3e30acb424b7960676734 # v5.0.0
         with:
-          python-version: "3.10"
+          python-version: "3.x"
         if: steps.enable_launchable.outputs.enable_launchable
 
       - name: Set up Java
@@ -128,7 +128,9 @@ jobs:
       - name: Set up Launchable
         run: |
           set -x
-          pip install launchable
+          PATH=$PATH:$(python -msite --user-base)/bin
+          echo "PATH=$PATH" >> $GITHUB_ENV
+          pip install --user launchable
           launchable verify
           : # The build name cannot include a slash, so we replace the string here.
           github_ref="$(echo ${{ github.ref }} | sed 's/\//_/g')"
