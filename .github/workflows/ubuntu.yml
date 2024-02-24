@@ -95,6 +95,12 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
+      - name: Set up Launchable
+        id: enable-launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+
       - name: make ${{ matrix.test_task }}
         run: >-
           $SETARCH make -s ${{ matrix.test_task }}
@@ -114,6 +120,16 @@ jobs:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: Record test results in Launchable
+        uses: ./.github/actions/launchable/record-test
+        with:
+          # We need to configure the `build` directory because
+          # this composite action is executed in the default working directory.
+          report-path: build/launchable_reports.json
+          os: ubuntu-20.04
+          test-opts: ${{ matrix.configure }}
+        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
         with:
