@@ -949,7 +949,7 @@ typedef struct rb_objspace {
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
 #ifdef RUBY_ASAN_ENABLED
-    rb_execution_context_t *marking_machine_context_ec;
+    const rb_execution_context_t *marking_machine_context_ec;
 #endif
 
 } rb_objspace_t;
@@ -6406,7 +6406,7 @@ gc_mark_machine_stack_location_maybe(rb_objspace_t *objspace, VALUE obj)
     gc_mark_maybe(objspace, obj);
 
 #ifdef RUBY_ASAN_ENABLED
-    rb_execution_context_t *ec = objspace->marking_machine_context_ec;
+    const rb_execution_context_t *ec = objspace->marking_machine_context_ec;
     void *fake_frame_start;
     void *fake_frame_end;
     bool is_fake_frame = asan_get_fake_stack_extents(
@@ -6495,13 +6495,25 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 #endif
 
 void
-rb_gc_mark_machine_stack(const rb_execution_context_t *ec)
+rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+#ifdef RUBY_ASAN_ENABLED
+    objspace->marking_machine_context_ec = ec;
+#endif
+
     VALUE *stack_start, *stack_end;
+
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
     RUBY_DEBUG_LOG("ec->th:%u stack_start:%p stack_end:%p", rb_ec_thread_ptr(ec)->serial, stack_start, stack_end);
 
-    rb_gc_mark_locations(stack_start, stack_end);
+    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
+    int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
+    each_location(objspace, (VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe);
+
+#ifdef RUBY_ASAN_ENABLED
+    objspace->marking_machine_context_ec = NULL;
+#endif
 }
 
 static void
