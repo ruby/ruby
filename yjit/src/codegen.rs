@@ -6140,15 +6140,13 @@ fn gen_send_cfunc(
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
     let mut argc = argc;
 
+    // Splat call to a C method that takes `VALUE *` and `len`
+    let variable_splat = flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc == -1;
+    let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
+
     // If the function expects a Ruby array of arguments
     if cfunc_argc < 0 && cfunc_argc != -1 {
         gen_counter_incr(asm, Counter::send_cfunc_ruby_array_varg);
-        return None;
-    }
-
-    // We aren't handling a vararg cfuncs with splat currently.
-    if flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc == -1 {
-        gen_counter_incr(asm, Counter::send_args_splat_cfunc_var_args);
         return None;
     }
 
@@ -6217,6 +6215,16 @@ fn gen_send_cfunc(
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
+    // Guard for variable length splat call before any modifications to the stack
+    if variable_splat {
+        asm_comment!(asm, "guard variable length splat call servicable");
+        let sp = asm.ctx.sp_opnd(0);
+        let splat_array = asm.stack_opnd(i32::from(kw_splat) + i32::from(block_arg));
+        let proceed = asm.ccall(rb_yjit_splat_varg_checks as _, vec![sp, splat_array, CFP]);
+        asm.cmp(proceed, Qfalse.into());
+        asm.je(Target::side_exit(Counter::guard_send_cfunc_bad_splat_vargs));
+    }
+
     // Number of args which will be passed through to the callee
     // This is adjusted by the kwargs being combined into a hash.
     let mut passed_argc = if kw_arg.is_null() {
@@ -6242,7 +6250,6 @@ fn gen_send_cfunc(
         return None;
     }
 
-    let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
     let block_arg_type = if block_arg {
         Some(asm.ctx.get_opnd_type(StackOpnd(0)))
     } else {
@@ -6287,9 +6294,9 @@ fn gen_send_cfunc(
         argc -= 1;
     }
 
-    // push_splat_args does stack manipulation so we can no longer side exit
-    if flags & VM_CALL_ARGS_SPLAT != 0 {
-        assert!(cfunc_argc >= 0);
+    // Splat handling when C method takes a static number of arguments.
+    // push_splat_args() does stack manipulation so we can no longer side exit
+    if flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc >= 0 {
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
@@ -6312,15 +6319,34 @@ fn gen_send_cfunc(
         handle_opt_send_shift_stack(asm, argc);
     }
 
+    // Push a dynamic number of items from the splat array to the stack when calling a vargs method
+    let dynamic_splat_size = if variable_splat {
+        asm_comment!(asm, "variable length splat");
+        let just_splat = usize::from(!kw_splat && kw_arg.is_null()).into();
+        let stack_splat_array = asm.lea(asm.stack_opnd(0));
+        Some(asm.ccall(rb_yjit_splat_varg_cfunc as _, vec![stack_splat_array, just_splat]))
+    } else {
+        None
+    };
+
     // Points to the receiver operand on the stack
     let recv = asm.stack_opnd(argc);
 
     // Store incremented PC into current control frame in case callee raises.
     jit_save_pc(jit, asm);
 
-    // Increment the stack pointer by 3 (in the callee)
-    // sp += 3
-    let sp = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * 3));
+    // Find callee's SP with space for metadata.
+    // Usually sp+3.
+    let sp = if let Some(splat_size) = dynamic_splat_size {
+        // Compute the callee's SP at runtime in case we accept a variable size for the splat array
+        const _: () = assert!(SIZEOF_VALUE == 8, "opting for a shift since mul on A64 takes no immediates");
+        let splat_size_bytes = asm.lshift(splat_size, 3usize.into());
+        // 3 items for method metadata, minus one to remove the splat array
+        let static_stack_top = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * 2));
+        asm.add(static_stack_top, splat_size_bytes)
+    } else {
+        asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * 3))
+    };
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
         SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
@@ -6382,8 +6408,17 @@ fn gen_send_cfunc(
     else if cfunc_argc == -1 {
         // The method gets a pointer to the first argument
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
+
+        let passed_argc_opnd = if let Some(splat_size) = dynamic_splat_size {
+            // The final argc is the size of the splat, minus one for the splat array itself
+            asm.add(splat_size, (passed_argc - 1).into())
+        } else {
+            // Without a splat, passed_argc is static
+            Opnd::Imm(passed_argc.into())
+        };
+
         vec![
-            Opnd::Imm(passed_argc.into()),
+            passed_argc_opnd,
             asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32)),
             asm.stack_opnd(argc),
         ]
