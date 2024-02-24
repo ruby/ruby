@@ -8278,7 +8278,7 @@ fn gen_send_general(
 
                         mid = unsafe { rb_get_symbol_id(compile_time_name) };
                         if mid == 0 {
-                            // This also rejects method names that need convserion
+                            // This also rejects method names that need conversion
                             gen_counter_incr(asm, Counter::send_send_null_mid);
                             return None;
                         }
