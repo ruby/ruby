@@ -1874,7 +1874,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 #define rb_vm_register_special_exception(sp, e, m) \
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
