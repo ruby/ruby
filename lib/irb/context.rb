@@ -479,9 +479,7 @@ module IRB
     # StdioInputMethod or RelineInputMethod or ReadlineInputMethod, see #io
     # for more information.
     def prompting?
-      verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-                   @io.kind_of?(RelineInputMethod) ||
-                   (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
+      verbose? || @io.prompting?
     end
 
     # The return value of the last statement evaluated.

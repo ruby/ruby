@@ -44,6 +44,10 @@ module IRB
       false
     end
 
+    def prompting?
+      false
+    end
+
     # For debug message
     def inspect
       'Abstract InputMethod'
@@ -89,6 +93,10 @@ module IRB
     # See IO#eof for more information.
     def readable_after_eof?
       true
+    end
+
+    def prompting?
+      STDIN.tty?
     end
 
     # Returns the current line number for #io.
@@ -218,6 +226,10 @@ module IRB
     # See IO#eof? for more information.
     def eof?
       @eof
+    end
+
+    def prompting?
+      true
     end
 
     # For debug message
@@ -465,6 +477,10 @@ module IRB
     # See IO#eof? for more information.
     def eof?
       @eof
+    end
+
+    def prompting?
+      true
     end
 
     # For debug message
