@@ -196,12 +196,8 @@ class Resolv
               line.sub!(/#.*/, '')
               addr, *hostnames = line.split(/\s+/)
               next unless addr
-              @addr2name[addr] = [] unless @addr2name.include? addr
-              @addr2name[addr].concat(hostnames)
-              hostnames.each {|hostname|
-                @name2addr[hostname] = [] unless @name2addr.include? hostname
-                @name2addr[hostname] << addr
-              }
+              (@addr2name[addr] ||= []).concat(hostnames)
+              hostnames.each {|hostname| (@name2addr[hostname] ||= []) << addr}
             }
           }
           @name2addr.each {|name, arr| arr.reverse!}
