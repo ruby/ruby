@@ -20,17 +20,34 @@ module Prism
 
       # This module gets prepended into RuboCop::AST::ProcessedSource.
       module ProcessedSource
-        # Redefine parser_class so that we can inject the prism parser into the
-        # list of known parsers.
-        def parser_class(ruby_version)
-          if ruby_version == Prism::Translation::Parser::VERSION_3_3
-            require "prism/translation/parser33"
-            Prism::Translation::Parser33
-          elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
-            require "prism/translation/parser34"
-            Prism::Translation::Parser34
-          else
-            super
+        # This condition is compatible with rubocop-ast versions up to 1.30.0.
+        if RuboCop::AST::ProcessedSource.instance_method(:parser_class).arity == 1
+          # Redefine parser_class so that we can inject the prism parser into the
+          # list of known parsers.
+          def parser_class(ruby_version)
+            if ruby_version == Prism::Translation::Parser::VERSION_3_3
+              require "prism/translation/parser33"
+              Prism::Translation::Parser33
+            elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
+              require "prism/translation/parser34"
+              Prism::Translation::Parser34
+            else
+              super
+            end
+          end
+        else
+          # Redefine parser_class so that we can inject the prism parser into the
+          # list of known parsers.
+          def parser_class(ruby_version, _parser_engine)
+            if ruby_version == Prism::Translation::Parser::VERSION_3_3
+              require "prism/translation/parser33"
+              Prism::Translation::Parser33
+            elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
+              require "prism/translation/parser34"
+              Prism::Translation::Parser34
+            else
+              super
+            end
           end
         end
       end
