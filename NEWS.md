@@ -30,7 +30,7 @@ The following default gems are updated.
 * irb 1.11.2
 * net-http 0.4.1
 * prism 0.24.0
-* reline 0.4.2
+* reline 0.4.3
 * stringio 3.1.1
 * strscan 3.1.1
 
