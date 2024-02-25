@@ -8,7 +8,21 @@ module IRB
   module Command
     class ShowSource < Base
       category "Context"
-      description "Show the source code of a given method or constant."
+      description "Show the source code of a given method, class/module, or constant."
+
+      help_message <<~HELP_MESSAGE
+        Usage: show_source [target] [-s]
+
+          -s  Show the super method. You can stack it like `-ss` to show the super of the super, etc.
+
+        Examples:
+
+          show_source Foo
+          show_source Foo#bar
+          show_source Foo#bar -s
+          show_source Foo.baz
+          show_source Foo::BAR
+      HELP_MESSAGE
 
       class << self
         def transform_args(args)
