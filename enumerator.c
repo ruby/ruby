@@ -164,7 +164,10 @@ static VALUE sym_each, sym_cycle, sym_yield;
 
 static VALUE lazy_use_super_method;
 
+extern ID ruby_static_id_cause;
+
 #define id_call idCall
+#define id_cause ruby_static_id_cause
 #define id_each idEach
 #define id_eqq idEqq
 #define id_initialize idInitialize
@@ -807,8 +810,16 @@ get_next_values(VALUE obj, struct enumerator *e)
 {
     VALUE curr, vs;
 
-    if (e->stop_exc)
-        rb_exc_raise(e->stop_exc);
+    if (e->stop_exc) {
+        VALUE exc = e->stop_exc;
+        VALUE result = rb_attr_get(exc, id_result);
+        VALUE mesg = rb_attr_get(exc, idMesg);
+        if (!NIL_P(mesg)) mesg = rb_str_dup(mesg);
+        VALUE stop_exc = rb_exc_new_str(rb_eStopIteration, mesg);
+        rb_ivar_set(stop_exc, id_cause, exc);
+        rb_ivar_set(stop_exc, id_result, result);
+        rb_exc_raise(stop_exc);
+    }
 
     curr = rb_fiber_current();
 
