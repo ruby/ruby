@@ -1556,6 +1556,9 @@ nodes:
               ^
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
         comment: |
           The elements of the hash. These can be either `AssocNode`s or `AssocSplatNode`s.
 
@@ -1903,6 +1906,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1920,6 +1927,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1934,6 +1945,11 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
+          - InterpolatedStringNode # `"a" "#{b}"`
       - name: closing_loc
         type: location?
     newline: parts
@@ -1948,6 +1964,10 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -1962,6 +1982,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1983,6 +2007,9 @@ nodes:
         kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
     comment: |
       Represents a hash literal without opening and closing braces.
 
@@ -2190,6 +2217,7 @@ nodes:
         kind: CallNode
       - name: targets
         type: node[]
+        kind: LocalVariableTargetNode
     comment: |
       Represents writing local variables using a regular expression match with named capture groups.
 
@@ -2221,10 +2249,35 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `$',`
+          - NumberedReferenceReadNode # On parsing error of `$1,`
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `*,$'`
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2238,10 +2291,30 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2820,6 +2893,9 @@ nodes:
     fields:
       - name: names
         type: node[]
+        kind:
+          - SymbolNode
+          - InterpolatedSymbolNode
       - name: keyword_loc
         type: location
     comment: |
