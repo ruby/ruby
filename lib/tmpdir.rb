@@ -22,6 +22,9 @@ class Dir
 
   ##
   # Returns the operating system's temporary file path.
+  #
+  #   require 'tmpdir'
+  #   Dir.tmpdir # => "/tmp"
 
   def self.tmpdir
     ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', SYSTMPDIR], ['/tmp']*2, ['.']*2].find do |name, dir|
@@ -44,6 +47,11 @@ class Dir
   end
 
   # Dir.mktmpdir creates a temporary directory.
+  #
+  #   require 'tmpdir'
+  #   Dir.mktmpdir {|dir|
+  #     # use the directory
+  #   }
   #
   # The directory is created with 0700 permission.
   # Application should not change the permission to make the temporary directory accessible from other users.
