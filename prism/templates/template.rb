@@ -161,7 +161,11 @@ module Prism
     end
 
     def java_type
-      "Node[]"
+      if specific_kind
+        "#{specific_kind}[]"
+      else
+        "Node[]"
+      end
     end
 
     # TODO: unduplicate with NodeKindField
