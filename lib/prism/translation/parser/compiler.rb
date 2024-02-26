@@ -942,7 +942,7 @@ module Prism
         # "foo #{bar}"
         # ^^^^^^^^^^^^
         def visit_interpolated_string_node(node)
-          if node.opening&.start_with?("<<")
+          if node.heredoc?
             children, closing = visit_heredoc(node)
             builder.string_compose(token(node.opening_loc), children, closing)
           else
@@ -967,7 +967,7 @@ module Prism
         # `foo #{bar}`
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
-          if node.opening.start_with?("<<")
+          if node.heredoc?
             children, closing = visit_heredoc(node)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
@@ -1485,8 +1485,8 @@ module Prism
         # "foo"
         # ^^^^^
         def visit_string_node(node)
-          if node.opening&.start_with?("<<")
-            children, closing = visit_heredoc(InterpolatedStringNode.new(node.send(:source), node.opening_loc, [node.copy(opening_loc: nil, closing_loc: nil, location: node.content_loc)], node.closing_loc, node.location))
+          if node.heredoc?
+            children, closing = visit_heredoc(node.to_interpolated)
             builder.string_compose(token(node.opening_loc), children, closing)
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
@@ -1646,8 +1646,8 @@ module Prism
         # `foo`
         # ^^^^^
         def visit_x_string_node(node)
-          if node.opening&.start_with?("<<")
-            children, closing = visit_heredoc(InterpolatedXStringNode.new(node.opening_loc, [StringNode.new(0, nil, node.content_loc, nil, node.unescaped, node.content_loc)], node.closing_loc, node.location))
+          if node.heredoc?
+            children, closing = visit_heredoc(node.to_interpolated)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
             builder.xstring_compose(

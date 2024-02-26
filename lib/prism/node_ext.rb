@@ -49,10 +49,34 @@ module Prism
 
   class StringNode < Node
     include HeredocQuery
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    def to_interpolated
+      InterpolatedStringNode.new(
+        source,
+        opening_loc,
+        [copy(opening_loc: nil, closing_loc: nil, location: content_loc)],
+        closing_loc,
+        location
+      )
+    end
   end
 
   class XStringNode < Node
     include HeredocQuery
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    def to_interpolated
+      InterpolatedXStringNode.new(
+        source,
+        opening_loc,
+        [StringNode.new(source, 0, nil, content_loc, nil, unescaped, content_loc)],
+        closing_loc,
+        location
+      )
+    end
   end
 
   private_constant :HeredocQuery
