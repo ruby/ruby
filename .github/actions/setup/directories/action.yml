@@ -44,6 +44,11 @@ inputs:
     description: >-
       If set to true, creates dummy files in build dir.
 
+  fetch-depth:
+    required: false
+    default: '1'
+    description: The depth of commit history fetched from the remote repository
+
 outputs: {} # nothing?
 
 runs:
@@ -79,6 +84,7 @@ runs:
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
         path: ${{ inputs.srcdir }}
+        fetch-depth: ${{ inputs.fetch-depth }}
 
     - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
       with:

@@ -56,8 +56,6 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
-          # Set fetch-depth: 0 so that Launchable can receive commits information.
-          fetch-depth: 0
 
       - name: Install libraries
         uses: ./.github/actions/setup/macos
@@ -68,6 +66,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 0 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
@@ -89,6 +89,7 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          srcdir: src
 
       - name: Set extra test options
         run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
@@ -118,9 +119,10 @@ jobs:
         with:
           # We need to configure the `build` directory because
           # this composite action is executed in the default working directory.
-          report-path: build/launchable_reports.json
+          report-path: ../build/launchable_reports.json
           os: ${{ matrix.os }}
           test-opts: ${{ matrix.test_opts }}
+          srcdir: src
         if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
