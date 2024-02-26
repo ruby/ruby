@@ -362,6 +362,7 @@ const struct st_hash_type rb_hashtype_ident = {
 };
 
 #define RHASH_IDENTHASH_P(hash) (RHASH_TYPE(hash) == &identhash)
+#define RHASH_STRING_KEY_P(hash, key) (!RHASH_IDENTHASH_P(hash) && (rb_obj_class(key) == rb_cString))
 
 typedef st_index_t st_hash_t;
 
@@ -3008,7 +3009,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
         ar_alloc_table(hash);
     }
 
-    if (RHASH_IDENTHASH_P(hash) || rb_obj_class(key) != rb_cString) {
+    if (!RHASH_STRING_KEY_P(hash, key)) {
         RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
     }
     else {
