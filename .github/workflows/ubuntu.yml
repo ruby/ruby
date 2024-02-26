@@ -69,6 +69,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
         with:
@@ -100,6 +102,7 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          srcdir: src
 
       - name: make ${{ matrix.test_task }}
         run: >-
@@ -126,9 +129,10 @@ jobs:
         with:
           # We need to configure the `build` directory because
           # this composite action is executed in the default working directory.
-          report-path: build/launchable_reports.json
+          report-path: ../build/launchable_reports.json
           os: ubuntu-20.04
           test-opts: ${{ matrix.configure }}
+          srcdir: src
         if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack

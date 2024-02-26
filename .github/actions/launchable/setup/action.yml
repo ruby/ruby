@@ -14,6 +14,13 @@ inputs:
       Launchable token is needed if you want to run Launchable on your forked repository.
       See https://github.com/ruby/ruby/wiki/CI-Servers#launchable-ci for details.
 
+  srcdir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to (re-)checkout source codes. Launchable retrives the commit information
+      from the directory.
+
 outputs:
   enable-launchable:
     description: "The boolean value indicating whether Launchable is enabled or not"
@@ -66,6 +73,7 @@ runs:
 
     - name: Set up Launchable
       shell: bash
+      working-directory: ${{ inputs.srcdir }}
       run: |
         set -x
         PATH=$PATH:$(python -msite --user-base)/bin
