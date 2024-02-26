@@ -3736,12 +3736,6 @@ objspace_each_pages(rb_objspace_t *objspace, each_page_callback *callback, void 
     objspace_each_exec(protected, &each_obj_data);
 }
 
-void
-rb_objspace_each_objects_without_setup(each_obj_callback *callback, void *data)
-{
-    objspace_each_objects(&rb_objspace, callback, data, FALSE);
-}
-
 struct os_each_struct {
     size_t num;
     VALUE of;
