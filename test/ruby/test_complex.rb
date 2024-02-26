@@ -980,17 +980,27 @@ class Complex_Test < Test::Unit::TestCase
     }
   end
 
-  def test_Complex_without_exception
-    assert_complex_without_exception('5x')
-    assert_complex_without_exception(nil)
-    assert_complex_without_exception(Object.new)
-    assert_complex_without_exception(1, nil)
-    assert_complex_without_exception(1, Object.new)
+  def assert_complex_with_exception(error, *args, message: nil)
+    assert_raise(error, message) do
+      Complex(*args, exception: true)
+    end
+    assert_nothing_raised(error, message) do
+      assert_nil(Complex(*args, exception: false))
+      assert_nil($!)
+    end
+  end
+
+  def test_Complex_with_exception
+    assert_complex_with_exception(ArgumentError, '5x')
+    assert_complex_with_exception(TypeError, nil)
+    assert_complex_with_exception(TypeError, Object.new)
+    assert_complex_with_exception(TypeError, 1, nil)
+    assert_complex_with_exception(TypeError, 1, Object.new)
 
     o = Object.new
     def o.to_c; raise; end
-    assert_complex_without_exception(o)
-    assert_complex_without_exception(1, o)
+    assert_complex_with_exception(RuntimeError, o)
+    assert_complex_with_exception(TypeError, 1, o)
   end
 
   def test_respond
@@ -1247,15 +1257,6 @@ class Complex_Test < Test::Unit::TestCase
     obj = n.new
     assert_raise_with_message(TypeError, error) do
       Complex.polar(1, obj)
-    end
-  end
-
-  private
-
-  def assert_complex_without_exception(*args)
-    assert_nothing_raised(ArgumentError) do
-      assert_nil(Complex(*args, exception: false))
-      assert_nil($!)
     end
   end
 end
