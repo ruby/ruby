@@ -1499,7 +1499,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x31350, 0x323AF,
 };
 
-#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1296
+#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1302
 static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
     0x100, 0x100,
     0x102, 0x102,
@@ -1582,9 +1582,9 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x1B5, 0x1B5,
     0x1B7, 0x1B8,
     0x1BC, 0x1BC,
-    0x1C4, 0x1C4,
-    0x1C7, 0x1C7,
-    0x1CA, 0x1CA,
+    0x1C4, 0x1C5,
+    0x1C7, 0x1C8,
+    0x1CA, 0x1CB,
     0x1CD, 0x1CD,
     0x1CF, 0x1CF,
     0x1D1, 0x1D1,
@@ -1602,7 +1602,7 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x1EA, 0x1EA,
     0x1EC, 0x1EC,
     0x1EE, 0x1EE,
-    0x1F1, 0x1F1,
+    0x1F1, 0x1F2,
     0x1F4, 0x1F4,
     0x1F6, 0x1F8,
     0x1FA, 0x1FA,
@@ -1910,11 +1910,14 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x1F5D, 0x1F5D,
     0x1F5F, 0x1F5F,
     0x1F68, 0x1F6F,
-    0x1FB8, 0x1FBB,
-    0x1FC8, 0x1FCB,
+    0x1F88, 0x1F8F,
+    0x1F98, 0x1F9F,
+    0x1FA8, 0x1FAF,
+    0x1FB8, 0x1FBC,
+    0x1FC8, 0x1FCC,
     0x1FD8, 0x1FDB,
     0x1FE8, 0x1FEC,
-    0x1FF8, 0x1FFB,
+    0x1FF8, 0x1FFC,
     0x2102, 0x2102,
     0x2107, 0x2107,
     0x210B, 0x210D,
@@ -2455,7 +2458,7 @@ pm_encoding_cesu_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 /**
  * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ASCII character.
+ * piece of information about the corresponding US-ASCII character.
  */
 static const uint8_t pm_encoding_ascii_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -3624,7 +3627,7 @@ static const uint8_t pm_encoding_windows_1250_table[256] = {
     0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 7, 0, 0, 0, 0, 7, // Ax
     0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 3, 0, 7, 0, 3, 3, // Bx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
     3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
 };
@@ -3672,7 +3675,7 @@ static const uint8_t pm_encoding_windows_1252_table[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Ax
     0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
     3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
 };
@@ -4022,7 +4025,7 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
     }
 
     // These are the double byte characters
-    if ((n > 1) && (b[0] >= 0x81 && b[0] <= 0xfe) && (b[1] >= 0x41 && b[1] <= 0xfe)) {
+    if ((n > 1) && (b[0] >= 0x81 && b[0] <= 0xFE) && ((b[1] >= 0x41 && b[1] <= 0x5A) || (b[1] >= 0x61 && b[1] <= 0x7A) || (b[1] >= 0x81 && b[1] <= 0xFE))) {
         return 2;
     }
 
@@ -4094,6 +4097,27 @@ pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
     }
 
     return 0;
+}
+
+/**
+ * Returns the size of the next character in the EUC-JP encoding if it is an
+ * uppercase character.
+ */
+static bool
+pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_euc_jp_char_width(b, n);
+
+    if (width == 1) {
+        return pm_encoding_ascii_isupper_char(b, n);
+    } else if (width == 2) {
+        return (
+            (b[0] == 0xA3 && b[1] >= 0xC1 && b[1] <= 0xDA) ||
+            (b[0] == 0xA6 && b[1] >= 0xA1 && b[1] <= 0xB8) ||
+            (b[0] == 0xA7 && b[1] >= 0xA1 && b[1] <= 0xC1)
+        );
+    } else {
+        return false;
+    }
 }
 
 /**
@@ -4201,16 +4225,57 @@ pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80 || (*b >= 0xA1 && *b <= 0xDF)) {
+    if (b[0] < 0x80 || (b[0] >= 0xA1 && b[0] <= 0xDF)) {
         return 1;
     }
 
     // These are the double byte characters.
-    if ((n > 1) && ((b[0] >= 0x81 && b[0] <= 0x9F) || (b[0] >= 0xE0 && b[0] <= 0xFC)) && (b[1] >= 0x40 && b[1] <= 0xFC)) {
+    if ((n > 1) && ((b[0] >= 0x81 && b[0] <= 0x9F) || (b[0] >= 0xE0 && b[0] <= 0xFC)) && (b[1] >= 0x40 && b[1] <= 0xFC && b[1] != 0x7F)) {
         return 2;
     }
 
     return 0;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * alphanumeric character.
+ */
+static size_t
+pm_encoding_shift_jis_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alnum_char(b, n)) : width;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * alphabetical character.
+ */
+static size_t
+pm_encoding_shift_jis_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alpha_char(b, n)) : width;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * uppercase character.
+ */
+static bool
+pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+
+    if (width == 1) {
+        return pm_encoding_ascii_isupper_char(b, n);
+    } else if (width == 2) {
+        return (
+            ((b[0] == 0x82) && (b[1] >= 0x60 && b[1] <= 0x79)) ||
+            ((b[0] == 0x83) && (b[1] >= 0x9F && b[1] <= 0xB6)) ||
+            ((b[0] == 0x84) && (b[1] >= 0x40 && b[1] <= 0x60))
+        );
+    } else {
+        return width;
+    }
 }
 
 /**
@@ -4270,7 +4335,7 @@ const pm_encoding_t pm_encodings[] = {
         .char_width = pm_encoding_euc_jp_char_width,
         .alnum_char = pm_encoding_ascii_alnum_char_7bit,
         .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .isupper_char = pm_encoding_euc_jp_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_CP850] = {
@@ -4334,7 +4399,7 @@ const pm_encoding_t pm_encodings[] = {
         .char_width = pm_encoding_euc_jp_char_width,
         .alnum_char = pm_encoding_ascii_alnum_char_7bit,
         .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .isupper_char = pm_encoding_euc_jp_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_EUC_JP_MS] = {
@@ -4342,7 +4407,7 @@ const pm_encoding_t pm_encodings[] = {
         .char_width = pm_encoding_euc_jp_char_width,
         .alnum_char = pm_encoding_ascii_alnum_char_7bit,
         .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .isupper_char = pm_encoding_euc_jp_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_EUC_JIS_2004] = {
@@ -4350,7 +4415,7 @@ const pm_encoding_t pm_encodings[] = {
         .char_width = pm_encoding_euc_jp_char_width,
         .alnum_char = pm_encoding_ascii_alnum_char_7bit,
         .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .isupper_char = pm_encoding_euc_jp_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_EUC_KR] = {
@@ -4708,9 +4773,9 @@ const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_MAC_JAPANESE] = {
         .name = "MacJapanese",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_MAC_ROMAN] = {
@@ -4756,33 +4821,33 @@ const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_SHIFT_JIS] = {
         .name = "Shift_JIS",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_SJIS_DOCOMO] = {
         .name = "SJIS-DoCoMo",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_SJIS_KDDI] = {
         .name = "SJIS-KDDI",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_SJIS_SOFTBANK] = {
         .name = "SJIS-SoftBank",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP] = {
@@ -4924,9 +4989,9 @@ const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_WINDOWS_31J] = {
         .name = "Windows-31J",
         .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_WINDOWS_874] = {
