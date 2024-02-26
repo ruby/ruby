@@ -26,6 +26,12 @@ module Prism
       assert_integer_parse(2**32)
       assert_integer_parse(2**64 + 2**32)
       assert_integer_parse(2**128 + 2**64 + 2**32)
+
+      num = 99 ** 99
+      assert_integer_parse(num, "0b#{num.to_s(2)}")
+      assert_integer_parse(num, "0o#{num.to_s(8)}")
+      assert_integer_parse(num, "0d#{num.to_s(10)}")
+      assert_integer_parse(num, "0x#{num.to_s(16)}")
     end
 
     private
