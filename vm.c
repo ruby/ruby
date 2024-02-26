@@ -4443,6 +4443,12 @@ rb_ruby_debug_ptr(void)
 
 bool rb_free_at_exit = false;
 
+bool
+ruby_free_at_exit_p(void)
+{
+    return rb_free_at_exit;
+}
+
 /* iseq.c */
 VALUE rb_insn_operand_intern(const rb_iseq_t *iseq,
                              VALUE insn, int op_no, VALUE op,
