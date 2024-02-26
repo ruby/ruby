@@ -1130,6 +1130,11 @@ CODE
     end;
   end
 
+  def test_byteslice_grapheme_clusters
+    string = "안녕"
+    assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
+  end
+
   def test_each_line
     verbose, $VERBOSE = $VERBOSE, nil
 
