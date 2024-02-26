@@ -42,6 +42,7 @@ Init_lock_native_thread(void)
 }
 
 #else // HAVE_PTHREAD_H
+void
 Init_lock_native_thread(void)
 {
     // do nothing
