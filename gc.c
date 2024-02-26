@@ -4394,7 +4394,7 @@ is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
     }
 }
 
-static inline int
+static inline bool
 is_live_object(rb_objspace_t *objspace, VALUE ptr)
 {
     switch (BUILTIN_TYPE(ptr)) {
