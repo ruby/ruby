@@ -7596,6 +7596,13 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                             obj_info(obj));
                     data->err_count++;
                 }
+
+                if (!!FL_TEST(obj, FL_FINALIZE) != !!st_is_member(finalizer_table, obj)) {
+                    fprintf(stderr, "verify_internal_consistency_i: FL_FINALIZE %s but %s finalizer_table: %s\n",
+                            FL_TEST(obj, FL_FINALIZE) ? "set" : "not set", st_is_member(finalizer_table, obj) ? "in" : "not in",
+                            obj_info(obj));
+                    data->err_count++;
+                }
             }
         }
         if (poisoned) {
