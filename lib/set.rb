@@ -521,8 +521,11 @@ class Set
   #     Set[1, 2].add?([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
   #     Set[1, 2].add?(2)                    #=> nil
   def add?(o)
-    add(o) unless include?(o)
+    self unless @hash.exchange_value(o, true)
   end
+
+  # Temporary alias just for benchmarking
+  alias_method :fast_add?, :add?
 
   # Deletes the given object from the set and returns self.  Use
   # `subtract` to delete many items at once.
