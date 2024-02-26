@@ -3030,7 +3030,7 @@ rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type
     return obj;
 }
 
-size_t
+static size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
     size_t size = 0;
