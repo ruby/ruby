@@ -17051,10 +17051,10 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
 static inline pm_node_t *
 parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
     pm_node_t *value = parse_starred_expression(parser, binding_power, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH, diag_id);
+    bool single_value = true;
 
-    bool is_single_value = true;
     if (previous_binding_power == PM_BINDING_POWER_STATEMENT && (PM_NODE_TYPE_P(value, PM_SPLAT_NODE) || match1(parser, PM_TOKEN_COMMA))) {
-        is_single_value = false;
+        single_value = false;
         pm_token_t opening = not_provided(parser);
         pm_array_node_t *array = pm_array_node_create(parser, &opening);
 
@@ -17068,16 +17068,18 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         }
     }
 
-    // Contradicting binding powers, the right-hand-side value of the assignment allows the `rescue` modifier.
-    if (is_single_value && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+    // Contradicting binding powers, the right-hand-side value of the assignment
+    // allows the `rescue` modifier.
+    if ((single_value || (binding_power == (PM_BINDING_POWER_MULTI_ASSIGNMENT + 1))) && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
         bool accepts_command_call_inner = false;
 
-        // RHS can accept command call iff the value is a call with arguments but without paranthesis.
+        // RHS can accept command call iff the value is a call with arguments
+        // but without paranthesis.
         if (PM_NODE_TYPE_P(value, PM_CALL_NODE)) {
-            pm_call_node_t *call_node = (pm_call_node_t *)value;
+            pm_call_node_t *call_node = (pm_call_node_t *) value;
             if ((call_node->arguments != NULL) && (call_node->opening_loc.start == NULL)) {
                 accepts_command_call_inner = true;
             }
