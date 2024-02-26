@@ -6826,16 +6826,6 @@ rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
     }
 }
 
-/* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
- * This function is only for GC_END_MARK timing.
- */
-
-int
-rb_objspace_marked_object_p(VALUE obj)
-{
-    return RVALUE_MARKED(obj) ? TRUE : FALSE;
-}
-
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
@@ -9606,7 +9596,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     GC_ASSERT(!RVALUE_MARKING((VALUE)src));
 
     /* Save off bits for current object. */
-    marked = rb_objspace_marked_object_p((VALUE)src);
+    marked = RVALUE_MARKED((VALUE)src);
     wb_unprotected = RVALUE_WB_UNPROTECTED((VALUE)src);
     uncollectible = RVALUE_UNCOLLECTIBLE((VALUE)src);
     bool remembered = RVALUE_REMEMBERED((VALUE)src);
