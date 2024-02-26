@@ -4372,19 +4372,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     ATOMIC_SET(finalizing, 0);
 }
 
-static inline int
-is_swept_object(VALUE ptr)
-{
-    struct heap_page *page = GET_HEAP_PAGE(ptr);
-    return page->flags.before_sweep ? FALSE : TRUE;
-}
-
 /* garbage objects will be collected soon. */
 static inline int
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     if (!is_lazy_sweeping(objspace) ||
-        is_swept_object(ptr) ||
+        !GET_HEAP_PAGE(ptr)->flags.before_sweep ||
         MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
 
         return FALSE;
@@ -13570,7 +13563,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     if (is_lazy_sweeping(objspace)) {
         fprintf(stderr, "lazy sweeping?: true\n");
-        fprintf(stderr, "swept?: %s\n", is_swept_object(obj) ? "done" : "not yet");
+        fprintf(stderr, "page swept?: %s\n", GET_HEAP_PAGE(ptr)->flags.before_sweep ? "false" : "true");
     }
     else {
         fprintf(stderr, "lazy sweeping?: false\n");
