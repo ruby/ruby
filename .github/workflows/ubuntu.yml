@@ -58,6 +58,9 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          # When using sparse-checkout, Launchable issues a warning. To suppress it, set `filter: null`.
+          # https://www.launchableinc.com/docs/resources/troubleshooting/
+          filter: null
 
       - uses: ./.github/actions/setup/ubuntu
         with:
@@ -69,6 +72,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          fetch-depth: 10
+          filter: null
 
       - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
         with:

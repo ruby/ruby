@@ -58,6 +58,9 @@ jobs:
           sparse-checkout: /.github
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 0
+          # When using sparse-checkout, Launchable issues a warning. To suppress it, set `filter: null`.
+          # https://www.launchableinc.com/docs/resources/troubleshooting/
+          filter: null
 
       - name: Install libraries
         uses: ./.github/actions/setup/macos
@@ -68,6 +71,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          fetch-depth: 10
+          filter: null
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
