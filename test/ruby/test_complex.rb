@@ -980,7 +980,7 @@ class Complex_Test < Test::Unit::TestCase
     }
   end
 
-  def assert_complex_with_exception(error, *args, message: nil)
+  def assert_complex_with_exception(error, *args, message: "")
     assert_raise(error, message) do
       Complex(*args, exception: true)
     end

@@ -35,7 +35,6 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <mswsock.h>
 #if !defined(_MSC_VER) || _MSC_VER >= 1400
 #include <iphlpapi.h>
 #endif
