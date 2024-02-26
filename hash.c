@@ -3906,18 +3906,9 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
-rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
-{
-    *value = arg->arg;
-    return ST_CONTINUE;
-}
-
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
-
-static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
-    RHASH_UPDATE(hash, key, rb_hash_update_callback, value);
+    rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
 
@@ -3928,6 +3919,9 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
 
     if (existing) {
         newvalue = (st_data_t)rb_yield_values(3, (VALUE)*key, (VALUE)*value, (VALUE)newvalue);
+    }
+    else if (RHASH_STRING_KEY_P(arg->hash, *key) && !RB_OBJ_FROZEN(*key)) {
+        *key = rb_hash_key_str(*key);
     }
     *value = newvalue;
     return ST_CONTINUE;
