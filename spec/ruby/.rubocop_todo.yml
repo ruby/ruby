@@ -63,7 +63,6 @@ Lint/LiteralInInterpolation:
     - 'language/string_spec.rb'
     - 'language/symbol_spec.rb'
     - 'language/undef_spec.rb'
-    - 'library/net/ftp/connect_spec.rb'
 
 # Offense count: 8
 # Cop supports --auto-correct.
