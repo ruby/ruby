@@ -4406,12 +4406,7 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
         break;
     }
 
-    if (!is_garbage_object(objspace, ptr)) {
-        return TRUE;
-    }
-    else {
-        return FALSE;
-    }
+    return !is_garbage_object(objspace, ptr);
 }
 
 static inline int
