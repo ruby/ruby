@@ -7589,8 +7589,13 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
         }
         else {
             if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
-                GC_ASSERT((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) == T_ZOMBIE);
                 data->zombie_object_count++;
+
+                if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) != T_ZOMBIE) {
+                    fprintf(stderr, "verify_internal_consistency_i: T_ZOMBIE has extra flags set: %s\n",
+                            obj_info(obj));
+                    data->err_count++;
+                }
             }
         }
         if (poisoned) {
