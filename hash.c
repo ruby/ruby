@@ -361,6 +361,8 @@ const struct st_hash_type rb_hashtype_ident = {
     rb_ident_hash,
 };
 
+#define RHASH_IDENTHASH_P(hash) (RHASH_TYPE(hash) == &identhash)
+
 typedef st_index_t st_hash_t;
 
 /*
@@ -3006,7 +3008,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
         ar_alloc_table(hash);
     }
 
-    if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
+    if (RHASH_IDENTHASH_P(hash) || rb_obj_class(key) != rb_cString) {
         RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
     }
     else {
@@ -4241,7 +4243,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
     table = RHASH_ST_TABLE(hash);
     orighash = table->type;
 
-    if (orighash != &identhash) {
+    if (!RHASH_IDENTHASH_P(orighash)) {
         VALUE value;
         struct reset_hash_type_arg ensure_arg;
         struct st_hash_type assochash;
@@ -4501,7 +4503,7 @@ rb_hash_compare_by_id(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
-    return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);
+    return RBOOL(RHASH_IDENTHASH_P(hash));
 }
 
 VALUE
