@@ -73,6 +73,11 @@ For the splitting,
 the default record separator is `$/`,
 and the default field separator  is `$;`.
 
+### Option `--backtrace-limit`
+
+Option `--backtrace-limit=<i>num</i>` sets a limit on the number of entries
+to be displayed in a backtrace.
+
 ### Option `-c`
 
 Option `-c` specifies that the specified Ruby program
@@ -244,6 +249,14 @@ and largely omits double-hyphen options (e.g., `--version`).
 Arguments and additional options are ignored.
 
 For a longer help message, use option `--help`.
+
+### Option `--help`
+
+Option `--help` prints a long help message.
+
+Arguments and additional options are ignored.
+
+For a shorter help message, use option `-h`.
 
 ### Option `-i`
 
@@ -446,6 +459,15 @@ $ ruby -v -e 'p $VERBOSE'
 ruby 3.3.0 (2023-12-25 revision 5124f9ac75) [x64-mingw-ucrt]
 true
 ```
+
+### Option `--verbose`
+
+Option `--verbose` sets global variable `$VERBOSE` to `true`
+and disables input from `$stdin`.
+
+### Option `--version`
+
+Option `--version` prints the version of the Ruby interpreter, then exits.
 
 ### Option `-w`
 
