@@ -3380,7 +3380,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
-    rb_hash_aset(misc, ID2SYM(rb_intern("prism")), iseq_body->prism ? Qtrue : Qfalse);
+    rb_hash_aset(misc, ID2SYM(rb_intern("parser")), iseq_body->prism ? ID2SYM(rb_intern("prism")) : ID2SYM(rb_intern("parse.y")));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
