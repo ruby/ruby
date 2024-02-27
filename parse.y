@@ -15072,6 +15072,9 @@ nd_value(struct parser_params *p, NODE *node)
 void
 rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
+#ifndef UNIVERSAL_PARSER
+    static const
+#endif
     struct st_hash_type literal_type = {
         literal_cmp,
         literal_hash,
