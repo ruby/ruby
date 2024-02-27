@@ -1841,9 +1841,11 @@ nucomp_to_f(VALUE self)
  *
  *   Complex.rect(1, 0).to_r              # => (1/1)
  *   Complex.rect(1, Rational(0, 1)).to_r # => (1/1)
+ *   Complex.rect(1, 0.0).to_r            # => (1/1)
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>)
+ * and <tt>self.imag.to_r</tt> is not exactly zero.
  *
  * Related: Complex#rationalize.
  */
@@ -1852,9 +1854,15 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (!k_exact_zero_p(dat->imag)) {
-        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
-                 self);
+    if (RB_FLOAT_TYPE_P(dat->imag) && FLOAT_ZERO_P(dat->imag)) {
+        /* Do nothing here */
+    }
+    else if (!k_exact_zero_p(dat->imag)) {
+        VALUE imag = rb_check_convert_type_with_id(dat->imag, T_RATIONAL, "Rational", idTo_r);
+        if (NIL_P(imag) || !k_exact_zero_p(imag)) {
+            rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
+                     self);
+        }
     }
     return f_to_r(dat->real);
 }
