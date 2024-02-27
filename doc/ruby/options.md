@@ -191,19 +191,19 @@ Whitespace between the option and its argument may be omitted.
 Option `--enable=<i>list</i>` specifies features to be enabled;
 _list_ is a comma-separated list of the features to be enabled.
 
-See {--disable}[options_md.html#label-Option+--disable-3Dlist].
+See {--disable}[rdoc-ref:options.md@Option+--disable-3Dlist].
 
 ### Option `--encoding`
 
 Option `--encoding` is an alias for
-{option -E}[options_md.html#label-Option+-E].
+{option -E}[rdoc-ref:options.md@Option+-E].
 
 ### Option `--external-encoding`
 
 Option `--external-encoding=<i>encoding</i>`
 sets the default external encoding for the invoked Ruby program;
 for values of +encoding+,
-see {Encoding: Names and Aliases}[rdoc-ref:Encoding@Names+and+Aliases].
+see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```sh
 $ ruby -e 'puts Encoding::default_external'
@@ -283,11 +283,11 @@ Whitespace between the option and its argument may be omitted.
 Option `--internal-encoding=<i>encoding</i>`
 sets the default internal encoding for the invoked Ruby program;
 for values of +encoding+,
-see {Encoding: Names and Aliases}[rdoc-ref:Encoding@Names+and+Aliases].
+see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```sh
-$ ruby -e 'p Encoding::default_internal'
-nil
+$ ruby -e 'puts Encoding::default_internal.nil?'
+true
 $ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
 CESU-8
 ```
