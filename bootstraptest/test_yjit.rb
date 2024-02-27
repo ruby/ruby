@@ -4634,3 +4634,27 @@ assert_equal '[1, 1, 1]', %q{
   empty = []
   [1.abs(*empty), 1.abs(**nil), 1.bit_length(*empty, **nil)]
 }
+
+# splat into C methods with -1 arity
+assert_equal '[[1, 2, 3], [0, 2, 3], [1, 2, 3], [2, 2, 3], [], [], [{}]]', %q{
+  class Foo < Array
+    def push(args) = super(1, *args)
+  end
+
+  def test_cfunc_vargs_splat(sub_instance, array_class, empty_kw_hash)
+    splat = [2, 3]
+    kw_splat = [empty_kw_hash]
+    [
+      sub_instance.push(splat),
+      array_class[0, *splat, **nil],
+      array_class[1, *splat, &nil],
+      array_class[2, *splat, **nil, &nil],
+      array_class.send(:[], *kw_splat),
+      # kw_splat disables keywords hash handling
+      array_class[*kw_splat],
+      array_class[*kw_splat, **nil],
+    ]
+  end
+
+  test_cfunc_vargs_splat(Foo.new, Array, Hash.ruby2_keywords_hash({}))
+}

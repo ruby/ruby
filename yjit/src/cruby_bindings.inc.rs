@@ -1194,6 +1194,15 @@ extern "C" {
     pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
+    pub fn rb_yjit_splat_varg_checks(
+        sp: *mut VALUE,
+        splat_array: VALUE,
+        cfp: *mut rb_control_frame_t,
+    ) -> VALUE;
+    pub fn rb_yjit_splat_varg_cfunc(
+        stack_splat_array: *mut VALUE,
+        sole_splat: bool,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
     pub fn rb_yjit_iseq_inspect(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_char;
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;

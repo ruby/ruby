@@ -386,7 +386,6 @@ make_counters! {
     send_args_splat_aref,
     send_args_splat_aset,
     send_args_splat_opt_call,
-    send_args_splat_cfunc_var_args,
     send_iseq_splat_arity_error,
     send_splat_too_long,
     send_send_wrong_args,
@@ -443,6 +442,8 @@ make_counters! {
     guard_send_not_fixnum_or_flonum,
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
+
+    guard_send_cfunc_bad_splat_vargs,
 
     guard_invokesuper_me_changed,
 
