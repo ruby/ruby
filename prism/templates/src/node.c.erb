@@ -43,6 +43,18 @@ pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
 }
 
 /**
+ * Prepend a new node onto the beginning of the node list.
+ */
+void
+pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node) {
+    if (pm_node_list_grow(list)) {
+        memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
+        list->nodes[0] = node;
+        list->size++;
+    }
+}
+
+/**
  * Free the internal memory associated with the given node list.
  */
 void

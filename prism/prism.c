@@ -1905,6 +1905,24 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
 }
 
 /**
+ * Allocate and initialize a new synthesized CallNode node from a call expression.
+ */
+static pm_call_node_t *
+pm_call_node_call_synthesized_create(pm_parser_t *parser, pm_node_t *receiver, const char *message, pm_arguments_node_t *arguments) {
+    pm_call_node_t *node = pm_call_node_create(parser, 0);
+    node->base.location.start = parser->start;
+    node->base.location.end = parser->end;
+
+    node->receiver = receiver;
+    node->call_operator_loc = (pm_location_t) { .start = NULL, .end = NULL };
+    node->message_loc = (pm_location_t) { .start = NULL, .end = NULL };
+    node->arguments = arguments;
+
+    node->name = pm_parser_constant_id_constant(parser, message, strlen(message));
+    return node;
+}
+
+/**
  * Allocate and initialize a new CallNode node from a call to a method name
  * without a receiver that could not have been a local variable read.
  */
@@ -1922,6 +1940,22 @@ pm_call_node_fcall_create(pm_parser_t *parser, pm_token_t *message, pm_arguments
     node->block = arguments->block;
 
     node->name = pm_parser_constant_id_token(parser, message);
+    return node;
+}
+
+/**
+ * Allocate and initialize a new CallNode node from a synthesized call to a
+ * method name with the given arguments.
+ */
+static pm_call_node_t *
+pm_call_node_fcall_synthesized_create(pm_parser_t *parser, pm_arguments_node_t *arguments, pm_constant_id_t name) {
+    pm_call_node_t *node = pm_call_node_create(parser, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY);
+
+    node->base.location.start = parser->start;
+    node->base.location.end = parser->start;
+    node->arguments = arguments;
+
+    node->name = name;
     return node;
 }
 
@@ -3568,7 +3602,25 @@ pm_global_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name)
 }
 
 /**
- * Allocate a new GlobalVariableWriteNode node.
+ * Allocate and initialize a new synthesized GlobalVariableReadNode node.
+ */
+static pm_global_variable_read_node_t *
+pm_global_variable_read_node_synthesized_create(pm_parser_t *parser, pm_constant_id_t name) {
+    pm_global_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_global_variable_read_node_t);
+
+    *node = (pm_global_variable_read_node_t) {
+        {
+            .type = PM_GLOBAL_VARIABLE_READ_NODE,
+            .location = { .start = parser->start, .end = parser->start }
+        },
+        .name = name
+    };
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new GlobalVariableWriteNode node.
  */
 static pm_global_variable_write_node_t *
 pm_global_variable_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
@@ -3585,6 +3637,27 @@ pm_global_variable_write_node_create(pm_parser_t *parser, pm_node_t *target, con
         .name = pm_global_variable_write_name(parser, target),
         .name_loc = PM_LOCATION_NODE_VALUE(target),
         .operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
+        .value = value
+    };
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new synthesized GlobalVariableWriteNode node.
+ */
+static pm_global_variable_write_node_t *
+pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constant_id_t name, pm_node_t *value) {
+    pm_global_variable_write_node_t *node = PM_ALLOC_NODE(parser, pm_global_variable_write_node_t);
+
+    *node = (pm_global_variable_write_node_t) {
+        {
+            .type = PM_GLOBAL_VARIABLE_WRITE_NODE,
+            .location = { .start = parser->start, .end = parser->start }
+        },
+        .name = name,
+        .name_loc = { .start = parser->start, .end = parser->start },
+        .operator_loc = { .start = parser->start, .end = parser->start },
         .value = value
     };
 
@@ -5678,20 +5751,37 @@ pm_statements_node_location_set(pm_statements_node_t *node, const uint8_t *start
 }
 
 /**
+ * Update the location of the statements node based on the statement that is
+ * being added to the list.
+ */
+static inline void
+pm_statements_node_body_update(pm_statements_node_t *node, pm_node_t *statement) {
+    if (pm_statements_node_body_length(node) == 0 || statement->location.start < node->base.location.start) {
+        node->base.location.start = statement->location.start;
+    }
+
+    if (statement->location.end > node->base.location.end) {
+        node->base.location.end = statement->location.end;
+    }
+}
+
+/**
  * Append a new node to the given StatementsNode node's body.
  */
 static void
 pm_statements_node_body_append(pm_statements_node_t *node, pm_node_t *statement) {
-    if (pm_statements_node_body_length(node) == 0 || statement->location.start < node->base.location.start) {
-        node->base.location.start = statement->location.start;
-    }
-    if (statement->location.end > node->base.location.end) {
-        node->base.location.end = statement->location.end;
-    }
-
+    pm_statements_node_body_update(node, statement);
     pm_node_list_append(&node->body, statement);
+    pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
+}
 
-    // Every statement gets marked as a place where a newline can occur.
+/**
+ * Prepend a new node to the given StatementsNode node's body.
+ */
+static void
+pm_statements_node_body_prepend(pm_statements_node_t *node, pm_node_t *statement) {
+    pm_statements_node_body_update(node, statement);
+    pm_node_list_prepend(&node->body, statement);
     pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
@@ -5899,6 +5989,27 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
 }
 
 /**
+ * Allocate and initialize a new synthesized SymbolNode node.
+ */
+static pm_symbol_node_t *
+pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
+    pm_symbol_node_t *node = PM_ALLOC_NODE(parser, pm_symbol_node_t);
+
+    *node = (pm_symbol_node_t) {
+        {
+            .type = PM_SYMBOL_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING,
+            .location = { .start = parser->start, .end = parser->start }
+        },
+        .value_loc = { .start = parser->start, .end = parser->start },
+        .unescaped = { 0 }
+    };
+
+    pm_string_constant_init(&node->unescaped, content, strlen(content));
+    return node;
+}
+
+/**
  * Check if the given node is a label in a hash.
  */
 static bool
@@ -5995,6 +6106,22 @@ pm_true_node_create(pm_parser_t *parser, const pm_token_t *token) {
         .type = PM_TRUE_NODE,
         .flags = PM_NODE_FLAG_STATIC_LITERAL,
         .location = PM_LOCATION_TOKEN_VALUE(token)
+    }};
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new synthesized TrueNode node.
+ */
+static pm_true_node_t *
+pm_true_node_synthesized_create(pm_parser_t *parser) {
+    pm_true_node_t *node = PM_ALLOC_NODE(parser, pm_true_node_t);
+
+    *node = (pm_true_node_t) {{
+        .type = PM_TRUE_NODE,
+        .flags = PM_NODE_FLAG_STATIC_LITERAL,
+        .location = { .start = parser->start, .end = parser->end }
     }};
 
     return node;
@@ -6244,6 +6371,27 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .predicate = predicate,
+        .statements = statements
+    };
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new synthesized while loop.
+ */
+static pm_while_node_t *
+pm_while_node_synthesized_create(pm_parser_t *parser, pm_node_t *predicate, pm_statements_node_t *statements) {
+    pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
+
+    *node = (pm_while_node_t) {
+        {
+            .type = PM_WHILE_NODE,
+            .location = { .start = parser->start, .end = parser->start }
+        },
+        .keyword_loc = { .start = parser->start, .end = parser->start },
+        .closing_loc = { .start = parser->start, .end = parser->start },
         .predicate = predicate,
         .statements = statements
     };
@@ -18108,6 +18256,80 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
     return node;
 }
 
+/**
+ * ruby -p, ruby -n, ruby -a, and ruby -l options will mutate the AST. We
+ * perform that mutation here.
+ */
+static pm_statements_node_t *
+wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
+    if (parser->command_line_p) {
+        pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
+        pm_arguments_node_arguments_append(
+            arguments,
+            (pm_node_t *) pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$_", 2))
+        );
+
+        pm_statements_node_body_append(statements, (pm_node_t *) pm_call_node_fcall_synthesized_create(
+            parser,
+            arguments,
+            pm_parser_constant_id_constant(parser, "print", 5)
+        ));
+    }
+
+    if (parser->command_line_n) {
+        if (parser->command_line_a) {
+            pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
+            pm_arguments_node_arguments_append(
+                arguments,
+                (pm_node_t *) pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$;", 2))
+            );
+
+            pm_global_variable_read_node_t *receiver = pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$_", 2));
+            pm_call_node_t *call = pm_call_node_call_synthesized_create(parser, (pm_node_t *) receiver, "split", arguments);
+
+            pm_global_variable_write_node_t *write = pm_global_variable_write_node_synthesized_create(
+                parser,
+                pm_parser_constant_id_constant(parser, "$F", 2),
+                (pm_node_t *) call
+            );
+
+            pm_statements_node_body_prepend(statements, (pm_node_t *) write);
+        }
+
+        pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
+        pm_arguments_node_arguments_append(
+            arguments,
+            (pm_node_t *) pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$/", 2))
+        );
+
+        if (parser->command_line_l) {
+            pm_keyword_hash_node_t *keywords = pm_keyword_hash_node_create(parser);
+            pm_keyword_hash_node_elements_append(keywords, (pm_node_t *) pm_assoc_node_create(
+                parser,
+                (pm_node_t *) pm_symbol_node_synthesized_create(parser, "chomp"),
+                &(pm_token_t) { .type = PM_TOKEN_NOT_PROVIDED, .start = parser->start, .end = parser->start },
+                (pm_node_t *) pm_true_node_synthesized_create(parser)
+            ));
+
+            pm_arguments_node_arguments_append(arguments, (pm_node_t *) keywords);
+        }
+
+        pm_statements_node_t *wrapped_statements = pm_statements_node_create(parser);
+        pm_statements_node_body_append(wrapped_statements, (pm_node_t *) pm_while_node_synthesized_create(
+            parser,
+            (pm_node_t *) pm_call_node_fcall_synthesized_create(parser, arguments, pm_parser_constant_id_constant(parser, "gets", 4)),
+            statements
+        ));
+
+        statements = wrapped_statements;
+    }
+
+    return statements;
+}
+
+/**
+ * Parse the top-level program node.
+ */
 static pm_node_t *
 parse_program(pm_parser_t *parser) {
     // If the current scope is NULL, then we want to push a new top level scope.
@@ -18130,6 +18352,12 @@ parse_program(pm_parser_t *parser) {
     // correct the location information.
     if (pm_statements_node_body_length(statements) == 0) {
         pm_statements_node_location_set(statements, parser->start, parser->start);
+    }
+
+    // At the top level, see if we need to wrap the statements in a program
+    // node with a while loop based on the options.
+    if (parser->command_line_p || parser->command_line_n) {
+        statements = wrap_statements(parser, statements);
     }
 
     return (pm_node_t *) pm_program_node_create(parser, &locals, statements);
@@ -18189,7 +18417,11 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .in_keyword_arg = false,
         .current_param_name = 0,
         .semantic_token_seen = false,
-        .frozen_string_literal = false
+        .frozen_string_literal = false,
+        .command_line_p = options != NULL && options->command_line_p,
+        .command_line_n = options != NULL && options->command_line_n,
+        .command_line_l = options != NULL && options->command_line_l,
+        .command_line_a = options != NULL && options->command_line_a
     };
 
     // Initialize the constant pool. We're going to completely guess as to the

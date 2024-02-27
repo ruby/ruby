@@ -343,6 +343,18 @@ module Prism
       values << (options.fetch(:frozen_string_literal, false) ? 1 : 0)
 
       template << "C"
+      values << (options.fetch(:command_line_p, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:command_line_n, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:command_line_l, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:command_line_a, false) ? 1 : 0)
+
+      template << "C"
       values << { nil => 0, "3.3.0" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
 
       template << "L"

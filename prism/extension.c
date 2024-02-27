@@ -29,6 +29,10 @@ ID rb_option_id_line;
 ID rb_option_id_frozen_string_literal;
 ID rb_option_id_version;
 ID rb_option_id_scopes;
+ID rb_option_id_command_line_p;
+ID rb_option_id_command_line_n;
+ID rb_option_id_command_line_l;
+ID rb_option_id_command_line_a;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -149,6 +153,14 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         }
     } else if (key_id == rb_option_id_scopes) {
         if (!NIL_P(value)) build_options_scopes(options, value);
+    } else if (key_id == rb_option_id_command_line_p) {
+        if (!NIL_P(value)) pm_options_command_line_p_set(options, value == Qtrue);
+    } else if (key_id == rb_option_id_command_line_n) {
+        if (!NIL_P(value)) pm_options_command_line_n_set(options, value == Qtrue);
+    } else if (key_id == rb_option_id_command_line_l) {
+        if (!NIL_P(value)) pm_options_command_line_l_set(options, value == Qtrue);
+    } else if (key_id == rb_option_id_command_line_a) {
+        if (!NIL_P(value)) pm_options_command_line_a_set(options, value == Qtrue);
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
     }
@@ -1232,6 +1244,10 @@ Init_prism(void) {
     rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_option_id_version = rb_intern_const("version");
     rb_option_id_scopes = rb_intern_const("scopes");
+    rb_option_id_command_line_p = rb_intern_const("command_line_p");
+    rb_option_id_command_line_n = rb_intern_const("command_line_n");
+    rb_option_id_command_line_l = rb_intern_const("command_line_l");
+    rb_option_id_command_line_a = rb_intern_const("command_line_a");
 
     /**
      * The version of the prism library.

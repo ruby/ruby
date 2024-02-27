@@ -78,6 +78,18 @@ typedef struct {
 
     /** Whether or not the frozen string literal option has been set. */
     bool frozen_string_literal;
+
+    /** Whether or not the -p command line option has been set. */
+    bool command_line_p;
+
+    /** Whether or not the -n command line option has been set. */
+    bool command_line_n;
+
+    /** Whether or not the -l command line option has been set. */
+    bool command_line_l;
+
+    /** Whether or not the -a command line option has been set. */
+    bool command_line_a;
 } pm_options_t;
 
 /**
@@ -111,6 +123,38 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
  * @param frozen_string_literal The frozen string literal value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
+
+/**
+ * Sets the -p command line option on the given options struct.
+ *
+ * @param options The options struct to set the -p command line option on.
+ * @param command_line_p The -p command line option to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_p_set(pm_options_t *options, bool command_line_p);
+
+/**
+ * Sets the -n command line option on the given options struct.
+ *
+ * @param options The options struct to set the -n command line option on.
+ * @param command_line_n The -n command line option to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_n_set(pm_options_t *options, bool command_line_n);
+
+/**
+ * Sets the -l command line option on the given options struct.
+ *
+ * @param options The options struct to set the -l command line option on.
+ * @param command_line_l The -l command line option to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_l_set(pm_options_t *options, bool command_line_l);
+
+/**
+ * Sets the -a command line option on the given options struct.
+ *
+ * @param options The options struct to set the -a command line option on.
+ * @param command_line_a The -a command line option to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_a_set(pm_options_t *options, bool command_line_a);
 
 /**
  * Set the version option on the given options struct by parsing the given
@@ -186,7 +230,10 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `4`     | the length the encoding    |
  * | ...     | the encoding bytes         |
  * | `1`     | frozen string literal      |
- * | `1`     | suppress warnings          |
+ * | `1`     | -p command line option     |
+ * | `1`     | -n command line option     |
+ * | `1`     | -l command line option     |
+ * | `1`     | -a command line option     |
  * | `1`     | the version                |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |

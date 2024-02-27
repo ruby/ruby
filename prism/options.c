@@ -33,6 +33,38 @@ pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_l
 }
 
 /**
+ * Sets the -p command line option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_command_line_p_set(pm_options_t *options, bool command_line_p) {
+    options->command_line_p = command_line_p;
+}
+
+/**
+ * Sets the -n command line option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_command_line_n_set(pm_options_t *options, bool command_line_n) {
+    options->command_line_n = command_line_n;
+}
+
+/**
+ * Sets the -l command line option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_command_line_l_set(pm_options_t *options, bool command_line_l) {
+    options->command_line_l = command_line_l;
+}
+
+/**
+ * Sets the -a command line option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_command_line_a_set(pm_options_t *options, bool command_line_a) {
+    options->command_line_a = command_line_a;
+}
+
+/**
  * Set the version option on the given options struct by parsing the given
  * string. If the string contains an invalid option, this returns false.
  * Otherwise, it returns true.
@@ -193,7 +225,11 @@ pm_options_read(pm_options_t *options, const char *data) {
         data += encoding_length;
     }
 
-    options->frozen_string_literal = *data++;
+    options->frozen_string_literal = (*data++) ? true : false;
+    options->command_line_p = (*data++) ? true : false;
+    options->command_line_n = (*data++) ? true : false;
+    options->command_line_l = (*data++) ? true : false;
+    options->command_line_a = (*data++) ? true : false;
     options->version = (pm_options_version_t) *data++;
 
     uint32_t scopes_count = pm_options_read_u32(data);

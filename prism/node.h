@@ -30,6 +30,15 @@ bool pm_node_list_grow(pm_node_list_t *list);
 void pm_node_list_append(pm_node_list_t *list, pm_node_t *node);
 
 /**
+ * Prepend a new node onto the beginning of the node list.
+ *
+ * @param list The list to prepend to.
+ * @param node The node to prepend.
+ */
+void
+pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+
+/**
  * Free the internal memory associated with the given node list.
  *
  * @param list The list to free.
