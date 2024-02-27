@@ -6668,6 +6668,7 @@ pm_node_check_it(pm_parser_t *parser, pm_node_t *node) {
     if (
         (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) &&
         !parser->current_scope->closed &&
+        (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
         pm_node_is_it(parser, node)
     ) {
         pm_local_variable_read_node_t *read = pm_local_variable_read_node_create_it(parser, &parser->previous);
@@ -14299,7 +14300,12 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
                     pm_node_t *variable = (pm_node_t *) parse_variable(parser);
 
                     if (variable == NULL) {
-                        if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0 && pm_token_is_it(parser->previous.start, parser->previous.end)) {
+                        if (
+                            (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) &&
+                            !parser->current_scope->closed &&
+                            (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
+                            pm_token_is_it(parser->previous.start, parser->previous.end)
+                        ) {
                             pm_local_variable_read_node_t *read = pm_local_variable_read_node_create_it(parser, &parser->previous);
                             if (read == NULL) read = pm_local_variable_read_node_create(parser, &parser->previous, 0);
                             variable = (pm_node_t *) read;
