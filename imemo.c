@@ -215,9 +215,7 @@ rb_cc_table_mark(VALUE klass)
 static bool
 moved_or_living_object_strictly_p(VALUE obj)
 {
-    return obj &&
-           rb_gc_is_ptr_to_obj((void *)obj) &&
-           (rb_objspace_markable_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
+    return obj && (rb_objspace_markable_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
 }
 
 static void
