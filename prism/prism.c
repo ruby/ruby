@@ -226,7 +226,7 @@ lex_mode_push(pm_parser_t *parser, pm_lex_mode_t lex_mode) {
     parser->lex_modes.index++;
 
     if (parser->lex_modes.index > PM_LEX_STACK_SIZE - 1) {
-        parser->lex_modes.current = (pm_lex_mode_t *) malloc(sizeof(pm_lex_mode_t));
+        parser->lex_modes.current = (pm_lex_mode_t *) xmalloc(sizeof(pm_lex_mode_t));
         if (parser->lex_modes.current == NULL) return false;
 
         *parser->lex_modes.current = lex_mode;
@@ -387,7 +387,7 @@ lex_mode_pop(pm_parser_t *parser) {
     } else {
         parser->lex_modes.index--;
         pm_lex_mode_t *prev = parser->lex_modes.current->prev;
-        free(parser->lex_modes.current);
+        xfree(parser->lex_modes.current);
         parser->lex_modes.current = prev;
     }
 }
@@ -1063,7 +1063,7 @@ parse_decimal_number(pm_parser_t *parser, const uint8_t *start, const uint8_t *e
     assert(diff > 0 && ((unsigned long) diff < SIZE_MAX));
     size_t length = (size_t) diff;
 
-    char *digits = calloc(length + 1, sizeof(char));
+    char *digits = xcalloc(length + 1, sizeof(char));
     memcpy(digits, start, length);
     digits[length] = '\0';
 
@@ -1076,7 +1076,7 @@ parse_decimal_number(pm_parser_t *parser, const uint8_t *start, const uint8_t *e
         value = UINT32_MAX;
     }
 
-    free(digits);
+    xfree(digits);
 
     if (value > UINT32_MAX) {
         pm_parser_err(parser, start, end, PM_ERR_INVALID_NUMBER_DECIMAL);
@@ -1138,7 +1138,7 @@ pm_statements_node_body_length(pm_statements_node_t *node);
  */
 static inline void *
 pm_alloc_node(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, size_t size) {
-    void *memory = calloc(1, size);
+    void *memory = xcalloc(1, size);
     if (memory == NULL) {
         fprintf(stderr, "Failed to allocate %d bytes\n", (int) size);
         abort();
@@ -2120,7 +2120,7 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
     if (write_constant->length > 0) {
         size_t length = write_constant->length - 1;
 
-        void *memory = malloc(length);
+        void *memory = xmalloc(length);
         memcpy(memory, write_constant->start, length);
 
         *read_name = pm_constant_pool_insert_owned(&parser->constant_pool, (uint8_t *) memory, length);
@@ -2162,7 +2162,7 @@ pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2197,7 +2197,7 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2234,7 +2234,7 @@ pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, 
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2269,7 +2269,7 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2306,7 +2306,7 @@ pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const 
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2341,7 +2341,7 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2369,7 +2369,7 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -2399,7 +2399,7 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -3206,7 +3206,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
 
     // First, get a buffer of the content.
     size_t length = (size_t) diff;
-    char *buffer = malloc(sizeof(char) * (length + 1));
+    char *buffer = xmalloc(sizeof(char) * (length + 1));
     memcpy((void *) buffer, token->start, length);
 
     // Next, handle underscores by removing them from the buffer.
@@ -3232,7 +3232,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     // is in a valid format. However it's good to be safe.
     if ((eptr != buffer + length) || (errno != 0 && errno != ERANGE)) {
         PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, (*token), PM_ERR_FLOAT_PARSE);
-        free((void *) buffer);
+        xfree((void *) buffer);
         return 0.0;
     }
 
@@ -3255,7 +3255,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     }
 
     // Finally we can free the buffer and return the value.
-    free((void *) buffer);
+    xfree((void *) buffer);
     return value;
 }
 
@@ -4967,7 +4967,7 @@ pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, 
 
     // Explicitly do not call pm_node_destroy here because we want to keep
     // around all of the information within the MultiWriteNode node.
-    free(target);
+    xfree(target);
 
     return node;
 }
@@ -6080,7 +6080,7 @@ pm_string_node_to_symbol_node(pm_parser_t *parser, pm_string_node_t *node, const
     // We are explicitly _not_ using pm_node_destroy here because we don't want
     // to trash the unescaped string. We could instead copy the string if we
     // know that it is owned, but we're taking the fast path for now.
-    free(node);
+    xfree(node);
 
     return new_node;
 }
@@ -6112,7 +6112,7 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
     // We are explicitly _not_ using pm_node_destroy here because we don't want
     // to trash the unescaped string. We could instead copy the string if we
     // know that it is owned, but we're taking the fast path for now.
-    free(node);
+    xfree(node);
 
     return new_node;
 }
@@ -6502,7 +6502,7 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
  */
 static bool
 pm_parser_scope_push(pm_parser_t *parser, bool closed) {
-    pm_scope_t *scope = (pm_scope_t *) malloc(sizeof(pm_scope_t));
+    pm_scope_t *scope = (pm_scope_t *) xmalloc(sizeof(pm_scope_t));
     if (scope == NULL) return false;
 
     *scope = (pm_scope_t) {
@@ -6741,7 +6741,7 @@ static void
 pm_parser_scope_pop(pm_parser_t *parser) {
     pm_scope_t *scope = parser->current_scope;
     parser->current_scope = scope->previous;
-    free(scope);
+    xfree(scope);
 }
 
 /******************************************************************************/
@@ -7074,7 +7074,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             pm_string_shared_init(&key, key_start, key_end);
         } else {
             size_t width = (size_t) (key_end - key_start);
-            uint8_t *buffer = malloc(width);
+            uint8_t *buffer = xmalloc(width);
             if (buffer == NULL) break;
 
             memcpy(buffer, key_start, width);
@@ -7116,7 +7116,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         // Allocate a new magic comment node to append to the parser's list.
         pm_magic_comment_t *magic_comment;
-        if ((magic_comment = (pm_magic_comment_t *) calloc(sizeof(pm_magic_comment_t), 1)) != NULL) {
+        if ((magic_comment = (pm_magic_comment_t *) xcalloc(sizeof(pm_magic_comment_t), 1)) != NULL) {
             magic_comment->key_start = key_start;
             magic_comment->value_start = value_start;
             magic_comment->key_length = (uint32_t) key_length;
@@ -7210,7 +7210,7 @@ context_recoverable(const pm_parser_t *parser, pm_token_t *token) {
 
 static bool
 context_push(pm_parser_t *parser, pm_context_t context) {
-    pm_context_node_t *context_node = (pm_context_node_t *) malloc(sizeof(pm_context_node_t));
+    pm_context_node_t *context_node = (pm_context_node_t *) xmalloc(sizeof(pm_context_node_t));
     if (context_node == NULL) return false;
 
     *context_node = (pm_context_node_t) { .context = context, .prev = NULL };
@@ -7228,7 +7228,7 @@ context_push(pm_parser_t *parser, pm_context_t context) {
 static void
 context_pop(pm_parser_t *parser) {
     pm_context_node_t *prev = parser->current_context->prev;
-    free(parser->current_context);
+    xfree(parser->current_context);
     parser->current_context = prev;
 }
 
@@ -8555,7 +8555,7 @@ parser_lex_callback(pm_parser_t *parser) {
  */
 static inline pm_comment_t *
 parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
-    pm_comment_t *comment = (pm_comment_t *) calloc(sizeof(pm_comment_t), 1);
+    pm_comment_t *comment = (pm_comment_t *) xcalloc(sizeof(pm_comment_t), 1);
     if (comment == NULL) return NULL;
 
     *comment = (pm_comment_t) {
@@ -11397,7 +11397,7 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
     // append an =.
     pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, *name_field);
     size_t length = constant->length;
-    uint8_t *name = calloc(length + 1, sizeof(uint8_t));
+    uint8_t *name = xcalloc(length + 1, sizeof(uint8_t));
     if (name == NULL) return;
 
     memcpy(name, constant->start, length);
@@ -14141,7 +14141,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_node) {
     }
 
     pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
-    free(assocs.nodes);
+    xfree(assocs.nodes);
 
     return node;
 }
@@ -14576,7 +14576,7 @@ parse_pattern(pm_parser_t *parser, bool top_pattern, pm_diagnostic_id_t diag_id)
             node = (pm_node_t *) pm_array_pattern_node_node_list_create(parser, &nodes);
         }
 
-        free(nodes.nodes);
+        xfree(nodes.nodes);
     } else if (leading_rest) {
         // Otherwise, if we parsed a single splat pattern, then we know we have an
         // array pattern, so we can go ahead and create that node.
@@ -17355,7 +17355,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 // in which case we need to copy it out into a new string.
                 location = call->receiver->location;
 
-                void *memory = malloc(length);
+                void *memory = xmalloc(length);
                 if (memory == NULL) abort();
 
                 memcpy(memory, source, length);
@@ -17843,7 +17843,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 }
 
                 if (!interpolated && total_length > 0) {
-                    void *memory = malloc(total_length);
+                    void *memory = xmalloc(total_length);
                     if (!memory) abort();
 
                     uint8_t *cursor = memory;
@@ -18519,7 +18519,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
 
-                void *allocated = malloc(length);
+                void *allocated = xmalloc(length);
                 if (allocated == NULL) continue;
 
                 memcpy(allocated, source, length);
@@ -18566,7 +18566,7 @@ pm_comment_list_free(pm_list_t *list) {
         next = node->next;
 
         pm_comment_t *comment = (pm_comment_t *) node;
-        free(comment);
+        xfree(comment);
     }
 }
 
@@ -18581,7 +18581,7 @@ pm_magic_comment_list_free(pm_list_t *list) {
         next = node->next;
 
         pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) node;
-        free(magic_comment);
+        xfree(magic_comment);
     }
 }
 
@@ -18732,7 +18732,7 @@ typedef struct {
 
 static inline pm_error_t *
 pm_parser_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
-    pm_error_t *errors = calloc(error_list->size, sizeof(pm_error_t));
+    pm_error_t *errors = xcalloc(error_list->size, sizeof(pm_error_t));
     if (errors == NULL) return NULL;
 
     int32_t start_line = parser->start_line;
@@ -18989,7 +18989,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     }
 
     // Finally, we'll free the array of errors that we allocated.
-    free(errors);
+    xfree(errors);
 }
 
 #undef PM_COLOR_GRAY

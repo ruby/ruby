@@ -166,7 +166,7 @@ pm_string_ensure_owned(pm_string_t *string) {
     size_t length = pm_string_length(string);
     const uint8_t *source = pm_string_source(string);
 
-    uint8_t *memory = malloc(length);
+    uint8_t *memory = xmalloc(length);
     if (!memory) return;
 
     pm_string_owned_init(string, memory, length);
@@ -217,7 +217,7 @@ pm_string_free(pm_string_t *string) {
     void *memory = (void *) string->source;
 
     if (string->type == PM_STRING_OWNED) {
-        free(memory);
+        xfree(memory);
 #ifdef PRISM_HAS_MMAP
     } else if (string->type == PM_STRING_MAPPED && string->length) {
 #if defined(_WIN32)

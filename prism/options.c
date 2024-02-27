@@ -86,7 +86,7 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
 PRISM_EXPORTED_FUNCTION bool
 pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
     options->scopes_count = scopes_count;
-    options->scopes = calloc(scopes_count, sizeof(pm_options_scope_t));
+    options->scopes = xcalloc(scopes_count, sizeof(pm_options_scope_t));
     return options->scopes != NULL;
 }
 
@@ -105,7 +105,7 @@ pm_options_scope_get(const pm_options_t *options, size_t index) {
 PRISM_EXPORTED_FUNCTION bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
-    scope->locals = calloc(locals_count, sizeof(pm_string_t));
+    scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
     return scope->locals != NULL;
 }
 
@@ -132,10 +132,10 @@ pm_options_free(pm_options_t *options) {
             pm_string_free(&scope->locals[local_index]);
         }
 
-        free(scope->locals);
+        xfree(scope->locals);
     }
 
-    free(options->scopes);
+    xfree(options->scopes);
 }
 
 /**

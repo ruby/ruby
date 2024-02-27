@@ -33,7 +33,7 @@
  * } pm_int_node_t;
  *
  * pm_list_t list = { 0 };
- * pm_int_node_t *node = malloc(sizeof(pm_int_node_t));
+ * pm_int_node_t *node = xmalloc(sizeof(pm_int_node_t));
  * node->value = 5;
  *
  * pm_list_append(&list, &node->node);

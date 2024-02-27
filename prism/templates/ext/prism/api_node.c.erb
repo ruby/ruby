@@ -76,7 +76,7 @@ typedef struct pm_node_stack_node {
 
 static void
 pm_node_stack_push(pm_node_stack_node_t **stack, const pm_node_t *visit) {
-    pm_node_stack_node_t *node = malloc(sizeof(pm_node_stack_node_t));
+    pm_node_stack_node_t *node = xmalloc(sizeof(pm_node_stack_node_t));
     node->prev = *stack;
     node->visit = visit;
     node->visited = false;
@@ -89,14 +89,14 @@ pm_node_stack_pop(pm_node_stack_node_t **stack) {
     const pm_node_t *visit = current->visit;
 
     *stack = current->prev;
-    free(current);
+    xfree(current);
 
     return visit;
 }
 
 VALUE
 pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encoding, VALUE source) {
-    ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
+    ID *constants = xcalloc(parser->constant_pool.size, sizeof(ID));
 
     for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
         pm_constant_t *constant = &parser->constant_pool.constants[index];
@@ -235,7 +235,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
     }
 
     VALUE result = rb_ary_pop(value_stack);
-    free(constants);
+    xfree(constants);
     return result;
 }
 

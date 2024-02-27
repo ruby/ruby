@@ -310,7 +310,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
-    char* dup = malloc(length);
+    char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
     pm_string_constant_init(&input, dup, length);
 #endif
@@ -318,7 +318,7 @@ dump(int argc, VALUE *argv, VALUE self) {
     VALUE value = dump_input(&input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
-    free(dup);
+    xfree(dup);
 #endif
 
     pm_string_free(&input);
@@ -733,7 +733,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
-    char* dup = malloc(length);
+    char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
     pm_string_constant_init(&input, dup, length);
 #endif
@@ -741,7 +741,7 @@ parse(int argc, VALUE *argv, VALUE self) {
     VALUE value = parse_input(&input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
-    free(dup);
+    xfree(dup);
 #endif
 
     pm_string_free(&input);

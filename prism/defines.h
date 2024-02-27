@@ -125,4 +125,27 @@
 #   define isinf(x) (sizeof(x) == sizeof(float) ? !_finitef(x) : !_finite(x))
 #endif
 
+/**
+ * If you build prism with a custom allocator, configure it with "-D PRISM_CUSTOM_ALLOCATOR"
+ * to use your own allocator that defines xmalloc, xrealloc, xcalloc, and xfree.
+ * For example, your `custom_allocator.h` file could look like this:
+ * ```
+ * #ifndef PRISM_CUSTOM_ALLOCATOR_H
+ * #define PRISM_CUSTOM_ALLOCATOR_H
+ * #define xmalloc      my_malloc
+ * #define xrealloc     my_realloc
+ * #define xcalloc      my_calloc
+ * #define xfree        my_free
+ * #endif
+ * ```
+ */
+#ifdef PRISM_CUSTOM_ALLOCATOR
+#   include "custom_allocator.h"
+#else
+#   define xmalloc      malloc
+#   define xrealloc     realloc
+#   define xcalloc      calloc
+#   define xfree        free
+#endif
+
 #endif

@@ -26,7 +26,7 @@ bool
 pm_node_list_grow(pm_node_list_t *list) {
     if (list->size == list->capacity) {
         list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
-        list->nodes = (pm_node_t **) realloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+        list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
         return list->nodes != NULL;
     }
     return true;
@@ -60,7 +60,7 @@ pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node) {
 void
 pm_node_list_free(pm_node_list_t *list) {
     if (list->capacity > 0) {
-        free(list->nodes);
+        xfree(list->nodes);
         *list = (pm_node_list_t) { 0 };
     }
 }
@@ -123,7 +123,7 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
             assert(false && "unreachable");
             break;
     }
-    free(node);
+    xfree(node);
 }
 
 static void

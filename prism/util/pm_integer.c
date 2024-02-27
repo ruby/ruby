@@ -7,7 +7,7 @@ static pm_integer_word_t *
 pm_integer_node_create(pm_integer_t *integer, uint32_t value) {
     integer->length++;
 
-    pm_integer_word_t *node = malloc(sizeof(pm_integer_word_t));
+    pm_integer_word_t *node = xmalloc(sizeof(pm_integer_word_t));
     if (node == NULL) return NULL;
 
     *node = (pm_integer_word_t) { .next = NULL, .value = value };
@@ -94,7 +94,7 @@ pm_integer_divide_word(pm_integer_t *integer, pm_integer_word_t *word, uint32_t 
         remainder = pm_integer_divide_word(integer, word->next, dividend);
 
         if (integer->length > 0 && word->next->value == 0) {
-            free(word->next);
+            xfree(word->next);
             word->next = NULL;
             integer->length--;
         }
@@ -256,7 +256,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
         default: {
             // First, allocate a buffer that we'll copy the decimal digits into.
             size_t length = (integer->length + 1) * 10;
-            char *digits = calloc(length, sizeof(char));
+            char *digits = xcalloc(length, sizeof(char));
             if (digits == NULL) return;
 
             // Next, create a new integer that we'll use to store the result of
@@ -276,7 +276,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
 
             // Finally, append the string to the buffer and free the digits.
             pm_buffer_append_string(buffer, current + 1, (size_t) (ending - current));
-            free(digits);
+            xfree(digits);
             return;
         }
     }
@@ -291,7 +291,7 @@ pm_integer_word_destroy(pm_integer_word_t *integer) {
         pm_integer_word_destroy(integer->next);
     }
 
-    free(integer);
+    xfree(integer);
 }
 
 /**
