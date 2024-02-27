@@ -894,7 +894,7 @@ rb_yjit_ruby2_keywords_splat_p(VALUE obj)
 VALUE
 rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
 {
-    if (!RB_TYPE_P(splat_array, T_ARRAY)) return Qfalse;
+    // We inserted a T_ARRAY guard before this call
     long len = RARRAY_LEN(splat_array);
 
     // Large splat arrays need a separate allocation
