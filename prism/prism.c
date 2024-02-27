@@ -16523,15 +16523,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                             pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, string);
                         } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
-                            // If we hit string content and the current node is a string node,
+                            // If we hit string content and the current node is a symbol node,
                             // then we need to convert the current node into an interpolated
                             // string and add the string content to the list of child nodes.
-                            pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->previous, &closing);
+                            pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
+                            pm_token_t bounds = not_provided(parser);
+
+                            pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = cast->value_loc.start, .end = cast->value_loc.end };
+                            pm_node_t *first_string = (pm_node_t *) pm_string_node_create_unescaped(parser, &bounds, &content, &bounds, &cast->unescaped);
+                            pm_node_t *second_string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->previous, &closing);
                             parser_lex(parser);
 
                             pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
-                            pm_interpolated_symbol_node_append(interpolated, current);
-                            pm_interpolated_symbol_node_append(interpolated, string);
+                            pm_interpolated_symbol_node_append(interpolated, first_string);
+                            pm_interpolated_symbol_node_append(interpolated, second_string);
+
+                            free(current);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
