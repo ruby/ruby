@@ -1276,12 +1276,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 
     RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
 
-    module = RCLASS_SUPER(module);
-    while (module && module != klass) {
-        c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
-        RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
-        module = RCLASS_SUPER(module);
-    }
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
 
