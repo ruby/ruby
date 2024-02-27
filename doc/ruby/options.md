@@ -309,18 +309,41 @@ CESU-8
 
 Option `-jit` enables JIT compilation with the default option.
 
-### Option `--jit-[_option_]`
+### Options `--jit-*`
 
-Option `--jit-[_option_]` enables JIT compilation with a given option `option`;
-the options:
+Options `--jit-*` [experimental] enable JIT compilation with specified options.
 
-- `warnings`: Enable printing JIT warnings.
-- `debug`: Enable JIT debugging (very slow), or add cflags if specified.
-- `wait`: Wait until JIT compilation finishes every time (for testing).
-- `save-temps`: Save JIT temporary files in $TMP or /tmp (for testing).
-- `verbose=<i>num</i>`: Print JIT logs of level `num` or less to stderr (default: 0).
-- `max-cache=num`: Maximum number of methods to be JIT-ed in a cache (default: 100).
-- `min-calls=num`: Number of calls to trigger JIT (for testing, default: 10000).
+#### Option `--jit-debug`
+
+Option `--jit-debug` enables JIT debugging (very slow);
+adds compiler flags if given.
+
+#### Option `--jit-max-cache=num`
+
+Option `--jit-max-cache=num` sets the maximum number of methods
+to be JIT-ed in a cache; default: 100).
+
+#### Option `--jit-min-calls=num`
+
+Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
+(for testing); default: 10000).
+
+#### Option `--jit-save-temps`
+
+Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
+
+#### Option `--jit-verbose=<i>num</i>`
+
+Option `--jit-verbose=<i>num</i>` prints JIT logs of level `num` or less
+to `$stderr`; default: 0.
+
+#### Option `--jit-wait`
+
+Option `--jit-wait` waits until JIT compilation finishes every time (for testing).
+
+####  Option `--jit-warnings`
+
+Option `--jit-warnings` enables printing of JIT warnings.
 
 ### Option `-l`
 
