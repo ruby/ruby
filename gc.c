@@ -4398,7 +4398,7 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
 static inline int
 is_markable_object(VALUE obj)
 {
-    if (rb_special_const_p(obj)) return FALSE; /* special const is not markable */
+    if (RB_SPECIAL_CONST_P(obj)) return FALSE; /* special const is not markable */
     check_rvalue_consistency(obj);
     return TRUE;
 }

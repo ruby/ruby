@@ -1889,7 +1889,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, extmod, type);
-            if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
+            if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
             }
             if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {

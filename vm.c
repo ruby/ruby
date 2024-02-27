@@ -2922,7 +2922,7 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
                         VALUE *p = ec->vm_stack;
                         VALUE *sp = ec->cfp->sp;
                         while (p < sp) {
-                            if (!rb_special_const_p(*p)) {
+                            if (!RB_SPECIAL_CONST_P(*p)) {
                                 cb(*p, ctx);
                             }
                             p++;
