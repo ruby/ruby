@@ -203,7 +203,7 @@ Option `--encoding` is an alias for
 Option `--external-encoding=<i>encoding</i>`
 sets the default external encoding for the invoked Ruby program;
 for values of +encoding+,
-see {encoding names and aliases}[rdoc-ref:encoding@Names+and+Aliases].
+see {Encoding: Names and Aliases}[rdoc-ref:Encoding@Names+and+Aliases].
 
 ```sh
 $ ruby -e 'puts Encoding::default_external'
@@ -277,6 +277,20 @@ $ popd
 ```
 
 Whitespace between the option and its argument may be omitted.
+
+### Option `--internal-encoding`
+
+Option `--internal-encoding=<i>encoding</i>`
+sets the default internal encoding for the invoked Ruby program;
+for values of +encoding+,
+see {Encoding: Names and Aliases}[rdoc-ref:Encoding@Names+and+Aliases].
+
+```sh
+$ ruby -e 'p Encoding::default_internal'
+nil
+$ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
+CESU-8
+```
 
 ### Option `--jit`
 
