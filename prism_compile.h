@@ -1,4 +1,5 @@
 #include "prism/prism.h"
+#include "ruby/encoding.h"
 
 /**
  * the getlocal and setlocal instructions require two parameters. level is how
@@ -21,7 +22,9 @@ typedef struct pm_scope_node {
     pm_node_t *parameters;
     pm_node_t *body;
     pm_constant_id_list_t locals;
+
     const pm_parser_t *parser;
+    rb_encoding *encoding;
 
     // The size of the local table
     // on the iseq which includes
@@ -32,7 +35,7 @@ typedef struct pm_scope_node {
     st_table *index_lookup_table;
 } pm_scope_node_t;
 
-void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, const pm_parser_t *parser);
+void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);
 void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 bool *rb_ruby_prism_ptr(void);
 
