@@ -73,11 +73,6 @@ For the splitting,
 the default record separator is `$/`,
 and the default field separator  is `$;`.
 
-### Option `--backtrace-limit`
-
-Option `--backtrace-limit=<i>num</i>` sets a limit on the number of entries
-to be displayed in a backtrace.
-
 ### Option `-c`
 
 Option `-c` specifies that the specified Ruby program
@@ -107,15 +102,6 @@ ruby
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `--copyright`
-
-Option `--copyright` prints a copyright message:
-
-```sh
-$ ruby --copyright
-ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
-```
-
 ### Option `-d`
 
 Some code in (or called by) the Ruby program may include statements or blocks
@@ -123,7 +109,7 @@ conditioned by the global variable `$DEBUG` (e.g., `if $DEBUG`);
 these commonly write to `$stdout` or `$stderr`.
 
 The default value for `$DEBUG` is `false`;
-option `-d` (or `--debug`) sets it to `true`:
+option `-d` sets it to `true`:
 
 ```sh
 $ ruby -e 'p $DEBUG'
@@ -131,31 +117,6 @@ false
 $ ruby -d -e 'p $DEBUG'
 true
 ```
-
-### Option `--disable=<i>list</i>`
-
-Option `--disable=<i>list</i>` specifies features to be disabled;
-_list_ is a comma-separated list of the features to be disabled.
-
-The supported features:
-
-- `gems`: Rubygems (default: enabled).
-- `did_you_mean`: `did_you_mean` (default: enabled).
-- `rubyopt`: `RUBYOPT` environment variable (default: enabled).
-- `frozen-string-literal`: Freeze all string literals (default: disabled).
-- `jit`: JIT compiler (default: disabled).
-
-### Option `--dump=<i>list</i>`
-
-Option `--dump=<i>list</i>` specifies items to be dumped;
-_list_ is a comma-separated list of the items.
-
-The supported items:
-
-- `insns`: Instruction sequences.
-- `yydebug`: yydebug of yacc parser generator.
-- `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
-- `parsetree_with_comment`: AST with comments.
 
 ### Option `-e`
 
@@ -191,32 +152,6 @@ $ ruby -E cesu-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_int
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `--enable=<i>list</i>`
-
-Option `--enable=<i>list</i>` specifies features to be enabled;
-_list_ is a comma-separated list of the features to be enabled.
-
-See {--disable}[rdoc-ref:options.md@Option+--disable-3Dlist].
-
-### Option `--encoding`
-
-Option `--encoding` is an alias for
-{option -E}[rdoc-ref:options.md@Option+-E].
-
-### Option `--external-encoding`
-
-Option `--external-encoding=<i>encoding</i>`
-sets the default external encoding for the invoked Ruby program;
-for values of +encoding+,
-see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
-
-```sh
-$ ruby -e 'puts Encoding::default_external'
-UTF-8
-$ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
-CESU-8
-```
-
 ### Option `-F`
 
 Option `-F`, when given with option `-a`,
@@ -250,14 +185,6 @@ Arguments and additional options are ignored.
 
 For a longer help message, use option `--help`.
 
-### Option `--help`
-
-Option `--help` prints a long help message.
-
-Arguments and additional options are ignored.
-
-For a shorter help message, use option `-h`.
-
 ### Option `-i`
 
 Option `-i` sets the ARGF in-place mode for the invoked Ruby program;
@@ -290,60 +217,6 @@ $ popd
 ```
 
 Whitespace between the option and its argument may be omitted.
-
-### Option `--internal-encoding`
-
-Option `--internal-encoding=<i>encoding</i>`
-sets the default internal encoding for the invoked Ruby program;
-for values of +encoding+,
-see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
-
-```sh
-$ ruby -e 'puts Encoding::default_internal.nil?'
-true
-$ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
-CESU-8
-```
-
-### Option `--jit`
-
-Option `-jit` enables JIT compilation with the default option.
-
-### Options `--jit-*`
-
-Options `--jit-*` [experimental] enable JIT compilation with specified options.
-
-#### Option `--jit-debug`
-
-Option `--jit-debug` enables JIT debugging (very slow);
-adds compiler flags if given.
-
-#### Option `--jit-max-cache=num`
-
-Option `--jit-max-cache=num` sets the maximum number of methods
-to be JIT-ed in a cache; default: 100).
-
-#### Option `--jit-min-calls=num`
-
-Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
-(for testing); default: 10000).
-
-#### Option `--jit-save-temps`
-
-Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
-
-#### Option `--jit-verbose=<i>num</i>`
-
-Option `--jit-verbose=<i>num</i>` prints JIT logs of level `num` or less
-to `$stderr`; default: 0.
-
-#### Option `--jit-wait`
-
-Option `--jit-wait` waits until JIT compilation finishes every time (for testing).
-
-####  Option `--jit-warnings`
-
-Option `--jit-warnings` enables printing of JIT warnings.
 
 ### Option `-l`
 
@@ -483,15 +356,6 @@ ruby 3.3.0 (2023-12-25 revision 5124f9ac75) [x64-mingw-ucrt]
 true
 ```
 
-### Option `--verbose`
-
-Option `--verbose` sets global variable `$VERBOSE` to `true`
-and disables input from `$stdin`.
-
-### Option `--version`
-
-Option `--version` prints the version of the Ruby interpreter, then exits.
-
 ### Option `-w`
 
 Option `-w` (lowercase letter) is equivalent to option `-W1` (uppercase letter).
@@ -588,3 +452,145 @@ $
 ```
 
 The option and its argument may not be separated by whitespace.
+
+### Option `--backtrace-limit`
+
+Option `--backtrace-limit=<i>num</i>` sets a limit on the number of entries
+to be displayed in a backtrace.
+
+### Option `--copyright`
+
+Option `--copyright` prints a copyright message:
+
+```sh
+$ ruby --copyright
+ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
+```
+
+### Option `--debug`
+
+Option `--debug` is an alias for
+{option -E}[rdoc-ref:options.md@Option+-d].
+
+### Option `--encoding`
+
+Option `--encoding` is an alias for
+{option -E}[rdoc-ref:options.md@Option+-E].
+
+### Option `--external-encoding`
+
+Option `--external-encoding=<i>encoding</i>`
+sets the default external encoding for the invoked Ruby program;
+for values of +encoding+,
+see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
+
+```sh
+$ ruby -e 'puts Encoding::default_external'
+UTF-8
+$ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
+CESU-8
+```
+
+### Option `--disable=<i>list</i>`
+
+Option `--disable=<i>list</i>` specifies features to be disabled;
+_list_ is a comma-separated list of the features to be disabled.
+
+The supported features:
+
+- `gems`: Rubygems (default: enabled).
+- `did_you_mean`: `did_you_mean` (default: enabled).
+- `rubyopt`: `RUBYOPT` environment variable (default: enabled).
+- `frozen-string-literal`: Freeze all string literals (default: disabled).
+- `jit`: JIT compiler (default: disabled).
+
+### Option `--dump=<i>list</i>`
+
+Option `--dump=<i>list</i>` specifies items to be dumped;
+_list_ is a comma-separated list of the items.
+
+The supported items:
+
+- `insns`: Instruction sequences.
+- `yydebug`: yydebug of yacc parser generator.
+- `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
+- `parsetree_with_comment`: AST with comments.
+
+### Option `--enable=<i>list</i>`
+
+Option `--enable=<i>list</i>` specifies features to be enabled;
+_list_ is a comma-separated list of the features to be enabled.
+
+See {--disable}[rdoc-ref:options.md@Option+--disable-3Dlist].
+
+### Option `--help`
+
+Option `--help` prints a long help message.
+
+Arguments and additional options are ignored.
+
+For a shorter help message, use option `-h`.
+
+### Option `--internal-encoding`
+
+Option `--internal-encoding=<i>encoding</i>`
+sets the default internal encoding for the invoked Ruby program;
+for values of +encoding+,
+see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
+
+```sh
+$ ruby -e 'puts Encoding::default_internal.nil?'
+true
+$ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
+CESU-8
+```
+
+### JIT Options
+
+JIT options [experimental] enable JIT compilation with certain options.
+
+### Option `--jit`
+
+Option `-jit` enables JIT compilation with the default option.
+
+#### Option `--jit-debug`
+
+Option `--jit-debug` enables JIT debugging (very slow);
+adds compiler flags if given.
+
+#### Option `--jit-max-cache=num`
+
+Option `--jit-max-cache=num` sets the maximum number of methods
+to be JIT-ed in a cache; default: 100).
+
+#### Option `--jit-min-calls=num`
+
+Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
+(for testing); default: 10000).
+
+#### Option `--jit-save-temps`
+
+Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
+
+#### Option `--jit-verbose=<i>num</i>`
+
+Option `--jit-verbose=<i>num</i>` prints JIT logs of level `num` or less
+to `$stderr`; default: 0.
+
+#### Option `--jit-wait`
+
+Option `--jit-wait` waits until JIT compilation finishes every time (for testing).
+
+####  Option `--jit-warnings`
+
+Option `--jit-warnings` enables printing of JIT warnings.
+
+### Option `--verbose`
+
+Option `--verbose` sets global variable `$VERBOSE` to `true`
+and disables input from `$stdin`.
+
+### Option `--version`
+
+Option `--version` prints the version of the Ruby interpreter, then exits.
+
