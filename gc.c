@@ -4373,7 +4373,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 }
 
 /* garbage objects will be collected soon. */
-static inline int
+static inline bool
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
