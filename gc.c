@@ -4376,15 +4376,8 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 static inline int
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
-    if (!is_lazy_sweeping(objspace) ||
-        !GET_HEAP_PAGE(ptr)->flags.before_sweep ||
-        MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
-
-        return FALSE;
-    }
-    else {
-        return TRUE;
-    }
+    return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
+        !MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr);
 }
 
 static inline bool
