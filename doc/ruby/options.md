@@ -102,6 +102,15 @@ ruby
 
 Whitespace between the option and its argument may be omitted.
 
+### Option `--copyright`
+
+Option `--copyright` prints a copyright message:
+
+```sh
+$ ruby --copyright
+ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
+```
+
 ### Option `-d`
 
 Some code in (or called by) the Ruby program may include statements or blocks
@@ -117,6 +126,31 @@ false
 $ ruby -d -e 'p $DEBUG'
 true
 ```
+
+### Option `--disable=<i>list</i>`
+
+Option `--disable=<i>list</i>` specifies features to be disabled;
+_list_ is a comma-separated list of the features to be disabled.
+
+The supported features:
+
+- `gems`: Rubygems (default: enabled).
+- `did_you_mean`: `did_you_mean` (default: enabled).
+- `rubyopt`: `RUBYOPT` environment variable (default: enabled).
+- `frozen-string-literal`: Freeze all string literals (default: disabled).
+- `jit`: JIT compiler (default: disabled).
+
+### Option `--dump=<i>list</i>`
+
+Option `--dump=<i>list</i>` specifies items to be dumped;
+_list_ is a comma-separated list of the items.
+
+The supported items:
+
+- `insns`: Instruction sequences.
+- `yydebug`: yydebug of yacc parser generator.
+- `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
+- `parsetree_with_comment`: AST with comments.
 
 ### Option `-e`
 
@@ -152,6 +186,32 @@ $ ruby -E cesu-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_int
 
 Whitespace between the option and its argument may be omitted.
 
+### Option `--enable=<i>list</i>`
+
+Option `--enable=<i>list</i>` specifies features to be enabled;
+_list_ is a comma-separated list of the features to be enabled.
+
+See {--disable}[options_md.html#label-Option+--disable-3Dlist].
+
+### Option `--encoding`
+
+Option `--encoding` is an alias for
+{option -E}[options_md.html#label-Option+-E].
+
+### Option `--external-encoding`
+
+Option `--external-encoding=<i>encoding</i>`
+sets the default external encoding for the invoked Ruby program;
+for values of +encoding+,
+see {encoding names and aliases}[rdoc-ref:encoding@Names+and+Aliases].
+
+```sh
+$ ruby -e 'puts Encoding::default_external'
+UTF-8
+$ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
+CESU-8
+```
+
 ### Option `-F`
 
 Option `-F`, when given with option `-a`,
@@ -174,6 +234,16 @@ $ ruby -an -F'[.,]\s*' -e 'p $F' desiderata.txt
 ["As far as possible", "without surrender"]
 ["be on good terms with all persons"]
 ```
+
+### Option `-h`
+
+Option `-h` prints a short help message
+that includes single-hyphen options (e.g. `-I`),
+and largely omits double-hyphen options (e.g., `--version`).
+
+Arguments and additional options are ignored.
+
+For a longer help message, use option `--help`.
 
 ### Option `-i`
 
@@ -208,7 +278,22 @@ $ popd
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `-jit` TODO
+### Option `--jit`
+
+Option `-jit` enables JIT compilation with the default option.
+
+### Option `--jit-[_option_]`
+
+Option `--jit-[_option_]` enables JIT compilation with a given option `option`;
+the options:
+
+- `warnings`: Enable printing JIT warnings.
+- `debug`: Enable JIT debugging (very slow), or add cflags if specified.
+- `wait`: Wait until JIT compilation finishes every time (for testing).
+- `save-temps`: Save JIT temporary files in $TMP or /tmp (for testing).
+- `verbose=<i>num</i>`: Print JIT logs of level `num` or less to stderr (default: 0).
+- `max-cache=num`: Maximum number of methods to be JIT-ed in a cache (default: 100).
+- `min-calls=num`: Number of calls to trigger JIT (for testing, default: 10000).
 
 ### Option `-l`
 
@@ -319,7 +404,22 @@ $ ruby -s t.rb -foo=baz -bar=bat
 ["baz", "bat"]
 ```
 
-### Option `-S` TODO
+### Option `-S`
+
+Option `-S` specifies that the Ruby interpreter
+is to search (if necessary) the directories whose paths are in the program's
+`PATH` environment variable;
+the program is executed in the shell's current working directory
+(not the directory where the program is found).
+
+This example uses adds path `'tmp/'` to the `PATH` environment variable:
+
+```sh
+$ export PATH=/tmp:$PATH
+$ echo "puts File.basename(Dir.pwd)" > /tmp/t.rb
+$ ruby -S t.rb
+ruby
+```
 
 ### Option `-v`
 
@@ -388,5 +488,44 @@ $ ruby -W:no-experimental -e 'p IO::Buffer.new'
 #<IO::Buffer>
 ```
 
-### Option `-x` TODO
+### Option `-x`
 
+Option `-x` executes a Ruby program whose code is embedded
+in other, non-code, text:
+
+The ruby code:
+
+- Begins after the first line beginning with `'#!` and containing string `'ruby'`.
+- Ends before any one of:
+
+    - End-of-file.
+    - A line consisting of `'__END__'`,
+    - Character `Ctrl-D` or `Ctrl-Z`.
+
+Example:
+
+```sh
+$ cat t.txt
+Leading garbage.
+#!ruby
+puts File.basename(Dir.pwd)
+__END__
+Trailing garbage.
+
+$ ruby -x t.txt
+ruby
+```
+
+The optional argument specifies the directory where the text file
+is to be found;
+the Ruby code is executed in that directory:
+
+```sh
+$ cp t.txt /tmp/
+$ ruby -x/tmp t.txt
+tmp
+$
+
+```
+
+The option and its argument may not be separated by whitespace.
