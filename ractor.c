@@ -3542,6 +3542,8 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     dst->v2 = src->v2;
     dst->v3 = src->v3;
 
+    rb_obj_switch_obj_id((VALUE)src, (VALUE)dst);
+
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
     }

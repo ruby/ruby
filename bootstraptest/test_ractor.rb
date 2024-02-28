@@ -1108,6 +1108,19 @@ values = r.take
 values.join
 }
 
+# moved objects have their original object_id
+assert_equal 'true', %q{
+r = Ractor.new do
+  obj = receive
+  obj.object_id
+end
+obj = Object.new
+object_id = obj.object_id
+r.send(obj, move: true)
+object_id_from_ractor = r.take
+object_id == object_id_from_ractor
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
