@@ -28,14 +28,19 @@ for the invoked Ruby program.
 
 The optional argument to the option must be octal digits,
 each in the range `0..7`;
-these digits are prefixed with digit `0` to form an octal value:
+these digits are prefixed with digit `0` to form an octal value.
 
-- If no argument is given, the input record separator is `0x00`.
-- If the argument is `0`, the input record separator is `''`;
+If no argument is given, the input record separator is `0x00`.
+
+If an argument is given, it must immediately follow the option
+(no whitespace or equal-sign character `'-'`);
+argument values:
+
+- `0`: the input record separator is `''`;
   see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values].
-- If the argument is in range `(1..0377)`,
-  it becomes the character value of the input record separator `$/`.
-- Otherwise, the input record separator is `nil`.
+- In range `(1..0377)`:
+  the input record separator `$/` is set to the character value of the argument.
+- Any other value: the input record separator is `nil`.
 
 Examples:
 
@@ -53,9 +58,6 @@ $ ruby -0377 -e 'p $/'
 $ ruby -0400 -e 'p $/'
 nil
 ```
-
-The option may not be separated from its argument by whitespace
-or by the equal-sign character (`'='`).
 
 See also:
 
