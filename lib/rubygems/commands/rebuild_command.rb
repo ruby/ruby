@@ -52,15 +52,15 @@ The rebuild command allows you to (attempt to) reproduce a build of a gem
 from a ruby gemspec.
 
 This command assumes the gemspec can be built with the `gem build` command.
-If you use either `gem build` or `rake build`/`rake release` to build/release
-a gem, it is a potential candidate.
+If you use any of `gem build`, `rake build`, or`rake release` in the
+build/release process for a gem, it is a potential candidate.
 
-You will likely need to match the RubyGems version used, since this is
-included in the Gem metadata.
+You will need to match the RubyGems version used, since this is included in
+the Gem metadata.
 
-If the gem includes lockfiles (e.g. Gemfile.lock) and similar, it will require
-more effort to reproduce a build. For example, it might require more precisely
-matched versions of Ruby and/or Bundler to be used.
+If the gem includes lockfiles (e.g. Gemfile.lock) and similar, it will
+require more effort to reproduce a build. For example, it might require
+more precisely matched versions of Ruby and/or Bundler to be used.
     EOF
   end
 
@@ -148,14 +148,13 @@ Please install RubyGems v#{rg_version} and try again.
       say "SUCCESS - original and rebuild hashes matched"
     else
       say "FAILURE - original and rebuild hashes did not match"
+      say
 
       if options[:diff]
-        say
         if system("diffoscope", old_file, new_file).nil?
           alert_error "error: could not find `diffoscope` executable"
         end
       else
-        say
         say "Pass --diff for more details (requires diffoscope to be installed)."
       end
 
