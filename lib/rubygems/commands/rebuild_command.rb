@@ -154,6 +154,9 @@ Please install RubyGems v#{rg_version} and try again.
         if system("diffoscope", old_file, new_file).nil?
           alert_error "error: could not find `diffoscope` executable"
         end
+      else
+        say
+        say "Pass --diff for more details (requires diffoscope to be installed)."
       end
 
       terminate_interaction 1
