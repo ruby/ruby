@@ -4857,7 +4857,7 @@ static VALUE
 count_objects(int argc, VALUE *argv, VALUE os)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    size_t counts[T_MASK+1];
+    size_t counts[T_MASK + 1] = { 0 };
     size_t freed = 0;
     size_t total = 0;
     size_t i;
@@ -4867,10 +4867,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
         hash = argv[0];
         if (!RB_TYPE_P(hash, T_HASH))
             rb_raise(rb_eTypeError, "non-hash given");
-    }
-
-    for (i = 0; i <= T_MASK; i++) {
-        counts[i] = 0;
     }
 
     for (i = 0; i < heap_allocated_pages; i++) {
