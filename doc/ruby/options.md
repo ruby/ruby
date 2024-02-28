@@ -61,10 +61,16 @@ nil
 
 See also:
 
-- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]: Split input lines into fields.
-- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]: \Set input field separator.
-- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
-- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]:
+  Split input lines into fields.
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]:
+  \Set input field separator.
+- {Option -l}[options_md.html#label-l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+  \Set output record separator; chop lines.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]:
+  Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]:
+  `-n`, with printing.
 
 ### `-a`: Split Input Lines into Fields
 
@@ -85,10 +91,16 @@ and the default field separator  is `$;`.
 
 See also:
 
-- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
-- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]: \Set input field separator.
-- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
-- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+  \Set `$/` (input record separator).
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]:
+  \Set input field separator.
+- {Option -l}[options_md.html#label-l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+  \Set output record separator; chop lines.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]:
+  Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]:
+  `-n`, with printing.
 
 ### `-c`: Check Syntax
 
@@ -209,10 +221,16 @@ The argument must immediately follow the option
 
 See also:
 
-- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
-- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]: Split input lines into fields.
-- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
-- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+  \Set `$/` (input record separator).
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]:
+  Split input lines into fields.
+- {Option -l}[options_md.html#label-l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+  \Set output record separator; chop lines.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]:
+  Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]:
+  `-n`, with printing.
 
 ### `-h`: Print Short Help Message
 
@@ -224,9 +242,9 @@ Arguments and additional options are ignored.
 
 For a longer help message, use option `--help`.
 
-### `-i`: \Set ARGF In-Place Mode
+### `-i`: \Set \ARGF In-Place Mode
 
-Option `-i` sets the ARGF in-place mode for the invoked Ruby program;
+Option `-i` sets the \ARGF in-place mode for the invoked Ruby program;
 see ARGF#inplace_mode=:
 
 ```
@@ -263,8 +281,8 @@ Option `-l`, when given with option `-n` or `-p`,
 modifies line-ending processing by:
 
 - Setting global variable output record separator `$\`
-  to input record separator `$/`;
-  this affects line-oriented output (such a that from Kernel#puts).
+  to the current value of input record separator `$/`;
+  this affects line-oriented output (such a the output from Kernel#puts).
 - Calling String#chop! on each line read.
 
 Without option `-l` (unchopped):
@@ -287,6 +305,19 @@ $ ruby -ln -e 'p $_' desiderata.txt
 "be on good terms with all persons."
 ```
 
+See also:
+
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+  \Set `$/` (input record separator).
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]:
+  Split input lines into fields.
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]:
+  \Set input field separator.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]:
+  Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]:
+  `-n`, with printing.
+
 ### `-n`: Run Program in `gets` Loop
 
 Option `-n` runs your program in a Kernel#gets loop:
@@ -308,6 +339,19 @@ As far as possible, without surrender,
 be on good terms with all persons.
 ```
 
+See also:
+
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+  \Set `$/` (input record separator).
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]:
+  Split input lines into fields.
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]:
+  \Set input field separator.
+- {Option -l}[options_md.html#label-l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+  \Set output record separator; chop lines.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]:
+  `-n`, with printing.
+
 ### `-p`: `-n`, with Printing
 
 Option `-p` is like option `-n`, but also prints each line:
@@ -323,6 +367,19 @@ As far as possible, without surrender,
 35
 be on good terms with all persons.
 ```
+
+See also:
+
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+  \Set `$/` (input record separator).
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]:
+  Split input lines into fields.
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]:
+  \Set input field separator.
+- {Option -l}[options_md.html#label-l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+  \Set output record separator; chop lines.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]:
+  Run program in `gets` loop.
 
 ### `-r`: Require Library
 
@@ -343,11 +400,14 @@ Whitespace between the option and its argument may be omitted.
 
 ### `-s`: Define Global Variable
 
-Option `-s` specifies that a "custom option" that follows
-the script name is to define a global variable in the invoked Ruby program:
+Option `-s` specifies that a "custom option" is to define a global variable
+in the invoked Ruby program:
 
-- The custom option must begin with single hyphen (`-foo`), not two hyphens (`--foo`).
-- The name of the global variable is based on the option name: `$foo` for `-foo`.
+- The custom option must appear _after_ the program name.
+- The custom option must begin with single hyphen (e.g., `-foo`),
+  not two hyphens (e.g., `--foo`).
+- The name of the global variable is based on the option name:
+  global variable `$foo` for custom option`-foo`.
 - The value of the global variable is the string option argument if given,
   `true` otherwise.
 
@@ -366,13 +426,16 @@ $ ruby -s t.rb -foo=baz -bar=bat
 ["baz", "bat"]
 ```
 
-### `-S`: Search Directories in `ENV['PATH']
+The option may not be used with
+{option -e}[options_md.html#label-e-3A+Execute+Given+Ruby+Code]
+
+### `-S`: Search Directories in `ENV['PATH']`
 
 Option `-S` specifies that the Ruby interpreter
 is to search (if necessary) the directories whose paths are in the program's
 `PATH` environment variable;
 the program is executed in the shell's current working directory
-(not the directory where the program is found).
+(not necessarily in the directory where the program is found).
 
 This example uses adds path `'tmp/'` to the `PATH` environment variable:
 
@@ -399,7 +462,7 @@ true
 
 Option `-w` (lowercase letter) is equivalent to option `-W1` (uppercase letter).
 
-### `-W`: \Set Warning Policy
+### `-W`: \Set \Warning Policy
 
 Any Ruby code can create a <i>warning message</i> by calling method Kernel#warn;
 methods in the Ruby core and standard libraries can also create warning messages.
@@ -490,12 +553,15 @@ $
 
 ```
 
-The option and its argument may not be separated by whitespace.
+If an argument is given, it must immediately follow the option
+(no intervening whitespace or equal-sign character `'='`).
 
 ### `--backtrace-limit`: \Set Backtrace Limit
 
 Option `--backtrace-limit` sets a limit on the number of entries
 to be displayed in a backtrace.
+
+See Thread::Backtrace.limit.
 
 ### `--copyright`: Print Ruby Copyright
 
@@ -514,7 +580,11 @@ Option `--debug` is an alias for
 ### `--disable`: Disable Features
 
 Option `--disable` specifies features to be disabled;
-_list_ is a comma-separated list of the features to be disabled.
+the argument is a comma-separated list of the features to be disabled:
+
+```sh
+ruby --disable=gems,rubyopt t.rb
+```
 
 The supported features:
 
@@ -524,24 +594,329 @@ The supported features:
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
 
+See also {option --enable}[options_md.html#label--enable-3A+Enable+Features].
+
 ### `--dump`: Dump Items
 
 Option `--dump` specifies items to be dumped;
-_list_ is a comma-separated list of the items.
+the argument is a comma-separated list of the items.
+
+Some of the argument values cause the command to behave as if a different
+option was given:
+
+- `--dump=copyright`:
+  Same as {option \-\-copyright}[options_md.html#label--copyright-3A+Print+Ruby+Copyright].
+- `--dump=help`:
+  Same as {option \-\-help}[options_md.html#label--help-3A+Print+Help+Message].
+- `--dump=syntax`:
+  Same as {option -c}[options_md.html#label-c-3A+Check+Syntax].
+- `--dump=usage`:
+  Same as {option -h}[options_md.html#label-h-3A+Print+Short+Help+Message].
+- `--dump=version`:
+  Same as {option \-\-version}[options_md.html#label--version-3A+Print+Ruby+Version].
+
+For the remaining argument values, we use this program:
+
+```sh
+$ cat t.rb
+puts 'Foo'
+```
 
 The supported items:
 
-- `insns`: Instruction sequences.
-- `yydebug`: yydebug of yacc parser generator.
-- `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
-- `parsetree_with_comment`: AST with comments.
+- `insns`: Instruction sequences:
+
+    ```sh
+    $ ruby --dump=insns t.rb
+    == disasm: #<ISeq:<main>@t.rb:1 (1,0)-(1,10)> (catch: FALSE)
+    0000 putself                                                          (   1)[Li]
+    0001 putstring                              "Foo"
+    0003 opt_send_without_block                 <calldata!mid:puts, argc:1, FCALL|ARGS_SIMPLE>
+    0005 leave
+    ```
+
+- `parsetree`: {Abstract syntax tree}[https://en.wikipedia.org/wiki/Abstract_syntax_tree]
+  (AST):
+
+    ```sh
+    $ ruby --dump=parsetree t.rb
+    ###########################################################
+    ## Do NOT use this node dump for any purpose other than  ##
+    ## debug and research.  Compatibility is not guaranteed. ##
+    ###########################################################
+
+    # @ NODE_SCOPE (line: 1, location: (1,0)-(1,10))
+    # +- nd_tbl: (empty)
+    # +- nd_args:
+    # |   (null node)
+    # +- nd_body:
+    #     @ NODE_FCALL (line: 1, location: (1,0)-(1,10))*
+    #     +- nd_mid: :puts
+    #     +- nd_args:
+    #         @ NODE_LIST (line: 1, location: (1,5)-(1,10))
+    #         +- nd_alen: 1
+    #         +- nd_head:
+    #         |   @ NODE_STR (line: 1, location: (1,5)-(1,10))
+    #         |   +- nd_lit: "Foo"
+    #         +- nd_next:
+    #             (null node)
+    ```
+
+- `parsetree_with_comment`: AST with comments:
+
+    ```sh
+    $ ruby --dump=parsetree_with_comment t.rb
+    ###########################################################
+    ## Do NOT use this node dump for any purpose other than  ##
+    ## debug and research.  Compatibility is not guaranteed. ##
+    ###########################################################
+
+    # @ NODE_SCOPE (line: 1, location: (1,0)-(1,10))
+    # | # new scope
+    # | # format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body
+    # +- nd_tbl (local table): (empty)
+    # +- nd_args (arguments):
+    # |   (null node)
+    # +- nd_body (body):
+    #     @ NODE_FCALL (line: 1, location: (1,0)-(1,10))*
+    #     | # function call
+    #     | # format: [nd_mid]([nd_args])
+    #     | # example: foo(1)
+    #     +- nd_mid (method id): :puts
+    #     +- nd_args (arguments):
+    #         @ NODE_LIST (line: 1, location: (1,5)-(1,10))
+    #         | # list constructor
+    #         | # format: [ [nd_head], [nd_next].. ] (length: [nd_alen])
+    #         | # example: [1, 2, 3]
+    #         +- nd_alen (length): 1
+    #         +- nd_head (element):
+    #         |   @ NODE_STR (line: 1, location: (1,5)-(1,10))
+    #         |   | # string literal
+    #         |   | # format: [nd_lit]
+    #         |   | # example: 'foo'
+    #         |   +- nd_lit (literal): "Foo"
+    #         +- nd_next (next element):
+    #             (null node)
+    ```
+
+- `yydebug`: Debugging information from yacc parser generator:
+
+    ```sh
+    $ ruby --dump=yydebug t.rb
+    Starting parse
+    Entering state 0
+    Reducing stack by rule 1 (line 1295):
+    lex_state: NONE -> BEG at line 1296
+    vtable_alloc:12392: 0x0000558453df1a00
+    vtable_alloc:12393: 0x0000558453df1a60
+    cmdarg_stack(push): 0 at line 12406
+    cond_stack(push): 0 at line 12407
+    -> $$ = nterm $@1 (1.0-1.0: )
+    Stack now 0
+    Entering state 2
+    Reading a token:
+    lex_state: BEG -> CMDARG at line 9049
+    Next token is token "local variable or method" (1.0-1.4: puts)
+    Shifting token "local variable or method" (1.0-1.4: puts)
+    Entering state 35
+    Reading a token: Next token is token "string literal" (1.5-1.6: )
+    Reducing stack by rule 742 (line 5567):
+    $1 = token "local variable or method" (1.0-1.4: puts)
+    -> $$ = nterm operation (1.0-1.4: )
+    Stack now 0 2
+    Entering state 126
+    Reducing stack by rule 78 (line 1794):
+    $1 = nterm operation (1.0-1.4: )
+    -> $$ = nterm fcall (1.0-1.4: )
+    Stack now 0 2
+    Entering state 80
+    Next token is token "string literal" (1.5-1.6: )
+    Reducing stack by rule 292 (line 2723):
+    cmdarg_stack(push): 1 at line 2737
+    -> $$ = nterm $@16 (1.4-1.4: )
+    Stack now 0 2 80
+    Entering state 235
+    Next token is token "string literal" (1.5-1.6: )
+    Shifting token "string literal" (1.5-1.6: )
+    Entering state 216
+    Reducing stack by rule 607 (line 4706):
+    -> $$ = nterm string_contents (1.6-1.6: )
+    Stack now 0 2 80 235 216
+    Entering state 437
+    Reading a token: Next token is token "literal content" (1.6-1.9: "Foo")
+    Shifting token "literal content" (1.6-1.9: "Foo")
+    Entering state 503
+    Reducing stack by rule 613 (line 4802):
+    $1 = token "literal content" (1.6-1.9: "Foo")
+    -> $$ = nterm string_content (1.6-1.9: )
+    Stack now 0 2 80 235 216 437
+    Entering state 507
+    Reducing stack by rule 608 (line 4716):
+    $1 = nterm string_contents (1.6-1.6: )
+    $2 = nterm string_content (1.6-1.9: )
+    -> $$ = nterm string_contents (1.6-1.9: )
+    Stack now 0 2 80 235 216
+    Entering state 437
+    Reading a token:
+    lex_state: CMDARG -> END at line 7276
+    Next token is token "terminator" (1.9-1.10: )
+    Shifting token "terminator" (1.9-1.10: )
+    Entering state 508
+    Reducing stack by rule 590 (line 4569):
+    $1 = token "string literal" (1.5-1.6: )
+    $2 = nterm string_contents (1.6-1.9: )
+    $3 = token "terminator" (1.9-1.10: )
+    -> $$ = nterm string1 (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 109
+    Reducing stack by rule 588 (line 4559):
+    $1 = nterm string1 (1.5-1.10: )
+    -> $$ = nterm string (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 108
+    Reading a token:
+    lex_state: END -> BEG at line 9200
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 586 (line 4541):
+    $1 = nterm string (1.5-1.10: )
+    -> $$ = nterm strings (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 107
+    Reducing stack by rule 307 (line 2837):
+    $1 = nterm strings (1.5-1.10: )
+    -> $$ = nterm primary (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 90
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 261 (line 2553):
+    $1 = nterm primary (1.5-1.10: )
+    -> $$ = nterm arg (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 220
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 270 (line 2586):
+    $1 = nterm arg (1.5-1.10: )
+    -> $$ = nterm arg_value (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 221
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 297 (line 2779):
+    $1 = nterm arg_value (1.5-1.10: )
+    -> $$ = nterm args (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 224
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 772 (line 5626):
+    -> $$ = nterm none (1.10-1.10: )
+    Stack now 0 2 80 235 224
+    Entering state 442
+    Reducing stack by rule 296 (line 2773):
+    $1 = nterm none (1.10-1.10: )
+    -> $$ = nterm opt_block_arg (1.10-1.10: )
+    Stack now 0 2 80 235 224
+    Entering state 441
+    Reducing stack by rule 288 (line 2696):
+    $1 = nterm args (1.5-1.10: )
+    $2 = nterm opt_block_arg (1.10-1.10: )
+    -> $$ = nterm call_args (1.5-1.10: )
+    Stack now 0 2 80 235
+    Entering state 453
+    Reducing stack by rule 293 (line 2723):
+    $1 = nterm $@16 (1.4-1.4: )
+    $2 = nterm call_args (1.5-1.10: )
+    cmdarg_stack(pop): 0 at line 2754
+    -> $$ = nterm command_args (1.4-1.10: )
+    Stack now 0 2 80
+    Entering state 333
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 79 (line 1804):
+    $1 = nterm fcall (1.0-1.4: )
+    $2 = nterm command_args (1.4-1.10: )
+    -> $$ = nterm command (1.0-1.10: )
+    Stack now 0 2
+    Entering state 81
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 73 (line 1770):
+    $1 = nterm command (1.0-1.10: )
+    -> $$ = nterm command_call (1.0-1.10: )
+    Stack now 0 2
+    Entering state 78
+    Reducing stack by rule 51 (line 1659):
+    $1 = nterm command_call (1.0-1.10: )
+    -> $$ = nterm expr (1.0-1.10: )
+    Stack now 0 2
+    Entering state 75
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 39 (line 1578):
+    $1 = nterm expr (1.0-1.10: )
+    -> $$ = nterm stmt (1.0-1.10: )
+    Stack now 0 2
+    Entering state 73
+    Next token is token '\n' (1.10-1.10: )
+    Reducing stack by rule 8 (line 1354):
+    $1 = nterm stmt (1.0-1.10: )
+    -> $$ = nterm top_stmt (1.0-1.10: )
+    Stack now 0 2
+    Entering state 72
+    Reducing stack by rule 5 (line 1334):
+    $1 = nterm top_stmt (1.0-1.10: )
+    -> $$ = nterm top_stmts (1.0-1.10: )
+    Stack now 0 2
+    Entering state 71
+    Next token is token '\n' (1.10-1.10: )
+    Shifting token '\n' (1.10-1.10: )
+    Entering state 311
+    Reducing stack by rule 769 (line 5618):
+    $1 = token '\n' (1.10-1.10: )
+    -> $$ = nterm term (1.10-1.10: )
+    Stack now 0 2 71
+    Entering state 313
+    Reducing stack by rule 770 (line 5621):
+    $1 = nterm term (1.10-1.10: )
+    -> $$ = nterm terms (1.10-1.10: )
+    Stack now 0 2 71
+    Entering state 314
+    Reading a token: Now at end of input.
+    Reducing stack by rule 759 (line 5596):
+    $1 = nterm terms (1.10-1.10: )
+    -> $$ = nterm opt_terms (1.10-1.10: )
+    Stack now 0 2 71
+    Entering state 312
+    Reducing stack by rule 3 (line 1321):
+    $1 = nterm top_stmts (1.0-1.10: )
+    $2 = nterm opt_terms (1.10-1.10: )
+    -> $$ = nterm top_compstmt (1.0-1.10: )
+    Stack now 0 2
+    Entering state 70
+    Reducing stack by rule 2 (line 1295):
+    $1 = nterm $@1 (1.0-1.0: )
+    $2 = nterm top_compstmt (1.0-1.10: )
+    vtable_free:12426: p->lvtbl->args(0x0000558453df1a00)
+    vtable_free:12427: p->lvtbl->vars(0x0000558453df1a60)
+    cmdarg_stack(pop): 0 at line 12428
+    cond_stack(pop): 0 at line 12429
+    -> $$ = nterm program (1.0-1.10: )
+    Stack now 0
+    Entering state 1
+    Now at end of input.
+    Shifting token "end-of-input" (1.10-1.10: )
+    Entering state 3
+    Stack now 0 1 3
+    Cleanup: popping token "end-of-input" (1.10-1.10: )
+    Cleanup: popping nterm program (1.0-1.10: )
+    ```
 
 ### `--enable`: Enable Features
 
 Option `--enable` specifies features to be enabled;
-_list_ is a comma-separated list of the features to be enabled.
+the argument is a comma-separated list of the features to be enabled.
 
-See {option --disable}[options_md.html#label--disable-3A+Disable+Features].
+```sh
+ruby --enable=gems,rubyopt t.rb
+```
+
+For the features,
+see {option --disable}[options_md.html#label--disable-3A+Disable+Features].
 
 ### `--encoding`: Alias for `-E`.
 
