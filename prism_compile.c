@@ -544,7 +544,23 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static void
-pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LABEL *then_label, rb_iseq_t *iseq, const int lineno, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
+
+    if (PM_NODE_TYPE_P(node, PM_INTEGER_NODE)) {
+        PM_COMPILE_NOT_POPPED(node);
+        ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(rb_intern("$.")));
+        ADD_SEND(ret, &dummy_line_node, idEq, INT2FIX(1));
+        PM_POP_IF_POPPED;
+    }
+    else {
+        PM_COMPILE(node);
+    }
+}
+
+static void
+pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LABEL *then_label, rb_iseq_t *iseq, const int lineno, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
     LABEL *lend = NEW_LABEL(lineno);
@@ -558,7 +574,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
     ADD_INSNL(ret, &dummy_line_node, branchif, lend);
 
     if (flip_flop_node->left) {
-        PM_COMPILE(flip_flop_node->left);
+        pm_compile_flip_flop_bound(iseq, flip_flop_node->left, ret, popped, scope_node);
     }
     else {
         PM_PUTNIL;
@@ -573,7 +589,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
 
     ADD_LABEL(ret, lend);
     if (flip_flop_node->right) {
-        PM_COMPILE(flip_flop_node->right);
+        pm_compile_flip_flop_bound(iseq, flip_flop_node->right, ret, popped, scope_node);
     }
     else {
         PM_PUTNIL;
@@ -624,9 +640,8 @@ again:
         ADD_INSNL(ret, &dummy_line_node, jump, then_label);
         return;
       case PM_FLIP_FLOP_NODE:
-        pm_compile_flip_flop((pm_flip_flop_node_t *)cond, else_label, then_label, iseq, lineno, ret, popped, scope_node);
+        pm_compile_flip_flop((const pm_flip_flop_node_t *) cond, else_label, then_label, iseq, lineno, ret, popped, scope_node);
         return;
-        // TODO: Several more nodes in this case statement
       case PM_DEFINED_NODE: {
         pm_defined_node_t *defined_node = (pm_defined_node_t *)cond;
         pm_compile_defined_expr(iseq, defined_node->value, ret, popped, scope_node, dummy_line_node, lineno, true);
