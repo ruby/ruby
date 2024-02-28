@@ -21,7 +21,7 @@ be on good terms with all persons.
 
 ## Options
 
-### Option `-0`: \Set `$/` (Input Record Separator)
+### `-0`: \Set `$/` (Input Record Separator)
 
 Option `-0` defines the input record separator `$/`
 for the invoked Ruby program.
@@ -61,12 +61,12 @@ nil
 
 See also:
 
-- {Option -a}[rdoc-ref:options.md@Option+-a-3A+Split+Input+Lines+into+Fields]: : Split input lines into fields.
-- {Option -F}[rdoc-ref:options.md@Option+-F-3A+Set+Input+Field+Separator]: \Set input field separator.
-- {Option -n}[rdoc-ref:options.md@Option+-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
-- {Option -p}[rdoc-ref:options.md@Option+-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]: Split input lines into fields.
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]: \Set input field separator.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
 
-### Option `-a`: Split Input Lines into Fields
+### `-a`: Split Input Lines into Fields
 
 Option `-a`, when given with either of options `-n` or `-p`,
 splits the string at `$_` into an array of strings at `$F`:
@@ -85,12 +85,12 @@ and the default field separator  is `$;`.
 
 See also:
 
-- {Option -0}[rdoc-ref:options.md@Option+-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
-- {Option -F}[rdoc-ref:options.md@Option+-F-3A+Set+Input+Field+Separator]: \Set input field separator.
-- {Option -n}[rdoc-ref:options.md@Option+-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
-- {Option -p}[rdoc-ref:options.md@Option+-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
+- {Option -F}[options_md.html#label-F-3A+Set+Input+Field+Separator]: \Set input field separator.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
 
-### Option `-c`: Check Syntax
+### `-c`: Check Syntax
 
 Option `-c` specifies that the specified Ruby program
 should be checked for syntax, but not actually executed:
@@ -102,7 +102,7 @@ $ ruby -c -e 'puts "Foo"'
 Syntax OK
 ```
 
-### Option `-C`: \Set Working Directory
+### `-C`: \Set Working Directory
 
 The argument to option `-C` specifies a working directory
 for the invoked Ruby program;
@@ -119,7 +119,7 @@ ruby
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `-d`: \Set `$DEBUG` to `true`
+### `-d`: \Set `$DEBUG` to `true`
 
 Some code in (or called by) the Ruby program may include statements or blocks
 conditioned by the global variable `$DEBUG` (e.g., `if $DEBUG`);
@@ -137,7 +137,7 @@ true
 
 Option `--debug` is an alias for option `-d`.
 
-### Option `-e`: Execute Given Ruby Code
+### `-e`: Execute Given Ruby Code
 
 Option `-e` requires an argument, which is Ruby code to be executed;
 the option may be given more than once:
@@ -153,7 +153,7 @@ Whitespace between the option and its argument may be omitted.
 The command may include other options,
 but should not include arguments (which, if given, are ignored).
 
-### Option `-E`: \Set Default Encodings
+### `-E`: \Set Default Encodings
 
 Option `-E` requires an argument, which specifies either the default external encoding,
 or both the default external and internal encodings for the invoked Ruby program:
@@ -174,14 +174,14 @@ Whitespace between the option and its argument may be omitted.
 
 See also:
 
-- {Option --external-encoding}[rdoc-ref:options.md@Option+--external-encoding-3A+Set+Default+External+Encoding]:
+- {Option --external-encoding}[options_md.html#label--external-encoding-3A+Set+Default+External+Encoding]:
   \Set default external encoding.
-- {Option --internal-encoding}[rdoc-ref:options.md@Option+--internal-encoding-3A+Set+Default+Internal+Encoding]:
+- {Option --internal-encoding}[options_md.html#label--internal-encoding-3A+Set+Default+Internal+Encoding]:
   \Set default internal encoding.
 
 Option `--encoding` is an alias for option `-E`.
 
-### Option `-F`: \Set Input Field Separator
+### `-F`: \Set Input Field Separator
 
 Option `-F`, when given with option `-a`,
 specifies that its argument is to be the input field separator to be used for splitting:
@@ -204,7 +204,7 @@ $ ruby -an -F'[.,]\s*' -e 'p $F' desiderata.txt
 ["be on good terms with all persons"]
 ```
 
-### Option `-h`: Print Short Help Message
+### `-h`: Print Short Help Message
 
 Option `-h` prints a short help message
 that includes single-hyphen options (e.g. `-I`),
@@ -214,7 +214,7 @@ Arguments and additional options are ignored.
 
 For a longer help message, use option `--help`.
 
-### Option `-i`: \Set ARGF In-Place Mode
+### `-i`: \Set ARGF In-Place Mode
 
 Option `-i` sets the ARGF in-place mode for the invoked Ruby program;
 see ARGF#inplace_mode=:
@@ -228,7 +228,7 @@ $ ruby -i.bak -e 'p ARGF.inplace_mode'
 ".bak"
 ```
 
-### Option `-I`: Add to `$LOAD_PATH`
+### `-I`: Add to `$LOAD_PATH`
 
 The argument to option `-I` specifies a directory
 to be added to the array in global variable `$LOAD_PATH`;
@@ -247,7 +247,7 @@ $ popd
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `-l`: \Set Output Record Separator; Chop Lines
+### `-l`: \Set Output Record Separator; Chop Lines
 
 Option `-l`, when given with option `-n` or `-p`,
 modifies line-ending processing by:
@@ -277,7 +277,7 @@ $ ruby -ln -e 'p $_' desiderata.txt
 "be on good terms with all persons."
 ```
 
-### Option `-n`: Run Program in `gets` Loop
+### `-n`: Run Program in `gets` Loop
 
 Option `-n` runs your program in a Kernel#gets loop:
 
@@ -298,7 +298,7 @@ As far as possible, without surrender,
 be on good terms with all persons.
 ```
 
-### Option `-p`: `-n`, with Printing
+### `-p`: `-n`, with Printing
 
 Option `-p` is like option `-n`, but also prints each line:
 
@@ -314,7 +314,7 @@ As far as possible, without surrender,
 be on good terms with all persons.
 ```
 
-### Option `-r`: Require Library
+### `-r`: Require Library
 
 The argument to option `-r` specifies a library to be required
 before executing the Ruby program;
@@ -331,7 +331,7 @@ $ ruby -r CSV -r JSON -e 'p defined?(JSON); p defined?(CSV)'
 
 Whitespace between the option and its argument may be omitted.
 
-### Option `-s`: Define Global Variable
+### `-s`: Define Global Variable
 
 Option `-s` specifies that a "custom option" that follows
 the script name is to define a global variable in the invoked Ruby program:
@@ -356,7 +356,7 @@ $ ruby -s t.rb -foo=baz -bar=bat
 ["baz", "bat"]
 ```
 
-### Option `-S`: Search Directories in `ENV['PATH']
+### `-S`: Search Directories in `ENV['PATH']
 
 Option `-S` specifies that the Ruby interpreter
 is to search (if necessary) the directories whose paths are in the program's
@@ -373,7 +373,7 @@ $ ruby -S t.rb
 ruby
 ```
 
-### Option `-v`: Print Version; \Set `$VERBOSE`
+### `-v`: Print Version; \Set `$VERBOSE`
 
 Options `-v` prints the Ruby version and sets global variable `$VERBOSE`:
 
@@ -385,11 +385,11 @@ ruby 3.3.0 (2023-12-25 revision 5124f9ac75) [x64-mingw-ucrt]
 true
 ```
 
-### Option `-w`: Synonym for `-W1`
+### `-w`: Synonym for `-W1`
 
 Option `-w` (lowercase letter) is equivalent to option `-W1` (uppercase letter).
 
-### Option `-W`: \Set Warning Policy
+### `-W`: \Set Warning Policy
 
 Any Ruby code can create a <i>warning message</i> by calling method Kernel#warn;
 methods in the Ruby core and standard libraries can also create warning messages.
@@ -440,7 +440,7 @@ $ ruby -W:no-experimental -e 'p IO::Buffer.new'
 #<IO::Buffer>
 ```
 
-### Option `-x`: Execute Ruby Code Found in Text
+### `-x`: Execute Ruby Code Found in Text
 
 Option `-x` executes a Ruby program whose code is embedded
 in other, non-code, text:
@@ -482,12 +482,12 @@ $
 
 The option and its argument may not be separated by whitespace.
 
-### Option `--backtrace-limit`: \Set Backtrace Limit
+### `--backtrace-limit`: \Set Backtrace Limit
 
 Option `--backtrace-limit` sets a limit on the number of entries
 to be displayed in a backtrace.
 
-### Option `--copyright`: Print Ruby Copyright
+### `--copyright`: Print Ruby Copyright
 
 Option `--copyright` prints a copyright message:
 
@@ -496,12 +496,12 @@ $ ruby --copyright
 ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
 ```
 
-### Option `--debug`: Alias for `-d`
+### `--debug`: Alias for `-d`
 
 Option `--debug` is an alias for
-{option -d}[rdoc-ref:options.md@Option+-d-3A+Set+-24DEBUG+to+true].
+{option -d}[options_md.html#label-d-3A+Set+-24DEBUG+to+true].
 
-### Option `--disable`: Disable Features
+### `--disable`: Disable Features
 
 Option `--disable` specifies features to be disabled;
 _list_ is a comma-separated list of the features to be disabled.
@@ -514,7 +514,7 @@ The supported features:
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
 
-### Option `--dump`: Dump Items
+### `--dump`: Dump Items
 
 Option `--dump` specifies items to be dumped;
 _list_ is a comma-separated list of the items.
@@ -526,19 +526,19 @@ The supported items:
 - `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
 - `parsetree_with_comment`: AST with comments.
 
-### Option `--enable`: Enable Features
+### `--enable`: Enable Features
 
 Option `--enable` specifies features to be enabled;
 _list_ is a comma-separated list of the features to be enabled.
 
-See {option --disable}[rdoc-ref:options.md@Option+--disable-3A+Disable+Features].
+See {option --disable}[options_md.html#label--disable-3A+Disable+Features].
 
-### Option `--encoding`: Alias for `-E`.
+### `--encoding`: Alias for `-E`.
 
 Option `--encoding` is an alias for
-{option -E}[rdoc-ref:options.md@Option+-E-3A+Set+Default+Encodings].
+{option -E}[options_md.html#label-E-3A+Set+Default+Encodings].
 
-### Option `--external-encoding`: \Set Default External Encoding
+### `--external-encoding`: \Set Default External Encoding
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
@@ -552,7 +552,7 @@ $ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
 CESU-8
 ```
 
-### Option `--help`: Print Help Message
+### `--help`: Print Help Message
 
 Option `--help` prints a long help message.
 
@@ -560,7 +560,7 @@ Arguments and additional options are ignored.
 
 For a shorter help message, use option `-h`.
 
-### Option `--internal-encoding`: \Set Default Internal Encoding
+### `--internal-encoding`: \Set Default Internal Encoding
 
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
@@ -574,12 +574,12 @@ $ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
 CESU-8
 ```
 
-### Option `--verbose`: \Set `$VERBOSE`
+### `--verbose`: \Set `$VERBOSE`
 
 Option `--verbose` sets global variable `$VERBOSE` to `true`
 and disables input from `$stdin`.
 
-### Option `--version`: Print Ruby Version
+### `--version`: Print Ruby Version
 
 Option `--version` prints the version of the Ruby interpreter, then exits.
 
@@ -588,39 +588,39 @@ Option `--version` prints the version of the Ruby interpreter, then exits.
 These options are experimental in the current Ruby release,
 and may be modified or withdrawn in later releases.
 
-### Option `--jit`
+### `--jit`
 
 Option `-jit` enables JIT compilation with the default option.
 
-#### Option `--jit-debug`
+#### `--jit-debug`
 
 Option `--jit-debug` enables JIT debugging (very slow);
 adds compiler flags if given.
 
-#### Option `--jit-max-cache=num`
+#### `--jit-max-cache=num`
 
 Option `--jit-max-cache=num` sets the maximum number of methods
 to be JIT-ed in a cache; default: 100).
 
-#### Option `--jit-min-calls=num`
+#### `--jit-min-calls=num`
 
 Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
 (for testing); default: 10000).
 
-#### Option `--jit-save-temps`
+#### `--jit-save-temps`
 
 Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
 
-#### Option `--jit-verbose`
+#### `--jit-verbose`
 
 Option `--jit-verbose` prints JIT logs of level `num` or less
 to `$stderr`; default: 0.
 
-#### Option `--jit-wait`
+#### `--jit-wait`
 
 Option `--jit-wait` waits until JIT compilation finishes every time (for testing).
 
-####  Option `--jit-warnings`
+#### `--jit-warnings`
 
 Option `--jit-warnings` enables printing of JIT warnings.
 
