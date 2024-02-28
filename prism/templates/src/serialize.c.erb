@@ -52,10 +52,14 @@ pm_serialize_string(const pm_parser_t *parser, const pm_string_t *string, pm_buf
 static void
 pm_serialize_integer(const pm_integer_t *integer, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, integer->negative ? 1 : 0);
-    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(integer->length + 1));
-
-    for (const pm_integer_word_t *node = &integer->head; node != NULL; node = node->next) {
-        pm_buffer_append_varuint(buffer, node->value);
+    if (integer->values == NULL) {
+        pm_buffer_append_varuint(buffer, pm_sizet_to_u32(1));
+        pm_buffer_append_varuint(buffer, integer->value);
+    } else {
+        pm_buffer_append_varuint(buffer, pm_sizet_to_u32(integer->length));
+        for (size_t i = 0; i < integer->length; i++) {
+            pm_buffer_append_varuint(buffer, integer->values[i]);
+        }
     }
 }
 
