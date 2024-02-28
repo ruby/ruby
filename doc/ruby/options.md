@@ -81,6 +81,13 @@ For the splitting,
 the default record separator is `$/`,
 and the default field separator  is `$;`.
 
+See also:
+
+- {Option -0}[rdoc-ref:options.md@Option+-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
+- {Option -F}[rdoc-ref:options.md@Option+-F-3A+Set+Input+Field+Separator]: \Set input field separator.
+- {Option -n}[rdoc-ref:options.md@Option+-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
+- {Option -p}[rdoc-ref:options.md@Option+-p-3A+-n-2C+with+Printing]: `-n`, with printing.
+
 ### Option `-c`: Check Syntax
 
 Option `-c` specifies that the specified Ruby program
