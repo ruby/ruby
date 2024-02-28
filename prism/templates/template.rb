@@ -145,7 +145,7 @@ module Prism
 
   # This represents a field on a node that is a list of nodes. We pass them as
   # references and store them directly on the struct.
-  class NodeListField < Field
+  class NodeListField < NodeKindField
     def rbs_class
       if specific_kind
         "Array[#{specific_kind}]"
@@ -161,20 +161,7 @@ module Prism
     end
 
     def java_type
-      if specific_kind
-        "#{specific_kind}[]"
-      else
-        "Node[]"
-      end
-    end
-
-    # TODO: unduplicate with NodeKindField
-    def specific_kind
-      options[:kind] unless options[:kind].is_a?(Array)
-    end
-
-    def union_kind
-      options[:kind] if options[:kind].is_a?(Array)
+      "#{super}[]"
     end
   end
 
