@@ -1798,6 +1798,26 @@ copy_str(VALUE str, rb_encoding *enc, bool intern)
     return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), enc);
 }
 
+#if USE_YJIT
+// Check that an environment variable is set to a truthy value
+static bool
+env_var_truthy(const char *name)
+{
+    const char *value = getenv(name);
+
+    if (!value)
+        return false;
+    if (strcmp(value, "1") == 0)
+        return true;
+    if (strcmp(value, "true") == 0)
+        return true;
+    if (strcmp(value, "yes") == 0)
+        return true;
+
+    return false;
+}
+#endif
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1907,7 +1927,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     if (!(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
 #if USE_YJIT
-        if (!FEATURE_USED_P(opt->features, yjit) && getenv("RUBY_YJIT_ENABLE")) {
+        if (!FEATURE_USED_P(opt->features, yjit) && env_var_truthy("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
         }
 #endif
