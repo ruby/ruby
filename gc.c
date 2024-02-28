@@ -3905,7 +3905,7 @@ should_be_finalizable(VALUE obj)
     rb_check_frozen(obj);
 }
 
-VALUE
+static VALUE
 rb_define_finalizer_no_check(VALUE obj, VALUE block)
 {
     rb_objspace_t *objspace = &rb_objspace;
