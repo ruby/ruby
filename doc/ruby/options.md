@@ -54,7 +54,15 @@ $ ruby -0400 -e 'p $/'
 nil
 ```
 
-The option may not be separated from its argument by whitespace.
+The option may not be separated from its argument by whitespace
+or by the equal-sign character (`'='`).
+
+See also:
+
+- {Option -a}[rdoc-ref:options.md@Option+-a-3A+Split+Input+Lines+into+Fields]: : Split input lines into fields.
+- {Option -F}[rdoc-ref:options.md@Option+-F-3A+Set+Input+Field+Separator]: \Set input field separator.
+- {Option -n}[rdoc-ref:options.md@Option+-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
+- {Option -p}[rdoc-ref:options.md@Option+-p-3A+-n-2C+with+Printing]: `-n`, with printing.
 
 ### Option `-a`: Split Input Lines into Fields
 
@@ -502,7 +510,7 @@ The supported items:
 Option `--enable` specifies features to be enabled;
 _list_ is a comma-separated list of the features to be enabled.
 
-See {option--disable}[rdoc-ref:options.md@Option+--disable-3A+Disable+Features].
+See {option --disable}[rdoc-ref:options.md@Option+--disable-3A+Disable+Features].
 
 ### Option `--encoding`: Alias for `-E`.
 
