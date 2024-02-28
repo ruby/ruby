@@ -2084,6 +2084,7 @@ static void
 prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 {
     ruby_opt_init(opt);
+    memset(result, 0, sizeof(pm_parse_result_t));
 
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
         rb_category_warn(
@@ -2095,11 +2096,14 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         );
     }
 
-    memset(result, 0, sizeof(*result));
-    result->options.line = 1;
+    pm_options_t *options = &result->options;
+    pm_options_line_set(options, 1);
+    pm_options_command_line_p_set(options, opt->do_print);
+    pm_options_command_line_n_set(options, opt->do_loop);
+    pm_options_command_line_l_set(options, opt->do_line);
+    pm_options_command_line_a_set(options, opt->do_split);
 
     VALUE error;
-
     if (strcmp(opt->script, "-") == 0) {
         rb_raise(rb_eRuntimeError, "Prism support for streaming code from stdin is not currently supported");
     }
