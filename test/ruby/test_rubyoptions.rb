@@ -929,7 +929,8 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_crash_report_executable_path
     omit if EnvUtil.rubybin.size > 245
     status, report = assert_crash_report("%E.%p.log")
-    assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
+    path = EnvUtil.rubybin.sub(/\A\w\K:[\/\\]/, '!').tr_s('/', '!')
+    assert_equal("#{path}.#{status.pid}.log", report)
   end
 
   def test_crash_report_script_path
