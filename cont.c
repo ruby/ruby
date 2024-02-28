@@ -796,6 +796,9 @@ static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fiber)
 {
     rb_execution_context_t *ec = &fiber->cont.saved_ec;
+#ifdef RUBY_ASAN_ENABLED
+    ec->machine.asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
+#endif
     rb_ractor_set_current_ec(th->ractor, th->ec = ec);
     // ruby_current_execution_context_ptr = th->ec = ec;
 
@@ -1023,13 +1026,8 @@ cont_mark(void *ptr)
                                  cont->machine.stack + cont->machine.stack_size);
         }
         else {
-            /* fiber */
-            const rb_fiber_t *fiber = (rb_fiber_t*)cont;
-
-            if (!FIBER_TERMINATED_P(fiber)) {
-                rb_gc_mark_locations(cont->machine.stack,
-                                     cont->machine.stack + cont->machine.stack_size);
-            }
+            /* fiber machine context is marked as part of rb_execution_context_mark, no need to
+             * do anything here. */
         }
     }
 
@@ -1568,11 +1566,10 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
         }
     }
 
-    /* exchange machine_stack_start between old_fiber and new_fiber */
+    /* these values are used in rb_gc_mark_machine_context to mark the fiber's stack. */
     old_fiber->cont.saved_ec.machine.stack_start = th->ec->machine.stack_start;
+    old_fiber->cont.saved_ec.machine.stack_end = FIBER_TERMINATED_P(old_fiber) ? NULL : th->ec->machine.stack_end;
 
-    /* old_fiber->machine.stack_end should be NULL */
-    old_fiber->cont.saved_ec.machine.stack_end = NULL;
 
     // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", (void*)old_fiber, old_fiber->stack.base, (void*)new_fiber, new_fiber->stack.base);
 
