@@ -703,6 +703,9 @@ struct pm_parser {
     /** The version of prism that we should use to parse. */
     pm_options_version_t version;
 
+    /** The command line flags given from the options. */
+    uint8_t command_line;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -736,30 +739,6 @@ struct pm_parser {
      * a true value.
      */
     bool frozen_string_literal;
-
-    /**
-     * Whether or not -p was present on the command line that invoked the
-     * parser. -p prints the value of $_ at the end of each loop.
-     */
-    bool command_line_p;
-
-    /**
-     * Whether or not -n was present on the command line that invoked the
-     * parser. -n wraps the script in a while gets loop.
-     */
-    bool command_line_n;
-
-    /**
-     * Whether or not -l was present on the command line that invoked the
-     * parser. -l chomps the input line by default.
-     */
-    bool command_line_l;
-
-    /**
-     * Whether or not -a was present on the command line that invoked the
-     * parser. -a splits the input line $_ into $F.
-     */
-    bool command_line_a;
 };
 
 #endif
