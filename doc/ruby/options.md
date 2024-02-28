@@ -470,12 +470,12 @@ ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
 ### Option `--debug`: Alias for `-d`
 
 Option `--debug` is an alias for
-{option -E}[rdoc-ref:options.md@Option+-d].
+{option -d}[rdoc-ref:options.md@Option+-d-3A+Set+-24DEBUG+to+true].
 
 ### Option `--encoding`: Alias for `-E`.
 
 Option `--encoding` is an alias for
-{option -E}[rdoc-ref:options.md@Option+-E].
+{option -E}[rdoc-ref:options.md@Option+-E-3A+Set+Default+Encodings].
 
 ### Option `--external-encoding`: \Set Default External Encoding
 
@@ -521,7 +521,7 @@ The supported items:
 Option `--enable` specifies features to be enabled;
 _list_ is a comma-separated list of the features to be enabled.
 
-See {--disable}[rdoc-ref:options.md@Option+--disable].
+See {option--disable}[rdoc-ref:options.md@Option+--disable-3A+Disable+Features].
 
 ### Option `--help`: Print Help Message
 
