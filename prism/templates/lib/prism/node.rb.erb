@@ -98,9 +98,6 @@ module Prism
       raise NoMethodError, "undefined method `type' for #{inspect}"
     end
   end
-  <%- if ENV["CHECK_FIELD_KIND"] -%>
-  CHECK_FIELD_KIND = ENV["CHECK_FIELD_KIND"]
-  <%- end -%>
   <%- nodes.each do |node| -%>
 
   <%- node.each_comment_line do |line| -%>
@@ -113,26 +110,8 @@ module Prism
       @newline = false
       @location = location
       <%- node.fields.each do |field| -%>
-      <%- if ENV["CHECK_FIELD_KIND"] -%>
-      <%- if field.respond_to?(:union_kind) && field.union_kind -%>
-      <%- case field -%>
-      <%- when Prism::NodeField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && ![<%= field.union_kind.join(', ') %>].include?(<%= field.name %>.class)
-      <%- when Prism::OptionalNodeField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && ![<%= field.union_kind.join(', ') %>, NilClass].include?(<%= field.name %>.class)
-      <%- when Prism::NodeListField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && !<%= field.name %>.all? { |n| [<%= field.union_kind.join(', ') %>].include?(n.class) }
-      <%- end -%>
-      <%- elsif field.respond_to?(:specific_kind) && field.specific_kind -%>
-      <%- case field -%>
-      <%- when Prism::NodeField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && !<%= field.name %>.is_a?(<%= field.specific_kind %>)
-      <%- when Prism::OptionalNodeField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && !<%= field.name %>.nil? && !<%= field.name %>.is_a?(<%= field.specific_kind %>)
-      <%- when Prism::NodeListField -%>
-      raise <%= field.name %>.inspect if CHECK_FIELD_KIND && !<%= field.name %>.all? { |n| n.is_a?(<%= field.specific_kind %>) }
-      <%- end -%>
-      <%- end -%>
+      <%- if Prism::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
+      raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
       <%- end -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>
