@@ -8252,15 +8252,11 @@ pm_parse_file_script_lines(const pm_parser_t *parser)
 }
 
 /**
- * Parse the given filepath and store the resulting scope node in the given
- * parse result struct. It returns a Ruby error if the file cannot be read or
- * if it cannot be parsed properly. It is assumed that the parse result object
- * is zeroed out.
- *
- * TODO: This should raise a better error when the file cannot be read.
+ * Attempt to load the file into memory. Return a Ruby error if the file cannot
+ * be read.
  */
 VALUE
-pm_parse_file(pm_parse_result_t *result, VALUE filepath)
+pm_load_file(pm_parse_result_t *result, VALUE filepath)
 {
     if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
 #ifdef _WIN32
@@ -8274,6 +8270,18 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
         return err;
     }
 
+    return Qnil;
+}
+
+/**
+ * Parse the given filepath and store the resulting scope node in the given
+ * parse result struct. It returns a Ruby error if the file cannot be read or
+ * if it cannot be parsed properly. It is assumed that the parse result object
+ * is zeroed out.
+ */
+VALUE
+pm_parse_file(pm_parse_result_t *result, VALUE filepath)
+{
     VALUE error = pm_parse_input(result, filepath);
 
     // If we're parsing a filepath, then we need to potentially support the
@@ -8287,6 +8295,21 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
         if (RB_TYPE_P(script_lines, T_HASH)) {
             rb_hash_aset(script_lines, filepath, pm_parse_file_script_lines(&result->parser));
         }
+    }
+
+    return error;
+}
+
+/**
+ * Load and then parse the given filepath. It returns a Ruby error if the file
+ * cannot be read or if it cannot be parsed properly.
+ */
+VALUE
+pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
+{
+    VALUE error = pm_load_file(result, filepath);
+    if (NIL_P(error)) {
+        error = pm_parse_file(result, filepath);
     }
 
     return error;
