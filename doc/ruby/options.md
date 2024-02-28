@@ -33,7 +33,7 @@ these digits are prefixed with digit `0` to form an octal value.
 If no argument is given, the input record separator is `0x00`.
 
 If an argument is given, it must immediately follow the option
-(no whitespace or equal-sign character `'-'`);
+(no intervening whitespace or equal-sign character `'='`);
 argument values:
 
 - `0`: the input record separator is `''`;
@@ -203,6 +203,16 @@ $ ruby -an -F'[.,]\s*' -e 'p $F' desiderata.txt
 ["As far as possible", "without surrender"]
 ["be on good terms with all persons"]
 ```
+
+The argument must immediately follow the option
+(no intervening whitespace or equal-sign character `'='`).
+
+See also:
+
+- {Option -0}[options_md.html#label-0-3A+Set+-24-2F+-28Input+Record+Separator-29]: \Set `$/` (input record separator).
+- {Option -a}[options_md.html#label-a-3A+Split+Input+Lines+into+Fields]: Split input lines into fields.
+- {Option -n}[options_md.html#label-n-3A+Run+Program+in+gets+Loop]: Run program in `gets` loop.
+- {Option -p}[options_md.html#label-p-3A+-n-2C+with+Printing]: `-n`, with printing.
 
 ### `-h`: Print Short Help Message
 
