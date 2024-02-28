@@ -5,7 +5,7 @@ require_relative "test_helper"
 module Prism
   class CommandLineTest < TestCase
     def test_command_line_p
-      program = Prism.parse("1", command_line_p: true).value
+      program = Prism.parse("1", command_line: "p").value
       statements = program.statements.body
 
       assert_equal 2, statements.length
@@ -14,7 +14,7 @@ module Prism
     end
 
     def test_command_line_n
-      program = Prism.parse("1", command_line_n: true).value
+      program = Prism.parse("1", command_line: "n").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -30,7 +30,7 @@ module Prism
     end
 
     def test_command_line_a
-      program = Prism.parse("1", command_line_n: true, command_line_a: true).value
+      program = Prism.parse("1", command_line: "na").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -42,7 +42,7 @@ module Prism
     end
 
     def test_command_line_l
-      program = Prism.parse("1", command_line_n: true, command_line_l: true).value
+      program = Prism.parse("1", command_line: "nl").value
       statements = program.statements.body
 
       assert_equal 1, statements.length

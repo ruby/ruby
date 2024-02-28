@@ -18273,7 +18273,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
  */
 static pm_statements_node_t *
 wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
-    if (parser->command_line_p) {
+    if (parser->command_line & PM_OPTIONS_COMMAND_LINE_P) {
         pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
         pm_arguments_node_arguments_append(
             arguments,
@@ -18287,8 +18287,8 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
         ));
     }
 
-    if (parser->command_line_n) {
-        if (parser->command_line_a) {
+    if (parser->command_line & PM_OPTIONS_COMMAND_LINE_N) {
+        if (parser->command_line & PM_OPTIONS_COMMAND_LINE_A) {
             pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
             pm_arguments_node_arguments_append(
                 arguments,
@@ -18313,7 +18313,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             (pm_node_t *) pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$/", 2))
         );
 
-        if (parser->command_line_l) {
+        if (parser->command_line & PM_OPTIONS_COMMAND_LINE_L) {
             pm_keyword_hash_node_t *keywords = pm_keyword_hash_node_create(parser);
             pm_keyword_hash_node_elements_append(keywords, (pm_node_t *) pm_assoc_node_create(
                 parser,
@@ -18367,7 +18367,7 @@ parse_program(pm_parser_t *parser) {
 
     // At the top level, see if we need to wrap the statements in a program
     // node with a while loop based on the options.
-    if (parser->command_line_p || parser->command_line_n) {
+    if (parser->command_line & (PM_OPTIONS_COMMAND_LINE_P | PM_OPTIONS_COMMAND_LINE_N)) {
         statements = wrap_statements(parser, statements);
     }
 
@@ -18421,6 +18421,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .current_string = PM_STRING_EMPTY,
         .start_line = 1,
         .explicit_encoding = NULL,
+        .command_line = 0,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -18428,11 +18429,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .in_keyword_arg = false,
         .current_param_name = 0,
         .semantic_token_seen = false,
-        .frozen_string_literal = false,
-        .command_line_p = options != NULL && options->command_line_p,
-        .command_line_n = options != NULL && options->command_line_n,
-        .command_line_l = options != NULL && options->command_line_l,
-        .command_line_a = options != NULL && options->command_line_a
+        .frozen_string_literal = false
     };
 
     // Initialize the constant pool. We're going to completely guess as to the
@@ -18477,6 +18474,9 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         if (options->frozen_string_literal) {
             parser->frozen_string_literal = true;
         }
+
+        // command_line option
+        parser->command_line = options->command_line;
 
         // version option
         parser->version = options->version;

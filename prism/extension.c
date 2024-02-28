@@ -29,10 +29,7 @@ ID rb_option_id_line;
 ID rb_option_id_frozen_string_literal;
 ID rb_option_id_version;
 ID rb_option_id_scopes;
-ID rb_option_id_command_line_p;
-ID rb_option_id_command_line_n;
-ID rb_option_id_command_line_l;
-ID rb_option_id_command_line_a;
+ID rb_option_id_command_line;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -148,21 +145,32 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
             const char *version = check_string(value);
 
             if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
-                rb_raise(rb_eArgError, "invalid version: %"PRIsVALUE, value);
+                rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
         }
     } else if (key_id == rb_option_id_scopes) {
         if (!NIL_P(value)) build_options_scopes(options, value);
-    } else if (key_id == rb_option_id_command_line_p) {
-        if (!NIL_P(value)) pm_options_command_line_p_set(options, value == Qtrue);
-    } else if (key_id == rb_option_id_command_line_n) {
-        if (!NIL_P(value)) pm_options_command_line_n_set(options, value == Qtrue);
-    } else if (key_id == rb_option_id_command_line_l) {
-        if (!NIL_P(value)) pm_options_command_line_l_set(options, value == Qtrue);
-    } else if (key_id == rb_option_id_command_line_a) {
-        if (!NIL_P(value)) pm_options_command_line_a_set(options, value == Qtrue);
+    } else if (key_id == rb_option_id_command_line) {
+        if (!NIL_P(value)) {
+            const char *string = check_string(value);
+            uint8_t command_line = 0;
+
+            for (size_t index = 0; index < strlen(string); index++) {
+                switch (string[index]) {
+                    case 'a': command_line |= PM_OPTIONS_COMMAND_LINE_A; break;
+                    case 'e': command_line |= PM_OPTIONS_COMMAND_LINE_E; break;
+                    case 'l': command_line |= PM_OPTIONS_COMMAND_LINE_L; break;
+                    case 'n': command_line |= PM_OPTIONS_COMMAND_LINE_N; break;
+                    case 'p': command_line |= PM_OPTIONS_COMMAND_LINE_P; break;
+                    case 'x': command_line |= PM_OPTIONS_COMMAND_LINE_X; break;
+                    default: rb_raise(rb_eArgError, "invalid command line flag: '%c'", string[index]); break;
+                }
+            }
+
+            pm_options_command_line_set(options, command_line);
+        }
     } else {
-        rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
+        rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
 
     return ST_CONTINUE;
@@ -697,21 +705,25 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  * Parse the given string and return a ParseResult instance. The options that
  * are supported are:
  *
- * * `filepath` - the filepath of the source being parsed. This should be a
- *       string or nil
+ * * `command_line` - either nil or a string of the various options that were
+ *       set on the command line. Valid values are combinations of "a", "l",
+ *       "n", "p", and "x".
  * * `encoding` - the encoding of the source being parsed. This should be an
- *       encoding or nil
- * * `line` - the line number that the parse starts on. This should be an
- *       integer or nil. Note that this is 1-indexed.
+ *       encoding or nil.
+ * * `filepath` - the filepath of the source being parsed. This should be a
+ *       string or nil.
  * * `frozen_string_literal` - whether or not the frozen string literal pragma
  *       has been set. This should be a boolean or nil.
- * * `version` - the version of prism that should be used to parse Ruby code. By
- *       default prism assumes you want to parse with the latest vesion of
- *       prism (which you can trigger with `nil` or `"latest"`). If you want to
- *       parse exactly as CRuby 3.3.0 would, then you can pass `"3.3.0"`.
+ * * `line` - the line number that the parse starts on. This should be an
+ *       integer or nil. Note that this is 1-indexed.
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
+ * * `version` - the version of Ruby syntax that prism should used to parse Ruby
+ *       code. By default prism assumes you want to parse with the latest vesion
+ *       of Ruby syntax (which you can trigger with `nil` or `"latest"`). You
+ *       may also restrict the syntax to a specific version of Ruby. The
+ *       supported values are `"3.3.0"` and `"3.4.0"`.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
@@ -1244,10 +1256,7 @@ Init_prism(void) {
     rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_option_id_version = rb_intern_const("version");
     rb_option_id_scopes = rb_intern_const("scopes");
-    rb_option_id_command_line_p = rb_intern_const("command_line_p");
-    rb_option_id_command_line_n = rb_intern_const("command_line_n");
-    rb_option_id_command_line_l = rb_intern_const("command_line_l");
-    rb_option_id_command_line_a = rb_intern_const("command_line_a");
+    rb_option_id_command_line = rb_intern_const("command_line");
 
     /**
      * The version of the prism library.
