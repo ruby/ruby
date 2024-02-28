@@ -157,7 +157,7 @@ module Prism
     end
 
     def rbi_class
-      "T::Array[Prism::Node]"
+      "T::Array[Prism::#{ruby_type}]"
     end
 
     def java_type
