@@ -135,6 +135,8 @@ $ ruby -d -e 'p $DEBUG'
 true
 ```
 
+Option `--debug` is an alias for option `-d`.
+
 ### Option `-e`: Execute Given Ruby Code
 
 Option `-e` requires an argument, which is Ruby code to be executed;
@@ -146,9 +148,10 @@ Foo
 Bar
 ```
 
-The command should not include arguments (which, if given, are ignored).
-
 Whitespace between the option and its argument may be omitted.
+
+The command should not include arguments (which, if given, are ignored),
+but may include other options.
 
 ### Option `-E`: \Set Default Encodings
 
