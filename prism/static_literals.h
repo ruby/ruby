@@ -14,6 +14,12 @@
 #include <assert.h>
 #include <stdbool.h>
 
+typedef struct {
+    pm_node_t **nodes;
+    size_t size;
+    size_t capacity;
+} pm_node_hash_t;
+
 /**
  * Certain sets of nodes (hash keys and when clauses) check for duplicate nodes
  * to alert the user of potential issues. To do this, we keep a set of the nodes
@@ -24,48 +30,34 @@
  */
 typedef struct {
     /**
-     * This is the set of IntegerNode and SourceLineNode instances. We store
-     * them in a sorted list so that we can binary search through them to find
-     * duplicates.
+     * This is the set of IntegerNode and SourceLineNode instances.
      */
-    pm_node_list_t integer_nodes;
+    pm_node_hash_t integer_nodes;
 
     /**
-     * This is the set of FloatNode instances. We store them in a sorted list so
-     * that we can binary search through them to find duplicates.
+     * This is the set of FloatNode instances.
      */
-    pm_node_list_t float_nodes;
+    pm_node_hash_t float_nodes;
 
     /**
-     * This is the set of RationalNode instances. We store them in a flat list
-     * that must be searched linearly.
+     * This is the set of RationalNode and ImaginaryNode instances.
      */
-    pm_node_list_t rational_nodes;
+    pm_node_hash_t number_nodes;
 
     /**
-     * This is the set of ImaginaryNode instances. We store them in a flat list
-     * that must be searched linearly.
+     * This is the set of StringNode and SourceFileNode instances.
      */
-    pm_node_list_t imaginary_nodes;
+    pm_node_hash_t string_nodes;
 
     /**
-     * This is the set of StringNode and SourceFileNode instances. We store them
-     * in a sorted list so that we can binary search through them to find
-     * duplicates.
+     * This is the set of RegularExpressionNode instances.
      */
-    pm_node_list_t string_nodes;
+    pm_node_hash_t regexp_nodes;
 
     /**
-     * This is the set of RegularExpressionNode instances. We store them in a
-     * sorted list so that we can binary search through them to find duplicates.
+     * This is the set of SymbolNode instances.
      */
-    pm_node_list_t regexp_nodes;
-
-    /**
-     * This is the set of SymbolNode instances. We store them in a sorted list
-     * so that we can binary search through them to find duplicates.
-     */
-    pm_node_list_t symbol_nodes;
+    pm_node_hash_t symbol_nodes;
 
     /**
      * A pointer to the last TrueNode instance that was inserted, or NULL.

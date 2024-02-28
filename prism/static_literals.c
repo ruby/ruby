@@ -1,40 +1,141 @@
 #include "prism/static_literals.h"
 
-/**
- * Insert a node into the given sorted list. This will return false if the node
- * was not already in the list, and true if it was.
- */
-static pm_node_t *
-pm_node_list_insert(const pm_parser_t *parser, pm_node_list_t *list, pm_node_t *node, int (*compare)(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right)) {
-    size_t low = 0;
-    size_t high = list->size;
+static inline uint32_t
+murmur_scramble(uint32_t value) {
+    value *= 0xcc9e2d51;
+    value = (value << 15) | (value >> 17);
+    value *= 0x1b873593;
+    return value;
+}
 
-    while (low < high) {
-        size_t mid = (low + high) / 2;
-        int result = compare(parser, list->nodes[mid], node);
+static uint32_t
+murmur_hash(const uint8_t *key, size_t length) {
+	uint32_t h = 0x9747b28c;
+    uint32_t k;
 
-        // If we find a match, then replace the old node with the new one and
-        // return the old one.
-        if (result == 0) {
-            pm_node_t *result = list->nodes[mid];
-            list->nodes[mid] = node;
-            return result;
-        }
-
-        if (result < 0) {
-            low = mid + 1;
-        } else {
-            high = mid;
-        }
+    /* Read in groups of 4. */
+    for (size_t i = length >> 2; i; i--) {
+        // Here is a source of differing results across endiannesses.
+        // A swap here has no effects on hash properties though.
+        memcpy(&k, key, sizeof(uint32_t));
+        key += sizeof(uint32_t);
+        h ^= murmur_scramble(k);
+        h = (h << 13) | (h >> 19);
+        h = h * 5 + 0xe6546b64;
     }
 
-    pm_node_list_grow(list);
-    memmove(&list->nodes[low + 1], &list->nodes[low], (list->size - low) * sizeof(pm_node_t *));
+    /* Read the rest. */
+    k = 0;
+    for (size_t i = length & 3; i; i--) {
+        k <<= 8;
+        k |= key[i - 1];
+    }
 
-    list->nodes[low] = node;
-    list->size++;
+    // A swap is *not* necessary here because the preceding loop already
+    // places the low bytes in the low places according to whatever endianness
+    // we use. Swaps only apply when the memory is copied in a chunk.
+    h ^= murmur_scramble(k);
 
-    return NULL;
+    /* Finalize. */
+	h ^= length;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return h;
+}
+
+static uint32_t
+node_hash(const pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_INTEGER_NODE: {
+            const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
+            const uint32_t *value = &integer->head.value;
+
+            uint32_t hash = murmur_hash((const uint8_t *) value, sizeof(uint32_t));
+            for (const pm_integer_word_t *word = integer->head.next; word != NULL; word = word->next) {
+                value = &word->value;
+                hash ^= murmur_hash((const uint8_t *) value, sizeof(uint32_t));
+            }
+
+            return hash;
+        }
+        case PM_SOURCE_LINE_NODE: {
+            const pm_line_column_t line_column = pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line);
+            const int32_t *value = &line_column.line;
+            return murmur_hash((const uint8_t *) value, sizeof(int32_t));
+        }
+        case PM_FLOAT_NODE: {
+            const double *value = &((const pm_float_node_t *) node)->value;
+            return murmur_hash((const uint8_t *) value, sizeof(double));
+        }
+        case PM_RATIONAL_NODE: {
+            const pm_node_t *numeric = ((const pm_rational_node_t *) node)->numeric;
+            return node_hash(parser, numeric) ^ murmur_scramble((uint32_t) node->type);
+        }
+        case PM_IMAGINARY_NODE: {
+            const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
+            return node_hash(parser, numeric) ^ murmur_scramble((uint32_t) node->type);
+        }
+        case PM_STRING_NODE: {
+            const pm_string_t *value = &((const pm_string_node_t *) node)->unescaped;
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+        }
+        case PM_SOURCE_FILE_NODE: {
+            const pm_string_t *value = &((const pm_source_file_node_t *) node)->filepath;
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+        }
+        case PM_REGULAR_EXPRESSION_NODE: {
+            const pm_string_t *value = &((const pm_regular_expression_node_t *) node)->unescaped;
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+        }
+        case PM_SYMBOL_NODE: {
+            const pm_string_t *value = &((const pm_symbol_node_t *) node)->unescaped;
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+        }
+        default:
+            assert(false && "unreachable");
+            return 0;
+    }
+}
+
+static pm_node_t *
+pm_node_hash_insert(const pm_parser_t *parser, pm_node_hash_t *hash, pm_node_t *node, int (*compare)(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right)) {
+    if (hash->size * 2 >= hash->capacity) {
+        size_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
+        pm_node_t **new_nodes = calloc(new_capacity, sizeof(pm_node_t *));
+        if (new_nodes == NULL) return NULL;
+
+        for (size_t i = 0; i < hash->capacity; i++) {
+            pm_node_t *node = hash->nodes[i];
+
+            if (node != NULL) {
+                size_t index = node_hash(parser, node) % new_capacity;
+                new_nodes[index] = node;
+            }
+        }
+
+        hash->nodes = new_nodes;
+        hash->capacity = new_capacity;
+    }
+
+    size_t index = node_hash(parser, node) % hash->capacity;
+    while (hash->nodes[index] != NULL) {
+        if (compare(parser, hash->nodes[index], node) == 0) break;
+        index = (index + 1) % hash->capacity;
+    }
+
+    pm_node_t *result = hash->nodes[index];
+    if (result == NULL) hash->size++;
+
+    hash->nodes[index] = node;
+    return result;
+}
+
+static void
+pm_node_hash_free(pm_node_hash_t *hash) {
+    if (hash->capacity > 0) free(hash->nodes);
 }
 
 /**
@@ -168,19 +269,19 @@ pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
-            return pm_node_list_insert(parser, &literals->integer_nodes, node, pm_compare_integer_nodes);
+            return pm_node_hash_insert(parser, &literals->integer_nodes, node, pm_compare_integer_nodes);
         case PM_FLOAT_NODE:
-            return pm_node_list_insert(parser, &literals->float_nodes, node, pm_compare_float_nodes);
+            return pm_node_hash_insert(parser, &literals->float_nodes, node, pm_compare_float_nodes);
         case PM_RATIONAL_NODE:
         case PM_IMAGINARY_NODE:
-            return pm_node_list_insert(parser, &literals->rational_nodes, node, pm_compare_number_nodes);
+            return pm_node_hash_insert(parser, &literals->number_nodes, node, pm_compare_number_nodes);
         case PM_STRING_NODE:
         case PM_SOURCE_FILE_NODE:
-            return pm_node_list_insert(parser, &literals->string_nodes, node, pm_compare_string_nodes);
+            return pm_node_hash_insert(parser, &literals->string_nodes, node, pm_compare_string_nodes);
         case PM_REGULAR_EXPRESSION_NODE:
-            return pm_node_list_insert(parser, &literals->regexp_nodes, node, pm_compare_regular_expression_nodes);
+            return pm_node_hash_insert(parser, &literals->regexp_nodes, node, pm_compare_regular_expression_nodes);
         case PM_SYMBOL_NODE:
-            return pm_node_list_insert(parser, &literals->symbol_nodes, node, pm_compare_string_nodes);
+            return pm_node_hash_insert(parser, &literals->symbol_nodes, node, pm_compare_string_nodes);
         case PM_TRUE_NODE: {
             pm_node_t *duplicated = literals->true_node;
             literals->true_node = node;
@@ -211,11 +312,10 @@ pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals
  */
 void
 pm_static_literals_free(pm_static_literals_t *literals) {
-    pm_node_list_free(&literals->integer_nodes);
-    pm_node_list_free(&literals->float_nodes);
-    pm_node_list_free(&literals->rational_nodes);
-    pm_node_list_free(&literals->imaginary_nodes);
-    pm_node_list_free(&literals->string_nodes);
-    pm_node_list_free(&literals->regexp_nodes);
-    pm_node_list_free(&literals->symbol_nodes);
+    pm_node_hash_free(&literals->integer_nodes);
+    pm_node_hash_free(&literals->float_nodes);
+    pm_node_hash_free(&literals->number_nodes);
+    pm_node_hash_free(&literals->string_nodes);
+    pm_node_hash_free(&literals->regexp_nodes);
+    pm_node_hash_free(&literals->symbol_nodes);
 }
