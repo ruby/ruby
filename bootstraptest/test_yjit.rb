@@ -4513,6 +4513,10 @@ assert_equal 'true', %q{
   def entry = yield
   entry { true }
 }
+assert_equal 'sym', %q{
+  def entry = :sym.to_sym
+  entry
+}
 
 assert_normal_exit %q{
   ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
