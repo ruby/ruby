@@ -150,8 +150,8 @@ Bar
 
 Whitespace between the option and its argument may be omitted.
 
-The command should not include arguments (which, if given, are ignored),
-but may include other options.
+The command may include other options,
+but should not include arguments (which, if given, are ignored).
 
 ### Option `-E`: \Set Default Encodings
 
@@ -171,6 +171,15 @@ $ ruby -E cesu-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_int
 ```
 
 Whitespace between the option and its argument may be omitted.
+
+See also:
+
+- {Option --external-encoding}[rdoc-ref:options.md@Option+--external-encoding-3A+Set+Default+External+Encoding]:
+  \Set default external encoding.
+- {Option --internal-encoding}[rdoc-ref:options.md@Option+--internal-encoding-3A+Set+Default+Internal+Encoding]:
+  \Set default internal encoding.
+
+Option `--encoding` is an alias for option `-E`.
 
 ### Option `-F`: \Set Input Field Separator
 
