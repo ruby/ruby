@@ -8,7 +8,7 @@ class TestDefaultGems < Test::Unit::TestCase
     # - `git ls-files` is useless under ruby's repository
     # - `2>/dev/null` works only on Unix-like platforms
     code.gsub!(/`git.*?`/, '""')
-    code.gsub!(/\[git.*?\]/, '[]')
+    code.gsub!(/\[git.*?\]/, '[echo]')
 
     eval(code, binding, file)
   end
