@@ -8160,6 +8160,7 @@ static VALUE
 pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 {
     // Set up the parser and parse the input.
+    pm_options_encoding_set(&result->options, rb_default_external_encoding()->name);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
