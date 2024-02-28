@@ -4424,20 +4424,6 @@ rb_gc_is_ptr_to_obj(const void *ptr)
     return is_pointer_to_heap(objspace, ptr);
 }
 
-VALUE
-rb_gc_id2ref_obj_tbl(VALUE objid)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-
-    VALUE orig;
-    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
-        return orig;
-    }
-    else {
-        return Qundef;
-    }
-}
-
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -4463,7 +4449,6 @@ id2ref(VALUE objid)
 #endif
     rb_objspace_t *objspace = &rb_objspace;
     VALUE ptr;
-    VALUE orig;
     void *p0;
 
     objid = rb_to_int(objid);
@@ -4485,9 +4470,9 @@ id2ref(VALUE objid)
         }
     }
 
-    if (!UNDEF_P(orig = rb_gc_id2ref_obj_tbl(objid)) &&
-        is_live_object(objspace, orig)) {
-
+    VALUE orig;
+    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig) &&
+            is_live_object(objspace, orig)) {
         if (!rb_multi_ractor_p() || rb_ractor_shareable_p(orig)) {
             return orig;
         }
