@@ -903,13 +903,22 @@ rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
     // Would we overflow if we put the contents of the array onto the stack?
     if (sp + len > (VALUE *)(cfp - 2)) return Qfalse;
 
+    // Reject keywords hash since that requires duping it sometimes
+    if (len > 0) {
+        VALUE last_hash = RARRAY_AREF(splat_array, len - 1);
+        if (RB_TYPE_P(last_hash, T_HASH) &&
+                FL_TEST_RAW(last_hash, RHASH_PASS_AS_KEYWORDS)) {
+            return Qfalse;
+        }
+    }
+
     return Qtrue;
 }
 
 // Push array elements to the stack for a C method that has a variable number
 // of parameters. Returns the number of arguments the splat array contributes.
 int
-rb_yjit_splat_varg_cfunc(VALUE *stack_splat_array, bool sole_splat)
+rb_yjit_splat_varg_cfunc(VALUE *stack_splat_array)
 {
     VALUE splat_array = *stack_splat_array;
     int len;
@@ -917,17 +926,6 @@ rb_yjit_splat_varg_cfunc(VALUE *stack_splat_array, bool sole_splat)
     // We already checked that length fits in `int`
     RUBY_ASSERT(RB_TYPE_P(splat_array, T_ARRAY));
     len = (int)RARRAY_LEN(splat_array);
-
-    // If this is a splat call without any keyword arguments, exclude the
-    // ruby2_keywords hash if it's empty
-    if (sole_splat && len > 0) {
-        VALUE last_hash = RARRAY_AREF(splat_array, len - 1);
-        if (RB_TYPE_P(last_hash, T_HASH) &&
-                FL_TEST_RAW(last_hash, RHASH_PASS_AS_KEYWORDS) &&
-                RHASH_EMPTY_P(last_hash)) {
-            len--;
-        }
-    }
 
     // Push the contents of the array onto the stack
     MEMCPY(stack_splat_array, RARRAY_CONST_PTR(splat_array), VALUE, len);

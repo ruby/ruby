@@ -4658,3 +4658,19 @@ assert_equal '[[1, 2, 3], [0, 2, 3], [1, 2, 3], [2, 2, 3], [], [], [{}]]', %q{
 
   test_cfunc_vargs_splat(Foo.new, Array, Hash.ruby2_keywords_hash({}))
 }
+
+# Class#new (arity=-1), splat, and ruby2_keywords
+assert_equal '[0, {1=>1}]', %q{
+  class KwInit
+    attr_reader :init_args
+    def initialize(x = 0, **kw)
+      @init_args = [x, kw]
+    end
+  end
+
+  def test(klass, args)
+    klass.new(*args).init_args
+  end
+
+  test(KwInit, [Hash.ruby2_keywords_hash({1 => 1})])
+}
