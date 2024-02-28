@@ -14,10 +14,18 @@
 #include <assert.h>
 #include <stdbool.h>
 
+/**
+ * An internal hash table for a set of nodes.
+ */
 typedef struct {
+    /** The array of nodes in the hash table. */
     pm_node_t **nodes;
-    size_t size;
-    size_t capacity;
+
+    /** The size of the hash table. */
+    uint32_t size;
+
+    /** The space that has been allocated in the hash table. */
+    uint32_t capacity;
 } pm_node_hash_t;
 
 /**

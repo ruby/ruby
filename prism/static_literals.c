@@ -8,48 +8,50 @@ murmur_scramble(uint32_t value) {
     return value;
 }
 
+/**
+ * Murmur hash (https://en.wikipedia.org/wiki/MurmurHash) is a non-cryptographic
+ * general-purpose hash function. It is fast, which is what we care about in
+ * this case.
+ */
 static uint32_t
 murmur_hash(const uint8_t *key, size_t length) {
-	uint32_t h = 0x9747b28c;
-    uint32_t k;
+    uint32_t hash = 0x9747b28c;
+    uint32_t segment;
 
-    /* Read in groups of 4. */
-    for (size_t i = length >> 2; i; i--) {
-        // Here is a source of differing results across endiannesses.
-        // A swap here has no effects on hash properties though.
-        memcpy(&k, key, sizeof(uint32_t));
+    for (size_t index = length >> 2; index; index--) {
+        memcpy(&segment, key, sizeof(uint32_t));
         key += sizeof(uint32_t);
-        h ^= murmur_scramble(k);
-        h = (h << 13) | (h >> 19);
-        h = h * 5 + 0xe6546b64;
+        hash ^= murmur_scramble(segment);
+        hash = (hash << 13) | (hash >> 19);
+        hash = hash * 5 + 0xe6546b64;
     }
 
-    /* Read the rest. */
-    k = 0;
-    for (size_t i = length & 3; i; i--) {
-        k <<= 8;
-        k |= key[i - 1];
+    segment = 0;
+    for (size_t index = length & 3; index; index--) {
+        segment <<= 8;
+        segment |= key[index - 1];
     }
 
-    // A swap is *not* necessary here because the preceding loop already
-    // places the low bytes in the low places according to whatever endianness
-    // we use. Swaps only apply when the memory is copied in a chunk.
-    h ^= murmur_scramble(k);
-
-    /* Finalize. */
-	h ^= length;
-	h ^= h >> 16;
-	h *= 0x85ebca6b;
-	h ^= h >> 13;
-	h *= 0xc2b2ae35;
-	h ^= h >> 16;
-	return h;
+    hash ^= murmur_scramble(segment);
+    hash ^= (uint32_t) length;
+    hash ^= hash >> 16;
+    hash *= 0x85ebca6b;
+    hash ^= hash >> 13;
+    hash *= 0xc2b2ae35;
+    hash ^= hash >> 16;
+    return hash;
 }
 
+/**
+ * Return the hash of the given node. It is important that nodes that have
+ * equivalent static literal values have the same hash. This is because we use
+ * these hashes to look for duplicates.
+ */
 static uint32_t
 node_hash(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
+            // Integers hash their value.
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
             const uint32_t *value = &integer->head.value;
 
@@ -62,35 +64,51 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
             return hash;
         }
         case PM_SOURCE_LINE_NODE: {
+            // Source lines hash their line number.
             const pm_line_column_t line_column = pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line);
             const int32_t *value = &line_column.line;
             return murmur_hash((const uint8_t *) value, sizeof(int32_t));
         }
         case PM_FLOAT_NODE: {
+            // Floats hash their value.
             const double *value = &((const pm_float_node_t *) node)->value;
             return murmur_hash((const uint8_t *) value, sizeof(double));
         }
         case PM_RATIONAL_NODE: {
+            // Rationals hash their numeric value. Because their numeric value
+            // is stored as a subnode, we hash that node and then mix in the
+            // fact that this is a rational node.
             const pm_node_t *numeric = ((const pm_rational_node_t *) node)->numeric;
             return node_hash(parser, numeric) ^ murmur_scramble((uint32_t) node->type);
         }
         case PM_IMAGINARY_NODE: {
+            // Imaginaries hash their numeric value. Because their numeric value
+            // is stored as a subnode, we hash that node and then mix in the
+            // fact that this is an imaginary node.
             const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
             return node_hash(parser, numeric) ^ murmur_scramble((uint32_t) node->type);
         }
         case PM_STRING_NODE: {
+            // Strings hash their value and mix in their flags so that different
+            // encodings are not considered equal.
             const pm_string_t *value = &((const pm_string_node_t *) node)->unescaped;
             return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
         }
         case PM_SOURCE_FILE_NODE: {
+            // Source files hash their value and mix in their flags so that
+            // different encodings are not considered equal.
             const pm_string_t *value = &((const pm_source_file_node_t *) node)->filepath;
             return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
         }
         case PM_REGULAR_EXPRESSION_NODE: {
+            // Regular expressions hash their value and mix in their flags so
+            // that different encodings are not considered equal.
             const pm_string_t *value = &((const pm_regular_expression_node_t *) node)->unescaped;
             return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
         }
         case PM_SYMBOL_NODE: {
+            // Symbols hash their value and mix in their flags so that different
+            // encodings are not considered equal.
             const pm_string_t *value = &((const pm_symbol_node_t *) node)->unescaped;
             return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
         }
@@ -100,32 +118,60 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
     }
 }
 
+/**
+ * Insert a node into the node hash. It accepts the hash that should hold the
+ * new node, the parser that generated the node, the node to insert, and a
+ * comparison function. The comparison function is used for collision detection,
+ * and must be able to compare all node types that will be stored in this hash.
+ */
 static pm_node_t *
-pm_node_hash_insert(const pm_parser_t *parser, pm_node_hash_t *hash, pm_node_t *node, int (*compare)(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right)) {
+pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *node, int (*compare)(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right)) {
+    // If we are out of space, we need to resize the hash. This will cause all
+    // of the nodes to be rehashed and reinserted into the new hash.
     if (hash->size * 2 >= hash->capacity) {
-        size_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
+        // First, allocate space for the new node list.
+        uint32_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
         pm_node_t **new_nodes = calloc(new_capacity, sizeof(pm_node_t *));
         if (new_nodes == NULL) return NULL;
 
-        for (size_t i = 0; i < hash->capacity; i++) {
-            pm_node_t *node = hash->nodes[i];
+        // It turns out to be more efficient to mask the hash value than to use
+        // the modulo operator. Because our capacities are always powers of two,
+        // we can use a bitwise AND to get the same result as the modulo
+        // operator.
+        uint32_t mask = new_capacity - 1;
+
+        // Now, rehash all of the nodes into the new list.
+        for (uint32_t index = 0; index < hash->capacity; index++) {
+            pm_node_t *node = hash->nodes[index];
 
             if (node != NULL) {
-                size_t index = node_hash(parser, node) % new_capacity;
+                uint32_t index = node_hash(parser, node) & mask;
                 new_nodes[index] = node;
             }
         }
 
+        // Finally, free the old node list and update the hash.
+        free(hash->nodes);
         hash->nodes = new_nodes;
         hash->capacity = new_capacity;
     }
 
-    size_t index = node_hash(parser, node) % hash->capacity;
+    // Now, insert the node into the hash.
+    uint32_t mask = hash->capacity - 1;
+    uint32_t index = node_hash(parser, node) & mask;
+
+    // We use linear probing to resolve collisions. This means that if the
+    // current index is occupied, we will move to the next index and try again.
+    // We are guaranteed that this will eventually find an empty slot because we
+    // resize the hash when it gets too full.
     while (hash->nodes[index] != NULL) {
         if (compare(parser, hash->nodes[index], node) == 0) break;
-        index = (index + 1) % hash->capacity;
+        index = (index + 1) & mask;
     }
 
+    // If the current index is occupied, we need to return the node that was
+    // already in the hash. Otherwise, we can just increment the size and insert
+    // the new node.
     pm_node_t *result = hash->nodes[index];
     if (result == NULL) hash->size++;
 
@@ -133,6 +179,9 @@ pm_node_hash_insert(const pm_parser_t *parser, pm_node_hash_t *hash, pm_node_t *
     return result;
 }
 
+/**
+ * Free the internal memory associated with the given node hash.
+ */
 static void
 pm_node_hash_free(pm_node_hash_t *hash) {
     if (hash->capacity > 0) free(hash->nodes);
@@ -269,19 +318,19 @@ pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
-            return pm_node_hash_insert(parser, &literals->integer_nodes, node, pm_compare_integer_nodes);
+            return pm_node_hash_insert(&literals->integer_nodes, parser, node, pm_compare_integer_nodes);
         case PM_FLOAT_NODE:
-            return pm_node_hash_insert(parser, &literals->float_nodes, node, pm_compare_float_nodes);
+            return pm_node_hash_insert(&literals->float_nodes, parser, node, pm_compare_float_nodes);
         case PM_RATIONAL_NODE:
         case PM_IMAGINARY_NODE:
-            return pm_node_hash_insert(parser, &literals->number_nodes, node, pm_compare_number_nodes);
+            return pm_node_hash_insert(&literals->number_nodes, parser, node, pm_compare_number_nodes);
         case PM_STRING_NODE:
         case PM_SOURCE_FILE_NODE:
-            return pm_node_hash_insert(parser, &literals->string_nodes, node, pm_compare_string_nodes);
+            return pm_node_hash_insert(&literals->string_nodes, parser, node, pm_compare_string_nodes);
         case PM_REGULAR_EXPRESSION_NODE:
-            return pm_node_hash_insert(parser, &literals->regexp_nodes, node, pm_compare_regular_expression_nodes);
+            return pm_node_hash_insert(&literals->regexp_nodes, parser, node, pm_compare_regular_expression_nodes);
         case PM_SYMBOL_NODE:
-            return pm_node_hash_insert(parser, &literals->symbol_nodes, node, pm_compare_string_nodes);
+            return pm_node_hash_insert(&literals->symbol_nodes, parser, node, pm_compare_string_nodes);
         case PM_TRUE_NODE: {
             pm_node_t *duplicated = literals->true_node;
             literals->true_node = node;
