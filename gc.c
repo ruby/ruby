@@ -4254,10 +4254,8 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
-bool rb_obj_is_main_ractor(VALUE gv);
-
-void
-rb_objspace_free_objects(rb_objspace_t *objspace)
+static void
+gc_each_object(rb_objspace_t *objspace, void (*func)(VALUE obj, void *data), void *data)
 {
     for (size_t i = 0; i < heap_allocated_pages; i++) {
         struct heap_page *page = heap_pages_sorted[i];
@@ -4266,25 +4264,76 @@ rb_objspace_free_objects(rb_objspace_t *objspace)
         uintptr_t p = (uintptr_t)page->start;
         uintptr_t pend = p + page->total_slots * stride;
         for (; p < pend; p += stride) {
-            VALUE vp = (VALUE)p;
-            switch (BUILTIN_TYPE(vp)) {
-              case T_NONE:
-              case T_SYMBOL:
-                break;
-              default:
-                obj_free(objspace, vp);
-                break;
+            VALUE obj = (VALUE)p;
+
+            void *poisoned = asan_unpoison_object_temporary(obj);
+
+            func(obj, data);
+
+            if (poisoned) {
+                GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
+                asan_poison_object(obj);
             }
         }
     }
 }
 
+bool rb_obj_is_main_ractor(VALUE gv);
+
+static void
+rb_objspace_free_objects_i(VALUE obj, void *data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
+      case T_SYMBOL:
+        break;
+      default:
+        obj_free(objspace, obj);
+        break;
+    }
+}
+
+void
+rb_objspace_free_objects(rb_objspace_t *objspace)
+{
+    gc_each_object(objspace, rb_objspace_free_objects_i, objspace);
+}
+
+static void
+rb_objspace_call_finalizer_i(VALUE obj, void *data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        if (!rb_free_at_exit && (!DATA_PTR(obj) || !RANY(obj)->as.data.dfree)) break;
+        if (rb_obj_is_thread(obj)) break;
+        if (rb_obj_is_mutex(obj)) break;
+        if (rb_obj_is_fiber(obj)) break;
+        if (rb_obj_is_main_ractor(obj)) break;
+
+        obj_free(objspace, obj);
+        break;
+      case T_FILE:
+        obj_free(objspace, obj);
+        break;
+      case T_SYMBOL:
+      case T_ARRAY:
+      case T_NONE:
+        break;
+      default:
+        if (rb_free_at_exit) {
+            obj_free(objspace, obj);
+        }
+        break;
+    }
+}
 
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
-    size_t i;
-
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
@@ -4325,45 +4374,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     unsigned int lock_lev;
     gc_enter(objspace, gc_enter_event_finalizer, &lock_lev);
 
-    /* run data/file object's finalizers */
-    for (i = 0; i < heap_allocated_pages; i++) {
-        struct heap_page *page = heap_pages_sorted[i];
-        short stride = page->slot_size;
-
-        uintptr_t p = (uintptr_t)page->start;
-        uintptr_t pend = p + page->total_slots * stride;
-        for (; p < pend; p += stride) {
-            VALUE vp = (VALUE)p;
-            void *poisoned = asan_unpoison_object_temporary(vp);
-            switch (BUILTIN_TYPE(vp)) {
-              case T_DATA:
-                if (!rb_free_at_exit && (!DATA_PTR(p) || !RANY(p)->as.data.dfree)) break;
-                if (rb_obj_is_thread(vp)) break;
-                if (rb_obj_is_mutex(vp)) break;
-                if (rb_obj_is_fiber(vp)) break;
-                if (rb_obj_is_main_ractor(vp)) break;
-
-                obj_free(objspace, vp);
-                break;
-              case T_FILE:
-                obj_free(objspace, vp);
-                break;
-              case T_SYMBOL:
-              case T_ARRAY:
-              case T_NONE:
-                break;
-              default:
-                if (rb_free_at_exit) {
-                    obj_free(objspace, vp);
-                }
-                break;
-            }
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
-                asan_poison_object(vp);
-            }
-        }
-    }
+    gc_each_object(objspace, rb_objspace_call_finalizer_i, objspace);
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
@@ -4820,6 +4831,27 @@ type_sym(size_t type)
     }
 }
 
+struct count_objects_data {
+    size_t counts[T_MASK+1];
+    size_t freed;
+    size_t total;
+};
+
+static void
+count_objects_i(VALUE obj, void *d)
+{
+    struct count_objects_data *data = (struct count_objects_data *)d;
+
+    if (RANY(obj)->as.basic.flags) {
+        data->counts[BUILTIN_TYPE(obj)]++;
+    }
+    else {
+        data->freed++;
+    }
+
+    data->total++;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.count_objects([result_hash]) -> hash
@@ -4859,10 +4891,7 @@ static VALUE
 count_objects(int argc, VALUE *argv, VALUE os)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    size_t counts[T_MASK + 1] = { 0 };
-    size_t freed = 0;
-    size_t total = 0;
-    size_t i;
+    struct count_objects_data data = { 0 };
     VALUE hash = Qnil;
 
     if (rb_check_arity(argc, 0, 1) == 1) {
@@ -4871,30 +4900,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
             rb_raise(rb_eTypeError, "non-hash given");
     }
 
-    for (i = 0; i < heap_allocated_pages; i++) {
-        struct heap_page *page = heap_pages_sorted[i];
-        short stride = page->slot_size;
-
-        uintptr_t p = (uintptr_t)page->start;
-        uintptr_t pend = p + page->total_slots * stride;
-        for (;p < pend; p += stride) {
-            VALUE vp = (VALUE)p;
-            GC_ASSERT((NUM_IN_PAGE(vp) * BASE_SLOT_SIZE) % page->slot_size == 0);
-
-            void *poisoned = asan_unpoison_object_temporary(vp);
-            if (RANY(p)->as.basic.flags) {
-                counts[BUILTIN_TYPE(vp)]++;
-            }
-            else {
-                freed++;
-            }
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
-                asan_poison_object(vp);
-            }
-        }
-        total += page->total_slots;
-    }
+    gc_each_object(objspace, count_objects_i, &data);
 
     if (NIL_P(hash)) {
         hash = rb_hash_new();
@@ -4902,13 +4908,13 @@ count_objects(int argc, VALUE *argv, VALUE os)
     else if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach(hash, set_zero, hash);
     }
-    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
-    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(freed));
+    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(data.total));
+    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(data.freed));
 
-    for (i = 0; i <= T_MASK; i++) {
+    for (size_t i = 0; i <= T_MASK; i++) {
         VALUE type = type_sym(i);
-        if (counts[i])
-            rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
+        if (data.counts[i])
+            rb_hash_aset(hash, type, SIZET2NUM(data.counts[i]));
     }
 
     return hash;
