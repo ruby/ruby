@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# typed: ignore
 
 module Prism
   # A parser for the pack template language.

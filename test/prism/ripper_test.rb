@@ -3,13 +3,11 @@
 require_relative "test_helper"
 
 module Prism
-  class RipperTest < TestCase
+  class RipperTestCase < TestCase
+    private
+
     def truffleruby?
       RUBY_ENGINE == "truffleruby"
-    end
-
-    def windows?
-      Gem.win_platform?
     end
 
     # Ripper produces certain ambiguous structures. For instance, it often
@@ -44,10 +42,9 @@ module Prism
       actual = normalized_sexp(actual)
       assert_equal expected, actual, "Expected Ripper and Prism to give equivalent output for #{path}!"
     end
-
   end
 
-  class RipperShortSourceTest < RipperTest
+  class RipperShortSourceTest < RipperTestCase
     def test_binary
       assert_equivalent("1 + 2")
       assert_equivalent("3 - 4 * 5")
@@ -258,13 +255,16 @@ module Prism
       assert_equivalent("alias :'' :foo")
     end
 
+    Translation::Ripper
+    RUBY_KEYWORDS = Translation.const_get(:RipperCompiler)::RUBY_KEYWORDS
+
     # This is *exactly* the kind of thing where Ripper would have a weird
     # special case we didn't handle correctly. We're still testing with
     # a leading colon since putting random keywords there will often get
     # parse errors. Mostly we want to know that Ripper will use :@kw
     # instead of :@ident for the lexer symbol for all of these.
     def test_keyword_aliases
-      Prism::Translation::Ripper::RUBY_KEYWORDS.each do |keyword|
+      RUBY_KEYWORDS.each do |keyword|
         assert_equivalent("alias :foo :#{keyword}")
       end
     end
@@ -276,7 +276,7 @@ module Prism
     end
   end
 
-  class RipperFixturesTest < RipperTest
+  class RipperFixturesTest < RipperTestCase
     #base = File.join(__dir__, "fixtures")
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
     relatives = [

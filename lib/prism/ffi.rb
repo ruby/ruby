@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# typed: ignore
 
 # This file is responsible for mirroring the API provided by the C extension by
 # using FFI to call into the shared library.
@@ -7,8 +8,6 @@ require "rbconfig"
 require "ffi"
 
 module Prism
-  BACKEND = :FFI
-
   module LibRubyParser # :nodoc:
     extend FFI::Library
 

@@ -136,7 +136,17 @@ Gem::Specification.new do |spec|
     "sig/prism/serialize.rbs",
     "sig/prism/visitor.rbs",
     "rbi/prism.rbi",
-    "rbi/prism_static.rbi"
+    "rbi/prism/compiler.rbi",
+    "rbi/prism/desugar_compiler.rbi",
+    "rbi/prism/mutation_compiler.rbi",
+    "rbi/prism/node_ext.rbi",
+    "rbi/prism/node.rbi",
+    "rbi/prism/parse_result.rbi",
+    "rbi/prism/translation/parser/compiler.rbi",
+    "rbi/prism/translation/ripper.rbi",
+    "rbi/prism/translation/ripper/ripper_compiler.rbi",
+    "rbi/prism/translation/ruby_parser.rbi",
+    "rbi/prism/visitor.rbi"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]

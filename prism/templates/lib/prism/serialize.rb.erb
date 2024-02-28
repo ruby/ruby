@@ -91,7 +91,6 @@ module Prism
           case load_varuint
           when 0 then InlineComment.new(load_location)
           when 1 then EmbDocComment.new(load_location)
-          when 2 then DATAComment.new(load_location)
           end
         end
       end

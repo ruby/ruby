@@ -1254,13 +1254,6 @@ Init_prism(void) {
      */
     rb_define_const(rb_cPrism, "VERSION", rb_str_new2(EXPECTED_PRISM_VERSION));
 
-    /**
-     * The backend of the parser that prism is using to parse Ruby code. This
-     * can be either :CEXT or :FFI. On runtimes that support C extensions, we
-     * default to :CEXT. Otherwise we use :FFI.
-     */
-    rb_define_const(rb_cPrism, "BACKEND", ID2SYM(rb_intern("CEXT")));
-
     // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
     rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
