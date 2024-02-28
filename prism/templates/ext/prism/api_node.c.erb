@@ -40,20 +40,20 @@ pm_string_new(const pm_string_t *string, rb_encoding *encoding) {
 static VALUE
 pm_integer_new(const pm_integer_t *integer) {
     VALUE result;
-    if (integer->head.next) {
-        size_t length = integer->length + 1;
-        VALUE str = rb_str_new(NULL, length * 8);
+    if (integer->values) {
+        VALUE str = rb_str_new(NULL, integer->length * 8);
         unsigned char *buf = (unsigned char *)RSTRING_PTR(str);
-        size_t offset = length * 8;
-        for (const pm_integer_word_t *node = &integer->head; node != NULL; node = node->next) {
+        size_t offset = integer->length * 8;
+        for (size_t i = 0; i < integer->length; i++) {
+            uint32_t value = integer->values[i];
             for (int i = 0; i < 8; i++) {
-                int n = (node->value >> (4 * i)) & 0xf;
+                int n = (value >> (4 * i)) & 0xf;
                 buf[--offset] = n < 10 ? n + '0' : n - 10 + 'a';
             }
         }
         result = rb_funcall(str, rb_intern("to_i"), 1, UINT2NUM(16));
     } else {
-        result = UINT2NUM(integer->head.value);
+        result = UINT2NUM(integer->value);
     }
 
     if (integer->negative) {

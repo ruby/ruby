@@ -53,12 +53,11 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
         case PM_INTEGER_NODE: {
             // Integers hash their value.
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            const uint32_t *value = &integer->head.value;
-
-            uint32_t hash = murmur_hash((const uint8_t *) value, sizeof(uint32_t));
-            for (const pm_integer_word_t *word = integer->head.next; word != NULL; word = word->next) {
-                value = &word->value;
-                hash ^= murmur_hash((const uint8_t *) value, sizeof(uint32_t));
+            uint32_t hash;
+            if (integer->values) {
+                hash = murmur_hash((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length);
+            } else {
+                hash = murmur_hash((const uint8_t *) &integer->value, sizeof(uint32_t));
             }
 
             if (integer->negative) {
@@ -204,9 +203,9 @@ pm_int64_value(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            if (integer->length > 0) return integer->negative ? INT64_MIN : INT64_MAX;
+            if (integer->values) return integer->negative ? INT64_MIN : INT64_MAX;
 
-            int64_t value = (int64_t) integer->head.value;
+            int64_t value = (int64_t) integer->value;
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
