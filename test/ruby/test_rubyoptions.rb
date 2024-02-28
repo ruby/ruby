@@ -917,28 +917,24 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_crash_report
-    assert_crash_report("%e.%f.%p.log") do |status, report|
-      assert_equal("#{File.basename(EnvUtil.rubybin)}.-e.#{status.pid}.log", report)
-    end
+    status, report = assert_crash_report("%e.%f.%p.log")
+    assert_equal("#{File.basename(EnvUtil.rubybin)}.-e.#{status.pid}.log", report)
   end
 
   def test_crash_report_script
-    assert_crash_report("%e.%f.%p.log", "bug.rb") do |status, report|
-      assert_equal("#{File.basename(EnvUtil.rubybin)}.bug.rb.#{status.pid}.log", report)
-    end
+    status, report = assert_crash_report("%e.%f.%p.log", "bug.rb")
+    assert_equal("#{File.basename(EnvUtil.rubybin)}.bug.rb.#{status.pid}.log", report)
   end
 
   def test_crash_report_executable_path
     omit if EnvUtil.rubybin.size > 245
-    assert_crash_report("%E.%p.log") do |status, report|
-      assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
-    end
+    status, report = assert_crash_report("%E.%p.log")
+    assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
   end
 
   def test_crash_report_script_path
-    assert_crash_report("%F.%p.log", "test/bug.rb") do |status, report|
-      assert_equal("test!bug.rb.#{status.pid}.log", report)
-    end
+    status, report = assert_crash_report("%F.%p.log", "test/bug.rb")
+    assert_equal("test!bug.rb.#{status.pid}.log", report)
   end
 
   def test_crash_report_pipe
