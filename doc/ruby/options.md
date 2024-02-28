@@ -455,7 +455,7 @@ The option and its argument may not be separated by whitespace.
 
 ### Option `--backtrace-limit`: \Set Backtrace Limit
 
-Option `--backtrace-limit=<i>num</i>` sets a limit on the number of entries
+Option `--backtrace-limit` sets a limit on the number of entries
 to be displayed in a backtrace.
 
 ### Option `--copyright`: Print Ruby Copyright
@@ -479,7 +479,7 @@ Option `--encoding` is an alias for
 
 ### Option `--external-encoding`: \Set Default External Encoding
 
-Option `--external-encoding=<i>encoding</i>`
+Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
 for values of +encoding+,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
@@ -491,9 +491,9 @@ $ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
 CESU-8
 ```
 
-### Option `--disable=<i>list</i>`: Disable Features
+### Option `--disable`: Disable Features
 
-Option `--disable=<i>list</i>` specifies features to be disabled;
+Option `--disable` specifies features to be disabled;
 _list_ is a comma-separated list of the features to be disabled.
 
 The supported features:
@@ -504,9 +504,9 @@ The supported features:
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
 
-### Option `--dump=<i>list</i>`: Dump Items
+### Option `--dump`: Dump Items
 
-Option `--dump=<i>list</i>` specifies items to be dumped;
+Option `--dump` specifies items to be dumped;
 _list_ is a comma-separated list of the items.
 
 The supported items:
@@ -516,12 +516,12 @@ The supported items:
 - `parsetree` {AST}[https://en.wikipedia.org/wiki/Abstract_syntax_tree].
 - `parsetree_with_comment`: AST with comments.
 
-### Option `--enable=<i>list</i>`: Enable Features
+### Option `--enable`: Enable Features
 
-Option `--enable=<i>list</i>` specifies features to be enabled;
+Option `--enable` specifies features to be enabled;
 _list_ is a comma-separated list of the features to be enabled.
 
-See {--disable}[rdoc-ref:options.md@Option+--disable-3Dlist].
+See {--disable}[rdoc-ref:options.md@Option+--disable].
 
 ### Option `--help`: Print Help Message
 
@@ -533,7 +533,7 @@ For a shorter help message, use option `-h`.
 
 ### Option `--internal-encoding`: \Set Default Internal Encoding
 
-Option `--internal-encoding=<i>encoding</i>`
+Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
 for values of +encoding+,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
@@ -545,9 +545,9 @@ $ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
 CESU-8
 ```
 
-### JIT Options [Experimental]
+### JIT Options (Experimental)
 
-JIT options [experimental] enable JIT compilation with certain options.
+JIT options (experimental) enable JIT compilation with certain options.
 
 ### Option `--jit`
 
@@ -572,9 +572,9 @@ Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
 
 Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
 
-#### Option `--jit-verbose=<i>num</i>`
+#### Option `--jit-verbose`
 
-Option `--jit-verbose=<i>num</i>` prints JIT logs of level `num` or less
+Option `--jit-verbose` prints JIT logs of level `num` or less
 to `$stderr`; default: 0.
 
 #### Option `--jit-wait`
