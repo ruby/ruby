@@ -923,7 +923,7 @@ see {option --disable}[options_md.html#label--disable-3A+Disable+Features].
 Option `--encoding` is an alias for
 {option -E}[options_md.html#label-E-3A+Set+Default+Encodings].
 
-### `--external-encoding`: \Set Default External Encoding
+### `--external-encoding`: \Set Default External \Encoding
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
@@ -945,7 +945,7 @@ Arguments and additional options are ignored.
 
 For a shorter help message, use option `-h`.
 
-### `--internal-encoding`: \Set Default Internal Encoding
+### `--internal-encoding`: \Set Default Internal \Encoding
 
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
