@@ -4046,8 +4046,8 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
     if (st_lookup(finalizer_table, obj, &data)) {
         table = (VALUE)data;
         st_insert(finalizer_table, dest, table);
+        FL_SET(dest, FL_FINALIZE);
     }
-    FL_SET(dest, FL_FINALIZE);
 }
 
 static VALUE
@@ -4117,6 +4117,7 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
 
     st_data_t key = (st_data_t)zombie;
     if (FL_TEST_RAW(zombie, FL_FINALIZE)) {
+        FL_UNSET(zombie, FL_FINALIZE);
         st_data_t table;
         if (st_delete(finalizer_table, &key, &table)) {
             run_finalizer(objspace, zombie, (VALUE)table);
@@ -4302,8 +4303,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
         while (list) {
             struct force_finalize_list *curr = list;
-            run_finalizer(objspace, curr->obj, curr->table);
+
             FL_UNSET(curr->obj, FL_FINALIZE);
+            run_finalizer(objspace, curr->obj, curr->table);
 
             st_data_t obj = (st_data_t)curr->obj;
             st_delete(finalizer_table, &obj, 0);
