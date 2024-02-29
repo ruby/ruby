@@ -89,18 +89,18 @@ module Prism
       def load_comments
         Array.new(load_varuint) do
           case load_varuint
-          when 0 then InlineComment.new(load_location)
-          when 1 then EmbDocComment.new(load_location)
+          when 0 then InlineComment.new(load_location_object)
+          when 1 then EmbDocComment.new(load_location_object)
           end
         end
       end
 
       def load_metadata
         comments = load_comments
-        magic_comments = Array.new(load_varuint) { MagicComment.new(load_location, load_location) }
-        data_loc = load_optional_location
-        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
+        magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
+        data_loc = load_optional_location_object
+        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -214,11 +214,19 @@ module Prism
       end
 
       def load_location
+        (load_varuint << 32) | load_varuint
+      end
+
+      def load_location_object
         Location.new(source, load_varuint, load_varuint)
       end
 
       def load_optional_location
         load_location if io.getbyte != 0
+      end
+
+      def load_optional_location_object
+        load_location_object if io.getbyte != 0
       end
 
       def load_constant(index)
