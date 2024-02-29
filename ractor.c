@@ -2517,6 +2517,7 @@ RUBY_SYMBOL_EXPORT_END
 void
 rb_init_ractor_selector(void)
 {
+    rb_global_variable(&rb_cRactorSelector);
     rb_cRactorSelector = rb_define_class_under(rb_cRactor, "Selector", rb_cObject);
     rb_undef_alloc_func(rb_cRactorSelector);
 
@@ -2625,16 +2626,29 @@ rb_init_ractor_selector(void)
 void
 Init_Ractor(void)
 {
+    rb_global_variable(&rb_cRactor);
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
     rb_undef_alloc_func(rb_cRactor);
 
-    rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
-    rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
-    rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
-    rb_eRactorMovedError     = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
-    rb_eRactorClosedError    = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
-    rb_eRactorUnsafeError    = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
+    rb_global_variable(&rb_eRactorError);
+    rb_eRactorError = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
 
+    rb_global_variable(&rb_eRactorIsolationError);
+    rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
+
+    rb_global_variable(&rb_eRactorRemoteError);
+    rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
+
+    rb_global_variable(&rb_eRactorMovedError);
+    rb_eRactorMovedError = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
+
+    rb_global_variable(&rb_eRactorClosedError);
+    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+
+    rb_global_variable(&rb_eRactorUnsafeError);
+    rb_eRactorUnsafeError = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
+
+    rb_global_variable(&rb_cRactorMovedObject);
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
     rb_define_method(rb_cRactorMovedObject, "method_missing", ractor_moved_missing, -1);

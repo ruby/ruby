@@ -4449,6 +4449,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
 
+    rb_global_variable(&rb_cEnumerator);
     rb_cEnumerator = rb_define_class("Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);
 
@@ -4472,6 +4473,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_mEnumerable, "chain", enum_chain, -1);
 
     /* Lazy */
+    rb_global_variable(&rb_cLazy);
     rb_cLazy = rb_define_class_under(rb_cEnumerator, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
 
@@ -4578,6 +4580,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
     /* Generator */
+    rb_global_variable(&rb_cGenerator);
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);
     rb_include_module(rb_cGenerator, rb_mEnumerable);
     rb_define_alloc_func(rb_cGenerator, generator_allocate);
@@ -4586,6 +4589,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cGenerator, "each", generator_each, -1);
 
     /* Yielder */
+    rb_global_variable(&rb_cYielder);
     rb_cYielder = rb_define_class_under(rb_cEnumerator, "Yielder", rb_cObject);
     rb_define_alloc_func(rb_cYielder, yielder_allocate);
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
@@ -4594,12 +4598,14 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
 
     /* Producer */
+    rb_global_variable(&rb_cEnumProducer);
     rb_cEnumProducer = rb_define_class_under(rb_cEnumerator, "Producer", rb_cObject);
     rb_define_alloc_func(rb_cEnumProducer, producer_allocate);
     rb_define_method(rb_cEnumProducer, "each", producer_each, 0);
     rb_define_singleton_method(rb_cEnumerator, "produce", enumerator_s_produce, -1);
 
     /* Chain */
+    rb_global_variable(&rb_cEnumChain);
     rb_cEnumChain = rb_define_class_under(rb_cEnumerator, "Chain", rb_cEnumerator);
     rb_define_alloc_func(rb_cEnumChain, enum_chain_allocate);
     rb_define_method(rb_cEnumChain, "initialize", enum_chain_initialize, -2);
@@ -4615,6 +4621,7 @@ InitVM_Enumerator(void)
     rb_undef_method(rb_cEnumChain, "peek_values");
 
     /* Product */
+    rb_global_variable(&rb_cEnumProduct);
     rb_cEnumProduct = rb_define_class_under(rb_cEnumerator, "Product", rb_cEnumerator);
     rb_define_alloc_func(rb_cEnumProduct, enum_product_allocate);
     rb_define_method(rb_cEnumProduct, "initialize", enum_product_initialize, -1);
@@ -4631,6 +4638,7 @@ InitVM_Enumerator(void)
     rb_define_singleton_method(rb_cEnumerator, "product", enumerator_s_product, -1);
 
     /* ArithmeticSequence */
+    rb_global_variable(&rb_cArithSeq);
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
     rb_undef_alloc_func(rb_cArithSeq);
     rb_undef_method(CLASS_OF(rb_cArithSeq), "new");

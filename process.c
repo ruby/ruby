@@ -9205,6 +9205,7 @@ InitVM_process(void)
     rb_define_global_function("exit", f_exit, -1);
     rb_define_global_function("abort", f_abort, -1);
 
+    rb_global_variable(&rb_mProcess);
     rb_mProcess = rb_define_module("Process");
 
 #ifdef WNOHANG
@@ -9240,11 +9241,13 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
 
     /* :nodoc: */
+    rb_global_variable(&rb_cWaiter);
     rb_cWaiter = rb_define_class_under(rb_mProcess, "Waiter", rb_cThread);
     rb_undef_alloc_func(rb_cWaiter);
     rb_undef_method(CLASS_OF(rb_cWaiter), "new");
     rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
 
+    rb_global_variable(&rb_cProcessStatus);
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
     rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");

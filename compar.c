@@ -312,6 +312,7 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
 void
 Init_Comparable(void)
 {
+    rb_global_variable(&rb_mComparable);
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);

@@ -4762,6 +4762,7 @@ rb_reg_timeout_get(VALUE re)
 void
 Init_Regexp(void)
 {
+    rb_global_variable(&rb_eRegexpError);
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
@@ -4782,6 +4783,7 @@ Init_Regexp(void)
 
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
 
+    rb_global_variable(&rb_cRegexp);
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
     rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance_pass_kw, -1);
@@ -4813,6 +4815,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
+    rb_global_variable(&rb_eRegexpTimeoutError);
     rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);
@@ -4830,7 +4833,8 @@ Init_Regexp(void)
 
     rb_global_variable(&reg_cache);
 
-    rb_cMatch  = rb_define_class("MatchData", rb_cObject);
+    rb_global_variable(&rb_cMatch);
+    rb_cMatch = rb_define_class("MatchData", rb_cObject);
     rb_define_alloc_func(rb_cMatch, match_alloc);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
     rb_undef_method(CLASS_OF(rb_cMatch), "allocate");

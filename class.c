@@ -890,16 +890,21 @@ refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
 void
 Init_class_hierarchy(void)
 {
+    rb_global_variable(&rb_cBasicObject);
     rb_cBasicObject = boot_defclass("BasicObject", 0);
+    rb_global_variable(&rb_cObject);
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
     rb_gc_register_mark_object(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
     rb_set_class_path_string(rb_cObject, rb_cObject, rb_fstring_lit("Object"));
 
+    rb_global_variable(&rb_cModule);
     rb_cModule = boot_defclass("Module", rb_cObject);
-    rb_cClass =  boot_defclass("Class",  rb_cModule);
-    rb_cRefinement =  boot_defclass("Refinement",  rb_cModule);
+    rb_global_variable(&rb_cClass);
+    rb_cClass = boot_defclass("Class",  rb_cModule);
+    rb_global_variable(&rb_cRefinement);
+    rb_cRefinement = boot_defclass("Refinement",  rb_cModule);
 
 #if 0 /* for RDoc */
     // we pretend it to be public, otherwise RDoc will ignore it

@@ -7345,7 +7345,10 @@ Init_File(void)
 
     VALUE separator;
 
+    rb_global_variable(&rb_mFileTest);
     rb_mFileTest = rb_define_module("FileTest");
+
+    rb_global_variable(&rb_cFile);
     rb_cFile = rb_define_class("File", rb_cIO);
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
@@ -7447,6 +7450,7 @@ Init_File(void)
 
     rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
+    rb_global_variable(&rb_mFConst);
     /*
      * Document-module: File::Constants
      *
@@ -7848,6 +7852,7 @@ Init_File(void)
 
     rb_define_global_function("test", rb_f_test, -1);
 
+    rb_global_variable(&rb_cStat);
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
     rb_define_alloc_func(rb_cStat,  rb_stat_s_alloc);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);

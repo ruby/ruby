@@ -6160,8 +6160,13 @@ Init_Numeric(void)
     id_to = rb_intern_const("to");
     id_by = rb_intern_const("by");
 
+    rb_global_variable(&rb_eZeroDivError);
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
+
+    rb_global_variable(&rb_eFloatDomainError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
+
+    rb_global_variable(&rb_cNumeric);
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
     rb_define_method(rb_cNumeric, "singleton_method_added", num_sadded, 1);
@@ -6196,6 +6201,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "positive?", num_positive_p, 0);
     rb_define_method(rb_cNumeric, "negative?", num_negative_p, 0);
 
+    rb_global_variable(&rb_cInteger);
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
@@ -6265,6 +6271,7 @@ Init_Numeric(void)
         rb_gc_register_mark_object(rb_fix_to_s_static[i]);
     }
 
+    rb_global_variable(&rb_cFloat);
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 
     rb_undef_alloc_func(rb_cFloat);

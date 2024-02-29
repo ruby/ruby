@@ -8577,7 +8577,8 @@ rb_ary_deconstruct(VALUE ary)
 void
 Init_Array(void)
 {
-    rb_cArray  = rb_define_class("Array", rb_cObject);
+    rb_global_variable(&rb_cArray);
+    rb_cArray = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cArray, empty_ary_alloc);

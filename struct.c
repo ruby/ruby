@@ -2164,6 +2164,7 @@ rb_data_inspect(VALUE s)
 void
 InitVM_Struct(void)
 {
+    rb_global_variable(&rb_cStruct);
     rb_cStruct = rb_define_class("Struct", rb_cObject);
     rb_include_module(rb_cStruct, rb_mEnumerable);
 
@@ -2203,6 +2204,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
 
+    rb_global_variable(&rb_cData);
     rb_cData = rb_define_class("Data", rb_cObject);
 
     rb_undef_method(CLASS_OF(rb_cData), "new");

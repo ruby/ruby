@@ -1825,6 +1825,7 @@ InitVM_Random(void)
 
     base = rb_define_class_id(id_base, rb_cObject);
     rb_undef_alloc_func(base);
+    rb_global_variable(&rb_cRandom);
     rb_cRandom = rb_define_class("Random", base);
     rb_const_set(rb_cRandom, id_base, base);
     rb_define_alloc_func(rb_cRandom, random_alloc);

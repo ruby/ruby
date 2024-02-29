@@ -5384,7 +5384,6 @@ Init_Thread_Mutex(void)
 void
 Init_Thread(void)
 {
-    VALUE cThGroup;
     rb_thread_t *th = GET_THREAD();
 
     sym_never = ID2SYM(rb_intern_const("never"));
@@ -5451,7 +5450,7 @@ Init_Thread(void)
     rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError,
                                      "stream closed in another thread");
 
-    cThGroup = rb_define_class("ThreadGroup", rb_cObject);
+    VALUE cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
     rb_define_method(cThGroup, "enclose", thgroup_enclose, 0);
@@ -5463,6 +5462,7 @@ Init_Thread(void)
         rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
+    rb_global_variable(&rb_eThreadError);
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 
     /* init thread core */

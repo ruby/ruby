@@ -15530,7 +15530,10 @@ Init_IO(void)
     cygwin_internal(CW_PERFILE, pf);
 #endif
 
+    rb_global_variable(&rb_eIOError);
     rb_eIOError = rb_define_class("IOError", rb_eStandardError);
+
+    rb_global_variable(&rb_eEOFError);
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 
     id_write = rb_intern_const("write");
@@ -15559,10 +15562,12 @@ Init_IO(void)
     rb_define_global_function("p", rb_f_p, -1);
     rb_define_method(rb_mKernel, "display", rb_obj_display, -1);
 
+    rb_global_variable(&rb_cIO);
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
     /* Can be raised by IO operations when IO#timeout= is set. */
+    rb_global_variable(&rb_eIOTimeoutError);
     rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
     /* Readable event mask for IO#wait. */
@@ -15573,13 +15578,17 @@ Init_IO(void)
     rb_define_const(rb_cIO, "PRIORITY", INT2NUM(RUBY_IO_PRIORITY));
 
     /* exception to wait for reading. see IO.select. */
+    rb_global_variable(&rb_mWaitReadable);
     rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");
     /* exception to wait for writing. see IO.select. */
+    rb_global_variable(&rb_mWaitWritable);
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
     /* exception to wait for reading by EAGAIN. see IO.select. */
+    rb_global_variable(&rb_eEAGAINWaitReadable);
     rb_eEAGAINWaitReadable = rb_define_class_under(rb_cIO, "EAGAINWaitReadable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitReadable, rb_mWaitReadable);
     /* exception to wait for writing by EAGAIN. see IO.select. */
+    rb_global_variable(&rb_eEAGAINWaitWritable);
     rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
 #if EAGAIN == EWOULDBLOCK
@@ -15591,16 +15600,20 @@ Init_IO(void)
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else
     /* exception to wait for reading by EWOULDBLOCK. see IO.select. */
+    rb_global_variable(&rb_eEWOULDBLOCKWaitReadable);
     rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
     /* exception to wait for writing by EWOULDBLOCK. see IO.select. */
+    rb_global_variable(&rb_eEWOULDBLOCKWaitWritable);
     rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
 #endif
     /* exception to wait for reading by EINPROGRESS. see IO.select. */
+    rb_global_variable(&rb_eEINPROGRESSWaitReadable);
     rb_eEINPROGRESSWaitReadable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitReadable", rb_eEINPROGRESS);
     rb_include_module(rb_eEINPROGRESSWaitReadable, rb_mWaitReadable);
     /* exception to wait for writing by EINPROGRESS. see IO.select. */
+    rb_global_variable(&rb_eEINPROGRESSWaitWritable);
     rb_eEINPROGRESSWaitWritable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitWritable", rb_eEINPROGRESS);
     rb_include_module(rb_eEINPROGRESSWaitWritable, rb_mWaitWritable);
 
@@ -15783,6 +15796,7 @@ Init_IO(void)
     rb_cARGF = rb_define_class("ARGF", rb_cObject);
 #endif
 
+    rb_global_variable(&rb_cARGF);
     rb_cARGF = rb_class_new(rb_cObject);
     rb_set_class_path(rb_cARGF, rb_cObject, "ARGF.class");
     rb_define_alloc_func(rb_cARGF, argf_alloc);

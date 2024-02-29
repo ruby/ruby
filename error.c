@@ -3316,7 +3316,8 @@ exception_loader(VALUE exc, VALUE obj)
 void
 Init_Exception(void)
 {
-    rb_eException   = rb_define_class("Exception", rb_cObject);
+    rb_global_variable(&rb_eException);
+    rb_eException = rb_define_class("Exception", rb_cObject);
     rb_define_alloc_func(rb_eException, exception_alloc);
     rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
@@ -3334,26 +3335,46 @@ Init_Exception(void)
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
     rb_define_method(rb_eException, "cause", exc_cause, 0);
 
+    rb_global_variable(&rb_eSystemExit);
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
     rb_define_method(rb_eSystemExit, "status", exit_status, 0);
     rb_define_method(rb_eSystemExit, "success?", exit_success_p, 0);
 
-    rb_eFatal  	    = rb_define_class("fatal", rb_eException);
-    rb_eSignal      = rb_define_class("SignalException", rb_eException);
-    rb_eInterrupt   = rb_define_class("Interrupt", rb_eSignal);
+    rb_global_variable(&rb_eFatal);
+    rb_eFatal = rb_define_class("fatal", rb_eException);
 
+    rb_global_variable(&rb_eSignal);
+    rb_eSignal = rb_define_class("SignalException", rb_eException);
+
+    rb_global_variable(&rb_eInterrupt);
+    rb_eInterrupt = rb_define_class("Interrupt", rb_eSignal);
+
+    rb_global_variable(&rb_eStandardError);
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
-    rb_eTypeError     = rb_define_class("TypeError", rb_eStandardError);
-    rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
-    rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
-    rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
+
+    rb_global_variable(&rb_eTypeError);
+    rb_eTypeError = rb_define_class("TypeError", rb_eStandardError);
+
+    rb_global_variable(&rb_eArgError);
+    rb_eArgError = rb_define_class("ArgumentError", rb_eStandardError);
+
+    rb_global_variable(&rb_eIndexError);
+    rb_eIndexError = rb_define_class("IndexError", rb_eStandardError);
+
+    rb_global_variable(&rb_eKeyError);
+    rb_eKeyError = rb_define_class("KeyError", rb_eIndexError);
     rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);
     rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
     rb_define_method(rb_eKeyError, "key", key_err_key, 0);
-    rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
 
+    rb_global_variable(&rb_eRangeError);
+    rb_eRangeError = rb_define_class("RangeError", rb_eStandardError);
+
+    rb_global_variable(&rb_eScriptError);
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
+
+    rb_global_variable(&rb_eSyntaxError);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
@@ -3364,17 +3385,22 @@ Init_Exception(void)
     /* the path failed to parse */
     rb_attr(rb_eSyntaxError, path, TRUE, FALSE, FALSE);
 
-    rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    rb_global_variable(&rb_eLoadError);
+    rb_eLoadError = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
     rb_attr(rb_eLoadError, path, TRUE, FALSE, FALSE);
 
+    rb_global_variable(&rb_eNotImpError);
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
-    rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_global_variable(&rb_eNameError);
+    rb_eNameError = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
+
+    rb_global_variable(&rb_cNameErrorMesg);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
     rb_define_alloc_func(rb_cNameErrorMesg, name_err_mesg_alloc);
     rb_define_method(rb_cNameErrorMesg, "initialize_copy", name_err_mesg_init_copy, 1);
@@ -3382,33 +3408,53 @@ Init_Exception(void)
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
+
+    rb_global_variable(&rb_eNoMethodError);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
     rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
+    rb_global_variable(&rb_eRuntimeError);
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
+
+    rb_global_variable(&rb_eFrozenError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
     rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
+
+    rb_global_variable(&rb_eSecurityError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
+
+    rb_global_variable(&rb_eNoMemError);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
+
+    rb_global_variable(&rb_eEncodingError);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
+
+    rb_global_variable(&rb_eEncCompatError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
+
+    rb_global_variable(&rb_eNoMatchingPatternError);
     rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
+
+    rb_global_variable(&rb_eNoMatchingPatternKeyError);
     rb_eNoMatchingPatternKeyError = rb_define_class("NoMatchingPatternKeyError", rb_eNoMatchingPatternError);
     rb_define_method(rb_eNoMatchingPatternKeyError, "initialize", no_matching_pattern_key_err_initialize, -1);
     rb_define_method(rb_eNoMatchingPatternKeyError, "matchee", no_matching_pattern_key_err_matchee, 0);
     rb_define_method(rb_eNoMatchingPatternKeyError, "key", no_matching_pattern_key_err_key, 0);
 
     syserr_tbl = st_init_numtable();
+    rb_global_variable(&rb_eSystemCallError);
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
     rb_define_method(rb_eSystemCallError, "initialize", syserr_initialize, -1);
     rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
     rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
 
+    rb_global_variable(&rb_mErrno);
     rb_mErrno = rb_define_module("Errno");
 
+    rb_global_variable(&rb_mWarning);
     rb_mWarning = rb_define_module("Warning");
     rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
     rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
@@ -3416,6 +3462,7 @@ Init_Exception(void)
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     /* :nodoc: */
+    rb_global_variable(&rb_cWarningBuffer);
     rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
     rb_define_method(rb_cWarningBuffer, "write", warning_write, -1);
 

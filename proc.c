@@ -4242,6 +4242,7 @@ Init_Proc(void)
 {
 #undef rb_intern
     /* Proc */
+    rb_global_variable(&rb_cProc);
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
@@ -4278,10 +4279,12 @@ Init_Proc(void)
     // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
     /* Exceptions */
+    rb_global_variable(&rb_eLocalJumpError);
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
     rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
+    rb_global_variable(&rb_eSysStackError);
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
     rb_vm_register_special_exception(ruby_error_sysstack, rb_eSysStackError, "stack level too deep");
 
@@ -4290,6 +4293,7 @@ Init_Proc(void)
     rb_define_global_function("lambda", f_lambda, 0);
 
     /* Method */
+    rb_global_variable(&rb_cMethod);
     rb_cMethod = rb_define_class("Method", rb_cObject);
     rb_undef_alloc_func(rb_cMethod);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
@@ -4321,6 +4325,7 @@ Init_Proc(void)
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
 
     /* UnboundMethod */
+    rb_global_variable(&rb_cUnboundMethod);
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);
     rb_undef_alloc_func(rb_cUnboundMethod);
     rb_undef_method(CLASS_OF(rb_cUnboundMethod), "new");
@@ -4391,6 +4396,7 @@ Init_Proc(void)
 void
 Init_Binding(void)
 {
+    rb_global_variable(&rb_cBinding);
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");

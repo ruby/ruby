@@ -3477,8 +3477,11 @@ Init_Cont(void)
         }
     }
 
+    rb_global_variable(&rb_cFiber);
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
+
+    rb_global_variable(&rb_eFiberError);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
@@ -3508,6 +3511,7 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
+    rb_global_variable(&rb_cFiberPool);
     rb_cFiberPool = rb_define_class_under(rb_cFiber, "Pool", rb_cObject);
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
     rb_define_method(rb_cFiberPool, "initialize", rb_fiber_pool_initialize, -1);
@@ -3521,6 +3525,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 void
 ruby_Init_Continuation_body(void)
 {
+    rb_global_variable(&rb_cContinuation);
     rb_cContinuation = rb_define_class("Continuation", rb_cObject);
     rb_undef_alloc_func(rb_cContinuation);
     rb_undef_method(CLASS_OF(rb_cContinuation), "new");

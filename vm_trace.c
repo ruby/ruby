@@ -1622,6 +1622,7 @@ Init_vm_trace(void)
     rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
     rb_define_method(rb_cThread, "add_trace_func", thread_add_trace_func_m, 1);
 
+    rb_global_variable(&rb_cTracePoint);
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
 }

@@ -3620,21 +3620,27 @@ io_buffer_not_inplace(VALUE self)
 void
 Init_IO_Buffer(void)
 {
+    rb_global_variable(&rb_cIOBuffer);
     rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cObject);
 
     /* Raised when an operation would resize or re-allocate a locked buffer. */
+    rb_global_variable(&rb_eIOBufferLockedError);
     rb_eIOBufferLockedError = rb_define_class_under(rb_cIOBuffer, "LockedError", rb_eRuntimeError);
 
     /* Raised when the buffer cannot be allocated for some reason, or you try to use a buffer that's not allocated. */
+    rb_global_variable(&rb_eIOBufferAllocationError);
     rb_eIOBufferAllocationError = rb_define_class_under(rb_cIOBuffer, "AllocationError", rb_eRuntimeError);
 
     /* Raised when you try to write to a read-only buffer, or resize an external buffer. */
+    rb_global_variable(&rb_eIOBufferAccessError);
     rb_eIOBufferAccessError = rb_define_class_under(rb_cIOBuffer, "AccessError", rb_eRuntimeError);
 
     /* Raised if you try to access a buffer slice which no longer references a valid memory range of the underlying source. */
+    rb_global_variable(&rb_eIOBufferInvalidatedError);
     rb_eIOBufferInvalidatedError = rb_define_class_under(rb_cIOBuffer, "InvalidatedError", rb_eRuntimeError);
 
     /* Raised if the mask given to a binary operation is invalid, e.g. zero length or overlaps the target buffer. */
+    rb_global_variable(&rb_eIOBufferMaskError);
     rb_eIOBufferMaskError = rb_define_class_under(rb_cIOBuffer, "MaskError", rb_eArgError);
 
     rb_define_alloc_func(rb_cIOBuffer, rb_io_buffer_type_allocate);

@@ -5058,6 +5058,7 @@ enum_compact(VALUE obj)
 void
 Init_Enumerable(void)
 {
+    rb_global_variable(&rb_mEnumerable);
     rb_mEnumerable = rb_define_module("Enumerable");
 
     rb_define_method(rb_mEnumerable, "to_a", enum_to_a, -1);

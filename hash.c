@@ -7130,6 +7130,7 @@ Init_Hash(void)
     id_flatten_bang = rb_intern_const("flatten!");
     id_hash_iter_lev = rb_make_internal_id();
 
+    rb_global_variable(&rb_cHash);
     rb_cHash = rb_define_class("Hash", rb_cObject);
 
     rb_include_module(rb_cHash, rb_mEnumerable);

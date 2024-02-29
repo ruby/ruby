@@ -3933,6 +3933,7 @@ Init_VM(void)
      * prototyping, and research.  Normal users must not use it.
      * This module is not portable between Ruby implementations.
      */
+    rb_global_variable(&rb_cRubyVM);
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
@@ -4128,6 +4129,7 @@ Init_VM(void)
      * 	on some platforms.
      *
      */
+    rb_global_variable(&rb_cThread);
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
 

@@ -2750,12 +2750,12 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 void
 Init_Rational(void)
 {
-    VALUE compat;
     id_abs = rb_intern_const("abs");
     id_integer_p = rb_intern_const("integer?");
     id_i_num = rb_intern_const("@numerator");
     id_i_den = rb_intern_const("@denominator");
 
+    rb_global_variable(&rb_cRational);
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 
     rb_define_alloc_func(rb_cRational, nurat_s_alloc);
@@ -2803,7 +2803,7 @@ Init_Rational(void)
 
     rb_define_private_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
     /* :nodoc: */
-    compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
+    VALUE compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nurat_marshal_load, 1);
     rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
 

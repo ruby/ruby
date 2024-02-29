@@ -1090,7 +1090,10 @@ exp1(sqrt)
 void
 InitVM_Math(void)
 {
+    rb_global_variable(&rb_mMath);
     rb_mMath = rb_define_module("Math");
+
+    rb_global_variable(&rb_eMathDomainError);
     rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eStandardError);
 
     /*  Definition of the mathematical constant PI as a Float number. */

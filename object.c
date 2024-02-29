@@ -4396,6 +4396,7 @@ InitVM_Object(void)
      * - #warn: Issue a warning based on the given messages and options.
      *
      */
+    rb_global_variable(&rb_mKernel);
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_class_inherited, 1);
@@ -4450,8 +4451,10 @@ InitVM_Object(void)
 
     rb_global_variable(&rb_cNilClass);
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
+
+    rb_global_variable(&rb_cNilClass);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cNilClass_to_s);
+    rb_global_variable(&rb_cNilClass_to_s);
     rb_define_method(rb_cNilClass, "to_s", rb_nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);

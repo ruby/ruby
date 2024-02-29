@@ -12139,7 +12139,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 void
 Init_String(void)
 {
-    rb_cString  = rb_define_class("String", rb_cObject);
+    rb_global_variable(&rb_cString);
+    rb_cString = rb_define_class("String", rb_cObject);
     RUBY_ASSERT(rb_vm_fstring_table());
     st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
     rb_include_module(rb_cString, rb_mComparable);
@@ -12295,6 +12296,7 @@ Init_String(void)
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     /* define UnicodeNormalize module here so that we don't have to look it up */
+    rb_global_variable(&mUnicodeNormalize);
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
     id_normalize               = rb_intern_const("normalize");
     id_normalized_p            = rb_intern_const("normalized?");
@@ -12308,6 +12310,7 @@ Init_String(void)
     rb_define_hooked_variable("$-F", &rb_fs, 0, rb_fs_setter);
     rb_gc_register_address(&rb_fs);
 
+    rb_global_variable(&rb_cSymbol);
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);

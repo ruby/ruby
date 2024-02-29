@@ -2597,7 +2597,6 @@ float_arg(VALUE self)
 void
 Init_Complex(void)
 {
-    VALUE compat;
     id_abs = rb_intern_const("abs");
     id_arg = rb_intern_const("arg");
     id_denominator = rb_intern_const("denominator");
@@ -2610,6 +2609,7 @@ Init_Complex(void)
     id_rationalize = rb_intern_const("rationalize");
     id_PI = rb_intern_const("PI");
 
+    rb_global_variable(&rb_cComplex);
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 
     rb_define_alloc_func(rb_cComplex, nucomp_s_alloc);
@@ -2684,7 +2684,7 @@ Init_Complex(void)
 
     rb_define_private_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
     /* :nodoc: */
-    compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject);
+    VALUE compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nucomp_marshal_load, 1);
     rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 

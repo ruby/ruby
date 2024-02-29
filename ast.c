@@ -815,7 +815,9 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
 void
 Init_ast(void)
 {
+    rb_global_variable(&rb_mAST);
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
+    rb_global_variable(&rb_cNode);
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
 }

@@ -2695,6 +2695,7 @@ Init_vm_eval(void)
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval_internal, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval_internal, -1);
 
+    rb_global_variable(&rb_eUncaughtThrow);
     rb_eUncaughtThrow = rb_define_class("UncaughtThrowError", rb_eArgError);
     rb_define_method(rb_eUncaughtThrow, "initialize", uncaught_throw_init, -1);
     rb_define_method(rb_eUncaughtThrow, "tag", uncaught_throw_tag, 0);

@@ -5777,6 +5777,7 @@ Init_Time(void)
     str_empty = rb_fstring_lit("");
     rb_gc_register_mark_object(str_empty);
 
+    rb_global_variable(&rb_cTime);
     rb_cTime = rb_define_class("Time", rb_cObject);
     VALUE scTime = rb_singleton_class(rb_cTime);
     rb_include_module(rb_cTime, rb_mComparable);

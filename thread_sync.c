@@ -1598,13 +1598,21 @@ Init_thread_sync(void)
 {
 #undef rb_intern
 #if defined(TEACH_RDOC) && TEACH_RDOC == 42
+    rb_global_variable(&rb_cMutex);
     rb_cMutex = rb_define_class_under(rb_cThread, "Mutex", rb_cObject);
+
+    rb_global_variable(&rb_cConditionVariable);
     rb_cConditionVariable = rb_define_class_under(rb_cThread, "ConditionVariable", rb_cObject);
+
+    rb_global_variable(&rb_cQueue);
     rb_cQueue = rb_define_class_under(rb_cThread, "Queue", rb_cObject);
+
+    rb_global_variable(&rb_cSizedQueue);
     rb_cSizedQueue = rb_define_class_under(rb_cThread, "SizedQueue", rb_cObject);
 #endif
 
 #define DEFINE_CLASS(name, super) \
+    rb_global_variable(&rb_c##name); \
     rb_c##name = define_thread_class(rb_cThread, rb_intern(#name), rb_c##super)
 
     /* Mutex */
@@ -1623,6 +1631,7 @@ Init_thread_sync(void)
     DEFINE_CLASS(Queue, Object);
     rb_define_alloc_func(rb_cQueue, queue_alloc);
 
+    rb_global_variable(&rb_eClosedQueueError);
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
 
     rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, -1);

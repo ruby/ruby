@@ -13686,6 +13686,7 @@ Init_GC(void)
     VALUE rb_mProfiler;
     VALUE gc_constants;
 
+    rb_global_variable(&rb_mGC);
     rb_mGC = rb_define_module("GC");
 
     gc_constants = rb_hash_new();
@@ -13716,6 +13717,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
 
+    rb_global_variable(&rb_mObjSpace);
     rb_mObjSpace = rb_define_module("ObjectSpace");
 
     rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);
