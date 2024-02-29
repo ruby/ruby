@@ -398,7 +398,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
 
 static void
 args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
-                         VALUE keyword_hash, VALUE *const locals)
+                         VALUE keyword_hash, VALUE *const locals, bool remove_hash_value)
 {
     const ID *acceptable_keywords = ISEQ_BODY(iseq)->param.keyword->table;
     const int req_key_num = ISEQ_BODY(iseq)->param.keyword->required_num;
@@ -407,13 +407,22 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
     VALUE missing = 0;
     int i, di;
     int unspecified_bits = 0;
+    size_t keyword_size = RHASH_SIZE(keyword_hash);
     VALUE unspecified_bits_value = Qnil;
 
     for (i=0; i<req_key_num; i++) {
         VALUE key = ID2SYM(acceptable_keywords[i]);
-        VALUE deleted_value = rb_hash_delete_entry(keyword_hash, key);
-        if (!UNDEF_P(deleted_value)) {
-            locals[i] = deleted_value;
+        VALUE value;
+        if (remove_hash_value) {
+            value = rb_hash_delete_entry(keyword_hash, key);
+        }
+        else {
+            value = rb_hash_lookup2(keyword_hash, key, Qundef);
+        }
+
+        if (!UNDEF_P(value)) {
+            keyword_size--;
+            locals[i] = value;
         }
         else {
             if (!missing) missing = rb_ary_hidden_new(1);
@@ -425,9 +434,17 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
 
     for (di=0; i<key_num; i++, di++) {
         VALUE key = ID2SYM(acceptable_keywords[i]);
-        VALUE deleted_value = rb_hash_delete_entry(keyword_hash, key);
-        if (!UNDEF_P(deleted_value)) {
-            locals[i] = deleted_value;
+        VALUE value;
+        if (remove_hash_value) {
+            value = rb_hash_delete_entry(keyword_hash, key);
+        }
+        else {
+            value = rb_hash_lookup2(keyword_hash, key, Qundef);
+        }
+
+        if (!UNDEF_P(value)) {
+            keyword_size--;
+            locals[i] = value;
         }
         else {
             if (UNDEF_P(default_values[di])) {
@@ -462,7 +479,16 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
         locals[rest_hash_index] = keyword_hash;
     }
     else {
-        if (!RHASH_EMPTY_P(keyword_hash)) {
+        if (!remove_hash_value) {
+            if (keyword_size != 0) {
+                /* Recurse with duplicated keyword hash in remove mode.
+                 * This is simpler than writing code to check which entries in the hash do not match.
+                 * This will raise an exception, so the additional performance impact shouldn't be material.
+                 */
+                args_setup_kw_parameters_from_kwsplat(ec, iseq, rb_hash_dup(keyword_hash), locals, true);
+            }
+        }
+        else if (!RHASH_EMPTY_P(keyword_hash)) {
             argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
         }
     }
@@ -808,8 +834,12 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             args_setup_kw_parameters(ec, iseq, args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, klocals);
         }
         else if (!NIL_P(keyword_hash)) {
-            keyword_hash = check_kwrestarg(keyword_hash, &kw_flag);
-            args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals);
+            bool remove_hash_value = false;
+            if (ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                keyword_hash = check_kwrestarg(keyword_hash, &kw_flag);
+                remove_hash_value = true;
+            }
+            args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals, remove_hash_value);
         }
         else {
             VM_ASSERT(args_argc(args) == 0);
