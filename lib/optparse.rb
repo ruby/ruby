@@ -1050,6 +1050,26 @@ XXX
     to << "  '*:file:_files' && return 0\n"
   end
 
+  def help_exit
+    if STDOUT.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
+      less = ENV["LESS"]
+      args = [{"LESS" => "#{!less || less.empty? ? '-' : less}Fe"}, pager, "w"]
+      print = proc do |f|
+        f.puts help
+      rescue Errno::EPIPE
+        # pager terminated
+      end
+      if Process.respond_to?(:fork) and false
+        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call(STDOUT)}
+        # unreachable
+      end
+      IO.popen(*args, &print)
+    else
+      puts help
+    end
+    exit
+  end
+
   #
   # Default options for ARGV, which never appear in option summary.
   #
@@ -1061,8 +1081,7 @@ XXX
   #
   Officious['help'] = proc do |parser|
     Switch::NoArgument.new do |arg|
-      puts parser.help
-      exit
+      parser.help_exit
     end
   end
 

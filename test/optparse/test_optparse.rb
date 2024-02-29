@@ -164,4 +164,44 @@ class TestOptionParser < Test::Unit::TestCase
     e = assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-t))}
     assert_equal(["-t"], e.args)
   end
+
+  def test_help_pager
+    require 'tmpdir'
+    Dir.mktmpdir do |dir|
+      File.open(File.join(dir, "options.rb"), "w") do |f|
+        f.puts "#{<<~"begin;"}\n#{<<~'end;'}"
+        begin;
+          stdout = STDOUT.dup
+          def stdout.tty?; true; end
+          Object.__send__(:remove_const, :STDOUT)
+          STDOUT = stdout
+          ARGV.options do |opt|
+          end;
+          100.times {|i| f.puts "  opt.on('--opt-#{i}') {}"}
+          f.puts "#{<<~"begin;"}\n#{<<~'end;'}"
+          begin;
+            opt.parse!
+          end
+        end;
+      end
+
+      optparse = $".find {|path| path.end_with?("/optparse.rb")}
+      args = ["-r#{optparse}", "options.rb", "--help"]
+      cmd = File.join(dir, "pager.cmd")
+      if RbConfig::CONFIG["EXECUTABLE_EXTS"]&.include?(".cmd")
+        command = "@echo off"
+      else # if File.executable?("/bin/sh")
+        # TruffleRuby just calls `posix_spawnp` and no fallback to `/bin/sh`.
+        command = "#!/bin/sh\n"
+      end
+
+      [
+        [{"RUBY_PAGER"=>cmd, "PAGER"=>"echo ng"}, "Executing RUBY_PAGER"],
+        [{"RUBY_PAGER"=>nil, "PAGER"=>cmd}, "Executing PAGER"],
+      ].each do |env, expected|
+        File.write(cmd, "#{command}\n" "echo #{expected}\n", perm: 0o700)
+        assert_in_out_err([env, *args], "", [expected], chdir: dir)
+      end
+    end
+  end
 end
