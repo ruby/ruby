@@ -716,7 +716,15 @@ module Test
             del_status_line or puts
             error, suites = suites.partition {|r| r[:error]}
             unless suites.empty?
-              puts "\n""Retrying..."
+              puts "\n"
+              @failed_output.puts "Failed tests:"
+              suites.each {|r|
+                r[:report].each {|c, m, e|
+                  @failed_output.puts "#{c}##{m}: #{e&.class}: #{e&.message&.slice(/\A.*/)}"
+                }
+              }
+              @failed_output.puts "\n"
+              puts "Retrying..."
               @verbose = options[:verbose]
               suites.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
