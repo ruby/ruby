@@ -533,10 +533,12 @@ static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
 extern ID ruby_static_id_signo;
 
-NORETURN(static void raise_on_write(rb_io_t *fptr, int e, VALUE errinfo));
+NORETURN(static void rb_sys_fail_on_write(rb_io_t *fptr));
 static void
-raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
+rb_sys_fail_on_write(rb_io_t *fptr)
 {
+    int e = errno;
+    VALUE errinfo = rb_syserr_new_path(e, (fptr)->pathv);
 #if defined EPIPE
     if (fptr_signal_on_epipe(fptr) && (e == EPIPE)) {
         const VALUE sig =
@@ -549,12 +551,6 @@ raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
 #endif
     rb_exc_raise(errinfo);
 }
-
-#define rb_sys_fail_on_write(fptr) \
-    do { \
-        int e = errno; \
-        raise_on_write(fptr, e, rb_syserr_new_path(e, (fptr)->pathv)); \
-    } while (0)
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
