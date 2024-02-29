@@ -57,5 +57,13 @@ module Prism
       assert_equal :$/, arguments.first.name
       assert_equal "chomp", arguments.last.elements.first.key.unescaped
     end
+
+    def test_command_line_e
+      result = Prism.parse("1 if 2..3")
+      assert_equal 2, result.warnings.length
+
+      result = Prism.parse("1 if 2..3", command_line: "e")
+      assert_equal 0, result.warnings.length
+    end
   end
 end

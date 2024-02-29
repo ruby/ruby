@@ -584,6 +584,15 @@ pm_parser_warn_token(pm_parser_t *parser, const pm_token_t *token, pm_diagnostic
     pm_parser_warn(parser, token->start, token->end, diag_id);
 }
 
+/**
+ * Append a warning to the list of warnings on the parser using the location of
+ * the given node.
+ */
+static inline void
+pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id_t diag_id) {
+    pm_parser_warn(parser, node->location.start, node->location.end, diag_id);
+}
+
 /******************************************************************************/
 /* Node-related functions                                                     */
 /******************************************************************************/
@@ -726,6 +735,17 @@ pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
 }
 
 /**
+ * Check one side of a flip-flop for integer literals. If -e was not supplied at
+ * the command-line, then warn.
+ */
+static inline void
+pm_flip_flop_predicate(pm_parser_t *parser, pm_node_t *node) {
+    if (PM_NODE_TYPE_P(node, PM_INTEGER_NODE) && !(parser->command_line & PM_OPTIONS_COMMAND_LINE_E)) {
+        pm_parser_warn_node(parser, node, PM_WARN_INTEGER_IN_FLIP_FLOP);
+    }
+}
+
+/**
  * The predicate of conditional nodes can change what would otherwise be regular
  * nodes into specialized nodes. For example:
  *
@@ -735,18 +755,18 @@ pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
  * if /foo #{bar}/       => InterpolatedRegularExpressionNode becomes InterpolatedMatchLastLineNode
  */
 static void
-pm_conditional_predicate(pm_node_t *node) {
+pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_AND_NODE: {
             pm_and_node_t *cast = (pm_and_node_t *) node;
-            pm_conditional_predicate(cast->left);
-            pm_conditional_predicate(cast->right);
+            pm_conditional_predicate(parser, cast->left);
+            pm_conditional_predicate(parser, cast->right);
             break;
         }
         case PM_OR_NODE: {
             pm_or_node_t *cast = (pm_or_node_t *) node;
-            pm_conditional_predicate(cast->left);
-            pm_conditional_predicate(cast->right);
+            pm_conditional_predicate(parser, cast->left);
+            pm_conditional_predicate(parser, cast->right);
             break;
         }
         case PM_PARENTHESES_NODE: {
@@ -754,18 +774,21 @@ pm_conditional_predicate(pm_node_t *node) {
 
             if ((cast->body != NULL) && PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE)) {
                 pm_statements_node_t *statements = (pm_statements_node_t *) cast->body;
-                if (statements->body.size == 1) pm_conditional_predicate(statements->body.nodes[0]);
+                if (statements->body.size == 1) pm_conditional_predicate(parser, statements->body.nodes[0]);
             }
 
             break;
         }
         case PM_RANGE_NODE: {
             pm_range_node_t *cast = (pm_range_node_t *) node;
+
             if (cast->left) {
-                pm_conditional_predicate(cast->left);
+                pm_flip_flop_predicate(parser, cast->left);
+                pm_conditional_predicate(parser, cast->left);
             }
             if (cast->right) {
-                pm_conditional_predicate(cast->right);
+                pm_flip_flop_predicate(parser, cast->right);
+                pm_conditional_predicate(parser, cast->right);
             }
 
             // Here we change the range node into a flip flop node. We can do
@@ -3778,7 +3801,7 @@ pm_if_node_create(pm_parser_t *parser,
     pm_node_t *consequent,
     const pm_token_t *end_keyword
 ) {
-    pm_conditional_predicate(predicate);
+    pm_conditional_predicate(parser, predicate);
     pm_predicate_check(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
@@ -3818,7 +3841,7 @@ pm_if_node_create(pm_parser_t *parser,
  */
 static pm_if_node_t *
 pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *if_keyword, pm_node_t *predicate) {
-    pm_conditional_predicate(predicate);
+    pm_conditional_predicate(parser, predicate);
     pm_predicate_check(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
@@ -3851,7 +3874,7 @@ pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_t
 static pm_if_node_t *
 pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_token_t *qmark, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
     pm_assert_value_expression(parser, predicate);
-    pm_conditional_predicate(predicate);
+    pm_conditional_predicate(parser, predicate);
     pm_predicate_check(parser, predicate);
 
     pm_statements_node_t *if_statements = pm_statements_node_create(parser);
@@ -6161,7 +6184,7 @@ pm_undef_node_append(pm_undef_node_t *node, pm_node_t *name) {
  */
 static pm_unless_node_t *
 pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
-    pm_conditional_predicate(predicate);
+    pm_conditional_predicate(parser, predicate);
     pm_predicate_check(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
@@ -6197,7 +6220,7 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
  */
 static pm_unless_node_t *
 pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *unless_keyword, pm_node_t *predicate) {
-    pm_conditional_predicate(predicate);
+    pm_conditional_predicate(parser, predicate);
     pm_predicate_check(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
@@ -16317,7 +16340,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     arguments.closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
                 } else {
                     receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_NOT_EXPRESSION);
-                    pm_conditional_predicate(receiver);
+                    pm_conditional_predicate(parser, receiver);
                     pm_predicate_check(parser, receiver);
 
                     if (!parser->recovering) {
@@ -16328,7 +16351,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
             } else {
                 receiver = parse_expression(parser, PM_BINDING_POWER_NOT, true, PM_ERR_NOT_EXPRESSION);
-                pm_conditional_predicate(receiver);
+                pm_conditional_predicate(parser, receiver);
                 pm_predicate_check(parser, receiver);
             }
 
@@ -17006,7 +17029,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, binding_power < PM_BINDING_POWER_MATCH, PM_ERR_UNARY_RECEIVER);
             pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "!");
 
-            pm_conditional_predicate(receiver);
+            pm_conditional_predicate(parser, receiver);
             pm_predicate_check(parser, receiver);
             return (pm_node_t *) node;
         }

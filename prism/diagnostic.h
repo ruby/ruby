@@ -309,6 +309,7 @@ typedef enum {
     PM_WARN_DUPLICATED_HASH_KEY,
     PM_WARN_DUPLICATED_WHEN_CLAUSE,
     PM_WARN_FLOAT_OUT_OF_RANGE,
+    PM_WARN_INTEGER_IN_FLIP_FLOP,
 
     // This is the number of diagnostic codes.
     PM_DIAGNOSTIC_ID_LEN,
