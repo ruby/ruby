@@ -95,11 +95,11 @@ require_relative "prism/parse_result/newlines"
 if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
   require "prism/prism"
 
-  # Using a C extension is the default backend for the parser.
+  # The C extension is the default backend on CRuby.
   Prism::BACKEND = :CEXT
 else
   require_relative "prism/ffi"
 
-  # On platforms that don't support C extensions, we use FFI.
+  # The FFI backend is used on other Ruby implementations.
   Prism::BACKEND = :FFI
 end
