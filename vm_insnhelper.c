@@ -276,14 +276,14 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     }
 
     const VALUE *orig = rb_iseq_original_iseq(iseq);
-    const ptrdiff_t pos = previous_insn_index(iseq, GET_PC());
-    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
-    const char *name = insn_name(insn);
     const VALUE iseqw = rb_iseqw_new(iseq);
     const VALUE inspection = rb_inspect(iseqw);
     const char *stri = rb_str_to_cstr(inspection);
     const VALUE disasm = rb_iseq_disasm(iseq);
     const char *strd = rb_str_to_cstr(disasm);
+    const ptrdiff_t pos = previous_insn_index(iseq, GET_PC());
+    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
+    const char *name = insn_name(insn);
 
     /* rb_bug() is not capable of outputting this large contents.  It
        is designed to run form a SIGSEGV handler, which tends to be
