@@ -16,5 +16,4 @@ module Gem::GemspecHelpers
 
     gemspecs.first
   end
-
 end
