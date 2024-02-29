@@ -2943,6 +2943,12 @@ vm_mark_negative_cme(VALUE val, void *dmy)
 
 void rb_thread_sched_mark_zombies(rb_vm_t *vm);
 
+static int
+vm_pin_defined_module_i(st_data_t key, st_data_t _value, st_data_t _arg)
+{
+    rb_gc_pin_no_mark((VALUE)key);
+    return ST_CONTINUE;
+}
 void
 rb_vm_mark(void *ptr)
 {
@@ -2991,7 +2997,8 @@ rb_vm_mark(void *ptr)
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->me2counter);
         /* Prevent classes from moving */
-        rb_mark_set(vm->defined_module_hash);
+        
+        st_foreach(vm->defined_module_hash, vm_pin_defined_module_i, (st_data_t)NULL);
 
         if (vm->loading_table) {
             rb_mark_tbl(vm->loading_table);
@@ -3035,11 +3042,6 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
 static int
 vm_add_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
 {
-    if (!existing) {
-        *val = 1;
-        return ST_CONTINUE;
-    }
-
     (*val)++;
     return ST_CONTINUE;
 }
@@ -3058,10 +3060,6 @@ rb_vm_add_root_module(VALUE module)
 static int
 vm_remove_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
 {
-    if (!existing) {
-        return ST_DELETE;
-    }
-
     (*val)--;
     if (*val <= 0) {
         return ST_DELETE;
@@ -3072,6 +3070,10 @@ vm_remove_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int exis
 int
 rb_vm_remove_root_module(VALUE module)
 {
+    if (module == rb_cNilClass || module == rb_cTrueClass || module == rb_cFalseClass) {
+        return FALSE;
+    }
+
     rb_vm_t *vm = GET_VM();
 
     st_update(vm->defined_module_hash, (st_data_t)module, vm_remove_root_module_i, (st_data_t)0);

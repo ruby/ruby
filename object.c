@@ -4448,6 +4448,7 @@ InitVM_Object(void)
     rb_define_global_function("Array", rb_f_array, 1);
     rb_define_global_function("Hash", rb_f_hash, 1);
 
+    rb_global_variable(&rb_cNilClass);
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cNilClass_to_s);
@@ -4534,6 +4535,7 @@ InitVM_Object(void)
     rb_undef_method(rb_cClass, "append_features");
     rb_undef_method(rb_cClass, "prepend_features");
 
+    rb_global_variable(&rb_cTrueClass);
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cTrueClass_to_s);
@@ -4546,6 +4548,7 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
 
+    rb_global_variable(&rb_cFalseClass);
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cFalseClass_to_s);

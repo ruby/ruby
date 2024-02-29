@@ -3284,6 +3284,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         break;
       case T_MODULE:
       case T_CLASS:
+        rb_vm_remove_root_module(obj);
         rb_id_table_free(RCLASS_M_TBL(obj));
         rb_cc_table_free(obj);
         if (rb_shape_obj_too_complex(obj)) {
@@ -6284,6 +6285,12 @@ rb_mark_set(st_table *tbl)
     mark_set(&rb_objspace, tbl);
 }
 
+void
+rb_pin_set_no_mark(st_table *tbl)
+{
+    mark_set(&rb_objspace, tbl);
+}
+
 static int
 mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -6708,6 +6715,12 @@ void
 rb_gc_mark_movable(VALUE ptr)
 {
     gc_mark(&rb_objspace, ptr);
+}
+
+void
+rb_gc_pin_no_mark(VALUE ptr)
+{
+    gc_pin(&rb_objspace, ptr);
 }
 
 void
