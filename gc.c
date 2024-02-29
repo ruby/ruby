@@ -6485,21 +6485,14 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 }
 #endif
 
-static void
-each_machine_stack_value(const rb_execution_context_t *ec, void (*cb)(rb_objspace_t *, VALUE))
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE *stack_start, *stack_end;
-
-    GET_STACK_BOUNDS(stack_start, stack_end, 0);
-    RUBY_DEBUG_LOG("ec->th:%u stack_start:%p stack_end:%p", rb_ec_thread_ptr(ec)->serial, stack_start, stack_end);
-    each_stack_location(objspace, ec, stack_start, stack_end, cb);
-}
-
 void
 rb_gc_mark_machine_stack(const rb_execution_context_t *ec)
 {
-    each_machine_stack_value(ec, gc_mark_maybe);
+    VALUE *stack_start, *stack_end;
+    GET_STACK_BOUNDS(stack_start, stack_end, 0);
+    RUBY_DEBUG_LOG("ec->th:%u stack_start:%p stack_end:%p", rb_ec_thread_ptr(ec)->serial, stack_start, stack_end);
+
+    rb_gc_mark_locations(stack_start, stack_end);
 }
 
 static void
