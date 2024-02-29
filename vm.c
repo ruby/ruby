@@ -2991,7 +2991,7 @@ rb_vm_mark(void *ptr)
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->me2counter);
         /* Prevent classes from moving */
-        rb_mark_tbl(vm->defined_module_hash);
+        rb_mark_set(vm->defined_module_hash);
 
         if (vm->loading_table) {
             rb_mark_tbl(vm->loading_table);
@@ -3032,12 +3032,49 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     rb_gc_register_mark_object(exc);
 }
 
+static int
+vm_add_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
+{
+    if (!existing) {
+        *val = 1;
+        return ST_CONTINUE;
+    }
+
+    (*val)++;
+    return ST_CONTINUE;
+}
+
 int
 rb_vm_add_root_module(VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
-    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)module);
+    st_update(vm->defined_module_hash, (st_data_t)module, vm_add_root_module_i, (st_data_t)0);
+
+    return TRUE;
+}
+
+
+static int
+vm_remove_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
+{
+    if (!existing) {
+        return ST_DELETE;
+    }
+
+    (*val)--;
+    if (*val <= 0) {
+        return ST_DELETE;
+    }
+    return ST_CONTINUE;
+}
+
+int
+rb_vm_remove_root_module(VALUE module)
+{
+    rb_vm_t *vm = GET_VM();
+
+    st_update(vm->defined_module_hash, (st_data_t)module, vm_remove_root_module_i, (st_data_t)0);
 
     return TRUE;
 }

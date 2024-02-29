@@ -3272,6 +3272,10 @@ rb_const_remove(VALUE mod, ID id)
         autoload_delete(mod, id);
         val = Qnil;
     }
+    else if (RB_TYPE_P(val, T_CLASS) || RB_TYPE_P(val, T_MODULE)) {
+        // The module may have beed pinned by `rb_vm_add_root_module` because defined from C
+        rb_vm_remove_root_module(val);
+    }
 
     ruby_xfree(ce);
 
@@ -3670,6 +3674,11 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             if (!NIL_P(ce->file) && ce->line) {
                 rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
                                 "previous definition of %"PRIsVALUE" was here", name);
+            }
+
+            if (RB_TYPE_P(ce->value, T_CLASS) || RB_TYPE_P(ce->value, T_MODULE)) {
+                // The module may have beed pinned by `rb_vm_add_root_module` because defined from C
+                rb_vm_remove_root_module(ce->value);
             }
         }
         rb_clear_constant_cache_for_id(id);

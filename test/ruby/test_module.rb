@@ -3300,6 +3300,32 @@ class TestModule < Test::Unit::TestCase
     CODE
   end
 
+  def test_rooted_module_leak
+    # [Bug #20311]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        Struct.new("A")
+        Struct.send(:remove_const, :A)
+      end
+
+      1_000.times(&code)
+    PREP
+      300_000.times(&code)
+    CODE
+
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      $VERBOSE = nil
+      code = proc do
+        Struct.new("A")
+        Struct.send(:const_set, :A, nil)
+      end
+
+      1_000.times(&code)
+    PREP
+      300_000.times(&code)
+    CODE
+  end
+
   def test_complemented_method_entry_memory_leak
     # [Bug #19894] [Bug #19896]
     assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
