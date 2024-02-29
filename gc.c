@@ -4043,10 +4043,14 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
     st_data_t data;
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
-    if (st_lookup(finalizer_table, obj, &data)) {
+
+    if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
         table = (VALUE)data;
         st_insert(finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
+    }
+    else {
+        rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", obj_info(obj));
     }
 }
 
