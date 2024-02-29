@@ -4304,11 +4304,11 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         while (list) {
             struct force_finalize_list *curr = list;
 
-            FL_UNSET(curr->obj, FL_FINALIZE);
-            run_finalizer(objspace, curr->obj, curr->table);
-
             st_data_t obj = (st_data_t)curr->obj;
             st_delete(finalizer_table, &obj, 0);
+            FL_UNSET(curr->obj, FL_FINALIZE);
+
+            run_finalizer(objspace, curr->obj, curr->table);
 
             list = curr->next;
             xfree(curr);
