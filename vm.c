@@ -3039,32 +3039,14 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     rb_gc_register_mark_object(exc);
 }
 
-static int
-vm_add_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
-{
-    (*val)++;
-    return ST_CONTINUE;
-}
-
 int
 rb_vm_add_root_module(VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
-    st_update(vm->defined_module_hash, (st_data_t)module, vm_add_root_module_i, (st_data_t)0);
+    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)Qtrue);
 
     return TRUE;
-}
-
-
-static int
-vm_remove_root_module_i(st_data_t *key, st_data_t *val, st_data_t _arg, int existing)
-{
-    (*val)--;
-    if (*val <= 0) {
-        return ST_DELETE;
-    }
-    return ST_CONTINUE;
 }
 
 int
@@ -3076,7 +3058,7 @@ rb_vm_remove_root_module(VALUE module)
 
     rb_vm_t *vm = GET_VM();
 
-    st_update(vm->defined_module_hash, (st_data_t)module, vm_remove_root_module_i, (st_data_t)0);
+    st_delete(vm->defined_module_hash, (st_data_t *)&module, NULL);
 
     return TRUE;
 }
