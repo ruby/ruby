@@ -61,6 +61,10 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
                 hash ^= murmur_hash((const uint8_t *) value, sizeof(uint32_t));
             }
 
+            if (integer->negative) {
+                hash ^= murmur_scramble((uint32_t) 1);
+            }
+
             return hash;
         }
         case PM_SOURCE_LINE_NODE: {
