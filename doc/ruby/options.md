@@ -569,7 +569,7 @@ Option `--copyright` prints a copyright message:
 
 ```sh
 $ ruby --copyright
-ruby - Copyright (C) 1993-2021 Yukihiro Matsumoto
+ruby - Copyright (C) 1993-2024 Yukihiro Matsumoto
 ```
 
 ### `--debug`: Alias for `-d`
