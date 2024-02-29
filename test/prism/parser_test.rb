@@ -4,7 +4,8 @@ require_relative "test_helper"
 
 begin
   verbose, $VERBOSE = $VERBOSE, nil
-  require "parser/current"
+  require "parser/ruby33"
+  require "prism/translation/parser33"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
@@ -98,7 +99,7 @@ module Prism
       buffer = Parser::Source::Buffer.new("inline ruby with warning", 1)
       buffer.source = "do_something *array"
 
-      parser = Prism::Translation::Parser.new
+      parser = Prism::Translation::Parser33.new
       parser.diagnostics.all_errors_are_fatal = false
       warning = nil
       parser.diagnostics.consumer = ->(received) { warning = received }
@@ -113,7 +114,7 @@ module Prism
       buffer = Parser::Source::Buffer.new(filepath, 1)
       buffer.source = File.read(filepath)
 
-      parser = Parser::CurrentRuby.default_parser
+      parser = Parser::Ruby33.new
       parser.diagnostics.consumer = ->(*) {}
       parser.diagnostics.all_errors_are_fatal = true
 
@@ -125,7 +126,7 @@ module Prism
         end
 
       actual_ast, actual_comments, actual_tokens =
-        Prism::Translation::Parser.new.tokenize(buffer)
+        Prism::Translation::Parser33.new.tokenize(buffer)
 
       assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
       assert_equal_tokens(expected_tokens, actual_tokens) if compare_tokens
