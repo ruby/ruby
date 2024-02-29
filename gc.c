@@ -6211,21 +6211,14 @@ rb_gc_mark_values(long n, const VALUE *values)
     }
 }
 
-static void
-gc_mark_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
-{
-    long i;
-
-    for (i=0; i<n; i++) {
-        gc_mark_and_pin(objspace, values[i]);
-    }
-}
-
 void
 rb_gc_mark_vm_stack_values(long n, const VALUE *values)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    gc_mark_stack_values(objspace, n, values);
+
+    for (long i = 0; i < n; i++) {
+        gc_mark_and_pin(objspace, values[i]);
+    }
 }
 
 static int
