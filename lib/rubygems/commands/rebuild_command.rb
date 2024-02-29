@@ -4,9 +4,12 @@ require "date"
 require "digest"
 require "fileutils"
 require "tmpdir"
+require_relative "../gemspec_helpers"
 require_relative "../package"
 
 class Gem::Commands::RebuildCommand < Gem::Command
+  include Gem::GemspecHelpers
+
   DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%N Z"
 
   def initialize
@@ -221,17 +224,6 @@ Please install RubyGems v#{rg_version} and try again.
     yield
   ensure
     ENV["SOURCE_DATE_EPOCH"] = old_sde
-  end
-
-  def find_gemspec(glob = "*.gemspec")
-    gemspecs = Dir.glob(glob).sort
-
-    if gemspecs.size > 1
-      alert_error "Multiple gemspecs found: #{gemspecs}, please specify one"
-      terminate_interaction(1)
-    end
-
-    gemspecs.first
   end
 
   def error_message(gem_name)
