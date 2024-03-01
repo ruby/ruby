@@ -8715,12 +8715,6 @@ rb_obj_rgengc_writebarrier_protected_p(VALUE obj)
     return RBOOL(!RVALUE_WB_UNPROTECTED(obj));
 }
 
-VALUE
-rb_obj_rgengc_promoted_p(VALUE obj)
-{
-    return RBOOL(OBJ_PROMOTED(obj));
-}
-
 size_t
 rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 {
