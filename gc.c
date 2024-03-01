@@ -8692,19 +8692,9 @@ rb_gc_writebarrier_remember(VALUE obj)
 void
 rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
-    if (RVALUE_WB_UNPROTECTED(obj) && !RVALUE_WB_UNPROTECTED(dest)) {
-        if (!RVALUE_OLD_P(dest)) {
-            MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(dest), dest);
-            RVALUE_AGE_RESET(dest);
-        }
-        else {
-            RVALUE_DEMOTE(objspace, dest);
-        }
+    if (RVALUE_WB_UNPROTECTED(obj)) {
+        rb_gc_writebarrier_unprotect(dest);
     }
-
-    check_rvalue_consistency(dest);
 }
 
 VALUE
