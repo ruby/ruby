@@ -212,14 +212,16 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
 /// This is called from rb_raise() (at rb_exc_new_str()) and other functions
 /// that may make a method call (e.g. rb_to_int()).
 #[no_mangle]
-pub extern "C" fn rb_yjit_lazy_push_frame(pc: *mut VALUE) {
+pub extern "C" fn rb_yjit_lazy_push_frame(pc: *mut VALUE) -> bool {
     if !yjit_enabled_p() {
-        return;
+        return false;
     }
 
     incr_counter!(num_lazy_frame_check);
     if let Some(&(cme, recv_idx)) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
         incr_counter!(num_lazy_frame_push);
         unsafe { rb_vm_push_cfunc_frame(cme, recv_idx as i32) }
+        return true;
     }
+    false
 }

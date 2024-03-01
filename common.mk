@@ -7962,6 +7962,7 @@ hash.$(OBJEXT): {$(VPATH)}vm_core.h
 hash.$(OBJEXT): {$(VPATH)}vm_debug.h
 hash.$(OBJEXT): {$(VPATH)}vm_opts.h
 hash.$(OBJEXT): {$(VPATH)}vm_sync.h
+hash.$(OBJEXT): {$(VPATH)}yjit.h
 imemo.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 imemo.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 imemo.$(OBJEXT): $(CCAN_DIR)/list/list.h

@@ -1075,6 +1075,7 @@ extern "C" {
         key: st_data_t,
         pval: *mut st_data_t,
     ) -> ::std::os::raw::c_int;
+    pub fn rb_hash_has_key(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_float_plus(x: VALUE, y: VALUE) -> VALUE;

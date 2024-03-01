@@ -45,7 +45,7 @@ void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
 void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
-void rb_yjit_lazy_push_frame(const VALUE *pc);
+bool rb_yjit_lazy_push_frame(const VALUE *pc);
 void rb_yjit_invalidate_no_singleton_class(VALUE klass);
 
 #else
@@ -68,9 +68,18 @@ static inline void rb_yjit_iseq_free(void *payload) {}
 static inline void rb_yjit_before_ractor_spawn(void) {}
 static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
-static inline void rb_yjit_lazy_push_frame(const VALUE *pc) {}
+static inline bool rb_yjit_lazy_push_frame(const VALUE *pc) { return false; }
 static inline void rb_yjit_invalidate_no_singleton_class(VALUE klass) {}
 
 #endif // #if USE_YJIT
+
+// Push and pop a lazy frame around a given statement. This is necessary
+// when something looks at frames after the statement.
+#define WITH_YJIT_LAZY_FRAME(stmt) do { \
+    rb_execution_context_t *ec = GET_EC(); \
+    bool frame_pushed = rb_yjit_lazy_push_frame(ec->cfp->pc); \
+    stmt; \
+    if (frame_pushed) ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp); \
+} while (0);
 
 #endif // #ifndef YJIT_H

@@ -48,6 +48,7 @@
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
+#include "yjit.h"
 
 /* Flags of RHash
  *
@@ -226,13 +227,17 @@ obj_any_hash(VALUE obj)
                 hval = rb_obj_hash(obj);
             }
             else if (RBASIC_CLASS(cme->defined_class) == rb_mKernel) {
-                hval = rb_vm_call0(GET_EC(), obj, id_hash, 0, 0, cme, 0);
+                WITH_YJIT_LAZY_FRAME({
+                    hval = rb_vm_call0(GET_EC(), obj, id_hash, 0, 0, cme, 0);
+                });
             }
         }
     }
 
     if (UNDEF_P(hval)) {
-        hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
+        WITH_YJIT_LAZY_FRAME({
+            hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
+        });
     }
 
     while (!FIXNUM_P(hval)) {
@@ -2229,6 +2234,18 @@ rb_hash_fetch(VALUE hash, VALUE key)
     return rb_hash_fetch_m(1, &key, hash);
 }
 
+VALUE
+rb_hash_fetch_with_default(VALUE hash, VALUE key, VALUE default_val)
+{
+    st_data_t val;
+    if (hash_stlike_lookup(hash, key, &val)) {
+        return (VALUE)val;
+    }
+    else {
+        return default_val;
+    }
+}
+
 /*
  *  call-seq:
  *    hash.default -> object
@@ -2452,7 +2469,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
  */
 
-static VALUE
+VALUE
 rb_hash_delete_m(VALUE hash, VALUE key)
 {
     VALUE val;
@@ -2471,6 +2488,25 @@ rb_hash_delete_m(VALUE hash, VALUE key)
         else {
             return Qnil;
         }
+    }
+}
+
+// rb_hash_delete_m without block support. YJIT uses this when it's
+// not safe to call rb_block_given_p().
+// TODO: Consider consolidating this with rb_hash_delete(), which is
+// currently missing rb_hash_modify_check() and compact_after_delete().
+VALUE
+rb_hash_delete_without_block(VALUE hash, VALUE key)
+{
+    rb_hash_modify_check(hash);
+    VALUE val = rb_hash_delete_entry(hash, key);
+
+    if (!UNDEF_P(val)) {
+        compact_after_delete(hash);
+        return val;
+    }
+    else {
+        return Qnil;
     }
 }
 
