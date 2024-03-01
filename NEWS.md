@@ -55,7 +55,7 @@ The following bundled gems are promoted from default gems.
 * abbrev 0.1.2
 * resolv-replace 0.1.1
 * rinda 0.2.0
-* drb 2.2.0
+* drb 2.2.1
 * nkf 0.2.0
 * syslog 0.1.2
 * csv 3.2.8
