@@ -254,7 +254,7 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
 
     const char * string_source = (const char *) pm_string_source(&options->filepath);
 
-    if (!pm_string_mapped_init(input, string_source)) {
+    if (!pm_string_file_init(input, string_source)) {
         pm_options_free(options);
 
 #ifdef _WIN32
