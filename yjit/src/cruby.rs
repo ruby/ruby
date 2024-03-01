@@ -112,6 +112,7 @@ pub use autogened::*;
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    pub fn rb_hash_delete_m(hash: VALUE) -> VALUE;
     pub fn rb_check_overloaded_cme(
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,

@@ -48,6 +48,7 @@
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
+#include "yjit.h"
 
 /* Flags of RHash
  *
@@ -211,6 +212,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 }
 
 VALUE rb_obj_hash(VALUE obj);
+VALUE rb_ary_hash(VALUE ary);
 VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat);
 
 static st_index_t
@@ -221,18 +223,26 @@ obj_any_hash(VALUE obj)
     if (klass) {
         const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, id_hash);
         if (cme && METHOD_ENTRY_BASIC(cme)) {
-            // Optimize away the frame push overhead if it's the default Kernel#hash
-            if (cme->def->type == VM_METHOD_TYPE_CFUNC && cme->def->body.cfunc.func == (rb_cfunc_t)rb_obj_hash) {
+            // Optimize away the frame push overhead if it's Kernel#hash or Array#hash
+            rb_cfunc_t func = cme->def->type == VM_METHOD_TYPE_CFUNC ? cme->def->body.cfunc.func : 0;
+            if (func == (rb_cfunc_t)rb_obj_hash) {
                 hval = rb_obj_hash(obj);
             }
+            else if (func == (rb_cfunc_t)rb_ary_hash) {
+                hval = rb_ary_hash(obj);
+            }
             else if (RBASIC_CLASS(cme->defined_class) == rb_mKernel) {
-                hval = rb_vm_call0(GET_EC(), obj, id_hash, 0, 0, cme, 0);
+                WITH_YJIT_LAZY_FRAME({
+                    hval = rb_vm_call0(GET_EC(), obj, id_hash, 0, 0, cme, 0);
+                });
             }
         }
     }
 
     if (UNDEF_P(hval)) {
-        hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
+        WITH_YJIT_LAZY_FRAME({
+            hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
+        });
     }
 
     while (!FIXNUM_P(hval)) {
@@ -2449,7 +2459,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
  */
 
-static VALUE
+VALUE
 rb_hash_delete_m(VALUE hash, VALUE key)
 {
     VALUE val;

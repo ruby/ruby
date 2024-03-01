@@ -5760,6 +5760,62 @@ fn jit_rb_hash_empty_p(
     true
 }
 
+fn jit_rb_hash_delete(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    // Not leaf if block is given. We assume this is not common.
+    if block.is_some() {
+        return false;
+    }
+    // Not leaf if #hash is called. Lazily push a frame in that case.
+    if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(1)) {
+        return false;
+    }
+    asm_comment!(asm, "Hash#delete");
+
+    let hash_opnd = asm.stack_opnd(1);
+    let key_opnd = asm.stack_opnd(0);
+    let ret = asm.ccall(rb_hash_delete_m as *const u8, vec![hash_opnd, key_opnd]);
+    asm.stack_pop(2); // Keep them on stack during ccall for lazy frame push
+
+    let ret_opnd = asm.stack_push(Type::Unknown);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_hash_has_key(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    // Not leaf if #hash is called. Lazily push a frame in that case.
+    if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(1)) {
+        return false;
+    }
+    asm_comment!(asm, "Hash#key?");
+
+    let hash_opnd = asm.stack_opnd(1);
+    let key_opnd = asm.stack_opnd(0);
+    let ret = asm.ccall(rb_hash_has_key as *const u8, vec![hash_opnd, key_opnd]);
+    asm.stack_pop(2); // Keep them on stack during ccall for lazy frame push
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
 fn jit_obj_respond_to(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -9838,6 +9894,11 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
 
         yjit_reg_method(rb_cHash, "empty?", jit_rb_hash_empty_p);
+        yjit_reg_method(rb_cHash, "delete", jit_rb_hash_delete);
+        yjit_reg_method(rb_cHash, "has_key?", jit_rb_hash_has_key);
+        yjit_reg_method(rb_cHash, "include?", jit_rb_hash_has_key);
+        yjit_reg_method(rb_cHash, "key?", jit_rb_hash_has_key);
+        yjit_reg_method(rb_cHash, "member?", jit_rb_hash_has_key);
 
         yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
         yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);

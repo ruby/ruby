@@ -2097,6 +2097,40 @@ assert_equal 'String#setbyte', %q{
   @caller.first.split("'").last
 }
 
+# Hash#key?
+assert_equal '[true, false]', %q{
+  hash = { 1 => true }
+  [hash.key?(1), hash.key?(2)]
+}
+assert_equal 'Hash#key?', %q{
+  def hash
+    @caller = caller
+    1
+  end
+
+  def ccall(h) = h.key?(self)
+  ccall({ self => true })
+
+  @caller.first.split("'").last
+}
+
+# Hash#delete
+assert_equal '[true, {}]', %q{
+  hash = { 1 => true }
+  [hash.delete(1), hash]
+}
+assert_equal 'Hash#delete', %q{
+  def hash
+    @caller = caller
+    1
+  end
+
+  def ccall(h) = h.delete(self)
+  ccall({ self => true })
+
+  @caller.first.split("'").last
+}
+
 # non-leaf String#byteslice
 assert_equal 'TypeError', %q{
   def ccall = "".byteslice(nil, nil)
