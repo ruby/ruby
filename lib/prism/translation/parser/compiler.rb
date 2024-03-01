@@ -1487,9 +1487,23 @@ module Prism
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
           else
+            parts = if node.unescaped.lines.count <= 1
+              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+            else
+              start_offset = node.content_loc.start_offset
+
+              node.unescaped.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.string_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end
