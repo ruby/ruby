@@ -8707,14 +8707,6 @@ rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
     check_rvalue_consistency(dest);
 }
 
-/* RGENGC analysis information */
-
-VALUE
-rb_obj_rgengc_writebarrier_protected_p(VALUE obj)
-{
-    return RBOOL(!RVALUE_WB_UNPROTECTED(obj));
-}
-
 VALUE
 rb_obj_rgengc_promoted_p(VALUE obj)
 {
