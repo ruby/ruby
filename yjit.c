@@ -739,15 +739,17 @@ rb_yjit_iseq_builtin_attrs(const rb_iseq_t *iseq)
     return iseq->body->builtin_attrs;
 }
 
-// If true, the iseq has only opt_invokebuiltin_delegate_leave and leave insns.
+// If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
-    unsigned int leave_len = insn_len(BIN(leave));
-    return iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave);
+    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
+    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+        return false;
+    }
+    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
+            insn2 == BIN(leave);
 }
 
 // Return an rb_builtin_function if the iseq contains only that builtin function.

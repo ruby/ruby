@@ -1600,6 +1600,19 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_leaf_builtin
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: 1)
+      before = RubyVM::YJIT.runtime_stats[:num_send_iseq_leaf]
+      return 1 if before.nil?
+
+      def entry = self.class
+      entry
+
+      after = RubyVM::YJIT.runtime_stats[:num_send_iseq_leaf]
+      after - before
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
