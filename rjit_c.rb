@@ -1004,6 +1004,10 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_cfunc_t
+    @rb_cfunc_t ||= self.VALUE
+  end
+
   def C.rb_control_frame_t
     @rb_control_frame_t ||= CType::Struct.new(
       "rb_control_frame_struct", Primitive.cexpr!("SIZEOF(struct rb_control_frame_struct)"),
@@ -1592,10 +1596,6 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_event_flag_t
     CType::Stub.new(:rb_event_flag_t)
-  end
-
-  def C.rb_cfunc_t
-    CType::Stub.new(:rb_cfunc_t)
   end
 
   def C.rb_method_alias_t
