@@ -521,6 +521,7 @@ vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
+// YJIT assumes this function never runs GC
 static inline void
 vm_env_write(const VALUE *ep, int index, VALUE v)
 {
