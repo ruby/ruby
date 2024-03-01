@@ -1210,7 +1210,7 @@ module RubyVM::RJIT # :nodoc: all
   def C.rb_method_cfunc_t
     @rb_method_cfunc_t ||= CType::Struct.new(
       "rb_method_cfunc_struct", Primitive.cexpr!("SIZEOF(struct rb_method_cfunc_struct)"),
-      func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), func)")],
+      func: [self.rb_cfunc_t, Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), func)")],
       invoker: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), invoker)")],
       argc: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), argc)")],
     )
@@ -1592,6 +1592,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_event_flag_t
     CType::Stub.new(:rb_event_flag_t)
+  end
+
+  def C.rb_cfunc_t
+    CType::Stub.new(:rb_cfunc_t)
   end
 
   def C.rb_method_alias_t

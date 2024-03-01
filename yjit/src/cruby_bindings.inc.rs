@@ -411,10 +411,11 @@ pub const VM_METHOD_TYPE_OPTIMIZED: rb_method_type_t = 9;
 pub const VM_METHOD_TYPE_MISSING: rb_method_type_t = 10;
 pub const VM_METHOD_TYPE_REFINED: rb_method_type_t = 11;
 pub type rb_method_type_t = u32;
+pub type rb_cfunc_t = ::std::option::Option<unsafe extern "C" fn() -> VALUE>;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_method_cfunc_struct {
-    pub func: ::std::option::Option<unsafe extern "C" fn() -> VALUE>,
+    pub func: rb_cfunc_t,
     pub invoker: ::std::option::Option<
         unsafe extern "C" fn(
             recv: VALUE,
