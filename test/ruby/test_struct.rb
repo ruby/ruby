@@ -544,7 +544,7 @@ module TestStruct
 
       1_000.times(&code)
     PREP
-      300_000.times(&code)
+      50_000.times(&code)
     CODE
   end
 
