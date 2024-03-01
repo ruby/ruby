@@ -2547,6 +2547,29 @@ file_size(VALUE self)
     return OFFT2NUM(rb_file_size(self));
 }
 
+struct nogvl_chmod_data {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_chmod(void *ptr)
+{
+    struct nogvl_chmod_data *data = ptr;
+    int ret = chmod(data->path, data->mode);
+    return (void *)(VALUE)ret;
+}
+
+static int
+rb_chmod(const char *path, mode_t mode)
+{
+    struct nogvl_chmod_data data = {
+        .path = path,
+        .mode = mode,
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_chmod, &data);
+}
+
 static int
 chmod_internal(const char *path, void *mode)
 {
@@ -2577,6 +2600,29 @@ rb_file_s_chmod(int argc, VALUE *argv, VALUE _)
     return apply2files(chmod_internal, argc, argv, &mode);
 }
 
+#ifdef HAVE_FCHMOD
+struct nogvl_fchmod_data {
+    int fd;
+    mode_t mode;
+};
+
+static VALUE
+io_blocking_fchmod(void *ptr)
+{
+    struct nogvl_fchmod_data *data = ptr;
+    int ret = fchmod(data->fd, data->mode);
+    return (VALUE)ret;
+}
+
+static int
+rb_fchmod(int fd, mode_t mode)
+{
+    (void)rb_chmod; /* suppress unused-function warning when HAVE_FCHMOD */
+    struct nogvl_fchmod_data data = {.fd = fd, .mode = mode};
+    return (int)rb_thread_io_blocking_region(io_blocking_fchmod, &data, fd);
+}
+#endif
+
 /*
  *  call-seq:
  *     file.chmod(mode_int)   -> 0
@@ -2603,7 +2649,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (fchmod(fptr->fd, mode) == -1) {
+    if (rb_fchmod(fptr->fd, mode) == -1) {
         if (HAVE_FCHMOD || errno != ENOSYS)
             rb_sys_fail_path(fptr->pathv);
     }
@@ -2614,7 +2660,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 #if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (chmod(RSTRING_PTR(path), mode) == -1)
+    if (rb_chmod(RSTRING_PTR(path), mode) == -1)
         rb_sys_fail_path(fptr->pathv);
 #endif
 
