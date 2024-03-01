@@ -1107,10 +1107,6 @@ main()
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
-		AS_IF([test -n "${POSTLINK}"], [
-		    LINK_SO="$LINK_SO
-\$(POSTLINK)"
-		])
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
@@ -1274,6 +1270,13 @@ main()
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
+
+AS_IF([test -n "${POSTLINK}"], [
+    # NOTE: A (part of) link commands used link shared extension libraries. If
+    # the first line of the value is empty, mkmf prepends default link steps.
+    LINK_SO="$LINK_SO
+\$(POSTLINK)"
+])
 
 AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"], [
     AC_MSG_NOTICE([Test skipped due to lack of a C++ compiler.])
