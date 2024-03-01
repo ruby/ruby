@@ -543,7 +543,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\[#<TestIRB::Workspac...>, #<TestIRB::Workspac...>]\n/, out)
+      assert_match(/\[#<TestIRB::Workspac...>, #<TestIRB::Workspac...>\]\n/, out)
     end
   end
 
