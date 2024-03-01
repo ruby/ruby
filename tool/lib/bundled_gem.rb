@@ -11,8 +11,7 @@ module BundledGem
     "time", # net-ftp
     "singleton", # prime
     "ipaddr", # rinda
-    "forwardable", # prime, rinda
-    "ruby2_keywords" # drb
+    "forwardable" # prime, rinda
   ]
 
   module_function
