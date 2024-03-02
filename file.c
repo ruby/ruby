@@ -2755,6 +2755,51 @@ rb_file_s_chown(int argc, VALUE *argv, VALUE _)
     return apply2files(chown_internal, argc, argv, &arg);
 }
 
+struct nogvl_chown_data {
+    union {
+        const char *path;
+        int fd;
+    } as;
+    struct chown_args new;
+};
+
+static void *
+nogvl_chown(void *ptr)
+{
+    struct nogvl_chown_data *data = ptr;
+    return (void *)(VALUE)chown(data->as.path, data->new.owner, data->new.group);
+}
+
+static int
+rb_chown(const char *path, rb_uid_t owner, rb_gid_t group)
+{
+    struct nogvl_chown_data data = {
+        .as = {.path = path},
+        .new = {.owner = owner, .group = group},
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_chown, &data);
+}
+
+#ifdef HAVE_FCHOWN
+static void *
+nogvl_fchown(void *ptr)
+{
+    struct nogvl_chown_data *data = ptr;
+    return (void *)(VALUE)fchown(data->as.fd, data->new.owner, data->new.group);
+}
+
+static int
+rb_fchown(int fd, rb_uid_t owner, rb_gid_t group)
+{
+    (void)rb_chown; /* suppress unused-function warning when HAVE_FCHMOD */
+    struct nogvl_chown_data data = {
+        .as = {.fd = fd},
+        .new = {.owner = owner, .group = group},
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_fchown, &data);
+}
+#endif
+
 /*
  *  call-seq:
  *     file.chown(owner_int, group_int )   -> 0
@@ -2786,10 +2831,10 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 #ifndef HAVE_FCHOWN
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (chown(RSTRING_PTR(path), o, g) == -1)
+    if (rb_chown(RSTRING_PTR(path), o, g) == -1)
         rb_sys_fail_path(fptr->pathv);
 #else
-    if (fchown(fptr->fd, o, g) == -1)
+    if (rb_fchown(fptr->fd, o, g) == -1)
         rb_sys_fail_path(fptr->pathv);
 #endif
 
