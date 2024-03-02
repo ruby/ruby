@@ -85,6 +85,7 @@ rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(kernel);
+    BUILTIN(class);
     BUILTIN(yjit);
     // BUILTIN(yjit_hook) is called after rb_yjit_init()
     BUILTIN(gc);

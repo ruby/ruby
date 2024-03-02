@@ -1204,6 +1204,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
 		$(srcdir)/nilclass.rb \
+		$(srcdir)/class.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(srcdir)/yjit.rb \
@@ -10675,6 +10676,7 @@ miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
+miniinit.$(OBJEXT): {$(VPATH)}class.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
@@ -11537,6 +11539,7 @@ object.$(OBJEXT): {$(VPATH)}method.h
 object.$(OBJEXT): {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}nilclass.rbinc
 object.$(OBJEXT): {$(VPATH)}node.h
+object.$(OBJEXT): {$(VPATH)}class.rbinc
 object.$(OBJEXT): {$(VPATH)}object.c
 object.$(OBJEXT): {$(VPATH)}onigmo.h
 object.$(OBJEXT): {$(VPATH)}oniguruma.h

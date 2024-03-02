@@ -9129,6 +9129,64 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
     UNKNOWN_NODE("attr!", node, COMPILE_NG);
 }
 
+static void
+assert_node_type(const NODE * node, int type)
+{
+    if (!nd_type_p(node, type)) {
+        rb_bug("expected node: %s, got %s", ruby_node_name(type), ruby_node_name(nd_type(node)));
+    }
+}
+
+static int
+compile_builtin_send(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE * call_node, const NODE *node, const NODE *line_node, int popped)
+{
+    assert_node_type(node, NODE_BLOCK_PASS);
+
+    const NODE * argspush = RNODE_BLOCK_PASS(node)->nd_head;
+
+    assert_node_type(argspush, NODE_ARGSPUSH);
+
+    NODE * argscat = (NODE *)RNODE_ARGSPUSH(argspush)->nd_head;
+
+    assert_node_type(argscat, NODE_ARGSCAT);
+
+    const NODE * params = RNODE_ARGSCAT(argscat)->nd_head;
+
+    // Should be a 2 element array
+    assert_node_type(params, NODE_LIST);
+
+    const NODE *param = params;
+
+    NODE *recv = RNODE_LIST(param)->nd_head;
+
+    assert_node_type(recv, NODE_LVAR);
+
+    param = RNODE_LIST(param)->nd_next;
+
+    NODE *mid = RNODE_LIST(param)->nd_head;
+
+    assert_node_type(mid, NODE_SYM);
+
+    rb_parser_string_t *str = RNODE_SYM(mid)->string;
+
+    RNODE_CALL(call_node)->nd_mid = rb_intern3(str->ptr, str->len, str->enc);
+    RNODE_CALL(call_node)->nd_recv = recv;
+
+    //RNODE_CALL(call_node)->nd_args = list;
+    // Save off the splat node
+    NODE * splat = RNODE_ARGSCAT(argscat)->nd_body;
+
+    assert_node_type(splat, NODE_LVAR);
+
+    // Turn the args cat in to a SPLAT
+    nd_set_type(RNODE_ARGSPUSH(argspush)->nd_head, NODE_SPLAT);
+    RNODE_SPLAT(RNODE_ARGSPUSH(argspush)->nd_head)->nd_head = splat;
+
+    CHECK(COMPILE(ret, "recv", recv));
+
+    return compile_call(iseq, ret, call_node, NODE_FCALL, line_node, popped, true);
+}
+
 static int
 compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const NODE *line_node, int popped)
 {
@@ -9260,6 +9318,10 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
             }
             else if (strcmp("arg!", builtin_func) == 0) {
                 return compile_builtin_arg(iseq, ret, args_node, line_node, popped);
+            }
+            else if (strcmp("send_delegate!", builtin_func) == 0) {
+                // pop off first two params
+                return compile_builtin_send(iseq, ret, node, args_node, line_node, popped);
             }
             else if (strcmp("mandatory_only?", builtin_func) == 0) {
                 if (popped) {
