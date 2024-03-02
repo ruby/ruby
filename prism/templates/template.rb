@@ -577,14 +577,8 @@ module Prism
       erb
     end
 
-    if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-      def erb(template)
-        ERB.new(template, trim_mode: "-")
-      end
-    else
-      def erb(template)
-        ERB.new(template, nil, "-")
-      end
+    def erb(template)
+      ERB.new(template, trim_mode: "-")
     end
 
     def locals
