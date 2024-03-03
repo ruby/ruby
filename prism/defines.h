@@ -126,12 +126,12 @@
 #endif
 
 /**
- * If you build prism with a custom allocator, configure it with "-D PRISM_CUSTOM_ALLOCATOR"
+ * If you build prism with a custom allocator, configure it with "-D PRISM_XALLOCATOR"
  * to use your own allocator that defines xmalloc, xrealloc, xcalloc, and xfree.
  * For example, your `custom_allocator.h` file could look like this:
  * ```
- * #ifndef PRISM_CUSTOM_ALLOCATOR_H
- * #define PRISM_CUSTOM_ALLOCATOR_H
+ * #ifndef PRISM_XALLOCATOR_H
+ * #define PRISM_XALLOCATOR_H
  * #define xmalloc      my_malloc
  * #define xrealloc     my_realloc
  * #define xcalloc      my_calloc
@@ -139,8 +139,8 @@
  * #endif
  * ```
  */
-#ifdef PRISM_CUSTOM_ALLOCATOR
-#   include "custom_allocator.h"
+#ifdef PRISM_XALLOCATOR
+#   include "prism_xallocator.h"
 #else
 #   define xmalloc      malloc
 #   define xrealloc     realloc
