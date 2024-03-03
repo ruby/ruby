@@ -1237,7 +1237,7 @@ end
       @s.rb_enc_interned_str_cstr("hello", Encoding::UTF_8).should.equal?(-"hello")
     end
 
-    ruby_version_is "3.4" do
+    ruby_bug "#20322", ""..."3.4" do
       it "uses the default encoding if encoding is null" do
         str = "hello"
         val = @s.rb_enc_interned_str_cstr(str, nil)
