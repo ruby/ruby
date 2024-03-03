@@ -1236,6 +1236,14 @@ end
     it "returns the same string as String#-@" do
       @s.rb_enc_interned_str_cstr("hello", Encoding::UTF_8).should.equal?(-"hello")
     end
+
+    ruby_bug "#20322", ""..."3.4" do
+      it "uses the default encoding if encoding is null" do
+        str = "hello"
+        val = @s.rb_enc_interned_str_cstr(str, nil)
+        val.encoding.should == Encoding::ASCII_8BIT
+      end
+    end
   end
 
   describe "rb_str_to_interned_str" do
