@@ -18,7 +18,7 @@ bool
 pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id) {
     if (list->size >= list->capacity) {
         list->capacity = list->capacity == 0 ? 8 : list->capacity * 2;
-        list->ids = (pm_constant_id_t *) realloc(list->ids, sizeof(pm_constant_id_t) * list->capacity);
+        list->ids = (pm_constant_id_t *) xrealloc(list->ids, sizeof(pm_constant_id_t) * list->capacity);
         if (list->ids == NULL) return false;
     }
 

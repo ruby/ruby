@@ -135,7 +135,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
     if (hash->size * 2 >= hash->capacity) {
         // First, allocate space for the new node list.
         uint32_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
-        pm_node_t **new_nodes = calloc(new_capacity, sizeof(pm_node_t *));
+        pm_node_t **new_nodes = xcalloc(new_capacity, sizeof(pm_node_t *));
         if (new_nodes == NULL) return NULL;
 
         // It turns out to be more efficient to mask the hash value than to use
@@ -155,7 +155,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
         }
 
         // Finally, free the old node list and update the hash.
-        free(hash->nodes);
+        xfree(hash->nodes);
         hash->nodes = new_nodes;
         hash->capacity = new_capacity;
     }
@@ -188,7 +188,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
  */
 static void
 pm_node_hash_free(pm_node_hash_t *hash) {
-    if (hash->capacity > 0) free(hash->nodes);
+    if (hash->capacity > 0) xfree(hash->nodes);
 }
 
 /**
