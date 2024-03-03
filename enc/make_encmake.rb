@@ -133,7 +133,12 @@ else
   dep = ""
 end
 mkin = File.read(File.join($srcdir, "Makefile.in"))
-mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
+# Variables that should not be expanded in Makefile.in to allow
+# overriding inherited variables at make-time.
+not_expand_vars = %w(CFLAGS)
+mkin.gsub!(/@(#{RbConfig::CONFIG.keys.join('|')})@/) do
+  not_expand_vars.include?($1) ? CONFIG[$1] : RbConfig::CONFIG[$1]
+end
 File.open(ARGV[0], 'wb') {|f|
   f.puts mkin, dep
 }
