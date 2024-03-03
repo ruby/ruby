@@ -2990,8 +2990,6 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->orig_progname);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->me2counter);
-        /* Prevent classes from moving */
-        rb_mark_tbl(vm->defined_module_hash);
 
         if (vm->loading_table) {
             rb_mark_tbl(vm->loading_table);
@@ -3030,16 +3028,6 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     OBJ_FREEZE(exc);
     ((VALUE *)vm->special_exceptions)[sp] = exc;
     rb_gc_register_mark_object(exc);
-}
-
-int
-rb_vm_add_root_module(VALUE module)
-{
-    rb_vm_t *vm = GET_VM();
-
-    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)module);
-
-    return TRUE;
 }
 
 static int
@@ -3093,7 +3081,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ensure_rollback_table);
 
             rb_vm_postponed_job_free();
-            st_free_table(vm->defined_module_hash);
 
             rb_id_table_free(vm->constant_cache);
 
@@ -3214,7 +3201,6 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->ensure_rollback_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
-        rb_st_memsize(vm->defined_module_hash) +
         vm_memsize_at_exit_list(vm->at_exit) +
         rb_st_memsize(vm->ci_table) +
         rb_st_memsize(vm->frozen_strings) +
@@ -4305,8 +4291,6 @@ void
 Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
-
-    vm->defined_module_hash = st_init_numtable();
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_hidden_new(128);

@@ -810,7 +810,7 @@ boot_defclass(const char *name, VALUE super)
     ID id = rb_intern(name);
 
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    rb_vm_add_root_module(obj);
+    rb_gc_register_mark_object(obj);
     return obj;
 }
 
@@ -986,14 +986,14 @@ rb_define_class(const char *name, VALUE super)
         }
 
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(klass);
+        rb_gc_register_mark_object(klass);
         return klass;
     }
     if (!super) {
         rb_raise(rb_eArgError, "no super class for '%s'", name);
     }
     klass = rb_define_class_id(id, super);
-    rb_vm_add_root_module(klass);
+    rb_gc_register_mark_object(klass);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -1043,7 +1043,7 @@ VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 {
     VALUE klass = rb_define_class_id_under_no_pin(outer, id, super);
-    rb_vm_add_root_module(klass);
+    rb_gc_register_mark_object(klass);
     return klass;
 }
 
@@ -1097,11 +1097,11 @@ rb_define_module(const char *name)
                      name, rb_obj_class(module));
         }
         /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(module);
+        rb_gc_register_mark_object(module);
         return module;
     }
     module = rb_module_new();
-    rb_vm_add_root_module(module);
+    rb_gc_register_mark_object(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
