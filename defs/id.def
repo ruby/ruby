@@ -91,6 +91,7 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_kwd
   core#raise
   core#sprintf
+  core#forwarding_arguments
 
   -                                                     debug#created_info
 

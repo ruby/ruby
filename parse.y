@@ -1581,7 +1581,7 @@ static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*,
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
 static void forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var);
-static NODE *new_method_case_args(struct parser_params *p);
+static NODE *new_method_case_args(struct parser_params *p, const YYLTYPE*);
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -2984,7 +2984,7 @@ bodystmt	: compstmt[body]
 method_body	: bodystmt
                 | p_case_body[body]
                     {
-                        $$ = NEW_CASE3(new_method_case_args(p), $body, &@body);
+                        $$ = NEW_CASE3(new_method_case_args(p, &@body), $body, &@body);
                     /*% ripper: case!(Qnil, $:body) %*/
                     }
                 ;
@@ -15553,30 +15553,18 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
 }
 
 static NODE *
-new_method_case_args(struct parser_params *p)
+new_method_case_args(struct parser_params *p, const YYLTYPE *body_loc)
 {
     if (!local_id(p, idFWD_ALL)) {
         compile_error(p, "not defined with ...");
         return Qnone;
     }
 
-    const YYLTYPE *loc = &NULL_LOC;
-    NODE *rest = NEW_LVAR(idFWD_REST, loc);
-#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-    NODE *kwrest = NEW_LVAR(idFWD_KWREST, loc);
-#endif
-    NODE *block = NEW_LVAR(idFWD_BLOCK, loc);
-
-    NODE *args = NEW_SPLAT(rest, loc);
-#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-    NODE *kwsplat = list_append(p, NEW_LIST(0, loc), kwrest);
-    args = NEW_ARGSPUSH(args, NEW_HASH(kwsplat, loc), loc);
-#endif
-    args = NEW_ARGSCAT(args, NEW_SPLAT(block, loc), loc);
-
-    NODE *cond = NEW_AND(NEW_CALL(rest, idEmptyP, 0, loc),
-                         NEW_CALL(block, '!', 0, loc), loc);
-    return NEW_IF(cond, kwrest, args, loc);
+    const YYLTYPE loc = {
+        {body_loc->beg_pos.lineno, body_loc->beg_pos.column},
+        {body_loc->beg_pos.lineno, body_loc->beg_pos.column},
+    };
+    return new_args_forward_call(p, 0, &loc, &loc);
 }
 
 static NODE *
