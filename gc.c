@@ -8767,29 +8767,13 @@ rb_gc_force_recycle(VALUE obj)
     /* no-op */
 }
 
-#ifndef MARK_OBJECT_ARY_BUCKET_SIZE
-#define MARK_OBJECT_ARY_BUCKET_SIZE 1024
-#endif
-
 void
 rb_gc_register_mark_object(VALUE obj)
 {
     if (!is_pointer_to_heap(&rb_objspace, (void *)obj))
         return;
 
-    RB_VM_LOCK_ENTER();
-    {
-        VALUE ary_ary = GET_VM()->mark_object_ary;
-        VALUE ary = rb_ary_last(0, 0, ary_ary);
-
-        if (NIL_P(ary) || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
-            ary = rb_ary_hidden_new(MARK_OBJECT_ARY_BUCKET_SIZE);
-            rb_ary_push(ary_ary, ary);
-        }
-
-        rb_ary_push(ary, obj);
-    }
-    RB_VM_LOCK_LEAVE();
+    rb_vm_register_global_object(obj);
 }
 
 void

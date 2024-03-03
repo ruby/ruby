@@ -1731,7 +1731,7 @@ rb_profile_frame_absolute_path(VALUE frame)
         static VALUE cfunc_str = Qfalse;
         if (!cfunc_str) {
             cfunc_str = rb_str_new_literal("<cfunc>");
-            rb_gc_register_mark_object(cfunc_str);
+            rb_vm_register_global_object(cfunc_str);
         }
         return cfunc_str;
     }

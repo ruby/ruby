@@ -51,7 +51,7 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
 
 #ifndef INCLUDED_BY_BUILTIN_C
     st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
-    rb_gc_register_mark_object((VALUE)iseq);
+    rb_vm_register_global_object((VALUE)iseq);
 #endif
 
     return iseq;

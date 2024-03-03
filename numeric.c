@@ -6262,7 +6262,7 @@ Init_Numeric(void)
     rb_fix_to_s_static[8] = rb_fstring_literal("8");
     rb_fix_to_s_static[9] = rb_fstring_literal("9");
     for(int i = 0; i < 10; i++) {
-        rb_gc_register_mark_object(rb_fix_to_s_static[i]);
+        rb_vm_register_global_object(rb_fix_to_s_static[i]);
     }
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);

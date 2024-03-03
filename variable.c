@@ -72,11 +72,11 @@ Init_var_tables(void)
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
-    rb_gc_register_mark_object(autoload_mutex);
+    rb_vm_register_global_object(autoload_mutex);
 
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
-    rb_gc_register_mark_object(autoload_features);
+    rb_vm_register_global_object(autoload_features);
 }
 
 static inline bool
@@ -3701,7 +3701,9 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     if (!rb_is_const_id(id)) {
         rb_warn("rb_define_const: invalid name '%s' for constant", name);
     }
-    rb_gc_register_mark_object(val);
+    if (!RB_SPECIAL_CONST_P(val)) {
+        rb_vm_register_global_object(val);
+    }
     rb_const_set(klass, id, val);
 }
 

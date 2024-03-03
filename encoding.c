@@ -1927,7 +1927,7 @@ Init_Encoding(void)
 
     list = rb_encoding_list = rb_ary_new2(ENCODING_LIST_CAPA);
     RBASIC_CLEAR_CLASS(list);
-    rb_gc_register_mark_object(list);
+    rb_vm_register_global_object(list);
 
     for (i = 0; i < enc_table->count; ++i) {
         rb_ary_push(list, enc_new(enc_table->list[i].enc));
