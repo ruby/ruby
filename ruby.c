@@ -2202,7 +2202,7 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
 
     if ((rb_e_script = opt->e_script) != 0) {
         rb_str_freeze(rb_e_script);
-        rb_gc_register_mark_object(opt->e_script);
+        rb_vm_register_global_object(opt->e_script);
     }
 
     rb_execution_context_t *ec = GET_EC();
@@ -3070,7 +3070,7 @@ ruby_process_options(int argc, char **argv)
     }
     set_progname(external_str_new_cstr(script_name));  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
-    rb_gc_register_mark_object(rb_argv0);
+    rb_vm_register_global_object(rb_argv0);
 
 #ifndef HAVE_SETPROCTITLE
     ruby_init_setproctitle(argc, argv);

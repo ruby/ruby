@@ -1462,7 +1462,7 @@ rb_sym_to_proc(VALUE sym)
 
     if (!sym_proc_cache) {
         sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_gc_register_mark_object(sym_proc_cache);
+        rb_vm_register_global_object(sym_proc_cache);
         rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
     }
 

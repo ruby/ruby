@@ -2538,7 +2538,7 @@ compat_allocator_table(void)
 #define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
         Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
-    rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
+    rb_vm_register_global_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }
 

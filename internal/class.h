@@ -108,6 +108,7 @@ struct RClass_and_rb_classext_t {
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
 
+#define RCLASS_IS_ROOT FL_USER0
 #define RICLASS_IS_ORIGIN FL_USER0
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3

@@ -517,7 +517,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         static VALUE freeze_true_hash;
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
-            rb_gc_register_mark_object(freeze_true_hash);
+            rb_vm_register_global_object(freeze_true_hash);
             rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
             rb_obj_freeze(freeze_true_hash);
         }
@@ -541,7 +541,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         static VALUE freeze_false_hash;
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
-            rb_gc_register_mark_object(freeze_false_hash);
+            rb_vm_register_global_object(freeze_false_hash);
             rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
             rb_obj_freeze(freeze_false_hash);
         }
@@ -4450,7 +4450,7 @@ InitVM_Object(void)
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cNilClass_to_s);
+    rb_vm_register_global_object(rb_cNilClass_to_s);
     rb_define_method(rb_cNilClass, "to_s", rb_nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
@@ -4536,7 +4536,7 @@ InitVM_Object(void)
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cTrueClass_to_s);
+    rb_vm_register_global_object(rb_cTrueClass_to_s);
     rb_define_method(rb_cTrueClass, "to_s", rb_true_to_s, 0);
     rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
@@ -4548,7 +4548,7 @@ InitVM_Object(void)
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cFalseClass_to_s);
+    rb_vm_register_global_object(rb_cFalseClass_to_s);
     rb_define_method(rb_cFalseClass, "to_s", rb_false_to_s, 0);
     rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
