@@ -1528,9 +1528,23 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
+            parts = if node.value.lines.one?
+              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+            else
+              start_offset = node.value_loc.start_offset
+
+              node.value.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.symbol_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.value_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end

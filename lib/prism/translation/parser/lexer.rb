@@ -291,6 +291,16 @@ module Prism
                 quote = value[2] == "-" || value[2] == "~" ? value[3] : value[2]
                 value = "<<#{quote == "'" || quote == "\"" ? quote : "\""}"
               end
+            when :tSTRING_CONTENT
+              unless (lines = token.value.lines).one?
+                start_offset = offset_cache[token.location.start_offset]
+                lines.map do |line|
+                  end_offset = start_offset + line.length
+                  tokens << [:tSTRING_CONTENT, [line, Range.new(source_buffer, start_offset, offset_cache[end_offset])]]
+                  start_offset = end_offset
+                end
+                next
+              end
             when :tSTRING_DVAR
               value = nil
             when :tSTRING_END
