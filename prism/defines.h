@@ -145,29 +145,37 @@
 #ifdef PRISM_XALLOCATOR
     #include "prism_xallocator.h"
 #else
-    /**
-     * The malloc function that should be used. This can be overriden with the
-     * PRISM_XALLOCATOR define.
-     */
-    #define xmalloc malloc
+    #ifndef xmalloc
+        /**
+         * The malloc function that should be used. This can be overriden with
+         * the PRISM_XALLOCATOR define.
+         */
+        #define xmalloc malloc
+    #endif
 
-    /**
-     * The realloc function that should be used. This can be overriden with the
-     * PRISM_XALLOCATOR define.
-     */
-    #define xrealloc realloc
+    #ifndef xrealloc
+        /**
+         * The realloc function that should be used. This can be overriden with
+         * the PRISM_XALLOCATOR define.
+         */
+        #define xrealloc realloc
+    #endif
 
-    /**
-     * The calloc function that should be used. This can be overriden with the
-     * PRISM_XALLOCATOR define.
-     */
-    #define xcalloc calloc
+    #ifndef xcalloc
+        /**
+         * The calloc function that should be used. This can be overriden with
+         * the PRISM_XALLOCATOR define.
+         */
+        #define xcalloc calloc
+    #endif
 
-    /**
-     * The free function that should be used. This can be overriden with the
-     * PRISM_XALLOCATOR define.
-     */
-    #define xfree free
+    #ifndef xfree
+        /**
+         * The free function that should be used. This can be overriden with the
+         * PRISM_XALLOCATOR define.
+         */
+        #define xfree free
+    #endif
 #endif
 
 #endif
