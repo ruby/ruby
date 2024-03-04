@@ -16,4 +16,5 @@ benchmark:
   - (2..3).overlap?(...1)
   - (2...3).overlap?(..2)
   - (2...3).overlap?(3...)
+  - (..2).overlap?(2..3)
   - (2..3).overlap?('a'..'d')
