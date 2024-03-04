@@ -593,6 +593,26 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
     pm_parser_warn(parser, node->location.start, node->location.end, diag_id);
 }
 
+/**
+ * Append a warning to the list of warnings on the parser using a format string.
+ */
+#define PM_PARSER_WARN_FORMAT(parser, start, end, diag_id, ...) \
+    pm_diagnostic_list_append_format(&parser->warning_list, start, end, diag_id, __VA_ARGS__)
+
+/**
+ * Append a warning to the list of warnings on the parser using the location of
+ * the given token and a format string.
+ */
+#define PM_PARSER_WARN_TOKEN_FORMAT(parser, token, diag_id, ...) \
+    PM_PARSER_WARN_FORMAT(parser, (token).start, (token).end, diag_id, __VA_ARGS__)
+
+/**
+ * Append a warning to the list of warnings on the parser using the location of
+ * the given token and a format string, and add on the content of the token.
+ */
+#define PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, token, diag_id) \
+    PM_PARSER_WARN_TOKEN_FORMAT(parser, token, diag_id, (int) ((token).end - (token).start), (const char *) (token).start)
+
 /******************************************************************************/
 /* Node-related functions                                                     */
 /******************************************************************************/
@@ -8678,6 +8698,20 @@ parser_flush_heredoc_end(pm_parser_t *parser) {
 }
 
 /**
+ * Returns true if the parser has lexed the last token on the current line.
+*/
+static bool
+parser_end_of_line_p(const pm_parser_t *parser) {
+    const uint8_t *cursor = parser->current.end;
+
+    while (cursor < parser->end && *cursor != '\n' && *cursor != '#') {
+        if (!pm_char_is_inline_whitespace(*cursor++)) return false;
+    }
+
+    return true;
+}
+
+/**
  * When we're lexing certain types (strings, symbols, lists, etc.) we have
  * string content associated with the tokens. For example:
  *
@@ -9693,6 +9727,10 @@ parser_lex(pm_parser_t *parser) {
                                     lex_state_set(parser, PM_LEX_STATE_ENDARG);
                                 }
                                 LEX(PM_TOKEN_UDOT_DOT_DOT);
+                            }
+
+                            if (parser->enclosure_nesting == 0 && parser_end_of_line_p(parser)) {
+                                pm_parser_warn_token(parser, &parser->current, PM_WARN_DOT_DOT_DOT_EOL);
                             }
 
                             lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -13122,13 +13160,19 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
     // Parse any number of elsif clauses. This will form a linked list of if
     // nodes pointing to each other from the top.
     if (context == PM_CONTEXT_IF) {
-        while (accept1(parser, PM_TOKEN_KEYWORD_ELSIF)) {
-            pm_token_t elsif_keyword = parser->previous;
+        while (match1(parser, PM_TOKEN_KEYWORD_ELSIF)) {
+            if (parser_end_of_line_p(parser)) {
+                PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_WARN_KEYWORD_EOL);
+            }
+
+            pm_token_t elsif_keyword = parser->current;
+            parser_lex(parser);
+
             pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, PM_CONTEXT_ELSIF, &then_keyword);
             pm_accepts_block_stack_push(parser, true);
+
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_ELSIF);
             pm_accepts_block_stack_pop(parser);
-
             accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
             pm_node_t *elsif = (pm_node_t *) pm_if_node_create(parser, &elsif_keyword, predicate, &then_keyword, statements, NULL, &end_keyword);
@@ -16305,6 +16349,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, &do_keyword, &parser->previous);
         }
         case PM_TOKEN_KEYWORD_IF:
+            if (parser_end_of_line_p(parser)) {
+                PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_WARN_KEYWORD_EOL);
+            }
+
             parser_lex(parser);
             return parse_conditional(parser, PM_CONTEXT_IF);
         case PM_TOKEN_KEYWORD_UNDEF: {
