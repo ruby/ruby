@@ -178,8 +178,8 @@ $ ruby -e 'p [Encoding::default_external, Encoding::default_internal]'
 $ ruby -E cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
 [#<Encoding:CESU-8>, nil]
 # Option -E with default external and internal encodings.
-$ ruby -E cesu-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
-[#<Encoding:CESU-8>, #<Encoding:CESU-8>]
+$ ruby -E utf-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
+[#<Encoding:UTF-8>, #<Encoding:CESU-8>]
 ```
 
 Whitespace between the option and its argument may be omitted.
