@@ -40,7 +40,7 @@ argument values:
   see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values].
 - In range `(1..0377)`:
   the input record separator `$/` is set to the character value of the argument.
-- Any other value: the input record separator is `nil`.
+- Any other octal value: the input record separator is `nil`.
 
 Examples:
 
@@ -178,8 +178,8 @@ $ ruby -e 'p [Encoding::default_external, Encoding::default_internal]'
 $ ruby -E cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
 [#<Encoding:CESU-8>, nil]
 # Option -E with default external and internal encodings.
-$ ruby -E cesu-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
-[#<Encoding:CESU-8>, #<Encoding:CESU-8>]
+$ ruby -E utf-8:cesu-8 -e 'p [Encoding::default_external, Encoding::default_internal]'
+[#<Encoding:UTF-8>, #<Encoding:CESU-8>]
 ```
 
 Whitespace between the option and its argument may be omitted.
@@ -589,7 +589,7 @@ ruby --disable=gems,rubyopt t.rb
 The supported features:
 
 - `gems`: Rubygems (default: enabled).
-- `did_you_mean`: `did_you_mean` (default: enabled).
+- `did_you_mean`: [`did_you_mean`](https://github.com/ruby/did_you_mean) (default: enabled).
 - `rubyopt`: `RUBYOPT` environment variable (default: enabled).
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
