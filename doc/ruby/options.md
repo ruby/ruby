@@ -589,7 +589,7 @@ ruby --disable=gems,rubyopt t.rb
 The supported features:
 
 - `gems`: Rubygems (default: enabled).
-- `did_you_mean`: `did_you_mean` (default: enabled).
+- `did_you_mean`: [`did_you_mean`](https://github.com/ruby/did_you_mean) (default: enabled).
 - `rubyopt`: `RUBYOPT` environment variable (default: enabled).
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
