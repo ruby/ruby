@@ -192,6 +192,61 @@ pm_node_type_to_str(pm_node_type_t node_type)
     return "";
 }
 
+/**
+ * Visit each of the nodes in this subtree using the given visitor callback. The
+ * callback function will be called for each node in the subtree. If it returns
+ * false, then that node's children will not be visited. If it returns true,
+ * then the children will be visited. The data parameter is treated as an opaque
+ * pointer and is passed to the visitor callback for consumers to use as they
+ * see fit.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+    if (visitor(node, data)) pm_visit_child_nodes(node, visitor, data);
+}
+
+/**
+ * Visit the children of the given node with the given callback. This is the
+ * default behavior for walking the tree that is called from pm_visit_node if
+ * the callback returns true.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        <%- if (fields = node.fields.select { |field| field.is_a?(Prism::NodeField) || field.is_a?(Prism::OptionalNodeField) || field.is_a?(Prism::NodeListField) }).any? -%>
+        case <%= node.type %>: {
+            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+            <%- fields.each do |field| -%>
+
+            // Visit the <%= field.name %> field
+            <%- case field -%>
+            <%- when Prism::NodeField -%>
+            pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            <%- when Prism::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            }
+            <%- when Prism::NodeListField -%>
+            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                pm_visit_node(<%= field.name %>->nodes[index], visitor, data);
+            }
+            <%- end -%>
+            <%- end -%>
+
+            break;
+        }
+        <%- else -%>
+        case <%= node.type %>:
+            break;
+        <%- end -%>
+        <%- end -%>
+        case PM_SCOPE_NODE:
+            break;
+    }
+}
+
 static void
 pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
     const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
