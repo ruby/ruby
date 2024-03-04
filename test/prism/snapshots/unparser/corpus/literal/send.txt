@@ -191,6 +191,7 @@
         │   │   │       │       ├── arguments: ∅
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── block: ∅
+        │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
         │   │   ├── consequent: ∅
         │   │   ├── case_keyword_loc: (16,0)-(16,4) = "case"
@@ -231,6 +232,7 @@
         │   │   │       │       ├── arguments: ∅
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── block: ∅
+        │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
         │   │   ├── consequent: ∅
         │   │   ├── case_keyword_loc: (20,0)-(20,4) = "case"

@@ -6322,6 +6322,7 @@ pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .statements = NULL,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .conditions = { 0 }
     };
 
@@ -6335,6 +6336,15 @@ static void
 pm_when_node_conditions_append(pm_when_node_t *node, pm_node_t *condition) {
     node->base.location.end = condition->location.end;
     pm_node_list_append(&node->conditions, condition);
+}
+
+/**
+ * Set the location of the then keyword of a when node.
+ */
+static inline void
+pm_when_node_then_keyword_loc_set(pm_when_node_t *node, const pm_token_t *then_keyword) {
+    node->base.location.end = then_keyword->end;
+    node->then_keyword_loc = PM_LOCATION_TOKEN_VALUE(then_keyword);
 }
 
 /**
@@ -15564,9 +15574,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     } while (accept1(parser, PM_TOKEN_COMMA));
 
                     if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-                        accept1(parser, PM_TOKEN_KEYWORD_THEN);
+                        if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
+                            pm_when_node_then_keyword_loc_set(when_node, &parser->previous);
+                        }
                     } else {
                         expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_EXPECT_WHEN_DELIMITER);
+                        pm_when_node_then_keyword_loc_set(when_node, &parser->previous);
                     }
 
                     if (!match3(parser, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {

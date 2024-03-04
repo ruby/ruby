@@ -16,7 +16,7 @@
             │   ├── closing_loc: ∅
             │   └── block: ∅
             ├── conditions: (length: 1)
-            │   └── @ WhenNode (location: (1,8)-(1,15))
+            │   └── @ WhenNode (location: (1,8)-(1,20))
             │       ├── keyword_loc: (1,8)-(1,12) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ SplatNode (location: (1,13)-(1,15))
@@ -32,6 +32,7 @@
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
+            │       ├── then_keyword_loc: (1,16)-(1,20) = "then"
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

@@ -35,6 +35,7 @@
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           └── block: ∅
+            │   │   ├── then_keyword_loc: ∅
             │   │   └── statements:
             │   │       @ StatementsNode (location: (1,24)-(1,27))
             │   │       └── body: (length: 1)
@@ -64,6 +65,7 @@
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
+            │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

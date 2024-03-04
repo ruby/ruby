@@ -2957,6 +2957,8 @@ nodes:
         type: location
       - name: conditions
         type: node[]
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

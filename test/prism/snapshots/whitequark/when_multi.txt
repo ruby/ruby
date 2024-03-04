@@ -31,6 +31,7 @@
             │       │       ├── content_loc: (1,23)-(1,26) = "baz"
             │       │       ├── closing_loc: (1,26)-(1,27) = "'"
             │       │       └── unescaped: "baz"
+            │       ├── then_keyword_loc: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,29)-(1,32))
             │           └── body: (length: 1)
