@@ -40,7 +40,7 @@ argument values:
   see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values].
 - In range `(1..0377)`:
   the input record separator `$/` is set to the character value of the argument.
-- Any other value: the input record separator is `nil`.
+- Any other octal value: the input record separator is `nil`.
 
 Examples:
 
