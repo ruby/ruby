@@ -255,7 +255,7 @@ module Prism
             when :!
               return visit_block(builder.not_op(token(node.message_loc), token(node.opening_loc), visit(node.receiver), token(node.closing_loc)), block)
             when :=~
-              if (receiver = node.receiver).type == :regular_expression_node
+              if (receiver = node.receiver).is_a?(RegularExpressionNode)
                 return builder.match_op(visit(receiver), token(node.message_loc), visit(node.arguments.arguments.first))
               end
             when :[]
