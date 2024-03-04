@@ -168,7 +168,7 @@ module Prism
 
       # Build the parser gem tokens from the prism tokens.
       def build_tokens(tokens, offset_cache)
-        Lexer.new(source_buffer, tokens.map(&:first), offset_cache).to_a
+        Lexer.new(source_buffer, tokens, offset_cache).to_a
       end
 
       # Build a range from a prism location.

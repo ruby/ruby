@@ -101,9 +101,11 @@ module Prism
 
       parser = Prism::Translation::Parser33.new
       parser.diagnostics.all_errors_are_fatal = false
+
       warning = nil
       parser.diagnostics.consumer = ->(received) { warning = received }
       parser.parse(buffer)
+
       assert_equal :warning, warning.level
       assert_includes warning.message, "has been interpreted as"
     end
