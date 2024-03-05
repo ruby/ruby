@@ -256,7 +256,21 @@ module Prism
       # foo => [bar]
       #        ^^^^^
       def visit_array_pattern_node(node)
-        raise NoMethodError, __method__
+        constant = visit(node.constant)
+        requireds = visit_all(node.requireds) if node.requireds.any?
+        rest =
+          if !node.rest.nil?
+            if !node.rest.expression.nil?
+              visit(node.rest.expression)
+            else
+              bounds(node.rest.location)
+              on_var_field(nil)
+            end
+          end
+        posts = visit_all(node.posts) if node.posts.any?
+
+        bounds(node.location)
+        on_aryptn(constant, requireds, rest, posts)
       end
 
       # foo(bar)
@@ -492,7 +506,11 @@ module Prism
       # foo => bar => baz
       #        ^^^^^^^^^^
       def visit_capture_pattern_node(node)
-        raise NoMethodError, __method__
+        value = visit(node.value)
+        target = visit(node.target)
+
+        bounds(node.location)
+        on_binary(value, :"=>", target)
       end
 
       # case foo; when bar; end
@@ -1208,7 +1226,8 @@ module Prism
       # foo, = bar
       # ^^^
       def visit_local_variable_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_field(on_ident(node.name.to_s))
       end
 
       # if /foo/ then end
