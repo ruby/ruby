@@ -6,7 +6,7 @@ File.delete("passing.txt") if File.exist?("passing.txt")
 File.delete("failing.txt") if File.exist?("failing.txt")
 
 module Prism
-  class RipperTest < RipperTestCase
+  class RipperTest < TestCase
     base = File.join(__dir__, "fixtures")
     relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
 
@@ -149,7 +149,6 @@ module Prism
       seattlerb/heredoc_with_only_carriage_returns_windows.txt
       seattlerb/if_elsif.txt
       seattlerb/index_0.txt
-      seattlerb/index_0_opasgn.txt
       seattlerb/interpolated_symbol_array_line_breaks.txt
       seattlerb/interpolated_word_array_line_breaks.txt
       seattlerb/lambda_do_vs_brace.txt
@@ -185,7 +184,6 @@ module Prism
       seattlerb/non_interpolated_word_array_line_breaks.txt
       seattlerb/op_asgn_command_call.txt
       seattlerb/op_asgn_dot_ident_command_call.txt
-      seattlerb/op_asgn_index_command_call.txt
       seattlerb/op_asgn_primary_colon_identifier1.txt
       seattlerb/op_asgn_primary_colon_identifier_command_call.txt
       seattlerb/op_asgn_val_dot_ident_command_call.txt
@@ -389,8 +387,6 @@ module Prism
       whitequark/numparam_outside_block.txt
       whitequark/op_asgn.txt
       whitequark/op_asgn_cmd.txt
-      whitequark/op_asgn_index.txt
-      whitequark/op_asgn_index_cmd.txt
       whitequark/or_asgn.txt
       whitequark/parser_bug_272.txt
       whitequark/parser_bug_507.txt

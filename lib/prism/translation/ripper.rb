@@ -1208,25 +1208,59 @@ module Prism
       # foo[bar] += baz
       # ^^^^^^^^^^^^^^^
       def visit_index_operator_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+        arguments = visit(node.arguments)
+
+        bounds(node.location)
+        target = on_aref_field(receiver, arguments)
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo[bar] &&= baz
       # ^^^^^^^^^^^^^^^^
       def visit_index_and_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+        arguments = visit(node.arguments)
+
+        bounds(node.location)
+        target = on_aref_field(receiver, arguments)
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo[bar] ||= baz
       # ^^^^^^^^^^^^^^^^
       def visit_index_or_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+        arguments = visit(node.arguments)
+
+        bounds(node.location)
+        target = on_aref_field(receiver, arguments)
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo[bar], = 1
       # ^^^^^^^^
       def visit_index_target_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+        arguments = visit(node.arguments)
+
+        bounds(node.location)
+        on_aref_field(receiver, arguments)
       end
 
       # @foo
