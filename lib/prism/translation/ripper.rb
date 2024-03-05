@@ -1252,13 +1252,31 @@ module Prism
       # END {}
       # ^^^^^^
       def visit_post_execution_node(node)
-        raise NoMethodError, __method__
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
+
+        bounds(node.location)
+        on_END(statements)
       end
 
       # BEGIN {}
       # ^^^^^^^^
       def visit_pre_execution_node(node)
-        raise NoMethodError, __method__
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
+
+        bounds(node.location)
+        on_BEGIN(statements)
       end
 
       # The top-level program node.
