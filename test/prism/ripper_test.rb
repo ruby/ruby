@@ -290,7 +290,6 @@ module Prism
       embdoc_no_newline_at_end.txt
       emoji_method_calls.txt
       endless_methods.txt
-      endless_range_in_conditional.txt
       for.txt
       global_variables.txt
       hashes.txt
@@ -400,7 +399,6 @@ module Prism
       seattlerb/case_in_multiple.txt
       seattlerb/case_in_or.txt
       seattlerb/class_comments.txt
-      seattlerb/cond_unary_minus.txt
       seattlerb/const_2_op_asgn_or2.txt
       seattlerb/const_3_op_asgn_or.txt
       seattlerb/const_op_asgn_and1.txt
@@ -444,7 +442,6 @@ module Prism
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/defs_oneliner_rescue.txt
       seattlerb/difficult1_line_numbers.txt
-      seattlerb/difficult1_line_numbers2.txt
       seattlerb/difficult2_.txt
       seattlerb/difficult3_.txt
       seattlerb/difficult3_4.txt
@@ -463,8 +460,6 @@ module Prism
       seattlerb/do_lambda.txt
       seattlerb/f_kw.txt
       seattlerb/f_kw__required.txt
-      seattlerb/flip2_env_lvar.txt
-      seattlerb/float_with_if_modifier.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
       seattlerb/heredoc_bad_hex_escape.txt
@@ -483,10 +478,8 @@ module Prism
       seattlerb/heredoc_with_only_carriage_returns.txt
       seattlerb/heredoc_with_only_carriage_returns_windows.txt
       seattlerb/if_elsif.txt
-      seattlerb/if_symbol.txt
       seattlerb/index_0.txt
       seattlerb/index_0_opasgn.txt
-      seattlerb/integer_with_if_modifier.txt
       seattlerb/interpolated_symbol_array_line_breaks.txt
       seattlerb/interpolated_word_array_line_breaks.txt
       seattlerb/iter_args_2__19.txt
@@ -634,7 +627,6 @@ module Prism
       unparser/corpus/literal/defs.txt
       unparser/corpus/literal/dstr.txt
       unparser/corpus/literal/empty.txt
-      unparser/corpus/literal/flipflop.txt
       unparser/corpus/literal/for.txt
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
@@ -652,7 +644,6 @@ module Prism
       unparser/corpus/literal/super.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/literal/yield.txt
-      unparser/corpus/semantic/and.txt
       unparser/corpus/semantic/block.txt
       unparser/corpus/semantic/def.txt
       unparser/corpus/semantic/dstr.txt
@@ -716,10 +707,7 @@ module Prism
       whitequark/casgn_toplevel.txt
       whitequark/character.txt
       whitequark/class_definition_in_while_cond.txt
-      whitequark/cond_begin.txt
       whitequark/cond_begin_masgn.txt
-      whitequark/cond_eflipflop.txt
-      whitequark/cond_iflipflop.txt
       whitequark/cond_match_current_line.txt
       whitequark/const_op_asgn.txt
       whitequark/dedenting_heredoc.txt
@@ -745,13 +733,9 @@ module Prism
       whitequark/forwarded_kwrestarg_with_additional_kwarg.txt
       whitequark/forwarded_restarg.txt
       whitequark/hash_label_end.txt
-      whitequark/if.txt
       whitequark/if_else.txt
       whitequark/if_elsif.txt
       whitequark/if_masgn__24.txt
-      whitequark/if_mod.txt
-      whitequark/if_nl_then.txt
-      whitequark/if_while_after_class__since_32.txt
       whitequark/interp_digit_var.txt
       whitequark/kwarg.txt
       whitequark/kwbegin_compstmt.txt
@@ -810,7 +794,6 @@ module Prism
       whitequark/restarg_unnamed.txt
       whitequark/return.txt
       whitequark/return_block.txt
-      whitequark/ruby_bug_10279.txt
       whitequark/ruby_bug_10653.txt
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11380.txt
@@ -857,9 +840,7 @@ module Prism
       whitequark/ternary.txt
       whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
-      whitequark/unless.txt
       whitequark/unless_else.txt
-      whitequark/unless_mod.txt
       whitequark/var_op_asgn.txt
       whitequark/when_splat.txt
       whitequark/yield.txt

@@ -797,7 +797,16 @@ module Prism
       # if foo then bar else baz end
       #                 ^^^^^^^^^^^^
       def visit_else_node(node)
-        raise NoMethodError, __method__
+        statements =
+          if node.statements.nil?
+            [nil]
+          else
+            body = node.statements.body
+            body.unshift(nil) if source.byteslice(node.else_keyword_loc.end_offset...node.statements.body[0].location.start_offset).include?(";")
+          end
+
+        bounds(node.location)
+        on_else(visit_statements_node_body(statements))
       end
 
       # "foo #{bar}"
@@ -1003,7 +1012,26 @@ module Prism
       # foo ? bar : baz
       # ^^^^^^^^^^^^^^^
       def visit_if_node(node)
-        raise NoMethodError, __method__
+        if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          predicate = visit(node.predicate)
+          statements =
+            if node.statements.nil?
+              bounds(node.location)
+              on_stmts_add(on_stmts_new, on_void_stmt)
+            else
+              visit(node.statements)
+            end
+          consequent = visit(node.consequent)
+
+          bounds(node.location)
+          on_if(predicate, statements, consequent)
+        else
+          statements = visit(node.statements.body.first)
+          predicate = visit(node.predicate)
+
+          bounds(node.location)
+          on_if_mod(predicate, statements)
+        end
       end
 
       # 1i
@@ -1826,7 +1854,26 @@ module Prism
       # bar unless foo
       # ^^^^^^^^^^^^^^
       def visit_unless_node(node)
-        raise NoMethodError, __method__
+        if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          predicate = visit(node.predicate)
+          statements =
+            if node.statements.nil?
+              bounds(node.location)
+              on_stmts_add(on_stmts_new, on_void_stmt)
+            else
+              visit(node.statements)
+            end
+          consequent = visit(node.consequent)
+
+          bounds(node.location)
+          on_unless(predicate, statements, consequent)
+        else
+          statements = visit(node.statements.body.first)
+          predicate = visit(node.predicate)
+
+          bounds(node.location)
+          on_unless_mod(predicate, statements)
+        end
       end
 
       # until foo; bar end
@@ -1835,7 +1882,7 @@ module Prism
       # bar until foo
       # ^^^^^^^^^^^^^
       def visit_until_node(node)
-        if node.statements.nil? || (node.keyword_loc.start_offset < node.statements.location.start_offset)
+        if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
           predicate = visit(node.predicate)
           statements =
             if node.statements.nil?
@@ -1880,7 +1927,7 @@ module Prism
       # bar while foo
       # ^^^^^^^^^^^^^
       def visit_while_node(node)
-        if node.statements.nil? || (node.keyword_loc.start_offset < node.statements.location.start_offset)
+        if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
           predicate = visit(node.predicate)
           statements =
             if node.statements.nil?
