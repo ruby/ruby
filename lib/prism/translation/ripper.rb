@@ -195,11 +195,25 @@ module Prism
       # alias $foo $bar
       # ^^^^^^^^^^^^^^^
       def visit_alias_global_variable_node(node)
-        new_name = visit(node.new_name)
-        old_name = visit(node.old_name)
+        new_name = visit_alias_global_variable_node_value(node.new_name)
+        old_name = visit_alias_global_variable_node_value(node.old_name)
 
         bounds(node.location)
         on_var_alias(new_name, old_name)
+      end
+
+      # Visit one side of an alias global variable node.
+      private def visit_alias_global_variable_node_value(node)
+        bounds(node.location)
+
+        case node
+        when BackReferenceReadNode
+          on_backref(node.slice)
+        when GlobalVariableReadNode
+          on_gvar(node.name.to_s)
+        else
+          raise
+        end
       end
 
       # foo => bar | baz
@@ -299,7 +313,8 @@ module Prism
       # foo { |; bar| }
       #          ^^^
       def visit_block_local_variable_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_ident(node.name.to_s)
       end
 
       # Visit a BlockNode.
@@ -322,12 +337,13 @@ module Prism
           visit(node.body)
         end
 
-        if node.opening == "{"
+        case node.opening
+        when "{"
           on_brace_block(params_val, body_val)
-        elsif node.opening == "do"
+        when "do"
           on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
         else
-          raise NoMethodError, __method__, "Unexpected Block opening character!"
+          raise raise
         end
       end
 
@@ -339,15 +355,30 @@ module Prism
 
       # A block's parameters.
       def visit_block_parameters_node(node)
-        on_block_var(visit(node.parameters), visit_block_parameters_node_empty)
+        parameters =
+          if node.parameters.nil?
+            on_params(nil, nil, nil, nil, nil, nil, nil)
+          else
+            visit(node.parameters)
+          end
+
+        locals =
+          if node.locals.any?
+            visit_all(node.locals)
+          else
+            visit_block_parameters_node_empty_locals
+          end
+
+        bounds(node.location)
+        on_block_var(parameters, locals)
       end
 
       if RUBY_ENGINE == "jruby"
-        # For JRuby, "no block" in an on_block_var is nil
-        private def visit_block_parameters_node_empty; nil; end
+        # For JRuby, empty locals in an on_block_var is nil.
+        private def visit_block_parameters_node_empty_locals; nil; end
       else
-        # For CRuby et al, "no block" in an on_block_var is false
-        private def visit_block_parameters_node_empty; false; end
+        # For everyone else, empty locals in an on_block_var is false.
+        private def visit_block_parameters_node_empty_locals; false; end
       end
 
       # break
@@ -458,7 +489,8 @@ module Prism
       # @@foo
       # ^^^^^
       def visit_class_variable_read_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_cvar(node.slice))
       end
 
       # @@foo = 1
@@ -467,25 +499,54 @@ module Prism
       # @@foo, @@bar = 1
       # ^^^^^  ^^^^^
       def visit_class_variable_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_cvar(node.name.to_s))
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
       end
 
       # @@foo += bar
       # ^^^^^^^^^^^^
       def visit_class_variable_operator_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_cvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @@foo &&= bar
       # ^^^^^^^^^^^^^
       def visit_class_variable_and_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_cvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @@foo ||= bar
       # ^^^^^^^^^^^^^
       def visit_class_variable_or_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_cvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @@foo, = bar
@@ -518,19 +579,43 @@ module Prism
       # Foo += bar
       # ^^^^^^^^^^^
       def visit_constant_operator_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_const(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo &&= bar
       # ^^^^^^^^^^^^
       def visit_constant_and_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_const(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo ||= bar
       # ^^^^^^^^^^^^
       def visit_constant_or_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_const(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo, = bar
@@ -542,7 +627,13 @@ module Prism
       # Foo::Bar
       # ^^^^^^^^
       def visit_constant_path_node(node)
-        raise NoMethodError, __method__
+        parent = visit(node.parent)
+
+        bounds(node.child.location)
+        child = on_const(node.child.name.to_s)
+
+        bounds(node.location)
+        on_const_path_ref(parent, child)
       end
 
       # Foo::Bar = 1
@@ -551,7 +642,17 @@ module Prism
       # Foo::Foo, Bar::Bar = 1
       # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
-        raise NoMethodError, __method__
+        parent = visit(node.target.parent)
+
+        bounds(node.target.child.location)
+        child = on_const(node.target.child.name.to_s)
+
+        bounds(node.target.location)
+        target = on_const_path_field(parent, child)
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
       end
 
       # Foo::Bar += baz
@@ -593,7 +694,8 @@ module Prism
       # defined?(a)
       # ^^^^^^^^^^^
       def visit_defined_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_defined(visit(node.value))
       end
 
       # if foo then bar else baz end
@@ -648,13 +750,21 @@ module Prism
       # if foo .. bar; end
       #    ^^^^^^^^^^
       def visit_flip_flop_node(node)
-        raise NoMethodError, __method__
+        left = visit(node.left)
+        right = visit(node.right)
+
+        bounds(node.location)
+        if node.exclude_end?
+          on_dot3(left, right)
+        else
+          on_dot2(left, right)
+        end
       end
 
       # 1.0
       # ^^^
       def visit_float_node(node)
-        visit_number(node) { |text| on_float(text) }
+        visit_number_node(node) { |text| on_float(text) }
       end
 
       # for foo in bar do end
@@ -681,14 +791,22 @@ module Prism
       # super {}
       # ^^^^^^^^
       def visit_forwarding_super_node(node)
-        raise NoMethodError, __method__
+        if node.block.nil?
+          bounds(node.location)
+          on_zsuper
+        else
+          block = visit(node.block)
+
+          bounds(node.location)
+          on_method_add_block(on_zsuper, block)
+        end
       end
 
       # $foo
       # ^^^^
       def visit_global_variable_read_node(node)
         bounds(node.location)
-        on_gvar(node.name.to_s)
+        on_var_ref(on_gvar(node.name.to_s))
       end
 
       # $foo = 1
@@ -697,13 +815,26 @@ module Prism
       # $foo, $bar = 1
       # ^^^^  ^^^^
       def visit_global_variable_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_gvar(node.name.to_s))
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
       end
 
       # $foo += bar
       # ^^^^^^^^^^^
       def visit_global_variable_operator_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_gvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # $foo &&= bar
@@ -751,7 +882,7 @@ module Prism
       # 1i
       # ^^
       def visit_imaginary_node(node)
-        visit_number(node) { |text| on_imaginary(text) }
+        visit_number_node(node) { |text| on_imaginary(text) }
       end
 
       # { foo: }
@@ -835,7 +966,7 @@ module Prism
       # 1
       # ^
       def visit_integer_node(node)
-        visit_number(node) { |text| on_int(text) }
+        visit_number_node(node) { |text| on_int(text) }
       end
 
       # if /foo #{bar}/ then end
@@ -1049,13 +1180,13 @@ module Prism
 
       # -> { _1 + _2 }
       # ^^^^^^^^^^^^^^
-      def visit_numbered_parameters_node(node)
+      def visit_number_nodeed_parameters_node(node)
         raise NoMethodError, __method__
       end
 
       # $1
       # ^^
-      def visit_numbered_reference_read_node(node)
+      def visit_number_nodeed_reference_read_node(node)
         raise NoMethodError, __method__
       end
 
@@ -1155,7 +1286,7 @@ module Prism
       # 1r
       # ^^
       def visit_rational_node(node)
-        visit_number(node) { |text| on_rational(text) }
+        visit_number_node(node) { |text| on_rational(text) }
       end
 
       # redo
@@ -1518,7 +1649,7 @@ module Prism
 
       # Visit a node that represents a number. We need to explicitly handle the
       # unary - operator.
-      def visit_number(node)
+      def visit_number_node(node)
         slice = node.slice
         location = node.location
 
