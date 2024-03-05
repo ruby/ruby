@@ -931,7 +931,26 @@ module Prism
       # foo => [*, bar, *]
       #        ^^^^^^^^^^^
       def visit_find_pattern_node(node)
-        raise NoMethodError, __method__
+        constant = visit(node.constant)
+        left =
+          if node.left.expression.nil?
+            bounds(node.left.location)
+            on_var_field(nil)
+          else
+            visit(node.left.expression)
+          end
+
+        requireds = visit_all(node.requireds) if node.requireds.any?
+        right =
+          if node.right.expression.nil?
+            bounds(node.right.location)
+            on_var_field(nil)
+          else
+            visit(node.right.expression)
+          end
+
+        bounds(node.location)
+        on_fndptn(constant, left, requireds, right)
       end
 
       # if foo .. bar; end

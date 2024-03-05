@@ -371,8 +371,6 @@ module Prism
       seattlerb/case_in.txt
       seattlerb/case_in_37.txt
       seattlerb/case_in_else.txt
-      seattlerb/case_in_find.txt
-      seattlerb/case_in_find_array.txt
       seattlerb/case_in_hash_pat.txt
       seattlerb/case_in_hash_pat_assign.txt
       seattlerb/case_in_hash_pat_paren_assign.txt
@@ -590,7 +588,6 @@ module Prism
       unparser/corpus/literal/rescue.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/since/27.txt
-      unparser/corpus/literal/since/30.txt
       unparser/corpus/literal/since/31.txt
       unparser/corpus/literal/since/32.txt
       unparser/corpus/literal/super.txt
