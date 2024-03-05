@@ -157,7 +157,6 @@ module Prism
       seattlerb/magic_encoding_comment.txt
       seattlerb/masgn_anon_splat_arg.txt
       seattlerb/masgn_arg_colon_arg.txt
-      seattlerb/masgn_arg_ident.txt
       seattlerb/masgn_arg_splat_arg.txt
       seattlerb/masgn_colon2.txt
       seattlerb/masgn_colon3.txt
@@ -234,7 +233,6 @@ module Prism
       seattlerb/safe_call_dot_parens.txt
       seattlerb/safe_call_operator.txt
       seattlerb/safe_calls.txt
-      seattlerb/safe_op_asgn.txt
       seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_arg_no_paren.txt
       seattlerb/stabby_block_iter_call.txt
@@ -251,7 +249,6 @@ module Prism
       seattlerb/symbols_empty_space.txt
       seattlerb/symbols_interp.txt
       seattlerb/thingy.txt
-      seattlerb/when_splat.txt
       seattlerb/words_interp.txt
       seattlerb/yield_call_assocs.txt
       seattlerb/yield_empty_parens.txt
@@ -259,7 +256,6 @@ module Prism
       spanning_heredoc.txt
       spanning_heredoc_newlines.txt
       strings.txt
-      super.txt
       symbols.txt
       ternary_operator.txt
       tilde_heredocs.txt
@@ -282,14 +278,11 @@ module Prism
       unparser/corpus/literal/lambda.txt
       unparser/corpus/literal/literal.txt
       unparser/corpus/literal/module.txt
-      unparser/corpus/literal/opasgn.txt
       unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/rescue.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/since/27.txt
       unparser/corpus/literal/since/31.txt
-      unparser/corpus/literal/since/32.txt
-      unparser/corpus/literal/super.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/literal/yield.txt
       unparser/corpus/semantic/block.txt
@@ -315,7 +308,6 @@ module Prism
       whitequark/args_block_pass.txt
       whitequark/args_cmd.txt
       whitequark/args_star.txt
-      whitequark/array_splat.txt
       whitequark/array_symbols.txt
       whitequark/array_symbols_empty.txt
       whitequark/array_symbols_interp.txt
@@ -392,7 +384,6 @@ module Prism
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/pattern_matching_blank_else.txt
       whitequark/pattern_matching_else.txt
-      whitequark/resbody_var.txt
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt
       whitequark/rescue_in_lambda_block.txt
@@ -436,13 +427,10 @@ module Prism
       whitequark/space_args_block.txt
       whitequark/space_args_cmd.txt
       whitequark/string_concat.txt
-      whitequark/super.txt
-      whitequark/super_block.txt
       whitequark/ternary.txt
       whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
       whitequark/unless_else.txt
-      whitequark/when_splat.txt
       whitequark/yield.txt
       xstring.txt
       yield.txt

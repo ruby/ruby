@@ -239,17 +239,28 @@ module Prism
       # []
       # ^^
       def visit_array_node(node)
-        elements = visit_array_node_elements(node.elements) unless node.elements.empty?
+        elements = visit_arguments(node.elements) unless node.elements.empty?
 
         bounds(node.location)
         on_array(elements)
       end
 
       # Visit a list of elements, like the elements of an array or arguments.
-      private def visit_array_node_elements(elements)
+      private def visit_arguments(elements)
         bounds(elements.first.location)
+
         elements.inject(on_args_new) do |args, element|
-          on_args_add(args, visit(element))
+          arg = visit(element)
+          bounds(element.location)
+
+          case element
+          when BlockArgumentNode
+            on_args_add_block(args, arg)
+          when SplatNode
+            on_args_add_star(args, arg)
+          else
+            on_args_add(args, arg)
+          end
         end
       end
 
@@ -277,7 +288,7 @@ module Prism
       #     ^^^
       def visit_arguments_node(node)
         bounds(node.location)
-        on_args_add_block(visit_array_node_elements(node.arguments), false)
+        on_args_add_block(visit_arguments(node.arguments), false)
       end
 
       # { a: 1 }
@@ -349,7 +360,7 @@ module Prism
       # foo(&bar)
       #     ^^^^
       def visit_block_argument_node(node)
-        raise NoMethodError, __method__
+        visit(node.expression)
       end
 
       # foo { |; bar| }
@@ -442,7 +453,7 @@ module Prism
           bounds(node.location)
           on_break(on_args_new)
         else
-          arguments = visit_array_node_elements(node.arguments.arguments)
+          arguments = visit_arguments(node.arguments.arguments)
 
           bounds(node.location)
           on_break(on_args_add_block(arguments, false))
@@ -492,7 +503,22 @@ module Prism
       # foo.bar += baz
       # ^^^^^^^^^^^^^^^
       def visit_call_operator_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+
+        bounds(node.call_operator_loc)
+        call_operator = visit_token(node.call_operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message)
+
+        bounds(node.location)
+        target = on_field(receiver, call_operator, message)
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo.bar &&= baz
@@ -540,7 +566,16 @@ module Prism
       # foo.bar, = 1
       # ^^^^^^^
       def visit_call_target_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+
+        bounds(node.call_operator_loc)
+        call_operator = visit_token(node.call_operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message)
+
+        bounds(node.location)
+        on_field(receiver, call_operator, message)
       end
 
       # foo => bar => baz
@@ -1709,7 +1744,7 @@ module Prism
           bounds(node.location)
           on_next(on_args_new)
         else
-          arguments = visit_array_node_elements(node.arguments.arguments)
+          arguments = visit_arguments(node.arguments.arguments)
 
           bounds(node.location)
           on_next(on_args_add_block(arguments, false))
@@ -1922,42 +1957,41 @@ module Prism
       # begin; rescue; end
       #        ^^^^^^^
       def visit_rescue_node(node)
-        consequent_val = nil
-        if node.consequent
-          consequent_val = visit(node.consequent)
-        end
+        exceptions =
+          case node.exceptions.length
+          when 0
+            nil
+          when 1
+            [visit(node.exceptions.first)]
+          else
+            bounds(node.location)
+            length = node.exceptions.length
 
-        if node.statements
-          stmts_val = visit(node.statements)
-        else
-          stmts_val = on_stmts_add(on_stmts_new, on_void_stmt)
-        end
+            node.exceptions.each_with_index.inject(on_args_new) do |mrhs, (exception, index)|
+              arg = visit(exception)
+              bounds(exception.location)
 
-        if node.reference
-          raise NoMethodError, __method__ unless node.reference.is_a?(LocalVariableTargetNode)
-          bounds(node.reference.location)
-          ref_val = on_var_field(on_ident(node.reference.name.to_s))
-        else
-          ref_val = nil
-        end
+              if index == length - 1
+                on_mrhs_add(on_mrhs_new_from_args(mrhs), arg)
+              else
+                on_args_add(mrhs, arg)
+              end
+            end
+          end
 
-        # No exception(s)
-        if !node.exceptions || node.exceptions.empty?
-          return on_rescue(nil, ref_val, stmts_val, consequent_val)
-        end
+        reference = visit(node.reference)
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
 
-        exc_vals = node.exceptions.map { |exc| visit(exc) }
+        consequent = visit(node.consequent)
 
-        if node.exceptions.length == 1
-          return on_rescue(exc_vals, ref_val, stmts_val, consequent_val)
-        end
-
-        inner_vals = exc_vals[0..-2].inject(on_args_new) do |output, exc_val|
-          on_args_add(output, exc_val)
-        end
-        exc_vals = on_mrhs_add(on_mrhs_new_from_args(inner_vals), exc_vals[-1])
-
-        on_rescue(exc_vals, ref_val, stmts_val, consequent_val)
+        bounds(node.location)
+        on_rescue(exceptions, reference, statements, consequent)
       end
 
       # def foo(*bar); end
@@ -2060,7 +2094,7 @@ module Prism
       # def foo(*); bar(*); end
       #                 ^
       def visit_splat_node(node)
-        raise NoMethodError, __method__
+        visit(node.expression)
       end
 
       # A list of statements.
@@ -2092,11 +2126,40 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        bounds(node.arguments.location)
-        arguments = on_args_add_block(visit_array_node_elements(node.arguments.arguments), node.block.nil? ? false : visit(node.block))
+        arguments = node.arguments&.arguments || []
+        block = node.block
 
-        bounds(node.location)
-        on_super(arguments)
+        if node.block.is_a?(BlockArgumentNode)
+          arguments << block
+          block = nil
+        end
+
+        arguments =
+          if arguments.any?
+            args = visit_arguments(arguments)
+
+            if node.block.is_a?(BlockArgumentNode)
+              args
+            else
+              bounds(arguments.first.location)
+              on_args_add_block(args, false)
+            end
+          end
+
+        if !node.lparen_loc.nil?
+          bounds(node.lparen_loc)
+          arguments = on_arg_paren(arguments)
+        end
+
+        if block.nil?
+          bounds(node.location)
+          on_super(arguments)
+        else
+          block = visit(block)
+
+          bounds(node.location)
+          on_method_add_block(on_super(arguments), block)
+        end
       end
 
       # :foo
@@ -2199,7 +2262,7 @@ module Prism
         # This is a special case where we're not going to call on_when directly
         # because we don't have access to the consequent. Instead, we'll return
         # the component parts and let the parent node handle it.
-        conditions = visit_array_node_elements(node.conditions)
+        conditions = visit_arguments(node.conditions)
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -2320,7 +2383,7 @@ module Prism
             args = if node.arguments.nil?
               on_args_new
             else
-              on_args_add_block(visit_array_node_elements(node.arguments.arguments))
+              on_args_add_block(visit_arguments(node.arguments.arguments))
             end
             method_args_val = on_method_add_arg(on_fcall(ident_val), args)
             return on_method_add_block(method_args_val, block_val)
@@ -2328,7 +2391,7 @@ module Prism
             if node.arguments.nil?
               return on_command(ident_val, nil)
             else
-              args = on_args_add_block(visit_array_node_elements(node.arguments.arguments), false)
+              args = on_args_add_block(visit_arguments(node.arguments.arguments), false)
               return on_command(ident_val, args)
             end
           end
