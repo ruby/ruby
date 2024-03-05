@@ -394,11 +394,6 @@ module Prism
       seattlerb/case_in_multiple.txt
       seattlerb/case_in_or.txt
       seattlerb/class_comments.txt
-      seattlerb/const_2_op_asgn_or2.txt
-      seattlerb/const_3_op_asgn_or.txt
-      seattlerb/const_op_asgn_and1.txt
-      seattlerb/const_op_asgn_and2.txt
-      seattlerb/const_op_asgn_or.txt
       seattlerb/defn_arg_forward_args.txt
       seattlerb/defn_args_forward_args.txt
       seattlerb/defn_endless_command.txt
@@ -497,7 +492,6 @@ module Prism
       seattlerb/op_asgn_command_call.txt
       seattlerb/op_asgn_dot_ident_command_call.txt
       seattlerb/op_asgn_index_command_call.txt
-      seattlerb/op_asgn_primary_colon_const_command_call.txt
       seattlerb/op_asgn_primary_colon_identifier1.txt
       seattlerb/op_asgn_primary_colon_identifier_command_call.txt
       seattlerb/op_asgn_val_dot_ident_command_call.txt
@@ -670,12 +664,10 @@ module Prism
       whitequark/bug_while_not_parens_do.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
-      whitequark/casgn_toplevel.txt
       whitequark/character.txt
       whitequark/class_definition_in_while_cond.txt
       whitequark/cond_begin_masgn.txt
       whitequark/cond_match_current_line.txt
-      whitequark/const_op_asgn.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt

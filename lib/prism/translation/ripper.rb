@@ -738,35 +738,72 @@ module Prism
       # Foo::Foo, Bar::Bar = 1
       # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
-        parent = visit(node.target.parent)
-
-        bounds(node.target.child.location)
-        child = on_const(node.target.child.name.to_s)
-
-        bounds(node.target.location)
-        target = on_const_path_field(parent, child)
+        target = visit_constant_path_write_node_target(node.target)
         value = visit(node.value)
 
         bounds(node.location)
         on_assign(target, value)
       end
 
+      # Visit a constant path that is part of a write node.
+      private def visit_constant_path_write_node_target(node)
+        if node.parent.nil?
+          bounds(node.child.location)
+          child = on_const(node.child.name.to_s)
+
+          bounds(node.location)
+          on_top_const_field(child)
+        else
+          parent = visit(node.parent)
+
+          bounds(node.child.location)
+          child = on_const(node.child.name.to_s)
+
+          bounds(node.location)
+          on_const_path_field(parent, child)
+        end
+      end
+
       # Foo::Bar += baz
       # ^^^^^^^^^^^^^^^
       def visit_constant_path_operator_write_node(node)
-        raise NoMethodError, __method__
+        target = visit_constant_path_write_node_target(node.target)
+        value = visit(node.value)
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo::Bar &&= baz
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_and_write_node(node)
-        raise NoMethodError, __method__
+        target = visit_constant_path_write_node_target(node.target)
+        value = visit(node.value)
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo::Bar ||= baz
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_or_write_node(node)
-        raise NoMethodError, __method__
+        target = visit_constant_path_write_node_target(node.target)
+        value = visit(node.value)
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # Foo::Bar, = baz
@@ -925,7 +962,8 @@ module Prism
       # def foo(...); end
       #         ^^^
       def visit_forwarding_parameter_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_args_forward
       end
 
       # super
@@ -1522,7 +1560,7 @@ module Prism
         posts = visit_all(node.posts) if node.posts.any?
         keywords = visit_all(node.keywords) if node.keywords.any?
         keyword_rest = visit(node.keyword_rest)
-        block = visit(node.block)
+        block = node.keyword_rest.is_a?(ForwardingParameterNode) ? :& : visit(node.block)
 
         bounds(node.location)
         on_params(requireds, optionals, rest, posts, keywords, keyword_rest, block)
