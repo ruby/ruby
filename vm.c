@@ -1373,6 +1373,7 @@ rb_proc_ractor_make_shareable(VALUE self)
     }
 
     FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+    rb_obj_freeze(self);
     return self;
 }
 
