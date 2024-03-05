@@ -200,6 +200,10 @@ module Test
         opts.on "--test-order=#{orders.join('|')}", orders do |a|
           options[:test_order] = a
         end
+
+        opts.on "--fail-fast", "If any test fails, exit without running any further tests." do
+          options[:fail_fast] = true
+        end
       end
 
       def non_options(files, options)
@@ -1736,7 +1740,9 @@ module Test
           trace = true
         end
 
-        assertions = all_test_methods.map { |method|
+        assertions = []
+
+        all_test_methods.each { |method|
 
           inst = suite.new method
           _start_method(inst)
@@ -1763,7 +1769,10 @@ module Test
 
           _end_method(inst)
 
-          inst._assertions
+          assertions << inst._assertions
+          if result=='F' && options[:fail_fast]
+            break
+          end
         }
         return assertions.size, assertions.inject(0) { |sum, n| sum + n }
       end
