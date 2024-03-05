@@ -12,7 +12,6 @@ module Prism
 
     skips = %w[
       arrays.txt
-      begin_ensure.txt
       begin_rescue.txt
       blocks.txt
       case.txt
@@ -48,7 +47,6 @@ module Prism
       rescue.txt
       return.txt
       seattlerb/TestRubyParserShared.txt
-      seattlerb/and_multi.txt
       seattlerb/array_lits_trailing_calls.txt
       seattlerb/attr_asgn_colon_id.txt
       seattlerb/attrasgn_primary_dot_constant.txt
@@ -56,9 +54,6 @@ module Prism
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
       seattlerb/block_break.txt
       seattlerb/block_call_dot_op2_brace_block.txt
-      seattlerb/block_call_dot_op2_cmd_args_do_block.txt
-      seattlerb/block_call_operation_colon.txt
-      seattlerb/block_call_operation_dot.txt
       seattlerb/block_call_paren_call_block_call.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
@@ -79,19 +74,16 @@ module Prism
       seattlerb/bug_comma.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
-      seattlerb/bug_not_parens.txt
       seattlerb/call_args_assoc_quoted.txt
       seattlerb/call_args_assoc_trailing_comma.txt
       seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/call_assoc_new_if_multiline.txt
       seattlerb/call_assoc_trailing_comma.txt
-      seattlerb/call_bang_command_call.txt
       seattlerb/call_block_arg_named.txt
       seattlerb/call_colon2.txt
       seattlerb/call_colon_parens.txt
       seattlerb/call_dot_parens.txt
-      seattlerb/call_not.txt
       seattlerb/call_stabby_do_end_with_block.txt
       seattlerb/call_stabby_with_braces_block.txt
       seattlerb/call_trailing_comma.txt
@@ -114,7 +106,6 @@ module Prism
       seattlerb/defs_oneliner.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/defs_oneliner_rescue.txt
-      seattlerb/difficult1_line_numbers.txt
       seattlerb/difficult2_.txt
       seattlerb/difficult3_.txt
       seattlerb/difficult3_4.txt
@@ -151,7 +142,6 @@ module Prism
       seattlerb/interpolated_symbol_array_line_breaks.txt
       seattlerb/interpolated_word_array_line_breaks.txt
       seattlerb/lambda_do_vs_brace.txt
-      seattlerb/lasgn_command.txt
       seattlerb/lasgn_middle_splat.txt
       seattlerb/magic_encoding_comment.txt
       seattlerb/masgn_anon_splat_arg.txt
@@ -159,7 +149,6 @@ module Prism
       seattlerb/masgn_arg_splat_arg.txt
       seattlerb/masgn_colon2.txt
       seattlerb/masgn_colon3.txt
-      seattlerb/masgn_command_call.txt
       seattlerb/masgn_double_paren.txt
       seattlerb/masgn_lhs_splat.txt
       seattlerb/masgn_paren.txt
@@ -174,13 +163,11 @@ module Prism
       seattlerb/mlhs_back_splat.txt
       seattlerb/mlhs_front_anonsplat.txt
       seattlerb/mlhs_front_splat.txt
-      seattlerb/mlhs_keyword.txt
       seattlerb/mlhs_mid_anonsplat.txt
       seattlerb/mlhs_mid_splat.txt
       seattlerb/module_comments.txt
       seattlerb/non_interpolated_symbol_array_line_breaks.txt
       seattlerb/non_interpolated_word_array_line_breaks.txt
-      seattlerb/op_asgn_command_call.txt
       seattlerb/op_asgn_primary_colon_identifier1.txt
       seattlerb/op_asgn_primary_colon_identifier_command_call.txt
       seattlerb/parse_if_not_canonical.txt
@@ -190,7 +177,6 @@ module Prism
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
       seattlerb/parse_line_heredoc_hardnewline.txt
-      seattlerb/parse_line_iter_call_no_parens.txt
       seattlerb/parse_line_multiline_str_literal_n.txt
       seattlerb/parse_line_return.txt
       seattlerb/parse_line_str_with_newline_escape.txt
@@ -200,10 +186,6 @@ module Prism
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_058_2.txt
       seattlerb/parse_pattern_076.txt
-      seattlerb/parse_until_not_canonical.txt
-      seattlerb/parse_until_not_noncanonical.txt
-      seattlerb/parse_while_not_canonical.txt
-      seattlerb/parse_while_not_noncanonical.txt
       seattlerb/pctW_lineno.txt
       seattlerb/pct_nl.txt
       seattlerb/pct_w_heredoc_interp_nested.txt
@@ -230,8 +212,6 @@ module Prism
       seattlerb/safe_attrasgn.txt
       seattlerb/safe_attrasgn_constant.txt
       seattlerb/safe_call_dot_parens.txt
-      seattlerb/safe_call_operator.txt
-      seattlerb/safe_calls.txt
       seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_arg_no_paren.txt
       seattlerb/stabby_block_iter_call.txt
@@ -288,7 +268,6 @@ module Prism
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/kwbegin.txt
       unparser/corpus/semantic/literal.txt
-      unparser/corpus/semantic/send.txt
       unparser/corpus/semantic/while.txt
       until.txt
       variables.txt
@@ -316,12 +295,9 @@ module Prism
       whitequark/asgn_mrhs.txt
       whitequark/break_block.txt
       whitequark/bug_435.txt
-      whitequark/bug_447.txt
       whitequark/bug_452.txt
-      whitequark/bug_466.txt
       whitequark/bug_480.txt
       whitequark/bug_ascii_8bit_in_literal.txt
-      whitequark/bug_cmd_string_lookahead.txt
       whitequark/bug_cmdarg.txt
       whitequark/bug_do_block_in_cmdarg.txt
       whitequark/bug_do_block_in_hash_brace.txt
@@ -368,16 +344,11 @@ module Prism
       whitequark/method_definition_in_while_cond.txt
       whitequark/newline_in_hash_argument.txt
       whitequark/next_block.txt
-      whitequark/not.txt
-      whitequark/not_cmd.txt
       whitequark/numbered_args_after_27.txt
       whitequark/numparam_outside_block.txt
       whitequark/op_asgn.txt
       whitequark/op_asgn_cmd.txt
-      whitequark/parser_bug_272.txt
       whitequark/parser_bug_507.txt
-      whitequark/parser_bug_525.txt
-      whitequark/parser_bug_604.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
@@ -394,7 +365,6 @@ module Prism
       whitequark/ruby_bug_11380.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt
-      whitequark/ruby_bug_11873_b.txt
       whitequark/ruby_bug_11989.txt
       whitequark/ruby_bug_11990.txt
       whitequark/ruby_bug_12073.txt

@@ -469,44 +469,22 @@ module Prism
       # foo.bar() {}
       # ^^^^^^^^^^^^
       def visit_call_node(node)
-        case node.name
-        when :[]
-          if node.opening == "["
+        if node.call_operator_loc.nil?
+          case node.name
+          when :[]
             receiver = visit(node.receiver)
-            arguments = node.arguments&.arguments || []
-            block = node.block
-
-            if block.is_a?(BlockArgumentNode)
-              arguments << block
-              block = nil
-            end
-
-            arguments =
-              if arguments.any?
-                args = visit_arguments(arguments)
-
-                if node.block.is_a?(BlockArgumentNode)
-                  args
-                else
-                  bounds(arguments.first.location)
-                  on_args_add_block(args, false)
-                end
-              end
+            arguments, block = visit_call_node_arguments(node.arguments, node.block)
 
             bounds(node.location)
             call = on_aref(receiver, arguments)
 
             if block.nil?
-              return call
+              call
             else
-              block = visit(block)
-
               bounds(node.location)
-              return on_method_add_block(call, block)
+              on_method_add_block(call, block)
             end
-          end
-        when :[]=
-          if node.opening == "["
+          when :[]=
             receiver = visit(node.receiver)
 
             *arguments, last_argument = node.arguments.arguments
@@ -529,34 +507,107 @@ module Prism
 
             value = visit(last_argument)
             bounds(last_argument.location)
-            return on_assign(call, value)
+            on_assign(call, value)
+          when :-@, :+@, :~@, :!@
+            receiver = visit(node.receiver)
+
+            bounds(node.location)
+            on_unary(node.message == "not" ? :not : node.name, receiver)
+          when :!=, :!~, :=~, :==, :===, :<=>, :>, :>=, :<, :<=, :&, :|, :^, :>>, :<<, :-, :+, :%, :/, :*, :**
+            receiver = visit(node.receiver)
+            value = visit(node.arguments.arguments.first)
+
+            bounds(node.location)
+            on_binary(receiver, node.name, value)
+          else
+            bounds(node.message_loc)
+            message = on_ident(node.message)
+
+            if node.variable_call?
+              on_vcall(message)
+            else
+              arguments, block = visit_call_node_arguments(node.arguments, node.block)
+              call =
+                if node.opening_loc.nil? && (arguments&.any? || block.nil?)
+                  bounds(node.location)
+                  on_command(message, arguments)
+                elsif !node.opening_loc.nil?
+                  bounds(node.location)
+                  on_method_add_arg(on_fcall(message), on_arg_paren(arguments))
+                else
+                  bounds(node.location)
+                  on_method_add_arg(on_fcall(message), on_args_new)
+                end
+
+              if block.nil?
+                call
+              else
+                bounds(node.block.location)
+                on_method_add_block(call, block)
+              end
+            end
+          end
+        else
+          receiver = visit(node.receiver)
+
+          bounds(node.call_operator_loc)
+          call_operator = visit_token(node.call_operator)
+
+          bounds(node.message_loc)
+          message = visit_token(node.message)
+
+          arguments, block = visit_call_node_arguments(node.arguments, node.block)
+          call =
+            if node.opening_loc.nil?
+              bounds(node.location)
+
+              if !arguments || arguments.empty?
+                on_call(receiver, call_operator, message)
+              else
+                on_command_call(receiver, call_operator, message, arguments)
+              end
+            else
+              bounds(node.opening_loc)
+              arguments = on_arg_paren(arguments)
+
+              bounds(node.location)
+              on_method_add_arg(on_call(receiver, call_operator, message), arguments)
+            end
+
+          if block.nil?
+            call
+          else
+            bounds(node.block.location)
+            on_method_add_block(call, block)
           end
         end
+      end
 
-        if node.variable_call?
-          bounds(node.message_loc)
-          return on_vcall(on_ident(node.message))
+      # Visit the arguments and block of a call node and return the arguments
+      # and block as they should be used.
+      private def visit_call_node_arguments(arguments_node, block_node)
+        arguments = arguments_node&.arguments || []
+        block = block_node
+
+        if block.is_a?(BlockArgumentNode)
+          arguments << block
+          block = nil
         end
 
-        if node.opening_loc.nil?
-          return visit_no_paren_call(node)
-        end
+        arguments =
+          if arguments.any?
+            args = visit_arguments(arguments)
 
-        # A non-operator method call with parentheses
-        args = on_arg_paren(node.arguments.nil? ? nil : visit(node.arguments))
+            if block.is_a?(BlockArgumentNode)
+              args
+            else
+              bounds(arguments.first.location)
+              on_args_add_block(args, false)
+            end
+          end
 
-        bounds(node.message_loc)
-        ident_val = on_ident(node.message)
-
-        bounds(node.location)
-        args_call_val = on_method_add_arg(on_fcall(ident_val), args)
-        if node.block
-          block_val = visit(node.block)
-
-          return on_method_add_block(args_call_val, block_val)
-        else
-          return args_call_val
-        end
+        block = visit(block) if !block.nil?
+        [arguments, block]
       end
 
       # foo.bar += baz
@@ -2424,70 +2475,6 @@ module Prism
           on_op(token)
         else
           on_ident(token)
-        end
-      end
-
-      # Generate Ripper events for a CallNode with no opening_loc
-      def visit_no_paren_call(node)
-        # No opening_loc can mean an operator. It can also mean a
-        # method call with no parentheses.
-        if node.message.match?(/^[[:punct:]]/)
-          left = visit(node.receiver)
-          if node.arguments&.arguments&.length == 1
-            right = visit(node.arguments.arguments.first)
-
-            return on_binary(left, node.name, right)
-          elsif !node.arguments || node.arguments.empty?
-            return on_unary(node.name, left)
-          else
-            raise NoMethodError, __method__, "More than two arguments for operator"
-          end
-        elsif node.call_operator_loc.nil?
-          # In Ripper a method call like "puts myvar" with no parentheses is a "command".
-          bounds(node.message_loc)
-          ident_val = on_ident(node.message)
-
-          # Unless it has a block, and then it's an fcall (e.g. "foo { bar }")
-          if node.block
-            block_val = visit(node.block)
-            # In these calls, even if node.arguments is nil, we still get an :args_new call.
-            args = if node.arguments.nil?
-              on_args_new
-            else
-              on_args_add_block(visit_arguments(node.arguments.arguments))
-            end
-            method_args_val = on_method_add_arg(on_fcall(ident_val), args)
-            return on_method_add_block(method_args_val, block_val)
-          else
-            if node.arguments.nil?
-              return on_command(ident_val, nil)
-            else
-              args = on_args_add_block(visit_arguments(node.arguments.arguments), false)
-              return on_command(ident_val, args)
-            end
-          end
-        else
-          operator = node.call_operator_loc.slice
-          if operator == "." || operator == "&."
-            left_val = visit(node.receiver)
-
-            bounds(node.call_operator_loc)
-            operator_val = operator == "." ? on_period(node.call_operator) : on_op(node.call_operator)
-
-            bounds(node.message_loc)
-            right_val = on_ident(node.message)
-
-            call_val = on_call(left_val, operator_val, right_val)
-
-            if node.block
-              block_val = visit(node.block)
-              return on_method_add_block(call_val, block_val)
-            else
-              return call_val
-            end
-          else
-            raise NoMethodError, __method__, "operator other than . or &. for call: #{operator.inspect}"
-          end
         end
       end
 
