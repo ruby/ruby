@@ -319,21 +319,31 @@ module Prism
       # begin end
       # ^^^^^^^^^
       def visit_begin_node(node)
-        rescue_val = node.rescue_clause ? visit(node.rescue_clause) : nil
-        ensure_val = node.ensure_clause ? visit(node.ensure_clause) : nil
+        clauses = visit_begin_node_clauses(node)
 
-        if node.statements
-          stmts_val = visit(node.statements)
-          if node_has_semicolon?(node)
-            # If there's a semicolon, we need to replace [:stmts_new] with
-            # [:stmts_add, [:stmts_new], [:void_stmt]].
-            stmts_val[1] = on_stmts_add(on_stmts_new, on_void_stmt)
+        bounds(node.location)
+        on_begin(clauses)
+      end
+
+      # Visit the clauses of a begin node to form an on_bodystmt call.
+      private def visit_begin_node_clauses(node)
+        statements =
+          if node.statements.nil?
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            body = node.statements.body
+            body.unshift(nil) if source.byteslice(node.begin_keyword_loc.end_offset...node.statements.body[0].location.start_offset).include?(";")
+
+            bounds(node.statements.location)
+            visit_statements_node_body(body)
           end
-        else
-          stmts_val = on_stmts_add(on_stmts_new, on_void_stmt)
-        end
 
-        on_begin(on_bodystmt(stmts_val, rescue_val, nil, ensure_val))
+        rescue_clause = visit(node.rescue_clause)
+        else_clause = visit(node.else_clause)
+        ensure_clause = visit(node.ensure_clause)
+
+        bounds(node.location)
+        on_bodystmt(statements, rescue_clause, else_clause, ensure_clause)
       end
 
       # foo(&bar)
@@ -528,7 +538,33 @@ module Prism
       # class Foo; end
       # ^^^^^^^^^^^^^^
       def visit_class_node(node)
-        raise NoMethodError, __method__
+        constant_path =
+          if node.constant_path.is_a?(ConstantReadNode)
+            bounds(node.constant_path.location)
+            on_const_ref(on_const(node.constant_path.name.to_s))
+          else
+            visit(node.constant_path)
+          end
+
+        superclass = visit(node.superclass)
+        bodystmt =
+          case node.body
+          when nil
+            bounds(node.location)
+            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          when StatementsNode
+            body = visit(node.body)
+
+            bounds(node.body.location)
+            on_bodystmt(body, nil, nil, nil)
+          when BeginNode
+            visit_begin_node_clauses(node.body)
+          else
+            raise
+          end
+
+        bounds(node.location)
+        on_class(constant_path, superclass, bodystmt)
       end
 
       # @@foo
@@ -672,13 +708,21 @@ module Prism
       # Foo::Bar
       # ^^^^^^^^
       def visit_constant_path_node(node)
-        parent = visit(node.parent)
+        if node.parent.nil?
+          bounds(node.child.location)
+          child = on_const(node.child.name.to_s)
 
-        bounds(node.child.location)
-        child = on_const(node.child.name.to_s)
+          bounds(node.location)
+          on_top_const_ref(child)
+        else
+          parent = visit(node.parent)
 
-        bounds(node.location)
-        on_const_path_ref(parent, child)
+          bounds(node.child.location)
+          child = on_const(node.child.name.to_s)
+
+          bounds(node.location)
+          on_const_path_ref(parent, child)
+        end
       end
 
       # Foo::Bar = 1
@@ -1619,8 +1663,16 @@ module Prism
       # A list of statements.
       def visit_statements_node(node)
         bounds(node.location)
-        node.body.inject(on_stmts_new) do |stmts, stmt|
-          on_stmts_add(stmts, visit(stmt))
+        visit_statements_node_body(node.body)
+      end
+
+      # Visit the list of statements of a statements node. We support nil
+      # statements in the list. This would normally not be allowed by the
+      # structure of the prism parse tree, but we manually add them here so that
+      # we can mirror Ripper's void stmt.
+      private def visit_statements_node_body(body)
+        body.inject(on_stmts_new) do |stmts, stmt|
+          on_stmts_add(stmts, stmt.nil? ? on_void_stmt : visit(stmt))
         end
       end
 
