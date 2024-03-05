@@ -969,18 +969,16 @@ module Prism
       # {}
       # ^^
       def visit_hash_node(node)
-        elements = visit_hash_node_elements(node.elements) unless node.elements.empty?
+        elements =
+          if node.elements.any?
+            args = visit_all(node.elements)
+
+            bounds(node.elements.first.location)
+            on_assoclist_from_args(args)
+          end
 
         bounds(node.location)
         on_hash(elements)
-      end
-
-      # Visit the elements of a hash node.
-      private def visit_hash_node_elements(elements)
-        args = visit_all(elements)
-
-        bounds(elements.first.location)
-        on_assoclist_from_args(args)
       end
 
       # foo => {}
@@ -1196,7 +1194,10 @@ module Prism
       # foo(bar: baz)
       #     ^^^^^^^^
       def visit_keyword_hash_node(node)
-        raise NoMethodError, __method__
+        elements = visit_all(node.elements)
+
+        bounds(node.location)
+        on_bare_assoc_hash(elements)
       end
 
       # def foo(**bar); end
@@ -1333,7 +1334,32 @@ module Prism
       # module Foo; end
       # ^^^^^^^^^^^^^^^
       def visit_module_node(node)
-        raise NoMethodError, __method__
+        constant_path =
+          if node.constant_path.is_a?(ConstantReadNode)
+            bounds(node.constant_path.location)
+            on_const_ref(on_const(node.constant_path.name.to_s))
+          else
+            visit(node.constant_path)
+          end
+
+        bodystmt =
+          case node.body
+          when nil
+            bounds(node.location)
+            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          when StatementsNode
+            body = visit(node.body)
+
+            bounds(node.body.location)
+            on_bodystmt(body, nil, nil, nil)
+          when BeginNode
+            visit_begin_node_clauses(node.body)
+          else
+            raise
+          end
+
+        bounds(node.location)
+        on_module(constant_path, bodystmt)
       end
 
       # foo, bar = baz
