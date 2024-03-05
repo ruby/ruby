@@ -1292,7 +1292,8 @@ module Prism
       # redo
       # ^^^^
       def visit_redo_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_redo
       end
 
       # /foo/
@@ -1373,7 +1374,8 @@ module Prism
       # retry
       # ^^^^^
       def visit_retry_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_retry
       end
 
       # return
@@ -1382,13 +1384,22 @@ module Prism
       # return 1
       # ^^^^^^^^
       def visit_return_node(node)
-        raise NoMethodError, __method__
+        if node.arguments.nil?
+          bounds(node.location)
+          on_return0
+        else
+          arguments = visit(node.arguments)
+
+          bounds(node.location)
+          on_return(on_args_add_block(arguments, false))
+        end
       end
 
       # self
       # ^^^^
       def visit_self_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_kw("self"))
       end
 
       # class << self; end
@@ -1400,19 +1411,22 @@ module Prism
       # __ENCODING__
       # ^^^^^^^^^^^^
       def visit_source_encoding_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_kw("__ENCODING__"))
       end
 
       # __FILE__
       # ^^^^^^^^
       def visit_source_file_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_kw("__FILE__"))
       end
 
       # __LINE__
       # ^^^^^^^^
       def visit_source_line_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_kw("__LINE__")) 
       end
 
       # foo(*bar)
@@ -1448,7 +1462,11 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        raise NoMethodError, __method__
+        bounds(node.arguments.location)
+        arguments = on_args_add_block(visit_array_node_elements(node.arguments.arguments), node.block.nil? ? false : visit(node.block))
+
+        bounds(node.location)
+        on_super(arguments)
       end
 
       # :foo
@@ -1467,7 +1485,27 @@ module Prism
       # undef foo
       # ^^^^^^^^^
       def visit_undef_node(node)
-        raise NoMethodError, __method__
+        names =
+          node.names.map do |name|
+            case name
+            when SymbolNode
+              bounds(name.value_loc)
+              token = visit_token(name.unescaped)
+
+              if name.opening_loc.nil?
+                on_symbol_literal(token)
+              else
+                on_symbol_literal(on_symbol(token))
+              end
+            when InterpolatedSymbolNode
+              visit(name)
+            else
+              raise
+            end
+          end
+
+        bounds(node.location)
+        on_undef(names)
       end
 
       # unless foo; bar end
@@ -1519,7 +1557,15 @@ module Prism
       # yield 1
       # ^^^^^^^
       def visit_yield_node(node)
-        raise NoMethodError, __method__
+        if node.arguments.nil?
+          bounds(node.location)
+          on_yield0
+        else
+          arguments = visit(node.arguments)
+
+          bounds(node.location)
+          on_yield(arguments)
+        end
       end
 
       private
@@ -1532,6 +1578,19 @@ module Prism
       ##########################################################################
       # Helpers
       ##########################################################################
+
+      # Visit the string content of a particular node. This method is used to
+      # split into the various token types.
+      def visit_token(token)
+        case token
+        when *RUBY_KEYWORDS
+          on_kw(token)
+        when /^[[:upper:]]/
+          on_const(token)
+        else
+          on_ident(token)
+        end
+      end
 
       # Generate Ripper events for a CallNode with no opening_loc
       def visit_no_paren_call(node)
