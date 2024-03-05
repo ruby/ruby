@@ -219,7 +219,11 @@ module Prism
       # foo => bar | baz
       #        ^^^^^^^^^
       def visit_alternation_pattern_node(node)
-        raise NoMethodError, __method__
+        left = visit(node.left)
+        right = visit(node.right)
+
+        bounds(node.location)
+        on_binary(left, :|, right)
       end
 
       # a and b
@@ -265,7 +269,18 @@ module Prism
       # { a: 1 }
       #   ^^^^
       def visit_assoc_node(node)
-        raise NoMethodError, __method__
+        key =
+          if node.key.is_a?(SymbolNode) && node.operator_loc.nil?
+            bounds(node.key.location)
+            on_label(node.key.slice)
+          else
+            visit(node.key)
+          end
+
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assoc_new(key, value)
       end
 
       # def foo(**); bar(**); end
@@ -274,7 +289,10 @@ module Prism
       # { **foo }
       #   ^^^^^
       def visit_assoc_splat_node(node)
-        raise NoMethodError, __method__
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assoc_splat(value)
       end
 
       # $+
@@ -883,7 +901,18 @@ module Prism
       # {}
       # ^^
       def visit_hash_node(node)
-        raise NoMethodError, __method__
+        elements = visit_hash_node_elements(node.elements) unless node.elements.empty?
+
+        bounds(node.location)
+        on_hash(elements)
+      end
+
+      # Visit the elements of a hash node.
+      private def visit_hash_node_elements(elements)
+        args = visit_all(elements)
+
+        bounds(elements.first.location)
+        on_assoclist_from_args(args)
       end
 
       # foo => {}
@@ -913,7 +942,6 @@ module Prism
       # { foo: }
       #   ^^^^
       def visit_implicit_node(node)
-        raise NoMethodError, __method__
       end
 
       # foo { |bar,| }
@@ -1078,6 +1106,11 @@ module Prism
         end
       end
 
+      # -> { it }
+      # ^^^^^^^^^
+      def visit_it_parameters_node(node)
+      end
+
       # foo(bar: baz)
       #     ^^^^^^^^
       def visit_keyword_hash_node(node)
@@ -1111,14 +1144,19 @@ module Prism
       # ^^^
       def visit_local_variable_read_node(node)
         bounds(node.location)
-        on_var_ref(on_ident(node.name.to_s))
+
+        if node.name == :"0it"
+          on_vcall(on_ident(node.slice))
+        else
+          on_var_ref(on_ident(node.slice))
+        end
       end
 
       # foo = 1
       # ^^^^^^^
       def visit_local_variable_write_node(node)
         bounds(node.name_loc)
-        target = on_var_field(on_ident(node.name.to_s))
+        target = on_var_field(on_ident(node.name_loc.slice))
         value = visit(node.value)
 
         bounds(node.location)
@@ -1129,7 +1167,7 @@ module Prism
       # ^^^^^^^^^^
       def visit_local_variable_operator_write_node(node)
         bounds(node.name_loc)
-        target = on_var_field(on_ident(node.name.to_s))
+        target = on_var_field(on_ident(node.name_loc.slice))
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
@@ -1143,7 +1181,7 @@ module Prism
       # ^^^^^^^^^^^
       def visit_local_variable_and_write_node(node)
         bounds(node.name_loc)
-        target = on_var_field(on_ident(node.name.to_s))
+        target = on_var_field(on_ident(node.name_loc.slice))
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
@@ -1157,7 +1195,7 @@ module Prism
       # ^^^^^^^^^^^
       def visit_local_variable_or_write_node(node)
         bounds(node.name_loc)
-        target = on_var_field(on_ident(node.name.to_s))
+        target = on_var_field(on_ident(node.name_loc.slice))
 
         bounds(node.operator_loc)
         operator = on_op("||=")
@@ -1252,7 +1290,6 @@ module Prism
       # -> { _1 + _2 }
       # ^^^^^^^^^^^^^^
       def visit_numbered_parameters_node(node)
-        raise NoMethodError, __method__
       end
 
       # $1
@@ -1327,13 +1364,16 @@ module Prism
       # foo => ^(bar)
       #        ^^^^^^
       def visit_pinned_expression_node(node)
-        raise NoMethodError, __method__
+        expression = visit(node.expression)
+
+        bounds(node.location)
+        on_begin(expression)
       end
 
       # foo = 1 and bar => ^foo
       #                    ^^^^
       def visit_pinned_variable_node(node)
-        raise NoMethodError, __method__
+        visit(node.variable)
       end
 
       # END {}
