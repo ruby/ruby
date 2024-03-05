@@ -173,228 +173,105 @@ module Prism
       # Visitor methods
       ##########################################################################
 
-      # Visit an ArrayNode node.
+      # alias foo bar
+      # ^^^^^^^^^^^^^
+      def visit_alias_method_node(node)
+        new_name = visit_alias_method_node_value(node.new_name)
+        old_name = visit_alias_method_node_value(node.old_name)
+
+        bounds(node.location)
+        on_alias(new_name, old_name)
+      end
+
+      # Visit one side of an alias method node.
+      private def visit_alias_method_node_value(node)
+        if node.is_a?(SymbolNode) && node.opening_loc.nil?
+          visit_symbol_literal_node(node, no_symbol_wrapper: true)
+        else
+          visit(node)
+        end
+      end
+
+      # alias $foo $bar
+      # ^^^^^^^^^^^^^^^
+      def visit_alias_global_variable_node(node)
+        new_name = visit(node.new_name)
+        old_name = visit(node.old_name)
+
+        bounds(node.location)
+        on_var_alias(new_name, old_name)
+      end
+
+      # foo => bar | baz
+      #        ^^^^^^^^^
+      def visit_alternation_pattern_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # a and b
+      # ^^^^^^^
+      def visit_and_node(node)
+        left = visit(node.left)
+        right = visit(node.right)
+
+        bounds(node.location)
+        on_binary(left, node.operator.to_sym, right)
+      end
+
+      # []
+      # ^^
       def visit_array_node(node)
-        elements = visit_elements(node.elements) unless node.elements.empty?
+        elements = visit_array_node_elements(node.elements) unless node.elements.empty?
+
         bounds(node.location)
         on_array(elements)
       end
 
-      # Visit a CallNode node.
-      # Ripper distinguishes between many different method-call
-      # nodes -- unary and binary operators, "command" calls with
-      # no parentheses, and call/fcall/vcall.
-      def visit_call_node(node)
-        return visit_aref_node(node) if node.name == :[]
-        return visit_aref_field_node(node) if node.name == :[]=
-
-        if node.variable_call?
-          raise NotImplementedError unless node.receiver.nil?
-
-          bounds(node.message_loc)
-          return on_vcall(on_ident(node.message))
+      # Visit a list of elements, like the elements of an array or arguments.
+      private def visit_array_node_elements(elements)
+        bounds(elements.first.location)
+        elements.inject(on_args_new) do |args, element|
+          on_args_add(args, visit(element))
         end
+      end
 
-        if node.opening_loc.nil?
-          return visit_no_paren_call(node)
-        end
+      # foo => [bar]
+      #        ^^^^^
+      def visit_array_pattern_node(node)
+        raise NoMethodError, __method__
+      end
 
-        # A non-operator method call with parentheses
-
-        args = if node.arguments.nil?
-          on_arg_paren(nil)
-        else
-          on_arg_paren(on_args_add_block(visit_elements(node.arguments.arguments), false))
-        end
-
-        bounds(node.message_loc)
-        ident_val = on_ident(node.message)
-
+      # foo(bar)
+      #     ^^^
+      def visit_arguments_node(node)
         bounds(node.location)
-        args_call_val = on_method_add_arg(on_fcall(ident_val), args)
-        if node.block
-          block_val = visit(node.block)
-
-          return on_method_add_block(args_call_val, block_val)
-        else
-          return args_call_val
-        end
+        on_args_add_block(visit_array_node_elements(node.arguments), false)
       end
 
-      # Visit a LocalVariableWriteNode.
-      def visit_local_variable_write_node(node)
-        bounds(node.name_loc)
-        ident_val = on_ident(node.name.to_s)
-        on_assign(on_var_field(ident_val), visit(node.value))
+      # { a: 1 }
+      #   ^^^^
+      def visit_assoc_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a LocalVariableAndWriteNode.
-      def visit_local_variable_and_write_node(node)
-        visit_binary_op_assign(node)
+      # def foo(**); bar(**); end
+      #                  ^^
+      #
+      # { **foo }
+      #   ^^^^^
+      def visit_assoc_splat_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a LocalVariableOrWriteNode.
-      def visit_local_variable_or_write_node(node)
-        visit_binary_op_assign(node)
-      end
-
-      # Visit nodes for +=, *=, -=, etc., called LocalVariableOperatorWriteNodes.
-      def visit_local_variable_operator_write_node(node)
-        visit_binary_op_assign(node, operator: "#{node.operator}=")
-      end
-
-      # Visit a LocalVariableReadNode.
-      def visit_local_variable_read_node(node)
-        bounds(node.location)
-        ident_val = on_ident(node.slice)
-
-        on_var_ref(ident_val)
-      end
-
-      # Visit a BlockNode.
-      def visit_block_node(node)
-        params_val = node.parameters.nil? ? nil : visit(node.parameters)
-
-        # If the body is empty, we use a void statement. If there is
-        # a semicolon after the opening delimiter, we append a void
-        # statement, unless the body is also empty. So we should never
-        # get a double void statement.
-
-        body_val = if node.body.nil?
-          on_stmts_add(on_stmts_new, on_void_stmt)
-        elsif node_has_semicolon?(node)
-          v = visit(node.body)
-          raise(NotImplementedError, "Unexpected statement structure #{v.inspect}") if v[0] != :stmts_add
-          v[1] = on_stmts_add(on_stmts_new, on_void_stmt)
-          v
-        else
-          visit(node.body)
-        end
-
-        if node.opening == "{"
-          on_brace_block(params_val, body_val)
-        elsif node.opening == "do"
-          on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
-        else
-          raise NotImplementedError, "Unexpected Block opening character!"
-        end
-      end
-
-      # Visit a BlockParametersNode.
-      def visit_block_parameters_node(node)
-        on_block_var(visit(node.parameters), no_block_value)
-      end
-
-      # Visit a ParametersNode.
-      # This will require expanding as we support more kinds of parameters.
-      def visit_parameters_node(node)
-        #on_params(required, optional, nil, nil, nil, nil, nil)
-        on_params(visit_all(node.requireds), nil, nil, nil, nil, nil, nil)
-      end
-
-      # Visit a RequiredParameterNode.
-      def visit_required_parameter_node(node)
-        bounds(node.location)
-        on_ident(node.name.to_s)
-      end
-
-      # Visit a BreakNode.
-      def visit_break_node(node)
-        return on_break(on_args_new) if node.arguments.nil?
-
-        args_val = visit_elements(node.arguments.arguments)
-        on_break(on_args_add_block(args_val, false))
-      end
-
-      # Visit an AliasMethodNode.
-      def visit_alias_method_node(node)
-        # For both the old and new name, if there is a colon in the symbol
-        # name (e.g. 'alias :foo :bar') then we do *not* emit the [:symbol] wrapper around
-        # the lexer token (e.g. :@ident) inside [:symbol_literal]. But if there
-        # is no colon (e.g. 'alias foo bar') then we *do* still emit the [:symbol] wrapper.
-
-        if node.new_name.is_a?(SymbolNode) && !node.new_name.opening
-          new_name_val = visit_symbol_literal_node(node.new_name, no_symbol_wrapper: true)
-        else
-          new_name_val = visit(node.new_name)
-        end
-        if node.old_name.is_a?(SymbolNode) && !node.old_name.opening
-          old_name_val = visit_symbol_literal_node(node.old_name, no_symbol_wrapper: true)
-        else
-          old_name_val = visit(node.old_name)
-        end
-
-        on_alias(new_name_val, old_name_val)
-      end
-
-      # Visit an AliasGlobalVariableNode.
-      def visit_alias_global_variable_node(node)
-        on_var_alias(visit(node.new_name), visit(node.old_name))
-      end
-
-      # Visit a GlobalVariableReadNode.
-      def visit_global_variable_read_node(node)
-        bounds(node.location)
-        on_gvar(node.name.to_s)
-      end
-
-      # Visit a BackReferenceReadNode.
+      # $+
+      # ^^
       def visit_back_reference_read_node(node)
         bounds(node.location)
-        on_backref(node.name.to_s)
+        on_backref(node.slice)
       end
 
-      # Visit an AndNode.
-      def visit_and_node(node)
-        visit_binary_operator(node)
-      end
-
-      # Visit an OrNode.
-      def visit_or_node(node)
-        visit_binary_operator(node)
-      end
-
-      # Visit a TrueNode.
-      def visit_true_node(node)
-        bounds(node.location)
-        on_var_ref(on_kw("true"))
-      end
-
-      # Visit a FalseNode.
-      def visit_false_node(node)
-        bounds(node.location)
-        on_var_ref(on_kw("false"))
-      end
-
-      # Visit a FloatNode node.
-      def visit_float_node(node)
-        visit_number(node) { |text| on_float(text) }
-      end
-
-      # Visit a ImaginaryNode node.
-      def visit_imaginary_node(node)
-        visit_number(node) { |text| on_imaginary(text) }
-      end
-
-      # Visit an IntegerNode node.
-      def visit_integer_node(node)
-        visit_number(node) { |text| on_int(text) }
-      end
-
-      # Visit a ParenthesesNode node.
-      def visit_parentheses_node(node)
-        body =
-          if node.body.nil?
-            on_stmts_add(on_stmts_new, on_void_stmt)
-          else
-            visit(node.body)
-          end
-
-        bounds(node.location)
-        on_paren(body)
-      end
-
-      # Visit a BeginNode node.
+      # begin end
+      # ^^^^^^^^^
       def visit_begin_node(node)
         rescue_val = node.rescue_clause ? visit(node.rescue_clause) : nil
         ensure_val = node.ensure_clause ? visit(node.ensure_clause) : nil
@@ -411,6 +288,330 @@ module Prism
         end
 
         on_begin(on_bodystmt(stmts_val, rescue_val, nil, ensure_val))
+      end
+
+      # foo(&bar)
+      #     ^^^^
+      def visit_block_argument_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo { |; bar| }
+      #          ^^^
+      def visit_block_local_variable_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Visit a BlockNode.
+      def visit_block_node(node)
+        params_val = node.parameters.nil? ? nil : visit(node.parameters)
+
+        # If the body is empty, we use a void statement. If there is
+        # a semicolon after the opening delimiter, we append a void
+        # statement, unless the body is also empty. So we should never
+        # get a double void statement.
+
+        body_val = if node.body.nil?
+          on_stmts_add(on_stmts_new, on_void_stmt)
+        elsif node_has_semicolon?(node)
+          v = visit(node.body)
+          raise(NoMethodError, __method__, "Unexpected statement structure #{v.inspect}") if v[0] != :stmts_add
+          v[1] = on_stmts_add(on_stmts_new, on_void_stmt)
+          v
+        else
+          visit(node.body)
+        end
+
+        if node.opening == "{"
+          on_brace_block(params_val, body_val)
+        elsif node.opening == "do"
+          on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
+        else
+          raise NoMethodError, __method__, "Unexpected Block opening character!"
+        end
+      end
+
+      # def foo(&bar); end
+      #         ^^^^
+      def visit_block_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # A block's parameters.
+      def visit_block_parameters_node(node)
+        on_block_var(visit(node.parameters), visit_block_parameters_node_empty)
+      end
+
+      if RUBY_ENGINE == "jruby"
+        # For JRuby, "no block" in an on_block_var is nil
+        private def visit_block_parameters_node_empty; nil; end
+      else
+        # For CRuby et al, "no block" in an on_block_var is false
+        private def visit_block_parameters_node_empty; false; end
+      end
+
+      # break
+      # ^^^^^
+      #
+      # break foo
+      # ^^^^^^^^^
+      def visit_break_node(node)
+        if node.arguments.nil?
+          bounds(node.location)
+          on_break(on_args_new)
+        else
+          arguments = visit_array_node_elements(node.arguments.arguments)
+
+          bounds(node.location)
+          on_break(on_args_add_block(arguments, false))
+        end
+      end
+
+      # foo
+      # ^^^
+      #
+      # foo.bar
+      # ^^^^^^^
+      #
+      # foo.bar() {}
+      # ^^^^^^^^^^^^
+      def visit_call_node(node)
+        return visit_aref_node(node) if node.name == :[]
+        return visit_aref_field_node(node) if node.name == :[]=
+
+        if node.variable_call?
+          raise NoMethodError, __method__ unless node.receiver.nil?
+
+          bounds(node.message_loc)
+          return on_vcall(on_ident(node.message))
+        end
+
+        if node.opening_loc.nil?
+          return visit_no_paren_call(node)
+        end
+
+        # A non-operator method call with parentheses
+        args = on_arg_paren(node.arguments.nil? ? nil : visit(node.arguments))
+
+        bounds(node.message_loc)
+        ident_val = on_ident(node.message)
+
+        bounds(node.location)
+        args_call_val = on_method_add_arg(on_fcall(ident_val), args)
+        if node.block
+          block_val = visit(node.block)
+
+          return on_method_add_block(args_call_val, block_val)
+        else
+          return args_call_val
+        end
+      end
+
+      # foo.bar += baz
+      # ^^^^^^^^^^^^^^^
+      def visit_call_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo.bar &&= baz
+      # ^^^^^^^^^^^^^^^
+      def visit_call_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo.bar ||= baz
+      # ^^^^^^^^^^^^^^^
+      def visit_call_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo.bar, = 1
+      # ^^^^^^^
+      def visit_call_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo => bar => baz
+      #        ^^^^^^^^^^
+      def visit_capture_pattern_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # case foo; when bar; end
+      # ^^^^^^^^^^^^^^^^^^^^^^^
+      def visit_case_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # case foo; in bar; end
+      # ^^^^^^^^^^^^^^^^^^^^^
+      def visit_case_match_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # class Foo; end
+      # ^^^^^^^^^^^^^^
+      def visit_class_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo
+      # ^^^^^
+      def visit_class_variable_read_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo = 1
+      # ^^^^^^^^^
+      #
+      # @@foo, @@bar = 1
+      # ^^^^^  ^^^^^
+      def visit_class_variable_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo += bar
+      # ^^^^^^^^^^^^
+      def visit_class_variable_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo &&= bar
+      # ^^^^^^^^^^^^^
+      def visit_class_variable_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo ||= bar
+      # ^^^^^^^^^^^^^
+      def visit_class_variable_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @@foo, = bar
+      # ^^^^^
+      def visit_class_variable_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo
+      # ^^^
+      def visit_constant_read_node(node)
+        bounds(node.location)
+        on_var_ref(on_const(node.name.to_s))
+      end
+
+      # Foo = 1
+      # ^^^^^^^
+      #
+      # Foo, Bar = 1
+      # ^^^  ^^^
+      def visit_constant_write_node(node)
+        bounds(node.name_loc)
+        target = on_var_field(on_const(node.name.to_s))
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
+      end
+
+      # Foo += bar
+      # ^^^^^^^^^^^
+      def visit_constant_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo &&= bar
+      # ^^^^^^^^^^^^
+      def visit_constant_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo ||= bar
+      # ^^^^^^^^^^^^
+      def visit_constant_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo, = bar
+      # ^^^
+      def visit_constant_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar
+      # ^^^^^^^^
+      def visit_constant_path_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar = 1
+      # ^^^^^^^^^^^^
+      #
+      # Foo::Foo, Bar::Bar = 1
+      # ^^^^^^^^  ^^^^^^^^
+      def visit_constant_path_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar += baz
+      # ^^^^^^^^^^^^^^^
+      def visit_constant_path_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar &&= baz
+      # ^^^^^^^^^^^^^^^^
+      def visit_constant_path_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar ||= baz
+      # ^^^^^^^^^^^^^^^^
+      def visit_constant_path_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Foo::Bar, = baz
+      # ^^^^^^^^
+      def visit_constant_path_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo; end
+      # ^^^^^^^^^^^^
+      #
+      # def self.foo; end
+      # ^^^^^^^^^^^^^^^^^
+      def visit_def_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # defined? a
+      # ^^^^^^^^^^
+      #
+      # defined?(a)
+      # ^^^^^^^^^^^
+      def visit_defined_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # if foo then bar else baz end
+      #                 ^^^^^^^^^^^^
+      def visit_else_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # "foo #{bar}"
+      #      ^^^^^^
+      def visit_embedded_statements_node(node)
+        visit(node.statements)
+      end
+
+      # "foo #@bar"
+      #      ^^^^^
+      def visit_embedded_variable_node(node)
+        raise NoMethodError, __method__
       end
 
       # Visit an EnsureNode node.
@@ -431,7 +632,565 @@ module Prism
         on_ensure(stmts_val)
       end
 
-      # Visit a RescueNode node.
+      # false
+      # ^^^^^
+      def visit_false_node(node)
+        bounds(node.location)
+        on_var_ref(on_kw("false"))
+      end
+
+      # foo => [*, bar, *]
+      #        ^^^^^^^^^^^
+      def visit_find_pattern_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # if foo .. bar; end
+      #    ^^^^^^^^^^
+      def visit_flip_flop_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # 1.0
+      # ^^^
+      def visit_float_node(node)
+        visit_number(node) { |text| on_float(text) }
+      end
+
+      # for foo in bar do end
+      # ^^^^^^^^^^^^^^^^^^^^^
+      def visit_for_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(...); bar(...); end
+      #                   ^^^
+      def visit_forwarding_arguments_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(...); end
+      #         ^^^
+      def visit_forwarding_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # super
+      # ^^^^^
+      #
+      # super {}
+      # ^^^^^^^^
+      def visit_forwarding_super_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $foo
+      # ^^^^
+      def visit_global_variable_read_node(node)
+        bounds(node.location)
+        on_gvar(node.name.to_s)
+      end
+
+      # $foo = 1
+      # ^^^^^^^^
+      #
+      # $foo, $bar = 1
+      # ^^^^  ^^^^
+      def visit_global_variable_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $foo += bar
+      # ^^^^^^^^^^^
+      def visit_global_variable_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $foo &&= bar
+      # ^^^^^^^^^^^^
+      def visit_global_variable_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $foo ||= bar
+      # ^^^^^^^^^^^^
+      def visit_global_variable_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $foo, = bar
+      # ^^^^
+      def visit_global_variable_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # {}
+      # ^^
+      def visit_hash_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo => {}
+      #        ^^
+      def visit_hash_pattern_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # if foo then bar end
+      # ^^^^^^^^^^^^^^^^^^^
+      #
+      # bar if foo
+      # ^^^^^^^^^^
+      #
+      # foo ? bar : baz
+      # ^^^^^^^^^^^^^^^
+      def visit_if_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # 1i
+      # ^^
+      def visit_imaginary_node(node)
+        visit_number(node) { |text| on_imaginary(text) }
+      end
+
+      # { foo: }
+      #   ^^^^
+      def visit_implicit_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo { |bar,| }
+      #           ^
+      def visit_implicit_rest_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # case foo; in bar; end
+      # ^^^^^^^^^^^^^^^^^^^^^
+      def visit_in_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo[bar] += baz
+      # ^^^^^^^^^^^^^^^
+      def visit_index_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo[bar] &&= baz
+      # ^^^^^^^^^^^^^^^^
+      def visit_index_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo[bar] ||= baz
+      # ^^^^^^^^^^^^^^^^
+      def visit_index_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo[bar], = 1
+      # ^^^^^^^^
+      def visit_index_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo
+      # ^^^^
+      def visit_instance_variable_read_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo = 1
+      # ^^^^^^^^
+      def visit_instance_variable_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo += bar
+      # ^^^^^^^^^^^
+      def visit_instance_variable_operator_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo &&= bar
+      # ^^^^^^^^^^^^
+      def visit_instance_variable_and_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo ||= bar
+      # ^^^^^^^^^^^^
+      def visit_instance_variable_or_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # @foo, = bar
+      # ^^^^
+      def visit_instance_variable_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # 1
+      # ^
+      def visit_integer_node(node)
+        visit_number(node) { |text| on_int(text) }
+      end
+
+      # if /foo #{bar}/ then end
+      #    ^^^^^^^^^^^^
+      def visit_interpolated_match_last_line_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # /foo #{bar}/
+      # ^^^^^^^^^^^^
+      def visit_interpolated_regular_expression_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # "foo #{bar}"
+      # ^^^^^^^^^^^^
+      def visit_interpolated_string_node(node)
+        contents = visit_string_contents(node.parts)
+
+        bounds(node.location)
+        on_string_literal(contents)
+      end
+
+      # :"foo #{bar}"
+      # ^^^^^^^^^^^^^
+      def visit_interpolated_symbol_node(node)
+        contents = visit_string_contents(node.parts)
+
+        bounds(node.location)
+        on_dyna_symbol(contents)
+      end
+
+      # `foo #{bar}`
+      # ^^^^^^^^^^^^
+      def visit_interpolated_x_string_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # Visit the contents of a string-like node.
+      private def visit_string_contents(parts)
+        parts.inject(on_string_content) do |content, part|
+          on_string_add(
+            content,
+            case part
+            when StringNode
+              bounds(part.content_loc)
+              on_tstring_content(part.content)
+            when EmbeddedStatementsNode
+              on_string_embexpr(visit(part))
+            else
+              raise
+            end
+          )
+        end
+      end
+
+      # foo(bar: baz)
+      #     ^^^^^^^^
+      def visit_keyword_hash_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(**bar); end
+      #         ^^^^^
+      #
+      # def foo(**); end
+      #         ^^
+      def visit_keyword_rest_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # -> {}
+      def visit_lambda_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo
+      # ^^^
+      def visit_local_variable_read_node(node)
+        bounds(node.location)
+        on_var_ref(on_ident(node.name.to_s))
+      end
+
+      # foo = 1
+      # ^^^^^^^
+      def visit_local_variable_write_node(node)
+        bounds(node.name_loc)
+        target = on_var_field(on_ident(node.name.to_s))
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
+      end
+
+      # foo += bar
+      # ^^^^^^^^^^
+      def visit_local_variable_operator_write_node(node)
+        bounds(node.name_loc)
+        target = on_var_field(on_ident(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
+      end
+
+      # foo &&= bar
+      # ^^^^^^^^^^^
+      def visit_local_variable_and_write_node(node)
+        bounds(node.name_loc)
+        target = on_var_field(on_ident(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
+      end
+
+      # foo ||= bar
+      # ^^^^^^^^^^^
+      def visit_local_variable_or_write_node(node)
+        bounds(node.name_loc)
+        target = on_var_field(on_ident(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
+      end
+
+      # foo, = bar
+      # ^^^
+      def visit_local_variable_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # if /foo/ then end
+      #    ^^^^^
+      def visit_match_last_line_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo in bar
+      # ^^^^^^^^^^
+      def visit_match_predicate_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo => bar
+      # ^^^^^^^^^^
+      def visit_match_required_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # /(?<foo>foo)/ =~ bar
+      # ^^^^^^^^^^^^^^^^^^^^
+      def visit_match_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # A node that is missing from the syntax tree. This is only used in the
+      # case of a syntax error.
+      def visit_missing_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # module Foo; end
+      # ^^^^^^^^^^^^^^^
+      def visit_module_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo, bar = baz
+      # ^^^^^^^^
+      def visit_multi_target_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo, bar = baz
+      # ^^^^^^^^^^^^^^
+      def visit_multi_write_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # next
+      # ^^^^
+      #
+      # next foo
+      # ^^^^^^^^
+      def visit_next_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # nil
+      # ^^^
+      def visit_nil_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(**nil); end
+      #         ^^^^^
+      def visit_no_keywords_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # -> { _1 + _2 }
+      # ^^^^^^^^^^^^^^
+      def visit_numbered_parameters_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # $1
+      # ^^
+      def visit_numbered_reference_read_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(bar: baz); end
+      #         ^^^^^^^^
+      def visit_optional_keyword_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(bar = 1); end
+      #         ^^^^^^^
+      def visit_optional_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # a or b
+      # ^^^^^^
+      def visit_or_node(node)
+        left = visit(node.left)
+        right = visit(node.right)
+
+        bounds(node.location)
+        on_binary(left, node.operator.to_sym, right)
+      end
+
+      # def foo(bar, *baz); end
+      #         ^^^^^^^^^
+      def visit_parameters_node(node)
+        requireds = visit_all(node.requireds)
+
+        on_params(requireds, nil, nil, nil, nil, nil, nil)
+      end
+
+      # ()
+      # ^^
+      #
+      # (1)
+      # ^^^
+      def visit_parentheses_node(node)
+        body =
+          if node.body.nil?
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.body)
+          end
+
+        bounds(node.location)
+        on_paren(body)
+      end
+
+      # foo => ^(bar)
+      #        ^^^^^^
+      def visit_pinned_expression_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # foo = 1 and bar => ^foo
+      #                    ^^^^
+      def visit_pinned_variable_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # END {}
+      # ^^^^^^
+      def visit_post_execution_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # BEGIN {}
+      # ^^^^^^^^
+      def visit_pre_execution_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # The top-level program node.
+      def visit_program_node(node)
+        statements = visit(node.statements)
+
+        bounds(node.location)
+        on_program(statements)
+      end
+
+      # 0..5
+      # ^^^^
+      def visit_range_node(node)
+        left = visit(node.left)
+        right = visit(node.right)
+
+        bounds(node.location)
+        if node.exclude_end?
+          on_dot3(left, right)
+        else
+          on_dot2(left, right)
+        end
+      end
+
+      # 1r
+      # ^^
+      def visit_rational_node(node)
+        visit_number(node) { |text| on_rational(text) }
+      end
+
+      # redo
+      # ^^^^
+      def visit_redo_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # /foo/
+      # ^^^^^
+      def visit_regular_expression_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(bar:); end
+      #         ^^^^
+      def visit_required_keyword_parameter_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # def foo(bar); end
+      #         ^^^
+      def visit_required_parameter_node(node)
+        bounds(node.location)
+        on_ident(node.name.to_s)
+      end
+
+      # foo rescue bar
+      # ^^^^^^^^^^^^^^
+      def visit_rescue_modifier_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # begin; rescue; end
+      #        ^^^^^^^
       def visit_rescue_node(node)
         consequent_val = nil
         if node.consequent
@@ -445,7 +1204,7 @@ module Prism
         end
 
         if node.reference
-          raise NotImplementedError unless node.reference.is_a?(LocalVariableTargetNode)
+          raise NoMethodError, __method__ unless node.reference.is_a?(LocalVariableTargetNode)
           bounds(node.reference.location)
           ref_val = on_var_field(on_ident(node.reference.name.to_s))
         else
@@ -471,85 +1230,165 @@ module Prism
         on_rescue(exc_vals, ref_val, stmts_val, consequent_val)
       end
 
-      # Visit a ProgramNode node.
-      def visit_program_node(node)
-        statements = visit(node.statements)
-        bounds(node.location)
-        on_program(statements)
+      # def foo(*bar); end
+      #         ^^^^
+      #
+      # def foo(*); end
+      #         ^
+      def visit_rest_parameter_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a RangeNode node.
-      def visit_range_node(node)
-        left = visit(node.left)
-        right = visit(node.right)
-
-        bounds(node.location)
-        if node.exclude_end?
-          on_dot3(left, right)
-        else
-          on_dot2(left, right)
-        end
+      # retry
+      # ^^^^^
+      def visit_retry_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a RationalNode node.
-      def visit_rational_node(node)
-        visit_number(node) { |text| on_rational(text) }
+      # return
+      # ^^^^^^
+      #
+      # return 1
+      # ^^^^^^^^
+      def visit_return_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a StringNode node.
-      def visit_string_node(node)
-        bounds(node.content_loc)
-        tstring_val = on_tstring_content(node.unescaped.to_s)
-        on_string_literal(on_string_add(on_string_content, tstring_val))
+      # self
+      # ^^^^
+      def visit_self_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit an XStringNode node.
-      def visit_x_string_node(node)
-        bounds(node.content_loc)
-        tstring_val = on_tstring_content(node.unescaped.to_s)
-        on_xstring_literal(on_xstring_add(on_xstring_new, tstring_val))
+      # class << self; end
+      # ^^^^^^^^^^^^^^^^^^
+      def visit_singleton_class_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit an InterpolatedStringNode node.
-      def visit_interpolated_string_node(node)
-        on_string_literal(visit_enumerated_node(node))
+      # __ENCODING__
+      # ^^^^^^^^^^^^
+      def visit_source_encoding_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a ConstantReadNode node.
-      def visit_constant_read_node(node)
-        bounds(node.location)
-        on_var_ref(on_const(node.name.to_s))
+      # __FILE__
+      # ^^^^^^^^
+      def visit_source_file_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a ConstantWriteNode node.
-      def visit_constant_write_node(node)
-        bounds(node.location)
-        const_val = on_var_field(on_const(node.name.to_s))
-
-        on_assign(const_val, visit(node.value))
+      # __LINE__
+      # ^^^^^^^^
+      def visit_source_line_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit an EmbeddedStatementsNode node.
-      def visit_embedded_statements_node(node)
-        visit(node.statements)
+      # foo(*bar)
+      #     ^^^^
+      #
+      # def foo((bar, *baz)); end
+      #               ^^^^
+      #
+      # def foo(*); bar(*); end
+      #                 ^
+      def visit_splat_node(node)
+        raise NoMethodError, __method__
       end
 
-      # Visit a SymbolNode node.
-      def visit_symbol_node(node)
-        visit_symbol_literal_node(node)
-      end
-
-      # Visit an InterpolatedSymbolNode node.
-      def visit_interpolated_symbol_node(node)
-        on_dyna_symbol(visit_enumerated_node(node))
-      end
-
-      # Visit a StatementsNode node.
+      # A list of statements.
       def visit_statements_node(node)
         bounds(node.location)
         node.body.inject(on_stmts_new) do |stmts, stmt|
           on_stmts_add(stmts, visit(stmt))
         end
+      end
+
+      # "foo"
+      # ^^^^^
+      def visit_string_node(node)
+        bounds(node.content_loc)
+        unescaped = on_tstring_content(node.unescaped)
+
+        bounds(node.location)
+        on_string_literal(on_string_add(on_string_content, unescaped))
+      end
+
+      # super(foo)
+      # ^^^^^^^^^^
+      def visit_super_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # :foo
+      # ^^^^
+      def visit_symbol_node(node)
+        visit_symbol_literal_node(node)
+      end
+
+      # true
+      # ^^^^
+      def visit_true_node(node)
+        bounds(node.location)
+        on_var_ref(on_kw("true"))
+      end
+
+      # undef foo
+      # ^^^^^^^^^
+      def visit_undef_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # unless foo; bar end
+      # ^^^^^^^^^^^^^^^^^^^
+      #
+      # bar unless foo
+      # ^^^^^^^^^^^^^^
+      def visit_unless_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # until foo; bar end
+      # ^^^^^^^^^^^^^^^^^
+      #
+      # bar until foo
+      # ^^^^^^^^^^^^^
+      def visit_until_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # case foo; when bar; end
+      #           ^^^^^^^^^^^^^
+      def visit_when_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # while foo; bar end
+      # ^^^^^^^^^^^^^^^^^^
+      #
+      # bar while foo
+      # ^^^^^^^^^^^^^
+      def visit_while_node(node)
+        raise NoMethodError, __method__
+      end
+
+      # `foo`
+      # ^^^^^
+      def visit_x_string_node(node)
+        bounds(node.content_loc)
+        unescaped = on_tstring_content(node.unescaped)
+
+        bounds(node.location)
+        on_xstring_literal(on_xstring_add(on_xstring_new, unescaped))
+      end
+
+      # yield
+      # ^^^^^
+      #
+      # yield 1
+      # ^^^^^^^
+      def visit_yield_node(node)
+        raise NoMethodError, __method__
       end
 
       private
@@ -576,7 +1415,7 @@ module Prism
           elsif !node.arguments || node.arguments.empty?
             return on_unary(node.name, left)
           else
-            raise NotImplementedError, "More than two arguments for operator"
+            raise NoMethodError, __method__, "More than two arguments for operator"
           end
         elsif node.call_operator_loc.nil?
           # In Ripper a method call like "puts myvar" with no parentheses is a "command".
@@ -590,7 +1429,7 @@ module Prism
             args = if node.arguments.nil?
               on_args_new
             else
-              on_args_add_block(visit_elements(node.arguments.arguments))
+              on_args_add_block(visit_array_node_elements(node.arguments.arguments))
             end
             method_args_val = on_method_add_arg(on_fcall(ident_val), args)
             return on_method_add_block(method_args_val, block_val)
@@ -598,7 +1437,7 @@ module Prism
             if node.arguments.nil?
               return on_command(ident_val, nil)
             else
-              args = on_args_add_block(visit_elements(node.arguments.arguments), false)
+              args = on_args_add_block(visit_array_node_elements(node.arguments.arguments), false)
               return on_command(ident_val, args)
             end
           end
@@ -622,47 +1461,9 @@ module Prism
               return call_val
             end
           else
-            raise NotImplementedError, "operator other than . or &. for call: #{operator.inspect}"
+            raise NoMethodError, __method__, "operator other than . or &. for call: #{operator.inspect}"
           end
         end
-      end
-
-      # Visit a list of elements, like the elements of an array or arguments.
-      def visit_elements(elements)
-        bounds(elements.first.location)
-        elements.inject(on_args_new) do |args, element|
-          on_args_add(args, visit(element))
-        end
-      end
-
-      # Visit an InterpolatedStringNode or an InterpolatedSymbolNode node.
-      def visit_enumerated_node(node)
-        parts = node.parts.map do |part|
-          case part
-          when StringNode
-            bounds(part.content_loc)
-            on_tstring_content(part.content)
-          when EmbeddedStatementsNode
-            on_string_embexpr(visit(part))
-          else
-            raise NotImplementedError, "Unexpected node type in visit_enumerated_node"
-          end
-        end
-
-        parts.inject(on_string_content) do |items, item|
-          on_string_add(items, item)
-        end
-      end
-
-      # Visit an operation-and-assign node, such as +=.
-      def visit_binary_op_assign(node, operator: node.operator)
-        bounds(node.name_loc)
-        ident_val = on_ident(node.name.to_s)
-
-        bounds(node.operator_loc)
-        op_val = on_op(operator)
-
-        on_opassign(on_var_field(ident_val), op_val, visit(node.value))
       end
 
       # In Prism this is a CallNode with :[] as the operator.
@@ -703,7 +1504,7 @@ module Prism
         if RUBY_KEYWORDS.include?(node_name)
           token_val = on_kw(node_name)
         elsif node_name.length == 0
-          raise NotImplementedError
+          raise NoMethodError, __method__
         elsif /[[:upper:]]/.match(node_name[0])
           token_val = on_const(node_name)
         elsif /[[:punct:]]/.match(node_name[0])
@@ -745,25 +1546,6 @@ module Prism
         end
       end
 
-      if RUBY_ENGINE == "jruby"
-        # For JRuby, "no block" in an on_block_var is nil
-        def no_block_value
-          nil
-        end
-      else
-        # For CRuby et al, "no block" in an on_block_var is false
-        def no_block_value
-          false
-        end
-      end
-
-      # Visit a binary operator node like an AndNode or OrNode
-      def visit_binary_operator(node)
-        left_val = visit(node.left)
-        right_val = visit(node.right)
-        on_binary(left_val, node.operator.to_sym, right_val)
-      end
-
       # Some nodes, such as `begin`, `ensure` and `do` may have a semicolon
       # after the keyword and before the first statement. This affects
       # Ripper's return values.
@@ -776,7 +1558,7 @@ module Prism
         when BlockNode
           [:opening_loc, :body]
         else
-          raise NotImplementedError
+          raise NoMethodError, __method__
         end
         first_offs, second_offs = delimiter_offsets_for(node, first_field, second_field)
 

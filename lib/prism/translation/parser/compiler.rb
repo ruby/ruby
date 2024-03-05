@@ -800,6 +800,7 @@ module Prism
         end
 
         # 1i
+        # ^^
         def visit_imaginary_node(node)
           visit_numeric(node, builder.complex([imaginary_value(node), srange(node.location)]))
         end
@@ -887,9 +888,6 @@ module Prism
 
         # @foo = 1
         # ^^^^^^^^
-        #
-        # @foo, @bar = 1
-        # ^^^^  ^^^^
         def visit_instance_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ivar(token(node.name_loc))),
@@ -1033,9 +1031,6 @@ module Prism
 
         # foo = 1
         # ^^^^^^^
-        #
-        # foo, bar = 1
-        # ^^^  ^^^
         def visit_local_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ident(token(node.name_loc))),
