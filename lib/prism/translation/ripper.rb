@@ -1380,7 +1380,15 @@ module Prism
       # next foo
       # ^^^^^^^^
       def visit_next_node(node)
-        raise NoMethodError, __method__
+        if node.arguments.nil?
+          bounds(node.location)
+          on_next(on_args_new)
+        else
+          arguments = visit_array_node_elements(node.arguments.arguments)
+
+          bounds(node.location)
+          on_next(on_args_add_block(arguments, false))
+        end
       end
 
       # nil
