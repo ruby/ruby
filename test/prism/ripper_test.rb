@@ -148,7 +148,6 @@ module Prism
       seattlerb/heredoc_with_only_carriage_returns.txt
       seattlerb/heredoc_with_only_carriage_returns_windows.txt
       seattlerb/if_elsif.txt
-      seattlerb/index_0.txt
       seattlerb/interpolated_symbol_array_line_breaks.txt
       seattlerb/interpolated_word_array_line_breaks.txt
       seattlerb/lambda_do_vs_brace.txt
@@ -401,18 +400,13 @@ module Prism
       whitequark/ruby_bug_12073.txt
       whitequark/ruby_bug_12402.txt
       whitequark/ruby_bug_12686.txt
-      whitequark/ruby_bug_13547.txt
       whitequark/ruby_bug_14690.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_attr_asgn.txt
       whitequark/send_attr_asgn_conditional.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/send_call.txt
-      whitequark/send_index.txt
-      whitequark/send_index_asgn.txt
-      whitequark/send_index_asgn_legacy.txt
       whitequark/send_index_cmd.txt
-      whitequark/send_index_legacy.txt
       whitequark/send_lambda.txt
       whitequark/send_lambda_args_noparen.txt
       whitequark/send_lambda_legacy.txt

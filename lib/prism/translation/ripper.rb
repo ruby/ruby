@@ -469,12 +469,71 @@ module Prism
       # foo.bar() {}
       # ^^^^^^^^^^^^
       def visit_call_node(node)
-        return visit_aref_node(node) if node.name == :[]
-        return visit_aref_field_node(node) if node.name == :[]=
+        case node.name
+        when :[]
+          if node.opening == "["
+            receiver = visit(node.receiver)
+            arguments = node.arguments&.arguments || []
+            block = node.block
+
+            if block.is_a?(BlockArgumentNode)
+              arguments << block
+              block = nil
+            end
+
+            arguments =
+              if arguments.any?
+                args = visit_arguments(arguments)
+
+                if node.block.is_a?(BlockArgumentNode)
+                  args
+                else
+                  bounds(arguments.first.location)
+                  on_args_add_block(args, false)
+                end
+              end
+
+            bounds(node.location)
+            call = on_aref(receiver, arguments)
+
+            if block.nil?
+              return call
+            else
+              block = visit(block)
+
+              bounds(node.location)
+              return on_method_add_block(call, block)
+            end
+          end
+        when :[]=
+          if node.opening == "["
+            receiver = visit(node.receiver)
+
+            *arguments, last_argument = node.arguments.arguments
+            arguments << node.block if !node.block.nil?
+
+            arguments =
+              if arguments.any?
+                args = visit_arguments(arguments)
+
+                if !node.block.nil?
+                  args
+                else
+                  bounds(arguments.first.location)
+                  on_args_add_block(args, false)
+                end
+              end
+
+            bounds(node.location)
+            call = on_aref_field(receiver, arguments)
+
+            value = visit(last_argument)
+            bounds(last_argument.location)
+            return on_assign(call, value)
+          end
+        end
 
         if node.variable_call?
-          raise NoMethodError, __method__ unless node.receiver.nil?
-
           bounds(node.message_loc)
           return on_vcall(on_ident(node.message))
         end
@@ -2430,23 +2489,6 @@ module Prism
             raise NoMethodError, __method__, "operator other than . or &. for call: #{operator.inspect}"
           end
         end
-      end
-
-      # In Prism this is a CallNode with :[] as the operator.
-      # In Ripper it's an :aref.
-      def visit_aref_node(node)
-        first_arg_val = visit(node.arguments.arguments[0])
-        args_val = on_args_add_block(on_args_add(on_args_new, first_arg_val), false)
-        on_aref(visit(node.receiver), args_val)
-      end
-
-      # In Prism this is a CallNode with :[]= as the operator.
-      # In Ripper it's an :aref_field.
-      def visit_aref_field_node(node)
-        first_arg_val = visit(node.arguments.arguments[0])
-        args_val = on_args_add_block(on_args_add(on_args_new, first_arg_val), false)
-        assign_val = visit(node.arguments.arguments[1])
-        on_assign(on_aref_field(visit(node.receiver), args_val), assign_val)
       end
 
       # Ripper has several methods of emitting a symbol literal. Inside an alias
