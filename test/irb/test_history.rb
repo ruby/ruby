@@ -136,7 +136,7 @@ module TestIRB
         io.class::HISTORY << 'line1'
         io.class::HISTORY << 'line2'
 
-        history_file = IRB.rc_file("_history")
+        history_file = IRB.rc_files("_history").first
         assert_not_send [File, :file?, history_file]
         File.write(history_file, "line0\n")
         io.save_history
@@ -217,9 +217,10 @@ module TestIRB
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = locale
       actual_history = nil
+      history_file = IRB.rc_files("_history").first
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
-        File.open(IRB.rc_file("_history"), "w") do |f|
+        File.open(history_file, "w") do |f|
           f.write(initial_irb_history)
         end
 
@@ -229,7 +230,7 @@ module TestIRB
         if block_given?
           previous_history = []
           io.class::HISTORY.each { |line| previous_history << line }
-          yield IRB.rc_file("_history")
+          yield history_file
           io.class::HISTORY.clear
           previous_history.each { |line| io.class::HISTORY << line }
         end
@@ -237,7 +238,7 @@ module TestIRB
         io.save_history
 
         io.load_history
-        File.open(IRB.rc_file("_history"), "r") do |f|
+        File.open(history_file, "r") do |f|
           actual_history = f.read
         end
       end
