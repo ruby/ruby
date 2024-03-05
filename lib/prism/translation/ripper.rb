@@ -1399,7 +1399,31 @@ module Prism
 
       # -> {}
       def visit_lambda_node(node)
-        raise NoMethodError, __method__
+        parameters =
+          if node.parameters.nil?
+            bounds(node.location)
+            on_params(nil, nil, nil, nil, nil, nil, nil)
+          else
+            # Ripper does not track block-locals within lambdas, so we skip
+            # directly to the parameters here.
+            visit(node.parameters.parameters)
+          end
+
+        if !node.opening_loc.nil?
+          bounds(node.opening_loc)
+          parameters = on_paren(parameters)
+        end
+
+        body =
+          if node.body.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.body)
+          end
+
+        bounds(node.location)
+        on_lambda(parameters, body)
       end
 
       # foo
@@ -2160,6 +2184,8 @@ module Prism
           on_kw(token)
         when /^[[:upper:]]/
           on_const(token)
+        when /^[[:punct:]]/
+          on_op(token)
         else
           on_ident(token)
         end

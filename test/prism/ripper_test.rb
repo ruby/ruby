@@ -384,7 +384,6 @@ module Prism
       seattlerb/defn_kwarg_lvar.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_rescue.txt
-      seattlerb/defn_unary_not.txt
       seattlerb/defns_reserved.txt
       seattlerb/defs_as_arg_with_do_block_inside.txt
       seattlerb/defs_comments.txt
@@ -406,7 +405,6 @@ module Prism
       seattlerb/difficult3__7.txt
       seattlerb/difficult3__8.txt
       seattlerb/difficult3__9.txt
-      seattlerb/difficult6_.txt
       seattlerb/difficult6__7.txt
       seattlerb/difficult6__8.txt
       seattlerb/difficult7_.txt
@@ -526,12 +524,8 @@ module Prism
       seattlerb/safe_op_asgn2.txt
       seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_arg_no_paren.txt
-      seattlerb/stabby_arg_opt_splat_arg_block_omfg.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
-      seattlerb/stabby_block_kw.txt
-      seattlerb/stabby_block_kw__required.txt
-      seattlerb/stabby_proc_scope.txt
       seattlerb/str_double_double_escaped_newline.txt
       seattlerb/str_double_escaped_newline.txt
       seattlerb/str_interp_ternary_or_label.txt
@@ -630,7 +624,6 @@ module Prism
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/bug_heredoc_do.txt
       whitequark/bug_interp_single.txt
-      whitequark/bug_lambda_leakage.txt
       whitequark/bug_rescue_empty_else.txt
       whitequark/bug_while_not_parens_do.txt
       whitequark/case_cond_else.txt
@@ -643,7 +636,6 @@ module Prism
       whitequark/def.txt
       whitequark/defs.txt
       whitequark/empty_stmt.txt
-      whitequark/endless_comparison_method.txt
       whitequark/endless_method.txt
       whitequark/endless_method_command_syntax.txt
       whitequark/endless_method_forwarded_args_legacy.txt
@@ -663,7 +655,6 @@ module Prism
       whitequark/if_elsif.txt
       whitequark/interp_digit_var.txt
       whitequark/kwbegin_compstmt.txt
-      whitequark/kwnilarg.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
       whitequark/lbrace_arg_after_command_args.txt
       whitequark/lparenarg_after_lvar__since_25.txt
@@ -690,7 +681,6 @@ module Prism
       whitequark/parser_bug_525.txt
       whitequark/parser_bug_604.txt
       whitequark/parser_bug_640.txt
-      whitequark/parser_bug_645.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/pattern_matching_blank_else.txt
@@ -728,9 +718,7 @@ module Prism
       whitequark/send_index_cmd.txt
       whitequark/send_index_legacy.txt
       whitequark/send_lambda.txt
-      whitequark/send_lambda_args.txt
       whitequark/send_lambda_args_noparen.txt
-      whitequark/send_lambda_args_shadow.txt
       whitequark/send_lambda_legacy.txt
       whitequark/send_op_asgn_conditional.txt
       whitequark/send_plain.txt
