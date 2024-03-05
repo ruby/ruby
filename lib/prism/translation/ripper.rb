@@ -796,13 +796,19 @@ module Prism
       # "foo #{bar}"
       #      ^^^^^^
       def visit_embedded_statements_node(node)
-        visit(node.statements)
+        statements = visit(node.statements)
+
+        bounds(node.location)
+        on_string_embexpr(statements)
       end
 
       # "foo #@bar"
       #      ^^^^^
       def visit_embedded_variable_node(node)
-        raise NoMethodError, __method__
+        variable = visit(node.variable)
+
+        bounds(node.location)
+        on_string_dvar(variable)
       end
 
       # Visit an EnsureNode node.
@@ -1123,22 +1129,37 @@ module Prism
       # /foo #{bar}/
       # ^^^^^^^^^^^^
       def visit_interpolated_regular_expression_node(node)
-        raise NoMethodError, __method__
+        bounds(node.parts.first.location)
+        parts =
+          node.parts.inject(on_regexp_new) do |content, part|
+            on_regexp_add(content, visit_string_content(part))
+          end
+
+        bounds(node.location)
+        on_regexp_literal(parts)
       end
 
       # "foo #{bar}"
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
-        contents = visit_string_contents(node.parts)
+        bounds(node.parts.first.location)
+        parts =
+          node.parts.inject(on_string_content) do |content, part|
+            on_string_add(content, visit_string_content(part))
+          end
 
         bounds(node.location)
-        on_string_literal(contents)
+        on_string_literal(parts)
       end
 
       # :"foo #{bar}"
       # ^^^^^^^^^^^^^
       def visit_interpolated_symbol_node(node)
-        contents = visit_string_contents(node.parts)
+        bounds(node.parts.first.location)
+        parts =
+          node.parts.inject(on_string_content) do |content, part|
+            on_string_add(content, visit_string_content(part))
+          end
 
         bounds(node.location)
         on_dyna_symbol(contents)
@@ -1147,24 +1168,23 @@ module Prism
       # `foo #{bar}`
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
-        raise NoMethodError, __method__
+        bounds(node.parts.first.location)
+        parts =
+          node.parts.inject(on_xstring_new) do |content, part|
+            on_xstring_add(content, visit_string_content(part))
+          end
+
+        bounds(node.location)
+        on_xstring_literal(parts)
       end
 
-      # Visit the contents of a string-like node.
-      private def visit_string_contents(parts)
-        parts.inject(on_string_content) do |content, part|
-          on_string_add(
-            content,
-            case part
-            when StringNode
-              bounds(part.content_loc)
-              on_tstring_content(part.content)
-            when EmbeddedStatementsNode
-              on_string_embexpr(visit(part))
-            else
-              raise
-            end
-          )
+      # Visit an individual part of a string-like node.
+      private def visit_string_content(part)
+        if part.is_a?(StringNode)
+          bounds(part.content_loc)
+          on_tstring_content(part.content)
+        else
+          visit(part)
         end
       end
 
