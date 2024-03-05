@@ -1117,7 +1117,25 @@ module Prism
       # foo => {}
       #        ^^
       def visit_hash_pattern_node(node)
-        raise NoMethodError, __method__
+        constant = visit(node.constant)
+        elements =
+          if node.elements.any? || !node.rest.nil?
+            node.elements.map do |element|
+              bounds(element.key.location)
+              key = on_label(element.key.slice)
+              value = visit(element.value)
+
+              [key, value]
+            end
+          end
+
+        rest =
+          if !node.rest.nil?
+            visit(node.rest.value)
+          end
+
+        bounds(node.location)
+        on_hshptn(constant, elements, rest)
       end
 
       # if foo then bar end
