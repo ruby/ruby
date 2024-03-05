@@ -290,7 +290,6 @@ module Prism
       embdoc_no_newline_at_end.txt
       emoji_method_calls.txt
       endless_methods.txt
-      for.txt
       global_variables.txt
       hashes.txt
       heredoc_with_escaped_newline_at_start.txt
@@ -342,15 +341,10 @@ module Prism
       seattlerb/bug191.txt
       seattlerb/bug_215.txt
       seattlerb/bug_249.txt
-      seattlerb/bug_args__19.txt
-      seattlerb/bug_args_masgn.txt
-      seattlerb/bug_args_masgn2.txt
-      seattlerb/bug_args_masgn_outer_parens__19.txt
       seattlerb/bug_call_arglist_parens.txt
       seattlerb/bug_comma.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
-      seattlerb/bug_masgn_right.txt
       seattlerb/bug_not_parens.txt
       seattlerb/call_args_assoc_quoted.txt
       seattlerb/call_args_assoc_trailing_comma.txt
@@ -431,8 +425,6 @@ module Prism
       seattlerb/index_0_opasgn.txt
       seattlerb/interpolated_symbol_array_line_breaks.txt
       seattlerb/interpolated_word_array_line_breaks.txt
-      seattlerb/iter_args_2__19.txt
-      seattlerb/iter_args_3.txt
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/lasgn_command.txt
       seattlerb/lasgn_middle_splat.txt
@@ -641,7 +633,6 @@ module Prism
       whitequark/endless_method_forwarded_args_legacy.txt
       whitequark/endless_method_with_rescue_mod.txt
       whitequark/endless_method_without_args.txt
-      whitequark/for_mlhs.txt
       whitequark/forward_arg.txt
       whitequark/forward_arg_with_open_args.txt
       whitequark/forward_args_legacy.txt
@@ -686,7 +677,6 @@ module Prism
       whitequark/pattern_matching_blank_else.txt
       whitequark/pattern_matching_else.txt
       whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt
-      whitequark/procarg0.txt
       whitequark/resbody_var.txt
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt

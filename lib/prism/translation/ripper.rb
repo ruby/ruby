@@ -1571,10 +1571,28 @@ module Prism
         on_module(constant_path, bodystmt)
       end
 
-      # foo, bar = baz
-      # ^^^^^^^^
+      # (foo, bar), bar = qux
+      # ^^^^^^^^^^
       def visit_multi_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        targets =
+          [*node.lefts, *node.rest, *node.rights].inject(on_mlhs_new) do |mlhs, target|
+            bounds(target.location)
+
+            if target.is_a?(ImplicitRestNode)
+              on_excessed_comma # these do not get put into the targets
+              mlhs
+            else
+              on_mlhs_add(mlhs, visit(target))
+            end
+          end
+
+        if node.lparen_loc.nil?
+          targets
+        else
+          bounds(node.lparen_loc)
+          on_mlhs_paren(targets)
+        end
       end
 
       # foo, bar = baz
