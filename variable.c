@@ -1442,7 +1442,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
             if (old_ivtbl) {
                 /* We need to modify old_ivtbl to have the too complex shape
                  * and hold the table because the xmalloc could trigger a GC
-                 * compaction. We want the table to be updated rather than than
+                 * compaction. We want the table to be updated rather than
                  * the original ivptr. */
 #if SHAPE_IN_BASIC_FLAGS
                 rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);

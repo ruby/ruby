@@ -995,7 +995,7 @@ fn jump_to_next_insn(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> Option<()> {
-    // Reset the depth since in current usages we only ever jump to to
+    // Reset the depth since in current usages we only ever jump to
     // chain_depth > 0 from the same instruction.
     let mut reset_depth = asm.ctx;
     reset_depth.reset_chain_depth_and_defer();
