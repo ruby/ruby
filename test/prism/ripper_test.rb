@@ -21,7 +21,6 @@ module Prism
       dash_heredocs.txt
       dos_endings.txt
       embdoc_no_newline_at_end.txt
-      emoji_method_calls.txt
       endless_methods.txt
       global_variables.txt
       hashes.txt
@@ -49,7 +48,6 @@ module Prism
       seattlerb/TestRubyParserShared.txt
       seattlerb/array_lits_trailing_calls.txt
       seattlerb/attr_asgn_colon_id.txt
-      seattlerb/attrasgn_primary_dot_constant.txt
       seattlerb/begin_rescue_else_ensure_bodies.txt
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
       seattlerb/block_break.txt
@@ -209,8 +207,6 @@ module Prism
       seattlerb/rescue_in_block.txt
       seattlerb/rescue_parens.txt
       seattlerb/return_call_assocs.txt
-      seattlerb/safe_attrasgn.txt
-      seattlerb/safe_attrasgn_constant.txt
       seattlerb/safe_call_dot_parens.txt
       seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_arg_no_paren.txt
@@ -373,7 +369,6 @@ module Prism
       whitequark/ruby_bug_14690.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_attr_asgn.txt
-      whitequark/send_attr_asgn_conditional.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/send_call.txt
       whitequark/send_index_cmd.txt

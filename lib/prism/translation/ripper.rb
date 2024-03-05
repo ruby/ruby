@@ -556,29 +556,37 @@ module Prism
           bounds(node.message_loc)
           message = visit_token(node.message)
 
-          arguments, block = visit_call_node_arguments(node.arguments, node.block)
-          call =
-            if node.opening_loc.nil?
-              bounds(node.location)
+          if node.name.end_with?("=") && !node.message.end_with?("=") && !node.arguments.nil? && node.block.nil?
+            bounds(node.arguments.location)
+            value = visit(node.arguments.arguments.first)
 
-              if !arguments || arguments.empty?
-                on_call(receiver, call_operator, message)
-              else
-                on_command_call(receiver, call_operator, message, arguments)
-              end
-            else
-              bounds(node.opening_loc)
-              arguments = on_arg_paren(arguments)
-
-              bounds(node.location)
-              on_method_add_arg(on_call(receiver, call_operator, message), arguments)
-            end
-
-          if block.nil?
-            call
+            bounds(node.location)
+            on_assign(on_field(receiver, call_operator, message), value)
           else
-            bounds(node.block.location)
-            on_method_add_block(call, block)
+            arguments, block = visit_call_node_arguments(node.arguments, node.block)
+            call =
+              if node.opening_loc.nil?
+                bounds(node.location)
+
+                if !arguments || arguments.empty?
+                  on_call(receiver, call_operator, message)
+                else
+                  on_command_call(receiver, call_operator, message, arguments)
+                end
+              else
+                bounds(node.opening_loc)
+                arguments = on_arg_paren(arguments)
+
+                bounds(node.location)
+                on_method_add_arg(on_call(receiver, call_operator, message), arguments)
+              end
+
+            if block.nil?
+              call
+            else
+              bounds(node.block.location)
+              on_method_add_block(call, block)
+            end
           end
         end
       end
