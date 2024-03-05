@@ -781,7 +781,39 @@ module Prism
       # def self.foo; end
       # ^^^^^^^^^^^^^^^^^
       def visit_def_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        name = visit_token(node.name_loc.slice)
+
+        parameters =
+          if node.parameters.nil?
+            bounds(node.location)
+            on_params(nil, nil, nil, nil, nil, nil, nil)
+          else
+            visit(node.parameters)
+          end
+
+        if !node.lparen_loc.nil?
+          bounds(node.lparen_loc)
+          parameters = on_paren(parameters)
+        end
+
+        bodystmt =
+          case node.body
+          when nil
+            bounds(node.location)
+            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          when StatementsNode
+            body = visit(node.body)
+
+            bounds(node.body.location)
+            on_bodystmt(body, nil, nil, nil)
+          when BeginNode
+            visit_begin_node_clauses(node.body)
+          else
+            raise
+          end
+
+        on_def(name, parameters, bodystmt)
       end
 
       # defined? a

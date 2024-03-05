@@ -299,7 +299,6 @@ module Prism
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
       if.txt
-      indented_file_end.txt
       keyword_method_names.txt
       lambda.txt
       method_calls.txt
@@ -317,15 +316,12 @@ module Prism
       return.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/and_multi.txt
-      seattlerb/args_kw_block.txt
       seattlerb/array_lits_trailing_calls.txt
       seattlerb/attr_asgn_colon_id.txt
       seattlerb/attrasgn_primary_dot_constant.txt
       seattlerb/begin_rescue_else_ensure_bodies.txt
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
-      seattlerb/block_arg__bare.txt
       seattlerb/block_break.txt
-      seattlerb/block_call_defn_call_block_call.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_call_dot_op2_cmd_args_do_block.txt
       seattlerb/block_call_operation_colon.txt
@@ -345,7 +341,6 @@ module Prism
       seattlerb/bug190.txt
       seattlerb/bug191.txt
       seattlerb/bug236.txt
-      seattlerb/bug_187.txt
       seattlerb/bug_215.txt
       seattlerb/bug_249.txt
       seattlerb/bug_args__19.txt
@@ -404,33 +399,18 @@ module Prism
       seattlerb/const_op_asgn_and1.txt
       seattlerb/const_op_asgn_and2.txt
       seattlerb/const_op_asgn_or.txt
-      seattlerb/defn_arg_asplat_arg.txt
       seattlerb/defn_arg_forward_args.txt
       seattlerb/defn_args_forward_args.txt
-      seattlerb/defn_comments.txt
       seattlerb/defn_endless_command.txt
       seattlerb/defn_endless_command_rescue.txt
       seattlerb/defn_forward_args.txt
       seattlerb/defn_forward_args__no_parens.txt
-      seattlerb/defn_kwarg_env.txt
-      seattlerb/defn_kwarg_kwarg.txt
-      seattlerb/defn_kwarg_kwsplat.txt
-      seattlerb/defn_kwarg_kwsplat_anon.txt
       seattlerb/defn_kwarg_lvar.txt
-      seattlerb/defn_kwarg_no_parens.txt
-      seattlerb/defn_kwarg_val.txt
-      seattlerb/defn_no_kwargs.txt
       seattlerb/defn_oneliner.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_noargs.txt
       seattlerb/defn_oneliner_noargs_parentheses.txt
       seattlerb/defn_oneliner_rescue.txt
-      seattlerb/defn_opt_last_arg.txt
-      seattlerb/defn_opt_reg.txt
-      seattlerb/defn_opt_splat_arg.txt
-      seattlerb/defn_powarg.txt
-      seattlerb/defn_reg_opt_reg.txt
-      seattlerb/defn_splat_arg.txt
       seattlerb/defn_unary_not.txt
       seattlerb/defns_reserved.txt
       seattlerb/defs_as_arg_with_do_block_inside.txt
@@ -458,8 +438,6 @@ module Prism
       seattlerb/difficult6__8.txt
       seattlerb/difficult7_.txt
       seattlerb/do_lambda.txt
-      seattlerb/f_kw.txt
-      seattlerb/f_kw__required.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
       seattlerb/heredoc_bad_hex_escape.txt
@@ -523,12 +501,9 @@ module Prism
       seattlerb/op_asgn_primary_colon_identifier1.txt
       seattlerb/op_asgn_primary_colon_identifier_command_call.txt
       seattlerb/op_asgn_val_dot_ident_command_call.txt
-      seattlerb/parse_def_special_name.txt
       seattlerb/parse_if_not_canonical.txt
       seattlerb/parse_if_not_noncanonical.txt
       seattlerb/parse_line_defn_complex.txt
-      seattlerb/parse_line_defn_no_parens.txt
-      seattlerb/parse_line_defn_no_parens_args.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
@@ -567,7 +542,6 @@ module Prism
       seattlerb/read_escape_unicode_h4.txt
       seattlerb/regexp_esc_C_slash.txt
       seattlerb/regexp_escape_extended.txt
-      seattlerb/required_kwarg_no_value.txt
       seattlerb/rescue_do_end_ensure_result.txt
       seattlerb/rescue_do_end_no_raise.txt
       seattlerb/rescue_do_end_raised.txt
@@ -645,7 +619,6 @@ module Prism
       unparser/corpus/literal/while.txt
       unparser/corpus/literal/yield.txt
       unparser/corpus/semantic/block.txt
-      unparser/corpus/semantic/def.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/kwbegin.txt
       unparser/corpus/semantic/literal.txt
@@ -658,9 +631,6 @@ module Prism
       whitequark/and_asgn.txt
       whitequark/and_or_masgn.txt
       whitequark/anonymous_blockarg.txt
-      whitequark/arg.txt
-      whitequark/arg_duplicate_ignored.txt
-      whitequark/arg_label.txt
       whitequark/arg_scope.txt
       whitequark/args.txt
       whitequark/args_args_assocs.txt
@@ -681,7 +651,6 @@ module Prism
       whitequark/array_words_empty.txt
       whitequark/array_words_interp.txt
       whitequark/asgn_mrhs.txt
-      whitequark/blockarg.txt
       whitequark/blockargs.txt
       whitequark/break_block.txt
       whitequark/bug_435.txt
@@ -689,12 +658,9 @@ module Prism
       whitequark/bug_452.txt
       whitequark/bug_466.txt
       whitequark/bug_480.txt
-      whitequark/bug_481.txt
       whitequark/bug_ascii_8bit_in_literal.txt
       whitequark/bug_cmd_string_lookahead.txt
       whitequark/bug_cmdarg.txt
-      whitequark/bug_def_no_paren_eql_begin.txt
-      whitequark/bug_do_block_in_call_args.txt
       whitequark/bug_do_block_in_cmdarg.txt
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/bug_heredoc_do.txt
@@ -737,13 +703,9 @@ module Prism
       whitequark/if_elsif.txt
       whitequark/if_masgn__24.txt
       whitequark/interp_digit_var.txt
-      whitequark/kwarg.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwnilarg.txt
-      whitequark/kwoptarg.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
-      whitequark/kwrestarg_named.txt
-      whitequark/kwrestarg_unnamed.txt
       whitequark/lbrace_arg_after_command_args.txt
       whitequark/lparenarg_after_lvar__since_25.txt
       whitequark/lvar_injecting_match.txt
@@ -767,10 +729,8 @@ module Prism
       whitequark/op_asgn_cmd.txt
       whitequark/op_asgn_index.txt
       whitequark/op_asgn_index_cmd.txt
-      whitequark/optarg.txt
       whitequark/or_asgn.txt
       whitequark/parser_bug_272.txt
-      whitequark/parser_bug_490.txt
       whitequark/parser_bug_507.txt
       whitequark/parser_bug_525.txt
       whitequark/parser_bug_604.txt
@@ -790,8 +750,6 @@ module Prism
       whitequark/rescue_in_lambda_block.txt
       whitequark/rescue_mod_masgn.txt
       whitequark/rescue_without_begin_end.txt
-      whitequark/restarg_named.txt
-      whitequark/restarg_unnamed.txt
       whitequark/return.txt
       whitequark/return_block.txt
       whitequark/ruby_bug_10653.txt
@@ -808,7 +766,6 @@ module Prism
       whitequark/ruby_bug_13547.txt
       whitequark/ruby_bug_14690.txt
       whitequark/ruby_bug_15789.txt
-      whitequark/ruby_bug_9669.txt
       whitequark/send_attr_asgn.txt
       whitequark/send_attr_asgn_conditional.txt
       whitequark/send_block_chain_cmd.txt
@@ -841,11 +798,10 @@ module Prism
       whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
       whitequark/unless_else.txt
-      whitequark/var_op_asgn.txt
       whitequark/when_splat.txt
       whitequark/yield.txt
       xstring.txt
-      yield.txt      
+      yield.txt
     ]
 
     relatives.each do |relative|
