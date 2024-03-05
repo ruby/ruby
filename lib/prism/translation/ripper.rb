@@ -849,13 +849,29 @@ module Prism
       # $foo &&= bar
       # ^^^^^^^^^^^^
       def visit_global_variable_and_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_gvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # $foo ||= bar
       # ^^^^^^^^^^^^
       def visit_global_variable_or_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_gvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # $foo, = bar
@@ -939,31 +955,61 @@ module Prism
       # @foo
       # ^^^^
       def visit_instance_variable_read_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_ivar(node.name.to_s))
       end
 
       # @foo = 1
       # ^^^^^^^^
       def visit_instance_variable_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_ivar(node.name.to_s))
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_assign(target, value)
       end
 
       # @foo += bar
       # ^^^^^^^^^^^
       def visit_instance_variable_operator_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_ivar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("#{node.operator}=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @foo &&= bar
       # ^^^^^^^^^^^^
       def visit_instance_variable_and_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_ivar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @foo ||= bar
       # ^^^^^^^^^^^^
       def visit_instance_variable_or_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        target = on_var_field(on_ivar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_opassign(target, operator, value)
       end
 
       # @foo, = bar
@@ -1193,25 +1239,27 @@ module Prism
       # nil
       # ^^^
       def visit_nil_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_ref(on_kw("nil"))
       end
 
       # def foo(**nil); end
       #         ^^^^^
       def visit_no_keywords_parameter_node(node)
-        raise NoMethodError, __method__
+        :nil
       end
 
       # -> { _1 + _2 }
       # ^^^^^^^^^^^^^^
-      def visit_number_nodeed_parameters_node(node)
+      def visit_numbered_parameters_node(node)
         raise NoMethodError, __method__
       end
 
       # $1
       # ^^
-      def visit_number_nodeed_reference_read_node(node)
-        raise NoMethodError, __method__
+      def visit_numbered_reference_read_node(node)
+        bounds(node.location)
+        on_backref(node.slice)
       end
 
       # def foo(bar: baz); end
@@ -1255,6 +1303,7 @@ module Prism
         keyword_rest = visit(node.keyword_rest)
         block = visit(node.block)
 
+        bounds(node.location)
         on_params(requireds, optionals, rest, posts, keywords, keyword_rest, block)
       end
 
@@ -1375,7 +1424,11 @@ module Prism
       # foo rescue bar
       # ^^^^^^^^^^^^^^
       def visit_rescue_modifier_node(node)
-        raise NoMethodError, __method__
+        expression = visit(node.expression)
+        rescue_expression = visit(node.rescue_expression)
+
+        bounds(node.location)
+        on_rescue_mod(expression, rescue_expression)
       end
 
       # begin; rescue; end
@@ -1586,7 +1639,25 @@ module Prism
       # bar until foo
       # ^^^^^^^^^^^^^
       def visit_until_node(node)
-        raise NoMethodError, __method__
+        if node.statements.nil? || (node.keyword_loc.start_offset < node.statements.location.start_offset)
+          predicate = visit(node.predicate)
+          statements =
+            if node.statements.nil?
+              bounds(node.location)
+              on_stmts_add(on_stmts_new, on_void_stmt)
+            else
+              visit(node.statements)
+            end
+
+          bounds(node.location)
+          on_until(predicate, statements)
+        else
+          statements = visit(node.statements.body.first)
+          predicate = visit(node.predicate)
+
+          bounds(node.location)
+          on_until_mod(predicate, statements)
+        end
       end
 
       # case foo; when bar; end
@@ -1601,7 +1672,25 @@ module Prism
       # bar while foo
       # ^^^^^^^^^^^^^
       def visit_while_node(node)
-        raise NoMethodError, __method__
+        if node.statements.nil? || (node.keyword_loc.start_offset < node.statements.location.start_offset)
+          predicate = visit(node.predicate)
+          statements =
+            if node.statements.nil?
+              bounds(node.location)
+              on_stmts_add(on_stmts_new, on_void_stmt)
+            else
+              visit(node.statements)
+            end
+
+          bounds(node.location)
+          on_while(predicate, statements)
+        else
+          statements = visit(node.statements.body.first)
+          predicate = visit(node.predicate)
+
+          bounds(node.location)
+          on_while_mod(predicate, statements)
+        end
       end
 
       # `foo`
