@@ -1167,7 +1167,7 @@ module Prism
           end
 
         bounds(node.location)
-        on_dyna_symbol(contents)
+        on_dyna_symbol(parts)
       end
 
       # `foo #{bar}`
