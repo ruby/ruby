@@ -539,7 +539,14 @@ module Prism
       # case foo; in bar; end
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_case_match_node(node)
-        raise NoMethodError, __method__
+        predicate = visit(node.predicate)
+        clauses =
+          node.conditions.reverse_each.inject(nil) do |consequent, condition|
+            on_in(*visit(condition), consequent)
+          end
+
+        bounds(node.location)
+        on_case(predicate, clauses)
       end
 
       # class Foo; end
@@ -1124,7 +1131,19 @@ module Prism
       # case foo; in bar; end
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_in_node(node)
-        raise NoMethodError, __method__
+        # This is a special case where we're not going to call on_in directly
+        # because we don't have access to the consequent. Instead, we'll return
+        # the component parts and let the parent node handle it.
+        pattern = visit(node.pattern)
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
+
+        [pattern, statements]
       end
 
       # foo[bar] += baz

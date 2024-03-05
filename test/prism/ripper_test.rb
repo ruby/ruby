@@ -369,18 +369,7 @@ module Prism
       seattlerb/call_stabby_with_braces_block.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
-      seattlerb/case_in_31.txt
       seattlerb/case_in_37.txt
-      seattlerb/case_in_42.txt
-      seattlerb/case_in_42_2.txt
-      seattlerb/case_in_47.txt
-      seattlerb/case_in_67.txt
-      seattlerb/case_in_86.txt
-      seattlerb/case_in_86_2.txt
-      seattlerb/case_in_array_pat_const.txt
-      seattlerb/case_in_array_pat_const2.txt
-      seattlerb/case_in_array_pat_paren_assign.txt
-      seattlerb/case_in_const.txt
       seattlerb/case_in_else.txt
       seattlerb/case_in_find.txt
       seattlerb/case_in_find_array.txt
@@ -390,9 +379,6 @@ module Prism
       seattlerb/case_in_hash_pat_paren_true.txt
       seattlerb/case_in_hash_pat_rest.txt
       seattlerb/case_in_hash_pat_rest_solo.txt
-      seattlerb/case_in_if_unless_post_mod.txt
-      seattlerb/case_in_multiple.txt
-      seattlerb/case_in_or.txt
       seattlerb/class_comments.txt
       seattlerb/defn_arg_forward_args.txt
       seattlerb/defn_args_forward_args.txt
@@ -509,8 +495,6 @@ module Prism
       seattlerb/parse_line_to_ary.txt
       seattlerb/parse_opt_call_args_assocs_comma.txt
       seattlerb/parse_opt_call_args_lit_comma.txt
-      seattlerb/parse_pattern_019.txt
-      seattlerb/parse_pattern_044.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_058_2.txt
@@ -730,7 +714,6 @@ module Prism
       whitequark/parser_bug_645.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
-      whitequark/pattern_matching__FILE__LINE_literals.txt
       whitequark/pattern_matching_blank_else.txt
       whitequark/pattern_matching_else.txt
       whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt
