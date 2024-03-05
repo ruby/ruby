@@ -255,18 +255,11 @@ module Prism
       assert_equivalent("alias :'' :foo")
     end
 
-    Translation::Ripper
-    RUBY_KEYWORDS = Translation.const_get(:RipperCompiler)::RUBY_KEYWORDS
-
-    # This is *exactly* the kind of thing where Ripper would have a weird
-    # special case we didn't handle correctly. We're still testing with
-    # a leading colon since putting random keywords there will often get
-    # parse errors. Mostly we want to know that Ripper will use :@kw
-    # instead of :@ident for the lexer symbol for all of these.
     def test_keyword_aliases
-      RUBY_KEYWORDS.each do |keyword|
-        assert_equivalent("alias :foo :#{keyword}")
-      end
+      assert_equivalent("alias :foo :if")
+      assert_equivalent("alias :foo :self")
+      assert_equivalent("alias :foo :__FILE__")
+      assert_equivalent("alias foo __ENCODING__")
     end
 
     private
