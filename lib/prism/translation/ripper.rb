@@ -526,7 +526,14 @@ module Prism
       # case foo; when bar; end
       # ^^^^^^^^^^^^^^^^^^^^^^^
       def visit_case_node(node)
-        raise NoMethodError, __method__
+        predicate = visit(node.predicate)
+        clauses =
+          node.conditions.reverse_each.inject(nil) do |consequent, condition|
+            on_when(*visit(condition), consequent)
+          end
+
+        bounds(node.location)
+        on_case(predicate, clauses)
       end
 
       # case foo; in bar; end
@@ -1846,7 +1853,19 @@ module Prism
       # case foo; when bar; end
       #           ^^^^^^^^^^^^^
       def visit_when_node(node)
-        raise NoMethodError, __method__
+        # This is a special case where we're not going to call on_when directly
+        # because we don't have access to the consequent. Instead, we'll return
+        # the component parts and let the parent node handle it.
+        conditions = visit_array_node_elements(node.conditions)
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
+
+        [conditions, statements]
       end
 
       # while foo; bar end
