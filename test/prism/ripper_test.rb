@@ -340,7 +340,6 @@ module Prism
       seattlerb/bug179.txt
       seattlerb/bug190.txt
       seattlerb/bug191.txt
-      seattlerb/bug236.txt
       seattlerb/bug_215.txt
       seattlerb/bug_249.txt
       seattlerb/bug_args__19.txt
@@ -464,7 +463,6 @@ module Prism
       seattlerb/mlhs_keyword.txt
       seattlerb/mlhs_mid_anonsplat.txt
       seattlerb/mlhs_mid_splat.txt
-      seattlerb/mlhs_rescue.txt
       seattlerb/module_comments.txt
       seattlerb/non_interpolated_symbol_array_line_breaks.txt
       seattlerb/non_interpolated_word_array_line_breaks.txt
@@ -485,7 +483,6 @@ module Prism
       seattlerb/parse_line_multiline_str_literal_n.txt
       seattlerb/parse_line_return.txt
       seattlerb/parse_line_str_with_newline_escape.txt
-      seattlerb/parse_line_to_ary.txt
       seattlerb/parse_opt_call_args_assocs_comma.txt
       seattlerb/parse_opt_call_args_lit_comma.txt
       seattlerb/parse_pattern_051.txt
@@ -599,7 +596,6 @@ module Prism
       while.txt
       whitequark/ambiuous_quoted_label_in_ternary_operator.txt
       whitequark/and_asgn.txt
-      whitequark/and_or_masgn.txt
       whitequark/anonymous_blockarg.txt
       whitequark/arg_scope.txt
       whitequark/args.txt
@@ -621,7 +617,6 @@ module Prism
       whitequark/array_words_empty.txt
       whitequark/array_words_interp.txt
       whitequark/asgn_mrhs.txt
-      whitequark/blockargs.txt
       whitequark/break_block.txt
       whitequark/bug_435.txt
       whitequark/bug_447.txt
@@ -642,8 +637,6 @@ module Prism
       whitequark/case_expr_else.txt
       whitequark/character.txt
       whitequark/class_definition_in_while_cond.txt
-      whitequark/cond_begin_masgn.txt
-      whitequark/cond_match_current_line.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
@@ -668,7 +661,6 @@ module Prism
       whitequark/hash_label_end.txt
       whitequark/if_else.txt
       whitequark/if_elsif.txt
-      whitequark/if_masgn__24.txt
       whitequark/interp_digit_var.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwnilarg.txt
@@ -678,18 +670,14 @@ module Prism
       whitequark/lvar_injecting_match.txt
       whitequark/masgn.txt
       whitequark/masgn_attr.txt
-      whitequark/masgn_cmd.txt
-      whitequark/masgn_const.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
       whitequark/method_definition_in_while_cond.txt
       whitequark/multiple_pattern_matches.txt
       whitequark/newline_in_hash_argument.txt
       whitequark/next_block.txt
-      whitequark/non_lvar_injecting_match.txt
       whitequark/not.txt
       whitequark/not_cmd.txt
-      whitequark/not_masgn__24.txt
       whitequark/numbered_args_after_27.txt
       whitequark/numparam_outside_block.txt
       whitequark/op_asgn.txt
@@ -709,12 +697,10 @@ module Prism
       whitequark/pattern_matching_else.txt
       whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt
       whitequark/procarg0.txt
-      whitequark/regex_interp.txt
       whitequark/resbody_var.txt
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt
       whitequark/rescue_in_lambda_block.txt
-      whitequark/rescue_mod_masgn.txt
       whitequark/rescue_without_begin_end.txt
       whitequark/return.txt
       whitequark/return_block.txt

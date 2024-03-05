@@ -647,7 +647,8 @@ module Prism
       # @@foo, = bar
       # ^^^^^
       def visit_class_variable_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_field(on_cvar(node.name.to_s))
       end
 
       # Foo
@@ -716,7 +717,8 @@ module Prism
       # Foo, = bar
       # ^^^
       def visit_constant_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_field(on_const(node.name.to_s))
       end
 
       # Foo::Bar
@@ -816,7 +818,7 @@ module Prism
       # Foo::Bar, = baz
       # ^^^^^^^^
       def visit_constant_path_target_node(node)
-        raise NoMethodError, __method__
+        visit_constant_path_write_node_target(node)
       end
 
       # def foo; end
@@ -1093,7 +1095,8 @@ module Prism
       # $foo, = bar
       # ^^^^
       def visit_global_variable_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_field(on_gvar(node.name.to_s))
       end
 
       # {}
@@ -1162,7 +1165,8 @@ module Prism
       # foo { |bar,| }
       #           ^
       def visit_implicit_rest_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_excessed_comma
       end
 
       # case foo; in bar; end
@@ -1270,7 +1274,8 @@ module Prism
       # @foo, = bar
       # ^^^^
       def visit_instance_variable_target_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_var_field(on_ivar(node.name.to_s))
       end
 
       # 1
@@ -1282,7 +1287,17 @@ module Prism
       # if /foo #{bar}/ then end
       #    ^^^^^^^^^^^^
       def visit_interpolated_match_last_line_node(node)
-        raise NoMethodError, __method__
+        bounds(node.parts.first.location)
+        parts =
+          node.parts.inject(on_regexp_new) do |content, part|
+            on_regexp_add(content, visit_string_content(part))
+          end
+
+        bounds(node.closing_loc)
+        closing = on_regexp_end(node.closing)
+
+        bounds(node.location)
+        on_regexp_literal(parts, closing)
       end
 
       # /foo #{bar}/
@@ -1294,8 +1309,11 @@ module Prism
             on_regexp_add(content, visit_string_content(part))
           end
 
+        bounds(node.closing_loc)
+        closing = on_regexp_end(node.closing)
+
         bounds(node.location)
-        on_regexp_literal(parts)
+        on_regexp_literal(parts, closing)
       end
 
       # "foo #{bar}"
@@ -1459,7 +1477,13 @@ module Prism
       # if /foo/ then end
       #    ^^^^^
       def visit_match_last_line_node(node)
-        raise NoMethodError, __method__
+        bounds(node.content_loc)
+        content = on_tstring_content(node.unescaped)
+
+        bounds(node.closing_loc)
+        closing = on_regexp_end(node.closing)
+
+        on_regexp_literal(on_regexp_add(on_regexp_new, content), closing)
       end
 
       # foo in bar
@@ -1532,7 +1556,23 @@ module Prism
       # foo, bar = baz
       # ^^^^^^^^^^^^^^
       def visit_multi_write_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        targets =
+          [*node.lefts, *node.rest, *node.rights].inject(on_mlhs_new) do |mlhs, target|
+            bounds(target.location)
+
+            if target.is_a?(ImplicitRestNode)
+              on_excessed_comma # these do not get put into the targets
+              mlhs
+            else
+              on_mlhs_add(mlhs, visit(target))
+            end
+          end
+
+        value = visit(node.value)
+
+        bounds(node.location)
+        on_massign(targets, value)
       end
 
       # next
