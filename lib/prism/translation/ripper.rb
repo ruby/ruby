@@ -2165,7 +2165,19 @@ module Prism
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        visit_symbol_literal_node(node)
+        if (opening = node.opening) && opening.match?(/^%s|['"]$/)
+          bounds(node.value_loc)
+          content = on_string_content
+
+          if !(value = node.value).empty?
+            content = on_string_add(content, on_tstring_content(value))
+          end
+
+          on_dyna_symbol(content)
+        else
+          bounds(node.value_loc)
+          on_symbol_literal(on_symbol(visit_token(node.value)))
+        end
       end
 
       # true
