@@ -498,13 +498,43 @@ module Prism
       # foo.bar &&= baz
       # ^^^^^^^^^^^^^^^
       def visit_call_and_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+
+        bounds(node.call_operator_loc)
+        call_operator = visit_token(node.call_operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message)
+
+        bounds(node.location)
+        target = on_field(receiver, call_operator, message)
+
+        bounds(node.operator_loc)
+        operator = on_op("&&=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo.bar ||= baz
       # ^^^^^^^^^^^^^^^
       def visit_call_or_write_node(node)
-        raise NoMethodError, __method__
+        receiver = visit(node.receiver)
+
+        bounds(node.call_operator_loc)
+        call_operator = visit_token(node.call_operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message)
+
+        bounds(node.location)
+        target = on_field(receiver, call_operator, message)
+
+        bounds(node.operator_loc)
+        operator = on_op("||=")
+
+        value = visit(node.value)
+        on_opassign(target, operator, value)
       end
 
       # foo.bar, = 1
@@ -2250,6 +2280,8 @@ module Prism
       # split into the various token types.
       def visit_token(token)
         case token
+        when "."
+          on_period(token)
         when *RUBY_KEYWORDS
           on_kw(token)
         when /^[[:upper:]]/

@@ -183,10 +183,8 @@ module Prism
       seattlerb/non_interpolated_symbol_array_line_breaks.txt
       seattlerb/non_interpolated_word_array_line_breaks.txt
       seattlerb/op_asgn_command_call.txt
-      seattlerb/op_asgn_dot_ident_command_call.txt
       seattlerb/op_asgn_primary_colon_identifier1.txt
       seattlerb/op_asgn_primary_colon_identifier_command_call.txt
-      seattlerb/op_asgn_val_dot_ident_command_call.txt
       seattlerb/parse_if_not_canonical.txt
       seattlerb/parse_if_not_noncanonical.txt
       seattlerb/parse_line_defn_complex.txt
@@ -237,7 +235,6 @@ module Prism
       seattlerb/safe_call_operator.txt
       seattlerb/safe_calls.txt
       seattlerb/safe_op_asgn.txt
-      seattlerb/safe_op_asgn2.txt
       seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_arg_no_paren.txt
       seattlerb/stabby_block_iter_call.txt
@@ -305,7 +302,6 @@ module Prism
       variables.txt
       while.txt
       whitequark/ambiuous_quoted_label_in_ternary_operator.txt
-      whitequark/and_asgn.txt
       whitequark/anonymous_blockarg.txt
       whitequark/arg_scope.txt
       whitequark/args.txt
@@ -387,7 +383,6 @@ module Prism
       whitequark/numparam_outside_block.txt
       whitequark/op_asgn.txt
       whitequark/op_asgn_cmd.txt
-      whitequark/or_asgn.txt
       whitequark/parser_bug_272.txt
       whitequark/parser_bug_507.txt
       whitequark/parser_bug_525.txt
@@ -430,7 +425,6 @@ module Prism
       whitequark/send_lambda.txt
       whitequark/send_lambda_args_noparen.txt
       whitequark/send_lambda_legacy.txt
-      whitequark/send_op_asgn_conditional.txt
       whitequark/send_plain.txt
       whitequark/send_plain_cmd.txt
       whitequark/send_self.txt
