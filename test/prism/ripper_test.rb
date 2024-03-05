@@ -380,15 +380,10 @@ module Prism
       seattlerb/class_comments.txt
       seattlerb/defn_arg_forward_args.txt
       seattlerb/defn_args_forward_args.txt
-      seattlerb/defn_endless_command.txt
-      seattlerb/defn_endless_command_rescue.txt
       seattlerb/defn_forward_args.txt
       seattlerb/defn_forward_args__no_parens.txt
       seattlerb/defn_kwarg_lvar.txt
-      seattlerb/defn_oneliner.txt
       seattlerb/defn_oneliner_eq2.txt
-      seattlerb/defn_oneliner_noargs.txt
-      seattlerb/defn_oneliner_noargs_parentheses.txt
       seattlerb/defn_oneliner_rescue.txt
       seattlerb/defn_unary_not.txt
       seattlerb/defns_reserved.txt

@@ -842,19 +842,26 @@ module Prism
         end
 
         bodystmt =
-          case node.body
-          when nil
-            bounds(node.location)
-            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
-          when StatementsNode
-            body = visit(node.body)
+          if node.equal_loc.nil?
+            case node.body
+            when nil
+              bounds(node.location)
+              on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+            when StatementsNode
+              body = visit(node.body)
+
+              bounds(node.body.location)
+              on_bodystmt(body, nil, nil, nil)
+            when BeginNode
+              visit_begin_node_clauses(node.body)
+            else
+              raise
+            end
+          else
+            body = visit(node.body.body.first)
 
             bounds(node.body.location)
             on_bodystmt(body, nil, nil, nil)
-          when BeginNode
-            visit_begin_node_clauses(node.body)
-          else
-            raise
           end
 
         on_def(name, parameters, bodystmt)
@@ -982,7 +989,7 @@ module Prism
       # def foo(...); bar(...); end
       #                   ^^^
       def visit_forwarding_arguments_node(node)
-        raise NoMethodError, __method__
+        
       end
 
       # def foo(...); end
