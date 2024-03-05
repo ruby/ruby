@@ -307,7 +307,6 @@ module Prism
       methods.txt
       modules.txt
       multi_write.txt
-      newline_terminated.txt
       non_alphanumeric_methods.txt
       not.txt
       patterns.txt
@@ -355,9 +354,7 @@ module Prism
       seattlerb/bug_args_masgn2.txt
       seattlerb/bug_args_masgn_outer_parens__19.txt
       seattlerb/bug_call_arglist_parens.txt
-      seattlerb/bug_case_when_regexp.txt
       seattlerb/bug_comma.txt
-      seattlerb/bug_cond_pct.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
       seattlerb/bug_masgn_right.txt
@@ -575,11 +572,8 @@ module Prism
       seattlerb/qwords_empty.txt
       seattlerb/read_escape_unicode_curlies.txt
       seattlerb/read_escape_unicode_h4.txt
-      seattlerb/regexp.txt
       seattlerb/regexp_esc_C_slash.txt
-      seattlerb/regexp_esc_u.txt
       seattlerb/regexp_escape_extended.txt
-      seattlerb/regexp_unicode_curlies.txt
       seattlerb/required_kwarg_no_value.txt
       seattlerb/rescue_do_end_ensure_result.txt
       seattlerb/rescue_do_end_no_raise.txt
@@ -715,7 +709,6 @@ module Prism
       whitequark/bug_heredoc_do.txt
       whitequark/bug_interp_single.txt
       whitequark/bug_lambda_leakage.txt
-      whitequark/bug_regex_verification.txt
       whitequark/bug_rescue_empty_else.txt
       whitequark/bug_while_not_parens_do.txt
       whitequark/case_cond_else.txt
@@ -799,7 +792,6 @@ module Prism
       whitequark/parser_bug_604.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_bug_645.txt
-      whitequark/parser_bug_830.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/pattern_matching__FILE__LINE_literals.txt
@@ -808,7 +800,6 @@ module Prism
       whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt
       whitequark/procarg0.txt
       whitequark/regex_interp.txt
-      whitequark/regex_plain.txt
       whitequark/resbody_var.txt
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt

@@ -1329,7 +1329,7 @@ module Prism
       # /(?<foo>foo)/ =~ bar
       # ^^^^^^^^^^^^^^^^^^^^
       def visit_match_write_node(node)
-        raise NoMethodError, __method__
+        visit(node.call)
       end
 
       # A node that is missing from the syntax tree. This is only used in the
@@ -1568,7 +1568,13 @@ module Prism
       # /foo/
       # ^^^^^
       def visit_regular_expression_node(node)
-        raise NoMethodError, __method__
+        bounds(node.content_loc)
+        content = on_tstring_content(node.unescaped)
+
+        bounds(node.closing_loc)
+        closing = on_regexp_end(node.closing)
+
+        on_regexp_literal(on_regexp_add(on_regexp_new, content), closing)
       end
 
       # def foo(bar:); end
