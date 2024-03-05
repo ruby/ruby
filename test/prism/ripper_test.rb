@@ -656,7 +656,6 @@ module Prism
       whitequark/endless_method_forwarded_args_legacy.txt
       whitequark/endless_method_with_rescue_mod.txt
       whitequark/endless_method_without_args.txt
-      whitequark/for.txt
       whitequark/for_mlhs.txt
       whitequark/forward_arg.txt
       whitequark/forward_arg_with_open_args.txt

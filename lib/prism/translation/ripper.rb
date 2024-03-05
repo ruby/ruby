@@ -983,13 +983,24 @@ module Prism
       # for foo in bar do end
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_for_node(node)
-        raise NoMethodError, __method__
+        index = visit(node.index)
+        collection = visit(node.collection)
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
+
+        bounds(node.location)
+        on_for(index, collection, statements)
       end
 
       # def foo(...); bar(...); end
       #                   ^^^
       def visit_forwarding_arguments_node(node)
-        
+        raise NoMethodError, __method__
       end
 
       # def foo(...); end
