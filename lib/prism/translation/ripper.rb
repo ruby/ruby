@@ -1678,7 +1678,25 @@ module Prism
       # class << self; end
       # ^^^^^^^^^^^^^^^^^^
       def visit_singleton_class_node(node)
-        raise NoMethodError, __method__
+        expression = visit(node.expression)
+        bodystmt =
+          case node.body
+          when nil
+            bounds(node.location)
+            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          when StatementsNode
+            body = visit(node.body)
+
+            bounds(node.body.location)
+            on_bodystmt(body, nil, nil, nil)
+          when BeginNode
+            visit_begin_node_clauses(node.body)
+          else
+            raise
+          end
+
+        bounds(node.location)
+        on_sclass(expression, bodystmt)
       end
 
       # __ENCODING__
