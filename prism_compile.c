@@ -2292,7 +2292,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         break;
       }
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
-        // Local variables can be targetted by placing identifiers in the place
+        // Local variables can be targeted by placing identifiers in the place
         // of a pattern. For example, foo in bar. This results in the value
         // being matched being written to that local variable.
         pm_local_variable_target_node_t *cast = (pm_local_variable_target_node_t *) node;

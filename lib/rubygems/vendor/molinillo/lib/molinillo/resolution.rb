@@ -103,7 +103,7 @@ module Gem::Molinillo
 
         # @return [Boolean] where the requirement of the state we're unwinding
         #    to directly caused the conflict. Note: in this case, it is
-        #    impossible for the state we're unwinding to to be a parent of
+        #    impossible for the state we're unwinding to be a parent of
         #    any of the other conflicting requirements (or we would have
         #    circularity)
         def unwinding_to_primary_requirement?

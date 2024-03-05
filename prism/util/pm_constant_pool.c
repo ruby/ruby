@@ -253,7 +253,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
         index = (index + 1) & mask;
     }
 
-    // IDs are allocated starting at 1, since the value 0 denotes a non-existant
+    // IDs are allocated starting at 1, since the value 0 denotes a non-existent
     // constant.
     uint32_t id = ++pool->size;
     assert(pool->size < ((uint32_t) (1 << 30)));

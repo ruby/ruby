@@ -62,7 +62,7 @@ typedef enum {
     /** The decimal base, indicated by a 0d, 0D, or empty prefix. */
     PM_INTEGER_BASE_DECIMAL,
 
-    /** The hexidecimal base, indicated by a 0x or 0X prefix. */
+    /** The hexadecimal base, indicated by a 0x or 0X prefix. */
     PM_INTEGER_BASE_HEXADECIMAL,
 
     /**

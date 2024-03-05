@@ -17320,7 +17320,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         bool accepts_command_call_inner = false;
 
         // RHS can accept command call iff the value is a call with arguments
-        // but without paranthesis.
+        // but without parenthesis.
         if (PM_NODE_TYPE_P(value, PM_CALL_NODE)) {
             pm_call_node_t *call_node = (pm_call_node_t *) value;
             if ((call_node->arguments != NULL) && (call_node->opening_loc.start == NULL)) {
