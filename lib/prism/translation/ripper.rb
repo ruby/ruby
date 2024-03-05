@@ -343,14 +343,23 @@ module Prism
         when "do"
           on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
         else
-          raise raise
+          raise
         end
       end
 
       # def foo(&bar); end
       #         ^^^^
       def visit_block_parameter_node(node)
-        raise NoMethodError, __method__
+        if node.name_loc.nil?
+          bounds(node.location)
+          on_blockarg(nil)
+        else
+          bounds(node.name_loc)
+          name = visit_token(node.name.to_s)
+
+          bounds(node.location)
+          on_blockarg(name)
+        end
       end
 
       # A block's parameters.
@@ -1035,7 +1044,16 @@ module Prism
       # def foo(**); end
       #         ^^
       def visit_keyword_rest_parameter_node(node)
-        raise NoMethodError, __method__
+        if node.name_loc.nil?
+          bounds(node.location)
+          on_kwrest_param(nil)
+        else
+          bounds(node.name_loc)
+          name = on_ident(node.name.to_s)
+
+          bounds(node.location)
+          on_kwrest_param(name)
+        end
       end
 
       # -> {}
@@ -1118,13 +1136,19 @@ module Prism
       # foo in bar
       # ^^^^^^^^^^
       def visit_match_predicate_node(node)
-        raise NoMethodError, __method__
+        value = visit(node.value)
+        pattern = on_in(visit(node.pattern), nil, nil)
+
+        on_case(value, pattern)
       end
 
       # foo => bar
       # ^^^^^^^^^^
       def visit_match_required_node(node)
-        raise NoMethodError, __method__
+        value = visit(node.value)
+        pattern = on_in(visit(node.pattern), nil, nil)
+
+        on_case(value, pattern)
       end
 
       # /(?<foo>foo)/ =~ bar
@@ -1193,13 +1217,21 @@ module Prism
       # def foo(bar: baz); end
       #         ^^^^^^^^
       def visit_optional_keyword_parameter_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        name = on_label("#{node.name}:")
+        value = visit(node.value)
+
+        [name, value]
       end
 
       # def foo(bar = 1); end
       #         ^^^^^^^
       def visit_optional_parameter_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        name = visit_token(node.name.to_s)
+        value = visit(node.value)
+
+        [name, value]
       end
 
       # a or b
@@ -1215,9 +1247,15 @@ module Prism
       # def foo(bar, *baz); end
       #         ^^^^^^^^^
       def visit_parameters_node(node)
-        requireds = visit_all(node.requireds)
+        requireds = visit_all(node.requireds) if node.requireds.any?
+        optionals = visit_all(node.optionals) if node.optionals.any?
+        rest = visit(node.rest)
+        posts = visit_all(node.posts) if node.posts.any?
+        keywords = visit_all(node.keywords) if node.keywords.any?
+        keyword_rest = visit(node.keyword_rest)
+        block = visit(node.block)
 
-        on_params(requireds, nil, nil, nil, nil, nil, nil)
+        on_params(requireds, optionals, rest, posts, keywords, keyword_rest, block)
       end
 
       # ()
@@ -1323,7 +1361,8 @@ module Prism
       # def foo(bar:); end
       #         ^^^^
       def visit_required_keyword_parameter_node(node)
-        raise NoMethodError, __method__
+        bounds(node.name_loc)
+        [on_label("#{node.name}:"), false]
       end
 
       # def foo(bar); end
@@ -1386,7 +1425,13 @@ module Prism
       # def foo(*); end
       #         ^
       def visit_rest_parameter_node(node)
-        raise NoMethodError, __method__
+        if node.name_loc.nil?
+          bounds(node.location)
+          on_rest_param(nil)
+        else
+          bounds(node.name_loc)
+          on_rest_param(visit_token(node.name.to_s))
+        end
       end
 
       # retry
