@@ -2301,11 +2301,16 @@ module Prism
       # "foo"
       # ^^^^^
       def visit_string_node(node)
-        bounds(node.content_loc)
-        unescaped = on_tstring_content(node.unescaped)
+        if node.content.empty?
+          bounds(node.location)
+          on_string_literal(on_string_content)
+        else
+          bounds(node.content_loc)
+          content = on_tstring_content(node.content)
 
-        bounds(node.location)
-        on_string_literal(on_string_add(on_string_content, unescaped))
+          bounds(node.location)
+          on_string_literal(on_string_add(on_string_content, content))
+        end
       end
 
       # super(foo)

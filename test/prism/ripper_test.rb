@@ -17,14 +17,11 @@ module Prism
       classes.txt
       command_method_call.txt
       constants.txt
-      dash_heredocs.txt
       dos_endings.txt
       embdoc_no_newline_at_end.txt
       endless_methods.txt
       global_variables.txt
       hashes.txt
-      heredoc_with_escaped_newline_at_start.txt
-      heredoc_with_trailing_newline.txt
       heredocs_leading_whitespace.txt
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
@@ -91,21 +88,14 @@ module Prism
       seattlerb/do_lambda.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
-      seattlerb/heredoc_bad_hex_escape.txt
-      seattlerb/heredoc_bad_oct_escape.txt
       seattlerb/heredoc_nested.txt
       seattlerb/heredoc_squiggly.txt
       seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt
       seattlerb/heredoc_squiggly_blank_lines.txt
-      seattlerb/heredoc_squiggly_empty.txt
       seattlerb/heredoc_squiggly_interp.txt
       seattlerb/heredoc_squiggly_tabs.txt
       seattlerb/heredoc_squiggly_tabs_extra.txt
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
-      seattlerb/heredoc_with_carriage_return_escapes.txt
-      seattlerb/heredoc_with_carriage_return_escapes_windows.txt
-      seattlerb/heredoc_with_only_carriage_returns.txt
-      seattlerb/heredoc_with_only_carriage_returns_windows.txt
       seattlerb/if_elsif.txt
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/lasgn_middle_splat.txt
@@ -134,18 +124,13 @@ module Prism
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
-      seattlerb/parse_line_heredoc_hardnewline.txt
-      seattlerb/parse_line_multiline_str_literal_n.txt
-      seattlerb/parse_line_str_with_newline_escape.txt
       seattlerb/parse_opt_call_args_assocs_comma.txt
       seattlerb/parse_opt_call_args_lit_comma.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_076.txt
-      seattlerb/pct_nl.txt
       seattlerb/quoted_symbol_hash_arg.txt
       seattlerb/quoted_symbol_keys.txt
-      seattlerb/qw_escape_term.txt
       seattlerb/read_escape_unicode_curlies.txt
       seattlerb/read_escape_unicode_h4.txt
       seattlerb/regexp_esc_C_slash.txt
@@ -156,15 +141,10 @@ module Prism
       seattlerb/rescue_do_end_rescued.txt
       seattlerb/return_call_assocs.txt
       seattlerb/safe_call_dot_parens.txt
-      seattlerb/slashy_newlines_within_string.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
-      seattlerb/str_double_double_escaped_newline.txt
-      seattlerb/str_double_escaped_newline.txt
       seattlerb/str_interp_ternary_or_label.txt
       seattlerb/str_lit_concat_bad_encodings.txt
-      seattlerb/str_newline_hash_line_number.txt
-      seattlerb/str_single_double_escaped_newline.txt
       seattlerb/thingy.txt
       seattlerb/yield_call_assocs.txt
       single_method_call_with_bang.txt
@@ -218,9 +198,7 @@ module Prism
       whitequark/asgn_mrhs.txt
       whitequark/break_block.txt
       whitequark/bug_480.txt
-      whitequark/bug_ascii_8bit_in_literal.txt
       whitequark/bug_do_block_in_hash_brace.txt
-      whitequark/bug_heredoc_do.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
       whitequark/character.txt
@@ -263,7 +241,6 @@ module Prism
       whitequark/ruby_bug_11873_a.txt
       whitequark/ruby_bug_11989.txt
       whitequark/ruby_bug_11990.txt
-      whitequark/ruby_bug_12073.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/send_call.txt
