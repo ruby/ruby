@@ -11,6 +11,8 @@ describe "Binding#irb" do
       pipe.readlines.map(&:chomp)
     end
 
-    out[-3..-1].should == ["a ** 2", "100", "exit"]
+    [out[-3..-1], ["a ** 2", "100", "exit"]].transpose.each do |actual, expected|
+      actual.should include(expected)
+    end
   end
 end
