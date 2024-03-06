@@ -1912,17 +1912,7 @@ module Prism
       # ^^^^^^^^^^
       def visit_multi_target_node(node)
         bounds(node.location)
-        targets =
-          [*node.lefts, *node.rest, *node.rights].inject(on_mlhs_new) do |mlhs, target|
-            bounds(target.location)
-
-            if target.is_a?(ImplicitRestNode)
-              on_excessed_comma # these do not get put into the targets
-              mlhs
-            else
-              on_mlhs_add(mlhs, visit(target))
-            end
-          end
+        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights)
 
         if node.lparen_loc.nil?
           targets
@@ -1932,21 +1922,47 @@ module Prism
         end
       end
 
+      # Visit the targets of a multi-target node.
+      private def visit_multi_target_node_targets(lefts, rest, rights)
+        mlhs = on_mlhs_new
+
+        lefts.each do |left|
+          bounds(left.location)
+          mlhs = on_mlhs_add(mlhs, visit(left))
+        end
+
+        case rest
+        when nil
+          # do nothing
+        when ImplicitRestNode
+          # these do not get put into the generated tree
+          bounds(rest.location)
+          on_excessed_comma
+        else
+          bounds(rest.location)
+          mlhs = on_mlhs_add_star(mlhs, visit(rest))
+        end
+
+        if rights.any?
+          bounds(rights.first.location)
+          post = on_mlhs_new
+
+          rights.each do |right|
+            bounds(right.location)
+            post = on_mlhs_add(post, visit(right))
+          end
+
+          mlhs = on_mlhs_add_post(mlhs, post)
+        end
+
+        mlhs
+      end
+
       # foo, bar = baz
       # ^^^^^^^^^^^^^^
       def visit_multi_write_node(node)
         bounds(node.location)
-        targets =
-          [*node.lefts, *node.rest, *node.rights].inject(on_mlhs_new) do |mlhs, target|
-            bounds(target.location)
-
-            if target.is_a?(ImplicitRestNode)
-              on_excessed_comma # these do not get put into the targets
-              mlhs
-            else
-              on_mlhs_add(mlhs, visit(target))
-            end
-          end
+        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights)
 
         unless node.lparen_loc.nil?
           bounds(node.lparen_loc)

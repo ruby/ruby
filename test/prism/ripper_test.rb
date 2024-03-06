@@ -38,19 +38,13 @@ module Prism
       patterns.txt
       regex.txt
       regex_char_width.txt
-      repeat_parameters.txt
       rescue.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/block_break.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
-      seattlerb/block_decomp_anon_splat_arg.txt
-      seattlerb/block_decomp_arg_splat.txt
-      seattlerb/block_decomp_arg_splat_arg.txt
-      seattlerb/block_decomp_splat.txt
       seattlerb/block_next.txt
-      seattlerb/block_paren_splat.txt
       seattlerb/block_return.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
@@ -63,15 +57,7 @@ module Prism
       seattlerb/case_in.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
-      seattlerb/difficult3_.txt
       seattlerb/difficult3_5.txt
-      seattlerb/difficult3__10.txt
-      seattlerb/difficult3__11.txt
-      seattlerb/difficult3__12.txt
-      seattlerb/difficult3__6.txt
-      seattlerb/difficult3__7.txt
-      seattlerb/difficult3__8.txt
-      seattlerb/difficult3__9.txt
       seattlerb/do_lambda.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
@@ -86,25 +72,13 @@ module Prism
       seattlerb/if_elsif.txt
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/lasgn_middle_splat.txt
-      seattlerb/masgn_anon_splat_arg.txt
       seattlerb/masgn_arg_colon_arg.txt
-      seattlerb/masgn_arg_splat_arg.txt
       seattlerb/masgn_colon2.txt
       seattlerb/masgn_colon3.txt
       seattlerb/masgn_double_paren.txt
       seattlerb/masgn_lhs_splat.txt
-      seattlerb/masgn_splat_arg.txt
-      seattlerb/masgn_splat_arg_arg.txt
-      seattlerb/masgn_star.txt
-      seattlerb/masgn_var_star_var.txt
       seattlerb/method_call_assoc_trailing_comma.txt
       seattlerb/method_call_trailing_comma.txt
-      seattlerb/mlhs_back_anonsplat.txt
-      seattlerb/mlhs_back_splat.txt
-      seattlerb/mlhs_front_anonsplat.txt
-      seattlerb/mlhs_front_splat.txt
-      seattlerb/mlhs_mid_anonsplat.txt
-      seattlerb/mlhs_mid_splat.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
@@ -131,7 +105,6 @@ module Prism
       unparser/corpus/literal/def.txt
       unparser/corpus/literal/dstr.txt
       unparser/corpus/literal/empty.txt
-      unparser/corpus/literal/for.txt
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
       unparser/corpus/literal/lambda.txt
@@ -149,7 +122,6 @@ module Prism
       variables.txt
       while.txt
       whitequark/anonymous_blockarg.txt
-      whitequark/args.txt
       whitequark/args_args_assocs.txt
       whitequark/args_args_assocs_comma.txt
       whitequark/args_args_comma.txt
