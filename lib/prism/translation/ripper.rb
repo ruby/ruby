@@ -1114,7 +1114,7 @@ module Prism
 
         bodystmt =
           if node.equal_loc.nil?
-            visit_body_node(node.body&.location || node.end_keyword_loc, node.body)
+            visit_body_node(node.rparen_loc || node.end_keyword_loc, node.body)
           else
             body = visit(node.body.body.first)
 

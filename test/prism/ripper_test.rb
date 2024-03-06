@@ -57,10 +57,6 @@ module Prism
       seattlerb/case_in.txt
       seattlerb/case_in_else.txt
       seattlerb/class_comments.txt
-      seattlerb/defn_arg_forward_args.txt
-      seattlerb/defn_args_forward_args.txt
-      seattlerb/defn_forward_args.txt
-      seattlerb/defn_kwarg_lvar.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_rescue.txt
       seattlerb/defs_oneliner_eq2.txt
@@ -179,16 +175,11 @@ module Prism
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
       whitequark/def.txt
       whitequark/empty_stmt.txt
-      whitequark/forward_arg.txt
       whitequark/forward_args_legacy.txt
-      whitequark/forwarded_argument_with_kwrestarg.txt
-      whitequark/forwarded_argument_with_restarg.txt
-      whitequark/forwarded_kwrestarg.txt
       whitequark/forwarded_kwrestarg_with_additional_kwarg.txt
       whitequark/forwarded_restarg.txt
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
-      whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
       whitequark/lvar_injecting_match.txt
       whitequark/masgn.txt
       whitequark/masgn_attr.txt
@@ -214,7 +205,6 @@ module Prism
       whitequark/send_self.txt
       whitequark/slash_newline_in_heredocs.txt
       whitequark/string_concat.txt
-      whitequark/trailing_forward_arg.txt
     ]
 
     relatives.each do |relative|
