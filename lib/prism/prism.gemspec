@@ -87,6 +87,7 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/comments.rb",
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/pattern.rb",
+    "lib/prism/polyfill/string.rb",
     "lib/prism/serialize.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
