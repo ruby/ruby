@@ -276,13 +276,6 @@ module Prism
 
       Location.new(source, start_offset, other.end_offset - start_offset)
     end
-
-    # Returns a null location that does not correspond to a source and points to
-    # the beginning of the file. Useful for when you want a location object but
-    # do not care where it points.
-    def self.null
-      new(nil, 0, 0) # steep:ignore
-    end
   end
 
   # This represents a comment that was encountered during parsing. It is the

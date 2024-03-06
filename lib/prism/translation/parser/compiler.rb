@@ -1806,7 +1806,7 @@ module Prism
 
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
-          children = []
+          children = Array.new
           node.parts.each do |part|
             pushing =
               if part.is_a?(StringNode) && part.unescaped.include?("\n")
