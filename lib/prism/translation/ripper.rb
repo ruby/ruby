@@ -1488,7 +1488,11 @@ module Prism
           consequent = visit(node.consequent)
 
           bounds(node.location)
-          on_if(predicate, statements, consequent)
+          if node.if_keyword == "if"
+            on_if(predicate, statements, consequent)
+          else
+            on_elsif(predicate, statements, consequent)
+          end
         else
           statements = visit(node.statements.body.first)
           predicate = visit(node.predicate)
