@@ -239,7 +239,66 @@ module Prism
       # []
       # ^^
       def visit_array_node(node)
-        elements = visit_arguments(node.elements) unless node.elements.empty?
+        bounds(node.location)
+        elements =
+          case node.opening
+          when /^%w/
+            node.elements.inject(on_qwords_new) do |qwords, element|
+              bounds(element.location)
+              on_qwords_add(qwords, on_tstring_content(element.content))
+            end
+          when /^%i/
+            node.elements.inject(on_qsymbols_new) do |qsymbols, element|
+              bounds(element.location)
+              on_qsymbols_add(qsymbols, on_tstring_content(element.value))
+            end
+          when /^%W/
+            node.elements.inject(on_words_new) do |words, element|
+              bounds(element.location)
+              word =
+                if element.is_a?(StringNode)
+                  on_word_add(on_word_new, on_tstring_content(element.content))
+                else
+                  element.parts.inject(on_word_new) do |word, part|
+                    word_part =
+                      if part.is_a?(StringNode)
+                        bounds(part.location)
+                        on_tstring_content(part.content)
+                      else
+                        visit(part)
+                      end
+
+                    on_word_add(word, word_part)
+                  end
+                end
+
+              on_words_add(words, word)
+            end
+          when /^%I/
+            node.elements.inject(on_symbols_new) do |symbols, element|
+              bounds(element.location)
+              symbol =
+                if element.is_a?(SymbolNode)
+                  on_word_add(on_word_new, on_tstring_content(element.value))
+                else
+                  element.parts.inject(on_word_new) do |word, part|
+                    word_part =
+                      if part.is_a?(StringNode)
+                        bounds(part.location)
+                        on_tstring_content(part.content)
+                      else
+                        visit(part)
+                      end
+
+                    on_word_add(word, word_part)
+                  end
+                end
+
+              on_symbols_add(symbols, symbol)
+            end
+          else
+            visit_arguments(node.elements) unless node.elements.empty?
+          end
 
         bounds(node.location)
         on_array(elements)

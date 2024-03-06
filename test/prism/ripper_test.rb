@@ -43,7 +43,6 @@ module Prism
       rescue.txt
       return.txt
       seattlerb/TestRubyParserShared.txt
-      seattlerb/array_lits_trailing_calls.txt
       seattlerb/begin_rescue_else_ensure_bodies.txt
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
       seattlerb/block_break.txt
@@ -115,8 +114,6 @@ module Prism
       seattlerb/heredoc_with_only_carriage_returns.txt
       seattlerb/heredoc_with_only_carriage_returns_windows.txt
       seattlerb/if_elsif.txt
-      seattlerb/interpolated_symbol_array_line_breaks.txt
-      seattlerb/interpolated_word_array_line_breaks.txt
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/lasgn_middle_splat.txt
       seattlerb/magic_encoding_comment.txt
@@ -141,8 +138,6 @@ module Prism
       seattlerb/mlhs_mid_anonsplat.txt
       seattlerb/mlhs_mid_splat.txt
       seattlerb/module_comments.txt
-      seattlerb/non_interpolated_symbol_array_line_breaks.txt
-      seattlerb/non_interpolated_word_array_line_breaks.txt
       seattlerb/parse_if_not_canonical.txt
       seattlerb/parse_if_not_noncanonical.txt
       seattlerb/parse_line_defn_complex.txt
@@ -158,18 +153,10 @@ module Prism
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_076.txt
-      seattlerb/pctW_lineno.txt
       seattlerb/pct_nl.txt
-      seattlerb/pct_w_heredoc_interp_nested.txt
-      seattlerb/qWords_space.txt
-      seattlerb/qsymbols.txt
-      seattlerb/qsymbols_empty.txt
-      seattlerb/qsymbols_empty_space.txt
-      seattlerb/qsymbols_interp.txt
       seattlerb/quoted_symbol_hash_arg.txt
       seattlerb/quoted_symbol_keys.txt
       seattlerb/qw_escape_term.txt
-      seattlerb/qwords_empty.txt
       seattlerb/read_escape_unicode_curlies.txt
       seattlerb/read_escape_unicode_h4.txt
       seattlerb/regexp_esc_C_slash.txt
@@ -189,13 +176,7 @@ module Prism
       seattlerb/str_lit_concat_bad_encodings.txt
       seattlerb/str_newline_hash_line_number.txt
       seattlerb/str_single_double_escaped_newline.txt
-      seattlerb/symbol_list.txt
-      seattlerb/symbols.txt
-      seattlerb/symbols_empty.txt
-      seattlerb/symbols_empty_space.txt
-      seattlerb/symbols_interp.txt
       seattlerb/thingy.txt
-      seattlerb/words_interp.txt
       seattlerb/yield_call_assocs.txt
       seattlerb/yield_empty_parens.txt
       single_method_call_with_bang.txt
@@ -250,12 +231,6 @@ module Prism
       whitequark/args_block_pass.txt
       whitequark/args_cmd.txt
       whitequark/args_star.txt
-      whitequark/array_symbols.txt
-      whitequark/array_symbols_empty.txt
-      whitequark/array_symbols_interp.txt
-      whitequark/array_words.txt
-      whitequark/array_words_empty.txt
-      whitequark/array_words_interp.txt
       whitequark/asgn_mrhs.txt
       whitequark/break_block.txt
       whitequark/bug_480.txt
@@ -283,7 +258,6 @@ module Prism
       whitequark/hash_label_end.txt
       whitequark/if_else.txt
       whitequark/if_elsif.txt
-      whitequark/interp_digit_var.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
       whitequark/lvar_injecting_match.txt
