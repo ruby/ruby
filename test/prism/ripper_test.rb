@@ -58,7 +58,6 @@ module Prism
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/call_assoc_trailing_comma.txt
       seattlerb/call_trailing_comma.txt
-      seattlerb/case_in.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/difficult3_5.txt
@@ -86,7 +85,6 @@ module Prism
       seattlerb/parse_opt_call_args_lit_comma.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
-      seattlerb/parse_pattern_076.txt
       seattlerb/return_call_assocs.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
@@ -135,7 +133,6 @@ module Prism
       whitequark/masgn_attr.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
-      whitequark/newline_in_hash_argument.txt
       whitequark/numbered_args_after_27.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt

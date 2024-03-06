@@ -1384,17 +1384,29 @@ module Prism
         elements =
           if node.elements.any? || !node.rest.nil?
             node.elements.map do |element|
-              bounds(element.key.location)
-              key = on_label(element.key.slice)
-              value = visit(element.value)
-
-              [key, value]
+              [
+                if (key = element.key).opening_loc.nil?
+                  visit(key)
+                else
+                  bounds(key.value_loc)
+                  if (value = key.value).empty?
+                    on_string_content
+                  else
+                    on_string_add(on_string_content, on_tstring_content(value))
+                  end
+                end,
+                visit(element.value)
+              ]
             end
           end
 
         rest =
-          if !node.rest.nil?
+          case node.rest
+          when AssocSplatNode
             visit(node.rest.value)
+          when NoKeywordsParameterNode
+            bounds(node.rest.location)
+            on_var_field(:nil)
           end
 
         bounds(node.location)
