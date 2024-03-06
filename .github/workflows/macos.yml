@@ -45,6 +45,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
