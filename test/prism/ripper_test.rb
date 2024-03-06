@@ -202,7 +202,6 @@ module Prism
       seattlerb/rescue_do_end_no_raise.txt
       seattlerb/rescue_do_end_raised.txt
       seattlerb/rescue_do_end_rescued.txt
-      seattlerb/rescue_in_block.txt
       seattlerb/rescue_parens.txt
       seattlerb/return_call_assocs.txt
       seattlerb/safe_call_dot_parens.txt
@@ -258,7 +257,6 @@ module Prism
       unparser/corpus/literal/since/31.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/literal/yield.txt
-      unparser/corpus/semantic/block.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/kwbegin.txt
       unparser/corpus/semantic/literal.txt
@@ -268,7 +266,6 @@ module Prism
       while.txt
       whitequark/ambiuous_quoted_label_in_ternary_operator.txt
       whitequark/anonymous_blockarg.txt
-      whitequark/arg_scope.txt
       whitequark/args.txt
       whitequark/args_args_assocs.txt
       whitequark/args_args_assocs_comma.txt

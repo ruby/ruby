@@ -356,6 +356,25 @@ module Prism
         on_bodystmt(statements, rescue_clause, else_clause, ensure_clause)
       end
 
+      # Visit the body of a structure that can have either a set of statements
+      # or statements wrapped in rescue/else/ensure.
+      private def visit_body_node(node, location)
+        case node
+        when nil
+          bounds(location)
+          on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+        when StatementsNode
+          body = visit(node)
+
+          bounds(node.location)
+          on_bodystmt(body, nil, nil, nil)
+        when BeginNode
+          visit_begin_node_clauses(node)
+        else
+          raise
+        end
+      end
+
       # foo(&bar)
       #     ^^^^
       def visit_block_argument_node(node)
@@ -371,31 +390,36 @@ module Prism
 
       # Visit a BlockNode.
       def visit_block_node(node)
-        params_val = node.parameters.nil? ? nil : visit(node.parameters)
+        braces = node.opening == "{"
+        parameters = visit(node.parameters)
 
-        # If the body is empty, we use a void statement. If there is
-        # a semicolon after the opening delimiter, we append a void
-        # statement, unless the body is also empty. So we should never
-        # get a double void statement.
+        body =
+          case node.body
+          when nil
+            bounds(node.location)
+            stmts = on_stmts_add(on_stmts_new, on_void_stmt)
 
-        body_val = if node.body.nil?
-          on_stmts_add(on_stmts_new, on_void_stmt)
-        elsif node_has_semicolon?(node)
-          v = visit(node.body)
-          raise(NoMethodError, __method__, "Unexpected statement structure #{v.inspect}") if v[0] != :stmts_add
-          v[1] = on_stmts_add(on_stmts_new, on_void_stmt)
-          v
+            bounds(node.location)
+            braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
+          when StatementsNode
+            stmts = node.body.body
+            stmts.unshift(nil) if source.byteslice((node.parameters&.location || node.opening_loc).end_offset...node.body.location.start_offset).include?(";")
+            stmts = visit_statements_node_body(stmts)
+
+            bounds(node.body.location)
+            braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
+          when BeginNode
+            visit_body_node(node.body, node.location)
+          else
+            raise
+          end
+
+        if braces
+          bounds(node.location)
+          on_brace_block(parameters, body)
         else
-          visit(node.body)
-        end
-
-        case node.opening
-        when "{"
-          on_brace_block(params_val, body_val)
-        when "do"
-          on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
-        else
-          raise
+          bounds(node.location)
+          on_do_block(parameters, body)
         end
       end
 
@@ -768,21 +792,7 @@ module Prism
           end
 
         superclass = visit(node.superclass)
-        bodystmt =
-          case node.body
-          when nil
-            bounds(node.location)
-            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
-          when StatementsNode
-            body = visit(node.body)
-
-            bounds(node.body.location)
-            on_bodystmt(body, nil, nil, nil)
-          when BeginNode
-            visit_begin_node_clauses(node.body)
-          else
-            raise
-          end
+        bodystmt = visit_body_node(node.body, node.location)
 
         bounds(node.location)
         on_class(constant_path, superclass, bodystmt)
@@ -1052,20 +1062,7 @@ module Prism
 
         bodystmt =
           if node.equal_loc.nil?
-            case node.body
-            when nil
-              bounds(node.location)
-              on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
-            when StatementsNode
-              body = visit(node.body)
-
-              bounds(node.body.location)
-              on_bodystmt(body, nil, nil, nil)
-            when BeginNode
-              visit_begin_node_clauses(node.body)
-            else
-              raise
-            end
+            visit_body_node(node.body, node.location)
           else
             body = visit(node.body.body.first)
 
@@ -1811,21 +1808,7 @@ module Prism
             visit(node.constant_path)
           end
 
-        bodystmt =
-          case node.body
-          when nil
-            bounds(node.location)
-            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
-          when StatementsNode
-            body = visit(node.body)
-
-            bounds(node.body.location)
-            on_bodystmt(body, nil, nil, nil)
-          when BeginNode
-            visit_begin_node_clauses(node.body)
-          else
-            raise
-          end
+        bodystmt = visit_body_node(node.body, node.location)
 
         bounds(node.location)
         on_module(constant_path, bodystmt)
@@ -2187,21 +2170,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^^^
       def visit_singleton_class_node(node)
         expression = visit(node.expression)
-        bodystmt =
-          case node.body
-          when nil
-            bounds(node.location)
-            on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
-          when StatementsNode
-            body = visit(node.body)
-
-            bounds(node.body.location)
-            on_bodystmt(body, nil, nil, nil)
-          when BeginNode
-            visit_begin_node_clauses(node.body)
-          else
-            raise
-          end
+        bodystmt = visit_body_node(node.body, node.location)
 
         bounds(node.location)
         on_sclass(expression, bodystmt)
@@ -2551,7 +2520,7 @@ module Prism
         location = node.location
 
         if slice[0] == "-"
-          bounds_values(location.start_line, location.start_column + 1)
+          bounds(location.copy(start_offset: location.start_offset + 1))
           value = yield slice[1..-1]
 
           bounds(node.location)
@@ -2612,13 +2581,6 @@ module Prism
       def bounds(location)
         @lineno = location.start_line
         @column = location.start_column
-      end
-
-      # If we need to do something unusual, we can directly update the line number
-      # and column to reflect the current node.
-      def bounds_values(lineno, column)
-        @lineno = lineno
-        @column = column
       end
 
       ##########################################################################
