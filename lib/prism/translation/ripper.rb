@@ -681,7 +681,7 @@ module Prism
               if node.opening_loc.nil?
                 bounds(node.location)
 
-                if !arguments || arguments.empty?
+                if node.arguments.nil? && !node.block.is_a?(BlockArgumentNode)
                   on_call(receiver, call_operator, message)
                 else
                   on_command_call(receiver, call_operator, message, arguments)
@@ -1708,7 +1708,8 @@ module Prism
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
         if node.opening&.start_with?("<<~")
-          heredoc = visit_string_heredoc_node(node.parts)
+          bounds(node.parts.first.location)
+          heredoc = visit_heredoc_node(node.parts, on_string_content) { |parts, part| on_string_add(parts, part) }
 
           bounds(node.location)
           on_string_literal(heredoc)
@@ -1749,7 +1750,8 @@ module Prism
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
         if node.opening.start_with?("<<~")
-          heredoc = visit_x_string_heredoc_node(node.parts)
+          bounds(node.parts.first.location)
+          heredoc = visit_heredoc_node(node.parts, on_xstring_new) { |parts, part| on_xstring_add(parts, part) }
 
           bounds(node.location)
           on_xstring_literal(heredoc)
@@ -2468,7 +2470,8 @@ module Prism
           bounds(node.location)
           on_CHAR("?#{node.content}")
         elsif opening.start_with?("<<~")
-          heredoc = visit_string_heredoc_node([node])
+          bounds(node.location)
+          heredoc = visit_heredoc_node([node], on_string_content) { |parts, part| on_string_add(parts, part) }
 
           bounds(node.location)
           on_string_literal(heredoc)
@@ -2530,44 +2533,55 @@ module Prism
       end
 
       # Visit a string that is expressed using a <<~ heredoc.
-      private def visit_string_heredoc_node(parts)
+      private def visit_heredoc_node(parts, base)
         common_whitespace = heredoc_common_whitespace(parts)
 
-        bounds(parts.first.location)
-        parts.inject(on_string_content) do |string_content, part|
-          on_string_add(
-            string_content,
+        if common_whitespace == 0
+          bounds(parts.first.location)
+
+          previous_string = []
+          previous_result = base
+
+          parts.each do |part|
             if part.is_a?(StringNode)
-              content = part.content
-              trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
-
-              bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
-              on_tstring_content(part.content[trimmed_whitespace..])
+              if previous_string.empty?
+                previous_string = [part]
+              else
+                previous_string << part
+              end
             else
-              visit(part)
+              unless previous_string.empty?
+                bounds(previous_string[0].location)
+                previous_result = yield(previous_result, on_tstring_content(previous_string.map(&:content).join))
+                previous_string = []
+              end
+
+              previous_result = yield(previous_result, visit(part))
             end
-          )
-        end
-      end
+          end
 
-      # Visit an xstring that is expressed using a <<~ heredoc.
-      private def visit_x_string_heredoc_node(parts)
-        common_whitespace = heredoc_common_whitespace(parts)
+          unless previous_string.empty?
+            bounds(previous_string[0].location)
+            previous_result = yield(previous_result, on_tstring_content(previous_string.map(&:content).join))
+          end
 
-        bounds(parts.first.location)
-        parts.inject(on_xstring_new) do |xstring, part|
-          on_xstring_add(
-            xstring,
-            if part.is_a?(StringNode)
-              content = part.content
-              trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
+          previous_result
+        else
+          bounds(parts.first.location)
+          parts.inject(base) do |string_content, part|
+            yield(
+              string_content,
+              if part.is_a?(StringNode)
+                content = part.content
+                trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
 
-              bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
-              on_tstring_content(part.content[trimmed_whitespace..])
-            else
-              visit(part)
-            end
-          )
+                bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
+                on_tstring_content(part.content[trimmed_whitespace..])
+              else
+                visit(part)
+              end
+            )
+          end
         end
       end
 
@@ -2739,7 +2753,8 @@ module Prism
           bounds(node.location)
           on_xstring_literal(on_xstring_new)
         elsif node.opening.start_with?("<<~")
-          heredoc = visit_x_string_heredoc_node([node])
+          bounds(node.location)
+          heredoc = visit_heredoc_node([node], on_xstring_new) { |parts, part| on_xstring_add(parts, part) }
 
           bounds(node.location)
           on_xstring_literal(heredoc)
@@ -2798,7 +2813,7 @@ module Prism
 
       # Returns true if there is a semicolon between the two locations.
       def void_stmt?(left, right, allow_newline)
-        pattern = allow_newline ? /[;#\n]/ : /[;#]/
+        pattern = allow_newline ? /[;\n]/ : /;/
         source.byteslice(left.end_offset...right.start_offset).match?(pattern)
       end
 

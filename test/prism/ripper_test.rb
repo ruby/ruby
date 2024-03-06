@@ -31,8 +31,6 @@ module Prism
 
     heredocs = %w[
       dos_endings.txt
-      heredocs_leading_whitespace.txt
-      heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
@@ -41,6 +39,7 @@ module Prism
       seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt
       seattlerb/heredoc_squiggly_blank_lines.txt
       seattlerb/heredoc_squiggly_interp.txt
+      seattlerb/heredoc_squiggly_no_indent.txt
       seattlerb/heredoc_squiggly_tabs.txt
       seattlerb/heredoc_squiggly_tabs_extra.txt
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
@@ -57,7 +56,6 @@ module Prism
     ]
 
     skips = incorrect | heredocs | %w[
-      seattlerb/TestRubyParserShared.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
