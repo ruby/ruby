@@ -373,7 +373,8 @@ module Prism
 
   # This represents an error that was encountered during parsing.
   class ParseError
-    # The type of error.
+    # The type of error. This is an _internal_ symbol that is used for
+    # communicating with translation layers. It is not meant to be public API.
     attr_reader :type
 
     # The message associated with this error.
@@ -406,7 +407,8 @@ module Prism
 
   # This represents a warning that was encountered during parsing.
   class ParseWarning
-    # The type of warning.
+    # The type of warning. This is an _internal_ symbol that is used for
+    # communicating with translation layers. It is not meant to be public API.
     attr_reader :type
 
     # The message associated with this warning.

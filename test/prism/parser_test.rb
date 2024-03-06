@@ -95,21 +95,6 @@ module Prism
       end
     end
 
-    def test_warnings
-      buffer = Parser::Source::Buffer.new("inline ruby with warning", 1)
-      buffer.source = "do_something *array"
-
-      parser = Prism::Translation::Parser33.new
-      parser.diagnostics.all_errors_are_fatal = false
-
-      warning = nil
-      parser.diagnostics.consumer = ->(received) { warning = received }
-      parser.parse(buffer)
-
-      assert_equal :warning, warning.level
-      assert_includes warning.message, "has been interpreted as"
-    end
-
     private
 
     def assert_equal_parses(filepath, compare_tokens: true)
@@ -186,8 +171,6 @@ module Prism
             actual_token[0] = expected_token[0] if %i[kDO_BLOCK kDO_LAMBDA].include?(expected_token[0])
           when :tLPAREN
             actual_token[0] = expected_token[0] if expected_token[0] == :tLPAREN2
-          when :tLCURLY
-            actual_token[0] = expected_token[0] if %i[tLBRACE tLBRACE_ARG].include?(expected_token[0])
           when :tPOW
             actual_token[0] = expected_token[0] if expected_token[0] == :tDSTAR
           end

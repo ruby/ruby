@@ -331,6 +331,9 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
         case PM_WARN_<%= warning.name %>: return "<%= warning.name.downcase %>";
         <%- end -%>
     }
+
+    assert(false && "unreachable");
+    return "";
 }
 
 static inline const char *
