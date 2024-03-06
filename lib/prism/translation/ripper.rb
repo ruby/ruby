@@ -54,6 +54,38 @@ module Prism
         new(src, filename, lineno).parse
       end
 
+      # Tokenizes the Ruby program and returns an array of an array,
+      # which is formatted like
+      # <code>[[lineno, column], type, token, state]</code>.
+      # The +filename+ argument is mostly ignored.
+      # By default, this method does not handle syntax errors in +src+,
+      # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
+      #
+      #   require 'ripper'
+      #   require 'pp'
+      #
+      #   pp Ripper.lex("def m(a) nil end")
+      #   #=> [[[1,  0], :on_kw,     "def", FNAME    ],
+      #        [[1,  3], :on_sp,     " ",   FNAME    ],
+      #        [[1,  4], :on_ident,  "m",   ENDFN    ],
+      #        [[1,  5], :on_lparen, "(",   BEG|LABEL],
+      #        [[1,  6], :on_ident,  "a",   ARG      ],
+      #        [[1,  7], :on_rparen, ")",   ENDFN    ],
+      #        [[1,  8], :on_sp,     " ",   BEG      ],
+      #        [[1,  9], :on_kw,     "nil", END      ],
+      #        [[1, 12], :on_sp,     " ",   END      ],
+      #        [[1, 13], :on_kw,     "end", END      ]]
+      #
+      def Ripper.lex(src, filename = "-", lineno = 1, raise_errors: false)
+        result = Prism.lex_compat(src, filepath: filename, line: lineno)
+
+        if result.failure? && raise_errors
+          raise SyntaxError, result.errors.first.message
+        else
+          result.value
+        end
+      end
+
       # This contains a table of all of the parser events and their
       # corresponding arity.
       PARSER_EVENT_TABLE = {

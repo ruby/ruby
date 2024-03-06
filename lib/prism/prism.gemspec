@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
     "docs/parser_translation.md",
     "docs/parsing_rules.md",
     "docs/releasing.md",
-    "docs/ripper.md",
+    "docs/ripper_translation.md",
     "docs/ruby_api.md",
     "docs/ruby_parser_translation.md",
     "docs/serialization.md",
