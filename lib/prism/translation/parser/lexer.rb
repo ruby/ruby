@@ -213,9 +213,11 @@ module Prism
         # Convert the prism tokens into the expected format for the parser gem.
         def to_a
           tokens = []
-          index = 0
 
-          while index < lexed.length
+          index = 0
+          length = lexed.length
+
+          while index < length
             token, state = lexed[index]
             index += 1
             next if %i[IGNORED_NEWLINE __END__ EOF].include?(token.type)
@@ -229,14 +231,18 @@ module Prism
               value.delete_prefix!("?")
             when :tCOMMENT
               if token.type == :EMBDOC_BEGIN
-                until (next_token = lexed[index][0]) && next_token.type == :EMBDOC_END
+                start_index = index
+
+                while !((next_token = lexed[index][0]) && next_token.type == :EMBDOC_END) && (index < length - 1)
                   value += next_token.value
                   index += 1
                 end
 
-                value += next_token.value
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[lexed[index][0].location.end_offset])
-                index += 1
+                if start_index != index
+                  value += next_token.value
+                  location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[lexed[index][0].location.end_offset])
+                  index += 1
+                end
               else
                 value.chomp!
                 location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset - 1])
