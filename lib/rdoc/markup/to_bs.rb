@@ -41,6 +41,31 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
   ##
+  # Prepares the visitor for consuming +list_item+
+
+  def accept_list_item_start list_item
+    type = @list_type.last
+
+    case type
+    when :NOTE, :LABEL then
+      bullets = Array(list_item.label).map do |label|
+        attributes(label).strip
+      end.join "\n"
+
+      bullets << ":\n" unless bullets.empty?
+
+      @prefix = ' ' * @indent
+      @indent += 2
+      @prefix << bullets + (' ' * @indent)
+    else
+      bullet = type == :BULLET ? '*' :  @list_index.last.to_s + '.'
+      @prefix = (' ' * @indent) + bullet.ljust(bullet.length + 1)
+      width = bullet.length + 1
+      @indent += width
+    end
+  end
+
+  ##
   # Turns on or off regexp handling for +convert_string+
 
   def annotate tag
