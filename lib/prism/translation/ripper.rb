@@ -248,7 +248,6 @@ module Prism
       # Visit a list of elements, like the elements of an array or arguments.
       private def visit_arguments(elements)
         bounds(elements.first.location)
-
         elements.inject(on_args_new) do |args, element|
           arg = visit(element)
           bounds(element.location)
@@ -626,10 +625,12 @@ module Prism
         end
 
         arguments =
-          if arguments.any?
+          if arguments.length == 1 && arguments.first.is_a?(ForwardingArgumentsNode)
+            visit(arguments.first)
+          elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block.is_a?(BlockArgumentNode)
+            if block.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode)
               args
             else
               bounds(arguments.first.location)
@@ -1208,7 +1209,8 @@ module Prism
       # def foo(...); bar(...); end
       #                   ^^^
       def visit_forwarding_arguments_node(node)
-        raise NoMethodError, __method__
+        bounds(node.location)
+        on_args_forward
       end
 
       # def foo(...); end

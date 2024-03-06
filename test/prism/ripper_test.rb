@@ -90,7 +90,6 @@ module Prism
       seattlerb/defn_arg_forward_args.txt
       seattlerb/defn_args_forward_args.txt
       seattlerb/defn_forward_args.txt
-      seattlerb/defn_forward_args__no_parens.txt
       seattlerb/defn_kwarg_lvar.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_rescue.txt
@@ -311,11 +310,9 @@ module Prism
       whitequark/empty_stmt.txt
       whitequark/endless_method.txt
       whitequark/endless_method_command_syntax.txt
-      whitequark/endless_method_forwarded_args_legacy.txt
       whitequark/endless_method_with_rescue_mod.txt
       whitequark/endless_method_without_args.txt
       whitequark/forward_arg.txt
-      whitequark/forward_arg_with_open_args.txt
       whitequark/forward_args_legacy.txt
       whitequark/forwarded_argument_with_kwrestarg.txt
       whitequark/forwarded_argument_with_restarg.txt
