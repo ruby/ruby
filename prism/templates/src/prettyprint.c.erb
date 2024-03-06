@@ -36,7 +36,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_concat(output_buffer, prefix_buffer);
                 pm_buffer_append_string(output_buffer, "+-- <%= field.name %>:", <%= 4 + field.name.length + 1 %>);
             <%- case field -%>
-            <%- when Prism::NodeField -%>
+            <%- when Prism::Template::NodeField -%>
                 pm_buffer_append_byte(output_buffer, '\n');
 
                 size_t prefix_length = prefix_buffer->length;
@@ -44,7 +44,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_concat(output_buffer, prefix_buffer);
                 prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>, prefix_buffer);
                 prefix_buffer->length = prefix_length;
-            <%- when Prism::OptionalNodeField -%>
+            <%- when Prism::Template::OptionalNodeField -%>
                 if (cast-><%= field.name %> == NULL) {
                     pm_buffer_append_string(output_buffer, " nil\n", 5);
                 } else {
@@ -56,11 +56,11 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>, prefix_buffer);
                     prefix_buffer->length = prefix_length;
                 }
-            <%- when Prism::StringField -%>
+            <%- when Prism::Template::StringField -%>
                 pm_buffer_append_string(output_buffer, " \"", 2);
                 pm_buffer_append_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>), PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
-            <%- when Prism::NodeListField -%>
+            <%- when Prism::Template::NodeListField -%>
                 pm_buffer_append_format(output_buffer, " (length: %lu)\n", (unsigned long) (cast-><%= field.name %>.size));
 
                 size_t last_index = cast-><%= field.name %>.size;
@@ -73,11 +73,11 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>.nodes[index], prefix_buffer);
                     prefix_buffer->length = prefix_length;
                 }
-            <%- when Prism::ConstantField -%>
+            <%- when Prism::Template::ConstantField -%>
                 pm_buffer_append_byte(output_buffer, ' ');
                 prettyprint_constant(output_buffer, parser, cast-><%= field.name %>);
                 pm_buffer_append_byte(output_buffer, '\n');
-            <%- when Prism::OptionalConstantField -%>
+            <%- when Prism::Template::OptionalConstantField -%>
                 if (cast-><%= field.name %> == 0) {
                     pm_buffer_append_string(output_buffer, " nil\n", 5);
                 } else {
@@ -85,21 +85,21 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     prettyprint_constant(output_buffer, parser, cast-><%= field.name %>);
                     pm_buffer_append_byte(output_buffer, '\n');
                 }
-            <%- when Prism::ConstantListField -%>
+            <%- when Prism::Template::ConstantListField -%>
                 pm_buffer_append_string(output_buffer, " [", 2);
                 for (uint32_t index = 0; index < cast-><%= field.name %>.size; index++) {
                     if (index != 0) pm_buffer_append_string(output_buffer, ", ", 2);
                     prettyprint_constant(output_buffer, parser, cast-><%= field.name %>.ids[index]);
                 }
                 pm_buffer_append_string(output_buffer, "]\n", 2);
-            <%- when Prism::LocationField -%>
+            <%- when Prism::Template::LocationField -%>
                 pm_location_t *location = &cast-><%= field.name %>;
                 pm_buffer_append_byte(output_buffer, ' ');
                 prettyprint_location(output_buffer, parser, location);
                 pm_buffer_append_string(output_buffer, " = \"", 4);
                 pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
-            <%- when Prism::OptionalLocationField -%>
+            <%- when Prism::Template::OptionalLocationField -%>
                 pm_location_t *location = &cast-><%= field.name %>;
                 if (location->start == NULL) {
                     pm_buffer_append_string(output_buffer, " nil\n", 5);
@@ -110,11 +110,11 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
                     pm_buffer_append_string(output_buffer, "\"\n", 2);
                 }
-            <%- when Prism::UInt8Field -%>
+            <%- when Prism::Template::UInt8Field -%>
                 pm_buffer_append_format(output_buffer, " %" PRIu8 "\n", cast-><%= field.name %>);
-            <%- when Prism::UInt32Field -%>
+            <%- when Prism::Template::UInt32Field -%>
                 pm_buffer_append_format(output_buffer, " %" PRIu32 "\n", cast-><%= field.name %>);
-            <%- when Prism::FlagsField -%>
+            <%- when Prism::Template::FlagsField -%>
                 bool found = false;
                 <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
                 <%- found.values.each do |value| -%>
@@ -126,12 +126,12 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 <%- end -%>
                 if (!found) pm_buffer_append_string(output_buffer, " nil", 4);
                 pm_buffer_append_byte(output_buffer, '\n');
-            <%- when Prism::IntegerField -%>
+            <%- when Prism::Template::IntegerField -%>
                 const pm_integer_t *integer = &cast-><%= field.name %>;
                 pm_buffer_append_byte(output_buffer, ' ');
                 pm_integer_string(output_buffer, integer);
                 pm_buffer_append_byte(output_buffer, '\n');
-            <%- when Prism::DoubleField -%>
+            <%- when Prism::Template::DoubleField -%>
                 pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
