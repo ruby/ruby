@@ -804,7 +804,7 @@ module Prism
       def visit_case_node(node)
         predicate = visit(node.predicate)
         clauses =
-          node.conditions.reverse_each.inject(nil) do |consequent, condition|
+          node.conditions.reverse_each.inject(visit(node.consequent)) do |consequent, condition|
             on_when(*visit(condition), consequent)
           end
 
@@ -817,7 +817,7 @@ module Prism
       def visit_case_match_node(node)
         predicate = visit(node.predicate)
         clauses =
-          node.conditions.reverse_each.inject(nil) do |consequent, condition|
+          node.conditions.reverse_each.inject(visit(node.consequent)) do |consequent, condition|
             on_in(*visit(condition), consequent)
           end
 

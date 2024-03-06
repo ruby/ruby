@@ -10,7 +10,13 @@ module Prism
     base = File.join(__dir__, "fixtures")
     relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
 
-    skips = %w[
+    failures = %w[
+      whitequark/break_block.txt
+      whitequark/next_block.txt
+      whitequark/return_block.txt
+    ]
+
+    skips = failures | %w[
       arrays.txt
       blocks.txt
       case.txt
@@ -55,7 +61,6 @@ module Prism
       seattlerb/call_block_arg_named.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
-      seattlerb/case_in_else.txt
       seattlerb/class_comments.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_rescue.txt
@@ -131,7 +136,6 @@ module Prism
       unless.txt
       unparser/corpus/literal/assignment.txt
       unparser/corpus/literal/block.txt
-      unparser/corpus/literal/case.txt
       unparser/corpus/literal/class.txt
       unparser/corpus/literal/def.txt
       unparser/corpus/literal/dstr.txt
@@ -166,18 +170,13 @@ module Prism
       whitequark/args_cmd.txt
       whitequark/args_star.txt
       whitequark/asgn_mrhs.txt
-      whitequark/break_block.txt
       whitequark/bug_480.txt
-      whitequark/case_cond_else.txt
-      whitequark/case_expr_else.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
       whitequark/def.txt
       whitequark/empty_stmt.txt
       whitequark/forward_args_legacy.txt
-      whitequark/forwarded_kwrestarg_with_additional_kwarg.txt
-      whitequark/forwarded_restarg.txt
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/lvar_injecting_match.txt
@@ -186,15 +185,11 @@ module Prism
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
       whitequark/newline_in_hash_argument.txt
-      whitequark/next_block.txt
       whitequark/numbered_args_after_27.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
-      whitequark/pattern_matching_blank_else.txt
-      whitequark/pattern_matching_else.txt
       whitequark/rescue_without_begin_end.txt
-      whitequark/return_block.txt
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt
