@@ -12,6 +12,22 @@ module Prism
   JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
   JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
 
+  class Error
+    attr_reader :name
+
+    def initialize(name)
+      @name = name
+    end
+  end
+
+  class Warning
+    attr_reader :name
+
+    def initialize(name)
+      @name = name
+    end
+  end
+
   # This module contains methods for escaping characters in JavaDoc comments.
   module JavaDoc
     ESCAPES = {
@@ -587,6 +603,8 @@ module Prism
           config = YAML.load_file(File.expand_path("../config.yml", __dir__))
 
           {
+            errors: config.fetch("errors").map { |name| Error.new(name) },
+            warnings: config.fetch("warnings").map { |name| Warning.new(name) },
             nodes: config.fetch("nodes").map { |node| NodeType.new(node) }.sort_by(&:name),
             tokens: config.fetch("tokens").map { |token| Token.new(token) },
             flags: config.fetch("flags").map { |flags| Flags.new(flags) }
@@ -598,6 +616,7 @@ module Prism
   TEMPLATES = [
     "ext/prism/api_node.c",
     "include/prism/ast.h",
+    "include/prism/diagnostic.h",
     "javascript/src/deserialize.js",
     "javascript/src/nodes.js",
     "javascript/src/visitor.js",
@@ -612,6 +631,7 @@ module Prism
     "lib/prism/node.rb",
     "lib/prism/serialize.rb",
     "lib/prism/visitor.rb",
+    "src/diagnostic.c",
     "src/node.c",
     "src/prettyprint.c",
     "src/serialize.c",
