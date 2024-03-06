@@ -167,7 +167,6 @@ module Prism
       seattlerb/str_single_double_escaped_newline.txt
       seattlerb/thingy.txt
       seattlerb/yield_call_assocs.txt
-      seattlerb/yield_empty_parens.txt
       single_method_call_with_bang.txt
       spanning_heredoc.txt
       spanning_heredoc_newlines.txt
@@ -197,7 +196,6 @@ module Prism
       unparser/corpus/literal/since/27.txt
       unparser/corpus/literal/since/31.txt
       unparser/corpus/literal/while.txt
-      unparser/corpus/literal/yield.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/literal.txt
       unparser/corpus/semantic/while.txt
@@ -276,9 +274,7 @@ module Prism
       whitequark/ternary.txt
       whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
-      whitequark/yield.txt
       xstring.txt
-      yield.txt
     ]
 
     relatives.each do |relative|

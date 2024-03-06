@@ -2500,11 +2500,22 @@ module Prism
       # yield 1
       # ^^^^^^^
       def visit_yield_node(node)
-        if node.arguments.nil?
+        if node.arguments.nil? && node.lparen_loc.nil?
           bounds(node.location)
           on_yield0
         else
-          arguments = visit(node.arguments)
+          arguments =
+            if node.arguments.nil?
+              bounds(node.location)
+              on_args_new
+            else
+              visit(node.arguments)
+            end
+
+          unless node.lparen_loc.nil?
+            bounds(node.lparen_loc)
+            arguments = on_paren(arguments)
+          end
 
           bounds(node.location)
           on_yield(arguments)
