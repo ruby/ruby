@@ -12,7 +12,6 @@ module Prism
 
     skips = %w[
       arrays.txt
-      begin_rescue.txt
       blocks.txt
       case.txt
       classes.txt
@@ -36,14 +35,11 @@ module Prism
       multi_write.txt
       non_alphanumeric_methods.txt
       patterns.txt
-      procs.txt
       regex.txt
       regex_char_width.txt
       repeat_parameters.txt
       rescue.txt
       seattlerb/TestRubyParserShared.txt
-      seattlerb/begin_rescue_else_ensure_bodies.txt
-      seattlerb/begin_rescue_else_ensure_no_bodies.txt
       seattlerb/block_break.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
@@ -57,7 +53,6 @@ module Prism
       seattlerb/block_return.txt
       seattlerb/bug190.txt
       seattlerb/bug191.txt
-      seattlerb/bug_215.txt
       seattlerb/bug_comma.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
@@ -183,7 +178,6 @@ module Prism
       symbols.txt
       ternary_operator.txt
       tilde_heredocs.txt
-      undef.txt
       unescaping.txt
       unless.txt
       unparser/corpus/literal/assignment.txt
@@ -208,7 +202,6 @@ module Prism
       unparser/corpus/literal/while.txt
       unparser/corpus/literal/yield.txt
       unparser/corpus/semantic/dstr.txt
-      unparser/corpus/semantic/kwbegin.txt
       unparser/corpus/semantic/literal.txt
       unparser/corpus/semantic/while.txt
       until.txt
@@ -233,7 +226,6 @@ module Prism
       whitequark/bug_ascii_8bit_in_literal.txt
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/bug_heredoc_do.txt
-      whitequark/bug_rescue_empty_else.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
       whitequark/character.txt
@@ -269,8 +261,6 @@ module Prism
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/pattern_matching_blank_else.txt
       whitequark/pattern_matching_else.txt
-      whitequark/rescue_else.txt
-      whitequark/rescue_else_ensure.txt
       whitequark/rescue_without_begin_end.txt
       whitequark/return_block.txt
       whitequark/ruby_bug_10653.txt

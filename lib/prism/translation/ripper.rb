@@ -176,20 +176,11 @@ module Prism
       # alias foo bar
       # ^^^^^^^^^^^^^
       def visit_alias_method_node(node)
-        new_name = visit_alias_method_node_value(node.new_name)
-        old_name = visit_alias_method_node_value(node.old_name)
+        new_name = visit(node.new_name)
+        old_name = visit(node.old_name)
 
         bounds(node.location)
         on_alias(new_name, old_name)
-      end
-
-      # Visit one side of an alias method node.
-      private def visit_alias_method_node_value(node)
-        if node.is_a?(SymbolNode) && node.opening_loc.nil?
-          visit_symbol_literal_node(node, no_symbol_wrapper: true)
-        else
-          visit(node)
-        end
       end
 
       # alias $foo $bar
@@ -408,7 +399,20 @@ module Prism
           end
 
         rescue_clause = visit(node.rescue_clause)
-        else_clause = visit(node.else_clause)
+        else_clause =
+          unless (else_clause_node = node.else_clause).nil?
+            else_statements =
+              if else_clause_node.statements.nil?
+                [nil]
+              else
+                body = else_clause_node.statements.body
+                body.unshift(nil) if source.byteslice(else_clause_node.else_keyword_loc.end_offset...else_clause_node.statements.body[0].location.start_offset).include?(";")
+                body
+              end
+
+            bounds(else_clause_node.location)
+            visit_statements_node_body(else_statements)
+          end
         ensure_clause = visit(node.ensure_clause)
 
         bounds(node.location)
@@ -535,10 +539,10 @@ module Prism
           bounds(node.location)
           on_break(on_args_new)
         else
-          arguments = visit_arguments(node.arguments.arguments)
+          arguments = visit(node.arguments)
 
           bounds(node.location)
-          on_break(on_args_add_block(arguments, false))
+          on_break(arguments)
         end
       end
 
@@ -1171,20 +1175,19 @@ module Prism
 
       # Visit an EnsureNode node.
       def visit_ensure_node(node)
-        if node.statements
-          # If there are any statements, we need to see if there's a semicolon
-          # between the ensure and the start of the first statement.
-
-          stmts_val = visit(node.statements)
-          if node_has_semicolon?(node)
-            # If there's a semicolon, we need to replace [:stmts_new] with
-            # [:stmts_add, [:stmts_new], [:void_stmt]].
-            stmts_val[1] = on_stmts_add(on_stmts_new, on_void_stmt)
+        statements =
+          if node.statements.nil?
+            [nil]
+          else
+            body = node.statements.body
+            body.unshift(nil) if source.byteslice(node.ensure_keyword_loc.end_offset...body[0].location.start_offset).include?(";")
+            body
           end
-        else
-          stmts_val = on_stmts_add(on_stmts_new, on_void_stmt)
-        end
-        on_ensure(stmts_val)
+
+        statements = visit_statements_node_body(statements)
+
+        bounds(node.location)
+        on_ensure(statements)
       end
 
       # false
@@ -1863,7 +1866,7 @@ module Prism
       # A node that is missing from the syntax tree. This is only used in the
       # case of a syntax error.
       def visit_missing_node(node)
-        raise NoMethodError, __method__
+        raise "Cannot visit missing nodes directly."
       end
 
       # module Foo; end
@@ -2346,7 +2349,7 @@ module Prism
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        if (opening = node.opening) && opening.match?(/^%s|['"]$/)
+        if (opening = node.opening)&.match?(/^%s|['"]$/)
           bounds(node.value_loc)
           content = on_string_content
 
@@ -2355,6 +2358,9 @@ module Prism
           end
 
           on_dyna_symbol(content)
+        elsif opening.nil? && node.closing_loc.nil?
+          bounds(node.value_loc)
+          on_symbol_literal(visit_token(node.value))
         else
           bounds(node.value_loc)
           on_symbol_literal(on_symbol(visit_token(node.value)))
@@ -2371,24 +2377,7 @@ module Prism
       # undef foo
       # ^^^^^^^^^
       def visit_undef_node(node)
-        names =
-          node.names.map do |name|
-            case name
-            when SymbolNode
-              bounds(name.value_loc)
-              token = visit_token(name.unescaped)
-
-              if name.opening_loc.nil?
-                on_symbol_literal(token)
-              else
-                on_symbol_literal(on_symbol(token))
-              end
-            when InterpolatedSymbolNode
-              visit(name)
-            else
-              raise
-            end
-          end
+        names = visit_all(node.names)
 
         bounds(node.location)
         on_undef(names)
@@ -2551,39 +2540,6 @@ module Prism
         end
       end
 
-      # Ripper has several methods of emitting a symbol literal. Inside an alias
-      # sometimes it suppresses the [:symbol] wrapper around ident. If the symbol
-      # is also the name of a keyword (e.g. :if) it will emit a :@kw wrapper, not
-      # an :@ident wrapper, with similar treatment for constants and operators.
-      def visit_symbol_literal_node(node, no_symbol_wrapper: false)
-        if (opening = node.opening) && (['"', "'"].include?(opening[-1]) || opening.start_with?("%s"))
-          bounds(node.value_loc)
-          str_val = node.value.to_s
-          if str_val == ""
-            return on_dyna_symbol(on_string_content)
-          else
-            tstring_val = on_tstring_content(str_val)
-            return on_dyna_symbol(on_string_add(on_string_content, tstring_val))
-          end
-        end
-
-        bounds(node.value_loc)
-        node_name = node.value.to_s
-        if RUBY_KEYWORDS.include?(node_name)
-          token_val = on_kw(node_name)
-        elsif node_name.length == 0
-          raise NoMethodError, __method__
-        elsif /[[:upper:]]/.match(node_name[0])
-          token_val = on_const(node_name)
-        elsif /[[:punct:]]/.match(node_name[0])
-          token_val = on_op(node_name)
-        else
-          token_val = on_ident(node_name)
-        end
-        sym_val = no_symbol_wrapper ? token_val : on_symbol(token_val)
-        on_symbol_literal(sym_val)
-      end
-
       # Visit a node that represents a number. We need to explicitly handle the
       # unary - operator.
       def visit_number_node(node)
@@ -2595,53 +2551,11 @@ module Prism
           value = yield slice[1..-1]
 
           bounds(node.location)
-          on_unary(visit_unary_operator(:-@), value)
+          on_unary(:-@, value)
         else
           bounds(location)
           yield slice
         end
-      end
-
-      if RUBY_ENGINE == "jruby" && Gem::Version.new(JRUBY_VERSION) < Gem::Version.new("9.4.6.0")
-        # JRuby before 9.4.6.0 uses :- for unary minus instead of :-@
-        def visit_unary_operator(value)
-          value == :-@ ? :- : value
-        end
-      else
-        # For most Rubies and JRuby after 9.4.6.0 this is a no-op.
-        def visit_unary_operator(value)
-          value
-        end
-      end
-
-      # Some nodes, such as `begin`, `ensure` and `do` may have a semicolon
-      # after the keyword and before the first statement. This affects
-      # Ripper's return values.
-      def node_has_semicolon?(node)
-        first_field, second_field = case node
-        when BeginNode
-          [:begin_keyword_loc, :statements]
-        when EnsureNode
-          [:ensure_keyword_loc, :statements]
-        when BlockNode
-          [:opening_loc, :body]
-        else
-          raise NoMethodError, __method__
-        end
-        first_offs, second_offs = delimiter_offsets_for(node, first_field, second_field)
-
-        # We need to know if there's a semicolon after the keyword, but before
-        # the start of the first statement in the ensure.
-        source.byteslice(first_offs..second_offs).include?(";")
-      end
-
-      # For a given node, grab the offsets for the end of the first field
-      # and the beginning of the second field.
-      def delimiter_offsets_for(node, first, second)
-        first_field = node.send(first)
-        first_end_loc = first_field.start_offset + first_field.length
-        second_begin_loc = node.send(second).body[0].location.start_offset - 1
-        [first_end_loc, second_begin_loc]
       end
 
       # This method is responsible for updating lineno and column information
