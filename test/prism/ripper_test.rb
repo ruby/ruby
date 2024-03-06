@@ -64,11 +64,9 @@ module Prism
       seattlerb/parse_line_evstr_after_break.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
-      seattlerb/return_call_assocs.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       seattlerb/str_lit_concat_bad_encodings.txt
-      seattlerb/yield_call_assocs.txt
       spanning_heredoc.txt
       strings.txt
       tilde_heredocs.txt

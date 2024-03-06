@@ -358,8 +358,8 @@ module Prism
       # foo(bar)
       #     ^^^
       def visit_arguments_node(node)
-        bounds(node.location)
-        on_args_add_block(visit_arguments(node.arguments), false)
+        arguments, _ = visit_call_node_arguments(node, nil, false)
+        arguments
       end
 
       # { a: 1 }
