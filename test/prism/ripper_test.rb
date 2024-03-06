@@ -25,7 +25,6 @@ module Prism
       dos_endings.txt
       embdoc_no_newline_at_end.txt
       endless_methods.txt
-      global_variables.txt
       hashes.txt
       heredocs_leading_whitespace.txt
       heredocs_nested.txt
@@ -89,7 +88,6 @@ module Prism
       single_method_call_with_bang.txt
       spanning_heredoc.txt
       strings.txt
-      symbols.txt
       ternary_operator.txt
       tilde_heredocs.txt
       unless.txt

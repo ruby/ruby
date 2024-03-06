@@ -2721,6 +2721,12 @@ module Prism
           on_ident(token)
         when /^[[:upper:]]/
           on_const(token)
+        when /^@@/
+          on_cvar(token)
+        when /^@/
+          on_ivar(token)
+        when /^\$/
+          on_gvar(token)
         when /^[[:punct:]]/
           on_op(token)
         else
