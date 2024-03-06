@@ -2306,7 +2306,12 @@ module Prism
           when 0
             nil
           when 1
-            [visit(node.exceptions.first)]
+            if (exception = node.exceptions.first).is_a?(SplatNode)
+              bounds(exception.location)
+              on_mrhs_add_star(on_mrhs_new, visit(exception))
+            else
+              [visit(node.exceptions.first)]
+            end
           else
             bounds(node.location)
             length = node.exceptions.length

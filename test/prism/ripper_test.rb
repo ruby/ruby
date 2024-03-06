@@ -57,7 +57,6 @@ module Prism
     ]
 
     skips = incorrect | heredocs | %w[
-      rescue.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
