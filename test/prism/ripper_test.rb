@@ -32,7 +32,6 @@ module Prism
       heredocs_with_ignored_newlines.txt
       if.txt
       method_calls.txt
-      methods.txt
       modules.txt
       multi_write.txt
       patterns.txt
@@ -52,7 +51,6 @@ module Prism
       seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/call_assoc_trailing_comma.txt
-      seattlerb/call_block_arg_named.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
       seattlerb/defn_oneliner_eq2.txt
@@ -113,7 +111,6 @@ module Prism
       unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/since/27.txt
-      unparser/corpus/literal/since/31.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/literal.txt
@@ -121,17 +118,10 @@ module Prism
       until.txt
       variables.txt
       while.txt
-      whitequark/anonymous_blockarg.txt
-      whitequark/args_args_assocs.txt
       whitequark/args_args_assocs_comma.txt
       whitequark/args_args_comma.txt
-      whitequark/args_args_star.txt
-      whitequark/args_assocs.txt
       whitequark/args_assocs_comma.txt
-      whitequark/args_assocs_legacy.txt
-      whitequark/args_block_pass.txt
       whitequark/args_cmd.txt
-      whitequark/args_star.txt
       whitequark/asgn_mrhs.txt
       whitequark/bug_480.txt
       whitequark/dedenting_heredoc.txt

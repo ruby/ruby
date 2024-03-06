@@ -693,22 +693,21 @@ module Prism
           block = nil
         end
 
-        arguments =
+        [
           if arguments.length == 1 && arguments.first.is_a?(ForwardingArgumentsNode)
             visit(arguments.first)
           elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode)
+            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode)
               args
             else
               bounds(arguments.first.location)
               on_args_add_block(args, false)
             end
-          end
-
-        block = visit(block) if !block.nil?
-        [arguments, block]
+          end,
+          visit(block)
+        ]
       end
 
       # foo.bar += baz
@@ -1985,10 +1984,10 @@ module Prism
           bounds(node.location)
           on_next(on_args_new)
         else
-          arguments = visit_arguments(node.arguments.arguments)
+          arguments = visit(node.arguments)
 
           bounds(node.location)
-          on_next(on_args_add_block(arguments, false))
+          on_next(arguments)
         end
       end
 
