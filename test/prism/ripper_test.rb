@@ -88,15 +88,12 @@ module Prism
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/while.txt
-      variables.txt
-      whitequark/asgn_mrhs.txt
       whitequark/bug_480.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
       whitequark/empty_stmt.txt
       whitequark/if_elsif.txt
-      whitequark/masgn_splat.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt

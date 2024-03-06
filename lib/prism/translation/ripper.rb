@@ -2812,13 +2812,14 @@ module Prism
           length = elements.length
 
           bounds(elements.first.location)
-          elements.each_with_index.inject(on_args_new) do |args, (element, index)|
+          elements.each_with_index.inject((elements.first.is_a?(SplatNode) && length == 1) ? on_mrhs_new : on_args_new) do |args, (element, index)|
             arg = visit(element)
             bounds(element.location)
 
             if index == length - 1
               if element.is_a?(SplatNode)
-                on_mrhs_add_star(on_mrhs_new_from_args(args), arg)
+                mrhs = index == 0 ? args : on_mrhs_new_from_args(args)
+                on_mrhs_add_star(mrhs, arg)
               else
                 on_mrhs_add(on_mrhs_new_from_args(args), arg)
               end
