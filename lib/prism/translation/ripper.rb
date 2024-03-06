@@ -2301,7 +2301,10 @@ module Prism
       # "foo"
       # ^^^^^
       def visit_string_node(node)
-        if node.content.empty?
+        if node.opening == "?"
+          bounds(node.location)
+          on_CHAR("?#{node.content}")
+        elsif node.content.empty?
           bounds(node.location)
           on_string_literal(on_string_content)
         else

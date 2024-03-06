@@ -50,7 +50,6 @@ module Prism
       seattlerb/block_return.txt
       seattlerb/bug190.txt
       seattlerb/bug191.txt
-      seattlerb/bug_comma.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
       seattlerb/call_args_assoc_quoted.txt
@@ -131,8 +130,6 @@ module Prism
       seattlerb/parse_pattern_076.txt
       seattlerb/quoted_symbol_hash_arg.txt
       seattlerb/quoted_symbol_keys.txt
-      seattlerb/read_escape_unicode_curlies.txt
-      seattlerb/read_escape_unicode_h4.txt
       seattlerb/regexp_esc_C_slash.txt
       seattlerb/regexp_escape_extended.txt
       seattlerb/rescue_do_end_ensure_result.txt
@@ -201,7 +198,6 @@ module Prism
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
-      whitequark/character.txt
       whitequark/class_definition_in_while_cond.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
