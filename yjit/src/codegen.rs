@@ -5533,15 +5533,12 @@ fn jit_rb_str_getbyte(
     let byte = asm.load(Opnd::mem(8, str_ptr, 0));
 
 
-
-    // FIXME: here we need to zero-extend the byte to 64 bits
-
-
+    let byte = byte.with_num_bits(64).unwrap();
+    let byte = asm.and(byte, 0xFF.into());
 
     // Tag the byte
     let byte = asm.lshift(byte, Opnd::UImm(1));
     let byte = asm.or(byte, Opnd::UImm(1));
-
 
 
     asm.stack_pop(2); // Keep them on stack during ccall for GC
@@ -6567,16 +6564,16 @@ fn get_string_ptr(asm: &mut Assembler, string_reg: Opnd) -> Opnd {
 
     let flags_opnd = Opnd::mem(VALUE_BITS, string_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, (RSTRING_NOEMBED as u64).into());
-    let heap_ptr_opnd = Opnd::mem(
+    let heap_ptr_opnd = asm.load(Opnd::mem(
         usize::BITS as u8,
         string_reg,
         RUBY_OFFSET_RSTRING_AS_HEAP_PTR,
-    );
+    ));
 
     // Load the address of the embedded array
     // (struct RString *)(obj)->as.ary
     let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, string_reg, RUBY_OFFSET_RSTRING_AS_ARY));
-    asm.csel_nz(ary_opnd, heap_ptr_opnd)
+    asm.csel_nz(heap_ptr_opnd, ary_opnd)
 }
 
 /// Pushes arguments from an array to the stack. Differs from push splat because
