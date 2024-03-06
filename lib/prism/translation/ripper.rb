@@ -629,7 +629,7 @@ module Prism
             on_binary(receiver, node.name, value)
           else
             bounds(node.message_loc)
-            message = visit_token(node.message)
+            message = visit_token(node.message, false)
 
             if node.variable_call?
               on_vcall(message)
@@ -666,7 +666,7 @@ module Prism
               :call
             else
               bounds(node.message_loc)
-              visit_token(node.message)
+              visit_token(node.message, false)
             end
 
           if node.name.end_with?("=") && !node.message.end_with?("=") && !node.arguments.nil? && node.block.nil?
@@ -2761,13 +2761,13 @@ module Prism
 
       # Visit the string content of a particular node. This method is used to
       # split into the various token types.
-      def visit_token(token)
+      def visit_token(token, allow_keywords = true)
         case token
         when "."
           on_period(token)
         when "`"
           on_backtick(token)
-        when *KEYWORDS
+        when *(allow_keywords ? KEYWORDS : [])
           on_kw(token)
         when /^_/
           on_ident(token)
