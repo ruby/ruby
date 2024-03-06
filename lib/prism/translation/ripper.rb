@@ -2216,7 +2216,9 @@ module Prism
 
       # The top-level program node.
       def visit_program_node(node)
-        statements = visit(node.statements)
+        body = node.statements.body
+        body << nil if body.empty?
+        statements = visit_statements_node_body(body)
 
         bounds(node.location)
         on_program(statements)

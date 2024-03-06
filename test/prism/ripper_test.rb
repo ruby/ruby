@@ -24,26 +24,16 @@ module Prism
       "seattlerb/parse_pattern_058.txt",
 
       # Ripper cannot handle named capture groups in regular expressions.
+      "regex.txt",
       "regex_char_width.txt",
       "whitequark/lvar_injecting_match.txt"
     ]
 
-    skips = incorrect | %w[
+    heredocs = %w[
       dos_endings.txt
-      embdoc_no_newline_at_end.txt
       heredocs_leading_whitespace.txt
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
-      if.txt
-      modules.txt
-      regex.txt
-      rescue.txt
-      seattlerb/TestRubyParserShared.txt
-      seattlerb/block_call_dot_op2_brace_block.txt
-      seattlerb/block_command_operation_colon.txt
-      seattlerb/block_command_operation_dot.txt
-      seattlerb/defn_oneliner_eq2.txt
-      seattlerb/defs_oneliner_eq2.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
       seattlerb/heredoc_nested.txt
@@ -54,12 +44,28 @@ module Prism
       seattlerb/heredoc_squiggly_tabs.txt
       seattlerb/heredoc_squiggly_tabs_extra.txt
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
-      seattlerb/if_elsif.txt
       spanning_heredoc.txt
       tilde_heredocs.txt
+      whitequark/dedenting_heredoc.txt
+      whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
+      whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
+      whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
+      whitequark/slash_newline_in_heredocs.txt
+    ]
+
+    skips = incorrect | heredocs | %w[
+      if.txt
+      modules.txt
+      rescue.txt
+      seattlerb/TestRubyParserShared.txt
+      seattlerb/block_call_dot_op2_brace_block.txt
+      seattlerb/block_command_operation_colon.txt
+      seattlerb/block_command_operation_dot.txt
+      seattlerb/defn_oneliner_eq2.txt
+      seattlerb/defs_oneliner_eq2.txt
+      seattlerb/if_elsif.txt
       unparser/corpus/literal/block.txt
       unparser/corpus/literal/class.txt
-      unparser/corpus/literal/empty.txt
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
       unparser/corpus/literal/module.txt
@@ -67,16 +73,10 @@ module Prism
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/while.txt
-      whitequark/dedenting_heredoc.txt
-      whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
-      whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
-      whitequark/empty_stmt.txt
       whitequark/if_elsif.txt
       whitequark/parser_bug_640.txt
-      whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/send_block_chain_cmd.txt
-      whitequark/slash_newline_in_heredocs.txt
     ]
 
     relatives.each do |relative|
