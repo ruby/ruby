@@ -13,6 +13,8 @@ module Prism
     incorrect = [
       # Ripper incorrectly attributes the block to the keyword.
       "seattlerb/block_break.txt",
+      "seattlerb/block_next.txt",
+      "seattlerb/block_return.txt",
       "whitequark/break_block.txt",
       "whitequark/next_block.txt",
       "whitequark/return_block.txt",
@@ -39,9 +41,6 @@ module Prism
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
-      seattlerb/block_next.txt
-      seattlerb/block_return.txt
-      seattlerb/bug_hash_interp_array.txt
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
@@ -59,31 +58,24 @@ module Prism
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
       seattlerb/if_elsif.txt
       seattlerb/lambda_do_vs_brace.txt
-      seattlerb/parse_line_dstr_escaped_newline.txt
-      seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       spanning_heredoc.txt
       tilde_heredocs.txt
-      unparser/corpus/literal/assignment.txt
       unparser/corpus/literal/block.txt
       unparser/corpus/literal/class.txt
-      unparser/corpus/literal/def.txt
-      unparser/corpus/literal/dstr.txt
       unparser/corpus/literal/empty.txt
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
       unparser/corpus/literal/lambda.txt
-      unparser/corpus/literal/literal.txt
       unparser/corpus/literal/module.txt
       unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/while.txt
-      whitequark/bug_480.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt

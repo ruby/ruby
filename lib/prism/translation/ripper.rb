@@ -1200,7 +1200,13 @@ module Prism
       # "foo #{bar}"
       #      ^^^^^^
       def visit_embedded_statements_node(node)
-        statements = visit(node.statements)
+        statements =
+          if node.statements.nil?
+            bounds(node.location)
+            on_stmts_add(on_stmts_new, on_void_stmt)
+          else
+            visit(node.statements)
+          end
 
         bounds(node.location)
         on_string_embexpr(statements)
