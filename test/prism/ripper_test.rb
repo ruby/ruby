@@ -14,7 +14,6 @@ module Prism
       arrays.txt
       blocks.txt
       case.txt
-      classes.txt
       command_method_call.txt
       constants.txt
       dos_endings.txt
@@ -93,7 +92,6 @@ module Prism
       seattlerb/if_elsif.txt
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/lasgn_middle_splat.txt
-      seattlerb/magic_encoding_comment.txt
       seattlerb/masgn_anon_splat_arg.txt
       seattlerb/masgn_arg_colon_arg.txt
       seattlerb/masgn_arg_splat_arg.txt
@@ -190,7 +188,6 @@ module Prism
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
-      whitequark/class_definition_in_while_cond.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
@@ -215,7 +212,6 @@ module Prism
       whitequark/newline_in_hash_argument.txt
       whitequark/next_block.txt
       whitequark/numbered_args_after_27.txt
-      whitequark/numparam_outside_block.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt

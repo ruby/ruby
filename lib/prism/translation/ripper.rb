@@ -421,16 +421,18 @@ module Prism
 
       # Visit the body of a structure that can have either a set of statements
       # or statements wrapped in rescue/else/ensure.
-      private def visit_body_node(node, location)
+      private def visit_body_node(location, node)
         case node
         when nil
           bounds(location)
           on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
         when StatementsNode
-          body = visit(node)
+          body = [*node.body]
+          body.unshift(nil) if semicolon?(location, body[0].location)
+          stmts = visit_statements_node_body(body)
 
-          bounds(node.location)
-          on_bodystmt(body, nil, nil, nil)
+          bounds(node.body.first.location)
+          on_bodystmt(stmts, nil, nil, nil)
         when BeginNode
           visit_begin_node_clauses(node)
         else
@@ -472,7 +474,7 @@ module Prism
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when BeginNode
-            visit_body_node(node.body, node.location)
+            visit_body_node(node.parameters&.location || node.opening_loc, node.body)
           else
             raise
           end
@@ -837,7 +839,7 @@ module Prism
           end
 
         superclass = visit(node.superclass)
-        bodystmt = visit_body_node(node.body, node.location)
+        bodystmt = visit_body_node(node.superclass&.location || node.constant_path.location, node.body)
 
         bounds(node.location)
         on_class(constant_path, superclass, bodystmt)
@@ -1114,7 +1116,7 @@ module Prism
 
         bodystmt =
           if node.equal_loc.nil?
-            visit_body_node(node.body, node.location)
+            visit_body_node(node.body&.location || node.end_keyword_loc, node.body)
           else
             body = visit(node.body.body.first)
 
@@ -1754,7 +1756,7 @@ module Prism
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when BeginNode
-            visit_body_node(node.body, node.location)
+            visit_body_node(node.opening_loc, node.body)
           else
             raise
           end
@@ -1888,7 +1890,7 @@ module Prism
             visit(node.constant_path)
           end
 
-        bodystmt = visit_body_node(node.body, node.location)
+        bodystmt = visit_body_node(node.constant_path.location, node.body)
 
         bounds(node.location)
         on_module(constant_path, bodystmt)
@@ -2250,7 +2252,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^^^
       def visit_singleton_class_node(node)
         expression = visit(node.expression)
-        bodystmt = visit_body_node(node.body, node.location)
+        bodystmt = visit_body_node(node.body&.location || node.end_keyword_loc, node.body)
 
         bounds(node.location)
         on_sclass(expression, bodystmt)
