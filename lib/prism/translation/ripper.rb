@@ -903,19 +903,11 @@ module Prism
           if node.locals.any?
             visit_all(node.locals)
           else
-            visit_block_parameters_node_empty_locals
+            false
           end
 
         bounds(node.location)
         on_block_var(parameters, locals)
-      end
-
-      if RUBY_ENGINE == "jruby"
-        # For JRuby, empty locals in an on_block_var is nil.
-        private def visit_block_parameters_node_empty_locals; nil; end
-      else
-        # For everyone else, empty locals in an on_block_var is false.
-        private def visit_block_parameters_node_empty_locals; false; end
       end
 
       # break

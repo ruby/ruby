@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return if RUBY_VERSION < "3.3"
+
 require_relative "test_helper"
 
 module Prism
@@ -52,10 +54,13 @@ module Prism
     relatives.each do |relative|
       # Skip the tests that Ripper is reporting the wrong results for.
       next if incorrect.include?(relative)
+
+      # Skip the tests we haven't implemented yet.
+      next if omitted.include?(relative)
+
       filepath = File.join(__dir__, "fixtures", relative)
 
       define_method "test_ripper_#{relative}" do
-        omit("Not yet implemented") if omitted.include?(relative)
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
         case relative

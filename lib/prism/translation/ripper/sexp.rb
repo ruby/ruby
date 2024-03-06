@@ -44,7 +44,6 @@ module Prism
           module_eval(<<-End, __FILE__, __LINE__ + 1)
             def on_#{event}(*args)
               args.unshift :#{event}
-              args
             end
           End
         end
