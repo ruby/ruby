@@ -87,9 +87,9 @@ module Prism
 
       while left <= right
         mid = left + (right - left) / 2
-        return mid if offsets[mid] == byte_offset
+        return mid if (offset = offsets[mid]) == byte_offset
 
-        if offsets[mid] < byte_offset
+        if offset < byte_offset
           left = mid + 1
         else
           right = mid - 1
@@ -262,7 +262,7 @@ module Prism
 
     # Returns true if the given other location is equal to this location.
     def ==(other)
-      other.is_a?(Location) &&
+      Location === other &&
         other.start_offset == start_offset &&
         other.end_offset == end_offset
     end
@@ -541,7 +541,7 @@ module Prism
 
     # Returns true if the given other token is equal to this token.
     def ==(other)
-      other.is_a?(Token) &&
+      Token === other &&
         other.type == type &&
         other.value == value
     end

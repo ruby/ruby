@@ -302,7 +302,7 @@ module Prism
                 index += 1
               end
             when :tFID
-              if !tokens.empty? && tokens[-1][0] == :kDEF
+              if !tokens.empty? && tokens.dig(-1, 0) == :kDEF
                 type = :tIDENTIFIER
               end
             end
