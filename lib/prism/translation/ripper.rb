@@ -585,8 +585,8 @@ module Prism
 
             bounds(node.location)
             call = on_aref_field(receiver, arguments)
+            value = visit_write_value(last_argument)
 
-            value = visit(last_argument)
             bounds(last_argument.location)
             on_assign(call, value)
           when :-@, :+@, :~@
@@ -648,8 +648,7 @@ module Prism
             end
 
           if node.name.end_with?("=") && !node.message.end_with?("=") && !node.arguments.nil? && node.block.nil?
-            bounds(node.arguments.location)
-            value = visit(node.arguments.arguments.first)
+            value = visit_write_value(node.arguments.arguments.first)
 
             bounds(node.location)
             on_assign(on_field(receiver, call_operator, message), value)
@@ -726,8 +725,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -747,8 +747,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -768,8 +769,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -857,7 +859,7 @@ module Prism
       def visit_class_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_cvar(node.name.to_s))
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -871,7 +873,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -885,7 +887,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -899,7 +901,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -927,7 +929,7 @@ module Prism
       def visit_constant_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_const(node.name.to_s))
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -941,7 +943,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -955,7 +957,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -969,7 +971,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1009,7 +1011,7 @@ module Prism
       # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -1042,7 +1044,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1056,7 +1058,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1070,7 +1072,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1305,7 +1307,7 @@ module Prism
       def visit_global_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_gvar(node.name.to_s))
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -1319,7 +1321,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1333,7 +1335,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1347,7 +1349,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1484,8 +1486,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -1500,8 +1503,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -1516,8 +1520,9 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
+        value = visit_write_value(node.value)
 
-        value = visit(node.value)
+        bounds(node.location)
         on_opassign(target, operator, value)
       end
 
@@ -1543,7 +1548,7 @@ module Prism
       def visit_instance_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_ivar(node.name.to_s))
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -1557,7 +1562,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1571,7 +1576,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1585,7 +1590,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1793,7 +1798,7 @@ module Prism
       def visit_local_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_ident(node.name_loc.slice))
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_assign(target, value)
@@ -1807,7 +1812,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("#{node.operator}=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1821,7 +1826,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1835,7 +1840,7 @@ module Prism
 
         bounds(node.operator_loc)
         operator = on_op("||=")
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_opassign(target, operator, value)
@@ -1968,7 +1973,7 @@ module Prism
           targets = on_mlhs_paren(targets)
         end
 
-        value = visit(node.value)
+        value = visit_write_value(node.value)
 
         bounds(node.location)
         on_massign(targets, value)
@@ -2738,6 +2743,40 @@ module Prism
         else
           bounds(location)
           yield slice
+        end
+      end
+
+      # Visit a node that represents a write value. This is used to handle the
+      # special case of an implicit array that is generated without brackets.
+      def visit_write_value(node)
+        if node.is_a?(ArrayNode) && node.opening_loc.nil?
+          elements = node.elements
+          length = elements.length
+
+          bounds(elements.first.location)
+          elements.each_with_index.inject(on_args_new) do |args, (element, index)|
+            arg = visit(element)
+            bounds(element.location)
+
+            if index == length - 1
+              if element.is_a?(SplatNode)
+                on_mrhs_add_star(on_mrhs_new_from_args(args), arg)
+              else
+                on_mrhs_add(on_mrhs_new_from_args(args), arg)
+              end
+            else
+              case element
+              when BlockArgumentNode
+                on_args_add_block(args, arg)
+              when SplatNode
+                on_args_add_star(args, arg)
+              else
+                on_args_add(args, arg)
+              end
+            end
+          end
+        else
+          visit(node)
         end
       end
 

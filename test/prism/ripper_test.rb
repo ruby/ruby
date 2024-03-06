@@ -69,12 +69,8 @@ module Prism
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
       seattlerb/if_elsif.txt
       seattlerb/lambda_do_vs_brace.txt
-      seattlerb/lasgn_middle_splat.txt
       seattlerb/masgn_arg_colon_arg.txt
-      seattlerb/masgn_colon2.txt
-      seattlerb/masgn_colon3.txt
       seattlerb/masgn_double_paren.txt
-      seattlerb/masgn_lhs_splat.txt
       seattlerb/method_call_assoc_trailing_comma.txt
       seattlerb/method_call_trailing_comma.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
@@ -133,7 +129,6 @@ module Prism
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/lvar_injecting_match.txt
-      whitequark/masgn.txt
       whitequark/masgn_attr.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
