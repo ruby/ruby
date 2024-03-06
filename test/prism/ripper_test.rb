@@ -51,13 +51,9 @@ module Prism
       seattlerb/block_command_operation_dot.txt
       seattlerb/block_next.txt
       seattlerb/block_return.txt
-      seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
-      seattlerb/call_args_assoc_trailing_comma.txt
       seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
-      seattlerb/call_assoc_trailing_comma.txt
-      seattlerb/call_trailing_comma.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/difficult3_5.txt
@@ -76,13 +72,9 @@ module Prism
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/masgn_arg_colon_arg.txt
       seattlerb/masgn_double_paren.txt
-      seattlerb/method_call_assoc_trailing_comma.txt
-      seattlerb/method_call_trailing_comma.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
-      seattlerb/parse_opt_call_args_assocs_comma.txt
-      seattlerb/parse_opt_call_args_lit_comma.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/return_call_assocs.txt
@@ -117,9 +109,6 @@ module Prism
       until.txt
       variables.txt
       while.txt
-      whitequark/args_args_assocs_comma.txt
-      whitequark/args_args_comma.txt
-      whitequark/args_assocs_comma.txt
       whitequark/args_cmd.txt
       whitequark/asgn_mrhs.txt
       whitequark/bug_480.txt

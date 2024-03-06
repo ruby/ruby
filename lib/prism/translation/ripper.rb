@@ -554,7 +554,7 @@ module Prism
           case node.name
           when :[]
             receiver = visit(node.receiver)
-            arguments, block = visit_call_node_arguments(node.arguments, node.block)
+            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
             bounds(node.location)
             call = on_aref(receiver, arguments)
@@ -612,7 +612,7 @@ module Prism
             if node.variable_call?
               on_vcall(message)
             else
-              arguments, block = visit_call_node_arguments(node.arguments, node.block)
+              arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
               call =
                 if node.opening_loc.nil? && (arguments&.any? || block.nil?)
                   bounds(node.location)
@@ -653,7 +653,7 @@ module Prism
             bounds(node.location)
             on_assign(on_field(receiver, call_operator, message), value)
           else
-            arguments, block = visit_call_node_arguments(node.arguments, node.block)
+            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
             call =
               if node.opening_loc.nil?
                 bounds(node.location)
@@ -683,7 +683,7 @@ module Prism
 
       # Visit the arguments and block of a call node and return the arguments
       # and block as they should be used.
-      private def visit_call_node_arguments(arguments_node, block_node)
+      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
         arguments = arguments_node&.arguments || []
         block = block_node
 
@@ -698,7 +698,7 @@ module Prism
           elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode)
+            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || trailing_comma
               args
             else
               bounds(arguments.first.location)
@@ -2479,7 +2479,7 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        arguments, block = visit_call_node_arguments(node.arguments, node.block)
+        arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
 
         if !node.lparen_loc.nil?
           bounds(node.lparen_loc)
@@ -2695,6 +2695,11 @@ module Prism
       ##########################################################################
       # Helpers
       ##########################################################################
+
+      # Returns true if there is a comma between the two locations.
+      def trailing_comma?(left, right)
+        source.byteslice(left.end_offset...right.start_offset).include?(",")
+      end
 
       # Returns true if there is a semicolon between the two locations.
       def void_stmt?(left, right)
