@@ -37,8 +37,6 @@ module Prism
     # * on_semicolon
     # * on_sp
     # * on_symbeg
-    # * on_tlambda
-    # * on_tlambeg
     # * on_tstring_beg
     # * on_tstring_end
     #
@@ -2243,6 +2241,9 @@ module Prism
 
       # -> {}
       def visit_lambda_node(node)
+        bounds(node.operator_loc)
+        on_tlambda(node.operator)
+
         parameters =
           if node.parameters.is_a?(BlockParametersNode)
             # Ripper does not track block-locals within lambdas, so we skip
@@ -2267,6 +2268,11 @@ module Prism
           end
 
         braces = node.opening == "{"
+        if braces
+          bounds(node.opening_loc)
+          on_tlambeg(node.opening)
+        end
+
         body =
           case node.body
           when nil
