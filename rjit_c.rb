@@ -326,6 +326,10 @@ module RubyVM::RJIT # :nodoc: all
     def RCLASS_ORIGIN(klass)
       Primitive.cexpr! 'RCLASS_ORIGIN(klass)'
     end
+
+    def RCLASS_SINGLETON_P(klass)
+      Primitive.cexpr! 'RCLASS_SINGLETON_P(klass)'
+    end
   end
 
   #
@@ -392,7 +396,6 @@ module RubyVM::RJIT # :nodoc: all
   C::RUBY_FLONUM_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_FLAG) }
   C::RUBY_FLONUM_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_MASK) }
   C::RUBY_FL_FREEZE = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FL_FREEZE) }
-  C::RUBY_FL_SINGLETON = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FL_SINGLETON) }
   C::RUBY_IMMEDIATE_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_IMMEDIATE_MASK) }
   C::RUBY_SPECIAL_SHIFT = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SPECIAL_SHIFT) }
   C::RUBY_SYMBOL_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SYMBOL_FLAG) }

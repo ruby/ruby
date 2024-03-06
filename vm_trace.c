@@ -734,7 +734,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
         if (RB_TYPE_P(klass, T_ICLASS)) {
             klass = RBASIC(klass)->klass;
         }
-        else if (FL_TEST(klass, FL_SINGLETON)) {
+        else if (RCLASS_SINGLETON_P(klass)) {
             klass = RCLASS_ATTACHED_OBJECT(klass);
         }
     }

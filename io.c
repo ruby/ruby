@@ -112,6 +112,7 @@
 #include "encindex.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/inits.h"
@@ -2276,7 +2277,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
     if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
         if (io != rb_ractor_stderr() && RTEST(ruby_verbose)) {
             VALUE klass = CLASS_OF(io);
-            char sep = FL_TEST(klass, FL_SINGLETON) ? (klass = io, '.') : '#';
+            char sep = RCLASS_SINGLETON_P(klass) ? (klass = io, '.') : '#';
             rb_category_warning(
                 RB_WARN_CATEGORY_DEPRECATED, "%+"PRIsVALUE"%c""write is outdated interface"
                 " which accepts just one argument",

@@ -3763,7 +3763,7 @@ internal_object_p(VALUE obj)
             break;
           case T_CLASS:
             if (!p->as.basic.klass) break;
-            if (FL_TEST(obj, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(obj)) {
                 return rb_singleton_class_internal_p(obj);
             }
             return 0;

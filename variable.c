@@ -1826,7 +1826,7 @@ void rb_obj_freeze_inline(VALUE x)
         }
         rb_shape_set_shape(x, next_shape);
 
-        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+        if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
         }
     }
@@ -3855,7 +3855,7 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 static VALUE
 cvar_front_klass(VALUE klass)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
         if (rb_namespace_p(obj)) {
             return obj;
@@ -4064,7 +4064,7 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
-    if (FL_TEST(mod, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(mod)) {
         if (rb_namespace_p(RCLASS_ATTACHED_OBJECT(mod))) {
             data = mod_cvar_at(tmp, data);
             tmp = cvar_front_klass(tmp);

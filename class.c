@@ -32,7 +32,7 @@
 
 /* Flags of T_CLASS
  *
- * 0:    RUBY_FL_SINGLETON
+ * 1:    RUBY_FL_SINGLETON
  *           This class is a singleton class.
  * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
  *           The RCLASS_SUPERCLASSES contains the class as the last element.
@@ -340,7 +340,7 @@ rb_check_inheritable(VALUE super)
         rb_raise(rb_eTypeError, "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
                  rb_obj_class(super));
     }
-    if (RBASIC(super)->flags & FL_SINGLETON) {
+    if (RCLASS_SINGLETON_P(super)) {
         rb_raise(rb_eTypeError, "can't make subclass of singleton class");
     }
     if (super == rb_cClass) {
@@ -426,7 +426,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "already initialized class");
     }
-    if (FL_TEST(orig, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(orig)) {
         rb_raise(rb_eTypeError, "can't copy singleton class");
     }
 }
@@ -544,7 +544,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     RCLASS_EXT(clone)->cloned = true;
     RCLASS_EXT(orig)->cloned = true;
 
-    if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
+    if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
@@ -650,7 +650,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     // attached to an object other than `obj`. In which case `obj` does not have
     // a material singleton class attached yet and there is no singleton class
     // to clone.
-    if (!(FL_TEST(klass, FL_SINGLETON) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
+    if (!(RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         // nothing to clone
         return klass;
     }
@@ -701,7 +701,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         RCLASS_SET_ATTACHED_OBJECT(klass, obj);
     }
 }
@@ -1607,7 +1607,7 @@ class_descendants_recursive(VALUE klass, VALUE v)
 {
     struct subclass_traverse_data *data = (struct subclass_traverse_data *) v;
 
-    if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
+    if (BUILTIN_TYPE(klass) == T_CLASS && !RCLASS_SINGLETON_P(klass)) {
         if (data->buffer && data->count < data->maxcount && !rb_objspace_garbage_object_p(klass)) {
             // assumes that this does not cause GC as long as the length does not exceed the capacity
             rb_ary_push(data->buffer, klass);
@@ -1712,7 +1712,7 @@ rb_class_subclasses(VALUE klass)
 VALUE
 rb_class_attached_object(VALUE klass)
 {
-    if (!FL_TEST(klass, FL_SINGLETON)) {
+    if (!RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "'%"PRIsVALUE"' is not a singleton class", klass);
     }
 
@@ -1815,7 +1815,7 @@ static bool
 particular_class_p(VALUE mod)
 {
     if (!mod) return false;
-    if (FL_TEST(mod, FL_SINGLETON)) return true;
+    if (RCLASS_SINGLETON_P(mod)) return true;
     if (BUILTIN_TYPE(mod) == T_ICLASS) return true;
     return false;
 }
@@ -2092,19 +2092,19 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
-    if (RB_TYPE_P(obj, T_CLASS) && FL_TEST(obj, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(obj)) {
         rb_singleton_class(obj);
     }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
     me_arg.recur = recur;
-    if (klass && FL_TEST(klass, FL_SINGLETON)) {
+    if (klass && RCLASS_SINGLETON_P(klass)) {
         if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
         klass = RCLASS_SUPER(klass);
     }
     if (recur) {
-        while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
+        while (klass && (RCLASS_SINGLETON_P(klass) || RB_TYPE_P(klass, T_ICLASS))) {
             if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
             klass = RCLASS_SUPER(klass);
         }
@@ -2244,7 +2244,7 @@ singleton_class_of(VALUE obj)
     }
 
     klass = METACLASS_OF(obj);
-    if (!(FL_TEST(klass, FL_SINGLETON) &&
+    if (!(RCLASS_SINGLETON_P(klass) &&
           RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         klass = rb_make_metaclass(obj, klass);
     }
@@ -2258,7 +2258,7 @@ void
 rb_freeze_singleton_class(VALUE x)
 {
     /* should not propagate to meta-meta-class, and so on */
-    if (!(RBASIC(x)->flags & FL_SINGLETON)) {
+    if (!RCLASS_SINGLETON_P(x)) {
         VALUE klass = RBASIC_CLASS(x);
         if (klass && // no class when hidden from ObjectSpace
             FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
@@ -2283,7 +2283,7 @@ rb_singleton_class_get(VALUE obj)
         return rb_special_singleton_class(obj);
     }
     klass = METACLASS_OF(obj);
-    if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
+    if (!RCLASS_SINGLETON_P(klass)) return Qnil;
     if (RCLASS_ATTACHED_OBJECT(klass) != obj) return Qnil;
     return klass;
 }
