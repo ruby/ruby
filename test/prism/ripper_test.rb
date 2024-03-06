@@ -30,7 +30,6 @@ module Prism
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
       if.txt
-      keyword_method_names.txt
       lambda.txt
       method_calls.txt
       methods.txt
@@ -93,13 +92,6 @@ module Prism
       seattlerb/defn_kwarg_lvar.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defn_oneliner_rescue.txt
-      seattlerb/defns_reserved.txt
-      seattlerb/defs_as_arg_with_do_block_inside.txt
-      seattlerb/defs_comments.txt
-      seattlerb/defs_endless_command.txt
-      seattlerb/defs_endless_command_rescue.txt
-      seattlerb/defs_kwarg.txt
-      seattlerb/defs_oneliner.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/defs_oneliner_rescue.txt
       seattlerb/difficult2_.txt
@@ -241,7 +233,6 @@ module Prism
       unparser/corpus/literal/control.txt
       unparser/corpus/literal/def.txt
       unparser/corpus/literal/defined.txt
-      unparser/corpus/literal/defs.txt
       unparser/corpus/literal/dstr.txt
       unparser/corpus/literal/empty.txt
       unparser/corpus/literal/for.txt
@@ -303,12 +294,7 @@ module Prism
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
       whitequark/def.txt
-      whitequark/defs.txt
       whitequark/empty_stmt.txt
-      whitequark/endless_method.txt
-      whitequark/endless_method_command_syntax.txt
-      whitequark/endless_method_with_rescue_mod.txt
-      whitequark/endless_method_without_args.txt
       whitequark/forward_arg.txt
       whitequark/forward_args_legacy.txt
       whitequark/forwarded_argument_with_kwrestarg.txt
@@ -329,7 +315,6 @@ module Prism
       whitequark/masgn_attr.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
-      whitequark/method_definition_in_while_cond.txt
       whitequark/newline_in_hash_argument.txt
       whitequark/next_block.txt
       whitequark/numbered_args_after_27.txt

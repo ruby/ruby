@@ -1044,6 +1044,13 @@ module Prism
       # def self.foo; end
       # ^^^^^^^^^^^^^^^^^
       def visit_def_node(node)
+        receiver = visit(node.receiver)
+        operator =
+          if !node.operator_loc.nil?
+            bounds(node.operator_loc)
+            visit_token(node.operator)
+          end
+
         bounds(node.name_loc)
         name = visit_token(node.name_loc.slice)
 
@@ -1070,7 +1077,12 @@ module Prism
             on_bodystmt(body, nil, nil, nil)
           end
 
-        on_def(name, parameters, bodystmt)
+        bounds(node.location)
+        if receiver.nil?
+          on_def(name, parameters, bodystmt)
+        else
+          on_defs(receiver, operator, name, parameters, bodystmt)
+        end
       end
 
       # defined? a
