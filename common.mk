@@ -245,6 +245,14 @@ srcs: prism/ast.h
 prism/ast.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/ast.h.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/ast.h $@
 
+srcs: prism/diagnostic.c
+prism/diagnostic.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/diagnostic.c.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/diagnostic.c $@
+
+srcs: prism/diagnostic.h
+prism/diagnostic.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/diagnostic.h.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/diagnostic.h $@
+
 srcs: prism/node.c
 prism/node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/node.c $@
@@ -2234,7 +2242,6 @@ ast.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ast.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ast.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ast.$(OBJEXT): $(top_srcdir)/prism/defines.h
-ast.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 ast.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 ast.$(OBJEXT): $(top_srcdir)/prism/node.h
 ast.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -2433,6 +2440,7 @@ ast.$(OBJEXT): {$(VPATH)}node.h
 ast.$(OBJEXT): {$(VPATH)}onigmo.h
 ast.$(OBJEXT): {$(VPATH)}oniguruma.h
 ast.$(OBJEXT): {$(VPATH)}prism/ast.h
+ast.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 ast.$(OBJEXT): {$(VPATH)}prism/version.h
 ast.$(OBJEXT): {$(VPATH)}prism_compile.h
 ast.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -2671,7 +2679,6 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/variable.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/defines.h
-builtin.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/node.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -2870,6 +2877,7 @@ builtin.$(OBJEXT): {$(VPATH)}node.h
 builtin.$(OBJEXT): {$(VPATH)}onigmo.h
 builtin.$(OBJEXT): {$(VPATH)}oniguruma.h
 builtin.$(OBJEXT): {$(VPATH)}prism/ast.h
+builtin.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 builtin.$(OBJEXT): {$(VPATH)}prism/version.h
 builtin.$(OBJEXT): {$(VPATH)}prism_compile.h
 builtin.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -3305,7 +3313,6 @@ compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
 compile.$(OBJEXT): $(top_srcdir)/internal/vm.h
 compile.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 compile.$(OBJEXT): $(top_srcdir)/prism/defines.h
-compile.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 compile.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 compile.$(OBJEXT): $(top_srcdir)/prism/node.h
 compile.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -3512,6 +3519,7 @@ compile.$(OBJEXT): {$(VPATH)}onigmo.h
 compile.$(OBJEXT): {$(VPATH)}oniguruma.h
 compile.$(OBJEXT): {$(VPATH)}optinsn.inc
 compile.$(OBJEXT): {$(VPATH)}prism/ast.h
+compile.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 compile.$(OBJEXT): {$(VPATH)}prism/prism.h
 compile.$(OBJEXT): {$(VPATH)}prism/version.h
 compile.$(OBJEXT): {$(VPATH)}prism_compile.c
@@ -3769,7 +3777,6 @@ cont.$(OBJEXT): $(top_srcdir)/internal/variable.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
 cont.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 cont.$(OBJEXT): $(top_srcdir)/prism/defines.h
-cont.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 cont.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 cont.$(OBJEXT): $(top_srcdir)/prism/node.h
 cont.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -3970,6 +3977,7 @@ cont.$(OBJEXT): {$(VPATH)}node.h
 cont.$(OBJEXT): {$(VPATH)}onigmo.h
 cont.$(OBJEXT): {$(VPATH)}oniguruma.h
 cont.$(OBJEXT): {$(VPATH)}prism/ast.h
+cont.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 cont.$(OBJEXT): {$(VPATH)}prism/version.h
 cont.$(OBJEXT): {$(VPATH)}prism_compile.h
 cont.$(OBJEXT): {$(VPATH)}ractor.h
@@ -6744,7 +6752,6 @@ eval.$(OBJEXT): $(top_srcdir)/internal/variable.h
 eval.$(OBJEXT): $(top_srcdir)/internal/vm.h
 eval.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 eval.$(OBJEXT): $(top_srcdir)/prism/defines.h
-eval.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 eval.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 eval.$(OBJEXT): $(top_srcdir)/prism/node.h
 eval.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -6947,6 +6954,7 @@ eval.$(OBJEXT): {$(VPATH)}node.h
 eval.$(OBJEXT): {$(VPATH)}onigmo.h
 eval.$(OBJEXT): {$(VPATH)}oniguruma.h
 eval.$(OBJEXT): {$(VPATH)}prism/ast.h
+eval.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 eval.$(OBJEXT): {$(VPATH)}prism/version.h
 eval.$(OBJEXT): {$(VPATH)}prism_compile.h
 eval.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -7225,7 +7233,6 @@ gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 gc.$(OBJEXT): $(top_srcdir)/prism/defines.h
-gc.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 gc.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 gc.$(OBJEXT): $(top_srcdir)/prism/node.h
 gc.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -7430,6 +7437,7 @@ gc.$(OBJEXT): {$(VPATH)}node.h
 gc.$(OBJEXT): {$(VPATH)}onigmo.h
 gc.$(OBJEXT): {$(VPATH)}oniguruma.h
 gc.$(OBJEXT): {$(VPATH)}prism/ast.h
+gc.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 gc.$(OBJEXT): {$(VPATH)}prism/version.h
 gc.$(OBJEXT): {$(VPATH)}prism_compile.h
 gc.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -7482,7 +7490,6 @@ goruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/defines.h
-goruby.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/node.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -7682,6 +7689,7 @@ goruby.$(OBJEXT): {$(VPATH)}node.h
 goruby.$(OBJEXT): {$(VPATH)}onigmo.h
 goruby.$(OBJEXT): {$(VPATH)}oniguruma.h
 goruby.$(OBJEXT): {$(VPATH)}prism/ast.h
+goruby.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 goruby.$(OBJEXT): {$(VPATH)}prism/version.h
 goruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 goruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -7726,7 +7734,6 @@ hash.$(OBJEXT): $(top_srcdir)/internal/variable.h
 hash.$(OBJEXT): $(top_srcdir)/internal/vm.h
 hash.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 hash.$(OBJEXT): $(top_srcdir)/prism/defines.h
-hash.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 hash.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 hash.$(OBJEXT): $(top_srcdir)/prism/node.h
 hash.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -7925,6 +7932,7 @@ hash.$(OBJEXT): {$(VPATH)}node.h
 hash.$(OBJEXT): {$(VPATH)}onigmo.h
 hash.$(OBJEXT): {$(VPATH)}oniguruma.h
 hash.$(OBJEXT): {$(VPATH)}prism/ast.h
+hash.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 hash.$(OBJEXT): {$(VPATH)}prism/version.h
 hash.$(OBJEXT): {$(VPATH)}prism_compile.h
 hash.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -8765,7 +8773,6 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/variable.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/vm.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/defines.h
-iseq.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/node.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -8969,6 +8976,7 @@ iseq.$(OBJEXT): {$(VPATH)}node.h
 iseq.$(OBJEXT): {$(VPATH)}onigmo.h
 iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
 iseq.$(OBJEXT): {$(VPATH)}prism/ast.h
+iseq.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 iseq.$(OBJEXT): {$(VPATH)}prism/prism.h
 iseq.$(OBJEXT): {$(VPATH)}prism/version.h
 iseq.$(OBJEXT): {$(VPATH)}prism_compile.h
@@ -9022,7 +9030,6 @@ load.$(OBJEXT): $(top_srcdir)/internal/variable.h
 load.$(OBJEXT): $(top_srcdir)/internal/vm.h
 load.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 load.$(OBJEXT): $(top_srcdir)/prism/defines.h
-load.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 load.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 load.$(OBJEXT): $(top_srcdir)/prism/node.h
 load.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -9222,6 +9229,7 @@ load.$(OBJEXT): {$(VPATH)}node.h
 load.$(OBJEXT): {$(VPATH)}onigmo.h
 load.$(OBJEXT): {$(VPATH)}oniguruma.h
 load.$(OBJEXT): {$(VPATH)}prism/ast.h
+load.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 load.$(OBJEXT): {$(VPATH)}prism/version.h
 load.$(OBJEXT): {$(VPATH)}prism_compile.h
 load.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -10353,7 +10361,6 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/defines.h
-miniinit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/node.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -10565,6 +10572,7 @@ miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
+miniinit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 miniinit.$(OBJEXT): {$(VPATH)}prism/version.h
 miniinit.$(OBJEXT): {$(VPATH)}prism_compile.h
 miniinit.$(OBJEXT): {$(VPATH)}ractor.rb
@@ -11940,7 +11948,6 @@ parser_st.$(OBJEXT): {$(VPATH)}st.c
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby.h
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/api_node.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/node.h
@@ -12129,6 +12136,7 @@ prism/api_node.$(OBJEXT): {$(VPATH)}onigmo.h
 prism/api_node.$(OBJEXT): {$(VPATH)}oniguruma.h
 prism/api_node.$(OBJEXT): {$(VPATH)}prism/api_node.c
 prism/api_node.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/api_node.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/api_node.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/api_node.$(OBJEXT): {$(VPATH)}st.h
 prism/api_node.$(OBJEXT): {$(VPATH)}subst.h
@@ -12136,7 +12144,6 @@ prism/api_pack.$(OBJEXT): $(hdrdir)/ruby.h
 prism/api_pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/api_pack.c
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/node.h
@@ -12324,12 +12331,11 @@ prism/api_pack.$(OBJEXT): {$(VPATH)}missing.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}onigmo.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}oniguruma.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/api_pack.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}st.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}subst.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.c
-prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12339,6 +12345,8 @@ prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/diagnostic.$(OBJEXT): {$(VPATH)}config.h
 prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/diagnostic.c
+prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.c
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.h
@@ -12347,7 +12355,6 @@ prism/encoding.$(OBJEXT): {$(VPATH)}config.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/extension.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/extension.c
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/extension.h
@@ -12536,11 +12543,11 @@ prism/extension.$(OBJEXT): {$(VPATH)}missing.h
 prism/extension.$(OBJEXT): {$(VPATH)}onigmo.h
 prism/extension.$(OBJEXT): {$(VPATH)}oniguruma.h
 prism/extension.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/extension.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/extension.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/extension.$(OBJEXT): {$(VPATH)}st.h
 prism/extension.$(OBJEXT): {$(VPATH)}subst.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/node.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12561,6 +12568,7 @@ prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/node.$(OBJEXT): {$(VPATH)}config.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/node.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/node.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.c
@@ -12588,7 +12596,6 @@ prism/prettyprint.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/prettyprint.$(OBJEXT): {$(VPATH)}prism/prettyprint.c
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/prism.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12614,6 +12621,7 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
 prism/prism.$(OBJEXT): {$(VPATH)}config.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/prism.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/encoding.h
@@ -12635,7 +12643,6 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/regexp.$(OBJEXT): {$(VPATH)}config.h
 prism/regexp.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/serialize.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12659,6 +12666,7 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/serialize.$(OBJEXT): {$(VPATH)}config.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/serialize.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/serialize.c
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/static_literals.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12747,7 +12755,6 @@ prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
@@ -12764,10 +12771,10 @@ prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.c
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism_init.$(OBJEXT): $(hdrdir)/ruby.h
 prism_init.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism_init.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/node.h
@@ -12956,6 +12963,7 @@ prism_init.$(OBJEXT): {$(VPATH)}missing.h
 prism_init.$(OBJEXT): {$(VPATH)}onigmo.h
 prism_init.$(OBJEXT): {$(VPATH)}oniguruma.h
 prism_init.$(OBJEXT): {$(VPATH)}prism/ast.h
+prism_init.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism_init.$(OBJEXT): {$(VPATH)}prism/version.h
 prism_init.$(OBJEXT): {$(VPATH)}prism_init.c
 prism_init.$(OBJEXT): {$(VPATH)}st.h
@@ -12985,7 +12993,6 @@ proc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 proc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 proc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 proc.$(OBJEXT): $(top_srcdir)/prism/defines.h
-proc.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 proc.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 proc.$(OBJEXT): $(top_srcdir)/prism/node.h
 proc.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -13183,6 +13190,7 @@ proc.$(OBJEXT): {$(VPATH)}node.h
 proc.$(OBJEXT): {$(VPATH)}onigmo.h
 proc.$(OBJEXT): {$(VPATH)}oniguruma.h
 proc.$(OBJEXT): {$(VPATH)}prism/ast.h
+proc.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 proc.$(OBJEXT): {$(VPATH)}prism/version.h
 proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
@@ -15469,7 +15477,6 @@ rjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 rjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/defines.h
-rjit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/node.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -15672,6 +15679,7 @@ rjit.$(OBJEXT): {$(VPATH)}node.h
 rjit.$(OBJEXT): {$(VPATH)}onigmo.h
 rjit.$(OBJEXT): {$(VPATH)}oniguruma.h
 rjit.$(OBJEXT): {$(VPATH)}prism/ast.h
+rjit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 rjit.$(OBJEXT): {$(VPATH)}prism/version.h
 rjit.$(OBJEXT): {$(VPATH)}prism_compile.h
 rjit.$(OBJEXT): {$(VPATH)}ractor.h
@@ -15723,7 +15731,6 @@ rjit_c.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/vm.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/defines.h
-rjit_c.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/node.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -15925,6 +15932,7 @@ rjit_c.$(OBJEXT): {$(VPATH)}node.h
 rjit_c.$(OBJEXT): {$(VPATH)}onigmo.h
 rjit_c.$(OBJEXT): {$(VPATH)}oniguruma.h
 rjit_c.$(OBJEXT): {$(VPATH)}prism/ast.h
+rjit_c.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 rjit_c.$(OBJEXT): {$(VPATH)}prism/version.h
 rjit_c.$(OBJEXT): {$(VPATH)}prism_compile.h
 rjit_c.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -16003,7 +16011,6 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/defines.h
-ruby.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/node.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -16203,6 +16210,7 @@ ruby.$(OBJEXT): {$(VPATH)}node.h
 ruby.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby.$(OBJEXT): {$(VPATH)}prism/ast.h
+ruby.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 ruby.$(OBJEXT): {$(VPATH)}prism/version.h
 ruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 ruby.$(OBJEXT): {$(VPATH)}rjit.h
@@ -18445,7 +18453,6 @@ thread.$(OBJEXT): $(top_srcdir)/internal/variable.h
 thread.$(OBJEXT): $(top_srcdir)/internal/vm.h
 thread.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 thread.$(OBJEXT): $(top_srcdir)/prism/defines.h
-thread.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 thread.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 thread.$(OBJEXT): $(top_srcdir)/prism/node.h
 thread.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -18649,6 +18656,7 @@ thread.$(OBJEXT): {$(VPATH)}node.h
 thread.$(OBJEXT): {$(VPATH)}onigmo.h
 thread.$(OBJEXT): {$(VPATH)}oniguruma.h
 thread.$(OBJEXT): {$(VPATH)}prism/ast.h
+thread.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 thread.$(OBJEXT): {$(VPATH)}prism/version.h
 thread.$(OBJEXT): {$(VPATH)}prism_compile.h
 thread.$(OBJEXT): {$(VPATH)}ractor.h
@@ -19707,7 +19715,6 @@ vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm.$(OBJEXT): $(top_srcdir)/prism/defines.h
-vm.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 vm.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 vm.$(OBJEXT): $(top_srcdir)/prism/node.h
 vm.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -19910,6 +19917,7 @@ vm.$(OBJEXT): {$(VPATH)}node.h
 vm.$(OBJEXT): {$(VPATH)}onigmo.h
 vm.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 vm.$(OBJEXT): {$(VPATH)}prism/version.h
 vm.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -19966,7 +19974,6 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/defines.h
-vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/node.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -20165,6 +20172,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}node.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}prism/version.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -20197,7 +20205,6 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/defines.h
-vm_dump.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/node.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -20394,6 +20401,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}node.h
 vm_dump.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_dump.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm_dump.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_dump.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 vm_dump.$(OBJEXT): {$(VPATH)}prism/version.h
 vm_dump.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_dump.$(OBJEXT): {$(VPATH)}procstat_vm.c
@@ -20639,7 +20647,6 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/defines.h
-vm_trace.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/node.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -20839,6 +20846,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}node.h
 vm_trace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_trace.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm_trace.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_trace.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 vm_trace.$(OBJEXT): {$(VPATH)}prism/version.h
 vm_trace.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_trace.$(OBJEXT): {$(VPATH)}ractor.h
@@ -21081,7 +21089,6 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/defines.h
-yjit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/node.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -21284,6 +21291,7 @@ yjit.$(OBJEXT): {$(VPATH)}node.h
 yjit.$(OBJEXT): {$(VPATH)}onigmo.h
 yjit.$(OBJEXT): {$(VPATH)}oniguruma.h
 yjit.$(OBJEXT): {$(VPATH)}prism/ast.h
+yjit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 yjit.$(OBJEXT): {$(VPATH)}prism/version.h
 yjit.$(OBJEXT): {$(VPATH)}prism_compile.h
 yjit.$(OBJEXT): {$(VPATH)}probes.dmyh
