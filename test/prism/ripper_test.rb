@@ -41,7 +41,6 @@ module Prism
       regex_char_width.txt
       repeat_parameters.txt
       rescue.txt
-      return.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/begin_rescue_else_ensure_bodies.txt
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
@@ -140,13 +139,11 @@ module Prism
       seattlerb/module_comments.txt
       seattlerb/parse_if_not_canonical.txt
       seattlerb/parse_if_not_noncanonical.txt
-      seattlerb/parse_line_defn_complex.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
       seattlerb/parse_line_heredoc_hardnewline.txt
       seattlerb/parse_line_multiline_str_literal_n.txt
-      seattlerb/parse_line_return.txt
       seattlerb/parse_line_str_with_newline_escape.txt
       seattlerb/parse_opt_call_args_assocs_comma.txt
       seattlerb/parse_opt_call_args_lit_comma.txt
@@ -205,7 +202,6 @@ module Prism
       unparser/corpus/literal/literal.txt
       unparser/corpus/literal/module.txt
       unparser/corpus/literal/pattern.txt
-      unparser/corpus/literal/rescue.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/since/27.txt
       unparser/corpus/literal/since/31.txt
@@ -237,7 +233,6 @@ module Prism
       whitequark/bug_ascii_8bit_in_literal.txt
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/bug_heredoc_do.txt
-      whitequark/bug_interp_single.txt
       whitequark/bug_rescue_empty_else.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
@@ -277,7 +272,6 @@ module Prism
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt
       whitequark/rescue_without_begin_end.txt
-      whitequark/return.txt
       whitequark/return_block.txt
       whitequark/ruby_bug_10653.txt
       whitequark/ruby_bug_11107.txt

@@ -2224,7 +2224,7 @@ module Prism
           arguments = visit(node.arguments)
 
           bounds(node.location)
-          on_return(on_args_add_block(arguments, false))
+          on_return(arguments)
         end
       end
 
