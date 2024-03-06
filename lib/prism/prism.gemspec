@@ -96,6 +96,8 @@ Gem::Specification.new do |spec|
     "lib/prism/translation/parser/lexer.rb",
     "lib/prism/translation/parser/rubocop.rb",
     "lib/prism/translation/ripper.rb",
+    "lib/prism/translation/ripper/sexp.rb",
+    "lib/prism/translation/ripper/shim.rb",
     "lib/prism/translation/ruby_parser.rb",
     "lib/prism/visitor.rb",
     "src/diagnostic.c",

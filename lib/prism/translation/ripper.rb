@@ -4,63 +4,34 @@ require "ripper"
 
 module Prism
   module Translation
-    # Note: This integration is not finished, and therefore still has many
-    # inconsistencies with Ripper. If you'd like to help out, pull requests
-    # would be greatly appreciated!
-    #
-    # This class is meant to provide a compatibility layer between prism and
-    # Ripper. It functions by parsing the entire tree first and then walking it
-    # and executing each of the Ripper callbacks as it goes.
-    #
-    # This class is going to necessarily be slower than the native Ripper API.
-    # It is meant as a stopgap until developers migrate to using prism. It is
-    # also meant as a test harness for the prism parser.
-    #
-    # To use this class, you treat `Prism::Translation::Ripper` effectively as
-    # you would treat the `Ripper` class.
+    # This class provides a compatibility layer between prism and Ripper. It
+    # functions by parsing the entire tree first and then walking it and
+    # executing each of the Ripper callbacks as it goes. To use this class, you
+    # treat `Prism::Translation::Ripper` effectively as you would treat the
+    # `Ripper` class.
     class Ripper < Compiler
-      # This class mirrors the ::Ripper::SexpBuilder subclass of ::Ripper that
-      # returns the arrays of [type, *children].
-      class SexpBuilder < Ripper
-        private
-
-        ::Ripper::PARSER_EVENTS.each do |event|
-          define_method(:"on_#{event}") do |*args|
-            [event, *args]
-          end
-        end
-
-        ::Ripper::SCANNER_EVENTS.each do |event|
-          define_method(:"on_#{event}") do |value|
-            [:"@#{event}", value, [lineno, column]]
-          end
-        end
+      # Parses the given Ruby program read from +src+.
+      # +src+ must be a String or an IO or a object with a #gets method.
+      def Ripper.parse(src, filename = "(ripper)", lineno = 1)
+        new(src, filename, lineno).parse
       end
 
-      # This class mirrors the ::Ripper::SexpBuilderPP subclass of ::Ripper that
-      # returns the same values as ::Ripper::SexpBuilder except with a couple of
-      # niceties that flatten linked lists into arrays.
-      class SexpBuilderPP < SexpBuilder
-        private
+      # This contains a table of all of the parser events and their
+      # corresponding arity.
+      PARSER_EVENT_TABLE = ::Ripper::PARSER_EVENT_TABLE
 
-        def _dispatch_event_new # :nodoc:
-          []
-        end
+      # This contains a table of all of the scanner events and their
+      # corresponding arity.
+      SCANNER_EVENT_TABLE = ::Ripper::SCANNER_EVENT_TABLE
 
-        def _dispatch_event_push(list, item) # :nodoc:
-          list << item
-          list
-        end
+      # This array contains name of parser events.
+      PARSER_EVENTS = PARSER_EVENT_TABLE.keys
 
-        ::Ripper::PARSER_EVENT_TABLE.each do |event, arity|
-          case event
-          when /_new\z/
-            alias_method :"on_#{event}", :_dispatch_event_new if arity == 0
-          when /_add\z/
-            alias_method :"on_#{event}", :_dispatch_event_push
-          end
-        end
-      end
+      # This array contains name of scanner events.
+      SCANNER_EVENTS = SCANNER_EVENT_TABLE.keys
+
+      # This array contains name of all ripper events.
+      EVENTS = PARSER_EVENTS + SCANNER_EVENTS
 
       # A list of all of the Ruby keywords.
       KEYWORDS = [
@@ -134,8 +105,79 @@ module Prism
 
       private_constant :KEYWORDS, :BINARY_OPERATORS
 
+      # Parses +src+ and create S-exp tree.
+      # Returns more readable tree rather than Ripper.sexp_raw.
+      # This method is mainly for developer use.
+      # The +filename+ argument is mostly ignored.
+      # By default, this method does not handle syntax errors in +src+,
+      # returning +nil+ in such cases. Use the +raise_errors+ keyword
+      # to raise a SyntaxError for an error in +src+.
+      #
+      #   require "ripper"
+      #   require "pp"
+      #
+      #   pp Ripper.sexp("def m(a) nil end")
+      #     #=> [:program,
+      #          [[:def,
+      #           [:@ident, "m", [1, 4]],
+      #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil, nil, nil]],
+      #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
+      #
+      def Ripper.sexp(src, filename = "-", lineno = 1, raise_errors: false)
+        builder = SexpBuilderPP.new(src, filename, lineno)
+        sexp = builder.parse
+        if builder.error?
+          if raise_errors
+            raise SyntaxError, builder.error
+          end
+        else
+          sexp
+        end
+      end
+
+      # Parses +src+ and create S-exp tree.
+      # This method is mainly for developer use.
+      # The +filename+ argument is mostly ignored.
+      # By default, this method does not handle syntax errors in +src+,
+      # returning +nil+ in such cases. Use the +raise_errors+ keyword
+      # to raise a SyntaxError for an error in +src+.
+      #
+      #   require 'ripper'
+      #   require 'pp'
+      #
+      #   pp Ripper.sexp_raw("def m(a) nil end")
+      #     #=> [:program,
+      #          [:stmts_add,
+      #           [:stmts_new],
+      #           [:def,
+      #            [:@ident, "m", [1, 4]],
+      #            [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil]],
+      #            [:bodystmt,
+      #             [:stmts_add, [:stmts_new], [:var_ref, [:@kw, "nil", [1, 9]]]],
+      #             nil,
+      #             nil,
+      #             nil]]]]
+      #
+      def Ripper.sexp_raw(src, filename = "-", lineno = 1, raise_errors: false)
+        builder = SexpBuilder.new(src, filename, lineno)
+        sexp = builder.parse
+        if builder.error?
+          if raise_errors
+            raise SyntaxError, builder.error
+          end
+        else
+          sexp
+        end
+      end
+
+      autoload :SexpBuilder, "prism/translation/ripper/sexp"
+      autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
+
       # The source that is being parsed.
       attr_reader :source
+
+      # The filename of the source being parsed.
+      attr_reader :filename
 
       # The current line number of the parser.
       attr_reader :lineno
@@ -144,11 +186,12 @@ module Prism
       attr_reader :column
 
       # Create a new Translation::Ripper object with the given source.
-      def initialize(source)
+      def initialize(source, filename = "(ripper)", lineno = 1)
         @source = source
+        @filename = filename
+        @lineno = lineno
+        @column = 0
         @result = nil
-        @lineno = nil
-        @column = nil
       end
 
       ##########################################################################
@@ -162,8 +205,20 @@ module Prism
 
       # Parse the source and return the result.
       def parse
+        result.comments.each do |comment|
+          on_comment(comment.slice)
+        end
+
         result.magic_comments.each do |magic_comment|
           on_magic_comment(magic_comment.key, magic_comment.value)
+        end
+
+        result.warnings.each do |warning|
+          if warning.level == :default
+            warning(warning.message)
+          else
+            warn(warning.message)
+          end
         end
 
         if error?
@@ -175,20 +230,6 @@ module Prism
         else
           result.value.accept(self)
         end
-      end
-
-      ##########################################################################
-      # Entrypoints for subclasses
-      ##########################################################################
-
-      # This is a convenience method that runs the SexpBuilder subclass parser.
-      def self.sexp_raw(source)
-        SexpBuilder.new(source).parse
-      end
-
-      # This is a convenience method that runs the SexpBuilderPP subclass parser.
-      def self.sexp(source)
-        SexpBuilderPP.new(source).parse
       end
 
       ##########################################################################
@@ -2512,26 +2553,6 @@ module Prism
         common_whitespace || 0
       end
 
-      # Take the content of a string and return the index of the first character
-      # that is not trimmed out by eliminating common whitespace.
-      private def heredoc_trimmed_whitespace(content, common_whitespace)
-        trimmed_whitespace = 0
-
-        index = 0
-        while index < content.length && content[index].match?(/\s/) && trimmed_whitespace < common_whitespace
-          if content[index] == "\t"
-            trimmed_whitespace = ((trimmed_whitespace / 8 + 1) * 8)
-            break if trimmed_whitespace > common_whitespace
-          else
-            trimmed_whitespace += 1
-          end
-
-          index += 1
-        end
-
-        index
-      end
-
       # Visit a string that is expressed using a <<~ heredoc.
       private def visit_heredoc_node(parts, base)
         common_whitespace = heredoc_common_whitespace(parts)
@@ -2573,11 +2594,11 @@ module Prism
               string_content,
               if part.is_a?(StringNode)
                 if index % 2 == 1
-                  content = part.content
-                  trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
+                  content = part.content.dup
+                  dedented = dedent_string(content, common_whitespace)
 
-                  bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
-                  on_tstring_content(content[trimmed_whitespace..])
+                  bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + dedented))
+                  on_tstring_content(content)
                 else
                   bounds(part.content_loc)
                   on_tstring_content(part.content)
@@ -2916,19 +2937,67 @@ module Prism
       # Ripper interface
       ##########################################################################
 
-      def _dispatch0; end # :nodoc:
-      def _dispatch1(_); end # :nodoc:
-      def _dispatch2(_, _); end # :nodoc:
-      def _dispatch3(_, _, _); end # :nodoc:
-      def _dispatch4(_, _, _, _); end # :nodoc:
-      def _dispatch5(_, _, _, _, _); end # :nodoc:
-      def _dispatch7(_, _, _, _, _, _, _); end # :nodoc:
+      # :stopdoc:
+      def _dispatch_0; end
+      def _dispatch_1(_); end
+      def _dispatch_2(_, _); end
+      def _dispatch_3(_, _, _); end
+      def _dispatch_4(_, _, _, _); end
+      def _dispatch_5(_, _, _, _, _); end
+      def _dispatch_7(_, _, _, _, _, _, _); end
+      # :startdoc:
 
-      alias_method :on_parse_error, :_dispatch1
-      alias_method :on_magic_comment, :_dispatch2
+      #
+      # Parser Events
+      #
 
-      (::Ripper::SCANNER_EVENT_TABLE.merge(::Ripper::PARSER_EVENT_TABLE)).each do |event, arity|
-        alias_method :"on_#{event}", :"_dispatch#{arity}"
+      PARSER_EVENT_TABLE.each do |id, arity|
+        alias_method "on_#{id}", "_dispatch_#{arity}"
+      end
+
+      # This method is called when weak warning is produced by the parser.
+      # +fmt+ and +args+ is printf style.
+      def warn(fmt, *args)
+      end
+
+      # This method is called when strong warning is produced by the parser.
+      # +fmt+ and +args+ is printf style.
+      def warning(fmt, *args)
+      end
+
+      # This method is called when the parser found syntax error.
+      def compile_error(msg)
+      end
+
+      #
+      # Scanner Events
+      #
+
+      SCANNER_EVENTS.each do |id|
+        alias_method "on_#{id}", :_dispatch_1
+      end
+
+      # This method is provided by the Ripper C extension. It is called when a
+      # string needs to be dedented because of a tilde heredoc. It is expected
+      # that it will modify the string in place and return the number of bytes
+      # that were removed.
+      def dedent_string(string, width)
+        whitespace = 0
+        cursor = 0
+
+        while cursor < string.length && string[cursor].match?(/\s/) && whitespace < width
+          if string[cursor] == "\t"
+            whitespace = ((whitespace / 8 + 1) * 8)
+            break if whitespace > width
+          else
+            whitespace += 1
+          end
+
+          cursor += 1
+        end
+
+        string.replace(string[cursor..])
+        cursor
       end
     end
   end
