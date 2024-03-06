@@ -391,6 +391,8 @@ class Time
     # heuristic to detect the format of the input string, you provide
     # a second argument that describes the format of the string.
     #
+    # Raises `ArgumentError` if the date or format is invalid.
+    #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
     #
