@@ -1647,14 +1647,21 @@ module Prism
       # "foo #{bar}"
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
-        bounds(node.parts.first.location)
-        parts =
-          node.parts.inject(on_string_content) do |content, part|
-            on_string_add(content, visit_string_content(part))
-          end
+        if node.opening.start_with?("<<~")
+          heredoc = visit_string_heredoc_node(node.parts)
 
-        bounds(node.location)
-        on_string_literal(parts)
+          bounds(node.location)
+          on_string_literal(heredoc)
+        else
+          bounds(node.parts.first.location)
+          parts =
+            node.parts.inject(on_string_content) do |content, part|
+              on_string_add(content, visit_string_content(part))
+            end
+
+          bounds(node.location)
+          on_string_literal(parts)
+        end
       end
 
       # :"foo #{bar}"
@@ -1673,14 +1680,21 @@ module Prism
       # `foo #{bar}`
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
-        bounds(node.parts.first.location)
-        parts =
-          node.parts.inject(on_xstring_new) do |content, part|
-            on_xstring_add(content, visit_string_content(part))
-          end
+        if node.opening.start_with?("<<~")
+          heredoc = visit_x_string_heredoc_node(node.parts)
 
-        bounds(node.location)
-        on_xstring_literal(parts)
+          bounds(node.location)
+          on_xstring_literal(heredoc)
+        else
+          bounds(node.parts.first.location)
+          parts =
+            node.parts.inject(on_xstring_new) do |content, part|
+              on_xstring_add(content, visit_string_content(part))
+            end
+
+          bounds(node.location)
+          on_xstring_literal(parts)
+        end
       end
 
       # Visit an individual part of a string-like node.
@@ -1846,12 +1860,12 @@ module Prism
       #    ^^^^^
       def visit_match_last_line_node(node)
         bounds(node.content_loc)
-        content = on_tstring_content(node.unescaped)
+        tstring_content = on_tstring_content(node.content)
 
         bounds(node.closing_loc)
         closing = on_regexp_end(node.closing)
 
-        on_regexp_literal(on_regexp_add(on_regexp_new, content), closing)
+        on_regexp_literal(on_regexp_add(on_regexp_new, tstring_content), closing)
       end
 
       # foo in bar
@@ -2140,12 +2154,12 @@ module Prism
       # ^^^^^
       def visit_regular_expression_node(node)
         bounds(node.content_loc)
-        content = on_tstring_content(node.unescaped)
+        tstring_content = on_tstring_content(node.content)
 
         bounds(node.closing_loc)
         closing = on_regexp_end(node.closing)
 
-        on_regexp_literal(on_regexp_add(on_regexp_new, content), closing)
+        on_regexp_literal(on_regexp_add(on_regexp_new, tstring_content), closing)
       end
 
       # def foo(bar:); end
@@ -2320,18 +2334,113 @@ module Prism
       # "foo"
       # ^^^^^
       def visit_string_node(node)
-        if node.opening == "?"
-          bounds(node.location)
-          on_CHAR("?#{node.content}")
-        elsif node.content.empty?
+        if (content = node.content).empty?
           bounds(node.location)
           on_string_literal(on_string_content)
-        else
-          bounds(node.content_loc)
-          content = on_tstring_content(node.content)
+        elsif (opening = node.opening) == "?"
+          bounds(node.location)
+          on_CHAR("?#{node.content}")
+        elsif opening.start_with?("<<~")
+          heredoc = visit_string_heredoc_node([node])
 
           bounds(node.location)
-          on_string_literal(on_string_add(on_string_content, content))
+          on_string_literal(heredoc)
+        else
+          bounds(node.content_loc)
+          tstring_content = on_tstring_content(content)
+
+          bounds(node.location)
+          on_string_literal(on_string_add(on_string_content, tstring_content))
+        end
+      end
+
+      # Ripper gives back the escaped string content but strips out the common
+      # leading whitespace. Prism gives back the unescaped string content and a
+      # location for the escaped string content. Unfortunately these don't work
+      # well together, so we need to re-derive the common leading whitespace.
+      private def heredoc_common_whitespace(parts)
+        common_whitespace = nil
+        dedent_next = true
+
+        parts.each do |part|
+          if part.is_a?(StringNode)
+            if dedent_next
+              common_whitespace = [
+                common_whitespace || Float::INFINITY,
+                part.content[/\A\s*/].each_char.inject(0) do |part_whitespace, char|
+                  char == "\t" ? ((part_whitespace / 8 + 1) * 8) : (part_whitespace + 1)
+                end
+              ].min
+            end
+
+            dedent_next = true
+          else
+            dedent_next = false
+          end
+        end
+
+        common_whitespace
+      end
+
+      # Take the content of a string and return the index of the first character
+      # that is not trimmed out by eliminating common whitespace.
+      private def heredoc_trimmed_whitespace(content, common_whitespace)
+        trimmed_whitespace = 0
+
+        index = 0
+        while index < content.length && content[index].match?(/\s/) && trimmed_whitespace < common_whitespace
+          if content[index] == "\t"
+            trimmed_whitespace = ((trimmed_whitespace / 8 + 1) * 8)
+            break if trimmed_whitespace > common_whitespace
+          else
+            trimmed_whitespace += 1
+          end
+
+          index += 1
+        end
+
+        index
+      end
+
+      # Visit a string that is expressed using a <<~ heredoc.
+      private def visit_string_heredoc_node(parts)
+        common_whitespace = heredoc_common_whitespace(parts)
+
+        bounds(parts.first.location)
+        parts.inject(on_string_content) do |string_content, part|
+          on_string_add(
+            string_content,
+            if part.is_a?(StringNode)
+              content = part.content
+              trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
+
+              bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
+              on_tstring_content(part.content[trimmed_whitespace..])
+            else
+              visit(part)
+            end
+          )
+        end
+      end
+
+      # Visit an xstring that is expressed using a <<~ heredoc.
+      private def visit_x_string_heredoc_node(parts)
+        common_whitespace = heredoc_common_whitespace(parts)
+
+        bounds(parts.first.location)
+        parts.inject(on_xstring_new) do |xstring, part|
+          on_xstring_add(
+            xstring,
+            if part.is_a?(StringNode)
+              content = part.content
+              trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
+
+              bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
+              on_tstring_content(part.content[trimmed_whitespace..])
+            else
+              visit(part)
+            end
+          )
         end
       end
 
@@ -2514,11 +2623,21 @@ module Prism
       # `foo`
       # ^^^^^
       def visit_x_string_node(node)
-        bounds(node.content_loc)
-        unescaped = on_tstring_content(node.unescaped)
+        if node.unescaped.empty?
+          bounds(node.location)
+          on_xstring_literal(on_xstring_new)
+        elsif node.opening.start_with?("<<~")
+          heredoc = visit_x_string_heredoc_node([node])
 
-        bounds(node.location)
-        on_xstring_literal(on_xstring_add(on_xstring_new, unescaped))
+          bounds(node.location)
+          on_xstring_literal(heredoc)
+        else
+          bounds(node.content_loc)
+          content = on_tstring_content(node.content)
+
+          bounds(node.location)
+          on_xstring_literal(on_xstring_add(on_xstring_new, content))
+        end
       end
 
       # yield

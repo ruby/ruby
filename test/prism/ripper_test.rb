@@ -46,7 +46,6 @@ module Prism
       seattlerb/block_next.txt
       seattlerb/block_paren_splat.txt
       seattlerb/block_return.txt
-      seattlerb/bug190.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
       seattlerb/call_args_assoc_quoted.txt
@@ -120,8 +119,6 @@ module Prism
       seattlerb/parse_pattern_076.txt
       seattlerb/quoted_symbol_hash_arg.txt
       seattlerb/quoted_symbol_keys.txt
-      seattlerb/regexp_esc_C_slash.txt
-      seattlerb/regexp_escape_extended.txt
       seattlerb/rescue_do_end_ensure_result.txt
       seattlerb/rescue_do_end_no_raise.txt
       seattlerb/rescue_do_end_raised.txt
@@ -138,7 +135,6 @@ module Prism
       symbols.txt
       ternary_operator.txt
       tilde_heredocs.txt
-      unescaping.txt
       unless.txt
       unparser/corpus/literal/assignment.txt
       unparser/corpus/literal/block.txt
@@ -216,7 +212,6 @@ module Prism
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt
-      whitequark/ruby_bug_11989.txt
       whitequark/ruby_bug_11990.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_block_chain_cmd.txt
@@ -225,7 +220,6 @@ module Prism
       whitequark/slash_newline_in_heredocs.txt
       whitequark/string_concat.txt
       whitequark/trailing_forward_arg.txt
-      xstring.txt
     ]
 
     relatives.each do |relative|
