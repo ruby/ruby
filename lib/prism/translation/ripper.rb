@@ -2318,12 +2318,22 @@ module Prism
 
             node.exceptions.each_with_index.inject(on_args_new) do |mrhs, (exception, index)|
               arg = visit(exception)
-              bounds(exception.location)
 
-              if index == length - 1
-                on_mrhs_add(on_mrhs_new_from_args(mrhs), arg)
+              bounds(exception.location)
+              mrhs = on_mrhs_new_from_args(mrhs) if index == length - 1
+
+              if exception.is_a?(SplatNode)
+                if index == length - 1
+                  on_mrhs_add_star(mrhs, arg)
+                else
+                  on_args_add_star(mrhs, arg)
+                end
               else
-                on_args_add(mrhs, arg)
+                if index == length - 1
+                  on_mrhs_add(mrhs, arg)
+                else
+                  on_args_add(mrhs, arg)
+                end
               end
             end
           end

@@ -61,8 +61,6 @@ module Prism
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
-      unparser/corpus/literal/block.txt
-      unparser/corpus/literal/kwbegin.txt
       whitequark/send_block_chain_cmd.txt
     ]
 
