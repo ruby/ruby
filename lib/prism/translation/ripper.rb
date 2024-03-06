@@ -2056,8 +2056,7 @@ module Prism
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
         if node.opening&.start_with?("<<~")
-          bounds(node.parts.first.location)
-          heredoc = visit_heredoc_node(node.parts, on_string_content) { |parts, part| on_string_add(parts, part) }
+          heredoc = visit_heredoc_string_node(node)
 
           bounds(node.location)
           on_string_literal(heredoc)
@@ -2098,8 +2097,7 @@ module Prism
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
         if node.opening.start_with?("<<~")
-          bounds(node.parts.first.location)
-          heredoc = visit_heredoc_node(node.parts, on_xstring_new) { |parts, part| on_xstring_add(parts, part) }
+          heredoc = visit_heredoc_x_string_node(node)
 
           bounds(node.location)
           on_xstring_literal(heredoc)
@@ -2827,8 +2825,7 @@ module Prism
           bounds(node.location)
           on_CHAR("?#{node.content}")
         elsif opening.start_with?("<<~")
-          bounds(node.location)
-          heredoc = visit_heredoc_node([node], on_string_content) { |parts, part| on_string_add(parts, part) }
+          heredoc = visit_heredoc_string_node(node.to_interpolated)
 
           bounds(node.location)
           on_string_literal(heredoc)
@@ -2841,16 +2838,15 @@ module Prism
         end
       end
 
-      # Visit a string that is expressed using a <<~ heredoc.
-      private def visit_heredoc_node(parts, base)
+      # Ripper gives back the escaped string content but strips out the common
+      # leading whitespace. Prism gives back the unescaped string content and
+      # a location for the escaped string content. Unfortunately these don't
+      # work well together, so here we need to re-derive the common leading
+      # whitespace.
+      private def visit_heredoc_node_whitespace(parts)
         common_whitespace = nil
         dedent_next = true
 
-        # Ripper gives back the escaped string content but strips out the common
-        # leading whitespace. Prism gives back the unescaped string content and
-        # a location for the escaped string content. Unfortunately these don't
-        # work well together, so here we need to re-derive the common leading
-        # whitespace.
         parts.each do |part|
           if part.is_a?(StringNode)
             if dedent_next && !(content = part.content).chomp.empty?
@@ -2868,7 +2864,14 @@ module Prism
           end
         end
 
-        if common_whitespace.nil? || common_whitespace == 0
+        common_whitespace || 0
+      end
+
+      # Visit a string that is expressed using a <<~ heredoc.
+      private def visit_heredoc_node(parts, base)
+        common_whitespace = visit_heredoc_node_whitespace(parts)
+
+        if common_whitespace == 0
           bounds(parts.first.location)
 
           string = []
@@ -2907,6 +2910,20 @@ module Prism
 
           bounds(parts.first.location)
           on_heredoc_dedent(result, common_whitespace)
+        end
+      end
+
+      private def visit_heredoc_string_node(node)
+        bounds(node.location)
+        visit_heredoc_node(node.parts, on_string_content) do |parts, part|
+          on_string_add(parts, part)
+        end
+      end
+
+      private def visit_heredoc_x_string_node(node)
+        bounds(node.location)
+        visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
+          on_xstring_add(parts, part)
         end
       end
 
@@ -3078,8 +3095,7 @@ module Prism
           bounds(node.location)
           on_xstring_literal(on_xstring_new)
         elsif node.opening.start_with?("<<~")
-          bounds(node.location)
-          heredoc = visit_heredoc_node([node], on_xstring_new) { |parts, part| on_xstring_add(parts, part) }
+          heredoc = visit_heredoc_x_string_node(node.to_interpolated)
 
           bounds(node.location)
           on_xstring_literal(heredoc)
