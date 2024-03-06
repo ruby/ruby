@@ -537,28 +537,10 @@ module Prism
             bounds(node.location)
             on_unary(node.name, receiver)
           when :!@
-            if node.message == "not"
-              receiver =
-                case node.receiver
-                when nil
-                  nil
-                when ParenthesesNode
-                  body = visit(node.receiver.body&.body&.first) || false
+            receiver = visit(node.receiver)
 
-                  bounds(node.receiver.location)
-                  on_paren(body)
-                else
-                  visit(node.receiver)
-                end
-
-              bounds(node.location)
-              on_unary(:not, receiver)
-            else
-              receiver = visit(node.receiver)
-
-              bounds(node.location)
-              on_unary(:!@, receiver)
-            end
+            bounds(node.location)
+            on_unary(node.message == "not" ? :not : :!@, receiver)
           when :!=, :!~, :=~, :==, :===, :<=>, :>, :>=, :<, :<=, :&, :|, :^, :>>, :<<, :-, :+, :%, :/, :*, :**
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
@@ -1675,20 +1657,36 @@ module Prism
           else
             # Ripper does not track block-locals within lambdas, so we skip
             # directly to the parameters here.
-            visit(node.parameters.parameters)
+            params = visit(node.parameters.parameters)
+
+            if node.parameters.opening_loc.nil?
+              params
+            else
+              bounds(node.parameters.opening_loc)
+              on_paren(params)
+            end
           end
 
-        if !node.opening_loc.nil?
-          bounds(node.opening_loc)
-          parameters = on_paren(parameters)
-        end
-
+        braces = node.opening == "{"
         body =
-          if node.body.nil?
+          case node.body
+          when nil
             bounds(node.location)
-            on_stmts_add(on_stmts_new, on_void_stmt)
+            stmts = on_stmts_add(on_stmts_new, on_void_stmt)
+
+            bounds(node.location)
+            braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
+          when StatementsNode
+            stmts = node.body.body
+            stmts.unshift(nil) if source.byteslice((node.parameters&.location || node.opening_loc).end_offset...node.body.location.start_offset).include?(";")
+            stmts = visit_statements_node_body(stmts)
+
+            bounds(node.body.location)
+            braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
+          when BeginNode
+            visit_body_node(node.body, node.location)
           else
-            visit(node.body)
+            raise
           end
 
         bounds(node.location)
@@ -1953,7 +1951,7 @@ module Prism
         posts = visit_all(node.posts) if node.posts.any?
         keywords = visit_all(node.keywords) if node.keywords.any?
         keyword_rest = visit(node.keyword_rest)
-        block = node.keyword_rest.is_a?(ForwardingParameterNode) ? :& : visit(node.block)
+        block = visit(node.block)
 
         bounds(node.location)
         on_params(requireds, optionals, rest, posts, keywords, keyword_rest, block)
@@ -2483,6 +2481,8 @@ module Prism
           on_period(token)
         when *RUBY_KEYWORDS
           on_kw(token)
+        when /^_/
+          on_ident(token)
         when /^[[:upper:]]/
           on_const(token)
         when /^[[:punct:]]/

@@ -30,7 +30,6 @@ module Prism
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
       if.txt
-      lambda.txt
       method_calls.txt
       methods.txt
       modules.txt
@@ -45,12 +44,10 @@ module Prism
       return.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/array_lits_trailing_calls.txt
-      seattlerb/attr_asgn_colon_id.txt
       seattlerb/begin_rescue_else_ensure_bodies.txt
       seattlerb/begin_rescue_else_ensure_no_bodies.txt
       seattlerb/block_break.txt
       seattlerb/block_call_dot_op2_brace_block.txt
-      seattlerb/block_call_paren_call_block_call.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
       seattlerb/block_decomp_anon_splat_arg.txt
@@ -60,13 +57,9 @@ module Prism
       seattlerb/block_next.txt
       seattlerb/block_paren_splat.txt
       seattlerb/block_return.txt
-      seattlerb/bug169.txt
-      seattlerb/bug179.txt
       seattlerb/bug190.txt
       seattlerb/bug191.txt
       seattlerb/bug_215.txt
-      seattlerb/bug_249.txt
-      seattlerb/bug_call_arglist_parens.txt
       seattlerb/bug_comma.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
@@ -77,11 +70,8 @@ module Prism
       seattlerb/call_assoc_new_if_multiline.txt
       seattlerb/call_assoc_trailing_comma.txt
       seattlerb/call_block_arg_named.txt
-      seattlerb/call_colon2.txt
       seattlerb/call_colon_parens.txt
       seattlerb/call_dot_parens.txt
-      seattlerb/call_stabby_do_end_with_block.txt
-      seattlerb/call_stabby_with_braces_block.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
       seattlerb/case_in_else.txt
@@ -105,8 +95,6 @@ module Prism
       seattlerb/difficult3__7.txt
       seattlerb/difficult3__8.txt
       seattlerb/difficult3__9.txt
-      seattlerb/difficult6__7.txt
-      seattlerb/difficult6__8.txt
       seattlerb/difficult7_.txt
       seattlerb/do_lambda.txt
       seattlerb/heredoc__backslash_dos_format.txt
@@ -144,7 +132,6 @@ module Prism
       seattlerb/masgn_splat_arg_arg.txt
       seattlerb/masgn_star.txt
       seattlerb/masgn_var_star_var.txt
-      seattlerb/messy_op_asgn_lineno.txt
       seattlerb/method_call_assoc_trailing_comma.txt
       seattlerb/method_call_trailing_comma.txt
       seattlerb/mlhs_back_anonsplat.txt
@@ -156,8 +143,6 @@ module Prism
       seattlerb/module_comments.txt
       seattlerb/non_interpolated_symbol_array_line_breaks.txt
       seattlerb/non_interpolated_word_array_line_breaks.txt
-      seattlerb/op_asgn_primary_colon_identifier1.txt
-      seattlerb/op_asgn_primary_colon_identifier_command_call.txt
       seattlerb/parse_if_not_canonical.txt
       seattlerb/parse_if_not_noncanonical.txt
       seattlerb/parse_line_defn_complex.txt
@@ -172,7 +157,6 @@ module Prism
       seattlerb/parse_opt_call_args_lit_comma.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
-      seattlerb/parse_pattern_058_2.txt
       seattlerb/parse_pattern_076.txt
       seattlerb/pctW_lineno.txt
       seattlerb/pct_nl.txt
@@ -194,11 +178,9 @@ module Prism
       seattlerb/rescue_do_end_no_raise.txt
       seattlerb/rescue_do_end_raised.txt
       seattlerb/rescue_do_end_rescued.txt
-      seattlerb/rescue_parens.txt
       seattlerb/return_call_assocs.txt
       seattlerb/safe_call_dot_parens.txt
       seattlerb/slashy_newlines_within_string.txt
-      seattlerb/stabby_arg_no_paren.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       seattlerb/str_double_double_escaped_newline.txt
@@ -276,12 +258,8 @@ module Prism
       whitequark/array_words_interp.txt
       whitequark/asgn_mrhs.txt
       whitequark/break_block.txt
-      whitequark/bug_435.txt
-      whitequark/bug_452.txt
       whitequark/bug_480.txt
       whitequark/bug_ascii_8bit_in_literal.txt
-      whitequark/bug_cmdarg.txt
-      whitequark/bug_do_block_in_cmdarg.txt
       whitequark/bug_do_block_in_hash_brace.txt
       whitequark/bug_heredoc_do.txt
       whitequark/bug_interp_single.txt
@@ -308,8 +286,6 @@ module Prism
       whitequark/interp_digit_var.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
-      whitequark/lbrace_arg_after_command_args.txt
-      whitequark/lparenarg_after_lvar__since_25.txt
       whitequark/lvar_injecting_match.txt
       whitequark/masgn.txt
       whitequark/masgn_attr.txt
@@ -319,9 +295,6 @@ module Prism
       whitequark/next_block.txt
       whitequark/numbered_args_after_27.txt
       whitequark/numparam_outside_block.txt
-      whitequark/op_asgn.txt
-      whitequark/op_asgn_cmd.txt
-      whitequark/parser_bug_507.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
@@ -329,39 +302,22 @@ module Prism
       whitequark/pattern_matching_else.txt
       whitequark/rescue_else.txt
       whitequark/rescue_else_ensure.txt
-      whitequark/rescue_in_lambda_block.txt
       whitequark/rescue_without_begin_end.txt
       whitequark/return.txt
       whitequark/return_block.txt
       whitequark/ruby_bug_10653.txt
       whitequark/ruby_bug_11107.txt
-      whitequark/ruby_bug_11380.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt
       whitequark/ruby_bug_11989.txt
       whitequark/ruby_bug_11990.txt
       whitequark/ruby_bug_12073.txt
-      whitequark/ruby_bug_12402.txt
-      whitequark/ruby_bug_12686.txt
-      whitequark/ruby_bug_14690.txt
       whitequark/ruby_bug_15789.txt
-      whitequark/send_attr_asgn.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/send_call.txt
       whitequark/send_index_cmd.txt
-      whitequark/send_lambda.txt
-      whitequark/send_lambda_args_noparen.txt
-      whitequark/send_lambda_legacy.txt
-      whitequark/send_plain.txt
-      whitequark/send_plain_cmd.txt
       whitequark/send_self.txt
       whitequark/slash_newline_in_heredocs.txt
-      whitequark/space_args_arg.txt
-      whitequark/space_args_arg_block.txt
-      whitequark/space_args_arg_call.txt
-      whitequark/space_args_arg_newline.txt
-      whitequark/space_args_block.txt
-      whitequark/space_args_cmd.txt
       whitequark/string_concat.txt
       whitequark/ternary.txt
       whitequark/ternary_ambiguous_symbol.txt
@@ -377,6 +333,17 @@ module Prism
 
       define_method "test_ripper_#{relative}" do
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
+
+        case relative
+        when /break|next|redo|if|unless|rescue|control|keywords|retry/
+          source = "-> do\nrescue\n#{source}\nend"
+        end
+
+        case source
+        when /^ *yield/
+          source = "def __invalid_yield__\n#{source}\nend"
+        end
+
         assert_ripper(source, filepath, skips.include?(relative))
       end
     end
