@@ -343,14 +343,7 @@ module Prism
       # { a: 1 }
       #   ^^^^
       def visit_assoc_node(node)
-        key =
-          if node.key.is_a?(SymbolNode) && node.operator_loc.nil?
-            bounds(node.key.location)
-            on_label(node.key.slice)
-          else
-            visit(node.key)
-          end
-
+        key = visit(node.key)
         value = visit(node.value)
 
         bounds(node.location)
@@ -2486,7 +2479,7 @@ module Prism
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        if (opening = node.opening)&.match?(/^%s|['"]$/)
+        if (opening = node.opening)&.match?(/^%s|['"]:?$/)
           bounds(node.value_loc)
           content = on_string_content
 
@@ -2495,6 +2488,9 @@ module Prism
           end
 
           on_dyna_symbol(content)
+        elsif (closing = node.closing) == ":"
+          bounds(node.location)
+          on_label("#{node.value}:")
         elsif opening.nil? && node.closing_loc.nil?
           bounds(node.value_loc)
           on_symbol_literal(visit_token(node.value))

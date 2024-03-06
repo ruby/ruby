@@ -48,7 +48,6 @@ module Prism
       seattlerb/block_return.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
-      seattlerb/call_args_assoc_quoted.txt
       seattlerb/call_args_assoc_trailing_comma.txt
       seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
@@ -117,8 +116,6 @@ module Prism
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_076.txt
-      seattlerb/quoted_symbol_hash_arg.txt
-      seattlerb/quoted_symbol_keys.txt
       seattlerb/rescue_do_end_ensure_result.txt
       seattlerb/rescue_do_end_no_raise.txt
       seattlerb/rescue_do_end_raised.txt
@@ -175,7 +172,6 @@ module Prism
       whitequark/asgn_mrhs.txt
       whitequark/break_block.txt
       whitequark/bug_480.txt
-      whitequark/bug_do_block_in_hash_brace.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
       whitequark/dedenting_heredoc.txt
@@ -190,7 +186,6 @@ module Prism
       whitequark/forwarded_kwrestarg.txt
       whitequark/forwarded_kwrestarg_with_additional_kwarg.txt
       whitequark/forwarded_restarg.txt
-      whitequark/hash_label_end.txt
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
