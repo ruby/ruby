@@ -46,36 +46,27 @@ module Prism
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
       spanning_heredoc.txt
       tilde_heredocs.txt
+      unparser/corpus/semantic/dstr.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
+      whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
+      whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/slash_newline_in_heredocs.txt
     ]
 
     skips = incorrect | heredocs | %w[
       if.txt
-      modules.txt
       rescue.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
-      seattlerb/defn_oneliner_eq2.txt
-      seattlerb/defs_oneliner_eq2.txt
       seattlerb/if_elsif.txt
       unparser/corpus/literal/block.txt
-      unparser/corpus/literal/class.txt
-      unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
-      unparser/corpus/literal/module.txt
-      unparser/corpus/literal/send.txt
-      unparser/corpus/literal/while.txt
-      unparser/corpus/semantic/dstr.txt
-      unparser/corpus/semantic/while.txt
       whitequark/if_elsif.txt
-      whitequark/parser_bug_640.txt
-      whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/send_block_chain_cmd.txt
     ]
 

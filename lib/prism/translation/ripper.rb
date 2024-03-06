@@ -395,20 +395,20 @@ module Prism
       # begin end
       # ^^^^^^^^^
       def visit_begin_node(node)
-        clauses = visit_begin_node_clauses(node.begin_keyword_loc, node)
+        clauses = visit_begin_node_clauses(node.begin_keyword_loc, node, false)
 
         bounds(node.location)
         on_begin(clauses)
       end
 
       # Visit the clauses of a begin node to form an on_bodystmt call.
-      private def visit_begin_node_clauses(location, node)
+      private def visit_begin_node_clauses(location, node, allow_newline)
         statements =
           if node.statements.nil?
             on_stmts_add(on_stmts_new, on_void_stmt)
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(location, node.statements.body[0].location)
+            body.unshift(nil) if void_stmt?(location, node.statements.body[0].location, allow_newline)
 
             bounds(node.statements.location)
             visit_statements_node_body(body)
@@ -422,7 +422,7 @@ module Prism
                 [nil]
               else
                 body = else_clause_node.statements.body
-                body.unshift(nil) if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location)
+                body.unshift(nil) if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location, allow_newline)
                 body
               end
 
@@ -437,20 +437,20 @@ module Prism
 
       # Visit the body of a structure that can have either a set of statements
       # or statements wrapped in rescue/else/ensure.
-      private def visit_body_node(location, node)
+      private def visit_body_node(location, node, allow_newline = false)
         case node
         when nil
           bounds(location)
           on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
         when StatementsNode
           body = [*node.body]
-          body.unshift(nil) if void_stmt?(location, body[0].location)
+          body.unshift(nil) if void_stmt?(location, body[0].location, allow_newline)
           stmts = visit_statements_node_body(body)
 
           bounds(node.body.first.location)
           on_bodystmt(stmts, nil, nil, nil)
         when BeginNode
-          visit_begin_node_clauses(location, node)
+          visit_begin_node_clauses(location, node, allow_newline)
         else
           raise
         end
@@ -484,7 +484,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location)
+            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -879,7 +879,7 @@ module Prism
           end
 
         superclass = visit(node.superclass)
-        bodystmt = visit_body_node(node.superclass&.location || node.constant_path.location, node.body)
+        bodystmt = visit_body_node(node.superclass&.location || node.constant_path.location, node.body, node.superclass.nil?)
 
         bounds(node.location)
         on_class(constant_path, superclass, bodystmt)
@@ -1190,7 +1190,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(node.else_keyword_loc, node.statements.body[0].location)
+            body.unshift(nil) if void_stmt?(node.else_keyword_loc, node.statements.body[0].location, false)
             body
           end
 
@@ -1229,7 +1229,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(node.ensure_keyword_loc, body[0].location)
+            body.unshift(nil) if void_stmt?(node.ensure_keyword_loc, body[0].location, false)
             body
           end
 
@@ -1839,7 +1839,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location)
+            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -1979,7 +1979,7 @@ module Prism
             visit(node.constant_path)
           end
 
-        bodystmt = visit_body_node(node.constant_path.location, node.body)
+        bodystmt = visit_body_node(node.constant_path.location, node.body, true)
 
         bounds(node.location)
         on_module(constant_path, bodystmt)
@@ -2778,8 +2778,9 @@ module Prism
       end
 
       # Returns true if there is a semicolon between the two locations.
-      def void_stmt?(left, right)
-        source.byteslice(left.end_offset...right.start_offset).match?(/[;#]/)
+      def void_stmt?(left, right, allow_newline)
+        pattern = allow_newline ? /[;#\n]/ : /[;#]/
+        source.byteslice(left.end_offset...right.start_offset).match?(pattern)
       end
 
       # Visit the string content of a particular node. This method is used to
