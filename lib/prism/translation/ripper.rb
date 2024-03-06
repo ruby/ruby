@@ -23,13 +23,10 @@ module Prism
     # * on_arg_ambiguous
     # * on_assign_error
     # * on_class_name_error
-    # * on_heredoc_dedent
     # * on_operator_ambiguous
     # * on_param_error
     #
     # * on_comma
-    # * on_heredoc_beg
-    # * on_heredoc_end
     # * on_ignored_nl
     # * on_kw
     # * on_label_end
@@ -48,7 +45,6 @@ module Prism
     # * on_tlambeg
     # * on_tstring_beg
     # * on_tstring_end
-    # * on_words_sep
     # * on_ignored_sp
     #
     class Ripper < Compiler
@@ -555,37 +551,58 @@ module Prism
       def visit_array_node(node)
         case (opening = node.opening)
         when /^%w/
-          bounds(node.opening_loc)
+          opening_loc = node.opening_loc
+          bounds(opening_loc)
           on_qwords_beg(opening)
 
-          elements =
-            node.elements.inject(on_qwords_new) do |qwords, element|
-              bounds(element.location)
-              on_qwords_add(qwords, on_tstring_content(element.content))
-            end
+          elements = on_qwords_new
+          previous = nil
+
+          node.elements.each do |element|
+            visit_words_sep(opening_loc, previous, element)
+
+            bounds(element.location)
+            elements = on_qwords_add(elements, on_tstring_content(element.content))
+
+            previous = element
+          end
 
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         when /^%i/
-          bounds(node.opening_loc)
+          opening_loc = node.opening_loc
+          bounds(opening_loc)
           on_qsymbols_beg(opening)
 
-          elements =
-            node.elements.inject(on_qsymbols_new) do |qsymbols, element|
-              bounds(element.location)
-              on_qsymbols_add(qsymbols, on_tstring_content(element.value))
-            end
+          elements = on_qsymbols_new
+          previous = nil
+
+          node.elements.each do |element|
+            visit_words_sep(opening_loc, previous, element)
+
+            bounds(element.location)
+            elements = on_qsymbols_add(elements, on_tstring_content(element.value))
+
+            previous = element
+          end
 
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         when /^%W/
-          bounds(node.opening_loc)
+          opening_loc = node.opening_loc
+          bounds(opening_loc)
           on_words_beg(opening)
 
-          elements =
-            node.elements.inject(on_words_new) do |words, element|
-              bounds(element.location)
-              word =
+          elements = on_words_new
+          previous = nil
+
+          node.elements.each do |element|
+            visit_words_sep(opening_loc, previous, element)
+
+            bounds(element.location)
+            elements =
+              on_words_add(
+                elements,
                 if element.is_a?(StringNode)
                   on_word_add(on_word_new, on_tstring_content(element.content))
                 else
@@ -601,20 +618,28 @@ module Prism
                     on_word_add(word, word_part)
                   end
                 end
+              )
 
-              on_words_add(words, word)
-            end
+            previous = element
+          end
 
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         when /^%I/
-          bounds(node.opening_loc)
+          opening_loc = node.opening_loc
+          bounds(opening_loc)
           on_symbols_beg(opening)
 
-          elements =
-            node.elements.inject(on_symbols_new) do |symbols, element|
-              bounds(element.location)
-              symbol =
+          elements = on_symbols_new
+          previous = nil
+
+          node.elements.each do |element|
+            visit_words_sep(opening_loc, previous, element)
+
+            bounds(element.location)
+            elements =
+              on_symbols_add(
+                elements,
                 if element.is_a?(SymbolNode)
                   on_word_add(on_word_new, on_tstring_content(element.value))
                 else
@@ -630,9 +655,10 @@ module Prism
                     on_word_add(word, word_part)
                   end
                 end
+              )
 
-              on_symbols_add(symbols, symbol)
-            end
+            previous = element
+          end
 
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
@@ -648,6 +674,18 @@ module Prism
 
         bounds(node.location)
         on_array(elements)
+      end
+
+      # Dispatch a words_sep event that contains the space between the elements
+      # of list literals.
+      private def visit_words_sep(opening_loc, previous, current)
+        end_offset = (previous.nil? ? opening_loc : previous.location).end_offset
+        start_offset = current.location.start_offset
+
+        if end_offset != start_offset
+          bounds(current.location.copy(start_offset: end_offset))
+          on_words_sep(source.byteslice(end_offset...start_offset))
+        end
       end
 
       # Visit a list of elements, like the elements of an array or arguments.
@@ -2914,17 +2952,35 @@ module Prism
       end
 
       private def visit_heredoc_string_node(node)
+        bounds(node.opening_loc)
+        on_heredoc_beg(node.opening)
+
         bounds(node.location)
-        visit_heredoc_node(node.parts, on_string_content) do |parts, part|
-          on_string_add(parts, part)
-        end
+        result =
+          visit_heredoc_node(node.parts, on_string_content) do |parts, part|
+            on_string_add(parts, part)
+          end
+
+        bounds(node.closing_loc)
+        on_heredoc_end(node.closing)
+
+        result
       end
 
       private def visit_heredoc_x_string_node(node)
+        bounds(node.opening_loc)
+        on_heredoc_beg(node.opening)
+
         bounds(node.location)
-        visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
-          on_xstring_add(parts, part)
-        end
+        result =
+          visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
+            on_xstring_add(parts, part)
+          end
+
+        bounds(node.closing_loc)
+        on_heredoc_end(node.closing)
+
+        result
       end
 
       # super(foo)
