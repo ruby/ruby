@@ -157,7 +157,8 @@ jobs:
       - name: Install launchable command
         run: |
           pip install launchable
-          launchable split-subset --subset-id $(cat ../launchable-subset-id.txt) --bin=1/2 raw > launchable-subset.txt
+          launchable split-subset --subset-id $(cat ../launchable-subset-id.txt) --bin 1/2 raw > launchable-subset.txt
+          cat launchable-subset.txt
           echo "TESTS=$TESTS $(cat launchable-subset.txt | sed 's/file=//g')" >> $GITHUB_ENV
         if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
@@ -259,7 +260,8 @@ jobs:
       - name: Install launchable command
         run: |
           pip install launchable
-          launchable split-subset --subset-id $(cat ../launchable-subset-id.txt) --bin=2/2 raw > launchable-subset.txt
+          launchable split-subset --subset-id $(cat ../launchable-subset-id.txt) --bin 2/2 raw > launchable-subset.txt
+          cat launchable-subset.txt
           echo "TESTS=$TESTS $(cat launchable-subset.txt | sed 's/file=//g')" >> $GITHUB_ENV
         if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
