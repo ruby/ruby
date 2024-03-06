@@ -646,8 +646,13 @@ module Prism
           bounds(node.call_operator_loc)
           call_operator = visit_token(node.call_operator)
 
-          bounds(node.message_loc)
-          message = visit_token(node.message)
+          message =
+            if node.message_loc.nil?
+              :call
+            else
+              bounds(node.message_loc)
+              visit_token(node.message)
+            end
 
           if node.name.end_with?("=") && !node.message.end_with?("=") && !node.arguments.nil? && node.block.nil?
             bounds(node.arguments.location)

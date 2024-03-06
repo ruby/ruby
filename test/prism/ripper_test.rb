@@ -55,8 +55,6 @@ module Prism
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/call_assoc_trailing_comma.txt
       seattlerb/call_block_arg_named.txt
-      seattlerb/call_colon_parens.txt
-      seattlerb/call_dot_parens.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
       seattlerb/case_in_else.txt
@@ -129,11 +127,9 @@ module Prism
       seattlerb/rescue_do_end_raised.txt
       seattlerb/rescue_do_end_rescued.txt
       seattlerb/return_call_assocs.txt
-      seattlerb/safe_call_dot_parens.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       seattlerb/str_lit_concat_bad_encodings.txt
-      seattlerb/thingy.txt
       seattlerb/yield_call_assocs.txt
       single_method_call_with_bang.txt
       spanning_heredoc.txt
@@ -224,7 +220,6 @@ module Prism
       whitequark/ruby_bug_11990.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_block_chain_cmd.txt
-      whitequark/send_call.txt
       whitequark/send_index_cmd.txt
       whitequark/send_self.txt
       whitequark/slash_newline_in_heredocs.txt
