@@ -19,7 +19,12 @@ module Prism
       "whitequark/next_block.txt",
       "whitequark/return_block.txt",
 
+      # Ripper is not accounting for locals created by patterns using the **
+      # operator within an `in` clause.
+      "seattlerb/parse_pattern_058.txt",
+
       # Ripper cannot handle named capture groups in regular expressions.
+      "regex_char_width.txt",
       "whitequark/lvar_injecting_match.txt"
     ]
 
@@ -32,10 +37,7 @@ module Prism
       heredocs_with_ignored_newlines.txt
       if.txt
       modules.txt
-      multi_write.txt
-      patterns.txt
       regex.txt
-      regex_char_width.txt
       rescue.txt
       seattlerb/TestRubyParserShared.txt
       seattlerb/block_call_dot_op2_brace_block.txt
@@ -54,8 +56,6 @@ module Prism
       seattlerb/heredoc_squiggly_tabs_extra.txt
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
       seattlerb/if_elsif.txt
-      seattlerb/parse_pattern_051.txt
-      seattlerb/parse_pattern_058.txt
       spanning_heredoc.txt
       tilde_heredocs.txt
       unparser/corpus/literal/block.txt
@@ -64,7 +64,6 @@ module Prism
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
       unparser/corpus/literal/module.txt
-      unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/send.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt

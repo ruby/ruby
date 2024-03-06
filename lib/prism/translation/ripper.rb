@@ -341,14 +341,15 @@ module Prism
         constant = visit(node.constant)
         requireds = visit_all(node.requireds) if node.requireds.any?
         rest =
-          if !node.rest.nil?
-            if !node.rest.expression.nil?
-              visit(node.rest.expression)
-            else
-              bounds(node.rest.location)
+          if (rest_node = node.rest).is_a?(SplatNode)
+            if rest_node.expression.nil?
+              bounds(rest_node.location)
               on_var_field(nil)
+            else
+              visit(rest_node.expression)
             end
           end
+
         posts = visit_all(node.posts) if node.posts.any?
 
         bounds(node.location)
@@ -2284,7 +2285,7 @@ module Prism
       # foo rescue bar
       # ^^^^^^^^^^^^^^
       def visit_rescue_modifier_node(node)
-        expression = visit(node.expression)
+        expression = visit_write_value(node.expression)
         rescue_expression = visit(node.rescue_expression)
 
         bounds(node.location)
