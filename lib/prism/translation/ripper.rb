@@ -1808,7 +1808,13 @@ module Prism
           if node.parameters.is_a?(BlockParametersNode)
             # Ripper does not track block-locals within lambdas, so we skip
             # directly to the parameters here.
-            params = visit(node.parameters.parameters)
+            params =
+              if node.parameters.parameters.nil?
+                bounds(node.location)
+                on_params(nil, nil, nil, nil, nil, nil, nil)
+              else
+                visit(node.parameters.parameters)
+              end
 
             if node.parameters.opening_loc.nil?
               params

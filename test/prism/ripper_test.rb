@@ -41,11 +41,8 @@ module Prism
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
-      seattlerb/call_array_lambda_block_call.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
-      seattlerb/difficult3_5.txt
-      seattlerb/do_lambda.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
       seattlerb/heredoc_nested.txt
@@ -57,11 +54,8 @@ module Prism
       seattlerb/heredoc_squiggly_tabs_extra.txt
       seattlerb/heredoc_squiggly_visually_blank_lines.txt
       seattlerb/if_elsif.txt
-      seattlerb/lambda_do_vs_brace.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
-      seattlerb/stabby_block_iter_call.txt
-      seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       spanning_heredoc.txt
       tilde_heredocs.txt
       unparser/corpus/literal/block.txt
@@ -69,7 +63,6 @@ module Prism
       unparser/corpus/literal/empty.txt
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/kwbegin.txt
-      unparser/corpus/literal/lambda.txt
       unparser/corpus/literal/module.txt
       unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/send.txt
@@ -84,7 +77,6 @@ module Prism
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
-      whitequark/ruby_bug_11107.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/slash_newline_in_heredocs.txt
     ]
