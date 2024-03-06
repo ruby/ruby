@@ -13,6 +13,22 @@ module Prism
     JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
     JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
 
+    class Error
+      attr_reader :name
+
+      def initialize(name)
+        @name = name
+      end
+    end
+
+    class Warning
+      attr_reader :name
+
+      def initialize(name)
+        @name = name
+      end
+    end
+
     # This module contains methods for escaping characters in JavaDoc comments.
     module JavaDoc
       ESCAPES = {
@@ -521,6 +537,7 @@ module Prism
           if you are looking to modify the template
           =end
 
+<<<<<<< HEAD
           HEADING
         when ".rbs"
           <<~HEADING
@@ -551,8 +568,18 @@ module Prism
           /******************************************************************************/
 
           HEADING
+=======
+          {
+            errors: config.fetch("errors").map { |name| Error.new(name) },
+            warnings: config.fetch("warnings").map { |name| Warning.new(name) },
+            nodes: config.fetch("nodes").map { |node| NodeType.new(node) }.sort_by(&:name),
+            tokens: config.fetch("tokens").map { |token| Token.new(token) },
+            flags: config.fetch("flags").map { |flags| Flags.new(flags) }
+          }
+>>>>>>> 35d292f929 (Expose types on diagnostics)
         end
 
+<<<<<<< HEAD
         write_to ||= File.expand_path("../#{name}", __dir__)
         contents = heading + erb.result_with_hash(locals)
 
@@ -627,6 +654,40 @@ module Prism
       "sig/prism/_private/dot_visitor.rbs"
     ]
   end
+=======
+  TEMPLATES = [
+    "ext/prism/api_node.c",
+    "include/prism/ast.h",
+    "include/prism/diagnostic.h",
+    "javascript/src/deserialize.js",
+    "javascript/src/nodes.js",
+    "javascript/src/visitor.js",
+    "java/org/prism/Loader.java",
+    "java/org/prism/Nodes.java",
+    "java/org/prism/AbstractNodeVisitor.java",
+    "lib/prism/compiler.rb",
+    "lib/prism/dispatcher.rb",
+    "lib/prism/dot_visitor.rb",
+    "lib/prism/dsl.rb",
+    "lib/prism/mutation_compiler.rb",
+    "lib/prism/node.rb",
+    "lib/prism/serialize.rb",
+    "lib/prism/visitor.rb",
+    "src/diagnostic.c",
+    "src/node.c",
+    "src/prettyprint.c",
+    "src/serialize.c",
+    "src/token_type.c",
+    "rbi/prism/node.rbi",
+    "rbi/prism/visitor.rbi",
+    "sig/prism.rbs",
+    "sig/prism/dsl.rbs",
+    "sig/prism/mutation_compiler.rbs",
+    "sig/prism/node.rbs",
+    "sig/prism/visitor.rbs",
+    "sig/prism/_private/dot_visitor.rbs"
+  ]
+>>>>>>> 35d292f929 (Expose types on diagnostics)
 end
 
 if __FILE__ == $0

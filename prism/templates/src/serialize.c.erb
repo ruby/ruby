@@ -210,6 +210,9 @@ pm_serialize_data_loc(const pm_parser_t *parser, pm_buffer_t *buffer) {
 
 static void
 pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
+    // serialize the type
+    pm_buffer_append_byte(buffer, (uint8_t) diagnostic->diag_id);
+
     // serialize message
     size_t message_length = strlen(diagnostic->message);
     pm_buffer_append_varuint(buffer, pm_sizet_to_u32(message_length));

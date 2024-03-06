@@ -452,12 +452,13 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
         }
 
         VALUE error_argv[] = {
+            ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id))),
             rb_enc_str_new_cstr(error->message, encoding),
             rb_class_new_instance(3, location_argv, rb_cPrismLocation),
             level
         };
 
-        rb_ary_push(errors, rb_class_new_instance(3, error_argv, rb_cPrismParseError));
+        rb_ary_push(errors, rb_class_new_instance(4, error_argv, rb_cPrismParseError));
     }
 
     return errors;
@@ -491,12 +492,13 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
         }
 
         VALUE warning_argv[] = {
+            ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id))),
             rb_enc_str_new_cstr(warning->message, encoding),
             rb_class_new_instance(3, location_argv, rb_cPrismLocation),
             level
         };
 
-        rb_ary_push(warnings, rb_class_new_instance(3, warning_argv, rb_cPrismParseWarning));
+        rb_ary_push(warnings, rb_class_new_instance(4, warning_argv, rb_cPrismParseWarning));
     }
 
     return warnings;
