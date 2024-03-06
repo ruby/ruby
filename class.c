@@ -32,9 +32,9 @@
 
 /* Flags of T_CLASS
  *
- * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
- *            The RCLASS_SUPERCLASSES contains the class as the last element.
- *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           The RCLASS_SUPERCLASSES contains the class as the last element.
+ *           This means that this class owns the RCLASS_SUPERCLASSES list.
  * if !SHAPE_IN_BASIC_FLAGS
  * 4-19: SHAPE_FLAG_MASK
  *           Shape ID for the class.
