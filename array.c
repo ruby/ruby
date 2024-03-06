@@ -1733,6 +1733,16 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  Returns elements from +self+; does not modify +self+.
  *
+ *  In brief:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a[0]     # => :foo
+ *    a[-1]    # => 2
+ *    a[1, 2]  # => ["bar", 2]
+ *    a[0..1]  # => [:foo, "bar"]
+ *    a[0..-2] # => [:foo, "bar"]
+ *    a[-2..2] # => ["bar", 2]
+ *
  *  When a single Integer argument +index+ is given, returns the element at offset +index+:
  *
  *    a = [:foo, 'bar', 2]
