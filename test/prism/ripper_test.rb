@@ -61,14 +61,11 @@ module Prism
       seattlerb/lambda_do_vs_brace.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
-      seattlerb/parse_line_evstr_after_break.txt
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
-      seattlerb/str_lit_concat_bad_encodings.txt
       spanning_heredoc.txt
-      strings.txt
       tilde_heredocs.txt
       unparser/corpus/literal/assignment.txt
       unparser/corpus/literal/block.txt
@@ -96,10 +93,8 @@ module Prism
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/ruby_bug_11107.txt
-      whitequark/ruby_bug_11990.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/slash_newline_in_heredocs.txt
-      whitequark/string_concat.txt
     ]
 
     relatives.each do |relative|

@@ -1696,11 +1696,19 @@ module Prism
       # "foo #{bar}"
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
-        if node.opening.start_with?("<<~")
+        if node.opening&.start_with?("<<~")
           heredoc = visit_string_heredoc_node(node.parts)
 
           bounds(node.location)
           on_string_literal(heredoc)
+        elsif !node.heredoc? && node.parts.length > 1 && node.parts.any? { |part| (part.is_a?(StringNode) || part.is_a?(InterpolatedStringNode)) && !part.opening_loc.nil? }
+          first, *rest = node.parts
+          rest.inject(visit(first)) do |content, part|
+            concat = visit(part)
+
+            bounds(part.location)
+            on_string_concat(content, concat)
+          end
         else
           bounds(node.parts.first.location)
           parts =
