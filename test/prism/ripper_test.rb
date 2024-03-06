@@ -63,9 +63,7 @@ module Prism
       seattlerb/case_in.txt
       seattlerb/class_comments.txt
       seattlerb/defn_oneliner_eq2.txt
-      seattlerb/defn_oneliner_rescue.txt
       seattlerb/defs_oneliner_eq2.txt
-      seattlerb/defs_oneliner_rescue.txt
       seattlerb/difficult3_.txt
       seattlerb/difficult3_5.txt
       seattlerb/difficult3__10.txt
@@ -117,10 +115,6 @@ module Prism
       seattlerb/parse_pattern_051.txt
       seattlerb/parse_pattern_058.txt
       seattlerb/parse_pattern_076.txt
-      seattlerb/rescue_do_end_ensure_result.txt
-      seattlerb/rescue_do_end_no_raise.txt
-      seattlerb/rescue_do_end_raised.txt
-      seattlerb/rescue_do_end_rescued.txt
       seattlerb/return_call_assocs.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
@@ -189,7 +183,6 @@ module Prism
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
-      whitequark/rescue_without_begin_end.txt
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt

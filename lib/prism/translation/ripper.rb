@@ -372,20 +372,20 @@ module Prism
       # begin end
       # ^^^^^^^^^
       def visit_begin_node(node)
-        clauses = visit_begin_node_clauses(node)
+        clauses = visit_begin_node_clauses(node.begin_keyword_loc, node)
 
         bounds(node.location)
         on_begin(clauses)
       end
 
       # Visit the clauses of a begin node to form an on_bodystmt call.
-      private def visit_begin_node_clauses(node)
+      private def visit_begin_node_clauses(location, node)
         statements =
           if node.statements.nil?
             on_stmts_add(on_stmts_new, on_void_stmt)
           else
             body = node.statements.body
-            body.unshift(nil) if semicolon?(node.begin_keyword_loc, node.statements.body[0].location)
+            body.unshift(nil) if semicolon?(location, node.statements.body[0].location)
 
             bounds(node.statements.location)
             visit_statements_node_body(body)
@@ -427,7 +427,7 @@ module Prism
           bounds(node.body.first.location)
           on_bodystmt(stmts, nil, nil, nil)
         when BeginNode
-          visit_begin_node_clauses(node)
+          visit_begin_node_clauses(location, node)
         else
           raise
         end
