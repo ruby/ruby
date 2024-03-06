@@ -69,6 +69,7 @@ jobs:
       - run: |
           launchable subset --target 100% --split --get-tests-from-previous-sessions raw > launchable-subset-id.txt
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
+        working-directory: ../src
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}${{ matrix.test_task }}
