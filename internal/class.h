@@ -195,10 +195,16 @@ static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 VALUE rb_class_inherited(VALUE, VALUE);
 VALUE rb_keyword_error_new(const char *, VALUE);
 
+static inline bool
+RCLASS_SINGLETON_P(VALUE klass)
+{
+    return RB_TYPE_P(klass, T_CLASS) && FL_TEST_RAW(klass, FL_SINGLETON);
+}
+
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
-    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         return 0;
     }
     return RCLASS_EXT(klass)->as.class.allocator;
@@ -207,7 +213,7 @@ RCLASS_ALLOCATOR(VALUE klass)
 static inline void
 RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
 {
-    assert(!FL_TEST(klass, FL_SINGLETON));
+    assert(!RCLASS_SINGLETON_P(klass));
     RCLASS_EXT(klass)->as.class.allocator = allocator;
 }
 
@@ -267,8 +273,7 @@ RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
 static inline VALUE
 RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 {
-    assert(BUILTIN_TYPE(klass) == T_CLASS);
-    assert(FL_TEST_RAW(klass, FL_SINGLETON));
+    assert(RCLASS_SINGLETON_P(klass));
 
     RB_OBJ_WRITE(klass, &RCLASS_EXT(klass)->as.singleton_class.attached_object, attached_object);
     return attached_object;

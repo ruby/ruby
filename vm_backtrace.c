@@ -198,7 +198,7 @@ gen_method_name(VALUE owner, VALUE name)
 {
     bool permanent;
     if (RB_TYPE_P(owner, T_CLASS) || RB_TYPE_P(owner, T_MODULE)) {
-        if (RBASIC(owner)->flags & FL_SINGLETON) {
+        if (RCLASS_SINGLETON_P(owner)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(owner);
             if (RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
                 v = rb_mod_name0(v, &permanent);
@@ -1784,7 +1784,7 @@ rb_profile_frame_classpath(VALUE frame)
         if (RB_TYPE_P(klass, T_ICLASS)) {
             klass = RBASIC(klass)->klass;
         }
-        else if (FL_TEST(klass, FL_SINGLETON)) {
+        else if (RCLASS_SINGLETON_P(klass)) {
             klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE))
                 return rb_sprintf("#<%s:%p>", rb_class2name(rb_obj_class(klass)), (void*)klass);
@@ -1801,7 +1801,7 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 {
     VALUE klass = frame2klass(frame);
 
-    return RBOOL(klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON));
+    return RBOOL(klass && !NIL_P(klass) && RCLASS_SINGLETON_P(klass));
 }
 
 VALUE

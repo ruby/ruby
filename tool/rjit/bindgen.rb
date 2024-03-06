@@ -423,7 +423,6 @@ generator = BindingGenerator.new(
       RUBY_FIXNUM_FLAG
       RUBY_FLONUM_FLAG
       RUBY_FLONUM_MASK
-      RUBY_FL_SINGLETON
       RUBY_IMMEDIATE_MASK
       RUBY_SPECIAL_SHIFT
       RUBY_SYMBOL_FLAG

@@ -533,7 +533,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
-    if (check && FL_TEST(klass, FL_SINGLETON)) {
+    if (check && RCLASS_SINGLETON_P(klass)) {
         VALUE origin = RCLASS_ORIGIN(klass);
         if (SINGLETON_DUMP_UNABLE_P(klass) ||
             (origin != klass && SINGLETON_DUMP_UNABLE_P(origin))) {

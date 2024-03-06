@@ -619,7 +619,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     if (RB_TYPE_P(klass, T_ICLASS)) {
         klass = RBASIC(klass)->klass;
     }
-    else if (FL_TEST(klass, FL_SINGLETON)) {
+    else if (RCLASS_SINGLETON_P(klass)) {
         klass = RCLASS_ATTACHED_OBJECT(klass);
         if (NIL_P(klass)) return FALSE;
     }

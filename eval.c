@@ -428,7 +428,7 @@ rb_class_modify_check(VALUE klass)
     if (OBJ_FROZEN(klass)) {
         const char *desc;
 
-        if (FL_TEST(klass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(klass)) {
             desc = "object";
             klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!SPECIAL_CONST_P(klass)) {

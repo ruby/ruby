@@ -6537,6 +6537,7 @@ error.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 error.$(OBJEXT): {$(VPATH)}builtin.h
 error.$(OBJEXT): {$(VPATH)}config.h
 error.$(OBJEXT): {$(VPATH)}constant.h
+error.$(OBJEXT): {$(VPATH)}debug_counter.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
@@ -6709,7 +6710,9 @@ error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
 error.$(OBJEXT): {$(VPATH)}util.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
+error.$(OBJEXT): {$(VPATH)}vm_debug.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
+error.$(OBJEXT): {$(VPATH)}vm_sync.h
 error.$(OBJEXT): {$(VPATH)}warning.rbinc
 error.$(OBJEXT): {$(VPATH)}yjit.h
 eval.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -8353,6 +8356,7 @@ io.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 io.$(OBJEXT): {$(VPATH)}builtin.h
 io.$(OBJEXT): {$(VPATH)}config.h
 io.$(OBJEXT): {$(VPATH)}constant.h
+io.$(OBJEXT): {$(VPATH)}debug_counter.h
 io.$(OBJEXT): {$(VPATH)}defines.h
 io.$(OBJEXT): {$(VPATH)}dln.h
 io.$(OBJEXT): {$(VPATH)}encindex.h
@@ -8531,7 +8535,9 @@ io.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 io.$(OBJEXT): {$(VPATH)}thread_native.h
 io.$(OBJEXT): {$(VPATH)}util.h
 io.$(OBJEXT): {$(VPATH)}vm_core.h
+io.$(OBJEXT): {$(VPATH)}vm_debug.h
 io.$(OBJEXT): {$(VPATH)}vm_opts.h
+io.$(OBJEXT): {$(VPATH)}vm_sync.h
 io_buffer.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 io_buffer.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 io_buffer.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -10790,6 +10796,7 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/array.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/bits.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/class.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/complex.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -10818,6 +10825,7 @@ node_dump.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 node_dump.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 node_dump.$(OBJEXT): {$(VPATH)}config.h
 node_dump.$(OBJEXT): {$(VPATH)}constant.h
+node_dump.$(OBJEXT): {$(VPATH)}debug_counter.h
 node_dump.$(OBJEXT): {$(VPATH)}defines.h
 node_dump.$(OBJEXT): {$(VPATH)}encoding.h
 node_dump.$(OBJEXT): {$(VPATH)}id.h
@@ -10987,7 +10995,9 @@ node_dump.$(OBJEXT): {$(VPATH)}subst.h
 node_dump.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 node_dump.$(OBJEXT): {$(VPATH)}thread_native.h
 node_dump.$(OBJEXT): {$(VPATH)}vm_core.h
+node_dump.$(OBJEXT): {$(VPATH)}vm_debug.h
 node_dump.$(OBJEXT): {$(VPATH)}vm_opts.h
+node_dump.$(OBJEXT): {$(VPATH)}vm_sync.h
 numeric.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 numeric.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 numeric.$(OBJEXT): $(CCAN_DIR)/list/list.h

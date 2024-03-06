@@ -560,7 +560,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (FL_TEST(obj, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }

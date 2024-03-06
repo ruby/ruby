@@ -288,7 +288,7 @@ VALUE
 rb_class_real(VALUE cl)
 {
     while (cl &&
-        ((RBASIC(cl)->flags & FL_SINGLETON) || BUILTIN_TYPE(cl) == T_ICLASS)) {
+        (RCLASS_SINGLETON_P(cl) || BUILTIN_TYPE(cl) == T_ICLASS)) {
         cl = RCLASS_SUPER(cl);
     }
     return cl;
@@ -493,7 +493,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
     VALUE singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);
-    if (FL_TEST(singleton, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(singleton)) {
         rb_singleton_class_attached(singleton, clone);
     }
 
@@ -1745,7 +1745,7 @@ rb_mod_to_s(VALUE klass)
     ID id_defined_at;
     VALUE refined_class, defined_at;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE s = rb_usascii_str_new2("#<Class:");
         VALUE v = RCLASS_ATTACHED_OBJECT(klass);
 
@@ -2121,7 +2121,7 @@ class_get_alloc_func(VALUE klass)
     if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
         rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
     allocator = rb_get_alloc_func(klass);
@@ -3082,7 +3082,7 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
-    return RBOOL(RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON));
+    return RBOOL(RCLASS_SINGLETON_P(klass));
 }
 
 /*! \private */
