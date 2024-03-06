@@ -1007,16 +1007,16 @@ module Prism
 
             bounds(last_argument.location)
             on_assign(call, value)
-          when :-@, :+@, :~@
+          when :-@, :+@, :~
             receiver = visit(node.receiver)
 
             bounds(node.location)
             on_unary(node.name, receiver)
-          when :!@
+          when :!
             receiver = visit(node.receiver)
 
             bounds(node.location)
-            on_unary(node.message == "not" ? :not : :!@, receiver)
+            on_unary(node.message == "not" ? :not : :!, receiver)
           when *BINARY_OPERATORS
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
