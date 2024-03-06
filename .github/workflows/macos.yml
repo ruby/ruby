@@ -2,12 +2,12 @@ name: macOS
 on:
   push:
     paths-ignore:
-      - "doc/**"
-      - "**/man"
-      - "**.md"
-      - "**.rdoc"
-      - "**/.document"
-      - ".*.yml"
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
   pull_request:
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
@@ -268,15 +268,15 @@ jobs:
       - run: launchable record tests --subset-id $(cat launchable-subset-id.txt) raw launchable_reports.json
         if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
-  result:
-    if: ${{ always() }}
-    name: ${{ github.workflow }} result
-    runs-on: macos-latest
-    needs: [make]
-    steps:
-      - run: exit 1
-        working-directory:
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+  # result:
+  #   if: ${{ always() }}
+  #   name: ${{ github.workflow }} result
+  #   runs-on: macos-latest
+  #   needs: [make]
+  #   steps:
+  #     - run: exit 1
+  #       working-directory:
+  #       if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:
