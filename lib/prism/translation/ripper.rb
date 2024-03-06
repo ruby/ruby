@@ -62,11 +62,8 @@ module Prism
         end
       end
 
-      # In an alias statement Ripper will emit @kw instead of @ident if the
-      # object being aliased is a Ruby keyword. For instance, in the line
-      # "alias :foo :if", the :if is treated as a lexer keyword. So we need to
-      # know what symbols are also keywords.
-      RUBY_KEYWORDS = [
+      # A list of all of the Ruby keywords.
+      KEYWORDS = [
         "alias",
         "and",
         "begin",
@@ -110,7 +107,32 @@ module Prism
         "__LINE__"
       ]
 
-      private_constant :RUBY_KEYWORDS
+      # A list of all of the Ruby binary operators.
+      BINARY_OPERATORS = [
+        :!=,
+        :!~,
+        :=~,
+        :==,
+        :===,
+        :<=>,
+        :>,
+        :>=,
+        :<,
+        :<=,
+        :&,
+        :|,
+        :^,
+        :>>,
+        :<<,
+        :-,
+        :+,
+        :%,
+        :/,
+        :*,
+        :**
+      ]
+
+      private_constant :KEYWORDS, :BINARY_OPERATORS
 
       # The source that is being parsed.
       attr_reader :source
@@ -599,7 +621,7 @@ module Prism
 
             bounds(node.location)
             on_unary(node.message == "not" ? :not : :!@, receiver)
-          when :!=, :!~, :=~, :==, :===, :<=>, :>, :>=, :<, :<=, :&, :|, :^, :>>, :<<, :-, :+, :%, :/, :*, :**
+          when *BINARY_OPERATORS
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
 
@@ -614,7 +636,7 @@ module Prism
             else
               arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
               call =
-                if node.opening_loc.nil? && (arguments&.any? || block.nil?)
+                if node.opening_loc.nil? && arguments&.any?
                   bounds(node.location)
                   on_command(message, arguments)
                 elsif !node.opening_loc.nil?
@@ -698,7 +720,7 @@ module Prism
           elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || trailing_comma
+            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || command?(arguments.last) || trailing_comma
               args
             else
               bounds(arguments.first.location)
@@ -707,6 +729,14 @@ module Prism
           end,
           visit(block)
         ]
+      end
+
+      # Returns true if the given node is a command node.
+      private def command?(node)
+        node.is_a?(CallNode) &&
+          node.opening_loc.nil? &&
+          (!node.arguments.nil? || node.block.is_a?(BlockArgumentNode)) &&
+          !BINARY_OPERATORS.include?(node.name)
       end
 
       # foo.bar += baz
@@ -2714,11 +2744,11 @@ module Prism
           on_period(token)
         when "`"
           on_backtick(token)
-        when *RUBY_KEYWORDS
+        when *KEYWORDS
           on_kw(token)
         when /^_/
           on_ident(token)
-        when /^[[:upper:]]/
+        when /^[[:upper:]]\w*$/
           on_const(token)
         when /^@@/
           on_cvar(token)

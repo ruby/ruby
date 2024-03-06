@@ -26,18 +26,14 @@ module Prism
 
     skips = incorrect | %w[
       arrays.txt
-      blocks.txt
       case.txt
-      command_method_call.txt
       constants.txt
       dos_endings.txt
       embdoc_no_newline_at_end.txt
-      hashes.txt
       heredocs_leading_whitespace.txt
       heredocs_nested.txt
       heredocs_with_ignored_newlines.txt
       if.txt
-      method_calls.txt
       modules.txt
       multi_write.txt
       patterns.txt
@@ -52,7 +48,6 @@ module Prism
       seattlerb/block_next.txt
       seattlerb/block_return.txt
       seattlerb/bug_hash_interp_array.txt
-      seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
@@ -82,12 +77,9 @@ module Prism
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
       seattlerb/str_lit_concat_bad_encodings.txt
       seattlerb/yield_call_assocs.txt
-      single_method_call_with_bang.txt
       spanning_heredoc.txt
       strings.txt
-      ternary_operator.txt
       tilde_heredocs.txt
-      unless.txt
       unparser/corpus/literal/assignment.txt
       unparser/corpus/literal/block.txt
       unparser/corpus/literal/class.txt
@@ -104,21 +96,15 @@ module Prism
       unparser/corpus/literal/since/27.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
-      unparser/corpus/semantic/literal.txt
       unparser/corpus/semantic/while.txt
-      until.txt
       variables.txt
-      while.txt
-      whitequark/args_cmd.txt
       whitequark/asgn_mrhs.txt
       whitequark/bug_480.txt
       whitequark/dedenting_heredoc.txt
       whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
-      whitequark/def.txt
       whitequark/empty_stmt.txt
       whitequark/if_elsif.txt
-      whitequark/kwbegin_compstmt.txt
       whitequark/masgn_attr.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt
@@ -127,13 +113,9 @@ module Prism
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/ruby_bug_11107.txt
-      whitequark/ruby_bug_11873.txt
-      whitequark/ruby_bug_11873_a.txt
       whitequark/ruby_bug_11990.txt
       whitequark/ruby_bug_15789.txt
       whitequark/send_block_chain_cmd.txt
-      whitequark/send_index_cmd.txt
-      whitequark/send_self.txt
       whitequark/slash_newline_in_heredocs.txt
       whitequark/string_concat.txt
     ]
