@@ -11865,7 +11865,7 @@ ibf_load_id(const struct ibf_load *load, const ID id_index)
     VALUE sym = ibf_load_object(load, id_index);
     if (rb_type_p(sym, T_FIXNUM)) {
         /* Load hidden local variables as indexes */
-        return NUM2LONG(sym);
+        return NUM2ULONG(sym);
     }
     return rb_sym2id(sym);
 }
