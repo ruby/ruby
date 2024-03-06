@@ -29,7 +29,6 @@ module Prism
     ]
 
     skips = incorrect | %w[
-      arrays.txt
       dos_endings.txt
       embdoc_no_newline_at_end.txt
       heredocs_leading_whitespace.txt

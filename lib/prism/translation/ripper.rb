@@ -1538,7 +1538,7 @@ module Prism
       # ^^^^^^^^^^^^^^^
       def visit_index_operator_write_node(node)
         receiver = visit(node.receiver)
-        arguments = visit(node.arguments)
+        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -1555,7 +1555,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_and_write_node(node)
         receiver = visit(node.receiver)
-        arguments = visit(node.arguments)
+        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -1572,7 +1572,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_or_write_node(node)
         receiver = visit(node.receiver)
-        arguments = visit(node.arguments)
+        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -1589,7 +1589,7 @@ module Prism
       # ^^^^^^^^
       def visit_index_target_node(node)
         receiver = visit(node.receiver)
-        arguments = visit(node.arguments)
+        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         on_aref_field(receiver, arguments)
