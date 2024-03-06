@@ -1409,7 +1409,14 @@ module Prism
       # foo ? bar : baz
       # ^^^^^^^^^^^^^^^
       def visit_if_node(node)
-        if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+        if node.then_keyword == "?"
+          predicate = visit(node.predicate)
+          truthy = visit(node.statements.body.first)
+          falsy = visit(node.consequent.statements.body.first)
+
+          bounds(node.location)
+          on_ifop(predicate, truthy, falsy)
+        elsif node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
           predicate = visit(node.predicate)
           statements =
             if node.statements.nil?

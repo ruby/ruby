@@ -49,7 +49,6 @@ module Prism
       seattlerb/block_paren_splat.txt
       seattlerb/block_return.txt
       seattlerb/bug190.txt
-      seattlerb/bug191.txt
       seattlerb/bug_hash_args_trailing_comma.txt
       seattlerb/bug_hash_interp_array.txt
       seattlerb/call_args_assoc_quoted.txt
@@ -72,9 +71,7 @@ module Prism
       seattlerb/defn_oneliner_rescue.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/defs_oneliner_rescue.txt
-      seattlerb/difficult2_.txt
       seattlerb/difficult3_.txt
-      seattlerb/difficult3_4.txt
       seattlerb/difficult3_5.txt
       seattlerb/difficult3__10.txt
       seattlerb/difficult3__11.txt
@@ -83,7 +80,6 @@ module Prism
       seattlerb/difficult3__7.txt
       seattlerb/difficult3__8.txt
       seattlerb/difficult3__9.txt
-      seattlerb/difficult7_.txt
       seattlerb/do_lambda.txt
       seattlerb/heredoc__backslash_dos_format.txt
       seattlerb/heredoc_backslash_nl.txt
@@ -140,7 +136,6 @@ module Prism
       seattlerb/safe_call_dot_parens.txt
       seattlerb/stabby_block_iter_call.txt
       seattlerb/stabby_block_iter_call_no_target_with_arg.txt
-      seattlerb/str_interp_ternary_or_label.txt
       seattlerb/str_lit_concat_bad_encodings.txt
       seattlerb/thingy.txt
       seattlerb/yield_call_assocs.txt
@@ -157,7 +152,6 @@ module Prism
       unparser/corpus/literal/block.txt
       unparser/corpus/literal/case.txt
       unparser/corpus/literal/class.txt
-      unparser/corpus/literal/control.txt
       unparser/corpus/literal/def.txt
       unparser/corpus/literal/defined.txt
       unparser/corpus/literal/dstr.txt
@@ -179,7 +173,6 @@ module Prism
       until.txt
       variables.txt
       while.txt
-      whitequark/ambiuous_quoted_label_in_ternary_operator.txt
       whitequark/anonymous_blockarg.txt
       whitequark/args.txt
       whitequark/args_args_assocs.txt
@@ -231,7 +224,6 @@ module Prism
       whitequark/pattern_matching_else.txt
       whitequark/rescue_without_begin_end.txt
       whitequark/return_block.txt
-      whitequark/ruby_bug_10653.txt
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11873.txt
       whitequark/ruby_bug_11873_a.txt
@@ -244,8 +236,6 @@ module Prism
       whitequark/send_self.txt
       whitequark/slash_newline_in_heredocs.txt
       whitequark/string_concat.txt
-      whitequark/ternary.txt
-      whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
       xstring.txt
     ]
