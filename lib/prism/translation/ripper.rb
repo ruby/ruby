@@ -2841,14 +2841,16 @@ module Prism
         end
       end
 
-      # Ripper gives back the escaped string content but strips out the common
-      # leading whitespace. Prism gives back the unescaped string content and a
-      # location for the escaped string content. Unfortunately these don't work
-      # well together, so we need to re-derive the common leading whitespace.
-      private def heredoc_common_whitespace(parts)
+      # Visit a string that is expressed using a <<~ heredoc.
+      private def visit_heredoc_node(parts, base)
         common_whitespace = nil
         dedent_next = true
 
+        # Ripper gives back the escaped string content but strips out the common
+        # leading whitespace. Prism gives back the unescaped string content and
+        # a location for the escaped string content. Unfortunately these don't
+        # work well together, so here we need to re-derive the common leading
+        # whitespace.
         parts.each do |part|
           if part.is_a?(StringNode)
             if dedent_next && !(content = part.content).chomp.empty?
@@ -2866,14 +2868,7 @@ module Prism
           end
         end
 
-        common_whitespace || 0
-      end
-
-      # Visit a string that is expressed using a <<~ heredoc.
-      private def visit_heredoc_node(parts, base)
-        common_whitespace = heredoc_common_whitespace(parts)
-
-        if common_whitespace == 0
+        if common_whitespace.nil? || common_whitespace == 0
           bounds(parts.first.location)
 
           string = []
@@ -2889,41 +2884,29 @@ module Prism
             else
               unless string.empty?
                 bounds(string[0].location)
-                result = yield(result, on_tstring_content(string.map(&:content).join))
+                result = yield result, on_tstring_content(string.map(&:content).join)
                 string = []
               end
 
-              result = yield(result, visit(part))
+              result = yield result, visit(part)
             end
           end
 
           unless string.empty?
             bounds(string[0].location)
-            result = yield(result, on_tstring_content(string.map(&:content).join))
+            result = yield result, on_tstring_content(string.map(&:content).join)
           end
 
           result
         else
           bounds(parts.first.location)
-          parts.each.with_index(parts.length).inject(base) do |string_content, (part, index)|
-            yield(
-              string_content,
-              if part.is_a?(StringNode)
-                if index % 2 == 1
-                  content = part.content.dup
-                  dedented = dedent_string(content, common_whitespace)
+          result =
+            parts.inject(base) do |string_content, part|
+              yield string_content, visit_string_content(part)
+            end
 
-                  bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + dedented))
-                  on_tstring_content(content)
-                else
-                  bounds(part.content_loc)
-                  on_tstring_content(part.content)
-                end
-              else
-                visit(part)
-              end
-            )
-          end
+          bounds(parts.first.location)
+          on_heredoc_dedent(result, common_whitespace)
         end
       end
 
