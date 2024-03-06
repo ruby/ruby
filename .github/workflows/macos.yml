@@ -2,12 +2,12 @@ name: macOS
 on:
   push:
     paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
+      - "doc/**"
+      - "**/man"
+      - "**.md"
+      - "**.rdoc"
+      - "**/.document"
+      - ".*.yml"
   pull_request:
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
@@ -20,8 +20,54 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
 jobs:
-  make:
+  setup:
+    strategy:
+      matrix:
+        test_task: ["check"]
+        test_opts: [""]
+        os:
+          - macos-12
+          - macos-13
+          - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+        include:
+          - test_task: test-all
+            test_opts: --repeat-count=2
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: test-bundler-parallel
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: test-bundled-gems
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
+      - name: Set up Launchable
+        id: enable-launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          srcdir: src
+      - run: |
+          launchable subset --target 100% --split --get-tests-from-previous-sessions raw > launchable-subset-id.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}${{ matrix.test_task }}
+          path: launchable-subset-id.txt
+
+  make1:
+    needs: [setup]
     strategy:
       matrix:
         test_task: ['check']
@@ -39,9 +85,6 @@ jobs:
           - test_task: test-bundled-gems
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
-
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
     runs-on: ${{ matrix.os }}
 
@@ -68,8 +111,6 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
-          # Set fetch-depth: 0 so that Launchable can receive commits information.
-          fetch-depth: 10
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
@@ -86,12 +127,19 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
-      - name: Set up Launchable
-        id: enable-launchable
-        uses: ./.github/actions/launchable/setup
+      - uses: actions/download-artifact@v4
         with:
-          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
-          srcdir: src
+          name: ${{ matrix.os }}${{ matrix.test_task }}
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+      - name: Install launchable command
+        run: |
+          pip install launchable
+          launchable split-subset --subset-id $(cat launchable-subset-id.txt) --bin 2/2 raw > launchable-subset.txt
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       - name: Set extra test options
         run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
@@ -116,22 +164,109 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
-      - name: Record test results in Launchable
-        uses: ./.github/actions/launchable/record-test
-        with:
-          # We need to configure the `build` directory because
-          # this composite action is executed in the default working directory.
-          report-path: ../build/launchable_reports.json
-          os: ${{ matrix.os }}
-          test-opts: ${{ matrix.test_opts }}
-          srcdir: src
-        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
+      - run: launchable record tests --subset-id $(cat launchable-subset-id.txt) raw launchable_reports.json
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
-      - uses: ./.github/actions/slack
+  make2:
+    needs: [setup]
+    strategy:
+      matrix:
+        test_task: ['check']
+        test_opts: ['']
+        os:
+          - macos-12
+          - macos-13
+          - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+        include:
+          - test_task: test-all
+            test_opts: --repeat-count=2
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: test-bundler-parallel
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: test-bundled-gems
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - name: Install libraries
+        uses: ./.github/actions/setup/macos
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc
+
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
+      - run: make
+
+      - name: Set test options for skipped tests
+        run: |
+          set -x
+          TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
+          echo "TESTS=${TESTS}" >> $GITHUB_ENV
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.os }}${{ matrix.test_task }}
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+      - name: Install launchable command
+        run: |
+          pip install launchable
+          launchable split-subset --subset-id $(cat launchable-subset-id.txt) --bin 2/2 raw > launchable-subset.txt
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+
+      - name: Set extra test options
+        run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        if: matrix.test_opts
+
+      - name: make ${{ matrix.test_task }}
+        run: |
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+        timeout-minutes: 60
+        env:
+          RUBY_TESTOPTS: '-q --tty=no'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
+          PRECHECK_BUNDLED_GEMS: 'no'
+
+      - name: make skipped tests
+        run: |
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
+          PRECHECK_BUNDLED_GEMS: 'no'
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - run: launchable record tests --subset-id $(cat launchable-subset-id.txt) raw launchable_reports.json
+        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
   result:
     if: ${{ always() }}
