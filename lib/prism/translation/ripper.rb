@@ -808,16 +808,26 @@ module Prism
       # foo.bar, = 1
       # ^^^^^^^
       def visit_call_target_node(node)
-        receiver = visit(node.receiver)
+        if node.call_operator == "::"
+          receiver = visit(node.receiver)
 
-        bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+          bounds(node.message_loc)
+          message = visit_token(node.message)
 
-        bounds(node.message_loc)
-        message = visit_token(node.message)
+          bounds(node.location)
+          on_const_path_field(receiver, message)
+        else
+          receiver = visit(node.receiver)
 
-        bounds(node.location)
-        on_field(receiver, call_operator, message)
+          bounds(node.call_operator_loc)
+          call_operator = visit_token(node.call_operator)
+
+          bounds(node.message_loc)
+          message = visit_token(node.message)
+
+          bounds(node.location)
+          on_field(receiver, call_operator, message)
+        end
       end
 
       # foo => bar => baz
@@ -1958,7 +1968,7 @@ module Prism
       # ^^^^^^^^^^
       def visit_multi_target_node(node)
         bounds(node.location)
-        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights)
+        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights, true)
 
         if node.lparen_loc.nil?
           targets
@@ -1969,7 +1979,11 @@ module Prism
       end
 
       # Visit the targets of a multi-target node.
-      private def visit_multi_target_node_targets(lefts, rest, rights)
+      private def visit_multi_target_node_targets(lefts, rest, rights, skippable)
+        if skippable && lefts.length == 1 && lefts.first.is_a?(MultiTargetNode) && rest.nil? && rights.empty?
+          return visit(lefts.first)
+        end
+
         mlhs = on_mlhs_new
 
         lefts.each do |left|
@@ -2008,7 +2022,7 @@ module Prism
       # ^^^^^^^^^^^^^^
       def visit_multi_write_node(node)
         bounds(node.location)
-        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights)
+        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights, true)
 
         unless node.lparen_loc.nil?
           bounds(node.lparen_loc)
@@ -2096,16 +2110,25 @@ module Prism
       # def foo(bar, *baz); end
       #         ^^^^^^^^^
       def visit_parameters_node(node)
-        requireds = visit_all(node.requireds) if node.requireds.any?
+        requireds = node.requireds.map { |required| required.is_a?(MultiTargetNode) ? visit_destructured_parameter_node(required) : visit(required) } if node.requireds.any?
         optionals = visit_all(node.optionals) if node.optionals.any?
         rest = visit(node.rest)
-        posts = visit_all(node.posts) if node.posts.any?
+        posts = node.posts.map { |post| post.is_a?(MultiTargetNode) ? visit_destructured_parameter_node(post) : visit(post) } if node.posts.any?
         keywords = visit_all(node.keywords) if node.keywords.any?
         keyword_rest = visit(node.keyword_rest)
         block = visit(node.block)
 
         bounds(node.location)
         on_params(requireds, optionals, rest, posts, keywords, keyword_rest, block)
+      end
+
+      # Visit a destructured positional parameter node.
+      private def visit_destructured_parameter_node(node)
+        bounds(node.location)
+        targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights, false)
+
+        bounds(node.lparen_loc)
+        on_mlhs_paren(targets)
       end
 
       # ()
