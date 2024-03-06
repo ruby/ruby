@@ -392,7 +392,7 @@ module Prism
             on_stmts_add(on_stmts_new, on_void_stmt)
           else
             body = node.statements.body
-            body.unshift(nil) if source.byteslice(node.begin_keyword_loc.end_offset...node.statements.body[0].location.start_offset).include?(";")
+            body.unshift(nil) if semicolon?(node.begin_keyword_loc, node.statements.body[0].location)
 
             bounds(node.statements.location)
             visit_statements_node_body(body)
@@ -406,7 +406,7 @@ module Prism
                 [nil]
               else
                 body = else_clause_node.statements.body
-                body.unshift(nil) if source.byteslice(else_clause_node.else_keyword_loc.end_offset...else_clause_node.statements.body[0].location.start_offset).include?(";")
+                body.unshift(nil) if semicolon?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location)
                 body
               end
 
@@ -466,7 +466,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if source.byteslice((node.parameters&.location || node.opening_loc).end_offset...node.body.location.start_offset).include?(";")
+            stmts.unshift(nil) if semicolon?(node.parameters&.location || node.opening_loc, node.body.location)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -1148,7 +1148,8 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if source.byteslice(node.else_keyword_loc.end_offset...node.statements.body[0].location.start_offset).include?(";")
+            body.unshift(nil) if semicolon?(node.else_keyword_loc, node.statements.body[0].location)
+            body
           end
 
         bounds(node.location)
@@ -1180,7 +1181,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if source.byteslice(node.ensure_keyword_loc.end_offset...body[0].location.start_offset).include?(";")
+            body.unshift(nil) if semicolon?(node.ensure_keyword_loc, body[0].location)
             body
           end
 
@@ -1740,7 +1741,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if source.byteslice((node.parameters&.location || node.opening_loc).end_offset...node.body.location.start_offset).include?(";")
+            stmts.unshift(nil) if semicolon?(node.parameters&.location || node.opening_loc, node.body.location)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -2520,6 +2521,11 @@ module Prism
       ##########################################################################
       # Helpers
       ##########################################################################
+
+      # Returns true if there is a semicolon between the two locations.
+      def semicolon?(left, right)
+        source.byteslice(left.end_offset...right.start_offset).include?(";")
+      end
 
       # Visit the string content of a particular node. This method is used to
       # split into the various token types.

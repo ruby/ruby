@@ -60,7 +60,6 @@ module Prism
       seattlerb/call_args_assoc_trailing_comma.txt
       seattlerb/call_args_command.txt
       seattlerb/call_array_lambda_block_call.txt
-      seattlerb/call_assoc_new_if_multiline.txt
       seattlerb/call_assoc_trailing_comma.txt
       seattlerb/call_block_arg_named.txt
       seattlerb/call_colon_parens.txt
@@ -132,8 +131,6 @@ module Prism
       seattlerb/mlhs_mid_anonsplat.txt
       seattlerb/mlhs_mid_splat.txt
       seattlerb/module_comments.txt
-      seattlerb/parse_if_not_canonical.txt
-      seattlerb/parse_if_not_noncanonical.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
@@ -243,7 +240,6 @@ module Prism
       whitequark/forwarded_kwrestarg_with_additional_kwarg.txt
       whitequark/forwarded_restarg.txt
       whitequark/hash_label_end.txt
-      whitequark/if_else.txt
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
       whitequark/kwoptarg_with_kwrestarg_and_forwarded_args.txt
@@ -280,7 +276,6 @@ module Prism
       whitequark/ternary.txt
       whitequark/ternary_ambiguous_symbol.txt
       whitequark/trailing_forward_arg.txt
-      whitequark/unless_else.txt
       whitequark/yield.txt
       xstring.txt
       yield.txt
