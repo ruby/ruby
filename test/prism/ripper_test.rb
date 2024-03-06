@@ -30,7 +30,6 @@ module Prism
       methods.txt
       modules.txt
       multi_write.txt
-      non_alphanumeric_methods.txt
       patterns.txt
       regex.txt
       regex_char_width.txt

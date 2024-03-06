@@ -2559,6 +2559,8 @@ module Prism
         case token
         when "."
           on_period(token)
+        when "`"
+          on_backtick(token)
         when *RUBY_KEYWORDS
           on_kw(token)
         when /^_/
