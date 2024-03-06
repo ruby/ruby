@@ -49,6 +49,7 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
@@ -57,19 +58,22 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - name: Set up Launchable
         id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           srcdir: src
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - run: |
           launchable subset --target 100% --split --get-tests-from-previous-sessions raw > launchable-subset-id.txt
-          if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}${{ matrix.test_task }}
           path: launchable-subset-id.txt
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
 
   make1:
     needs: [setup]
