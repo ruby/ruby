@@ -9,6 +9,48 @@ module Prism
     # executing each of the Ripper callbacks as it goes. To use this class, you
     # treat `Prism::Translation::Ripper` effectively as you would treat the
     # `Ripper` class.
+    #
+    # Note that this class will serve the most common use cases, but Ripper's
+    # API is extensive and undocumented. It relies on reporting the state of the
+    # parser at any given time. We do our best to replicate that here, but
+    # because it is a different architecture it is not possible to perfectly
+    # replicate the behavior of Ripper.
+    #
+    # The main known difference is that we may omit dispatching some events in
+    # some cases. This impacts the following events:
+    #
+    # * on_alias_error
+    # * on_arg_ambiguous
+    # * on_assign_error
+    # * on_class_name_error
+    # * on_heredoc_dedent
+    # * on_operator_ambiguous
+    # * on_param_error
+    #
+    # * on_comma
+    # * on_heredoc_beg
+    # * on_heredoc_end
+    # * on_ignored_nl
+    # * on_kw
+    # * on_label_end
+    # * on_lbrace
+    # * on_lbracket
+    # * on_lparen
+    # * on_nl
+    # * on_op
+    # * on_rbrace
+    # * on_rbracket
+    # * on_rparen
+    # * on_semicolon
+    # * on_sp
+    # * on_symbeg
+    # * on_tlambda
+    # * on_tlambeg
+    # * on_tstring_beg
+    # * on_tstring_end
+    # * on_words_sep
+    # * on_ignored_sp
+    #
     class Ripper < Compiler
       # Parses the given Ruby program read from +src+.
       # +src+ must be a String or an IO or a object with a #gets method.
@@ -18,11 +60,203 @@ module Prism
 
       # This contains a table of all of the parser events and their
       # corresponding arity.
-      PARSER_EVENT_TABLE = ::Ripper::PARSER_EVENT_TABLE
+      PARSER_EVENT_TABLE = {
+        BEGIN: 1,
+        END: 1,
+        alias: 2,
+        alias_error: 2,
+        aref: 2,
+        aref_field: 2,
+        arg_ambiguous: 1,
+        arg_paren: 1,
+        args_add: 2,
+        args_add_block: 2,
+        args_add_star: 2,
+        args_forward: 0,
+        args_new: 0,
+        array: 1,
+        aryptn: 4,
+        assign: 2,
+        assign_error: 2,
+        assoc_new: 2,
+        assoc_splat: 1,
+        assoclist_from_args: 1,
+        bare_assoc_hash: 1,
+        begin: 1,
+        binary: 3,
+        block_var: 2,
+        blockarg: 1,
+        bodystmt: 4,
+        brace_block: 2,
+        break: 1,
+        call: 3,
+        case: 2,
+        class: 3,
+        class_name_error: 2,
+        command: 2,
+        command_call: 4,
+        const_path_field: 2,
+        const_path_ref: 2,
+        const_ref: 1,
+        def: 3,
+        defined: 1,
+        defs: 5,
+        do_block: 2,
+        dot2: 2,
+        dot3: 2,
+        dyna_symbol: 1,
+        else: 1,
+        elsif: 3,
+        ensure: 1,
+        excessed_comma: 0,
+        fcall: 1,
+        field: 3,
+        fndptn: 4,
+        for: 3,
+        hash: 1,
+        heredoc_dedent: 2,
+        hshptn: 3,
+        if: 3,
+        if_mod: 2,
+        ifop: 3,
+        in: 3,
+        kwrest_param: 1,
+        lambda: 2,
+        magic_comment: 2,
+        massign: 2,
+        method_add_arg: 2,
+        method_add_block: 2,
+        mlhs_add: 2,
+        mlhs_add_post: 2,
+        mlhs_add_star: 2,
+        mlhs_new: 0,
+        mlhs_paren: 1,
+        module: 2,
+        mrhs_add: 2,
+        mrhs_add_star: 2,
+        mrhs_new: 0,
+        mrhs_new_from_args: 1,
+        next: 1,
+        nokw_param: 1,
+        opassign: 3,
+        operator_ambiguous: 2,
+        param_error: 2,
+        params: 7,
+        paren: 1,
+        parse_error: 1,
+        program: 1,
+        qsymbols_add: 2,
+        qsymbols_new: 0,
+        qwords_add: 2,
+        qwords_new: 0,
+        redo: 0,
+        regexp_add: 2,
+        regexp_literal: 2,
+        regexp_new: 0,
+        rescue: 4,
+        rescue_mod: 2,
+        rest_param: 1,
+        retry: 0,
+        return: 1,
+        return0: 0,
+        sclass: 2,
+        stmts_add: 2,
+        stmts_new: 0,
+        string_add: 2,
+        string_concat: 2,
+        string_content: 0,
+        string_dvar: 1,
+        string_embexpr: 1,
+        string_literal: 1,
+        super: 1,
+        symbol: 1,
+        symbol_literal: 1,
+        symbols_add: 2,
+        symbols_new: 0,
+        top_const_field: 1,
+        top_const_ref: 1,
+        unary: 2,
+        undef: 1,
+        unless: 3,
+        unless_mod: 2,
+        until: 2,
+        until_mod: 2,
+        var_alias: 2,
+        var_field: 1,
+        var_ref: 1,
+        vcall: 1,
+        void_stmt: 0,
+        when: 3,
+        while: 2,
+        while_mod: 2,
+        word_add: 2,
+        word_new: 0,
+        words_add: 2,
+        words_new: 0,
+        xstring_add: 2,
+        xstring_literal: 1,
+        xstring_new: 0,
+        yield: 1,
+        yield0: 0,
+        zsuper: 0
+      }
 
       # This contains a table of all of the scanner events and their
       # corresponding arity.
-      SCANNER_EVENT_TABLE = ::Ripper::SCANNER_EVENT_TABLE
+      SCANNER_EVENT_TABLE = {
+        CHAR: 1,
+        __end__: 1,
+        backref: 1,
+        backtick: 1,
+        comma: 1,
+        comment: 1,
+        const: 1,
+        cvar: 1,
+        embdoc: 1,
+        embdoc_beg: 1,
+        embdoc_end: 1,
+        embexpr_beg: 1,
+        embexpr_end: 1,
+        embvar: 1,
+        float: 1,
+        gvar: 1,
+        heredoc_beg: 1,
+        heredoc_end: 1,
+        ident: 1,
+        ignored_nl: 1,
+        imaginary: 1,
+        int: 1,
+        ivar: 1,
+        kw: 1,
+        label: 1,
+        label_end: 1,
+        lbrace: 1,
+        lbracket: 1,
+        lparen: 1,
+        nl: 1,
+        op: 1,
+        period: 1,
+        qsymbols_beg: 1,
+        qwords_beg: 1,
+        rational: 1,
+        rbrace: 1,
+        rbracket: 1,
+        regexp_beg: 1,
+        regexp_end: 1,
+        rparen: 1,
+        semicolon: 1,
+        sp: 1,
+        symbeg: 1,
+        symbols_beg: 1,
+        tlambda: 1,
+        tlambeg: 1,
+        tstring_beg: 1,
+        tstring_content: 1,
+        tstring_end: 1,
+        words_beg: 1,
+        words_sep: 1,
+        ignored_sp: 1
+      }
 
       # This array contains name of parser events.
       PARSER_EVENTS = PARSER_EVENT_TABLE.keys
@@ -206,11 +440,37 @@ module Prism
       # Parse the source and return the result.
       def parse
         result.comments.each do |comment|
-          on_comment(comment.slice)
+          location = comment.location
+          bounds(location)
+
+          if comment.is_a?(InlineComment)
+            on_comment(comment.slice)
+          else
+            offset = location.start_offset
+            lines = comment.slice.lines
+
+            lines.each_with_index do |line, index|
+              bounds(location.copy(start_offset: offset))
+
+              if index == 0
+                on_embdoc_beg(line)
+              elsif index == lines.size - 1
+                on_embdoc_end(line)
+              else
+                on_embdoc(line)
+              end
+
+              offset += line.bytesize
+            end
+          end
         end
 
         result.magic_comments.each do |magic_comment|
           on_magic_comment(magic_comment.key, magic_comment.value)
+        end
+
+        unless result.data_loc.nil?
+          on___end__(result.data_loc.slice.each_line.first)
         end
 
         result.warnings.each do |warning|
@@ -293,20 +553,36 @@ module Prism
       # []
       # ^^
       def visit_array_node(node)
-        bounds(node.location)
-        elements =
-          case node.opening
-          when /^%w/
+        case (opening = node.opening)
+        when /^%w/
+          bounds(node.opening_loc)
+          on_qwords_beg(opening)
+
+          elements =
             node.elements.inject(on_qwords_new) do |qwords, element|
               bounds(element.location)
               on_qwords_add(qwords, on_tstring_content(element.content))
             end
-          when /^%i/
+
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        when /^%i/
+          bounds(node.opening_loc)
+          on_qsymbols_beg(opening)
+
+          elements =
             node.elements.inject(on_qsymbols_new) do |qsymbols, element|
               bounds(element.location)
               on_qsymbols_add(qsymbols, on_tstring_content(element.value))
             end
-          when /^%W/
+
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        when /^%W/
+          bounds(node.opening_loc)
+          on_words_beg(opening)
+
+          elements =
             node.elements.inject(on_words_new) do |words, element|
               bounds(element.location)
               word =
@@ -328,7 +604,14 @@ module Prism
 
               on_words_add(words, word)
             end
-          when /^%I/
+
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        when /^%I/
+          bounds(node.opening_loc)
+          on_symbols_beg(opening)
+
+          elements =
             node.elements.inject(on_symbols_new) do |symbols, element|
               bounds(element.location)
               symbol =
@@ -350,9 +633,18 @@ module Prism
 
               on_symbols_add(symbols, symbol)
             end
-          else
-            visit_arguments(node.elements) unless node.elements.empty?
-          end
+
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        else
+          bounds(node.opening_loc)
+          on_lbracket(opening)
+
+          elements = visit_arguments(node.elements) unless node.elements.empty?
+
+          bounds(node.closing_loc)
+          on_rbracket(node.closing)
+        end
 
         bounds(node.location)
         on_array(elements)
@@ -1242,6 +1534,9 @@ module Prism
       # "foo #{bar}"
       #      ^^^^^^
       def visit_embedded_statements_node(node)
+        bounds(node.opening_loc)
+        on_embexpr_beg(node.opening)
+
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -1250,6 +1545,9 @@ module Prism
             visit(node.statements)
           end
 
+        bounds(node.closing_loc)
+        on_embexpr_end(node.closing)
+
         bounds(node.location)
         on_string_embexpr(statements)
       end
@@ -1257,6 +1555,9 @@ module Prism
       # "foo #@bar"
       #      ^^^^^
       def visit_embedded_variable_node(node)
+        bounds(node.operator_loc)
+        on_embvar(node.operator)
+
         variable = visit(node.variable)
 
         bounds(node.location)
@@ -1494,7 +1795,7 @@ module Prism
             visit(node.rest.value)
           when NoKeywordsParameterNode
             bounds(node.rest.location)
-            on_var_field(:nil)
+            on_var_field(visit(node.rest))
           end
 
         bounds(node.location)
@@ -1716,6 +2017,9 @@ module Prism
       # if /foo #{bar}/ then end
       #    ^^^^^^^^^^^^
       def visit_interpolated_match_last_line_node(node)
+        bounds(node.opening_loc)
+        on_regexp_beg(node.opening)
+
         bounds(node.parts.first.location)
         parts =
           node.parts.inject(on_regexp_new) do |content, part|
@@ -1732,6 +2036,9 @@ module Prism
       # /foo #{bar}/
       # ^^^^^^^^^^^^
       def visit_interpolated_regular_expression_node(node)
+        bounds(node.opening_loc)
+        on_regexp_beg(node.opening)
+
         bounds(node.parts.first.location)
         parts =
           node.parts.inject(on_regexp_new) do |content, part|
@@ -1976,6 +2283,9 @@ module Prism
       # if /foo/ then end
       #    ^^^^^
       def visit_match_last_line_node(node)
+        bounds(node.opening_loc)
+        on_regexp_beg(node.opening)
+
         bounds(node.content_loc)
         tstring_content = on_tstring_content(node.content)
 
@@ -2130,6 +2440,9 @@ module Prism
       # def foo(**nil); end
       #         ^^^^^
       def visit_no_keywords_parameter_node(node)
+        bounds(node.location)
+        on_nokw_param(nil)
+
         :nil
       end
 
@@ -2301,6 +2614,9 @@ module Prism
       # /foo/
       # ^^^^^
       def visit_regular_expression_node(node)
+        bounds(node.opening_loc)
+        on_regexp_beg(node.opening)
+
         if node.content.empty?
           bounds(node.closing_loc)
           closing = on_regexp_end(node.closing)
