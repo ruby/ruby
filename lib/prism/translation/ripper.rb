@@ -2814,7 +2814,7 @@ module Prism
       # ^^^^^^^^
       def visit_source_line_node(node)
         bounds(node.location)
-        on_var_ref(on_kw("__LINE__")) 
+        on_var_ref(on_kw("__LINE__"))
       end
 
       # foo(*bar)
@@ -2943,6 +2943,7 @@ module Prism
         end
       end
 
+      # Visit a heredoc node that is representing a string.
       private def visit_heredoc_string_node(node)
         bounds(node.opening_loc)
         on_heredoc_beg(node.opening)
@@ -2959,6 +2960,7 @@ module Prism
         result
       end
 
+      # Visit a heredoc node that is representing an xstring.
       private def visit_heredoc_x_string_node(node)
         bounds(node.opening_loc)
         on_heredoc_beg(node.opening)
