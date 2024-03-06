@@ -73,7 +73,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}${{ matrix.test_task }}
-          path: launchable-subset-id.txt
+          path: src/launchable-subset-id.txt
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
 
   make1:
