@@ -10,10 +10,18 @@ module Prism
     base = File.join(__dir__, "fixtures")
     relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
 
-    incorrect = %w[
-      whitequark/break_block.txt
-      whitequark/next_block.txt
-      whitequark/return_block.txt
+    incorrect = [
+      # Ripper incorrectly attributes the block to the `break` statement.
+      "whitequark/break_block.txt",
+
+      # Ripper cannot handle named capture groups in regular expressions.
+      "whitequark/lvar_injecting_match.txt",
+
+      # Ripper incorrectly attributes the block to the `next` statement.
+      "whitequark/next_block.txt",
+
+      # Ripper incorrectly attributes the block to the `return` statement.
+      "whitequark/return_block.txt"
     ]
 
     skips = incorrect | %w[
@@ -122,10 +130,8 @@ module Prism
       whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt
       whitequark/def.txt
       whitequark/empty_stmt.txt
-      whitequark/forward_args_legacy.txt
       whitequark/if_elsif.txt
       whitequark/kwbegin_compstmt.txt
-      whitequark/lvar_injecting_match.txt
       whitequark/masgn_attr.txt
       whitequark/masgn_nested.txt
       whitequark/masgn_splat.txt

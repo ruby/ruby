@@ -2467,39 +2467,21 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        arguments = node.arguments&.arguments || []
-        block = node.block
-
-        if node.block.is_a?(BlockArgumentNode)
-          arguments << block
-          block = nil
-        end
-
-        arguments =
-          if arguments.any?
-            args = visit_arguments(arguments)
-
-            if node.block.is_a?(BlockArgumentNode)
-              args
-            else
-              bounds(arguments.first.location)
-              on_args_add_block(args, false)
-            end
-          end
+        arguments, block = visit_call_node_arguments(node.arguments, node.block)
 
         if !node.lparen_loc.nil?
           bounds(node.lparen_loc)
           arguments = on_arg_paren(arguments)
         end
 
-        if block.nil?
-          bounds(node.location)
-          on_super(arguments)
-        else
-          block = visit(block)
+        bounds(node.location)
+        call = on_super(arguments)
 
-          bounds(node.location)
-          on_method_add_block(on_super(arguments), block)
+        if block.nil?
+          call
+        else
+          bounds(node.block.location)
+          on_method_add_block(call, block)
         end
       end
 
