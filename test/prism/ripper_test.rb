@@ -11,17 +11,14 @@ module Prism
     relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
 
     incorrect = [
-      # Ripper incorrectly attributes the block to the `break` statement.
+      # Ripper incorrectly attributes the block to the keyword.
+      "seattlerb/block_break.txt",
       "whitequark/break_block.txt",
+      "whitequark/next_block.txt",
+      "whitequark/return_block.txt",
 
       # Ripper cannot handle named capture groups in regular expressions.
-      "whitequark/lvar_injecting_match.txt",
-
-      # Ripper incorrectly attributes the block to the `next` statement.
-      "whitequark/next_block.txt",
-
-      # Ripper incorrectly attributes the block to the `return` statement.
-      "whitequark/return_block.txt"
+      "whitequark/lvar_injecting_match.txt"
     ]
 
     skips = incorrect | %w[
@@ -39,7 +36,6 @@ module Prism
       regex_char_width.txt
       rescue.txt
       seattlerb/TestRubyParserShared.txt
-      seattlerb/block_break.txt
       seattlerb/block_call_dot_op2_brace_block.txt
       seattlerb/block_command_operation_colon.txt
       seattlerb/block_command_operation_dot.txt
@@ -89,7 +85,6 @@ module Prism
       unparser/corpus/literal/module.txt
       unparser/corpus/literal/pattern.txt
       unparser/corpus/literal/send.txt
-      unparser/corpus/literal/since/27.txt
       unparser/corpus/literal/while.txt
       unparser/corpus/semantic/dstr.txt
       unparser/corpus/semantic/while.txt
@@ -102,13 +97,11 @@ module Prism
       whitequark/empty_stmt.txt
       whitequark/if_elsif.txt
       whitequark/masgn_splat.txt
-      whitequark/numbered_args_after_27.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/ruby_bug_11107.txt
       whitequark/ruby_bug_11990.txt
-      whitequark/ruby_bug_15789.txt
       whitequark/send_block_chain_cmd.txt
       whitequark/slash_newline_in_heredocs.txt
       whitequark/string_concat.txt

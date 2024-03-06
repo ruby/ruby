@@ -1791,10 +1791,7 @@ module Prism
       # -> {}
       def visit_lambda_node(node)
         parameters =
-          if node.parameters.nil?
-            bounds(node.location)
-            on_params(nil, nil, nil, nil, nil, nil, nil)
-          else
+          if node.parameters.is_a?(BlockParametersNode)
             # Ripper does not track block-locals within lambdas, so we skip
             # directly to the parameters here.
             params = visit(node.parameters.parameters)
@@ -1805,6 +1802,9 @@ module Prism
               bounds(node.parameters.opening_loc)
               on_paren(params)
             end
+          else
+            bounds(node.location)
+            on_params(nil, nil, nil, nil, nil, nil, nil)
           end
 
         braces = node.opening == "{"
