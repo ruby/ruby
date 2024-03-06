@@ -32,6 +32,8 @@
 
 /* Flags of T_CLASS
  *
+ * 0:    RUBY_FL_SINGLETON
+ *           This class is a singleton class.
  * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
  *           The RCLASS_SUPERCLASSES contains the class as the last element.
  *           This means that this class owns the RCLASS_SUPERCLASSES list.
