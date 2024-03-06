@@ -27,6 +27,7 @@ module TestIRB
       ENV["IRBRC"] = @backup_irbrc
       Encoding.default_external = @backup_default_external
       $VERBOSE = @original_verbose
+      FileUtils.rm_rf(@tmpdir)
     end
 
     class TestInputMethodWithRelineHistory < TestInputMethod
