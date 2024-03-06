@@ -40,6 +40,7 @@ BUILTRUBY = $(topdir)/miniruby$(EXEEXT)
 
 empty =
 AR = @AR@
+LD = @LD@
 CC = @CC@
 ARFLAGS = @ARFLAGS@$(empty)
 RANLIB = @RANLIB@
@@ -56,6 +57,7 @@ DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
 LDSHARED = @LDSHARED@
+POSTLINK = @POSTLINK@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
 extdldflags = @EXTDLDFLAGS@

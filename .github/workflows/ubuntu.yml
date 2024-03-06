@@ -69,8 +69,10 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
-      - uses: ruby/setup-ruby@22fdc77bf4148f810455b226c90fb81b5cbc00a7 # v1.171.0
+      - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -88,27 +90,50 @@ jobs:
 
       - run: $SETARCH make
 
+      - name: Set test options for skipped tests
+        run: |
+          set -x
+          TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
+          echo "TESTS=${TESTS}" >> $GITHUB_ENV
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+
+      - name: Set up Launchable
+        id: enable-launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          srcdir: src
+
       - name: make ${{ matrix.test_task }}
         run: >-
           $SETARCH make -s ${{ matrix.test_task }}
-          ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+          ${TESTS:+TESTS="$TESTS"}
           ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests
         run: |
-          $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+          $SETARCH make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
-          TESTS: ${{ matrix.skipped_tests }}
-        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: Record test results in Launchable
+        uses: ./.github/actions/launchable/record-test
+        with:
+          # We need to configure the `build` directory because
+          # this composite action is executed in the default working directory.
+          report-path: ../build/launchable_reports.json
+          os: ubuntu-20.04
+          test-opts: ${{ matrix.configure }}
+          srcdir: src
+        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
         with:

@@ -3500,6 +3500,9 @@ static VALUE
 rb_gzfile_eof_p(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
+    while (!ZSTREAM_IS_FINISHED(&gz->z) && ZSTREAM_BUF_FILLED(&gz->z) == 0) {
+	gzfile_read_more(gz, Qnil);
+    }
     return GZFILE_IS_FINISHED(gz) ? Qtrue : Qfalse;
 }
 

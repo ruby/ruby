@@ -2148,7 +2148,9 @@ ARCH_FLAG = #{$ARCH_FLAG}
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = #{CONFIG['LDSHARED']}
 LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
+POSTLINK = #{config_string('POSTLINK', RbConfig::CONFIG)}
 AR = #{CONFIG['AR']}
+LD = #{CONFIG['LD']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
 }

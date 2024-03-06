@@ -30,7 +30,7 @@ The following default gems are updated.
 * irb 1.11.2
 * net-http 0.4.1
 * prism 0.24.0
-* reline 0.4.2
+* reline 0.4.3
 * stringio 3.1.1
 * strscan 3.1.1
 
@@ -55,7 +55,7 @@ The following bundled gems are promoted from default gems.
 * abbrev 0.1.2
 * resolv-replace 0.1.1
 * rinda 0.2.0
-* drb 2.2.0
+* drb 2.2.1
 * nkf 0.2.0
 * syslog 0.1.2
 * csv 3.2.8

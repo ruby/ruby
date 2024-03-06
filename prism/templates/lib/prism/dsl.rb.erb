@@ -8,6 +8,7 @@ module Prism
   #       [
   #         Prism::IntegerNode.new(
   #           Prism::IntegerBaseFlags::DECIMAL,
+  #           1,
   #           Prism::Location.new(source, 1, 1),
   #           source
   #         )
@@ -22,7 +23,7 @@ module Prism
   #     source = Prism::Source.new("[1]")
   #
   #     ArrayNode(
-  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, Location(source, 1, 1)), source),
+  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, 1, Location(source, 1, 1)), source),
   #       Location(source, 0, 1),
   #       Location(source, 2, 1),
   #       source
@@ -35,7 +36,7 @@ module Prism
 
     # Create a new Location object
     def Location(source = nil, start_offset = 0, length = 0)
-      Location.new(source, start_offset, length)
+      Location.new(source, start_offset, length) # steep:ignore
     end
     <%- nodes.each do |node| -%>
 

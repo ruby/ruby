@@ -146,7 +146,8 @@
         │   │   │   │       ├── operator_loc: (17,8)-(17,9) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (17,10)-(17,11))
-        │   │   │   │           └── flags: decimal
+        │   │   │   │           ├── flags: decimal
+        │   │   │   │           └── value: 1
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
@@ -195,7 +196,8 @@
         │   │   │   │       ├── operator_loc: (19,9)-(19,10) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (19,11)-(19,12))
-        │   │   │   │           └── flags: decimal
+        │   │   │   │           ├── flags: decimal
+        │   │   │   │           └── value: 1
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (19,14)-(19,16))
         │   │   │   │   ├── flags: ∅
@@ -254,7 +256,8 @@
         │   │   │   │       ├── operator_loc: (21,9)-(21,10) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (21,11)-(21,12))
-        │   │   │   │           └── flags: decimal
+        │   │   │   │           ├── flags: decimal
+        │   │   │   │           └── value: 1
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (21,14)-(21,16))
         │   │   │   │   ├── flags: ∅

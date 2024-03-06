@@ -6,7 +6,7 @@
  */
 bool
 pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capacity) {
-    list->offsets = (size_t *) calloc(capacity, sizeof(size_t));
+    list->offsets = (size_t *) xcalloc(capacity, sizeof(size_t));
     if (list->offsets == NULL) return false;
 
     list->start = start;
@@ -29,11 +29,11 @@ pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
         size_t *original_offsets = list->offsets;
 
         list->capacity = (list->capacity * 3) / 2;
-        list->offsets = (size_t *) calloc(list->capacity, sizeof(size_t));
+        list->offsets = (size_t *) xcalloc(list->capacity, sizeof(size_t));
         if (list->offsets == NULL) return false;
 
         memcpy(list->offsets, original_offsets, list->size * sizeof(size_t));
-        free(original_offsets);
+        xfree(original_offsets);
     }
 
     assert(*cursor == '\n');
@@ -84,5 +84,5 @@ pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor
  */
 void
 pm_newline_list_free(pm_newline_list_t *list) {
-    free(list->offsets);
+    xfree(list->offsets);
 }

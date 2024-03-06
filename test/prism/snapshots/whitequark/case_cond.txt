@@ -19,6 +19,7 @@
             │       │       ├── arguments: ∅
             │       │       ├── closing_loc: ∅
             │       │       └── block: ∅
+            │       ├── then_keyword_loc: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,16)-(1,21))
             │           └── body: (length: 1)

@@ -504,6 +504,11 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
     if (!RB_TYPE_P(keyword_hash, T_HASH)) {
         keyword_hash = rb_to_hash_type(keyword_hash);
     }
+    else if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_kwrest)) {
+        if (!ISEQ_BODY(iseq)->param.flags.has_kw) {
+            *kw_flag |= VM_CALL_KW_SPLAT_MUT;
+        }
+    }
 
     if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT) &&
         (ISEQ_BODY(iseq)->param.flags.has_kwrest ||
@@ -587,12 +592,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
                 !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg)) {
             args->rest_dupped = true;
-        }
-    }
-
-    if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_kwrest)) {
-        if (kw_flag & VM_CALL_KW_SPLAT) {
-            kw_flag |= VM_CALL_KW_SPLAT_MUT;
         }
     }
 

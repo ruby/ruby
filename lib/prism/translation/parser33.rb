@@ -1,4 +1,4 @@
-require_relative "parser"
+# frozen_string_literal: true
 
 module Prism
   module Translation

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/lib/tracer.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)

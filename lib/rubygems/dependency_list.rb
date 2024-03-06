@@ -6,7 +6,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "tsort"
+require_relative "vendored_tsort"
 require_relative "deprecate"
 
 ##

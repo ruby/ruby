@@ -233,6 +233,23 @@ vm_check_frame(VALUE type,
 static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
+// Return the index of the instruction right before the given PC.
+// This is needed because insn_entry advances PC before the insn body.
+static unsigned int
+previous_insn_index(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    unsigned int pos = 0;
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int opcode = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[pos]);
+        unsigned int next_pos = pos + insn_len(opcode);
+        if (ISEQ_BODY(iseq)->iseq_encoded + next_pos == pc) {
+            return pos;
+        }
+        pos = next_pos;
+    }
+    rb_bug("failed to find the previous insn");
+}
+
 void
 rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
@@ -259,15 +276,14 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     }
 
     const VALUE *orig = rb_iseq_original_iseq(iseq);
-    const VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
-    const ptrdiff_t pos = GET_PC() - encoded;
-    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
-    const char *name = insn_name(insn);
     const VALUE iseqw = rb_iseqw_new(iseq);
     const VALUE inspection = rb_inspect(iseqw);
     const char *stri = rb_str_to_cstr(inspection);
     const VALUE disasm = rb_iseq_disasm(iseq);
     const char *strd = rb_str_to_cstr(disasm);
+    const ptrdiff_t pos = previous_insn_index(iseq, GET_PC());
+    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
+    const char *name = insn_name(insn);
 
     /* rb_bug() is not capable of outputting this large contents.  It
        is designed to run form a SIGSEGV handler, which tends to be
@@ -505,6 +521,7 @@ vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
+// YJIT assumes this function never runs GC
 static inline void
 vm_env_write(const VALUE *ep, int index, VALUE v)
 {
@@ -3517,6 +3534,24 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
 
     return val;
+}
+
+// Push a C method frame for a given cme. This is called when JIT code skipped
+// pushing a frame but the C method reached a point where a frame is needed.
+void
+rb_vm_push_cfunc_frame(const rb_callable_method_entry_t *cme, int recv_idx)
+{
+    VM_ASSERT(cme->def->type == VM_METHOD_TYPE_CFUNC);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE *sp = ec->cfp->sp;
+    VALUE recv = *(sp - recv_idx - 1);
+    VALUE frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    VALUE block_handler = VM_BLOCK_HANDLER_NONE;
+#if VM_CHECK_MODE > 0
+    // Clean up the stack canary since we're about to satisfy the "leaf or lazy push" assumption
+    *(GET_EC()->cfp->sp) = Qfalse;
+#endif
+    vm_push_frame(ec, NULL, frame_type, recv, block_handler, (VALUE)cme, 0, ec->cfp->sp, 0, 0);
 }
 
 // If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)

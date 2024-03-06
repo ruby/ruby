@@ -2080,8 +2080,13 @@ process_script(ruby_cmdline_options_t *opt)
     return ast;
 }
 
+/**
+ * Call ruby_opt_init to set up the global state based on the command line
+ * options, and then warn if prism is enabled and the experimental warning
+ * category is enabled.
+ */
 static void
-prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
+prism_opt_init(ruby_cmdline_options_t *opt)
 {
     ruby_opt_init(opt);
 
@@ -2094,31 +2099,62 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
             "issue tracker."
         );
     }
+}
 
-    memset(result, 0, sizeof(*result));
-    result->options.line = 1;
+/**
+ * Process the command line options and parse the script into the given result.
+ * Raise an error if the script cannot be parsed.
+ */
+static void
+prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
+{
+    memset(result, 0, sizeof(pm_parse_result_t));
+
+    pm_options_t *options = &result->options;
+    pm_options_line_set(options, 1);
+
+    uint8_t command_line = 0;
+    if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
+    if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
+    if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
+    if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
+    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
 
     VALUE error;
-
     if (strcmp(opt->script, "-") == 0) {
         rb_raise(rb_eRuntimeError, "Prism support for streaming code from stdin is not currently supported");
     }
     else if (opt->e_script) {
+        command_line |= PM_OPTIONS_COMMAND_LINE_E;
+        pm_options_command_line_set(options, command_line);
+
+        prism_opt_init(opt);
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
     }
     else {
-        error = pm_parse_file(result, opt->script_name);
+        pm_options_command_line_set(options, command_line);
+        error = pm_load_file(result, opt->script_name);
 
-        // If we found an __END__ marker, then we're going to define a
-        // global DATA constant that is a file object that can be read
-        // to read the contents after the marker.
+        // If reading the file did not error, at that point we load the command
+        // line options. We do it in this order so that if the main script fails
+        // to load, it doesn't require files required by -r.
+        if (NIL_P(error)) {
+            prism_opt_init(opt);
+            error = pm_parse_file(result, opt->script_name);
+        }
+
+        // If we found an __END__ marker, then we're going to define a global
+        // DATA constant that is a file object that can be read to read the
+        // contents after the marker.
         if (NIL_P(error) && result->parser.data_loc.start != NULL) {
             int xflag = opt->xflag;
             VALUE file = open_load_file(opt->script_name, &xflag);
 
-            size_t offset = result->parser.data_loc.start - result->parser.start + 7;
-            if ((result->parser.start + offset < result->parser.end) && result->parser.start[offset] == '\r') offset++;
-            if ((result->parser.start + offset < result->parser.end) && result->parser.start[offset] == '\n') offset++;
+            const pm_parser_t *parser = &result->parser;
+            size_t offset = parser->data_loc.start - parser->start + 7;
+
+            if ((parser->start + offset < parser->end) && parser->start[offset] == '\r') offset++;
+            if ((parser->start + offset < parser->end) && parser->start[offset] == '\n') offset++;
 
             rb_funcall(file, rb_intern_const("seek"), 2, SIZET2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);

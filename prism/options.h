@@ -76,9 +76,49 @@ typedef struct {
      */
     pm_options_version_t version;
 
+    /** A bitset of the various options that were set on the command line. */
+    uint8_t command_line;
+
     /** Whether or not the frozen string literal option has been set. */
     bool frozen_string_literal;
 } pm_options_t;
+
+/**
+ * A bit representing whether or not the command line -a option was set. -a
+ * splits the input line $_ into $F.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_A = 0x1;
+
+/**
+ * A bit representing whether or not the command line -e option was set. -e
+ * allow the user to specify a script to be executed. This is necessary for
+ * prism to know because certain warnings are not generated when -e is used.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_E = 0x2;
+
+/**
+ * A bit representing whether or not the command line -l option was set. -l
+ * chomps the input line by default.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_L = 0x4;
+
+/**
+ * A bit representing whether or not the command line -n option was set. -n
+ * wraps the script in a while gets loop.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_N = 0x8;
+
+/**
+ * A bit representing whether or not the command line -p option was set. -p
+ * prints the value of $_ at the end of each loop.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_P = 0x10;
+
+/**
+ * A bit representing whether or not the command line -x option was set. -x
+ * searches the input file for a shebang that matches the current Ruby engine.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
 
 /**
  * Set the filepath option on the given options struct.
@@ -111,6 +151,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
  * @param frozen_string_literal The frozen string literal value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
+
+/**
+ * Sets the command line option on the given options struct.
+ *
+ * @param options The options struct to set the command line option on.
+ * @param command_line The command_line value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, uint8_t command_line);
 
 /**
  * Set the version option on the given options struct by parsing the given
@@ -186,7 +234,10 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `4`     | the length the encoding    |
  * | ...     | the encoding bytes         |
  * | `1`     | frozen string literal      |
- * | `1`     | suppress warnings          |
+ * | `1`     | -p command line option     |
+ * | `1`     | -n command line option     |
+ * | `1`     | -l command line option     |
+ * | `1`     | -a command line option     |
  * | `1`     | the version                |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |

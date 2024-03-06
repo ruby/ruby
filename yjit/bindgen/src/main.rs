@@ -460,6 +460,8 @@ fn main() {
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
+        .allowlist_function("rb_yjit_splat_varg_checks")
+        .allowlist_function("rb_yjit_splat_varg_cfunc")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

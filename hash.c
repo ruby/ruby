@@ -210,10 +210,26 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     return (long)hnum;
 }
 
+VALUE rb_obj_hash(VALUE obj);
+VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat);
+
 static st_index_t
 obj_any_hash(VALUE obj)
 {
-    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
+    VALUE hval = Qundef;
+    VALUE klass = CLASS_OF(obj);
+    if (klass) {
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, id_hash);
+        if (cme && METHOD_ENTRY_BASIC(cme)) {
+            // Optimize away the frame push overhead if it's the default Kernel#hash
+            if (cme->def->type == VM_METHOD_TYPE_CFUNC && cme->def->body.cfunc.func == (rb_cfunc_t)rb_obj_hash) {
+                hval = rb_obj_hash(obj);
+            }
+            else if (RBASIC_CLASS(cme->defined_class) == rb_mKernel) {
+                hval = rb_vm_call0(GET_EC(), obj, id_hash, 0, 0, cme, 0);
+            }
+        }
+    }
 
     if (UNDEF_P(hval)) {
         hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
@@ -1600,7 +1616,7 @@ rb_hash_modify_check(VALUE hash)
     rb_check_frozen(hash);
 }
 
-RUBY_FUNC_EXPORTED struct st_table *
+struct st_table *
 rb_hash_tbl_raw(VALUE hash, const char *file, int line)
 {
     return ar_force_convert_table(hash, file, line);

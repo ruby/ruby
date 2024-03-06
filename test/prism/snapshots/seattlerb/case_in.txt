@@ -193,7 +193,8 @@
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (22,7)-(22,9))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 10
         │   │       │   └── operator_loc: (22,4)-(22,7) = "..."
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (22,0)-(22,2) = "in"
@@ -217,7 +218,8 @@
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (26,6)-(26,8))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 10
         │   │       │   └── operator_loc: (26,4)-(26,6) = ".."
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (26,0)-(26,2) = "in"
@@ -240,7 +242,8 @@
         │   │       │   ├── flags: exclude_end
         │   │       │   ├── left:
         │   │       │   │   @ IntegerNode (location: (30,4)-(30,5))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 1
         │   │       │   ├── right: ∅
         │   │       │   └── operator_loc: (30,5)-(30,8) = "..."
         │   │       ├── statements: ∅
@@ -264,10 +267,12 @@
         │   │       │   ├── flags: exclude_end
         │   │       │   ├── left:
         │   │       │   │   @ IntegerNode (location: (34,4)-(34,5))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 1
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (34,8)-(34,9))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 3
         │   │       │   └── operator_loc: (34,5)-(34,8) = "..."
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (34,0)-(34,2) = "in"
@@ -287,7 +292,8 @@
         │   │   └── @ InNode (location: (38,0)-(38,6))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (38,4)-(38,6))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 42
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (38,0)-(38,2) = "in"
         │   │       └── then_loc: ∅

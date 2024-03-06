@@ -1004,6 +1004,10 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_cfunc_t
+    @rb_cfunc_t ||= self.VALUE
+  end
+
   def C.rb_control_frame_t
     @rb_control_frame_t ||= CType::Struct.new(
       "rb_control_frame_struct", Primitive.cexpr!("SIZEOF(struct rb_control_frame_struct)"),
@@ -1210,7 +1214,7 @@ module RubyVM::RJIT # :nodoc: all
   def C.rb_method_cfunc_t
     @rb_method_cfunc_t ||= CType::Struct.new(
       "rb_method_cfunc_struct", Primitive.cexpr!("SIZEOF(struct rb_method_cfunc_struct)"),
-      func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), func)")],
+      func: [self.rb_cfunc_t, Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), func)")],
       invoker: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), invoker)")],
       argc: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_cfunc_struct *)NULL)), argc)")],
     )

@@ -44,7 +44,8 @@
             │       │   ├── opening_loc: (3,2)-(3,3) = "["
             │       │   └── closing_loc: (3,3)-(3,4) = "]"
             │       └── @ IntegerNode (location: (3,6)-(3,7))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (3,8)-(3,14))

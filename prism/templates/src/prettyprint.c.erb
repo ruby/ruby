@@ -126,6 +126,13 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 <%- end -%>
                 if (!found) pm_buffer_append_string(output_buffer, " nil", 4);
                 pm_buffer_append_byte(output_buffer, '\n');
+            <%- when Prism::IntegerField -%>
+                const pm_integer_t *integer = &cast-><%= field.name %>;
+                pm_buffer_append_byte(output_buffer, ' ');
+                pm_integer_string(output_buffer, integer);
+                pm_buffer_append_byte(output_buffer, '\n');
+            <%- when Prism::DoubleField -%>
+                pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>

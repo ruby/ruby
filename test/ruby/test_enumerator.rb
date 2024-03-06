@@ -128,6 +128,7 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_with_index_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal([[1, 0], [2, 1], [3, 2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
       assert_equal([[1, 5], [2, 6], [3, 7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
@@ -863,6 +864,7 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_lazy_chain_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       ea = (10..).lazy.select(&:even?).take(10)
       ed = (20..).lazy.select(&:odd?)

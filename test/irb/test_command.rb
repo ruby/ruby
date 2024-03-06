@@ -75,6 +75,7 @@ module TestIRB
     def test_irb_info_multiline
       FileUtils.touch("#{@tmpdir}/.inputrc")
       FileUtils.touch("#{@tmpdir}/.irbrc")
+      FileUtils.touch("#{@tmpdir}/_irbrc")
 
       out, err = execute_lines(
         "irb_info",
@@ -86,7 +87,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath:\s.+\n
+        \.irbrc\spaths:.*\.irbrc.*_irbrc\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -110,7 +111,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath:\s.+\n
+        \.irbrc\spaths:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -196,7 +197,7 @@ module TestIRB
         IRB\sversion:\sirb .+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath: .+\n
+        \.irbrc\spaths: .+\n
         RUBY_PLATFORM: .+\n
         LANG\senv:\sja_JP\.UTF-8\n
         LC_ALL\senv:\sen_US\.UTF-8\n
@@ -482,7 +483,8 @@ module TestIRB
   class CwwsTest < WorkspaceCommandTestCase
     def test_cwws_returns_the_current_workspace_object
       out, err = execute_lines(
-        "cwws.class",
+        "cwws",
+        "self.class"
       )
 
       assert_empty err
@@ -493,51 +495,56 @@ module TestIRB
   class PushwsTest < WorkspaceCommandTestCase
     def test_pushws_switches_to_new_workspace_and_pushes_the_current_one_to_the_stack
       out, err = execute_lines(
-        "pushws #{self.class}::Foo.new\n",
-        "cwws.class",
+        "pushws #{self.class}::Foo.new",
+        "self.class",
+        "popws",
+        "self.class"
       )
       assert_empty err
-      assert_include(out, "#{self.class}::Foo")
+
+      assert_match(/=> #{self.class}::Foo\n/, out)
+      assert_match(/=> #{self.class}\n$/, out)
     end
 
     def test_pushws_extends_the_new_workspace_with_command_bundle
       out, err = execute_lines(
-        "pushws Object.new\n",
+        "pushws Object.new",
         "self.singleton_class.ancestors"
       )
       assert_empty err
       assert_include(out, "IRB::ExtendCommandBundle")
     end
 
-    def test_pushws_prints_help_message_when_no_arg_is_given
+    def test_pushws_prints_workspace_stack_when_no_arg_is_given
       out, err = execute_lines(
-        "pushws\n",
+        "pushws",
       )
       assert_empty err
-      assert_match(/No other workspace/, out)
+      assert_include(out, "[#<TestIRB::PushwsTe...>]")
+    end
+
+    def test_pushws_without_argument_swaps_the_top_two_workspaces
+      out, err = execute_lines(
+        "pushws #{self.class}::Foo.new",
+        "self.class",
+        "pushws",
+        "self.class"
+      )
+      assert_empty err
+      assert_match(/=> #{self.class}::Foo\n/, out)
+      assert_match(/=> #{self.class}\n$/, out)
     end
   end
 
   class WorkspacesTest < WorkspaceCommandTestCase
-    def test_workspaces_returns_the_array_of_non_main_workspaces
+    def test_workspaces_returns_the_stack_of_workspaces
       out, err = execute_lines(
         "pushws #{self.class}::Foo.new\n",
-        "workspaces.map { |w| w.class.name }",
+        "workspaces",
       )
 
       assert_empty err
-      # self.class::Foo would be the current workspace
-      # self.class would be the old workspace that's pushed to the stack
-      assert_include(out, "=> [\"#{self.class}\"]")
-    end
-
-    def test_workspaces_returns_empty_array_when_no_workspaces_were_added
-      out, err = execute_lines(
-        "workspaces.map(&:to_s)",
-      )
-
-      assert_empty err
-      assert_include(out, "=> []")
+      assert_match(/\[#<TestIRB::Workspac...>, #<TestIRB::Workspac...>\]\n/, out)
     end
   end
 
@@ -557,7 +564,7 @@ module TestIRB
         "popws\n",
       )
       assert_empty err
-      assert_match(/workspace stack empty/, out)
+      assert_match(/\[#<TestIRB::PopwsTes...>\]\n/, out)
     end
   end
 

@@ -186,9 +186,9 @@ class Reline::Face
       conf.define :scrollbar, style: :reset
     end
     config(:completion_dialog) do |conf|
-      conf.define :default, foreground: :white, background: :cyan
-      conf.define :enhanced, foreground: :white, background: :magenta
-      conf.define :scrollbar, foreground: :white, background: :cyan
+      conf.define :default, foreground: :bright_white, background: :gray
+      conf.define :enhanced, foreground: :black, background: :white
+      conf.define :scrollbar, foreground: :white, background: :gray
     end
   end
 

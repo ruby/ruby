@@ -30,7 +30,8 @@
             │               └── @ AssocSplatNode (location: (1,5)-(1,8))
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,7)-(1,8))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: (1,5)-(1,7) = "**"
             ├── closing_loc: (1,8)-(1,9) = ")"
             └── block: ∅

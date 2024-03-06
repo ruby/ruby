@@ -294,7 +294,8 @@
         │   │   │   │   ├── operator_loc: (22,11)-(22,12) = "="
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (22,13)-(22,14))
-        │   │   │   │       └── flags: decimal
+        │   │   │   │       ├── flags: decimal
+        │   │   │   │       └── value: 1
         │   │   │   └── @ OptionalParameterNode (location: (22,16)-(22,22))
         │   │   │       ├── flags: repeated_parameter
         │   │   │       ├── name: :_a
@@ -302,7 +303,8 @@
         │   │   │       ├── operator_loc: (22,19)-(22,20) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (22,21)-(22,22))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -362,14 +364,16 @@
         │   │   │   │   ├── name_loc: (28,8)-(28,11) = "_a:"
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (28,12)-(28,13))
-        │   │   │   │       └── flags: decimal
+        │   │   │   │       ├── flags: decimal
+        │   │   │   │       └── value: 1
         │   │   │   └── @ OptionalKeywordParameterNode (location: (28,15)-(28,20))
         │   │   │       ├── flags: repeated_parameter
         │   │   │       ├── name: :_a
         │   │   │       ├── name_loc: (28,15)-(28,18) = "_a:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (28,19)-(28,20))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅

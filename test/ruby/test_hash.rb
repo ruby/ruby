@@ -1359,6 +1359,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     h = @cls[1=>2]
     c = nil
     f = false
@@ -1379,6 +1381,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_iter_level
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     h = @cls[1=>2, 3=>4]
     c = nil
@@ -1397,6 +1401,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_escape
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     assert_nothing_raised(RuntimeError, bug9105) do
       h=@cls[]
@@ -1411,6 +1417,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_reenter
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     assert_nothing_raised(RuntimeError, bug9105) do
       h = @cls[1=>2,3=>4]

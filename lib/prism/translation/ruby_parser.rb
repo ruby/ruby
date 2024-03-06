@@ -6,7 +6,7 @@ module Prism
   module Translation
     # This module is the entry-point for converting a prism syntax tree into the
     # seattlerb/ruby_parser gem's syntax tree.
-    module RubyParser
+    class RubyParser
       # A prism visitor that builds Sexp objects.
       class Compiler < ::Prism::Compiler
         # This is the name of the file that we are compiling. We set it on every
@@ -1490,31 +1490,43 @@ module Prism
 
       private_constant :Compiler
 
+      # Parse the given source and translate it into the seattlerb/ruby_parser
+      # gem's Sexp format.
+      def parse(source, filepath = "(string)")
+        translate(Prism.parse(source), filepath)
+      end
+
+      # Parse the given file and translate it into the seattlerb/ruby_parser
+      # gem's Sexp format.
+      def parse_file(filepath)
+        translate(Prism.parse_file(filepath), filepath)
+      end
+
       class << self
         # Parse the given source and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
         def parse(source, filepath = "(string)")
-          translate(Prism.parse(source), filepath)
+          new.parse(source, filepath)
         end
 
         # Parse the given file and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
         def parse_file(filepath)
-          translate(Prism.parse_file(filepath), filepath)
+          new.parse_file(filepath)
+        end
+      end
+
+      private
+
+      # Translate the given parse result and filepath into the
+      # seattlerb/ruby_parser gem's Sexp format.
+      def translate(result, filepath)
+        if result.failure?
+          error = result.errors.first
+          raise ::RubyParser::SyntaxError, "#{filepath}:#{error.location.start_line} :: #{error.message}"
         end
 
-        private
-
-        # Translate the given parse result and filepath into the
-        # seattlerb/ruby_parser gem's Sexp format.
-        def translate(result, filepath)
-          if result.failure?
-            error = result.errors.first
-            raise ::RubyParser::SyntaxError, "#{filepath}:#{error.location.start_line} :: #{error.message}"
-          end
-
-          result.value.accept(Compiler.new(filepath))
-        end
+        result.value.accept(Compiler.new(filepath))
       end
     end
   end

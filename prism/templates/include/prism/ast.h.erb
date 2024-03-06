@@ -8,6 +8,7 @@
 
 #include "prism/defines.h"
 #include "prism/util/pm_constant_pool.h"
+#include "prism/util/pm_integer.h"
 #include "prism/util/pm_string.h"
 
 #include <assert.h>
@@ -183,6 +184,8 @@ typedef struct pm_<%= node.human %> {
     when Prism::LocationField, Prism::OptionalLocationField then "pm_location_t #{field.name}"
     when Prism::UInt8Field then "uint8_t #{field.name}"
     when Prism::UInt32Field then "uint32_t #{field.name}"
+    when Prism::IntegerField then "pm_integer_t #{field.name}"
+    when Prism::DoubleField then "double #{field.name}"
     else raise field.class.name
     end
     %>;

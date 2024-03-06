@@ -15,7 +15,21 @@ module IRB
       end
 
       category "Context"
-      description "Enter the mode to look up RI documents."
+      description "Look up documentation with RI."
+
+      help_message <<~HELP_MESSAGE
+        Usage: show_doc [name]
+
+        When name is provided, IRB will look up the documentation for the given name.
+        When no name is provided, a RI session will be started.
+
+        Examples:
+
+          show_doc
+          show_doc Array
+          show_doc Array#each
+
+      HELP_MESSAGE
 
       def execute(*names)
         require 'rdoc/ri/driver'

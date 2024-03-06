@@ -17,7 +17,7 @@ module Prism
         if port
           "<tr><td align=\"left\" colspan=\"2\" port=\"#{name}\">#{name}</td></tr>"
         else
-          "<tr><td align=\"left\">#{name}</td><td>#{CGI.escapeHTML(value)}</td></tr>"
+          "<tr><td align=\"left\">#{name}</td><td>#{CGI.escapeHTML(value || raise)}</td></tr>"
         end
       end
     end
@@ -133,7 +133,7 @@ module Prism
       else
         table.field("<%= field.name %>", "[]")
       end
-      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField -%>
+      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField, Prism::IntegerField, Prism::DoubleField -%>
       table.field("<%= field.name %>", node.<%= field.name %>.inspect)
       <%- when Prism::LocationField -%>
       table.field("<%= field.name %>", location_inspect(node.<%= field.name %>))
@@ -175,7 +175,7 @@ module Prism
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
     def <%= flag.human %>_inspect(node)
-      flags = []
+      flags = [] #: Array[String]
       <%- flag.values.each do |value| -%>
       flags << "<%= value.name.downcase %>" if node.<%= value.name.downcase %>?
       <%- end -%>

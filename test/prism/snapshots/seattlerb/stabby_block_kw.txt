@@ -23,7 +23,8 @@
             │   │   │       ├── name_loc: (1,4)-(1,6) = "k:"
             │   │   │       └── value:
             │   │   │           @ IntegerNode (location: (1,6)-(1,8))
-            │   │   │           └── flags: decimal
+            │   │   │           ├── flags: decimal
+            │   │   │           └── value: 42
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

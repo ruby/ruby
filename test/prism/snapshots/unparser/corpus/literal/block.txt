@@ -167,7 +167,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: (11,5)-(11,6) = ")"
         │   └── block:
         │       @ BlockNode (location: (11,7)-(13,1))

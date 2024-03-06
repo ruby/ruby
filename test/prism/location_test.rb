@@ -543,6 +543,10 @@ module Prism
       assert_location(InterpolatedXStringNode, '`foo #{bar} baz`')
     end
 
+    def test_ItParametersNode
+      assert_location(ItParametersNode, "-> { it }", &:parameters)
+    end
+
     def test_KeywordHashNode
       assert_location(KeywordHashNode, "foo(a, b: 1)", 7...11) { |node| node.arguments.arguments[1] }
     end

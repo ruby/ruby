@@ -179,6 +179,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_EXPECT_STRING_CONTENT]              = { "expected string content after opening string delimiter", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPECT_WHEN_DELIMITER]              = { "expected a delimiter after the predicates of a `when` clause", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_EXPRESSION_BARE_HASH]               = { "unexpected bare hash in expression", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_FLOAT_PARSE]                        = { "could not parse the float '%.*s'", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_COLLECTION]                     = { "expected a collection after the `in` in a `for` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_INDEX]                          = { "expected an index after `for`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_FOR_IN]                             = { "expected an `in` after the index in a `for` statement", PM_ERROR_LEVEL_FATAL },
@@ -190,7 +191,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_HASH_VALUE]                         = { "expected a value in the hash literal", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_HEREDOC_TERM]                       = { "could not find a terminator for the heredoc", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_QUESTION_MARK]           = { "incomplete expression at `?`", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3_0]    = { "`%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "'%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0] = { "`%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "'%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_FATAL },
@@ -202,8 +205,10 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PERCENT]                    = { "invalid `%` token", PM_ERROR_LEVEL_FATAL }, // TODO WHAT?
+    [PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0]      = { "`%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_VARIABLE_GLOBAL]            = { "'%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_IT_NOT_ALLOWED]                     = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_IT_NOT_ALLOWED_NUMBERED]            = { "`it` is not allowed when an numbered parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_IT_NOT_ALLOWED_ORDINARY]            = { "`it` is not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_OPEN]                        = { "expected a `do` keyword or a `{` to open the lambda block", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_BRACE]                  = { "expected a lambda block beginning with `{` to end with `}`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_LAMBDA_TERM_END]                    = { "expected a lambda block beginning with `do` to end with `end`", PM_ERROR_LEVEL_FATAL },
@@ -225,7 +230,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_NOT_EXPRESSION]                     = { "expected an expression after `not`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NO_LOCAL_VARIABLE]                  = { "%.*s: no such local variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NUMBER_LITERAL_UNDERSCORE]          = { "number literal ending with a `_`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED]     = { "numbered parameters are not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_NUMBERED_PARAMETER_IT]              = { "numbered parameters are not allowed when an 'it' parameter is defined", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_NUMBERED_PARAMETER_ORDINARY]        = { "numbered parameters are not allowed when an ordinary parameter is defined", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = { "numbered parameter is already used in outer scope", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_OPERATOR_MULTI_ASSIGN]              = { "unexpected operator for a multiple assignment", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_OPERATOR_WRITE_ARGUMENTS]           = { "unexpected operator after a call with arguments", PM_ERROR_LEVEL_FATAL },
@@ -300,8 +306,14 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = { "ambiguous first argument; put parentheses or a space even after `+` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_PREFIX_STAR]             = { "ambiguous `*` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_SLASH]                   = { "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_DOT_DOT_DOT_EOL]                   = { "... at EOL, should be parenthesized?", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_DUPLICATED_HASH_KEY]               = { "key %.*s is duplicated and overwritten on line %" PRIi32, PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_DUPLICATED_WHEN_CLAUSE]            = { "duplicated 'when' clause with line %" PRIi32 " is ignored", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_END_IN_METHOD]                     = { "END in method; use at_exit", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_FLOAT_OUT_OF_RANGE]                = { "Float %.*s%s out of range", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_INTEGER_IN_FLIP_FLOP]              = { "integer literal in flip-flop", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_KEYWORD_EOL]                       = { "`%.*s` at the end of line without an expression", PM_WARNING_LEVEL_VERBOSE }
 };
 
 static inline const char *
@@ -326,7 +338,7 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  */
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
@@ -357,15 +369,15 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) {
         return false;
     }
 
     size_t length = (size_t) (result + 1);
-    char *message = (char *) malloc(length);
+    char *message = (char *) xmalloc(length);
     if (message == NULL) {
-        free(diagnostic);
+        xfree(diagnostic);
         return false;
     }
 
@@ -394,8 +406,8 @@ pm_diagnostic_list_free(pm_list_t *list) {
     while (node != NULL) {
         pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
 
-        if (node->owned) free((void *) node->message);
-        free(node);
+        if (node->owned) xfree((void *) node->message);
+        xfree(node);
 
         node = next;
     }

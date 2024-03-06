@@ -103,6 +103,8 @@ class Gem::SpecificationPolicy
 
     validate_dependencies
 
+    validate_required_ruby_version
+
     validate_extensions
 
     validate_removed_attributes
@@ -224,6 +226,12 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
+    end
+  end
+
+  def validate_required_ruby_version
+    if @specification.required_ruby_version.requirements == [Gem::Requirement::DefaultRequirement]
+      warning "make sure you specify the oldest ruby version constraint (like \">= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute"
     end
   end
 

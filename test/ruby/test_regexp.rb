@@ -73,6 +73,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
       [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
@@ -470,6 +471,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_inspect_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
     end
@@ -891,6 +893,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
       assert_equal("h", m.match(:foo))

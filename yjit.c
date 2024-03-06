@@ -739,15 +739,17 @@ rb_yjit_iseq_builtin_attrs(const rb_iseq_t *iseq)
     return iseq->body->builtin_attrs;
 }
 
-// If true, the iseq has only opt_invokebuiltin_delegate_leave and leave insns.
+// If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
-    unsigned int leave_len = insn_len(BIN(leave));
-    return iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave);
+    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
+    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+        return false;
+    }
+    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
+            insn2 == BIN(leave);
 }
 
 // Return an rb_builtin_function if the iseq contains only that builtin function.
@@ -888,6 +890,49 @@ rb_yjit_ruby2_keywords_splat_p(VALUE obj)
     VALUE last = RARRAY_AREF(obj, len - 1);
     if (!RB_TYPE_P(last, T_HASH)) return 0;
     return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
+}
+
+// Checks to establish preconditions for rb_yjit_splat_varg_cfunc()
+VALUE
+rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
+{
+    // We inserted a T_ARRAY guard before this call
+    long len = RARRAY_LEN(splat_array);
+
+    // Large splat arrays need a separate allocation
+    if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
+
+    // Would we overflow if we put the contents of the array onto the stack?
+    if (sp + len > (VALUE *)(cfp - 2)) return Qfalse;
+
+    // Reject keywords hash since that requires duping it sometimes
+    if (len > 0) {
+        VALUE last_hash = RARRAY_AREF(splat_array, len - 1);
+        if (RB_TYPE_P(last_hash, T_HASH) &&
+                FL_TEST_RAW(last_hash, RHASH_PASS_AS_KEYWORDS)) {
+            return Qfalse;
+        }
+    }
+
+    return Qtrue;
+}
+
+// Push array elements to the stack for a C method that has a variable number
+// of parameters. Returns the number of arguments the splat array contributes.
+int
+rb_yjit_splat_varg_cfunc(VALUE *stack_splat_array)
+{
+    VALUE splat_array = *stack_splat_array;
+    int len;
+
+    // We already checked that length fits in `int`
+    RUBY_ASSERT(RB_TYPE_P(splat_array, T_ARRAY));
+    len = (int)RARRAY_LEN(splat_array);
+
+    // Push the contents of the array onto the stack
+    MEMCPY(stack_splat_array, RARRAY_CONST_PTR(splat_array), VALUE, len);
+
+    return len;
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes

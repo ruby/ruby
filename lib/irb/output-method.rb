@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   output-method.rb - output methods used by irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -9,16 +9,10 @@ module IRB
   # IRB::Notifier. You can define your own output method to use with Irb.new,
   # or Context.new
   class OutputMethod
-    class NotImplementedError < StandardError
-      def initialize(val)
-        super("Need to define `#{val}'")
-      end
-    end
-
     # Open this method to implement your own output method, raises a
     # NotImplementedError if you don't define #print in your own class.
     def print(*opts)
-      raise NotImplementedError, "print"
+      raise NotImplementedError
     end
 
     # Prints the given +opts+, with a newline delimiter.

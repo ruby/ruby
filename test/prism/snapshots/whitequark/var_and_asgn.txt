@@ -8,6 +8,7 @@
             ├── operator_loc: (1,2)-(1,5) = "&&="
             ├── value:
             │   @ IntegerNode (location: (1,6)-(1,7))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── name: :a
             └── depth: 0

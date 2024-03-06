@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: false
 
 require "erb"
 require "fileutils"
@@ -6,9 +7,43 @@ require "yaml"
 
 module Prism
   SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
+  CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
 
   JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
   JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
+
+  # This module contains methods for escaping characters in JavaDoc comments.
+  module JavaDoc
+    ESCAPES = {
+      "'" => "&#39;",
+      "\"" => "&quot;",
+      "@" => "&#64;",
+      "&" => "&amp;",
+      "<" => "&lt;",
+      ">" => "&gt;"
+    }.freeze
+
+    def self.escape(value)
+      value.gsub(/['&"<>@]/, ESCAPES)
+    end
+  end
+
+  # A comment attached to a field or node.
+  class ConfigComment
+    attr_reader :value
+
+    def initialize(value)
+      @value = value
+    end
+
+    def each_line(&block)
+      value.each_line { |line| yield line.prepend(" ").rstrip }
+    end
+
+    def each_java_line(&block)
+      ConfigComment.new(JavaDoc.escape(value)).each_line(&block)
+    end
+  end
 
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
@@ -21,8 +56,12 @@ module Prism
       @options = options
     end
 
-    def each_comment_line
-      comment.each_line { |line| yield line.prepend(" ").rstrip } if comment
+    def each_comment_line(&block)
+      ConfigComment.new(comment).each_line(&block) if comment
+    end
+
+    def each_comment_java_line(&block)
+      ConfigComment.new(comment).each_java_line(&block) if comment
     end
 
     def semantic_field?
@@ -38,27 +77,35 @@ module Prism
   # node and not just a generic node.
   class NodeKindField < Field
     def c_type
-      if options[:kind]
-        "pm_#{options[:kind].gsub(/(?<=.)[A-Z]/, "_\\0").downcase}"
+      if specific_kind
+        "pm_#{specific_kind.gsub(/(?<=.)[A-Z]/, "_\\0").downcase}"
       else
         "pm_node"
       end
     end
 
     def ruby_type
-      options[:kind] || "Node"
+      specific_kind || "Node"
     end
 
     def java_type
-      options[:kind] || "Node"
+      specific_kind || "Node"
     end
 
     def java_cast
-      if options[:kind]
+      if specific_kind
         "(Nodes.#{options[:kind]}) "
       else
         ""
       end
+    end
+
+    def specific_kind
+      options[:kind] unless options[:kind].is_a?(Array)
+    end
+
+    def union_kind
+      options[:kind] if options[:kind].is_a?(Array)
     end
   end
 
@@ -66,11 +113,31 @@ module Prism
   # references and store them as references.
   class NodeField < NodeKindField
     def rbs_class
-      ruby_type
+      if specific_kind
+        specific_kind
+      elsif union_kind
+        union_kind.join(" | ")
+      else
+        "Prism::node"
+      end
     end
 
     def rbi_class
-      "Prism::#{ruby_type}"
+      if specific_kind
+        "Prism::#{specific_kind}"
+      elsif union_kind
+        "T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")})"
+      else
+        "Prism::Node"
+      end
+    end
+
+    def check_field_kind
+      if union_kind
+        "[#{union_kind.join(', ')}].include?(#{name}.class)"
+      else
+        "#{name}.is_a?(#{ruby_type})"
+      end
     end
   end
 
@@ -78,27 +145,67 @@ module Prism
   # optionally null. We pass them as references and store them as references.
   class OptionalNodeField < NodeKindField
     def rbs_class
-      "#{ruby_type}?"
+      if specific_kind
+        "#{specific_kind}?"
+      elsif union_kind
+        [*union_kind, "nil"].join(" | ")
+      else
+        "Prism::node?"
+      end
     end
 
     def rbi_class
-      "T.nilable(Prism::#{ruby_type})"
+      if specific_kind
+        "T.nilable(Prism::#{specific_kind})"
+      elsif union_kind
+        "T.nilable(T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")}))"
+      else
+        "T.nilable(Prism::Node)"
+      end
+    end
+
+    def check_field_kind
+      if union_kind
+        "[#{union_kind.join(', ')}, NilClass].include?(#{name}.class)"
+      else
+        "#{name}.nil? || #{name}.is_a?(#{ruby_type})"
+      end
     end
   end
 
   # This represents a field on a node that is a list of nodes. We pass them as
   # references and store them directly on the struct.
-  class NodeListField < Field
+  class NodeListField < NodeKindField
     def rbs_class
-      "Array[Node]"
+      if specific_kind
+        "Array[#{specific_kind}]"
+      elsif union_kind
+        "Array[#{union_kind.join(" | ")}]"
+      else
+        "Array[Prism::node]"
+      end
     end
 
     def rbi_class
-      "T::Array[Prism::Node]"
+      if specific_kind
+        "T::Array[Prism::#{specific_kind}]"
+      elsif union_kind
+        "T::Array[T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")})]"
+      else
+        "T::Array[Prism::Node]"
+      end
     end
 
     def java_type
-      "Node[]"
+      "#{super}[]"
+    end
+
+    def check_field_kind
+      if union_kind
+        "#{name}.all? { |n| [#{union_kind.join(', ')}].include?(n.class) }"
+      else
+        "#{name}.all? { |n| n.is_a?(#{ruby_type}) }"
+      end
     end
   end
 
@@ -254,6 +361,38 @@ module Prism
     end
   end
 
+  # This represents an arbitrarily-sized integer. When it gets to Ruby it will
+  # be an Integer.
+  class IntegerField < Field
+    def rbs_class
+      "Integer"
+    end
+
+    def rbi_class
+      "Integer"
+    end
+
+    def java_type
+      "Object"
+    end
+  end
+
+  # This represents a double-precision floating point number. When it gets to
+  # Ruby it will be a Float.
+  class DoubleField < Field
+    def rbs_class
+      "Float"
+    end
+
+    def rbi_class
+      "Float"
+    end
+
+    def java_type
+      "double"
+    end
+  end
+
   # This class represents a node in the tree, configured by the config.yml file
   # in YAML format. It contains information about the name of the node and the
   # various child nodes it contains.
@@ -285,8 +424,12 @@ module Prism
       @comment = config.fetch("comment")
     end
 
-    def each_comment_line
-      comment.each_line { |line| yield line.prepend(" ").rstrip }
+    def each_comment_line(&block)
+      ConfigComment.new(comment).each_line(&block)
+    end
+
+    def each_comment_java_line(&block)
+      ConfigComment.new(comment).each_java_line(&block)
     end
 
     def semantic_fields
@@ -315,6 +458,8 @@ module Prism
       when "uint8"      then UInt8Field
       when "uint32"     then UInt32Field
       when "flags"      then FlagsField
+      when "integer"    then IntegerField
+      when "double"     then DoubleField
       else raise("Unknown field type: #{name.inspect}")
       end
     end
@@ -368,6 +513,7 @@ module Prism
       when ".rb"
         <<~HEADING
         # frozen_string_literal: true
+
         =begin
         This file is generated by the templates/template.rb script and should not be
         modified manually. See #{filepath}
@@ -383,13 +529,16 @@ module Prism
 
         HEADING
       when ".rbi"
-          <<~HEADING
-          =begin
-          This file is generated by the templates/template.rb script and should not be
-          modified manually. See #{filepath}
-          if you are looking to modify the template
-          =end
-          HEADING
+        <<~HEADING
+        # typed: strict
+
+        =begin
+        This file is generated by the templates/template.rb script and should not be
+        modified manually. See #{filepath}
+        if you are looking to modify the template
+        =end
+
+        HEADING
       else
         <<~HEADING
         /******************************************************************************/
@@ -399,6 +548,7 @@ module Prism
         /* if you are looking to modify the                                           */
         /* template                                                                   */
         /******************************************************************************/
+
         HEADING
       end
 
@@ -427,14 +577,8 @@ module Prism
       erb
     end
 
-    if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-      def erb(template)
-        ERB.new(template, trim_mode: "-")
-      end
-    else
-      def erb(template)
-        ERB.new(template, nil, "-")
-      end
+    def erb(template)
+      ERB.new(template, trim_mode: "-")
     end
 
     def locals
@@ -472,8 +616,14 @@ module Prism
     "src/prettyprint.c",
     "src/serialize.c",
     "src/token_type.c",
-    "rbi/prism.rbi",
+    "rbi/prism/node.rbi",
+    "rbi/prism/visitor.rbi",
     "sig/prism.rbs",
+    "sig/prism/dsl.rbs",
+    "sig/prism/mutation_compiler.rbs",
+    "sig/prism/node.rbs",
+    "sig/prism/visitor.rbs",
+    "sig/prism/_private/dot_visitor.rbs"
   ]
 end
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# typed: ignore
 
 # This file is responsible for mirroring the API provided by the C extension by
 # using FFI to call into the shared library.
@@ -7,8 +8,6 @@ require "rbconfig"
 require "ffi"
 
 module Prism
-  BACKEND = :FFI
-
   module LibRubyParser # :nodoc:
     extend FFI::Library
 
@@ -314,6 +313,24 @@ module Prism
       LibRubyParser.pm_parse_success_p(string.pointer, string.length, dump_options(options))
     end
 
+    # Return the value that should be dumped for the command_line option.
+    def dump_options_command_line(options)
+      command_line = options.fetch(:command_line, "")
+      raise ArgumentError, "command_line must be a string" unless command_line.is_a?(String)
+
+      command_line.each_char.inject(0) do |value, char|
+        case char
+        when "a" then value | 0b000001
+        when "e" then value | 0b000010
+        when "l" then value | 0b000100
+        when "n" then value | 0b001000
+        when "p" then value | 0b010000
+        when "x" then value | 0b100000
+        else raise ArgumentError, "invalid command_line option: #{char}"
+        end
+      end
+    end
+
     # Convert the given options into a serialized options string.
     def dump_options(options)
       template = +""
@@ -341,6 +358,9 @@ module Prism
 
       template << "C"
       values << (options.fetch(:frozen_string_literal, false) ? 1 : 0)
+
+      template << "C"
+      values << dump_options_command_line(options)
 
       template << "C"
       values << { nil => 0, "3.3.0" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])

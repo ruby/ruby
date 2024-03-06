@@ -29,7 +29,7 @@ describe "Net::FTP#connect" do
   ruby_version_is ""..."3.1" do
     it "prints a small debug line when in debug mode" do
       @ftp.debug_mode = true
-      -> { @ftp.connect(@server.hostname, @server.server_port) }.should output(/#{"connect: "}#{@server.hostname}#{", "}#{@server.server_port}#{"\\nget: 220 Dummy FTP Server ready!"}/)
+      -> { @ftp.connect(@server.hostname, @server.server_port) }.should output(/connect: #{@server.hostname}, #{@server.server_port}\nget: 220 Dummy FTP Server ready!/)
       @ftp.debug_mode = false
     end
   end

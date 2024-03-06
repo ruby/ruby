@@ -82,7 +82,7 @@ module Prism
           0,
           read_class.new(source, *arguments, node.name_loc),
           nil,
-          node.operator_loc.slice.chomp("="),
+          node.operator_loc.slice.chomp("=").to_sym,
           node.operator_loc.copy(length: node.operator_loc.length - 1),
           nil,
           ArgumentsNode.new(source, 0, [node.value], node.value.location),

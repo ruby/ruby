@@ -32,7 +32,8 @@
             │       │       │   @ StatementsNode (location: (1,24)-(1,25))
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ IntegerNode (location: (1,24)-(1,25))
-            │       │       │           └── flags: decimal
+            │       │       │           ├── flags: decimal
+            │       │       │           └── value: 1
             │       │       └── closing_loc: (1,25)-(1,26) = "}"
             │       └── closing_loc: (1,26)-(1,27) = "\""
             └── keyword_loc: (1,0)-(1,5) = "undef"

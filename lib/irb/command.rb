@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/command.rb - irb command
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -314,45 +314,5 @@ module IRB # :nodoc:
     end
 
     install_extend_commands
-  end
-
-  # Extends methods for the Context module
-  module ContextExtender
-    CE = ContextExtender # :nodoc:
-
-    @EXTEND_COMMANDS = [
-      [:eval_history=, "ext/eval_history.rb"],
-      [:use_loader=, "ext/use-loader.rb"],
-    ]
-
-    # Installs the default context extensions as irb commands:
-    #
-    # Context#eval_history=::   +irb/ext/history.rb+
-    # Context#use_tracer=::     +irb/ext/tracer.rb+
-    # Context#use_loader=::     +irb/ext/use-loader.rb+
-    def self.install_extend_commands
-      for args in @EXTEND_COMMANDS
-        def_extend_command(*args)
-      end
-    end
-
-    # Evaluate the given +command+ from the given +load_file+ on the Context
-    # module.
-    #
-    # Will also define any given +aliases+ for the method.
-    def self.def_extend_command(cmd_name, load_file, *aliases)
-      line = __LINE__; Context.module_eval %[
-        def #{cmd_name}(*opts, &b)
-          Context.module_eval {remove_method(:#{cmd_name})}
-          require_relative "#{load_file}"
-          __send__ :#{cmd_name}, *opts, &b
-        end
-        for ali in aliases
-          alias_method ali, cmd_name
-        end
-      ], __FILE__, line
-    end
-
-    CE.install_extend_commands
   end
 end

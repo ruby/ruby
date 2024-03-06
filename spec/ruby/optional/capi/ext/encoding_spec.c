@@ -320,6 +320,10 @@ static VALUE encoding_spec_rb_enc_left_char_head(VALUE self, VALUE str, VALUE of
   return LONG2NUM(result - ptr);
 }
 
+static VALUE encoding_spec_rb_define_dummy_encoding(VALUE self, VALUE name) {
+  return INT2NUM(rb_define_dummy_encoding(RSTRING_PTR(name)));
+}
+
 void Init_encoding_spec(void) {
   VALUE cls;
   native_rb_encoding_pointer = (rb_encoding**) malloc(sizeof(rb_encoding*));
@@ -379,6 +383,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_uv_to_utf8", encoding_spec_rb_uv_to_utf8, 2);
   rb_define_method(cls, "ONIGENC_MBC_CASE_FOLD", encoding_spec_ONIGENC_MBC_CASE_FOLD, 1);
   rb_define_method(cls, "rb_enc_left_char_head", encoding_spec_rb_enc_left_char_head, 2);
+  rb_define_method(cls, "rb_define_dummy_encoding", encoding_spec_rb_define_dummy_encoding, 1);
 }
 
 #ifdef __cplusplus

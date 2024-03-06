@@ -1034,6 +1034,14 @@ eom
     assert_not_match(/end-of-input/, e.message)
   end
 
+  def test_invalid_regexp
+    bug20295 = '[ruby-core:116913] [Bug #20295]'
+
+    assert_syntax_error("/[/=~s", /premature end of char-class/, bug20295)
+    assert_syntax_error("/(?<>)/=~s", /group name is empty/, bug20295)
+    assert_syntax_error("/(?<a>[)/=~s", /premature end of char-class/, bug20295)
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\

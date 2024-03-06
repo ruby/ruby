@@ -63,7 +63,8 @@
         │   │   │       ├── operator_loc: (4,29)-(4,30) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (4,31)-(4,32))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (4,34)-(4,44))
@@ -370,7 +371,8 @@
         │   ├── name_loc: (44,0)-(44,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (44,4)-(44,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (44,2)-(44,3) = "="
         ├── @ DefNode (location: (44,7)-(45,3))
         │   ├── name: :a
@@ -450,7 +452,8 @@
         │   │   │       ├── name_loc: (53,10)-(53,12) = "c:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (53,13)-(53,14))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -482,7 +485,8 @@
         │   │   │       ├── name_loc: (56,10)-(56,12) = "c:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (56,13)-(56,14))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -510,7 +514,8 @@
         │   │   │   │   ├── name_loc: (59,6)-(59,8) = "b:"
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (60,2)-(60,3))
-        │   │   │   │       └── flags: decimal
+        │   │   │   │       ├── flags: decimal
+        │   │   │   │       └── value: 1
         │   │   │   └── @ RequiredKeywordParameterNode (location: (60,5)-(60,7))
         │   │   │       ├── flags: ∅
         │   │   │       ├── name: :c
@@ -546,7 +551,8 @@
         │   │   │   │   ├── operator_loc: (65,8)-(65,9) = "="
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (65,10)-(65,11))
-        │   │   │   │       └── flags: decimal
+        │   │   │   │       ├── flags: decimal
+        │   │   │   │       └── value: 1
         │   │   │   └── @ OptionalParameterNode (location: (65,13)-(65,18))
         │   │   │       ├── flags: ∅
         │   │   │       ├── name: :c
@@ -554,7 +560,8 @@
         │   │   │       ├── operator_loc: (65,15)-(65,16) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (65,17)-(65,18))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -599,7 +606,8 @@
         │   │   │       ├── operator_loc: (71,11)-(71,12) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (71,13)-(71,14))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -738,7 +746,8 @@
         │   │           ├── name_loc: (86,0)-(86,1) = "b"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (86,4)-(86,5))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           └── operator_loc: (86,2)-(86,3) = "="
         │   ├── locals: [:b]
         │   ├── def_keyword_loc: (85,0)-(85,3) = "def"
@@ -840,7 +849,8 @@
         │   │   @ StatementsNode (location: (103,10)-(103,11))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (103,10)-(103,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (103,0)-(103,3) = "def"
         │   ├── operator_loc: ∅
@@ -857,7 +867,8 @@
         │   │   @ StatementsNode (location: (104,10)-(104,11))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (104,10)-(104,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── locals: []
         │   ├── def_keyword_loc: (104,0)-(104,3) = "def"
         │   ├── operator_loc: ∅
@@ -885,7 +896,8 @@
         │   │   @ StatementsNode (location: (106,15)-(106,18))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (106,15)-(106,18))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 123
         │   ├── locals: [:bar]
         │   ├── def_keyword_loc: (106,0)-(106,3) = "def"
         │   ├── operator_loc: ∅
@@ -902,7 +914,8 @@
         │   │   @ StatementsNode (location: (108,10)-(108,13))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (108,10)-(108,13))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 123
         │   ├── locals: []
         │   ├── def_keyword_loc: (108,0)-(108,3) = "def"
         │   ├── operator_loc: ∅
@@ -1021,9 +1034,11 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 3)
         │   │           │       ├── @ IntegerNode (location: (114,14)-(114,15))
-        │   │           │       │   └── flags: decimal
+        │   │           │       │   ├── flags: decimal
+        │   │           │       │   └── value: 1
         │   │           │       ├── @ IntegerNode (location: (114,17)-(114,18))
-        │   │           │       │   └── flags: decimal
+        │   │           │       │   ├── flags: decimal
+        │   │           │       │   └── value: 2
         │   │           │       └── @ ForwardingArgumentsNode (location: (114,20)-(114,23))
         │   │           ├── closing_loc: (114,23)-(114,24) = ")"
         │   │           └── block: ∅
@@ -1186,7 +1201,8 @@
         │   ├── name_loc: (133,0)-(133,5) = "Const"
         │   ├── value:
         │   │   @ IntegerNode (location: (133,8)-(133,9))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (133,6)-(133,7) = "="
         ├── @ DefNode (location: (133,11)-(134,3))
         │   ├── name: :a
@@ -1355,10 +1371,12 @@
         │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (142,12)-(142,13))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 1
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (142,16)-(142,18))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 10
         │   │   │           │           └── operator_loc: (142,13)-(142,16) = "..."
         │   │   │           ├── opening_loc: (142,11)-(142,12) = "("
         │   │   │           └── closing_loc: (142,18)-(142,19) = ")"
@@ -1397,7 +1415,8 @@
         │   │   │           │           ├── left: ∅
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (145,15)-(145,17))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 10
         │   │   │           │           └── operator_loc: (145,12)-(145,15) = "..."
         │   │   │           ├── opening_loc: (145,11)-(145,12) = "("
         │   │   │           └── closing_loc: (145,17)-(145,18) = ")"
@@ -1435,7 +1454,8 @@
         │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (148,12)-(148,13))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 1
         │   │   │           │           ├── right: ∅
         │   │   │           │           └── operator_loc: (148,13)-(148,16) = "..."
         │   │   │           ├── opening_loc: (148,11)-(148,12) = "("
@@ -1472,10 +1492,12 @@
         │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (151,13)-(151,14))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 1
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (151,17)-(151,19))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 10
         │   │   │           │           └── operator_loc: (151,14)-(151,17) = "..."
         │   │   │           ├── opening_loc: (151,12)-(151,13) = "("
         │   │   │           └── closing_loc: (151,19)-(151,20) = ")"
@@ -1515,7 +1537,8 @@
         │   │   │           │           ├── left: ∅
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (154,16)-(154,18))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 10
         │   │   │           │           └── operator_loc: (154,13)-(154,16) = "..."
         │   │   │           ├── opening_loc: (154,12)-(154,13) = "("
         │   │   │           └── closing_loc: (154,18)-(154,19) = ")"
@@ -1554,7 +1577,8 @@
         │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (157,13)-(157,14))
-        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           │   ├── flags: decimal
+        │   │   │           │           │   └── value: 1
         │   │   │           │           ├── right: ∅
         │   │   │           │           └── operator_loc: (157,14)-(157,17) = "..."
         │   │   │           ├── opening_loc: (157,12)-(157,13) = "("
@@ -1643,7 +1667,8 @@
         │   ├── name_loc: (164,0)-(164,3) = "foo"
         │   ├── value:
         │   │   @ IntegerNode (location: (164,6)-(164,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (164,4)-(164,5) = "="
         ├── @ DefNode (location: (165,0)-(165,16))
         │   ├── name: :bar
@@ -1952,7 +1977,8 @@
         │   │   │           │       │   ├── equal_loc: (181,28)-(181,29) = "="
         │   │   │           │       │   └── end_keyword_loc: ∅
         │   │   │           │       └── @ IntegerNode (location: (181,35)-(181,36))
-        │   │   │           │           └── flags: decimal
+        │   │   │           │           ├── flags: decimal
+        │   │   │           │           └── value: 1
         │   │   │           ├── opening_loc: (181,14)-(181,15) = "("
         │   │   │           └── closing_loc: (181,36)-(181,37) = ")"
         │   │   ├── rest: ∅
@@ -1964,7 +1990,8 @@
         │   │   @ StatementsNode (location: (181,41)-(181,42))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (181,41)-(181,42))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── locals: [:bar]
         │   ├── def_keyword_loc: (181,0)-(181,3) = "def"
         │   ├── operator_loc: ∅
@@ -2002,7 +2029,8 @@
             │   │       ├── operator_loc: (183,29)-(183,30) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (183,31)-(183,32))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
@@ -2012,7 +2040,8 @@
             │   @ StatementsNode (location: (183,36)-(183,37))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (183,36)-(183,37))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 2
             ├── locals: [:bar]
             ├── def_keyword_loc: (183,0)-(183,3) = "def"
             ├── operator_loc: (183,20)-(183,21) = "."

@@ -9,6 +9,7 @@
 #include "prism/defines.h"
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
+#include "prism/util/pm_integer.h"
 #include "prism/util/pm_memchr.h"
 #include "prism/util/pm_strncasecmp.h"
 #include "prism/util/pm_strpbrk.h"
@@ -20,10 +21,12 @@
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/regexp.h"
+#include "prism/static_literals.h"
 #include "prism/version.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb.rb - irb main module
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -903,8 +903,8 @@ module IRB
     # parsed as a :method_add_arg and the output won't be suppressed
 
     PROMPT_MAIN_TRUNCATE_LENGTH = 32
-    PROMPT_MAIN_TRUNCATE_OMISSION = '...'.freeze
-    CONTROL_CHARACTERS_PATTERN = "\x00-\x1F".freeze
+    PROMPT_MAIN_TRUNCATE_OMISSION = '...'
+    CONTROL_CHARACTERS_PATTERN = "\x00-\x1F"
 
     # Returns the current context of this irb session
     attr_reader :context
@@ -933,7 +933,7 @@ module IRB
 
     def debug_readline(binding)
       workspace = IRB::WorkSpace.new(binding)
-      context.workspace = workspace
+      context.replace_workspace(workspace)
       context.workspace.load_commands_to_main
       @line_no += 1
 
@@ -1056,7 +1056,7 @@ module IRB
       return read_input(prompt) if @context.io.respond_to?(:check_termination)
 
       # nomultiline
-      code = ''
+      code = +''
       line_offset = 0
       loop do
         line = read_input(prompt)
@@ -1138,7 +1138,6 @@ module IRB
       end
       if @context.io.respond_to?(:dynamic_prompt)
         @context.io.dynamic_prompt do |lines|
-          lines << '' if lines.empty?
           tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
           line_results = IRB::NestingParser.parse_by_line(tokens)
           tokens_until_line = []
@@ -1270,12 +1269,11 @@ module IRB
     # Used by the irb command +irb_load+, see IRB@IRB+Sessions for more
     # information.
     def suspend_workspace(workspace)
-      @context.workspace, back_workspace = workspace, @context.workspace
-      begin
-        yield back_workspace
-      ensure
-        @context.workspace = back_workspace
-      end
+      current_workspace = @context.workspace
+      @context.replace_workspace(workspace)
+      yield
+    ensure
+      @context.replace_workspace current_workspace
     end
 
     # Evaluates the given block using the given +input_method+ as the
@@ -1535,7 +1533,7 @@ class Binding
 
     if debugger_irb
       # If we're already in a debugger session, set the workspace and irb_path for the original IRB instance
-      debugger_irb.context.workspace = workspace
+      debugger_irb.context.replace_workspace(workspace)
       debugger_irb.context.irb_path = irb_path
       # If we've started a debugger session and hit another binding.irb, we don't want to start an IRB session
       # instead, we want to resume the irb:rdbg session.

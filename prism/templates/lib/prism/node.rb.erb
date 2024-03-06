@@ -56,6 +56,7 @@ module Prism
 
     # Convert this node into a graphviz dot graph string.
     def to_dot
+      # @type self: node
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
 
@@ -109,6 +110,9 @@ module Prism
       @newline = false
       @location = location
       <%- node.fields.each do |field| -%>
+      <%- if Prism::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
+      raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
+      <%- end -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>
     end
@@ -150,7 +154,7 @@ module Prism
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       <%- if node.fields.any? { |field| field.is_a?(Prism::OptionalNodeField) } -%>
-      compact = []
+      compact = [] #: Array[Prism::node]
       <%- node.fields.each do |field| -%>
       <%- case field -%>
       <%- when Prism::NodeField -%>
@@ -179,17 +183,12 @@ module Prism
         when Prism::NodeField, Prism::LocationField then field.name
         when Prism::OptionalNodeField, Prism::NodeListField, Prism::OptionalLocationField then "*#{field.name}"
         end
-      }.compact.join(", ") %>]
+      }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (**params) -> <%= node.name %>
-    def copy(**params)
-      <%= node.name %>.new(
-        source,
-        <%- (node.fields.map(&:name) + ["location"]).map do |name| -%>
-        params.fetch(:<%= name %>) { <%= name %> },
-        <%- end -%>
-      )
+    # def copy: (<%= (node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" } + ["?location: Location"]).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (node.fields.map(&:name) + ["location"]).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]
@@ -281,7 +280,7 @@ module Prism
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt8Field, Prism::UInt32Field -%>
+      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt8Field, Prism::UInt32Field, Prism::IntegerField, Prism::DoubleField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when Prism::OptionalConstantField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?

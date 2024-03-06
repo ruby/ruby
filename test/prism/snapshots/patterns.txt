@@ -34,7 +34,8 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ IntegerNode (location: (2,7)-(2,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (2,4)-(2,6) = "=>"
         ├── @ MatchRequiredNode (location: (3,0)-(3,10))
         │   ├── value:
@@ -50,6 +51,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (3,7)-(3,10))
+        │   │   └── value: 1.0
         │   └── operator_loc: (3,4)-(3,6) = "=>"
         ├── @ MatchRequiredNode (location: (4,0)-(4,9))
         │   ├── value:
@@ -67,7 +69,8 @@
         │   │   @ ImaginaryNode (location: (4,7)-(4,9))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (4,7)-(4,8))
-        │   │       └── flags: decimal
+        │   │       ├── flags: decimal
+        │   │       └── value: 1
         │   └── operator_loc: (4,4)-(4,6) = "=>"
         ├── @ MatchRequiredNode (location: (5,0)-(5,9))
         │   ├── value:
@@ -85,7 +88,8 @@
         │   │   @ RationalNode (location: (5,7)-(5,9))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (5,7)-(5,8))
-        │   │       └── flags: decimal
+        │   │       ├── flags: decimal
+        │   │       └── value: 1
         │   └── operator_loc: (5,4)-(5,6) = "=>"
         ├── @ MatchRequiredNode (location: (6,0)-(6,11))
         │   ├── value:
@@ -516,10 +520,12 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (28,7)-(28,8))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (28,12)-(28,13))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   └── operator_loc: (28,9)-(28,11) = ".."
         │   └── operator_loc: (28,4)-(28,6) = "=>"
         ├── @ MatchRequiredNode (location: (29,0)-(29,17))
@@ -539,8 +545,10 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ FloatNode (location: (29,7)-(29,10))
+        │   │   │   └── value: 1.0
         │   │   ├── right:
         │   │   │   @ FloatNode (location: (29,14)-(29,17))
+        │   │   │   └── value: 1.0
         │   │   └── operator_loc: (29,11)-(29,13) = ".."
         │   └── operator_loc: (29,4)-(29,6) = "=>"
         ├── @ MatchRequiredNode (location: (30,0)-(30,15))
@@ -562,12 +570,14 @@
         │   │   │   @ ImaginaryNode (location: (30,7)-(30,9))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (30,7)-(30,8))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   ├── right:
         │   │   │   @ ImaginaryNode (location: (30,13)-(30,15))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (30,13)-(30,14))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   └── operator_loc: (30,10)-(30,12) = ".."
         │   └── operator_loc: (30,4)-(30,6) = "=>"
         ├── @ MatchRequiredNode (location: (31,0)-(31,15))
@@ -589,12 +599,14 @@
         │   │   │   @ RationalNode (location: (31,7)-(31,9))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (31,7)-(31,8))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   ├── right:
         │   │   │   @ RationalNode (location: (31,13)-(31,15))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (31,13)-(31,14))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   └── operator_loc: (31,10)-(31,12) = ".."
         │   └── operator_loc: (31,4)-(31,6) = "=>"
         ├── @ MatchRequiredNode (location: (32,0)-(32,19))
@@ -1238,7 +1250,8 @@
         │   ├── name_loc: (54,0)-(54,3) = "bar"
         │   ├── value:
         │   │   @ IntegerNode (location: (54,6)-(54,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (54,4)-(54,5) = "="
         ├── @ MatchRequiredNode (location: (54,9)-(54,20))
         │   ├── value:
@@ -1333,7 +1346,8 @@
         │   │   @ PinnedExpressionNode (location: (59,7)-(59,11))
         │   │   ├── expression:
         │   │   │   @ IntegerNode (location: (59,9)-(59,10))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── operator_loc: (59,7)-(59,8) = "^"
         │   │   ├── lparen_loc: (59,8)-(59,9) = "("
         │   │   └── rparen_loc: (59,10)-(59,11) = ")"
@@ -1540,7 +1554,8 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (69,11)-(69,12))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (69,10)-(69,11) = "("
@@ -1565,11 +1580,14 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (70,11)-(70,12))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   ├── @ IntegerNode (location: (70,14)-(70,15))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 2
         │   │   │   └── @ IntegerNode (location: (70,17)-(70,18))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 3
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (70,10)-(70,11) = "("
@@ -1745,7 +1763,8 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (77,11)-(77,12))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (77,10)-(77,11) = "["
@@ -1770,11 +1789,14 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (78,11)-(78,12))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   ├── @ IntegerNode (location: (78,14)-(78,15))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 2
         │   │   │   └── @ IntegerNode (location: (78,17)-(78,18))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 3
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (78,10)-(78,11) = "["
@@ -2390,7 +2412,8 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ IntegerNode (location: (105,7)-(105,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (105,4)-(105,6) = "in"
         ├── @ MatchPredicateNode (location: (106,0)-(106,10))
         │   ├── value:
@@ -2406,6 +2429,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (106,7)-(106,10))
+        │   │   └── value: 1.0
         │   └── operator_loc: (106,4)-(106,6) = "in"
         ├── @ MatchPredicateNode (location: (107,0)-(107,9))
         │   ├── value:
@@ -2423,7 +2447,8 @@
         │   │   @ ImaginaryNode (location: (107,7)-(107,9))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (107,7)-(107,8))
-        │   │       └── flags: decimal
+        │   │       ├── flags: decimal
+        │   │       └── value: 1
         │   └── operator_loc: (107,4)-(107,6) = "in"
         ├── @ MatchPredicateNode (location: (108,0)-(108,9))
         │   ├── value:
@@ -2441,7 +2466,8 @@
         │   │   @ RationalNode (location: (108,7)-(108,9))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (108,7)-(108,8))
-        │   │       └── flags: decimal
+        │   │       ├── flags: decimal
+        │   │       └── value: 1
         │   └── operator_loc: (108,4)-(108,6) = "in"
         ├── @ MatchPredicateNode (location: (109,0)-(109,11))
         │   ├── value:
@@ -2920,7 +2946,8 @@
         │   │   └── @ InNode (location: (136,10)-(136,19))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (136,13)-(136,14))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (136,10)-(136,12) = "in"
         │   │       └── then_loc: (136,15)-(136,19) = "then"
@@ -2943,6 +2970,7 @@
         │   │   └── @ InNode (location: (137,10)-(137,21))
         │   │       ├── pattern:
         │   │       │   @ FloatNode (location: (137,13)-(137,16))
+        │   │       │   └── value: 1.0
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (137,10)-(137,12) = "in"
         │   │       └── then_loc: (137,17)-(137,21) = "then"
@@ -2967,7 +2995,8 @@
         │   │       │   @ ImaginaryNode (location: (138,13)-(138,15))
         │   │       │   └── numeric:
         │   │       │       @ IntegerNode (location: (138,13)-(138,14))
-        │   │       │       └── flags: decimal
+        │   │       │       ├── flags: decimal
+        │   │       │       └── value: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (138,10)-(138,12) = "in"
         │   │       └── then_loc: (138,16)-(138,20) = "then"
@@ -2992,7 +3021,8 @@
         │   │       │   @ RationalNode (location: (139,13)-(139,15))
         │   │       │   └── numeric:
         │   │       │       @ IntegerNode (location: (139,13)-(139,14))
-        │   │       │       └── flags: decimal
+        │   │       │       ├── flags: decimal
+        │   │       │       └── value: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (139,10)-(139,12) = "in"
         │   │       └── then_loc: (139,16)-(139,20) = "then"
@@ -3620,7 +3650,8 @@
         │   │       │   │   @ StatementsNode (location: (163,13)-(163,14))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ IntegerNode (location: (163,13)-(163,14))
-        │   │       │   │           └── flags: decimal
+        │   │       │   │           ├── flags: decimal
+        │   │       │   │           └── value: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -3655,6 +3686,7 @@
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,16))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ FloatNode (location: (164,13)-(164,16))
+        │   │       │   │           └── value: 1.0
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -3691,7 +3723,8 @@
         │   │       │   │       └── @ ImaginaryNode (location: (165,13)-(165,15))
         │   │       │   │           └── numeric:
         │   │       │   │               @ IntegerNode (location: (165,13)-(165,14))
-        │   │       │   │               └── flags: decimal
+        │   │       │   │               ├── flags: decimal
+        │   │       │   │               └── value: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -3728,7 +3761,8 @@
         │   │       │   │       └── @ RationalNode (location: (166,13)-(166,15))
         │   │       │   │           └── numeric:
         │   │       │   │               @ IntegerNode (location: (166,13)-(166,14))
-        │   │       │   │               └── flags: decimal
+        │   │       │   │               ├── flags: decimal
+        │   │       │   │               └── value: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4722,9 +4756,11 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (205,16)-(205,17))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (205,19)-(205,20))
-        │       │       └── flags: decimal
+        │       │       ├── flags: decimal
+        │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (206,0)-(208,3))
@@ -4749,9 +4785,11 @@
         │       │           │   ├── flags: ∅
         │       │           │   ├── elements: (length: 2)
         │       │           │   │   ├── @ IntegerNode (location: (207,3)-(207,4))
-        │       │           │   │   │   └── flags: decimal
+        │       │           │   │   │   ├── flags: decimal
+        │       │           │   │   │   └── value: 1
         │       │           │   │   └── @ IntegerNode (location: (207,6)-(207,7))
-        │       │           │   │       └── flags: decimal
+        │       │           │   │       ├── flags: decimal
+        │       │           │   │       └── value: 2
         │       │           │   ├── opening_loc: (207,2)-(207,3) = "["
         │       │           │   └── closing_loc: (207,7)-(207,8) = "]"
         │       │           ├── pattern:
@@ -4819,7 +4857,8 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ IntegerNode (location: (212,0)-(212,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── call_operator_loc: (212,1)-(212,2) = "."
         │   ├── name: :then
         │   ├── message_loc: (212,2)-(212,6) = "then"
@@ -4838,7 +4877,8 @@
         │       │       └── @ MatchPredicateNode (location: (212,9)-(212,17))
         │       │           ├── value:
         │       │           │   @ IntegerNode (location: (212,9)-(212,10))
-        │       │           │   └── flags: decimal
+        │       │           │   ├── flags: decimal
+        │       │           │   └── value: 1
         │       │           ├── pattern:
         │       │           │   @ PinnedVariableNode (location: (212,14)-(212,17))
         │       │           │   ├── variable:

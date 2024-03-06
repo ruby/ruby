@@ -17,7 +17,7 @@ net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.4.0.1 https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
-rbs             3.4.4   https://github.com/ruby/rbs
+rbs             3.4.4   https://github.com/ruby/rbs 56ae86bb5f4864f5057778bd45b280248b012329
 typeprof        0.21.11 https://github.com/ruby/typeprof
 debug           1.9.1   https://github.com/ruby/debug 2d602636d99114d55a32fedd652c9c704446a749
 racc            1.7.3   https://github.com/ruby/racc
@@ -29,7 +29,7 @@ observer        0.1.2   https://github.com/ruby/observer
 abbrev          0.1.2   https://github.com/ruby/abbrev
 resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
 rinda           0.2.0   https://github.com/ruby/rinda
-drb             2.2.0   https://github.com/ruby/drb 29389313b6f0d1b215ba16cdc28062dbc44c3c50
+drb             2.2.1   https://github.com/ruby/drb
 nkf             0.2.0   https://github.com/ruby/nkf
 syslog          0.1.2   https://github.com/ruby/syslog
 csv             3.2.8   https://github.com/ruby/csv

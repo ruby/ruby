@@ -6,7 +6,8 @@
         ├── @ MatchRequiredNode (location: (1,0)-(1,8))
         │   ├── value:
         │   │   @ IntegerNode (location: (1,0)-(1,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
         │   │   ├── constant: ∅
@@ -22,7 +23,8 @@
         ├── @ MatchRequiredNode (location: (2,0)-(2,8))
         │   ├── value:
         │   │   @ IntegerNode (location: (2,0)-(2,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (2,5)-(2,8))
         │   │   ├── constant: ∅
@@ -38,7 +40,8 @@
         ├── @ MatchPredicateNode (location: (3,0)-(3,15))
         │   ├── value:
         │   │   @ IntegerNode (location: (3,0)-(3,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (3,5)-(3,15))
         │   │   ├── constant: ∅
@@ -48,7 +51,8 @@
         │   │   │   └── expression: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (3,9)-(3,11))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 42
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (3,13)-(3,14))
         │   │   │   ├── operator_loc: (3,13)-(3,14) = "*"
@@ -59,7 +63,8 @@
         └── @ MatchPredicateNode (location: (4,0)-(4,17))
             ├── value:
             │   @ IntegerNode (location: (4,0)-(4,1))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── pattern:
             │   @ FindPatternNode (location: (4,5)-(4,17))
             │   ├── constant: ∅

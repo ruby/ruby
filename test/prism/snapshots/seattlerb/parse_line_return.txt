@@ -26,7 +26,8 @@
             │           │               ├── flags: ∅
             │           │               └── arguments: (length: 1)
             │           │                   └── @ IntegerNode (location: (3,17)-(3,19))
-            │           │                       └── flags: decimal
+            │           │                       ├── flags: decimal
+            │           │                       └── value: 42
             │           ├── consequent: ∅
             │           └── end_keyword_loc: (4,8)-(4,11) = "end"
             ├── locals: []

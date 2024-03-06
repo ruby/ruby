@@ -32,9 +32,11 @@
 
 /* Flags of T_CLASS
  *
- * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
- *            The RCLASS_SUPERCLASSES contains the class as the last element.
- *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * 0:    RUBY_FL_SINGLETON
+ *           This class is a singleton class.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           The RCLASS_SUPERCLASSES contains the class as the last element.
+ *           This means that this class owns the RCLASS_SUPERCLASSES list.
  * if !SHAPE_IN_BASIC_FLAGS
  * 4-19: SHAPE_FLAG_MASK
  *           Shape ID for the class.
@@ -1007,7 +1009,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
 }
 
 VALUE
-rb_define_class_id_under(VALUE outer, ID id, VALUE super)
+rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
 {
     VALUE klass;
 
@@ -1024,8 +1026,6 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
                      " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
                      outer, rb_id2str(id), RCLASS_SUPER(klass), super);
         }
-        /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(klass);
 
         return klass;
     }
@@ -1037,8 +1037,15 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_vm_add_root_module(klass);
 
+    return klass;
+}
+
+VALUE
+rb_define_class_id_under(VALUE outer, ID id, VALUE super)
+{
+    VALUE klass = rb_define_class_id_under_no_pin(outer, id, super);
+    rb_vm_add_root_module(klass);
     return klass;
 }
 

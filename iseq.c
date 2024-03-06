@@ -1245,7 +1245,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
-        error = pm_parse_file(&result, filepath);
+        error = pm_load_parse_file(&result, filepath);
         RB_GC_GUARD(filepath);
     }
     else {
@@ -1646,7 +1646,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     pm_parse_result_t result = { 0 };
     result.options.line = 1;
 
-    VALUE error = pm_parse_file(&result, file);
+    VALUE error = pm_load_parse_file(&result, file);
 
     if (error == Qnil) {
         make_compile_option(&option, opt);
@@ -3380,7 +3380,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
-    rb_hash_aset(misc, ID2SYM(rb_intern("prism")), iseq_body->prism ? Qtrue : Qfalse);
+    rb_hash_aset(misc, ID2SYM(rb_intern("parser")), iseq_body->prism ? ID2SYM(rb_intern("prism")) : ID2SYM(rb_intern("parse.y")));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

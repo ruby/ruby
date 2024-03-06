@@ -218,7 +218,8 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (11,1)-(11,2))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :**
         │   │   ├── message_loc: (11,2)-(11,4) = "**"
@@ -228,7 +229,8 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 2
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── call_operator_loc: ∅
@@ -242,7 +244,8 @@
             ├── flags: ∅
             ├── receiver:
             │   @ IntegerNode (location: (13,0)-(13,2))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: -1
             ├── call_operator_loc: (13,2)-(13,3) = "."
             ├── name: :zero?
             ├── message_loc: (13,3)-(13,8) = "zero?"

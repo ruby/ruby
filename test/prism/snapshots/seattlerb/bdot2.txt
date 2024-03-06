@@ -8,7 +8,8 @@
         │   ├── left: ∅
         │   ├── right:
         │   │   @ IntegerNode (location: (1,2)-(1,4))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 10
         │   └── operator_loc: (1,0)-(1,2) = ".."
         ├── @ RangeNode (location: (2,2)-(2,5))
         │   ├── flags: ∅

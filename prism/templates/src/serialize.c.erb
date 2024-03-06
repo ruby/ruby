@@ -25,7 +25,7 @@ pm_serialize_location(const pm_parser_t *parser, const pm_location_t *location, 
 }
 
 static void
-pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffer) {
+pm_serialize_string(const pm_parser_t *parser, const pm_string_t *string, pm_buffer_t *buffer) {
     switch (string->type) {
         case PM_STRING_SHARED: {
             pm_buffer_append_byte(buffer, 1);
@@ -46,6 +46,16 @@ pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffe
             assert(false && "Cannot serialize mapped strings.");
             break;
 #endif
+    }
+}
+
+static void
+pm_serialize_integer(const pm_integer_t *integer, pm_buffer_t *buffer) {
+    pm_buffer_append_byte(buffer, integer->negative ? 1 : 0);
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(integer->length + 1));
+
+    for (const pm_integer_word_t *node = &integer->head; node != NULL; node = node->next) {
+        pm_buffer_append_varuint(buffer, node->value);
     }
 }
 
@@ -115,6 +125,10 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::FlagsField -%>
             pm_buffer_append_varuint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
+            <%- when Prism::IntegerField -%>
+            pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when Prism::DoubleField -%>
+            pm_buffer_append_double(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>

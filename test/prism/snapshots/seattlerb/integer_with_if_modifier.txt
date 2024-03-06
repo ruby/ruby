@@ -12,6 +12,7 @@
             │   @ StatementsNode (location: (1,0)-(1,5))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (1,0)-(1,5))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1234
             ├── consequent: ∅
             └── end_keyword_loc: ∅

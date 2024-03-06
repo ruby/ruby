@@ -602,6 +602,7 @@ generator = BindingGenerator.new(
     rb_callcache
     rb_callinfo
     rb_captured_block
+    rb_cfunc_t
     rb_control_frame_t
     rb_cref_t
     rb_execution_context_struct

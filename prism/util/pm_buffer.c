@@ -16,7 +16,7 @@ pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity) {
     buffer->length = 0;
     buffer->capacity = capacity;
 
-    buffer->value = (char *) malloc(capacity);
+    buffer->value = (char *) xmalloc(capacity);
     return buffer->value != NULL;
 }
 
@@ -60,7 +60,7 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
             buffer->capacity *= 2;
         }
 
-        buffer->value = realloc(buffer->value, buffer->capacity);
+        buffer->value = xrealloc(buffer->value, buffer->capacity);
         if (buffer->value == NULL) return false;
     }
 
@@ -161,6 +161,15 @@ void
 pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value) {
     uint32_t unsigned_int = ((uint32_t)(value) << 1) ^ ((uint32_t)(value >> 31));
     pm_buffer_append_varuint(buffer, unsigned_int);
+}
+
+/**
+ * Append a double to the buffer.
+ */
+void
+pm_buffer_append_double(pm_buffer_t *buffer, double value) {
+    const void *source = &value;
+    pm_buffer_append(buffer, source, sizeof(double));
 }
 
 /**
@@ -279,5 +288,5 @@ pm_buffer_rstrip(pm_buffer_t *buffer) {
  */
 void
 pm_buffer_free(pm_buffer_t *buffer) {
-    free(buffer->value);
+    xfree(buffer->value);
 }

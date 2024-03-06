@@ -1109,6 +1109,16 @@ x = __ENCODING__
     assert_warning('') {o.instance_eval("def marg2((a)); nil; end")}
   end
 
+  def test_parsing_begin_statement_inside_method_definition
+    assert_equal :bug_20234, eval("def (begin;end).bug_20234; end")
+    assert_equal :bug_20234, eval("def (begin;rescue;end).bug_20234; end")
+    assert_equal :bug_20234, eval("def (begin;ensure;end).bug_20234; end")
+    assert_equal :bug_20234, eval("def (begin;rescue;else;end).bug_20234; end")
+
+    assert_raise(SyntaxError) { eval("def (begin;else;end).bug_20234; end") }
+    assert_raise(SyntaxError) { eval("def (begin;ensure;else;end).bug_20234; end") }
+  end
+
   def test_named_capture_conflict
     a = 1
     assert_warning('') {eval("a = 1; /(?<a>)/ =~ ''")}

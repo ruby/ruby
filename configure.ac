@@ -1102,14 +1102,10 @@ main()
 		])
 		AC_CHECK_PROGS(dsymutil, $dsymutils dsymutil)
 		AS_IF([test -n "$codesign"], [
-		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@; }${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' \$@; }${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
-		])
-		AS_IF([test -n "${POSTLINK}"], [
-		    LINK_SO="$LINK_SO
-\$(POSTLINK)"
 		])
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
@@ -1267,13 +1263,20 @@ main()
 [wasi*],[	LIBS="-lm -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-getpid -lwasi-emulated-process-clocks $LIBS"
 		RUBY_APPEND_OPTIONS(CFLAGS, -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_GETPID -D_WASI_EMULATED_PROCESS_CLOCKS)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_GETPID -D_WASI_EMULATED_PROCESS_CLOCKS)
-		POSTLINK="\$(WASMOPT) --asyncify \$(wasmoptflags) --pass-arg=asyncify-ignore-imports -o \$@ \$@${POSTLINK:+; $POSTLINK}"
+		POSTLINK="\$(WASMOPT) --asyncify \$(wasmoptflags) -o \$@ \$@${POSTLINK:+; $POSTLINK}"
 		# wasi-libc's sys/socket.h is not compatible with -std=gnu99,
 		# so re-declare shutdown in include/ruby/missing.h
 		ac_cv_func_shutdown=no
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
+
+AS_IF([test -n "${POSTLINK}"], [
+    # NOTE: A (part of) link commands used link shared extension libraries. If
+    # the first line of the value is empty, mkmf prepends default link steps.
+    LINK_SO="$LINK_SO
+\$(POSTLINK)"
+])
 
 AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"], [
     AC_MSG_NOTICE([Test skipped due to lack of a C++ compiler.])
@@ -3157,6 +3160,7 @@ AC_SUBST(EXTOBJS)
 	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
+	[wasi*], [	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'}],
 	[	: ${LDSHARED='$(LD)'}])
     AC_MSG_RESULT($rb_cv_dlopen)
 }

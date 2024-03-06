@@ -37,7 +37,8 @@
             │                   │   └── unescaped: "baz"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,12)-(1,13))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: (1,9)-(1,11) = "=>"
             ├── closing_loc: (1,14)-(1,15) = "]"
             └── block: ∅

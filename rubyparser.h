@@ -1272,7 +1272,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_resize)(VALUE str, long len);
     VALUE (*str_new)(const char *ptr, long len);
     VALUE (*str_new_cstr)(const char *ptr);
-    VALUE (*fstring)(VALUE);
+    VALUE (*str_to_interned_str)(VALUE);
     int (*is_ascii_string)(VALUE str);
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
     VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);

@@ -30,7 +30,7 @@ module Prism
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
     def slice(byte_offset, length)
-      source.byteslice(byte_offset, length)
+      source.byteslice(byte_offset, length) or raise
     end
 
     # Binary search through the offsets to find the line number for the given
@@ -52,7 +52,7 @@ module Prism
 
     # Return the character offset for the given byte offset.
     def character_offset(byte_offset)
-      source.byteslice(0, byte_offset).length
+      (source.byteslice(0, byte_offset) or raise).length
     end
 
     # Return the column number in characters for the given byte offset.
@@ -67,7 +67,7 @@ module Prism
     # concept of code units that differs from the number of characters in other
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
-      byteslice = source.byteslice(0, byte_offset).encode(encoding)
+      byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding)
       (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
     end
 
@@ -157,12 +157,8 @@ module Prism
     end
 
     # Create a new location object with the given options.
-    def copy(**options)
-      Location.new(
-        options.fetch(:source) { source },
-        options.fetch(:start_offset) { start_offset },
-        options.fetch(:length) { length }
-      )
+    def copy(source: self.source, start_offset: self.start_offset, length: self.length)
+      Location.new(source, start_offset, length)
     end
 
     # Returns a string representation of this location.
@@ -285,7 +281,7 @@ module Prism
     # the beginning of the file. Useful for when you want a location object but
     # do not care where it points.
     def self.null
-      new(nil, 0, 0)
+      new(nil, 0, 0) # steep:ignore
     end
   end
 

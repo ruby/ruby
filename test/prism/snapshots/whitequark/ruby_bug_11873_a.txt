@@ -51,7 +51,8 @@
         │   │       │   ├── closing_loc: (1,7)-(1,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,12)-(1,18))
@@ -108,6 +109,7 @@
         │   │       │   ├── closing_loc: (3,7)-(3,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ FloatNode (location: (3,10)-(3,13))
+        │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,14)-(3,20))
@@ -166,6 +168,7 @@
         │   │       └── @ ImaginaryNode (location: (5,10)-(5,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (5,10)-(5,13))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,15)-(5,21))
@@ -224,6 +227,7 @@
         │   │       └── @ RationalNode (location: (7,10)-(7,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (7,10)-(7,13))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,15)-(7,21))
@@ -341,7 +345,8 @@
         │   │       │   ├── closing_loc: (11,8)-(11,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ IntegerNode (location: (11,11)-(11,12))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (11,13)-(11,19))
@@ -398,6 +403,7 @@
         │   │       │   ├── closing_loc: (13,8)-(13,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ FloatNode (location: (13,11)-(13,14))
+        │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (13,15)-(13,21))
@@ -456,6 +462,7 @@
         │   │       └── @ ImaginaryNode (location: (15,11)-(15,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (15,11)-(15,14))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (15,16)-(15,22))
@@ -514,6 +521,7 @@
         │   │       └── @ RationalNode (location: (17,11)-(17,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (17,11)-(17,14))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (17,16)-(17,22))
@@ -636,7 +644,8 @@
         │   │       │       ├── opening_loc: (21,3)-(21,4) = "{"
         │   │       │       └── closing_loc: (21,7)-(21,8) = "}"
         │   │       └── @ IntegerNode (location: (21,10)-(21,11))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (21,12)-(21,18))
@@ -698,6 +707,7 @@
         │   │       │       ├── opening_loc: (23,3)-(23,4) = "{"
         │   │       │       └── closing_loc: (23,7)-(23,8) = "}"
         │   │       └── @ FloatNode (location: (23,10)-(23,13))
+        │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (23,14)-(23,20))
@@ -761,6 +771,7 @@
         │   │       └── @ ImaginaryNode (location: (25,10)-(25,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (25,10)-(25,13))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (25,15)-(25,21))
@@ -824,6 +835,7 @@
         │   │       └── @ RationalNode (location: (27,10)-(27,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (27,10)-(27,13))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (27,15)-(27,21))
@@ -951,7 +963,8 @@
         │   │       │       ├── opening_loc: (31,3)-(31,4) = "{"
         │   │       │       └── closing_loc: (31,8)-(31,9) = "}"
         │   │       └── @ IntegerNode (location: (31,11)-(31,12))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (31,13)-(31,19))
@@ -1013,6 +1026,7 @@
         │   │       │       ├── opening_loc: (33,3)-(33,4) = "{"
         │   │       │       └── closing_loc: (33,8)-(33,9) = "}"
         │   │       └── @ FloatNode (location: (33,11)-(33,14))
+        │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (33,15)-(33,21))
@@ -1076,6 +1090,7 @@
         │   │       └── @ ImaginaryNode (location: (35,11)-(35,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (35,11)-(35,14))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (35,16)-(35,22))
@@ -1139,6 +1154,7 @@
         │   │       └── @ RationalNode (location: (37,11)-(37,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (37,11)-(37,14))
+        │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (37,16)-(37,22))

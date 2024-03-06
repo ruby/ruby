@@ -398,7 +398,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
     }
 }
 
-RUBY_FUNC_EXPORTED
 VALUE
 rb_fstring(VALUE str)
 {
@@ -1578,7 +1577,7 @@ rb_str_free(VALUE str)
     }
 }
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_str_memsize(VALUE str)
 {
     if (FL_TEST(str, STR_NOEMBED|STR_SHARED|STR_NOFREE) == STR_NOEMBED) {
@@ -1877,17 +1876,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 if (orig == str) n = 0;
             }
             str_modifiable(str);
-            if (STR_EMBED_P(str)) { /* make noembed always */
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
-                RUBY_ASSERT(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
-                memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_LEN(str) + 1);
-                RSTRING(str)->as.heap.ptr = new_ptr;
-            }
-            else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+            if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                /* make noembed always */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, size);
+                if (STR_EMBED_P(str)) RUBY_ASSERT((long)osize <= str_embed_capa(str));
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
@@ -3102,7 +3097,7 @@ rb_str_unlocktmp(VALUE str)
     return str;
 }
 
-RUBY_FUNC_EXPORTED VALUE
+VALUE
 rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
 {
     rb_str_locktmp(str);
@@ -6178,7 +6173,7 @@ rb_str_getbyte(VALUE str, VALUE index)
  *
  *  Related: String#getbyte.
  */
-static VALUE
+VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);
@@ -12127,7 +12122,7 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
-    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+    if (enc != NULL && UNLIKELY(rb_enc_autoload_p(enc))) {
         rb_enc_autoload(enc);
     }
 

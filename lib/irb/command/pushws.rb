@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   change-ws.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -15,7 +15,23 @@ module IRB
       description "Show workspaces."
 
       def execute(*obj)
-        irb_context.workspaces.collect{|ws| ws.main}
+        inspection_resuls = irb_context.instance_variable_get(:@workspace_stack).map do |ws|
+          truncated_inspect(ws.main)
+        end
+
+        puts "[" + inspection_resuls.join(", ") + "]"
+      end
+
+      private
+
+      def truncated_inspect(obj)
+        obj_inspection = obj.inspect
+
+        if obj_inspection.size > 20
+          obj_inspection = obj_inspection[0, 19] + "...>"
+        end
+
+        obj_inspection
       end
     end
 

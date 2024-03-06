@@ -354,6 +354,14 @@ END
     end
 
     assert_block do
+      a = "abc"
+      case 'abc'
+      in /#{a}/o
+        true
+      end
+    end
+
+    assert_block do
       case 0
       in ->(i) { i == 0 }
         true

@@ -73,6 +73,7 @@ module Prism
       alias.txt
       method_calls.txt
       methods.txt
+      multi_write.txt
       not.txt
       patterns.txt
       regex.txt

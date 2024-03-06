@@ -1976,8 +1976,11 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->num = kw;
 
     if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
+        ID kw_id = iseq->body->local_table[arg_size];
         keyword->rest_start = arg_size++;
         body->param.flags.has_kwrest = TRUE;
+
+        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
     }
     keyword->required_num = rkw;
     keyword->table = &body->local_table[keyword->bits_start - keyword->num];
@@ -3192,7 +3195,11 @@ optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
                                  unsigned int set_flags, unsigned int unset_flags)
 {
     LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
-    if (!IS_NEXT_INSN_ID(niobj, send)) {
+    if ((set_flags & VM_CALL_ARGS_BLOCKARG) && (set_flags & VM_CALL_KW_SPLAT) &&
+            IS_NEXT_INSN_ID(niobj, splatkw)) {
+        niobj = niobj->next;
+    }
+    if (!IS_NEXT_INSN_ID(niobj, send) && !IS_NEXT_INSN_ID(niobj, invokesuper)) {
         return false;
     }
     niobj = niobj->next;
@@ -7252,6 +7259,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_COLON3:
       case NODE_BEGIN:
       case NODE_BLOCK:
+      case NODE_ONCE:
         CHECK(COMPILE(ret, "case in literal", node)); // (1)
         if (in_single_pattern) {
             ADD_INSN1(ret, line_node, dupn, INT2FIX(2));
@@ -9516,7 +9524,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
             /* rest argument */
             int idx = local_body->local_table_size - local_body->param.rest_start;
             ADD_GETLOCAL(args, node, idx, lvar_level);
-            ADD_INSN1(args, node, splatarray, Qfalse);
+            ADD_INSN1(args, node, splatarray, RBOOL(local_body->param.flags.has_post));
 
             argc = local_body->param.rest_start + 1;
             flag |= VM_CALL_ARGS_SPLAT;
@@ -9532,8 +9540,8 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
                     int idx = local_body->local_table_size - (post_start + j);
                     ADD_GETLOCAL(args, node, idx, lvar_level);
                 }
-                ADD_INSN1(args, node, newarray, INT2FIX(j));
-                ADD_INSN (args, node, concatarray);
+                ADD_INSN1(args, node, pushtoarray, INT2FIX(j));
+                flag |= VM_CALL_ARGS_SPLAT_MUT;
                 /* argc is settled at above */
             }
             else {
@@ -11855,6 +11863,10 @@ ibf_load_id(const struct ibf_load *load, const ID id_index)
         return 0;
     }
     VALUE sym = ibf_load_object(load, id_index);
+    if (rb_integer_type_p(sym)) {
+        /* Load hidden local variables as indexes */
+        return NUM2ULONG(sym);
+    }
     return rb_sym2id(sym);
 }
 
@@ -12378,7 +12390,12 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     int i;
 
     for (i=0; i<size; i++) {
-        table[i] = ibf_dump_id(dump, body->local_table[i]);
+        VALUE v = ibf_dump_id(dump, body->local_table[i]);
+        if (v == 0) {
+            /* Dump hidden local variables as indexes, so load_from_binary will work with them */
+            v = ibf_dump_object(dump, ULONG2NUM(body->local_table[i]));
+        }
+        table[i] = v;
     }
 
     IBF_W_ALIGN(ID);

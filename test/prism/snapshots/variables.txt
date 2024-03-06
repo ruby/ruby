@@ -10,7 +10,8 @@
         │   ├── name_loc: (3,0)-(3,5) = "@@abc"
         │   ├── value:
         │   │   @ IntegerNode (location: (3,8)-(3,9))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (3,6)-(3,7) = "="
         ├── @ MultiWriteNode (location: (5,0)-(5,16))
         │   ├── lefts: (length: 2)
@@ -25,7 +26,8 @@
         │   ├── operator_loc: (5,13)-(5,14) = "="
         │   └── value:
         │       @ IntegerNode (location: (5,15)-(5,16))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ ClassVariableWriteNode (location: (7,0)-(7,12))
         │   ├── name: :@@foo
         │   ├── name_loc: (7,0)-(7,5) = "@@foo"
@@ -34,9 +36,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (7,8)-(7,9))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (7,11)-(7,12))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (7,6)-(7,7) = "="
@@ -45,7 +49,8 @@
         │   ├── name_loc: (9,0)-(9,4) = "$abc"
         │   ├── value:
         │   │   @ IntegerNode (location: (9,7)-(9,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (9,5)-(9,6) = "="
         ├── @ GlobalVariableReadNode (location: (11,0)-(11,4))
         │   └── name: :$abc
@@ -56,7 +61,8 @@
         │   ├── name_loc: (15,0)-(15,4) = "@abc"
         │   ├── value:
         │   │   @ IntegerNode (location: (15,7)-(15,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (15,5)-(15,6) = "="
         ├── @ CallNode (location: (17,0)-(17,1))
         │   ├── flags: variable_call, ignore_visibility
@@ -74,7 +80,8 @@
         │   ├── name_loc: (19,0)-(19,3) = "abc"
         │   ├── value:
         │   │   @ IntegerNode (location: (19,6)-(19,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (19,4)-(19,5) = "="
         ├── @ MultiWriteNode (location: (21,0)-(21,14))
         │   ├── lefts: (length: 2)
@@ -89,7 +96,8 @@
         │   ├── operator_loc: (21,11)-(21,12) = "="
         │   └── value:
         │       @ IntegerNode (location: (21,13)-(21,14))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ GlobalVariableWriteNode (location: (23,0)-(23,11))
         │   ├── name: :$foo
         │   ├── name_loc: (23,0)-(23,4) = "$foo"
@@ -98,9 +106,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (23,7)-(23,8))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (23,10)-(23,11))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (23,5)-(23,6) = "="
@@ -117,7 +127,8 @@
         │   ├── operator_loc: (25,11)-(25,12) = "="
         │   └── value:
         │       @ IntegerNode (location: (25,13)-(25,14))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ InstanceVariableWriteNode (location: (27,0)-(27,11))
         │   ├── name: :@foo
         │   ├── name_loc: (27,0)-(27,4) = "@foo"
@@ -126,9 +137,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (27,7)-(27,8))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (27,10)-(27,11))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (27,5)-(27,6) = "="
@@ -138,7 +151,8 @@
         │   ├── name_loc: (29,0)-(29,3) = "foo"
         │   ├── value:
         │   │   @ IntegerNode (location: (29,6)-(29,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (29,4)-(29,5) = "="
         ├── @ LocalVariableWriteNode (location: (29,9)-(29,19))
         │   ├── name: :foo
@@ -149,9 +163,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (29,15)-(29,16))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (29,18)-(29,19))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (29,13)-(29,14) = "="
@@ -164,9 +180,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (31,6)-(31,7))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (31,9)-(31,10))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (31,4)-(31,5) = "="
@@ -188,9 +206,11 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (33,9)-(33,10))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (33,12)-(33,13))
-        │       │       └── flags: decimal
+        │       │       ├── flags: decimal
+        │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (35,0)-(35,11))
@@ -209,9 +229,11 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (35,7)-(35,8))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (35,10)-(35,11))
-        │       │       └── flags: decimal
+        │       │       ├── flags: decimal
+        │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (37,0)-(37,16))
@@ -235,9 +257,11 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (37,12)-(37,13))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (37,15)-(37,16))
-        │       │       └── flags: decimal
+        │       │       ├── flags: decimal
+        │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (39,0)-(39,27))
@@ -267,14 +291,17 @@
         │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (39,18)-(39,19))
-        │       │   │   └── flags: decimal
+        │       │   │   ├── flags: decimal
+        │       │   │   └── value: 1
         │       │   └── @ ArrayNode (location: (39,21)-(39,27))
         │       │       ├── flags: ∅
         │       │       ├── elements: (length: 2)
         │       │       │   ├── @ IntegerNode (location: (39,22)-(39,23))
-        │       │       │   │   └── flags: decimal
+        │       │       │   │   ├── flags: decimal
+        │       │       │   │   └── value: 2
         │       │       │   └── @ IntegerNode (location: (39,25)-(39,26))
-        │       │       │       └── flags: decimal
+        │       │       │       ├── flags: decimal
+        │       │       │       └── value: 3
         │       │       ├── opening_loc: (39,21)-(39,22) = "["
         │       │       └── closing_loc: (39,26)-(39,27) = "]"
         │       ├── opening_loc: ∅
@@ -304,9 +331,11 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (43,6)-(43,7))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   └── @ IntegerNode (location: (43,9)-(43,10))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 2
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (43,4)-(43,5) = "="

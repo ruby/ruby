@@ -20,17 +20,18 @@
             │       ├── keyword_loc: (1,10)-(1,14) = "when"
             │       ├── conditions: (length: 2)
             │       │   ├── @ StringNode (location: (1,15)-(1,20))
-            │       │   │   ├── flags: ∅
+            │       │   │   ├── flags: frozen
             │       │   │   ├── opening_loc: (1,15)-(1,16) = "'"
             │       │   │   ├── content_loc: (1,16)-(1,19) = "bar"
             │       │   │   ├── closing_loc: (1,19)-(1,20) = "'"
             │       │   │   └── unescaped: "bar"
             │       │   └── @ StringNode (location: (1,22)-(1,27))
-            │       │       ├── flags: ∅
+            │       │       ├── flags: frozen
             │       │       ├── opening_loc: (1,22)-(1,23) = "'"
             │       │       ├── content_loc: (1,23)-(1,26) = "baz"
             │       │       ├── closing_loc: (1,26)-(1,27) = "'"
             │       │       └── unescaped: "baz"
+            │       ├── then_keyword_loc: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,29)-(1,32))
             │           └── body: (length: 1)

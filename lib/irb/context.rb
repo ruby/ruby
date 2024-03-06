@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/context.rb - irb context
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -22,10 +22,11 @@ module IRB
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil)
       @irb = irb
+      @workspace_stack = []
       if workspace
-        @workspace = workspace
+        @workspace_stack << workspace
       else
-        @workspace = WorkSpace.new
+        @workspace_stack << WorkSpace.new
       end
       @thread = Thread.current
 
@@ -166,6 +167,18 @@ module IRB
       IRB.conf[:USE_TRACER] = val
     end
 
+    def eval_history=(val)
+      self.class.remove_method(__method__)
+      require_relative "ext/eval_history"
+      __send__(__method__, val)
+    end
+
+    def use_loader=(val)
+      self.class.remove_method(__method__)
+      require_relative "ext/use-loader"
+      __send__(__method__, val)
+    end
+
     private def build_completor
       completor_type = IRB.conf[:COMPLETOR]
       case completor_type
@@ -217,15 +230,24 @@ module IRB
       IRB.conf[:HISTORY_FILE] = hist
     end
 
+    # Workspace in the current context.
+    def workspace
+      @workspace_stack.last
+    end
+
+    # Replace the current workspace with the given +workspace+.
+    def replace_workspace(workspace)
+      @workspace_stack.pop
+      @workspace_stack.push(workspace)
+    end
+
     # The top-level workspace, see WorkSpace#main
     def main
-      @workspace.main
+      workspace.main
     end
 
     # The toplevel workspace, see #home_workspace
     attr_reader :workspace_home
-    # WorkSpace in the current context.
-    attr_accessor :workspace
     # The current thread in this context.
     attr_reader :thread
     # The current input method.
@@ -467,9 +489,7 @@ module IRB
     # StdioInputMethod or RelineInputMethod or ReadlineInputMethod, see #io
     # for more information.
     def prompting?
-      verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-                   @io.kind_of?(RelineInputMethod) ||
-                   (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
+      verbose? || @io.prompting?
     end
 
     # The return value of the last statement evaluated.
@@ -479,7 +499,7 @@ module IRB
     # to #last_value.
     def set_last_value(value)
       @last_value = value
-      @workspace.local_variable_set :_, value
+      workspace.local_variable_set :_, value
     end
 
     # Sets the +mode+ of the prompt in this context.
@@ -575,7 +595,7 @@ module IRB
 
       if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
         last_proc = proc do
-          result = @workspace.evaluate(line, @eval_path, line_no)
+          result = workspace.evaluate(line, @eval_path, line_no)
         end
         IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
           _name, callback, arg = item
@@ -586,7 +606,7 @@ module IRB
           end
         end.call
       else
-        result = @workspace.evaluate(line, @eval_path, line_no)
+        result = workspace.evaluate(line, @eval_path, line_no)
       end
 
       set_last_value(result)

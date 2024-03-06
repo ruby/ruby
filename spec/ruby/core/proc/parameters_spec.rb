@@ -33,6 +33,16 @@ describe "Proc#parameters" do
     it "regards named parameters in lambda as optional if lambda: false keyword used" do
       -> x { }.parameters(lambda: false).first.first.should == :opt
     end
+
+    it "regards named parameters in procs and lambdas as required if lambda keyword is truthy" do
+      proc {|x| }.parameters(lambda: 123).first.first.should == :req
+      -> x { }.parameters(lambda: 123).first.first.should == :req
+    end
+
+    it "ignores the lambda keyword if it is nil" do
+      proc {|x|}.parameters(lambda: nil).first.first.should == :opt
+      -> x { }.parameters(lambda: nil).first.first.should == :req
+    end
   end
 
   it "regards optional keyword parameters in procs as optional" do
@@ -159,5 +169,9 @@ describe "Proc#parameters" do
       [:keyrest, :_],
       [:block, :_]
     ]
+  end
+
+  it "returns :nokey for **nil parameter" do
+    proc { |**nil| }.parameters.should == [[:nokey]]
   end
 end

@@ -120,7 +120,7 @@ module Prism
         comment_start = comment.location.start_offset
         comment_end = comment.location.end_offset
 
-        targets = []
+        targets = [] #: Array[_Target]
         node.comment_targets.map do |value|
           case value
           when StatementsNode
@@ -133,8 +133,8 @@ module Prism
         end
 
         targets.sort_by!(&:start_offset)
-        preceding = nil
-        following = nil
+        preceding = nil #: _Target?
+        following = nil #: _Target?
 
         left = 0
         right = targets.length
@@ -150,6 +150,7 @@ module Prism
           target_end = target.end_offset
 
           if target.encloses?(comment)
+            # @type var target: NodeTarget
             # The comment is completely contained by this target. Abandon the
             # binary search at this level.
             return nearest_targets(target.node, comment)
@@ -187,7 +188,7 @@ module Prism
 
     # Attach the list of comments to their respective locations in the tree.
     def attach_comments!
-      Comments.new(self).attach!
+      Comments.new(self).attach! # steep:ignore
     end
   end
 end

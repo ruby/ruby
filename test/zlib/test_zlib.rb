@@ -1205,6 +1205,38 @@ if defined? Zlib
       }
     end
 
+    # Various methods of Zlib::GzipReader failed when to reading files
+    # just a few bytes larger than GZFILE_READ_SIZE.
+    def test_gzfile_read_size_boundary
+      Tempfile.create("test_zlib_gzip_read_size_boundary") {|t|
+        t.close
+        # NO_COMPRESSION helps with recreating the error condition.
+        # The error happens on compressed files too, but it's harder to reproduce.
+        # For example, ~12750 bytes are needed to trigger the error using __FILE__.
+        # We avoid this because the test file will change over time.
+        Zlib::GzipWriter.open(t.path, Zlib::NO_COMPRESSION) do |gz|
+          gz.print("\n" * 2024) # range from 2024 to 2033 triggers the error
+          gz.flush
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          f.readpartial(1024) until f.eof?
+          assert_raise(EOFError) { f.readpartial(1) }
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          f.readline until f.eof?
+          assert_raise(EOFError) { f.readline }
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          b = f.readbyte until f.eof?
+          f.ungetbyte(b)
+          f.readbyte
+          assert_raise(EOFError) { f.readbyte }
+        end
+      }
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
