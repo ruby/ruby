@@ -385,7 +385,7 @@ module Prism
             on_stmts_add(on_stmts_new, on_void_stmt)
           else
             body = node.statements.body
-            body.unshift(nil) if semicolon?(location, node.statements.body[0].location)
+            body.unshift(nil) if void_stmt?(location, node.statements.body[0].location)
 
             bounds(node.statements.location)
             visit_statements_node_body(body)
@@ -399,7 +399,7 @@ module Prism
                 [nil]
               else
                 body = else_clause_node.statements.body
-                body.unshift(nil) if semicolon?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location)
+                body.unshift(nil) if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location)
                 body
               end
 
@@ -421,7 +421,7 @@ module Prism
           on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
         when StatementsNode
           body = [*node.body]
-          body.unshift(nil) if semicolon?(location, body[0].location)
+          body.unshift(nil) if void_stmt?(location, body[0].location)
           stmts = visit_statements_node_body(body)
 
           bounds(node.body.first.location)
@@ -461,7 +461,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if semicolon?(node.parameters&.location || node.opening_loc, node.body.location)
+            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -1148,7 +1148,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if semicolon?(node.else_keyword_loc, node.statements.body[0].location)
+            body.unshift(nil) if void_stmt?(node.else_keyword_loc, node.statements.body[0].location)
             body
           end
 
@@ -1181,7 +1181,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if semicolon?(node.ensure_keyword_loc, body[0].location)
+            body.unshift(nil) if void_stmt?(node.ensure_keyword_loc, body[0].location)
             body
           end
 
@@ -1762,7 +1762,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if semicolon?(node.parameters&.location || node.opening_loc, node.body.location)
+            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -2146,13 +2146,20 @@ module Prism
       # /foo/
       # ^^^^^
       def visit_regular_expression_node(node)
-        bounds(node.content_loc)
-        tstring_content = on_tstring_content(node.content)
+        if node.content.empty?
+          bounds(node.closing_loc)
+          closing = on_regexp_end(node.closing)
 
-        bounds(node.closing_loc)
-        closing = on_regexp_end(node.closing)
+          on_regexp_literal(on_regexp_new, closing)
+        else
+          bounds(node.content_loc)
+          tstring_content = on_tstring_content(node.content)
 
-        on_regexp_literal(on_regexp_add(on_regexp_new, tstring_content), closing)
+          bounds(node.closing_loc)
+          closing = on_regexp_end(node.closing)
+
+          on_regexp_literal(on_regexp_add(on_regexp_new, tstring_content), closing)
+        end
       end
 
       # def foo(bar:); end
@@ -2676,8 +2683,8 @@ module Prism
       ##########################################################################
 
       # Returns true if there is a semicolon between the two locations.
-      def semicolon?(left, right)
-        source.byteslice(left.end_offset...right.start_offset).include?(";")
+      def void_stmt?(left, right)
+        source.byteslice(left.end_offset...right.start_offset).match?(/[;#]/)
       end
 
       # Visit the string content of a particular node. This method is used to

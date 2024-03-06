@@ -10,13 +10,13 @@ module Prism
     base = File.join(__dir__, "fixtures")
     relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
 
-    failures = %w[
+    incorrect = %w[
       whitequark/break_block.txt
       whitequark/next_block.txt
       whitequark/return_block.txt
     ]
 
-    skips = failures | %w[
+    skips = incorrect | %w[
       arrays.txt
       blocks.txt
       case.txt
@@ -61,7 +61,6 @@ module Prism
       seattlerb/call_block_arg_named.txt
       seattlerb/call_trailing_comma.txt
       seattlerb/case_in.txt
-      seattlerb/class_comments.txt
       seattlerb/defn_oneliner_eq2.txt
       seattlerb/defs_oneliner_eq2.txt
       seattlerb/difficult3_.txt
@@ -106,7 +105,6 @@ module Prism
       seattlerb/mlhs_front_splat.txt
       seattlerb/mlhs_mid_anonsplat.txt
       seattlerb/mlhs_mid_splat.txt
-      seattlerb/module_comments.txt
       seattlerb/parse_line_dstr_escaped_newline.txt
       seattlerb/parse_line_dstr_soft_newline.txt
       seattlerb/parse_line_evstr_after_break.txt
@@ -122,7 +120,6 @@ module Prism
       seattlerb/yield_call_assocs.txt
       single_method_call_with_bang.txt
       spanning_heredoc.txt
-      spanning_heredoc_newlines.txt
       strings.txt
       symbols.txt
       ternary_operator.txt
