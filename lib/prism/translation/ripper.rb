@@ -607,7 +607,7 @@ module Prism
             on_binary(receiver, node.name, value)
           else
             bounds(node.message_loc)
-            message = on_ident(node.message)
+            message = visit_token(node.message)
 
             if node.variable_call?
               on_vcall(message)

@@ -24,7 +24,6 @@ module Prism
       constants.txt
       dos_endings.txt
       embdoc_no_newline_at_end.txt
-      endless_methods.txt
       hashes.txt
       heredocs_leading_whitespace.txt
       heredocs_nested.txt
