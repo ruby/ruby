@@ -5532,14 +5532,13 @@ fn jit_rb_str_getbyte(
     let str_ptr = asm.add(str_ptr, idx);
     let byte = asm.load(Opnd::mem(8, str_ptr, 0));
 
-
+    // Zero-extend the byte to 64 bits
     let byte = byte.with_num_bits(64).unwrap();
     let byte = asm.and(byte, 0xFF.into());
 
     // Tag the byte
     let byte = asm.lshift(byte, Opnd::UImm(1));
     let byte = asm.or(byte, Opnd::UImm(1));
-
 
     asm.stack_pop(2); // Keep them on stack during ccall for GC
     let out_opnd = asm.stack_push(Type::Fixnum);
