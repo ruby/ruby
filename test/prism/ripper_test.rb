@@ -37,7 +37,6 @@ module Prism
       modules.txt
       multi_write.txt
       non_alphanumeric_methods.txt
-      not.txt
       patterns.txt
       procs.txt
       regex.txt
@@ -300,7 +299,6 @@ module Prism
       whitequark/bug_heredoc_do.txt
       whitequark/bug_interp_single.txt
       whitequark/bug_rescue_empty_else.txt
-      whitequark/bug_while_not_parens_do.txt
       whitequark/case_cond_else.txt
       whitequark/case_expr_else.txt
       whitequark/character.txt

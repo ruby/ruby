@@ -508,11 +508,34 @@ module Prism
             value = visit(last_argument)
             bounds(last_argument.location)
             on_assign(call, value)
-          when :-@, :+@, :~@, :!@
+          when :-@, :+@, :~@
             receiver = visit(node.receiver)
 
             bounds(node.location)
-            on_unary(node.message == "not" ? :not : node.name, receiver)
+            on_unary(node.name, receiver)
+          when :!@
+            if node.message == "not"
+              receiver =
+                case node.receiver
+                when nil
+                  nil
+                when ParenthesesNode
+                  body = visit(node.receiver.body&.body&.first) || false
+
+                  bounds(node.receiver.location)
+                  on_paren(body)
+                else
+                  visit(node.receiver)
+                end
+
+              bounds(node.location)
+              on_unary(:not, receiver)
+            else
+              receiver = visit(node.receiver)
+
+              bounds(node.location)
+              on_unary(:!@, receiver)
+            end
           when :!=, :!~, :=~, :==, :===, :<=>, :>, :>=, :<, :<=, :&, :|, :^, :>>, :<<, :-, :+, :%, :/, :*, :**
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
