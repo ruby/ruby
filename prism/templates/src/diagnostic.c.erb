@@ -1,5 +1,7 @@
 #include "prism/diagnostic.h"
 
+#define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
+
 /** This struct holds the data for each diagnostic. */
 typedef struct {
     /** The message associated with the diagnostic. */
@@ -71,7 +73,7 @@ typedef struct {
  * * `PM_WARNING_LEVEL_DEFAULT` - Warnings that appear for `ruby -c -e 'code'`.
  * * `PM_WARNING_LEVEL_VERBOSE` - Warnings that appear with `-w`, as in `ruby -w -c -e 'code'`.
  */
-static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
+static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     // Special error that can be replaced
     [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_FATAL },
 
@@ -316,9 +318,24 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_KEYWORD_EOL]                       = { "`%.*s` at the end of line without an expression", PM_WARNING_LEVEL_VERBOSE }
 };
 
+/**
+ * Get the human-readable name of the given diagnostic ID.
+ */
+const char *
+pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
+    switch (diag_id) {
+        <%- errors.each do |error| -%>
+        case PM_ERR_<%= error.name %>: return "<%= error.name.downcase %>";
+        <%- end -%>
+        <%- warnings.each do |warning| -%>
+        case PM_WARN_<%= warning.name %>: return "<%= warning.name.downcase %>";
+        <%- end -%>
+    }
+}
+
 static inline const char *
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
-    assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+    assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     const char *message = diagnostic_messages[diag_id].message;
     assert(message);
@@ -328,7 +345,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 
 static inline uint8_t
 pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
-    assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+    assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     return (uint8_t) diagnostic_messages[diag_id].level;
 }
@@ -343,6 +360,7 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { start, end },
+        .diag_id = diag_id,
         .message = pm_diagnostic_message(diag_id),
         .owned = false,
         .level = pm_diagnostic_level(diag_id)
@@ -387,6 +405,7 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { start, end },
+        .diag_id = diag_id,
         .message = message,
         .owned = true,
         .level = pm_diagnostic_level(diag_id)

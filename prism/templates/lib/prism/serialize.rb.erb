@@ -116,12 +116,23 @@ module Prism
         end
       end
 
+      DIAGNOSTIC_TYPES = [
+        <%- errors.each do |error| -%>
+        <%= error.name.downcase.to_sym.inspect %>,
+        <%- end -%>
+        <%- warnings.each do |warning| -%>
+        <%= warning.name.downcase.to_sym.inspect %>,
+        <%- end -%>
+      ].freeze
+
+      private_constant :DIAGNOSTIC_TYPES
+
       def load_metadata
         comments = load_comments
         magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
         data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location_object, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
