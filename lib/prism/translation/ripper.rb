@@ -1936,6 +1936,11 @@ module Prism
             end
           end
 
+        unless node.lparen_loc.nil?
+          bounds(node.lparen_loc)
+          targets = on_mlhs_paren(targets)
+        end
+
         value = visit(node.value)
 
         bounds(node.location)

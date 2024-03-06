@@ -99,7 +99,6 @@ module Prism
       seattlerb/masgn_colon3.txt
       seattlerb/masgn_double_paren.txt
       seattlerb/masgn_lhs_splat.txt
-      seattlerb/masgn_paren.txt
       seattlerb/masgn_splat_arg.txt
       seattlerb/masgn_splat_arg_arg.txt
       seattlerb/masgn_star.txt
@@ -150,7 +149,6 @@ module Prism
       unparser/corpus/literal/case.txt
       unparser/corpus/literal/class.txt
       unparser/corpus/literal/def.txt
-      unparser/corpus/literal/defined.txt
       unparser/corpus/literal/dstr.txt
       unparser/corpus/literal/empty.txt
       unparser/corpus/literal/for.txt
