@@ -144,7 +144,7 @@ module Prism
         end
 
         if left.location != right.location
-          return "expected:\n#{left.inspect}\n#{left.location}\nactual:\n#{right.inspect}\n#{right.location}"
+          return "expected:\n#{left.inspect}\n#{left.location.inspect}\nactual:\n#{right.inspect}\n#{right.location.inspect}"
         end
 
         if left.type == :str && left.children[0] != right.children[0]

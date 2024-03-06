@@ -116,7 +116,14 @@ module Prism
               builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
-            builder.pair_label([node.key.unescaped, srange(node.key.location)])
+            if (value = node.value.value).is_a?(LocalVariableReadNode)
+              builder.pair_keyword(
+                [node.key.unescaped, srange(node.key)],
+                builder.ident([value.name, srange(node.key.value_loc)]).updated(:lvar)
+              )
+            else
+              builder.pair_label([node.key.unescaped, srange(node.key.location)])
+            end
           elsif node.operator_loc
             builder.pair(visit(node.key), token(node.operator_loc), visit(node.value))
           elsif node.key.is_a?(SymbolNode) && node.key.opening_loc.nil?
