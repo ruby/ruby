@@ -2494,10 +2494,10 @@ module Prism
 
         parts.each do |part|
           if part.is_a?(StringNode)
-            if dedent_next
+            if dedent_next && !(content = part.content).chomp.empty?
               common_whitespace = [
                 common_whitespace || Float::INFINITY,
-                part.content[/\A\s*/].each_char.inject(0) do |part_whitespace, char|
+                content[/\A\s*/].each_char.inject(0) do |part_whitespace, char|
                   char == "\t" ? ((part_whitespace / 8 + 1) * 8) : (part_whitespace + 1)
                 end
               ].min
@@ -2509,7 +2509,7 @@ module Prism
           end
         end
 
-        common_whitespace
+        common_whitespace || 0
       end
 
       # Take the content of a string and return the index of the first character
@@ -2539,44 +2539,49 @@ module Prism
         if common_whitespace == 0
           bounds(parts.first.location)
 
-          previous_string = []
-          previous_result = base
+          string = []
+          result = base
 
           parts.each do |part|
             if part.is_a?(StringNode)
-              if previous_string.empty?
-                previous_string = [part]
+              if string.empty?
+                string = [part]
               else
-                previous_string << part
+                string << part
               end
             else
-              unless previous_string.empty?
-                bounds(previous_string[0].location)
-                previous_result = yield(previous_result, on_tstring_content(previous_string.map(&:content).join))
-                previous_string = []
+              unless string.empty?
+                bounds(string[0].location)
+                result = yield(result, on_tstring_content(string.map(&:content).join))
+                string = []
               end
 
-              previous_result = yield(previous_result, visit(part))
+              result = yield(result, visit(part))
             end
           end
 
-          unless previous_string.empty?
-            bounds(previous_string[0].location)
-            previous_result = yield(previous_result, on_tstring_content(previous_string.map(&:content).join))
+          unless string.empty?
+            bounds(string[0].location)
+            result = yield(result, on_tstring_content(string.map(&:content).join))
           end
 
-          previous_result
+          result
         else
           bounds(parts.first.location)
-          parts.inject(base) do |string_content, part|
+          parts.each.with_index(parts.length).inject(base) do |string_content, (part, index)|
             yield(
               string_content,
               if part.is_a?(StringNode)
-                content = part.content
-                trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
+                if index % 2 == 1
+                  content = part.content
+                  trimmed_whitespace = heredoc_trimmed_whitespace(content, common_whitespace)
 
-                bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
-                on_tstring_content(part.content[trimmed_whitespace..])
+                  bounds(part.content_loc.copy(start_offset: part.content_loc.start_offset + trimmed_whitespace))
+                  on_tstring_content(content[trimmed_whitespace..])
+                else
+                  bounds(part.content_loc)
+                  on_tstring_content(part.content)
+                end
               else
                 visit(part)
               end
