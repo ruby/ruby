@@ -98,7 +98,7 @@ jobs:
           - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
           - test_task: test-all
-            test_opts: --repeat-count=2
+            test_opts: --repeat-count=2 -j=1
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
 
@@ -193,7 +193,7 @@ jobs:
           - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
           - test_task: test-all
-            test_opts: --repeat-count=2
+            test_opts: --repeat-count=2 -j=1
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
 
@@ -289,7 +289,7 @@ jobs:
           - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
           - test_task: test-all
-            test_opts: --repeat-count=2
+            test_opts: --repeat-count=2 -j=1
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
 
@@ -384,7 +384,7 @@ jobs:
           - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
           - test_task: test-all
-            test_opts: --repeat-count=2
+            test_opts: --repeat-count=2 -j=1
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
 
