@@ -45,22 +45,22 @@ module Prism
     base = File.join(__dir__, "fixtures")
 
     # These files are erroring because of the parser gem being wrong.
-    skip_incorrect = %w[
-      embdoc_no_newline_at_end.txt
+    skip_incorrect = [
+      "embdoc_no_newline_at_end.txt"
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = skip_incorrect | %w[
-      dash_heredocs.txt
-      dos_endings.txt
-      heredocs_with_ignored_newlines.txt
-      regex.txt
-      regex_char_width.txt
-      spanning_heredoc.txt
-      spanning_heredoc_newlines.txt
-      tilde_heredocs.txt
-      unescaping.txt
+    skip_all = skip_incorrect | [
+      "dash_heredocs.txt",
+      "dos_endings.txt",
+      "heredocs_with_ignored_newlines.txt",
+      "regex.txt",
+      "regex_char_width.txt",
+      "spanning_heredoc.txt",
+      "spanning_heredoc_newlines.txt",
+      "tilde_heredocs.txt",
+      "unescaping.txt"
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -70,21 +70,21 @@ module Prism
 
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
-    skip_tokens = %w[
-      comments.txt
-      constants.txt
-      endless_range_in_conditional.txt
-      heredoc_with_comment.txt
-      heredoc_with_escaped_newline_at_start.txt
-      heredocs_leading_whitespace.txt
-      heredocs_nested.txt
-      heredocs_with_ignored_newlines_and_non_empty.txt
-      indented_file_end.txt
-      non_alphanumeric_methods.txt
-      range_begin_open_inclusive.txt
-      single_quote_heredocs.txt
-      strings.txt
-      xstring.txt
+    skip_tokens = [
+      "comments.txt",
+      "constants.txt",
+      "endless_range_in_conditional.txt",
+      "heredoc_with_comment.txt",
+      "heredoc_with_escaped_newline_at_start.txt",
+      "heredocs_leading_whitespace.txt",
+      "heredocs_nested.txt",
+      "heredocs_with_ignored_newlines_and_non_empty.txt",
+      "indented_file_end.txt",
+      "non_alphanumeric_methods.txt",
+      "range_begin_open_inclusive.txt",
+      "single_quote_heredocs.txt",
+      "strings.txt",
+      "xstring.txt"
     ]
 
     Dir["*.txt", base: base].each do |name|

@@ -25,30 +25,29 @@ module Prism
       # Ripper cannot handle named capture groups in regular expressions.
       "regex.txt",
       "regex_char_width.txt",
-      "whitequark/lvar_injecting_match.txt"
+      "whitequark/lvar_injecting_match.txt",
+
+      # Ripper fails to understand some structures that span across heredocs.
+      "spanning_heredoc.txt"
     ]
 
     omitted = [
       "dos_endings.txt",
       "heredocs_with_ignored_newlines.txt",
+      "seattlerb/block_call_dot_op2_brace_block.txt",
+      "seattlerb/block_command_operation_colon.txt",
+      "seattlerb/block_command_operation_dot.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
       "seattlerb/heredoc_backslash_nl.txt",
       "seattlerb/heredoc_nested.txt",
       "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
-      "seattlerb/heredoc_squiggly_no_indent.txt",
-      "spanning_heredoc.txt",
       "tilde_heredocs.txt",
       "unparser/corpus/semantic/dstr.txt",
       "whitequark/dedenting_heredoc.txt",
-      "whitequark/parser_bug_640.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
-      "whitequark/slash_newline_in_heredocs.txt",
-
-      "seattlerb/block_call_dot_op2_brace_block.txt",
-      "seattlerb/block_command_operation_colon.txt",
-      "seattlerb/block_command_operation_dot.txt",
-      "whitequark/send_block_chain_cmd.txt"
+      "whitequark/send_block_chain_cmd.txt",
+      "whitequark/slash_newline_in_heredocs.txt"
     ]
 
     relatives.each do |relative|
