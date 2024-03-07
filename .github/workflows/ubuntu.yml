@@ -43,7 +43,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     if: >-
       ${{!(false
