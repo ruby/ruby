@@ -76,7 +76,8 @@ jobs:
           srcdir: src
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - run: |
-          launchable subset --target 100% --split --get-tests-from-previous-sessions raw > launchable-subset-id.txt
+          ruby -e 'File.write("launchable-subset-input.txt", Dir["**/*_test.rb"].map {|file| "file=#{file}"}.join("\n"))'
+          launchable subset --target 100% --split raw launchable-subset-input.txt > launchable-subset-id.txt
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
         working-directory: src
       - uses: actions/upload-artifact@v4
@@ -180,9 +181,6 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
-      - run: launchable record tests --subset-id $(cat ../launchable-subset-id.txt) raw launchable_reports.json
-        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
-
   make2:
     needs: [setup]
     strategy:
@@ -252,6 +250,7 @@ jobs:
         run: |
           pip install launchable
           launchable split-subset --subset-id $(cat ../launchable-subset-id.txt) --bin 2/4 raw > launchable-subset.txt
+
           echo "TESTS=$(cat launchable-subset.txt | tr '\n' ' ' | sed 's/file=/..\/src\//g')" >> $GITHUB_ENV
         if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
@@ -277,9 +276,6 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - run: launchable record tests --subset-id $(cat ../launchable-subset-id.txt) raw launchable_reports.json
-        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
   make3:
     needs: [setup]
@@ -376,9 +372,6 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
-      - run: launchable record tests --subset-id $(cat ../launchable-subset-id.txt) raw launchable_reports.json
-        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
-
   make4:
     needs: [setup]
     strategy:
@@ -473,9 +466,6 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - run: launchable record tests --subset-id $(cat ../launchable-subset-id.txt) raw launchable_reports.json
-        if: ${{ always() && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
   # result:
   #   if: ${{ always() }}
