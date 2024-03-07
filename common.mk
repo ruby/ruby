@@ -723,7 +723,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
-	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time
+	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
 	-$(Q)$(RMALL) yjit/target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit \
 	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
