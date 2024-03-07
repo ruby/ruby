@@ -234,6 +234,9 @@ typedef struct pm_lex_mode {
              * a tilde heredoc.
              */
             size_t common_whitespace;
+
+            /** True if the previous token ended with a line continuation. */
+            bool line_continuation;
         } heredoc;
     } as;
 
