@@ -504,6 +504,24 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     return warnings;
 }
 
+/**
+ * Create a new parse result from the given parser, value, encoding, and source.
+ */
+static VALUE
+parse_result_create(pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source) {
+    VALUE result_argv[] = {
+        value,
+        parser_comments(parser, source),
+        parser_magic_comments(parser, source),
+        parser_data_loc(parser, source),
+        parser_errors(parser, encoding, source),
+        parser_warnings(parser, encoding, source),
+        source
+    };
+
+    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+}
+
 /******************************************************************************/
 /* Lexing Ruby code                                                           */
 /******************************************************************************/
@@ -610,19 +628,11 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         value = parse_lex_data.tokens;
     }
 
-    VALUE result_argv[] = {
-        value,
-        parser_comments(&parser, source),
-        parser_magic_comments(&parser, source),
-        parser_data_loc(&parser, source),
-        parser_errors(&parser, parse_lex_data.encoding, source),
-        parser_warnings(&parser, parse_lex_data.encoding, source),
-        source
-    };
-
+    VALUE result = parse_result_create(&parser, value, parse_lex_data.encoding, source);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+
+    return result;
 }
 
 /**
@@ -682,17 +692,8 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
-    VALUE result_argv[] = {
-        pm_ast_new(&parser, node, encoding, source),
-        parser_comments(&parser, source),
-        parser_magic_comments(&parser, source),
-        parser_data_loc(&parser, source),
-        parser_errors(&parser, encoding, source),
-        parser_warnings(&parser, encoding, source),
-        source
-    };
-
-    VALUE result = rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+    VALUE value = pm_ast_new(&parser, node, encoding, source);
+    VALUE result = parse_result_create(&parser, value, encoding, source) ;
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -749,6 +750,60 @@ parse(int argc, VALUE *argv, VALUE self) {
     pm_string_free(&input);
     pm_options_free(&options);
     return value;
+}
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects.
+ */
+static char *
+parse_stream_fgets(char *restrict string, int size, void *restrict stream) {
+    RUBY_ASSERT(size > 0);
+
+    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    if (NIL_P(line)) {
+        return NULL;
+    }
+
+    const char *cstr = StringValueCStr(line);
+    size_t length = strlen(cstr);
+
+    memcpy(string, cstr, length);
+    string[length] = '\0';
+
+    return string;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_stream(stream, **options) -> ParseResult
+ *
+ * Parse the given object that responds to `gets` and return a ParseResult
+ * instance. The options that are supported are the same as Prism::parse.
+ */
+static VALUE
+parse_stream(int argc, VALUE *argv, VALUE self) {
+    VALUE stream;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &stream, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
+
+    pm_parser_t parser;
+    pm_buffer_t buffer;
+
+    pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, &options);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+
+    VALUE source = pm_source_new(&parser, encoding);
+    VALUE value = pm_ast_new(&parser, node, encoding, source);
+    VALUE result = parse_result_create(&parser, value, encoding, source);
+
+    pm_node_destroy(&parser, node);
+    pm_buffer_free(&buffer);
+    pm_parser_free(&parser);
+
+    return result;
 }
 
 /**
@@ -1271,6 +1326,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_stream", parse_stream, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse_comments", parse_comments, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, -1);
