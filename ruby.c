@@ -362,6 +362,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--parser={parse.y|prism}",           ", --parser=prism",
           "the parser used to parse Ruby code (experimental)"),
         M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
+	M("--warning=category",                     "", "enable or disable warning category"),
         M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
         M("--version",                              "", "print the version number, then exit"),
         M("--crash-report=TEMPLATE",                "", "template of crash report files"),
@@ -1191,29 +1192,37 @@ setup_yjit_options(const char *s)
  *   the next character after the last consumed character.
  */
 
+
+static void
+proc_warning_category(ruby_cmdline_options_t *opt, const char *s)
+{
+    unsigned int bits = 0;
+    static const char no_prefix[] = "no-";
+    int enable = strncmp(s, no_prefix, sizeof(no_prefix)-1) != 0;
+    if (!enable) s += sizeof(no_prefix)-1;
+    size_t len = strlen(s);
+    if (NAME_MATCH_P("deprecated", s, len)) {
+        bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
+    }
+    else if (NAME_MATCH_P("experimental", s, len)) {
+        bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+    }
+    else if (NAME_MATCH_P("performance", s, len)) {
+        bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
+    }
+    else {
+        rb_warn("unknown warning category: '%s'", s);
+        return;
+    }
+    FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+}
+
 /* optional */
 static const char *
 proc_W_option(ruby_cmdline_options_t *opt, const char *s, int *warning)
 {
     if (s[1] == ':') {
-        unsigned int bits = 0;
-        static const char no_prefix[] = "no-";
-        int enable = strncmp(s += 2, no_prefix, sizeof(no_prefix)-1) != 0;
-        if (!enable) s += sizeof(no_prefix)-1;
-        size_t len = strlen(s);
-        if (NAME_MATCH_P("deprecated", s, len)) {
-            bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
-        }
-        else if (NAME_MATCH_P("experimental", s, len)) {
-            bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
-        }
-        else if (NAME_MATCH_P("performance", s, len)) {
-            bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
-        }
-        else {
-            rb_warn("unknown warning category: '%s'", s);
-        }
-        if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+        proc_warning_category(opt, s + 2);
         return 0;
     }
     else {
@@ -1478,6 +1487,9 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     }
     else if (is_option_with_arg("crash-report", true, true)) {
         opt->crash_report = s;
+    }
+    else if (is_option_with_arg("warning", Qfalse, Qtrue)) {
+        proc_warning_category(opt, s);
     }
     else {
         rb_raise(rb_eRuntimeError,
