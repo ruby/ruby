@@ -84,7 +84,7 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
  * stream. It closely mirrors that of fgets so that fgets can be used as the
  * default implementation.
  */
-typedef char * (pm_parse_stream_fgets_t)(char *restrict string, int size, void *restrict stream);
+typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
 
 /**
  * Parse a stream of Ruby source and return the tree.

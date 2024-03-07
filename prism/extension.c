@@ -756,7 +756,7 @@ parse(int argc, VALUE *argv, VALUE self) {
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
 static char *
-parse_stream_fgets(char *restrict string, int size, void *restrict stream) {
+parse_stream_fgets(char *string, int size, void *stream) {
     RUBY_ASSERT(size > 0);
 
     VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
