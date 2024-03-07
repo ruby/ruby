@@ -76,7 +76,7 @@ jobs:
           srcdir: src
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
       - run: |
-          ruby -e 'File.write("launchable-subset-input.txt", Dir["**/*_test.rb"].map {|file| "file=#{file}"}.join("\n"))'
+          ruby -e 'File.write("launchable-subset-input.txt", Dir["test/**/*_test.rb", "test/**/test_*.rb"].map {|file| "file=#{file}"}.join("\n"))'
           launchable subset --target 100% --split raw launchable-subset-input.txt > launchable-subset-id.txt
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
         working-directory: src
