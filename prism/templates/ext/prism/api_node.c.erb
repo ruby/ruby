@@ -37,23 +37,26 @@ pm_string_new(const pm_string_t *string, rb_encoding *encoding) {
     return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding);
 }
 
-static VALUE
+VALUE
 pm_integer_new(const pm_integer_t *integer) {
     VALUE result;
-    if (integer->values) {
-        VALUE str = rb_str_new(NULL, integer->length * 8);
-        unsigned char *buf = (unsigned char *)RSTRING_PTR(str);
+    if (integer->values == NULL) {
+        result = UINT2NUM(integer->value);
+    } else {
+        VALUE string = rb_str_new(NULL, integer->length * 8);
+        unsigned char *bytes = (unsigned char *) RSTRING_PTR(string);
+
         size_t offset = integer->length * 8;
-        for (size_t i = 0; i < integer->length; i++) {
-            uint32_t value = integer->values[i];
-            for (int i = 0; i < 8; i++) {
-                int n = (value >> (4 * i)) & 0xf;
-                buf[--offset] = n < 10 ? n + '0' : n - 10 + 'a';
+        for (size_t value_index = 0; value_index < integer->length; value_index++) {
+            uint32_t value = integer->values[value_index];
+
+            for (int index = 0; index < 8; index++) {
+                int byte = (value >> (4 * index)) & 0xf;
+                bytes[--offset] = byte < 10 ? byte + '0' : byte - 10 + 'a';
             }
         }
-        result = rb_funcall(str, rb_intern("to_i"), 1, UINT2NUM(16));
-    } else {
-        result = UINT2NUM(integer->value);
+
+        result = rb_funcall(string, rb_intern("to_i"), 1, UINT2NUM(16));
     }
 
     if (integer->negative) {

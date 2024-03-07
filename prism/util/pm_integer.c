@@ -29,8 +29,9 @@ big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint
 
     size_t length = left_length < right_length ? right_length : left_length;
     uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * (length + 1));
-    uint64_t carry = 0;
+    if (values == NULL) return;
 
+    uint64_t carry = 0;
     for (size_t index = 0; index < length; index++) {
         uint64_t sum = carry + (index < left_length ? left_values[index] : 0) + (index < right_length ? right_values[index] : 0);
         values[index] = (uint32_t) (sum % base);
@@ -54,36 +55,15 @@ static void
 big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer_t *c, uint64_t base) {
     size_t a_length;
     uint32_t *a_values;
-
-    if (a->values == NULL) {
-        a_length = 1;
-        a_values = &a->value;
-    } else {
-        a_length = a->length;
-        a_values = a->values;
-    }
+    INTEGER_EXTRACT(a, a_length, a_values)
 
     size_t b_length;
     uint32_t *b_values;
-
-    if (b->values == NULL) {
-        b_length = 1;
-        b_values = &b->value;
-    } else {
-        b_length = b->length;
-        b_values = b->values;
-    }
+    INTEGER_EXTRACT(b, b_length, b_values)
 
     size_t c_length;
     uint32_t *c_values;
-
-    if (c->values == NULL) {
-        c_length = 1;
-        c_values = &c->value;
-    } else {
-        c_length = c->length;
-        c_values = c->values;
-    }
+    INTEGER_EXTRACT(c, c_length, c_values)
 
     uint32_t *values = (uint32_t*) xmalloc(sizeof(uint32_t) * a_length);
     int64_t carry = 0;
@@ -137,6 +117,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     if (left_length <= 10) {
         size_t length = left_length + right_length;
         uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+        if (values == NULL) return;
 
         for (size_t left_index = 0; left_index < left_length; left_index++) {
             uint32_t carry = 0;
@@ -293,6 +274,8 @@ pm_integer_from_uint64(pm_integer_t *integer, uint64_t value, uint64_t base) {
     }
 
     uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * length);
+    if (values == NULL) return;
+
     for (size_t value_index = 0; value_index < length; value_index++) {
         values[value_index] = (uint32_t) (value % base);
         value /= base;
@@ -340,6 +323,7 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
 
     size_t bigints_length = (source_length + 1) / 2;
     pm_integer_t *bigints = (pm_integer_t *) xcalloc(bigints_length, sizeof(pm_integer_t));
+    if (bigints == NULL) return;
 
     for (size_t index = 0; index < source_length; index += 2) {
         uint64_t value = source_values[index] + base_from * (index + 1 < source_length ? source_values[index + 1] : 0);
@@ -516,7 +500,7 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
 
     const uint8_t *cursor = start;
     uint64_t value = (uint64_t) pm_integer_parse_digit(*cursor++);
- 
+
     for (; cursor < end; cursor++) {
         if (*cursor == '_') continue;
         value = value * multiplier + (uint64_t) pm_integer_parse_digit(*cursor);
@@ -528,7 +512,7 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
             return;
         }
     }
- 
+
     integer->value = (uint32_t) value;
 }
 
