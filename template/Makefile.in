@@ -492,7 +492,7 @@ clean-local::
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
 	$(Q)find . -depth \( -name '*.bc' -o -name '*.[is]' \) -delete 2> /dev/null || true
-	-$(Q)$(RMALL) exe/ *.dSYM
+	-$(Q)$(RMALL) *.dSYM
 
 distclean-local::
 	$(Q)$(RM) \

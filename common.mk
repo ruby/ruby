@@ -735,6 +735,8 @@ lib/clean-runnable:: PHONY
 	$(Q)$(CHDIR) lib 2>$(NULL) && $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby 2>$(NULL) || $(NULLCMD)
 clean-runnable:: bin/clean-runnable lib/clean-runnable PHONY
 	$(Q)$(RMDIR) lib/$(RUBY_BASE_NAME) lib bin 2>$(NULL) || $(NULLCMD)
+	-$(Q)$(RM) $(EXTOUT)/$(arch)/rbconfig.rb
+	-$(Q)$(RMALL) exe/
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
