@@ -175,7 +175,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     }
 
     // Create a buffer to read the file into.
-    uint8_t *source = malloc(file_size);
+    uint8_t *source = xmalloc(file_size);
     if (source == NULL) {
         CloseHandle(file);
         return false;
@@ -190,7 +190,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
 
     // Check the number of bytes read
     if (bytes_read != file_size) {
-        free(source);
+        xfree(source);
         CloseHandle(file);
         return false;
     }
@@ -220,7 +220,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     }
 
     size_t length = (size_t) file_size;
-    uint8_t *source = malloc(length);
+    uint8_t *source = xmalloc(length);
     if (source == NULL) {
         fclose(file);
         return false;
@@ -231,7 +231,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     fclose(file);
 
     if (bytes_read != 1) {
-        free(source);
+        xfree(source);
         return false;
     }
 

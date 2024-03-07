@@ -1,26 +1,48 @@
 #include "prism/util/pm_integer.h"
 
 /**
+ * Pull out the length and values from the integer, regardless of the form in
+ * which the length/values are stored.
+ */
+#define INTEGER_EXTRACT(integer, length_variable, values_variable) \
+    if ((integer)->values == NULL) { \
+        length_variable = 1; \
+        values_variable = &(integer)->value; \
+    } else { \
+        length_variable = (integer)->length; \
+        values_variable = (integer)->values; \
+    }
+
+/**
  * Adds two positive pm_integer_t with the given base.
  * Return pm_integer_t with values allocated. Not normalized.
  */
-static pm_integer_t
-big_add(pm_integer_t left_, pm_integer_t right_, uint64_t base) {
-    pm_integer_t left = left_.values ? left_ : (pm_integer_t) { 0, 1, &left_.value, false };
-    pm_integer_t right = right_.values ? right_ : (pm_integer_t) { 0, 1, &right_.value, false };
-    size_t length = left.length < right.length ? right.length : left.length;
-    uint32_t *values = (uint32_t*) malloc(sizeof(uint32_t) * (length + 1));
+static void
+big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint64_t base) {
+    size_t left_length;
+    uint32_t *left_values;
+    INTEGER_EXTRACT(left, left_length, left_values)
+
+    size_t right_length;
+    uint32_t *right_values;
+    INTEGER_EXTRACT(right, right_length, right_values)
+
+    size_t length = left_length < right_length ? right_length : left_length;
+    uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * (length + 1));
     uint64_t carry = 0;
-    for (size_t i = 0; i < length; i++) {
-        uint64_t sum = carry + (i < left.length ? left.values[i] : 0) + (i < right.length ? right.values[i] : 0);
-        values[i] = (uint32_t) (sum % base);
+
+    for (size_t index = 0; index < length; index++) {
+        uint64_t sum = carry + (index < left_length ? left_values[index] : 0) + (index < right_length ? right_values[index] : 0);
+        values[index] = (uint32_t) (sum % base);
         carry = sum / base;
     }
+
     if (carry > 0) {
         values[length] = (uint32_t) carry;
         length++;
     }
-    return (pm_integer_t) { 0, length, values, false };
+
+    *destination = (pm_integer_t) { 0, length, values, false };
 }
 
 /**
@@ -28,105 +50,185 @@ big_add(pm_integer_t left_, pm_integer_t right_, uint64_t base) {
  * base. Assume a, b, c, a - b - c all to be poitive.
  * Return pm_integer_t with values allocated. Not normalized.
  */
-static pm_integer_t
-big_sub2(pm_integer_t a_, pm_integer_t b_, pm_integer_t c_, uint64_t base) {
-    pm_integer_t a = a_.values ? a_ : (pm_integer_t) { 0, 1, &a_.value, false };
-    pm_integer_t b = b_.values ? b_ : (pm_integer_t) { 0, 1, &b_.value, false };
-    pm_integer_t c = c_.values ? c_ : (pm_integer_t) { 0, 1, &c_.value, false };
-    size_t length = a.length;
-    uint32_t *values = (uint32_t*) malloc(sizeof(uint32_t) * length);
+static void
+big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer_t *c, uint64_t base) {
+    size_t a_length;
+    uint32_t *a_values;
+
+    if (a->values == NULL) {
+        a_length = 1;
+        a_values = &a->value;
+    } else {
+        a_length = a->length;
+        a_values = a->values;
+    }
+
+    size_t b_length;
+    uint32_t *b_values;
+
+    if (b->values == NULL) {
+        b_length = 1;
+        b_values = &b->value;
+    } else {
+        b_length = b->length;
+        b_values = b->values;
+    }
+
+    size_t c_length;
+    uint32_t *c_values;
+
+    if (c->values == NULL) {
+        c_length = 1;
+        c_values = &c->value;
+    } else {
+        c_length = c->length;
+        c_values = c->values;
+    }
+
+    uint32_t *values = (uint32_t*) xmalloc(sizeof(uint32_t) * a_length);
     int64_t carry = 0;
-    for (size_t i = 0; i < length; i++) {
-        int64_t sub = carry + a.values[i] - (i < b.length ? b.values[i] : 0) - (i < c.length ? c.values[i] : 0);
+
+    for (size_t index = 0; index < a_length; index++) {
+        int64_t sub = (
+            carry +
+            a_values[index] -
+            (index < b_length ? b_values[index] : 0) -
+            (index < c_length ? c_values[index] : 0)
+        );
+
         if (sub >= 0) {
-            values[i] = (uint32_t) sub;
+            values[index] = (uint32_t) sub;
             carry = 0;
         } else {
-            sub +=  2 * (int64_t) base;
-            values[i] = (uint32_t) ((uint64_t) sub % base);
+            sub += 2 * (int64_t) base;
+            values[index] = (uint32_t) ((uint64_t) sub % base);
             carry = sub / (int64_t) base - 2;
         }
     }
-    while (length > 1 && values[length - 1] == 0) length--;
-    return (pm_integer_t) { 0, length, values, false };
+
+    while (a_length > 1 && values[a_length - 1] == 0) a_length--;
+    *destination = (pm_integer_t) { 0, a_length, values, false };
 }
 
 /**
  * Multiply two positive integers with the given base using karatsuba algorithm.
  * Return pm_integer_t with values allocated. Not normalized.
  */
-static pm_integer_t
-karatsuba_multiply(pm_integer_t left_, pm_integer_t right_, uint64_t base) {
-    pm_integer_t left = left_.values ? left_ : (pm_integer_t) { 0, 1, &left_.value, false };
-    pm_integer_t right = right_.values ? right_ : (pm_integer_t) { 0, 1, &right_.value, false };
-    if (left.length > right.length) {
-        pm_integer_t temp = left;
-        left = right;
-        right = temp;
+static void
+karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint64_t base) {
+    size_t left_length;
+    uint32_t *left_values;
+    INTEGER_EXTRACT(left, left_length, left_values)
+
+    size_t right_length;
+    uint32_t *right_values;
+    INTEGER_EXTRACT(right, right_length, right_values)
+
+    if (left_length > right_length) {
+        size_t temporary_length = left_length;
+        left_length = right_length;
+        right_length = temporary_length;
+
+        uint32_t *temporary_values = left_values;
+        left_values = right_values;
+        right_values = temporary_values;
     }
-    if (left.length <= 10) {
-        size_t length = left.length + right.length;
-        uint32_t *values = (uint32_t*) calloc(length, sizeof(uint32_t));
-        for (size_t i = 0; i < left.length; i++) {
+
+    if (left_length <= 10) {
+        size_t length = left_length + right_length;
+        uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+
+        for (size_t left_index = 0; left_index < left_length; left_index++) {
             uint32_t carry = 0;
-            for (size_t j = 0; j < right.length; j++) {
-                uint64_t product = (uint64_t) left.values[i] * right.values[j] + values[i + j] + carry;
-                values[i + j] = (uint32_t) (product % base);
+            for (size_t right_index = 0; right_index < right_length; right_index++) {
+                uint64_t product = (uint64_t) left_values[left_index] * right_values[right_index] + values[left_index + right_index] + carry;
+                values[left_index + right_index] = (uint32_t) (product % base);
                 carry = (uint32_t) (product / base);
             }
-            values[i + right.length] = carry;
+            values[left_index + right_length] = carry;
         }
+
         while (length > 1 && values[length - 1] == 0) length--;
-        return (pm_integer_t) { 0, length, values, false };
+        *destination = (pm_integer_t) { 0, length, values, false };
+        return;
     }
-    if (left.length * 2 <= right.length) {
-        uint32_t *values = (uint32_t*) calloc(left.length + right.length, sizeof(uint32_t));
-        for (size_t start_offset = 0; start_offset < right.length; start_offset += left.length) {
-            size_t end_offset = start_offset + left.length;
-            if (end_offset > right.length) end_offset = right.length;
-            pm_integer_t sliced_right = { 0, end_offset - start_offset, right.values + start_offset, false };
-            pm_integer_t v = karatsuba_multiply(left, sliced_right, base);
+
+    if (left_length * 2 <= right_length) {
+        uint32_t *values = (uint32_t*) xcalloc(left_length + right_length, sizeof(uint32_t));
+
+        for (size_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
+            size_t end_offset = start_offset + left_length;
+            if (end_offset > right_length) end_offset = right_length;
+
+            pm_integer_t sliced_right = {
+                .value = 0,
+                .length = end_offset - start_offset,
+                .values = right_values + start_offset,
+                .negative = false
+            };
+
+            pm_integer_t product;
+            karatsuba_multiply(&product, left, &sliced_right, base);
+
             uint32_t carry = 0;
-            for (size_t i = 0; i < v.length; i++) {
-                uint64_t sum = (uint64_t) values[start_offset + i] + v.values[i] + carry;
-                values[start_offset + i] = (uint32_t) (sum % base);
+            for (size_t index = 0; index < product.length; index++) {
+                uint64_t sum = (uint64_t) values[start_offset + index] + product.values[index] + carry;
+                values[start_offset + index] = (uint32_t) (sum % base);
                 carry = (uint32_t) (sum / base);
             }
-            if (carry > 0) values[start_offset + v.length] += carry;
-            pm_integer_free(&v);
+
+            if (carry > 0) values[start_offset + product.length] += carry;
+            pm_integer_free(&product);
         }
-        return (pm_integer_t) { 0, left.length + right.length, values, false };
+
+        *destination = (pm_integer_t) { 0, left_length + right_length, values, false };
+        return;
     }
-    size_t half = left.length / 2;
-    pm_integer_t x0 = { 0, half, left.values, false };
-    pm_integer_t x1 = { 0, left.length - half, left.values + half, false };
-    pm_integer_t y0 = { 0, half, right.values, false };
-    pm_integer_t y1 = { 0, right.length - half, right.values + half, false };
-    pm_integer_t z0 = karatsuba_multiply(x0, y0, base);
-    pm_integer_t z2 = karatsuba_multiply(x1, y1, base);
+
+    size_t half = left_length / 2;
+    pm_integer_t x0 = { 0, half, left_values, false };
+    pm_integer_t x1 = { 0, left_length - half, left_values + half, false };
+    pm_integer_t y0 = { 0, half, right_values, false };
+    pm_integer_t y1 = { 0, right_length - half, right_values + half, false };
+
+    pm_integer_t z0;
+    karatsuba_multiply(&z0, &x0, &y0, base);
+
+    pm_integer_t z2;
+    karatsuba_multiply(&z2, &x1, &y1, base);
 
     // For simplicity to avoid considering negative values,
     // use `z1 = (x0 + x1) * (y0 + y1) - z0 - z2` instead of original karatsuba algorithm.
-    pm_integer_t x01 = big_add(x0, x1, base);
-    pm_integer_t y01 = big_add(y0, y1, base);
-    pm_integer_t xy = karatsuba_multiply(x01, y01, base);
-    pm_integer_t z1 = big_sub2(xy, z0, z2, base);
+    pm_integer_t x01;
+    big_add(&x01, &x0, &x1, base);
 
-    size_t length = left.length + right.length;
-    uint32_t *values = (uint32_t*) calloc(length, sizeof(uint32_t));
+    pm_integer_t y01;
+    big_add(&y01, &y0, &y1, base);
+
+    pm_integer_t xy;
+    karatsuba_multiply(&xy, &x01, &y01, base);
+
+    pm_integer_t z1;
+    big_sub2(&z1, &xy, &z0, &z2, base);
+
+    size_t length = left_length + right_length;
+    uint32_t *values = (uint32_t*) xcalloc(length, sizeof(uint32_t));
     memcpy(values, z0.values, sizeof(uint32_t) * z0.length);
     memcpy(values + 2 * half, z2.values, sizeof(uint32_t) * z2.length);
+
     uint32_t carry = 0;
-    for(size_t i = 0; i < z1.length; i++) {
-        uint64_t sum = (uint64_t) carry + values[i + half] + z1.values[i];
-        values[i + half] = (uint32_t) (sum % base);
+    for(size_t index = 0; index < z1.length; index++) {
+        uint64_t sum = (uint64_t) carry + values[index + half] + z1.values[index];
+        values[index + half] = (uint32_t) (sum % base);
         carry = (uint32_t) (sum / base);
     }
-    for(size_t i = half + z1.length; carry > 0; i++) {
-        uint64_t sum = (uint64_t) carry + values[i];
-        values[i] = (uint32_t) (sum % base);
+
+    for(size_t index = half + z1.length; carry > 0; index++) {
+        uint64_t sum = (uint64_t) carry + values[index];
+        values[index] = (uint32_t) (sum % base);
         carry = (uint32_t) (sum / base);
     }
+
     while (length > 1 && values[length - 1] == 0) length--;
     pm_integer_free(&z0);
     pm_integer_free(&z1);
@@ -134,52 +236,70 @@ karatsuba_multiply(pm_integer_t left_, pm_integer_t right_, uint64_t base) {
     pm_integer_free(&x01);
     pm_integer_free(&y01);
     pm_integer_free(&xy);
-    return (pm_integer_t) { 0, length, values, false };
+
+    *destination = (pm_integer_t) { 0, length, values, false };
 }
 
 /**
- * Return the value of a digit in a uint32_t.
+ * The values of a hexadecimal digit, where the index is the ASCII character.
  */
-static uint32_t
+static const int8_t pm_integer_parse_digit_values[256] = {
+//   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 1x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 2x
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, // 3x
+    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 4x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 5x
+    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 6x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 7x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 8x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 9x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Ax
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Bx
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Cx
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Dx
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Ex
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // Fx
+};
+
+/**
+ * Return the value of a hexadecimal digit in a uint8_t.
+ */
+static uint8_t
 pm_integer_parse_digit(const uint8_t character) {
-    switch (character) {
-        case '0': return 0;
-        case '1': return 1;
-        case '2': return 2;
-        case '3': return 3;
-        case '4': return 4;
-        case '5': return 5;
-        case '6': return 6;
-        case '7': return 7;
-        case '8': return 8;
-        case '9': return 9;
-        case 'a': case 'A': return 10;
-        case 'b': case 'B': return 11;
-        case 'c': case 'C': return 12;
-        case 'd': case 'D': return 13;
-        case 'e': case 'E': return 14;
-        case 'f': case 'F': return 15;
-        default: assert(false && "unreachable"); return 0;
-    }
+    int8_t value = pm_integer_parse_digit_values[character];
+    assert(value != -1 && "invalid digit");
+
+    return (uint8_t) value;
 }
 
 /**
- * Create a pm_integer_t from uint64_t with the given base.
+ * Create a pm_integer_t from uint64_t with the given base. It is assumed that
+ * the memory for the pm_integer_t pointer has been zeroed.
  */
-static pm_integer_t
-pm_integer_from_uint64(uint64_t value, uint64_t base) {
+static void
+pm_integer_from_uint64(pm_integer_t *integer, uint64_t value, uint64_t base) {
     if (value < base) {
-        return (pm_integer_t) { (uint32_t) value, 0, NULL, false };
+        integer->value = (uint32_t) value;
+        return;
     }
-    uint64_t v = value;
-    size_t len = 0;
-    while (value > 0) { len++; value /= base; }
-    uint32_t *values = (uint32_t*) malloc(sizeof(uint32_t) * len);
-    for (size_t i = 0; i < len; i++) {
-        values[i] = (uint32_t) (v % base);
-        v /= base;
+
+    size_t length = 0;
+    uint64_t length_value = value;
+    while (length_value > 0) {
+        length++;
+        length_value /= base;
     }
-    return (pm_integer_t) { 0, len, values, false };
+
+    uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * length);
+    for (size_t value_index = 0; value_index < length; value_index++) {
+        values[value_index] = (uint32_t) (value % base);
+        value /= base;
+    }
+
+    integer->length = length;
+    integer->values = values;
 }
 
 /**
@@ -192,61 +312,81 @@ pm_integer_normalize(pm_integer_t *integer) {
     if (integer->values == NULL) {
         return;
     }
+
     while (integer->length > 1 && integer->values[integer->length - 1] == 0) {
         integer->length--;
     }
+
     if (integer->length > 1) {
         return;
     }
 
     uint32_t value = integer->values[0];
     bool negative = integer->negative && value != 0;
+
     pm_integer_free(integer);
-    *integer = (pm_integer_t) { value, 0, NULL, negative };
+    *integer = (pm_integer_t) { .value = value, .length = 0, .values = NULL, .negative = negative };
 }
 
 /**
  * Convert base of the integer.
  * In practice, it converts 10**9 to 1<<32 or 1<<32 to 10**9.
  */
-static pm_integer_t
-pm_integer_convert_base(pm_integer_t source_, uint64_t base_from, uint64_t base_to) {
-    pm_integer_t source = source_.values ? source_ : (pm_integer_t) { 0, 1, &source_.value, source_.negative };
-    size_t bigints_length = (source.length + 1) / 2;
-    pm_integer_t *bigints = (pm_integer_t*) malloc(sizeof(pm_integer_t) * bigints_length);
-    for (size_t i = 0; i < source.length; i += 2) {
-        uint64_t v = source.values[i] + base_from * (i + 1 < source.length ? source.values[i + 1] : 0);
-        bigints[i / 2] = pm_integer_from_uint64(v, base_to);
+static void
+pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, uint64_t base_from, uint64_t base_to) {
+    size_t source_length;
+    const uint32_t *source_values;
+    INTEGER_EXTRACT(source, source_length, source_values)
+
+    size_t bigints_length = (source_length + 1) / 2;
+    pm_integer_t *bigints = (pm_integer_t *) xcalloc(bigints_length, sizeof(pm_integer_t));
+
+    for (size_t index = 0; index < source_length; index += 2) {
+        uint64_t value = source_values[index] + base_from * (index + 1 < source_length ? source_values[index + 1] : 0);
+        pm_integer_from_uint64(&bigints[index / 2], value, base_to);
     }
-    pm_integer_t base = pm_integer_from_uint64(base_from, base_to);
+
+    pm_integer_t base = { 0 };
+    pm_integer_from_uint64(&base, base_from, base_to);
+
     while (bigints_length > 1) {
-        size_t new_length = (bigints_length + 1) / 2;
-        pm_integer_t new_base = karatsuba_multiply(base, base, base_to);
+        pm_integer_t next_base;
+        karatsuba_multiply(&next_base, &base, &base, base_to);
+
         pm_integer_free(&base);
-        base = new_base;
-        pm_integer_t *new_bigints = (pm_integer_t*) malloc(sizeof(pm_integer_t) * new_length);
-        for (size_t i = 0; i < bigints_length; i += 2) {
-            if (i + 1 == bigints_length) {
-                new_bigints[i / 2] = bigints[i];
+        base = next_base;
+
+        size_t next_length = (bigints_length + 1) / 2;
+        pm_integer_t *next_bigints = (pm_integer_t *) xmalloc(sizeof(pm_integer_t) * next_length);
+
+        for (size_t bigints_index = 0; bigints_index < bigints_length; bigints_index += 2) {
+            if (bigints_index + 1 == bigints_length) {
+                next_bigints[bigints_index / 2] = bigints[bigints_index];
             } else {
-                pm_integer_t multiplied = karatsuba_multiply(base, bigints[i + 1], base_to);
-                new_bigints[i / 2] = big_add(bigints[i], multiplied, base_to);
-                pm_integer_free(&bigints[i]);
-                pm_integer_free(&bigints[i + 1]);
+                pm_integer_t multiplied;
+                karatsuba_multiply(&multiplied, &base, &bigints[bigints_index + 1], base_to);
+
+                big_add(&next_bigints[bigints_index / 2], &bigints[bigints_index], &multiplied, base_to);
+                pm_integer_free(&bigints[bigints_index]);
+                pm_integer_free(&bigints[bigints_index + 1]);
                 pm_integer_free(&multiplied);
             }
         }
-        free(bigints);
-        bigints = new_bigints;
-        bigints_length = new_length;
+
+        xfree(bigints);
+        bigints = next_bigints;
+        bigints_length = next_length;
     }
+
+    *destination = bigints[0];
+    destination->negative = source->negative;
+    pm_integer_normalize(destination);
+
+    xfree(bigints);
     pm_integer_free(&base);
-    pm_integer_t result = bigints[0];
-    result.negative = source.negative;
-    free(bigints);
-    pm_integer_normalize(&result);
-    return result;
 }
+
+#undef INTEGER_EXTRACT
 
 /**
  * Convert digits to integer with the given power-of-two base.
@@ -255,18 +395,23 @@ static void
 pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *digits, size_t digits_length) {
     size_t bit = 1;
     while (base > (uint32_t) (1 << bit)) bit++;
+
     size_t length = (digits_length * bit + 31) / 32;
-    uint32_t *values = (uint32_t*) calloc(length, sizeof(uint32_t));
-    for (size_t i = 0; i < digits_length; i++) {
-        size_t bit_position = bit * (digits_length - i - 1);
-        uint32_t value = digits[i];
+    uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+
+    for (size_t digit_index = 0; digit_index < digits_length; digit_index++) {
+        size_t bit_position = bit * (digits_length - digit_index - 1);
+        uint32_t value = digits[digit_index];
+
         size_t index = bit_position / 32;
         size_t shift = bit_position % 32;
+
         values[index] |= value << shift;
         if (32 - shift < bit) values[index + 1] |= value >> (32 - shift);
     }
+
     while (length > 1 && values[length - 1] == 0) length--;
-    *integer = (pm_integer_t) { 0, length, values, false };
+    *integer = (pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false };
     pm_integer_normalize(integer);
 }
 
@@ -275,22 +420,25 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
  */
 static void
 pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t digits_length) {
-    // Construct a bigdecimal with base = 10**9 from the digits
     const size_t batch = 9;
-    size_t values_length = (digits_length + batch - 1) / batch;
-    pm_integer_t decimal = { 0, values_length, (uint32_t*) calloc(values_length, sizeof(uint32_t)), false };
-    uint32_t v = 0;
-    for (size_t i = 0; i < digits_length; i++) {
-        v = v * 10 + digits[i];
-        size_t reverse_index = digits_length - i - 1;
+    size_t length = (digits_length + batch - 1) / batch;
+
+    uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+    uint32_t value = 0;
+
+    for (size_t digits_index = 0; digits_index < digits_length; digits_index++) {
+        value = value * 10 + digits[digits_index];
+
+        size_t reverse_index = digits_length - digits_index - 1;
         if (reverse_index % batch == 0) {
-            decimal.values[reverse_index / batch] = v;
-            v = 0;
+            values[reverse_index / batch] = value;
+            value = 0;
         }
     }
+
     // Convert base from 10**9 to 1<<32.
-    *integer = pm_integer_convert_base(decimal, 1000000000, ((uint64_t) 1 << 32));
-    pm_integer_free(&decimal);
+    pm_integer_convert_base(integer, &((pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
+    xfree(values);
 }
 
 /**
@@ -299,19 +447,22 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
 static void
 pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
     // Allocate an array to store digits.
-    uint8_t *digits = malloc(sizeof(uint8_t) * (size_t) (end - start));
+    uint8_t *digits = xmalloc(sizeof(uint8_t) * (size_t) (end - start));
     size_t digits_length = 0;
+
     for (; start < end; start++) {
         if (*start == '_') continue;
-        digits[digits_length++] = (uint8_t) pm_integer_parse_digit(*start);
+        digits[digits_length++] = pm_integer_parse_digit(*start);
     }
+
     // Construct pm_integer_t from the digits.
     if (multiplier == 10) {
         pm_integer_parse_decimal(integer, digits, digits_length);
     } else {
         pm_integer_parse_powof2(integer, multiplier, digits, digits_length);
     }
-    free(digits);
+
+    xfree(digits);
 }
 
 /**
@@ -363,18 +514,21 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
     // invalid integer. If this is the case, we'll just return 0.
     if (start >= end) return;
 
-    const uint8_t *ptr = start;
-    uint64_t value = pm_integer_parse_digit(*ptr++);
-    for (; ptr < end; ptr++) {
-        if (*ptr == '_') continue;
-        value = value * multiplier + pm_integer_parse_digit(*ptr);
+    const uint8_t *cursor = start;
+    uint64_t value = (uint64_t) pm_integer_parse_digit(*cursor++);
+ 
+    for (; cursor < end; cursor++) {
+        if (*cursor == '_') continue;
+        value = value * multiplier + (uint64_t) pm_integer_parse_digit(*cursor);
+
         if (value > UINT32_MAX) {
-            // If the integer is too large to fit into a single uint32_t, then we'll
-            // parse it as a big integer.
+            // If the integer is too large to fit into a single uint32_t, then
+            // we'll parse it as a big integer.
             pm_integer_parse_big(integer, multiplier, start, end);
             return;
         }
     }
+ 
     integer->value = (uint32_t) value;
 }
 
@@ -396,7 +550,7 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     if (left->negative != right->negative) return left->negative ? -1 : 1;
     int negative = left->negative ? -1 : 1;
 
-    if (left->values == right->values) {
+    if (left->values == NULL && right->values == NULL) {
         if (left->value < right->value) return -1 * negative;
         if (left->value > right->value) return 1 * negative;
         return 0;
@@ -405,12 +559,13 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     if (left->values == NULL || left->length < right->length) return -1 * negative;
     if (right->values == NULL || left->length > right->length) return 1 * negative;
 
-    for (size_t i = 0; i < left->length; i++) {
-        size_t index = left->length - i - 1;
-        uint32_t l = left->values[index];
-        uint32_t r = right->values[index];
-        if (l < r) return -1 * negative;
-        if (l > r) return 1 * negative;
+    for (size_t index = 0; index < left->length; index++) {
+        size_t value_index = left->length - index - 1;
+        uint32_t left_value = left->values[value_index];
+        uint32_t right_value = right->values[value_index];
+
+        if (left_value < right_value) return -1 * negative;
+        if (left_value > right_value) return 1 * negative;
     }
 
     return 0;
@@ -425,18 +580,24 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
         pm_buffer_append_byte(buffer, '-');
     }
 
+    // If the integer fits into a single uint32_t, then we can just append the
+    // value directly to the buffer.
     if (integer->values == NULL) {
         pm_buffer_append_format(buffer, "%" PRIu32, integer->value);
         return;
     }
+
+    // If the integer is two uint32_t values, then we can | them together and
+    // append the result to the buffer.
     if (integer->length == 2) {
         const uint64_t value = ((uint64_t) integer->values[0]) | ((uint64_t) integer->values[1] << 32);
         pm_buffer_append_format(buffer, "%" PRIu64, value);
         return;
     }
 
-    // Convert base from 1<<32 to 10**9.
-    pm_integer_t converted = pm_integer_convert_base(*integer, (uint64_t) 1 << 32, 1000000000);
+    // Otherwise, first we'll convert the base from 1<<32 to 10**9.
+    pm_integer_t converted;
+    pm_integer_convert_base(&converted, integer, (uint64_t) 1 << 32, 1000000000);
 
     if (converted.values == NULL) {
         pm_buffer_append_format(buffer, "%" PRIu32, converted.value);
@@ -445,24 +606,26 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     }
 
     // Allocate a buffer that we'll copy the decimal digits into.
-    size_t char_length = converted.length * 9;
-    char *digits = calloc(char_length, sizeof(char));
+    size_t digits_length = converted.length * 9;
+    char *digits = xcalloc(digits_length, sizeof(char));
     if (digits == NULL) return;
 
     // Pack bigdecimal to digits.
-    for (size_t i = 0; i < converted.length; i++) {
-        uint32_t v = converted.values[i];
-        for (size_t j = 0; j < 9; j++) {
-            digits[char_length - 9 * i - j - 1] = (char) ('0' + v % 10);
-            v /= 10;
+    for (size_t value_index = 0; value_index < converted.length; value_index++) {
+        uint32_t value = converted.values[value_index];
+
+        for (size_t digit_index = 0; digit_index < 9; digit_index++) {
+            digits[digits_length - 9 * value_index - digit_index - 1] = (char) ('0' + value % 10);
+            value /= 10;
         }
     }
+
     size_t start_offset = 0;
-    while (start_offset < char_length - 1 && digits[start_offset] == '0') start_offset++;
+    while (start_offset < digits_length - 1 && digits[start_offset] == '0') start_offset++;
 
     // Finally, append the string to the buffer and free the digits.
-    pm_buffer_append_string(buffer, digits + start_offset, char_length - start_offset);
-    free(digits);
+    pm_buffer_append_string(buffer, digits + start_offset, digits_length - start_offset);
+    xfree(digits);
     pm_integer_free(&converted);
 }
 
@@ -473,6 +636,6 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
 PRISM_EXPORTED_FUNCTION void
 pm_integer_free(pm_integer_t *integer) {
     if (integer->values) {
-        free(integer->values);
+        xfree(integer->values);
     }
 }
