@@ -1047,30 +1047,16 @@ integer_parse(VALUE self, VALUE source) {
     pm_integer_t integer = { 0 };
     pm_integer_parse(&integer, PM_INTEGER_BASE_UNKNOWN, start, start + length);
 
-    VALUE number;
-
-    if (integer.values == NULL) {
-        number = UINT2NUM(integer.value);
-    } else {
-        number = UINT2NUM(0);
-        for (size_t i = 0; i < integer.length; i++) {
-            VALUE receiver = rb_funcall(UINT2NUM(integer.values[i]), rb_intern("<<"), 1, ULONG2NUM(i * 32));
-            number = rb_funcall(receiver, rb_intern("|"), 1, number);
-        }
-    }
-
-    if (integer.negative) number = rb_funcall(number, rb_intern("-@"), 0);
-
     pm_buffer_t buffer = { 0 };
     pm_integer_string(&buffer, &integer);
 
     VALUE string = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
     pm_buffer_free(&buffer);
-    pm_integer_free(&integer);
 
     VALUE result = rb_ary_new_capa(2);
-    rb_ary_push(result, number);
+    rb_ary_push(result, pm_integer_new(&integer));
     rb_ary_push(result, string);
+    pm_integer_free(&integer);
 
     return result;
 }
