@@ -370,7 +370,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("insns",                                   "", "Instruction sequences."),
         M("insns_without_opt",                       "", "Instruction sequences compiled with no optimization."),
         M("yydebug(+error-tolerant)",                "", "yydebug of yacc parser generator."),
-        M("parsetree(+error-tolerant)",              "", "Abstract syntax tree (AST)".),
+        M("parsetree(+error-tolerant)",              "", "Abstract syntax tree (AST)."),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments."),
         M("prism_parsetree",                         "", "Prism AST with comments."),
     };
