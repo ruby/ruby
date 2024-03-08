@@ -296,7 +296,7 @@ module Prism
                 start_offset = offset_cache[token.location.start_offset]
                 lines.map do |line|
                   end_offset = start_offset + line.length
-                  tokens << [:tSTRING_CONTENT, [line, Range.new(source_buffer, start_offset, offset_cache[end_offset])]]
+                  tokens << [:tSTRING_CONTENT, [line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
                   start_offset = end_offset
                 end
                 next
