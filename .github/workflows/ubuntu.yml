@@ -79,6 +79,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10

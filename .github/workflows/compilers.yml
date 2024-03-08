@@ -240,6 +240,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
 
       - name: Run configure
         run: >
