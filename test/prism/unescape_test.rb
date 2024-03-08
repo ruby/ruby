@@ -230,8 +230,6 @@ module Prism
       else
         assert_equal expected.bytes, actual.bytes, message
       end
-    rescue Exception
-      binding.irb
     end
   end
 end

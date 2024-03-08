@@ -5949,7 +5949,7 @@ parse_symbol_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
     return 0;
 }
 
-static inline pm_node_flags_t
+static pm_node_flags_t
 parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, const pm_string_t *source, const pm_string_t *contents, pm_node_flags_t flags, char modifier, const pm_encoding_t *modifier_encoding) {
     assert ((modifier == 'n' && modifier_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) ||
             (modifier == 'u' && modifier_encoding == PM_ENCODING_UTF_8_ENTRY) ||
@@ -5974,7 +5974,7 @@ parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, con
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, modifier, parser->encoding->name);
 
             if (modifier == 'n' && !ascii_only) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_NON_ESCAPED_MBC, pm_string_source(source));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) pm_string_length(source), (const char *) pm_string_source(source));
             }
         }
 
@@ -5985,18 +5985,18 @@ parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, con
     bool mixed_encoding = false;
 
     if (mixed_encoding) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, pm_string_source(source));
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, (int) pm_string_length(source), (const char *) pm_string_source(source));
     } else if (modifier != 'n' && parser->explicit_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) {
         // TODO (nirvdrum 21-Feb-2024): Validate the content is valid in the modifier encoding. Do this on-demand so we don't pay the cost of computation unnecessarily.
         bool valid_string_in_modifier_encoding = true;
 
         if (!valid_string_in_modifier_encoding) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, pm_string_source(source));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, (int) pm_string_length(source), (const char *) pm_string_source(source));
         }
     } else if (modifier != 'u' && parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
         // TODO (nirvdrum 21-Feb-2024): There's currently no way to tell if the source used hex or Unicode character escapes from `explicit_encoding` alone. If the source encoding was already UTF-8, both character escape types would set `explicit_encoding` to UTF-8, but need to be processed differently. Skip for now.
         if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, pm_string_source(source));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, (int) pm_string_length(source), (const char *) pm_string_source(source));
         }
     }
 
@@ -6010,13 +6010,12 @@ parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, con
  * when the Regexp is explicitly given an ASCII-8BIT encoding via the (/n) modifier. Otherwise, the encoding
  * may be explicitly set with an escape sequence.
  */
-static inline pm_node_flags_t
+static pm_node_flags_t
 parse_and_validate_regular_expression_encoding(pm_parser_t *parser, const pm_string_t *source, const pm_string_t *contents, pm_node_flags_t flags) {
     // TODO (nirvdrum 22-Feb-2024): CRuby reports a special Regexp-specific error for invalid Unicode ranges. We either need to scan again or modify the "invalid Unicode escape sequence" message we already report.
     bool valid_unicode_range = true;
     if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY && !valid_unicode_range) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INVALID_UNICODE_RANGE, pm_string_source(source));
-
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INVALID_UNICODE_RANGE, (int) pm_string_length(source), (const char *) pm_string_source(source));
         return flags;
     }
 
@@ -17143,13 +17142,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 parser_lex(parser);
 
-                pm_node_t *regular_expression_node = (pm_node_t *) (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
-                pm_node_flag_set(regular_expression_node, PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING);
+                pm_node_t *node = (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
+                pm_node_flag_set(node, PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING);
 
-                return regular_expression_node;
+                return node;
             }
 
-            pm_interpolated_regular_expression_node_t *node;
+            pm_interpolated_regular_expression_node_t *interpolated;
 
             if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
                 // In this case we've hit string content so we know the regular
@@ -17157,40 +17156,57 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // following token is the end (in which case we can return a plain
                 // regular expression) or if it's not then it has interpolation.
                 pm_string_t unescaped = parser->current_string;
-                pm_string_t *source = &parser->current_regular_expression_source;
                 pm_token_t content = parser->current;
+
+                pm_string_t source = parser->current_regular_expression_source;
+                pm_string_constant_init(&parser->current_regular_expression_source, "", 0);
+
                 parser_lex(parser);
 
                 // If we hit an end, then we can create a regular expression node
                 // without interpolation, which can be represented more succinctly and
                 // more easily compiled.
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
-                    pm_node_t *regular_expression_node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, source);
-                    pm_node_flag_set(regular_expression_node, parse_and_validate_regular_expression_encoding(parser, source, &unescaped, regular_expression_node->flags));
-                    return regular_expression_node;
+                    pm_node_t *node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &source);
+                    pm_node_flag_set(node, parse_and_validate_regular_expression_encoding(parser, &source, &unescaped, node->flags));
+                    pm_string_free(&unescaped);
+                    return node;
                 }
 
                 // If we get here, then we have interpolation so we'll need to create
                 // a regular expression node with interpolation.
-                node = pm_interpolated_regular_expression_node_create(parser, &opening);
+                interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
 
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
-                pm_interpolated_regular_expression_node_append(node, part);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &source);
+                pm_interpolated_regular_expression_node_append(interpolated, part);
+                pm_string_free(&unescaped);
             } else {
                 // If the first part of the body of the regular expression is not a
                 // string content, then we have interpolation and we need to create an
                 // interpolated regular expression node.
-                node = pm_interpolated_regular_expression_node_create(parser, &opening);
+                interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
             }
 
             // Now that we're here and we have interpolation, we'll parse all of the
             // parts into the list.
             pm_node_t *part;
             while (!match2(parser, PM_TOKEN_REGEXP_END, PM_TOKEN_EOF)) {
-                if ((part = parse_string_part(parser)) != NULL) {
-                    pm_interpolated_regular_expression_node_append(node, part);
+                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                    pm_token_t opening = not_provided(parser);
+                    pm_token_t closing = not_provided(parser);
+
+                    pm_node_t *node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->current, &closing, &parser->current_regular_expression_source);
+                    pm_node_flag_set(node, parse_unescaped_encoding(parser));
+
+                    pm_string_free(&parser->current_string);
+                    pm_string_constant_init(&parser->current_regular_expression_source, "", 0);
+
+                    parser_lex(parser);
+                    pm_interpolated_regular_expression_node_append(interpolated, node);
+                } else if ((part = parse_string_part(parser)) != NULL) {
+                    pm_interpolated_regular_expression_node_append(interpolated, part);
                 }
             }
 
@@ -17201,9 +17217,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             } else {
                 expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
             }
-            pm_interpolated_regular_expression_node_closing_set(node, &closing);
 
-            return (pm_node_t *) node;
+            pm_interpolated_regular_expression_node_closing_set(interpolated, &closing);
+            return (pm_node_t *) interpolated;
         }
         case PM_TOKEN_BACKTICK:
         case PM_TOKEN_PERCENT_LOWER_X: {
