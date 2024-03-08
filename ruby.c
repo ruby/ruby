@@ -151,22 +151,24 @@ enum feature_flag_bits {
     SEP \
     X(parsetree) \
     SEP \
-    X(parsetree_with_comment) \
-    SEP \
     X(insns) \
-    SEP \
-    X(insns_without_opt) \
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
     dump_error_tolerant,
+    dump_with_comment,
+    dump_without_opt,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
     dump_error_tolerant_bits = (DUMP_BIT(yydebug) |
-                                DUMP_BIT(parsetree) |
-                                DUMP_BIT(parsetree_with_comment)),
+                                DUMP_BIT(parsetree)),
+    dump_with_comment_bits = (DUMP_BIT(yydebug) |
+                              DUMP_BIT(parsetree)),
+    dump_without_opt_bits = (DUMP_BIT(insns)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
-                      DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-                      DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
+                      DUMP_BIT(parsetree) | DUMP_BIT(insns)),
+    dump_optional_bits = (DUMP_BIT(error_tolerant) |
+                          DUMP_BIT(with_comment) |
+                          DUMP_BIT(without_opt))
 };
 
 static inline void
@@ -369,11 +371,9 @@ usage(const char *name, int help, int highlight, int columns)
         M("--help",			            "", "show this message, -h for short message"),
     };
     static const struct ruby_opt_message dumps[] = {
-        M("insns",                  "", "instruction sequences"),
-        M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
+        M("insns(+without-opt)", "", "instruction sequences"),
         M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
-        M("parsetree(+error-tolerant)","", "AST"),
-        M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
+        M("parsetree(+error-tolerant, +with-comment)","", "AST"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -1100,14 +1100,24 @@ dump_additional_option(const char *str, int len, unsigned int bits, const char *
     int w;
     for (; len-- > 0 && *str++ == additional_opt_sep; len -= w, str += w) {
         w = memtermspn(str, additional_opt_sep, len);
-#define SET_ADDITIONAL(bit) if (NAME_MATCH_P(#bit, str, w)) { \
+#define SET_ADDITIONAL_BIT(bit) { \
             if (bits & DUMP_BIT(bit)) \
                 rb_warn("duplicate option to dump %s: '%.*s'", name, w, str); \
             bits |= DUMP_BIT(bit); \
             continue; \
         }
+#define SET_ADDITIONAL(bit) if (NAME_MATCH_P(#bit, str, w)) SET_ADDITIONAL_BIT(bit)
+#define SET_ADDITIONAL_2(bit, alias) \
+        if (NAME_MATCH_P(#bit, str, w) || NAME_MATCH_P(#alias, str, w)) SET_ADDITIONAL_BIT(bit)
+
         if (dump_error_tolerant_bits & bits) {
             SET_ADDITIONAL(error_tolerant);
+        }
+        if (dump_with_comment_bits & bits) {
+            SET_ADDITIONAL_2(with_comment, comment);
+        }
+        if (dump_without_opt_bits & bits) {
+            SET_ADDITIONAL(without_opt);
         }
         rb_warn("don't know how to dump %s with '%.*s'", name, w, str);
     }
@@ -2486,10 +2496,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!dump) return Qtrue;
     }
 
-    if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
+    if (dump & DUMP_BIT(parsetree)) {
         VALUE tree;
         if (result.ast) {
-            int comment = dump & DUMP_BIT(parsetree_with_comment);
+            int comment = opt->dump & DUMP_BIT(with_comment);
             tree = rb_parser_dump_tree(result.ast->body.root, comment);
         }
         else {
@@ -2497,7 +2507,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
         rb_io_write(rb_stdout, tree);
         rb_io_flush(rb_stdout);
-        dump &= ~DUMP_BIT(parsetree)&~DUMP_BIT(parsetree_with_comment);
+        dump &= ~DUMP_BIT(parsetree);
         if (!dump) {
             dispose_result();
             return Qtrue;
@@ -2522,7 +2532,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")), toplevel_binding);
         const struct rb_block *base_block = toplevel_context(toplevel_binding);
         const rb_iseq_t *parent = vm_block_iseq(base_block);
-        bool optimize = !(dump & DUMP_BIT(insns_without_opt));
+        bool optimize = !(opt->dump & DUMP_BIT(without_opt));
 
         if (!result.ast) {
             pm_parse_result_t *pm = &result.prism;
@@ -2536,7 +2546,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
     }
 
-    if (dump & (DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))) {
+    if (dump & DUMP_BIT(insns)) {
         rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
         rb_io_flush(rb_stdout);
         dump &= ~DUMP_BIT(insns);
