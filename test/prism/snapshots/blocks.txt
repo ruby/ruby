@@ -127,7 +127,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (7,9)-(7,10))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 0
         │   ├── closing_loc: (7,10)-(7,11) = ")"
         │   └── block:
         │       @ BlockNode (location: (7,12)-(7,35))
@@ -345,7 +346,8 @@
         │       │   │   │           │   ├── flags: ∅
         │       │   │   │           │   └── arguments: (length: 1)
         │       │   │   │           │       └── @ IntegerNode (location: (17,14)-(17,15))
-        │       │   │   │           │           └── flags: decimal
+        │       │   │   │           │           ├── flags: decimal
+        │       │   │   │           │           └── value: 1
         │       │   │   │           ├── closing_loc: (17,15)-(17,16) = "]"
         │       │   │   │           └── block: ∅
         │       │   │   ├── rest: ∅
@@ -520,7 +522,8 @@
         │       │   │   │       ├── operator_loc: (33,12)-(33,13) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (33,14)-(33,15))
-        │       │   │   │           └── flags: decimal
+        │       │   │   │           ├── flags: decimal
+        │       │   │   │           └── value: 2
         │       │   │   ├── rest: ∅
         │       │   │   ├── posts: (length: 0)
         │       │   │   ├── keywords: (length: 1)
@@ -579,7 +582,8 @@
         │   ├── name_loc: (37,0)-(37,4) = "fork"
         │   ├── value:
         │   │   @ IntegerNode (location: (37,7)-(37,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (37,5)-(37,6) = "="
         ├── @ CallNode (location: (38,0)-(39,3))
         │   ├── flags: ignore_visibility
@@ -715,14 +719,16 @@
         │   │               │   │   │   │   ├── name_loc: (49,2)-(49,4) = "a:"
         │   │               │   │   │   │   └── value:
         │   │               │   │   │   │       @ IntegerNode (location: (49,5)-(49,6))
-        │   │               │   │   │   │       └── flags: decimal
+        │   │               │   │   │   │       ├── flags: decimal
+        │   │               │   │   │   │       └── value: 1
         │   │               │   │   │   └── @ OptionalKeywordParameterNode (location: (50,2)-(50,6))
         │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       ├── name: :b
         │   │               │   │   │       ├── name_loc: (50,2)-(50,4) = "b:"
         │   │               │   │   │       └── value:
         │   │               │   │   │           @ IntegerNode (location: (50,5)-(50,6))
-        │   │               │   │   │           └── flags: decimal
+        │   │               │   │   │           ├── flags: decimal
+        │   │               │   │   │           └── value: 2
         │   │               │   │   ├── keyword_rest: ∅
         │   │               │   │   └── block: ∅
         │   │               │   ├── locals: (length: 0)

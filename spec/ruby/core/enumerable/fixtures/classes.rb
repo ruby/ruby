@@ -342,4 +342,10 @@ module EnumerableSpecs
       @block.call(*args)
     end
   end
+
+  # Set is a core class since Ruby 3.2
+  ruby_version_is '3.2' do
+    class SetSubclass < Set
+    end
+  end
 end # EnumerableSpecs utility classes

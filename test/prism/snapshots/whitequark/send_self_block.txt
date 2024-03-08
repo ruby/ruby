@@ -63,7 +63,8 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (7,4)-(7,5))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: (7,5)-(7,6) = ")"
             └── block:
                 @ BlockNode (location: (7,7)-(7,10))

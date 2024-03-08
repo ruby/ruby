@@ -42,6 +42,7 @@
 #include "ruby/assert.h"
 #include "builtin.h"
 #include "shape.h"
+#include "yjit.h"
 
 /* Flags of RObject
  *
@@ -114,6 +115,37 @@ rb_obj_reveal(VALUE obj, VALUE klass)
     if (!SPECIAL_CONST_P(obj)) {
         RBASIC_SET_CLASS(obj, klass);
     }
+    return obj;
+}
+
+VALUE
+rb_class_allocate_instance(VALUE klass)
+{
+    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+
+    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+
+    NEWOBJ_OF(o, struct RObject, klass,
+              T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+    VALUE obj = (VALUE)o;
+
+    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
+
+    // Set the shape to the specific T_OBJECT shape which is always
+    // SIZE_POOL_COUNT away from the root shape.
+    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
+
+#if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
+        ptr[i] = Qundef;
+    }
+#endif
+
     return obj;
 }
 
@@ -256,7 +288,7 @@ VALUE
 rb_class_real(VALUE cl)
 {
     while (cl &&
-        ((RBASIC(cl)->flags & FL_SINGLETON) || BUILTIN_TYPE(cl) == T_ICLASS)) {
+        (RCLASS_SINGLETON_P(cl) || BUILTIN_TYPE(cl) == T_ICLASS)) {
         cl = RCLASS_SUPER(cl);
     }
     return cl;
@@ -454,17 +486,14 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
     return obj;
 }
 
-static VALUE
-mutable_obj_clone(VALUE obj, VALUE kwfreeze)
+VALUE
+rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 {
-    VALUE clone, singleton;
     VALUE argv[2];
 
-    clone = rb_obj_alloc(rb_obj_class(obj));
-
-    singleton = rb_singleton_class_clone_and_attach(obj, clone);
+    VALUE singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);
-    if (FL_TEST(singleton, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(singleton)) {
         rb_singleton_class_attached(singleton, clone);
     }
 
@@ -488,7 +517,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         static VALUE freeze_true_hash;
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
-            rb_gc_register_mark_object(freeze_true_hash);
+            rb_vm_register_global_object(freeze_true_hash);
             rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
             rb_obj_freeze(freeze_true_hash);
         }
@@ -512,7 +541,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         static VALUE freeze_false_hash;
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
-            rb_gc_register_mark_object(freeze_false_hash);
+            rb_vm_register_global_object(freeze_false_hash);
             rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
             rb_obj_freeze(freeze_false_hash);
         }
@@ -529,11 +558,27 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
     return clone;
 }
 
+static VALUE
+mutable_obj_clone(VALUE obj, VALUE kwfreeze)
+{
+    VALUE clone = rb_obj_alloc(rb_obj_class(obj));
+    return rb_obj_clone_setup(obj, clone, kwfreeze);
+}
+
 VALUE
 rb_obj_clone(VALUE obj)
 {
     if (special_object_p(obj)) return obj;
     return mutable_obj_clone(obj, Qnil);
+}
+
+VALUE
+rb_obj_dup_setup(VALUE obj, VALUE dup)
+{
+    init_copy(dup, obj);
+    rb_funcall(dup, id_init_dup, 1, obj);
+
+    return dup;
 }
 
 /*
@@ -584,10 +629,7 @@ rb_obj_dup(VALUE obj)
         return obj;
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
-    init_copy(dup, obj);
-    rb_funcall(dup, id_init_dup, 1, obj);
-
-    return dup;
+    return rb_obj_dup_setup(obj, dup);
 }
 
 /*
@@ -1703,7 +1745,7 @@ rb_mod_to_s(VALUE klass)
     ID id_defined_at;
     VALUE refined_class, defined_at;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE s = rb_usascii_str_new2("#<Class:");
         VALUE v = RCLASS_ATTACHED_OBJECT(klass);
 
@@ -2079,7 +2121,7 @@ class_get_alloc_func(VALUE klass)
     if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
         rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
     allocator = rb_get_alloc_func(klass);
@@ -2206,10 +2248,10 @@ rb_class_get_superclass(VALUE klass)
     return RCLASS(klass)->super;
 }
 
-static const char bad_instance_name[] = "`%1$s' is not allowed as an instance variable name";
-static const char bad_class_name[] = "`%1$s' is not allowed as a class variable name";
+static const char bad_instance_name[] = "'%1$s' is not allowed as an instance variable name";
+static const char bad_class_name[] = "'%1$s' is not allowed as a class variable name";
 static const char bad_const_name[] = "wrong constant name %1$s";
-static const char bad_attr_name[] = "invalid attribute name `%1$s'";
+static const char bad_attr_name[] = "invalid attribute name '%1$s'";
 #define wrong_constant_name bad_const_name
 
 /*! \private */
@@ -3040,7 +3082,7 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
-    return RBOOL(RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON));
+    return RBOOL(RCLASS_SINGLETON_P(klass));
 }
 
 /*! \private */
@@ -3197,6 +3239,7 @@ rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise
     VALUE v;
 
     if (RB_INTEGER_TYPE_P(val)) return val;
+    rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     v = try_to_int(val, mid, raise);
     if (!raise && NIL_P(v)) return Qnil;
     if (!RB_INTEGER_TYPE_P(v)) {
@@ -3947,6 +3990,12 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+static VALUE
+rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
+{
+    return DBL2NUM(HUGE_VAL);
+}
+
 /*
  *  Document-class: Class
  *
@@ -4401,7 +4450,7 @@ InitVM_Object(void)
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cNilClass_to_s);
+    rb_vm_register_global_object(rb_cNilClass_to_s);
     rb_define_method(rb_cNilClass, "to_s", rb_nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
@@ -4487,7 +4536,7 @@ InitVM_Object(void)
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cTrueClass_to_s);
+    rb_vm_register_global_object(rb_cTrueClass_to_s);
     rb_define_method(rb_cTrueClass, "to_s", rb_true_to_s, 0);
     rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
@@ -4499,7 +4548,7 @@ InitVM_Object(void)
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cFalseClass_to_s);
+    rb_vm_register_global_object(rb_cFalseClass_to_s);
     rb_define_method(rb_cFalseClass, "to_s", rb_false_to_s, 0);
     rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);

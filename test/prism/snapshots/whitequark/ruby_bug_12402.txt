@@ -482,7 +482,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (25,4)-(25,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 0
         │   ├── closing_loc: (25,5)-(25,6) = "]"
         │   ├── block: ∅
         │   ├── operator: :+
@@ -529,7 +530,8 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (27,4)-(27,5))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 0
             ├── closing_loc: (27,5)-(27,6) = "]"
             ├── block: ∅
             ├── operator: :+

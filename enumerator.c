@@ -4562,7 +4562,7 @@ InitVM_Enumerator(void)
     rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
     rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
     rb_obj_freeze(lazy_use_super_method);
-    rb_gc_register_mark_object(lazy_use_super_method);
+    rb_vm_register_global_object(lazy_use_super_method);
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);

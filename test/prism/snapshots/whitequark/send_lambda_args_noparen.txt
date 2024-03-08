@@ -23,7 +23,8 @@
         │   │   │   │       ├── name_loc: (1,3)-(1,5) = "a:"
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (1,6)-(1,7))
-        │   │   │   │           └── flags: decimal
+        │   │   │   │           ├── flags: decimal
+        │   │   │   │           └── value: 1
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
         │   │   ├── locals: (length: 0)

@@ -695,6 +695,13 @@ module TestTimeTZ::WithTZ
     assert_equal(t.dst?, t2.dst?)
   end
 
+  def subtest_fractional_second(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2024, 1, 1, 23, 59, 59.9r, tzarg)
+    assert_equal(utc_offset[t.dst? ? 1 : 0], t.utc_offset)
+    t = time_class.new(2024, 7, 1, 23, 59, 59.9r, tzarg)
+    assert_equal(utc_offset[t.dst? ? 1 : 0], t.utc_offset)
+  end
+
   def test_invalid_zone
     make_timezone("INVALID", "INV", 0)
   rescue => e
@@ -719,6 +726,7 @@ module TestTimeTZ::WithTZ
     "Asia/Tokyo" => ["JST", +9*3600],
     "America/Los_Angeles" => ["PST", -8*3600, "PDT", -7*3600],
     "Africa/Ndjamena" => ["WAT", +1*3600],
+    "Etc/UTC" => ["UTC", 0],
   }
 
   def make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)

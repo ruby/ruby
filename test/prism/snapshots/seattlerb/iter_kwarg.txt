@@ -30,7 +30,8 @@
                 │   │   │       ├── name_loc: (1,5)-(1,7) = "b:"
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,8)-(1,9))
-                │   │   │           └── flags: decimal
+                │   │   │           ├── flags: decimal
+                │   │   │           └── value: 1
                 │   │   ├── keyword_rest: ∅
                 │   │   └── block: ∅
                 │   ├── locals: (length: 0)

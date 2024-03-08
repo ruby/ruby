@@ -349,7 +349,7 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
     BDIGIT_DBL maxpow;
     int exponent;
 
-    assert(2 <= base && base <= 36);
+    RUBY_ASSERT(2 <= base && base <= 36);
 
     {
 #if SIZEOF_BDIGIT_DBL == 2
@@ -381,7 +381,7 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
 static inline BDIGIT_DBL
 bary2bdigitdbl(const BDIGIT *ds, size_t n)
 {
-    assert(n <= 2);
+    RUBY_ASSERT(n <= 2);
 
     if (n == 2)
         return ds[0] | BIGUP(ds[1]);
@@ -393,7 +393,7 @@ bary2bdigitdbl(const BDIGIT *ds, size_t n)
 static inline void
 bdigitdbl2bary(BDIGIT *ds, size_t n, BDIGIT_DBL num)
 {
-    assert(n == 2);
+    RUBY_ASSERT(n == 2);
 
     ds[0] = BIGLO(num);
     ds[1] = (BDIGIT)BIGDN(num);
@@ -424,7 +424,7 @@ bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 {
     size_t i;
     BDIGIT_DBL num = 0;
-    assert(0 <= shift && shift < BITSPERDIG);
+    RUBY_ASSERT(0 <= shift && shift < BITSPERDIG);
 
     for (i=0; i<n; i++) {
         num = num | (BDIGIT_DBL)*xds++ << shift;
@@ -440,7 +440,7 @@ bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT hi
     size_t i;
     BDIGIT_DBL num = 0;
 
-    assert(0 <= shift && shift < BITSPERDIG);
+    RUBY_ASSERT(0 <= shift && shift < BITSPERDIG);
 
     num = BIGUP(higher_bdigit);
     for (i = 0; i < n; i++) {
@@ -1060,8 +1060,8 @@ integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *
         if (debug_integer_pack) {
             int nlp_bits1;
             size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
-            assert(num_bdigits == num_bdigits1);
-            assert(*nlp_bits_ret == nlp_bits1);
+            RUBY_ASSERT(num_bdigits == num_bdigits1);
+            RUBY_ASSERT(*nlp_bits_ret == nlp_bits1);
             (void)num_bdigits1;
         }
     }
@@ -1271,7 +1271,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
         }
         if (dd)
             *dp++ = (BDIGIT)dd;
-        assert(dp <= de);
+        RUBY_ASSERT(dp <= de);
         while (dp < de)
             *dp++ = 0;
 #undef PUSH_BITS
@@ -1330,7 +1330,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
 
     num_bdigits0 = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 
-    assert(num_bdigits0 <= num_bdigits);
+    RUBY_ASSERT(num_bdigits0 <= num_bdigits);
 
     sign = bary_unpack_internal(bdigits, num_bdigits0, words, numwords, wordsize, nails, flags, nlp_bits);
 
@@ -1349,8 +1349,8 @@ bary_subb(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yd
     size_t i;
     size_t sn;
 
-    assert(xn <= zn);
-    assert(yn <= zn);
+    RUBY_ASSERT(xn <= zn);
+    RUBY_ASSERT(yn <= zn);
 
     sn = xn < yn ? xn : yn;
 
@@ -1411,8 +1411,8 @@ bary_addc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yd
     BDIGIT_DBL num;
     size_t i;
 
-    assert(xn <= zn);
-    assert(yn <= zn);
+    RUBY_ASSERT(xn <= zn);
+    RUBY_ASSERT(yn <= zn);
 
     if (xn > yn) {
         const BDIGIT *tds;
@@ -1476,7 +1476,7 @@ bary_mul_single(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT y)
 {
     BDIGIT_DBL n;
 
-    assert(2 <= zn);
+    RUBY_ASSERT(2 <= zn);
 
     n = (BDIGIT_DBL)x * y;
     bdigitdbl2bary(zds, 2, n);
@@ -1490,7 +1490,7 @@ bary_muladd_1xN(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
     BDIGIT_DBL dd;
     size_t j;
 
-    assert(zn > yn);
+    RUBY_ASSERT(zn > yn);
 
     if (x == 0)
         return 0;
@@ -1525,7 +1525,7 @@ bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
     BDIGIT_DBL t2;
     BDIGIT_DBL_SIGNED num;
 
-    assert(zn == yn + 1);
+    RUBY_ASSERT(zn == yn + 1);
 
     num = 0;
     t2 = 0;
@@ -1550,7 +1550,7 @@ bary_mulsub_1xN(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
 {
     BDIGIT_DBL_SIGNED num;
 
-    assert(zn == yn + 1);
+    RUBY_ASSERT(zn == yn + 1);
 
     num = bigdivrem_mulsub(zds, zn, x, yds, yn);
     zds[yn] = BIGLO(num);
@@ -1564,7 +1564,7 @@ bary_mul_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIG
 {
     size_t i;
 
-    assert(xn + yn <= zn);
+    RUBY_ASSERT(xn + yn <= zn);
 
     BDIGITS_ZERO(zds, zn);
     for (i = 0; i < xn; i++) {
@@ -1595,7 +1595,7 @@ bary_sq_fast(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn)
     BDIGIT vl;
     int vh;
 
-    assert(xn * 2 <= zn);
+    RUBY_ASSERT(xn * 2 <= zn);
 
     BDIGITS_ZERO(zds, zn);
 
@@ -1667,9 +1667,9 @@ bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
     VALUE work = 0;
     size_t n;
 
-    assert(xn + yn <= zn);
-    assert(xn <= yn);
-    assert(!KARATSUBA_BALANCED(xn, yn) || !TOOM3_BALANCED(xn, yn));
+    RUBY_ASSERT(xn + yn <= zn);
+    RUBY_ASSERT(xn <= yn);
+    RUBY_ASSERT(!KARATSUBA_BALANCED(xn, yn) || !TOOM3_BALANCED(xn, yn));
 
     BDIGITS_ZERO(zds, xn);
 
@@ -1751,9 +1751,9 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const B
     const BDIGIT *xds0, *xds1, *yds0, *yds1;
     BDIGIT *zds0, *zds1, *zds2, *zds3;
 
-    assert(xn + yn <= zn);
-    assert(xn <= yn);
-    assert(yn < 2 * xn);
+    RUBY_ASSERT(xn + yn <= zn);
+    RUBY_ASSERT(xn <= yn);
+    RUBY_ASSERT(yn < 2 * xn);
 
     sq = xds == yds && xn == yn;
 
@@ -1768,7 +1768,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const B
 
     n = yn / 2;
 
-    assert(n < xn);
+    RUBY_ASSERT(n < xn);
 
     if (wn < n) {
         /* This function itself needs only n BDIGITs for work area.
@@ -1889,7 +1889,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const B
         for (x = 0, i = xn-1; 0 <= i; i--) { x <<= SIZEOF_BDIGIT*CHAR_BIT; x |= xds[i]; }
         for (y = 0, i = yn-1; 0 <= i; i--) { y <<= SIZEOF_BDIGIT*CHAR_BIT; y |= yds[i]; }
         for (z = 0, i = zn-1; 0 <= i; i--) { z <<= SIZEOF_BDIGIT*CHAR_BIT; z |= zds[i]; }
-        assert(z == x * y);
+        RUBY_ASSERT(z == x * y);
     }
     */
 
@@ -1957,11 +1957,11 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
 
     int sq = xds == yds && xn == yn;
 
-    assert(xn <= yn);  /* assume y >= x */
-    assert(xn + yn <= zn);
+    RUBY_ASSERT(xn <= yn);  /* assume y >= x */
+    RUBY_ASSERT(xn + yn <= zn);
 
     n = (yn + 2) / 3;
-    assert(2*n < xn);
+    RUBY_ASSERT(2*n < xn);
 
     wnc = 0;
 
@@ -2148,19 +2148,19 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     /* z(1) : t1 <- u1 * v1 */
     bary_mul_toom3_start(t1ds, t1n, u1ds, u1n, v1ds, v1n, wds, wn);
     t1p = u1p == v1p;
-    assert(t1ds[t1n-1] == 0);
+    RUBY_ASSERT(t1ds[t1n-1] == 0);
     t1n--;
 
     /* z(-1) : t2 <- u2 * v2 */
     bary_mul_toom3_start(t2ds, t2n, u2ds, u2n, v2ds, v2n, wds, wn);
     t2p = u2p == v2p;
-    assert(t2ds[t2n-1] == 0);
+    RUBY_ASSERT(t2ds[t2n-1] == 0);
     t2n--;
 
     /* z(-2) : t3 <- u3 * v3 */
     bary_mul_toom3_start(t3ds, t3n, u3ds, u3n, v3ds, v3n, wds, wn);
     t3p = u3p == v3p;
-    assert(t3ds[t3n-1] == 0);
+    RUBY_ASSERT(t3ds[t3n-1] == 0);
     t3n--;
 
     /* z(inf) : t4 <- x2 * y2 */
@@ -2336,7 +2336,7 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
     mpz_t x, y, z;
     size_t count;
 
-    assert(xn + yn <= zn);
+    RUBY_ASSERT(xn + yn <= zn);
 
     mpz_init(x);
     mpz_init(y);
@@ -2371,7 +2371,7 @@ rb_big_mul_gmp(VALUE x, VALUE y)
 static void
 bary_short_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-    assert(xn + yn <= zn);
+    RUBY_ASSERT(xn + yn <= zn);
 
     if (xn == 1 && yn == 1) {
         bary_mul_single(zds, zn, xds[0], yds[0]);
@@ -2407,7 +2407,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *znp, const BDIGIT **xdsp, size_t *xnp, 
     const BDIGIT *yds = *ydsp;
     size_t yn = *ynp;
 
-    assert(xn + yn <= zn);
+    RUBY_ASSERT(xn + yn <= zn);
 
     nlsz = 0;
 
@@ -2456,7 +2456,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *znp, const BDIGIT **xdsp, size_t *xnp, 
         tds = xds; xds = yds; yds = tds;
         tn = xn; xn = yn; yn = tn;
     }
-    assert(xn <= yn);
+    RUBY_ASSERT(xn <= yn);
 
     if (xn <= 1) {
         if (xn == 0) {
@@ -2639,8 +2639,8 @@ rb_big_stop(void *ptr)
 static BDIGIT
 bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdigit, BDIGIT y)
 {
-    assert(0 < xn);
-    assert(x_higher_bdigit < y);
+    RUBY_ASSERT(0 < xn);
+    RUBY_ASSERT(x_higher_bdigit < y);
     if (POW2_P(y)) {
         BDIGIT r;
         r = xds[0] & (y-1);
@@ -2672,9 +2672,9 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     struct big_div_struct bds;
     size_t ynzero;
 
-    assert(yn < zn);
-    assert(BDIGIT_MSB(yds[yn-1]));
-    assert(zds[zn-1] < yds[yn-1]);
+    RUBY_ASSERT(yn < zn);
+    RUBY_ASSERT(BDIGIT_MSB(yds[yn-1]));
+    RUBY_ASSERT(zds[zn-1] < yds[yn-1]);
 
     for (ynzero = 0; !yds[ynzero]; ynzero++);
 
@@ -2713,9 +2713,9 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
     size_t zn;
     VALUE tmpyz = 0;
 
-    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
-    assert(qds ? (xn - yn + 1) <= qn : 1);
-    assert(rds ? yn <= rn : 1);
+    RUBY_ASSERT(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+    RUBY_ASSERT(qds ? (xn - yn + 1) <= qn : 1);
+    RUBY_ASSERT(rds ? yn <= rn : 1);
 
     zn = xn + BIGDIVREM_EXTRA_WORDS;
 
@@ -2807,10 +2807,10 @@ bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xd
     mpz_t x, y, q, r;
     size_t count;
 
-    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
-    assert(qds ? (xn - yn + 1) <= qn : 1);
-    assert(rds ? yn <= rn : 1);
-    assert(qds || rds);
+    RUBY_ASSERT(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+    RUBY_ASSERT(qds ? (xn - yn + 1) <= qn : 1);
+    RUBY_ASSERT(rds ? yn <= rn : 1);
+    RUBY_ASSERT(qds || rds);
 
     mpz_init(x);
     mpz_init(y);
@@ -2896,8 +2896,8 @@ bary_divmod_branch(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
 static void
 bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-    assert(xn <= qn);
-    assert(yn <= rn);
+    RUBY_ASSERT(xn <= qn);
+    RUBY_ASSERT(yn <= rn);
 
     BARY_TRUNC(yds, yn);
     if (yn == 0)
@@ -3432,8 +3432,8 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
         if (debug_integer_pack) {
             size_t numwords0, nlz_bits0;
             numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
-            assert(numwords0 == numwords);
-            assert(nlz_bits0 == nlz_bits);
+            RUBY_ASSERT(numwords0 == numwords);
+            RUBY_ASSERT(nlz_bits0 == nlz_bits);
             (void)numwords0;
         }
     }
@@ -3848,7 +3848,7 @@ str2big_poweroftwo(
     if (numbits) {
         *dp++ = BIGLO(dd);
     }
-    assert((size_t)(dp - BDIGITS(z)) == num_bdigits);
+    RUBY_ASSERT((size_t)(dp - BDIGITS(z)) == num_bdigits);
 
     return z;
 }
@@ -3891,7 +3891,7 @@ str2big_normal(
             }
             break;
         }
-        assert(blen <= num_bdigits);
+        RUBY_ASSERT(blen <= num_bdigits);
     }
 
     return z;
@@ -3949,7 +3949,7 @@ str2big_karatsuba(
             current_base = 1;
         }
     }
-    assert(i == num_bdigits);
+    RUBY_ASSERT(i == num_bdigits);
     for (unit = 2; unit < num_bdigits; unit *= 2) {
         for (i = 0; i < num_bdigits; i += unit*2) {
             if (2*unit <= num_bdigits - i) {
@@ -4094,8 +4094,8 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         len -= (n); \
     } while (0)
 #define ASSERT_LEN() do {\
-        assert(len != 0); \
-        if (len0 >= 0) assert(s + len0 == str + len); \
+        RUBY_ASSERT(len != 0); \
+        if (len0 >= 0) RUBY_ASSERT(s + len0 == str + len); \
     } while (0)
 
     if (!str) {
@@ -4640,8 +4640,8 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
     size_t shift_numdigits;
     int shift_numbits;
 
-    assert(POW2_P(CHAR_BIT));
-    assert(POW2_P(BITSPERDIG));
+    RUBY_ASSERT(POW2_P(CHAR_BIT));
+    RUBY_ASSERT(POW2_P(BITSPERDIG));
 
     if (BIGZEROP(x))
         return INT2FIX(0);
@@ -4728,7 +4728,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
         rb_obj_hide(power);
         base36_power_cache[base - 2][power_level] = power;
         base36_numdigits_cache[base - 2][power_level] = numdigits;
-        rb_gc_register_mark_object(power);
+        rb_vm_register_global_object(power);
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
@@ -4764,7 +4764,7 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
     int beginning = !b2s->ptr;
     size_t len = 0;
 
-    assert(xn <= 2);
+    RUBY_ASSERT(xn <= 2);
     num = bary2bdigitdbl(xds, xn);
 
     if (beginning) {
@@ -4892,7 +4892,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
             /* bigdivrem_restoring will modify y.
              * So use temporary buffer.  */
             tds = xds + qn;
-            assert(qn + bn <= xn + wn);
+            RUBY_ASSERT(qn + bn <= xn + wn);
             bary_small_lshift(tds, bds, bn, shift);
             xds[xn] = bary_small_lshift(xds, xds, xn, shift);
         }
@@ -4910,7 +4910,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
         }
 
         BARY_TRUNC(qds, qn);
-        assert(qn <= bn);
+        RUBY_ASSERT(qn <= bn);
         big2str_karatsuba(b2s, qds, qn, xn+wn - (rn+qn), lower_power_level, lower_numdigits+taillen);
         BARY_TRUNC(rds, rn);
         big2str_karatsuba(b2s, rds, rn, xn+wn - rn, lower_power_level, taillen);
@@ -4975,7 +4975,7 @@ big2str_generic(VALUE x, int base)
         invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+        rb_raise(rb_eRangeError, "bignum too big to convert into 'string'");
     }
 
     power_level = 0;
@@ -4985,7 +4985,7 @@ big2str_generic(VALUE x, int base)
         power_level++;
         power = power_cache_get_power(base, power_level, NULL);
     }
-    assert(power_level != MAX_BASE36_POWER_TABLE_ENTRIES);
+    RUBY_ASSERT(power_level != MAX_BASE36_POWER_TABLE_ENTRIES);
 
     if ((size_t)BIGNUM_LEN(power) <= xn) {
         /*
@@ -5100,7 +5100,7 @@ rb_big2str1(VALUE x, int base)
         invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+        rb_raise(rb_eRangeError, "bignum too big to convert into 'string'");
     }
 
     if (POW2_P(base)) {
@@ -5136,7 +5136,7 @@ big2ulong(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > sizeof(long)) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+        rb_raise(rb_eRangeError, "bignum too big to convert into '%s'", type);
     }
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGIT
@@ -5179,7 +5179,7 @@ rb_big2long(VALUE x)
         if (num <= 1+(unsigned long)(-(LONG_MIN+1)))
             return -(long)(num-1)-1;
     }
-    rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
+    rb_raise(rb_eRangeError, "bignum too big to convert into 'long'");
 }
 
 #if HAVE_LONG_LONG
@@ -5197,7 +5197,7 @@ big2ull(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > SIZEOF_LONG_LONG)
-        rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+        rb_raise(rb_eRangeError, "bignum too big to convert into '%s'", type);
 #if SIZEOF_LONG_LONG <= SIZEOF_BDIGIT
     num = (unsigned LONG_LONG)ds[0];
 #else
@@ -5238,7 +5238,7 @@ rb_big2ll(VALUE x)
         if (num <= 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
             return -(LONG_LONG)(num-1)-1;
     }
-    rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
+    rb_raise(rb_eRangeError, "bignum too big to convert into 'long long'");
 }
 
 #endif  /* HAVE_LONG_LONG */
@@ -5660,7 +5660,7 @@ bigsub_int(VALUE x, long y0)
     zds = BDIGITS(z);
 
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
-    assert(xn == zn);
+    RUBY_ASSERT(xn == zn);
     num = (BDIGIT_DBL_SIGNED)xds[0] - y;
     if (xn == 1 && num < 0) {
         BIGNUM_NEGATE(z);
@@ -5723,7 +5723,7 @@ bigsub_int(VALUE x, long y0)
     goto finish;
 
   finish:
-    assert(num == 0 || num == -1);
+    RUBY_ASSERT(num == 0 || num == -1);
     if (num < 0) {
         get2comp(z);
         BIGNUM_NEGATE(z);
@@ -7001,7 +7001,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
     if (FIXNUM_P(y)) {
        y = rb_int2big(FIX2LONG(y));
     }
-    assert(RB_BIGNUM_TYPE_P(m));
+    RUBY_ASSERT(RB_BIGNUM_TYPE_P(m));
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
     mn = BIGNUM_LEN(m);

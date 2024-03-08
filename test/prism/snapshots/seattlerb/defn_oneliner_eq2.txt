@@ -34,7 +34,8 @@
             │           │   @ StatementsNode (location: (2,14)-(2,16))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,14)-(2,16))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 42
             │           ├── locals: [:o]
             │           ├── def_keyword_loc: (2,2)-(2,5) = "def"
             │           ├── operator_loc: ∅

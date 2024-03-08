@@ -1786,9 +1786,8 @@ impl Context {
     }
 
     /// Get an operand for the adjusted stack pointer address
-    pub fn sp_opnd(&self, offset_bytes: isize) -> Opnd {
-        let offset = ((self.sp_offset as isize) * (SIZEOF_VALUE as isize)) + offset_bytes;
-        let offset = offset as i32;
+    pub fn sp_opnd(&self, offset_bytes: i32) -> Opnd {
+        let offset = ((self.sp_offset as i32) * SIZEOF_VALUE_I32) + offset_bytes;
         return Opnd::mem(64, SP, offset);
     }
 
@@ -2750,13 +2749,13 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let original_interp_sp = get_cfp_sp(cfp);
 
         let running_iseq = get_cfp_iseq(cfp);
+        assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
+
         let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx.into());
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
         // Unlike in the interpreter, our `leave` doesn't write to the caller's
         // SP -- we do it in the returned-to code. Account for this difference.
         let reconned_sp = reconned_sp.add(target_ctx.is_return_landing().into());
-
-        assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
 
         // Update the PC in the current CFP, because it may be out of sync in JITted code
         rb_set_cfp_pc(cfp, reconned_pc);

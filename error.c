@@ -32,6 +32,7 @@
 #endif
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
@@ -48,6 +49,7 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "yjit.h"
 
 #include "builtin.h"
 
@@ -1409,6 +1411,7 @@ rb_exc_new_cstr(VALUE etype, const char *s)
 VALUE
 rb_exc_new_str(VALUE etype, VALUE str)
 {
+    rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     StringValue(str);
     return rb_class_new_instance(1, &str, etype);
 }
@@ -2386,7 +2389,7 @@ name_err_mesg_to_str(VALUE obj)
                 VALUE klass;
               object:
                 klass = CLASS_OF(obj);
-                if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
+                if (RB_TYPE_P(klass, T_CLASS) && RCLASS_SINGLETON_P(klass)) {
                     s = FAKE_CSTR(&s_str, "");
                     if (obj == rb_vm_top_self()) {
                         c = FAKE_CSTR(&c_str, "main");
@@ -3827,6 +3830,7 @@ inspect_frozen_obj(VALUE obj, VALUE mesg, int recur)
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
+    rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",

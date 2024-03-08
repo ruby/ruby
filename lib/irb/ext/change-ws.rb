@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/ext/cb.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -12,7 +12,7 @@ module IRB # :nodoc:
       if defined? @home_workspace
         @home_workspace
       else
-        @home_workspace = @workspace
+        @home_workspace = workspace
       end
     end
 
@@ -25,11 +25,11 @@ module IRB # :nodoc:
     # See IRB::WorkSpace.new for more information.
     def change_workspace(*_main)
       if _main.empty?
-        @workspace = home_workspace
+        replace_workspace(home_workspace)
         return main
       end
 
-      @workspace = WorkSpace.new(_main[0])
+      replace_workspace(WorkSpace.new(_main[0]))
 
       if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
         main.extend ExtendCommandBundle

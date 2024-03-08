@@ -32,4 +32,5 @@
                 ├── keyword_loc: (1,9)-(1,15) = "rescue"
                 └── rescue_expression:
                     @ IntegerNode (location: (1,16)-(1,18))
-                    └── flags: decimal
+                    ├── flags: decimal
+                    └── value: 42

@@ -92,7 +92,7 @@ tests = [
   [ 'intern',                   %q{ :"#{true}" }, ],
 
   [ 'newarray',    %q{ ["true"][0] }, ],
-  [ 'newarraykwsplat', %q{ [**{x:'true'}][0][:x] }, ],
+  [ 'pushtoarraykwsplat', %q{ [**{x:'true'}][0][:x] }, ],
   [ 'duparray',    %q{ [ true ][0] }, ],
   [ 'expandarray', %q{ y = [ true, false, nil ]; x, = y; x }, ],
   [ 'expandarray', %q{ y = [ true, false, nil ]; x, *z = y; x }, ],

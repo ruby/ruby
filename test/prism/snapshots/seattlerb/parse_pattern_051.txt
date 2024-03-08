@@ -9,11 +9,14 @@
             │   ├── flags: ∅
             │   ├── elements: (length: 3)
             │   │   ├── @ IntegerNode (location: (1,6)-(1,7))
-            │   │   │   └── flags: decimal
+            │   │   │   ├── flags: decimal
+            │   │   │   └── value: 0
             │   │   ├── @ IntegerNode (location: (1,9)-(1,10))
-            │   │   │   └── flags: decimal
+            │   │   │   ├── flags: decimal
+            │   │   │   └── value: 1
             │   │   └── @ IntegerNode (location: (1,12)-(1,13))
-            │   │       └── flags: decimal
+            │   │       ├── flags: decimal
+            │   │       └── value: 2
             │   ├── opening_loc: (1,5)-(1,6) = "["
             │   └── closing_loc: (1,13)-(1,14) = "]"
             ├── conditions: (length: 1)
@@ -23,9 +26,11 @@
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 2)
             │       │   │   ├── @ IntegerNode (location: (2,4)-(2,5))
-            │       │   │   │   └── flags: decimal
+            │       │   │   │   ├── flags: decimal
+            │       │   │   │   └── value: 0
             │       │   │   └── @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │       └── flags: decimal
+            │       │   │       ├── flags: decimal
+            │       │   │       └── value: 1
             │       │   ├── rest:
             │       │   │   @ ImplicitRestNode (location: (2,8)-(2,9))
             │       │   ├── posts: (length: 0)

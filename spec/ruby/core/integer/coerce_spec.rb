@@ -88,18 +88,4 @@ describe "Integer#coerce" do
       ary.should == [1.2, a.to_f]
     end
   end
-
-  ruby_version_is ""..."3.4" do
-    require 'bigdecimal'
-    context "bigdecimal" do
-      it "produces Floats" do
-        x, y = 3.coerce(BigDecimal("3.4"))
-        x.class.should == Float
-        x.should == 3.4
-        y.class.should == Float
-        y.should == 3.0
-      end
-    end
-  end
-
 end

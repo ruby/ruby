@@ -399,6 +399,11 @@ MESSAGE
       env, *commands = commands if Hash === commands.first
       envs.merge!(env) if env
     end
+
+    # disable ASAN leak reporting - conftest programs almost always don't bother
+    # to free their memory.
+    envs['ASAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('ASAN_OPTIONS')
+
     return envs, expand[commands]
   end
 
@@ -2143,7 +2148,9 @@ ARCH_FLAG = #{$ARCH_FLAG}
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = #{CONFIG['LDSHARED']}
 LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
+POSTLINK = #{config_string('POSTLINK', RbConfig::CONFIG)}
 AR = #{CONFIG['AR']}
+LD = #{CONFIG['LD']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
 }

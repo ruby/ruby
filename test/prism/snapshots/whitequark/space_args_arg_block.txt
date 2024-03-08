@@ -29,7 +29,8 @@
         │   │           │   @ StatementsNode (location: (1,9)-(1,10))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (1,9)-(1,10))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 1
         │   │           ├── opening_loc: (1,8)-(1,9) = "("
         │   │           └── closing_loc: (1,10)-(1,11) = ")"
         │   ├── closing_loc: ∅
@@ -66,7 +67,8 @@
         │   │           │   @ StatementsNode (location: (3,10)-(3,11))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (3,10)-(3,11))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 1
         │   │           ├── opening_loc: (3,9)-(3,10) = "("
         │   │           └── closing_loc: (3,11)-(3,12) = ")"
         │   ├── closing_loc: ∅
@@ -93,7 +95,8 @@
             │           │   @ StatementsNode (location: (5,5)-(5,6))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (5,5)-(5,6))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 1
             │           ├── opening_loc: (5,4)-(5,5) = "("
             │           └── closing_loc: (5,6)-(5,7) = ")"
             ├── closing_loc: ∅

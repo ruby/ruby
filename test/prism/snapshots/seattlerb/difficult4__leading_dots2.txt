@@ -4,11 +4,13 @@
     @ StatementsNode (location: (1,0)-(2,3))
     └── body: (length: 2)
         ├── @ IntegerNode (location: (1,0)-(1,1))
-        │   └── flags: decimal
+        │   ├── flags: decimal
+        │   └── value: 1
         └── @ RangeNode (location: (2,0)-(2,3))
             ├── flags: ∅
             ├── left: ∅
             ├── right:
             │   @ IntegerNode (location: (2,2)-(2,3))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 3
             └── operator_loc: (2,0)-(2,2) = ".."

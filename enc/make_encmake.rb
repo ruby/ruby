@@ -121,11 +121,7 @@ ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
 if File.exist?(depend = File.join($srcdir, "depend"))
-  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-    erb = ERB.new(File.read(depend), trim_mode: '%')
-  else
-    erb = ERB.new(File.read(depend), nil, '%')
-  end
+  erb = ERB.new(File.read(depend), trim_mode: '%')
   erb.filename = depend
   tmp = erb.result(binding)
   dep = "\n#### depend ####\n\n" << depend_rules(tmp).join
@@ -133,17 +129,18 @@ else
   dep = ""
 end
 mkin = File.read(File.join($srcdir, "Makefile.in"))
-mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
+# Variables that should not be expanded in Makefile.in to allow
+# overriding inherited variables at make-time.
+not_expand_vars = %w(CFLAGS)
+mkin.gsub!(/@(#{RbConfig::CONFIG.keys.join('|')})@/) do
+  not_expand_vars.include?($1) ? CONFIG[$1] : RbConfig::CONFIG[$1]
+end
 File.open(ARGV[0], 'wb') {|f|
   f.puts mkin, dep
 }
 if MODULE_TYPE == :static
   filename = "encinit.c.erb"
-  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-    erb = ERB.new(File.read(File.join($srcdir, filename)), trim_mode: '%-')
-  else
-    erb = ERB.new(File.read(File.join($srcdir, filename)), nil, '%-')
-  end
+  erb = ERB.new(File.read(File.join($srcdir, filename)), trim_mode: '%-')
   erb.filename = "enc/#{filename}"
   tmp = erb.result(binding)
   begin

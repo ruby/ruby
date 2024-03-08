@@ -215,7 +215,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
             --len; \
         } \
         if (len > 0) { \
-            fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+            fprintf(stderr, "ignored "name" option: '%.*s'\n", len, str); \
         } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \

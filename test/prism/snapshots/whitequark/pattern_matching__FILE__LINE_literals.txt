@@ -23,7 +23,8 @@
             │   │   │   │   ├── flags: ∅
             │   │   │   │   └── arguments: (length: 1)
             │   │   │   │       └── @ IntegerNode (location: (1,35)-(1,36))
-            │   │   │   │           └── flags: decimal
+            │   │   │   │           ├── flags: decimal
+            │   │   │   │           └── value: 1
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── block: ∅
             │   │   └── @ SourceEncodingNode (location: (1,38)-(1,50))

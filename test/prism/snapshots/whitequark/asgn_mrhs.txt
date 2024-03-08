@@ -46,7 +46,8 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   └── block: ∅
         │   │   │   └── @ IntegerNode (location: (3,11)-(3,12))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (3,4)-(3,5) = "="

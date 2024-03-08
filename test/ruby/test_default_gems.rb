@@ -5,9 +5,11 @@ class TestDefaultGems < Test::Unit::TestCase
   def self.load(file)
     code = File.read(file, mode: "r:UTF-8:-", &:read)
 
+    # These regex patterns are from load_gemspec method of rbinstall.rb.
     # - `git ls-files` is useless under ruby's repository
     # - `2>/dev/null` works only on Unix-like platforms
-    code.gsub!(/`git.*?`/, '""')
+    code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\([^\)]*\)/m, '[]')
+    code.gsub!(/IO\.popen\(.*git.*?\)/, '[].each')
 
     eval(code, binding, file)
   end

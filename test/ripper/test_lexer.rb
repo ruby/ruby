@@ -171,7 +171,7 @@ class TestRipper::Lexer < Test::Unit::TestCase
   end
 
   BAD_CODE = [
-    [:parse_error,      'def req(true) end',         %r[unexpected `true'],         'true'],
+    [:parse_error,      'def req(true) end',         %r[unexpected 'true'],         'true'],
     [:parse_error,      'def req(a, a) end',         %r[duplicated argument name],  'a'],
     [:assign_error,     'begin; nil = 1; end',       %r[assign to nil],             'nil'],
     [:alias_error,      'begin; alias $x $1; end',   %r[number variables],          '$1'],

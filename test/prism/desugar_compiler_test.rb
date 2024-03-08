@@ -54,20 +54,14 @@ module Prism
     # Ensure every node is only present once in the AST.
     # If the same node is present twice it would most likely indicate it is executed twice, which is invalid semantically.
     # This also acts as a sanity check that Node#child_nodes returns only nodes or nil (which caught a couple bugs).
-    class EnsureEveryNodeOnceInAST < Visitor
-      def initialize
-        @all_nodes = {}.compare_by_identity
+    def ensure_every_node_once_in_ast(node, all_nodes = {}.compare_by_identity)
+      if all_nodes.include?(node)
+        raise "#{node.inspect} is present multiple times in the desugared AST and likely executed multiple times"
+      else
+        all_nodes[node] = true
       end
-
-      def visit(node)
-        if node
-          if @all_nodes.include?(node)
-            raise "#{node.inspect} is present multiple times in the desugared AST and likely executed multiple times"
-          else
-            @all_nodes[node] = true
-          end
-        end
-        super(node)
+      node.child_nodes.each do |child|
+        ensure_every_node_once_in_ast(child, all_nodes) unless child.nil?
       end
     end
 
@@ -75,7 +69,7 @@ module Prism
       ast = Prism.parse(source).value.accept(DesugarCompiler.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
 
-      ast.accept(EnsureEveryNodeOnceInAST.new)
+      ensure_every_node_once_in_ast(ast)
     end
 
     def assert_not_desugared(source, reason)

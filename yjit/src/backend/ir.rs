@@ -3,8 +3,8 @@ use std::fmt;
 use std::convert::From;
 use std::mem::take;
 use crate::codegen::{gen_outlined_exit, gen_counted_exit};
-use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
-use crate::virtualmem::{CodePtr};
+use crate::cruby::{vm_stack_canary, SIZEOF_VALUE_I32, VALUE};
+use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, OutlinedCb};
 use crate::core::{Context, RegTemps, MAX_REG_TEMPS};
 use crate::options::*;
@@ -229,11 +229,16 @@ impl Opnd
 
     /// Calculate Opnd::Stack's index from the stack bottom.
     pub fn stack_idx(&self) -> u8 {
+        self.get_stack_idx().unwrap()
+    }
+
+    /// Calculate Opnd::Stack's index from the stack bottom if it's Opnd::Stack.
+    pub fn get_stack_idx(&self) -> Option<u8> {
         match self {
             Opnd::Stack { idx, stack_size, .. } => {
-                (*stack_size as isize - *idx as isize - 1) as u8
+                Some((*stack_size as isize - *idx as isize - 1) as u8)
             },
-            _ => unreachable!(),
+            _ => None
         }
     }
 
@@ -1017,6 +1022,9 @@ pub struct Assembler {
 
     /// Stack size for Target::SideExit
     side_exit_stack_size: Option<u8>,
+
+    /// If true, the next ccall() should verify its leafness
+    leaf_ccall: bool,
 }
 
 impl Assembler
@@ -1034,6 +1042,7 @@ impl Assembler
             side_exits,
             side_exit_pc: None,
             side_exit_stack_size: None,
+            leaf_ccall: false,
         }
     }
 
@@ -1077,6 +1086,12 @@ impl Assembler
                 }
                 // Set current ctx.reg_temps to Opnd::Stack.
                 Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps: None } => {
+                    assert_eq!(
+                        self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
+                        *stack_size as i16 - *sp_offset as i16,
+                        "Opnd::Stack (stack_size: {}, sp_offset: {}) expects a different SP position from asm.ctx (stack_size: {}, sp_offset: {})",
+                        *stack_size, *sp_offset, self.ctx.get_stack_size(), self.ctx.get_sp_offset(),
+                    );
                     *opnd = Opnd::Stack {
                         idx: *idx,
                         num_bits: *num_bits,
@@ -1561,6 +1576,16 @@ impl Assembler
     pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
         AssemblerDrainingIterator::new(self)
     }
+
+    /// Return true if the next ccall() is expected to be leaf.
+    pub fn get_leaf_ccall(&mut self) -> bool {
+        self.leaf_ccall
+    }
+
+    /// Assert that the next ccall() is going to be leaf.
+    pub fn expect_leaf_ccall(&mut self) {
+        self.leaf_ccall = true;
+    }
 }
 
 /// A struct that allows iterating through an assembler's instructions and
@@ -1661,6 +1686,9 @@ impl Assembler {
     }
 
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        // Let vm_check_canary() assert this ccall's leafness if leaf_ccall is set
+        let canary_opnd = self.set_stack_canary(&opnds);
+
         let old_temps = self.ctx.get_reg_temps(); // with registers
         // Spill stack temp registers since they are caller-saved registers.
         // Note that this doesn't spill stack temps that are already popped
@@ -1680,7 +1708,35 @@ impl Assembler {
         // so rollback the manipulated RegTemps to a spilled version.
         self.ctx.set_reg_temps(new_temps);
 
+        // Clear the canary after use
+        if let Some(canary_opnd) = canary_opnd {
+            self.mov(canary_opnd, 0.into());
+        }
+
         out
+    }
+
+    /// Let vm_check_canary() assert the leafness of this ccall if leaf_ccall is set
+    fn set_stack_canary(&mut self, opnds: &Vec<Opnd>) -> Option<Opnd> {
+        // Use the slot right above the stack top for verifying leafness.
+        let canary_opnd = self.stack_opnd(-1);
+
+        // If the slot is already used, which is a valid optimization to avoid spills,
+        // give up the verification.
+        let canary_opnd = if cfg!(debug_assertions) && self.leaf_ccall && opnds.iter().all(|opnd|
+            opnd.get_stack_idx() != canary_opnd.get_stack_idx()
+        ) {
+            asm_comment!(self, "set stack canary");
+            self.mov(canary_opnd, vm_stack_canary().into());
+            Some(canary_opnd)
+        } else {
+            None
+        };
+
+        // Avoid carrying the flag to the next instruction whether we verified it or not.
+        self.leaf_ccall = false;
+
+        canary_opnd
     }
 
     pub fn cmp(&mut self, left: Opnd, right: Opnd) {
@@ -1957,6 +2013,16 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::URShift { opnd, shift, out });
         out
+    }
+
+    /// Verify the leafness of the given block
+    pub fn with_leaf_ccall<F, R>(&mut self, mut block: F) -> R
+    where F: FnMut(&mut Self) -> R {
+        let old_leaf_ccall = self.leaf_ccall;
+        self.leaf_ccall = true;
+        let ret = block(self);
+        self.leaf_ccall = old_leaf_ccall;
+        ret
     }
 
     /// Add a label at the current position

@@ -29,7 +29,8 @@
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (2,13)-(2,14))
-            │       │   │       │   └── flags: decimal
+            │       │   │       │   ├── flags: decimal
+            │       │   │       │   └── value: 1
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,9)-(2,10) = "["
@@ -38,7 +39,8 @@
             │       │   @ StatementsNode (location: (3,2)-(3,3))
             │       │   └── body: (length: 1)
             │       │       └── @ IntegerNode (location: (3,2)-(3,3))
-            │       │           └── flags: decimal
+            │       │           ├── flags: decimal
+            │       │           └── value: 1
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

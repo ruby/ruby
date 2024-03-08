@@ -410,7 +410,7 @@ class EvalSpecs
   Vπstring_not_frozen = "not frozen"
 end
 CODE
-      -> { eval(code) }.should complain(/warning: `frozen_string_literal' is ignored after any tokens/, verbose: true)
+      -> { eval(code) }.should complain(/warning: [`']frozen_string_literal' is ignored after any tokens/, verbose: true)
       EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
 

@@ -253,9 +253,9 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
 
-            assert(rb_darray_size(feature_indexes) == 2);
+            RUBY_ASSERT(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
-            assert(!SPECIAL_CONST_P((VALUE)feature_indexes));
+            RUBY_ASSERT(!SPECIAL_CONST_P((VALUE)feature_indexes));
 
             *value = (st_data_t)feature_indexes;
         }
@@ -745,7 +745,9 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 
         if (*rb_ruby_prism_ptr()) {
             pm_parse_result_t result = { 0 };
-            VALUE error = pm_parse_file(&result, fname);
+            result.options.line = 1;
+
+            VALUE error = pm_load_parse_file(&result, fname);
 
             if (error == Qnil) {
                 iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);
@@ -1613,5 +1615,5 @@ Init_load(void)
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
     ruby_dln_libmap = rb_hash_new_with_size(0);
-    rb_gc_register_mark_object(ruby_dln_libmap);
+    rb_vm_register_global_object(ruby_dln_libmap);
 }

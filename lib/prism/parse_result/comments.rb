@@ -27,11 +27,11 @@ module Prism
         end
 
         def start_offset
-          node.location.start_offset
+          node.start_offset
         end
 
         def end_offset
-          node.location.end_offset
+          node.end_offset
         end
 
         def encloses?(comment)
@@ -39,8 +39,12 @@ module Prism
             comment.location.end_offset <= end_offset
         end
 
-        def <<(comment)
-          node.location.comments << comment
+        def leading_comment(comment)
+          node.location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          node.location.trailing_comment(comment)
         end
       end
 
@@ -65,8 +69,12 @@ module Prism
           false
         end
 
-        def <<(comment)
-          location.comments << comment
+        def leading_comment(comment)
+          location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          location.trailing_comment(comment)
         end
       end
 
@@ -84,15 +92,23 @@ module Prism
       def attach!
         parse_result.comments.each do |comment|
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)
-          target =
-            if comment.trailing?
-              preceding || following || enclosing || NodeTarget.new(parse_result.value)
-            else
-              # If a comment exists on its own line, prefer a leading comment.
-              following || preceding || enclosing || NodeTarget.new(parse_result.value)
-            end
 
-          target << comment
+          if comment.trailing?
+            if preceding
+              preceding.trailing_comment(comment)
+            else
+              (following || enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
+          else
+            # If a comment exists on its own line, prefer a leading comment.
+            if following
+              following.leading_comment(comment)
+            elsif preceding
+              preceding.trailing_comment(comment)
+            else
+              (enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
+          end
         end
       end
 
@@ -104,7 +120,7 @@ module Prism
         comment_start = comment.location.start_offset
         comment_end = comment.location.end_offset
 
-        targets = []
+        targets = [] #: Array[_Target]
         node.comment_targets.map do |value|
           case value
           when StatementsNode
@@ -117,8 +133,8 @@ module Prism
         end
 
         targets.sort_by!(&:start_offset)
-        preceding = nil
-        following = nil
+        preceding = nil #: _Target?
+        following = nil #: _Target?
 
         left = 0
         right = targets.length
@@ -134,6 +150,7 @@ module Prism
           target_end = target.end_offset
 
           if target.encloses?(comment)
+            # @type var target: NodeTarget
             # The comment is completely contained by this target. Abandon the
             # binary search at this level.
             return nearest_targets(target.node, comment)
@@ -171,7 +188,7 @@ module Prism
 
     # Attach the list of comments to their respective locations in the tree.
     def attach_comments!
-      Comments.new(self).attach!
+      Comments.new(self).attach! # steep:ignore
     end
   end
 end

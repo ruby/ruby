@@ -65,7 +65,7 @@ fn yjit_init() {
     }
 
     // Make sure --yjit-perf doesn't append symbols to an old file
-    if get_option!(perf_map) {
+    if get_option!(perf_map).is_some() {
         let perf_map = format!("/tmp/perf-{}.map", std::process::id());
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");
@@ -206,4 +206,20 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
     }
 
     return Qnil;
+}
+
+/// Push a C method frame if the given PC is supposed to lazily push one.
+/// This is called from rb_raise() (at rb_exc_new_str()) and other functions
+/// that may make a method call (e.g. rb_to_int()).
+#[no_mangle]
+pub extern "C" fn rb_yjit_lazy_push_frame(pc: *mut VALUE) {
+    if !yjit_enabled_p() {
+        return;
+    }
+
+    incr_counter!(num_lazy_frame_check);
+    if let Some(&(cme, recv_idx)) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
+        incr_counter!(num_lazy_frame_push);
+        unsafe { rb_vm_push_cfunc_frame(cme, recv_idx as i32) }
+    }
 }

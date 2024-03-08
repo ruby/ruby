@@ -44,7 +44,7 @@ struct rb_classext_struct {
     VALUE *iv_ptr;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
-    struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
+    struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
     struct rb_id_table *cvc_tbl;
     size_t superclass_depth;
     VALUE *superclasses;
@@ -108,6 +108,7 @@ struct RClass_and_rb_classext_t {
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
 
+#define RCLASS_IS_ROOT FL_USER0
 #define RICLASS_IS_ORIGIN FL_USER0
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
@@ -175,6 +176,7 @@ void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);
+VALUE rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super);
 VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
@@ -194,10 +196,16 @@ static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 VALUE rb_class_inherited(VALUE, VALUE);
 VALUE rb_keyword_error_new(const char *, VALUE);
 
+static inline bool
+RCLASS_SINGLETON_P(VALUE klass)
+{
+    return RB_TYPE_P(klass, T_CLASS) && FL_TEST_RAW(klass, FL_SINGLETON);
+}
+
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
-    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         return 0;
     }
     return RCLASS_EXT(klass)->as.class.allocator;
@@ -206,7 +214,7 @@ RCLASS_ALLOCATOR(VALUE klass)
 static inline void
 RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
 {
-    assert(!FL_TEST(klass, FL_SINGLETON));
+    assert(!RCLASS_SINGLETON_P(klass));
     RCLASS_EXT(klass)->as.class.allocator = allocator;
 }
 
@@ -266,8 +274,7 @@ RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
 static inline VALUE
 RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 {
-    assert(BUILTIN_TYPE(klass) == T_CLASS);
-    assert(FL_TEST_RAW(klass, FL_SINGLETON));
+    assert(RCLASS_SINGLETON_P(klass));
 
     RB_OBJ_WRITE(klass, &RCLASS_EXT(klass)->as.singleton_class.attached_object, attached_object);
     return attached_object;

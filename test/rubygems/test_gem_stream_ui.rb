@@ -2,7 +2,7 @@
 
 require_relative "helper"
 require "rubygems/user_interaction"
-require "rubygems/timeout"
+require "rubygems/vendored_timeout"
 
 class TestGemStreamUI < Gem::TestCase
   # increase timeout with RJIT for --jit-wait testing

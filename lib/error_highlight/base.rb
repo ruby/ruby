@@ -54,7 +54,16 @@ module ErrorHighlight
 
       return nil unless Thread::Backtrace::Location === loc
 
-      node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+      node =
+        begin
+          RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+        rescue RuntimeError => error
+          # RubyVM::AbstractSyntaxTree.of raises an error with a message that
+          # includes "prism" when the ISEQ was compiled with the prism compiler.
+          # In this case, we'll set the node to `nil`. In the future, we will
+          # reparse with the prism parser and pass the parsed node to Spotter.
+          raise unless error.message.include?("prism")
+        end
 
       Spotter.new(node, **opts).spot
 

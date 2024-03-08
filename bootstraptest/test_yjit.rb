@@ -2046,6 +2046,67 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
 } unless rjit_enabled? # Not yet working on RJIT
 
+# Basic test for String#setbyte
+assert_equal 'AoZ', %q{
+  s = "foo"
+  s.setbyte(0, 65)
+  s.setbyte(-1, 90)
+  s
+}
+
+# String#setbyte IndexError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(1, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte TypeError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(nil, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte FrozenError
+assert_equal 'String#setbyte', %q{
+  def ccall = "a".freeze.setbyte(0, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# non-leaf String#setbyte
+assert_equal 'String#setbyte', %q{
+  def to_int
+    @caller = caller
+    0
+  end
+
+  def ccall = "a".setbyte(self, 98)
+  ccall
+
+  @caller.first.split("'").last
+}
+
+# non-leaf String#byteslice
+assert_equal 'TypeError', %q{
+  def ccall = "".byteslice(nil, nil)
+  begin
+    ccall
+  rescue => e
+    e.class
+  end
+}
+
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
@@ -4452,6 +4513,10 @@ assert_equal 'true', %q{
   def entry = yield
   entry { true }
 }
+assert_equal 'sym', %q{
+  def entry = :sym.to_sym
+  entry
+}
 
 assert_normal_exit %q{
   ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
@@ -4537,4 +4602,79 @@ assert_normal_exit %q{
   end
 
   Foo.new.try
+}
+
+# a kwrest case
+assert_equal '[1, 2, {:complete=>false}]', %q{
+  def rest(foo: 1, bar: 2, **kwrest)
+    [foo, bar, kwrest]
+  end
+
+  def callsite = rest(complete: false)
+
+  callsite
+}
+
+# splat+kw_splat+opt+rest
+assert_equal '[1, []]', %q{
+  def opt_rest(a = 0, *rest) = [a, rest]
+
+  def call_site(args) = opt_rest(*args, **nil)
+
+  call_site([1])
+}
+
+# splat and nil kw_splat
+assert_equal 'ok', %q{
+  def identity(x) = x
+
+  def splat_nil_kw_splat(args) = identity(*args, **nil)
+
+  splat_nil_kw_splat([:ok])
+}
+
+# empty splat and kwsplat into leaf builtins
+assert_equal '[1, 1, 1]', %q{
+  empty = []
+  [1.abs(*empty), 1.abs(**nil), 1.bit_length(*empty, **nil)]
+}
+
+# splat into C methods with -1 arity
+assert_equal '[[1, 2, 3], [0, 2, 3], [1, 2, 3], [2, 2, 3], [], [], [{}]]', %q{
+  class Foo < Array
+    def push(args) = super(1, *args)
+  end
+
+  def test_cfunc_vargs_splat(sub_instance, array_class, empty_kw_hash)
+    splat = [2, 3]
+    kw_splat = [empty_kw_hash]
+    [
+      sub_instance.push(splat),
+      array_class[0, *splat, **nil],
+      array_class[1, *splat, &nil],
+      array_class[2, *splat, **nil, &nil],
+      array_class.send(:[], *kw_splat),
+      # kw_splat disables keywords hash handling
+      array_class[*kw_splat],
+      array_class[*kw_splat, **nil],
+    ]
+  end
+
+  test_cfunc_vargs_splat(Foo.new, Array, Hash.ruby2_keywords_hash({}))
+}
+
+# Class#new (arity=-1), splat, and ruby2_keywords
+assert_equal '[0, {1=>1}]', %q{
+  class KwInit
+    attr_reader :init_args
+    def initialize(x = 0, **kw)
+      @init_args = [x, kw]
+    end
+  end
+
+  def test(klass, args)
+    klass.new(*args).init_args
+  end
+
+  test(KwInit, [Hash.ruby2_keywords_hash({1 => 1})])
 }

@@ -3,6 +3,7 @@
 # See `tool/sync_default_gems.rb --help` for how to use this.
 
 require 'fileutils'
+require "rbconfig"
 
 module SyncDefaultGems
   include FileUtils
@@ -384,6 +385,9 @@ module SyncDefaultGems
     else
       sync_lib gem, upstream
     end
+
+    # Architecture-dependent files must not pollute libdir.
+    rm_rf(Dir["lib/**/*.#{RbConfig::CONFIG['DLEXT']}"])
     replace_rdoc_ref_all
   end
 

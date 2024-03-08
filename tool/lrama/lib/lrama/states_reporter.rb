@@ -109,8 +109,8 @@ module Lrama
         io << "\n"
 
         # Report shifts
-        tmp = state.term_transitions.select do |shift, _|
-          !shift.not_selected
+        tmp = state.term_transitions.reject do |shift, _|
+          shift.not_selected
         end.map do |shift, next_state|
           [shift.next_sym, next_state.id]
         end

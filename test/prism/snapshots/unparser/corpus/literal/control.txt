@@ -21,7 +21,8 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ IntegerNode (location: (6,7)-(6,8))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ ReturnNode (location: (7,0)-(7,11))
         │   ├── keyword_loc: (7,0)-(7,6) = "return"
         │   └── arguments:
@@ -29,9 +30,11 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (7,7)-(7,8))
-        │           │   └── flags: decimal
+        │           │   ├── flags: decimal
+        │           │   └── value: 1
         │           └── @ IntegerNode (location: (7,10)-(7,11))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 2
         ├── @ ReturnNode (location: (8,0)-(8,19))
         │   ├── keyword_loc: (8,0)-(8,6) = "return"
         │   └── arguments:
@@ -47,7 +50,8 @@
         │               │   @ StatementsNode (location: (8,14)-(8,15))
         │               │   └── body: (length: 1)
         │               │       └── @ IntegerNode (location: (8,14)-(8,15))
-        │               │           └── flags: decimal
+        │               │           ├── flags: decimal
+        │               │           └── value: 1
         │               ├── consequent:
         │               │   @ ElseNode (location: (8,16)-(8,19))
         │               │   ├── else_keyword_loc: (8,16)-(8,17) = ":"
@@ -55,7 +59,8 @@
         │               │   │   @ StatementsNode (location: (8,18)-(8,19))
         │               │   │   └── body: (length: 1)
         │               │   │       └── @ IntegerNode (location: (8,18)-(8,19))
-        │               │   │           └── flags: decimal
+        │               │   │           ├── flags: decimal
+        │               │   │           └── value: 2
         │               │   └── end_keyword_loc: ∅
         │               └── end_keyword_loc: ∅
         ├── @ BreakNode (location: (9,0)-(9,18))
@@ -72,7 +77,8 @@
         │   │           │   @ StatementsNode (location: (9,13)-(9,14))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (9,13)-(9,14))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 1
         │   │           ├── consequent:
         │   │           │   @ ElseNode (location: (9,15)-(9,18))
         │   │           │   ├── else_keyword_loc: (9,15)-(9,16) = ":"
@@ -80,7 +86,8 @@
         │   │           │   │   @ StatementsNode (location: (9,17)-(9,18))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (9,17)-(9,18))
-        │   │           │   │           └── flags: decimal
+        │   │           │   │           ├── flags: decimal
+        │   │           │   │           └── value: 2
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   └── keyword_loc: (9,0)-(9,5) = "break"
@@ -98,7 +105,8 @@
         │   │           │   @ StatementsNode (location: (10,12)-(10,13))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (10,12)-(10,13))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 1
         │   │           ├── consequent:
         │   │           │   @ ElseNode (location: (10,14)-(10,17))
         │   │           │   ├── else_keyword_loc: (10,14)-(10,15) = ":"
@@ -106,7 +114,8 @@
         │   │           │   │   @ StatementsNode (location: (10,16)-(10,17))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (10,16)-(10,17))
-        │   │           │   │           └── flags: decimal
+        │   │           │   │           ├── flags: decimal
+        │   │           │   │           └── value: 2
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   └── keyword_loc: (10,0)-(10,4) = "next"
@@ -126,7 +135,8 @@
                         │   @ StatementsNode (location: (12,2)-(12,3))
                         │   └── body: (length: 1)
                         │       └── @ IntegerNode (location: (12,2)-(12,3))
-                        │           └── flags: decimal
+                        │           ├── flags: decimal
+                        │           └── value: 1
                         ├── consequent:
                         │   @ ElseNode (location: (13,0)-(15,3))
                         │   ├── else_keyword_loc: (13,0)-(13,4) = "else"
@@ -134,6 +144,7 @@
                         │   │   @ StatementsNode (location: (14,2)-(14,3))
                         │   │   └── body: (length: 1)
                         │   │       └── @ IntegerNode (location: (14,2)-(14,3))
-                        │   │           └── flags: decimal
+                        │   │           ├── flags: decimal
+                        │   │           └── value: 2
                         │   └── end_keyword_loc: (15,0)-(15,3) = "end"
                         └── end_keyword_loc: (15,0)-(15,3) = "end"

@@ -93,7 +93,7 @@ class PP < PrettyPrint
   #
   # PP.pp returns +out+.
   def PP.pp(obj, out=$>, width=width_for(out))
-    q = PP.new(out, width)
+    q = new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
     #$pp = q
@@ -286,14 +286,19 @@ class PP < PrettyPrint
       group(1, '{', '}') {
         seplist(obj, nil, :each_pair) {|k, v|
           group {
-            pp k
-            text '=>'
-            group(1) {
-              breakable ''
-              pp v
-            }
+            pp_hash_pair k, v
           }
         }
+      }
+    end
+
+    # A pretty print for a pair of Hash
+    def pp_hash_pair(k, v)
+      pp k
+      text '=>'
+      group(1) {
+        breakable ''
+        pp v
       }
     end
   end

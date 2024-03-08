@@ -17,7 +17,7 @@
     * autoconf - 2.67 or later
     * gperf - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
-    * ruby - 2.7 or later
+    * ruby - 3.0 or later
         * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
 
 2. Install optional, recommended dependencies:
@@ -42,7 +42,7 @@
 
 1. Download ruby source code:
 
-    Select one of the bellow.
+    Select one of the below.
 
     1. Build from the tarball:
 
@@ -173,17 +173,23 @@ You should configure Ruby without optimization and other flags that may interfer
 
 ### Building with Address Sanitizer
 
-Using the address sanitizer is a great way to detect memory issues.
+Using the address sanitizer (ASAN) is a great way to detect memory issues. It can detect memory safety issues in Ruby itself, and also in any C extensions compiled with and loaded into a Ruby compiled with ASAN.
 
 ``` shell
 ./autogen.sh
 mkdir build && cd build
-export ASAN_OPTIONS="halt_on_error=0:use_sigaltstack=0:detect_leaks=0"
-../configure cppflags="-fsanitize=address -fno-omit-frame-pointer" optflags=-O0 LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+../configure CC=clang cflags="-fsanitize=address -fno-omit-frame-pointer -DUSE_MN_THREADS=0" # and any other options you might like
 make
 ```
+The compiled Ruby will now automatically crash with a report and a backtrace if ASAN detects a memory safety issue.
 
-On Linux it is important to specify `-O0` when debugging. This is especially true for ASAN which sometimes works incorrectly at higher optimisation levels.
+Please note, however, the following caveats!
+
+* ASAN will not work properly on any currently released version of Ruby; the necessary support is currently only present on Ruby's master branch.
+* Due to [this bug](https://bugs.ruby-lang.org/issues/20243), Clang generates code for threadlocal variables which doesn't work with M:N threading. Thus, it's necessary to disable M:N threading support at build time for now.
+* Currently, ASAN will only work correctly when using a recent head build of LLVM/Clang - it requires [this bugfix](https://github.com/llvm/llvm-project/pull/75290) related to multithreaded `fork`, which is not yet in any released version. See [here](https://llvm.org/docs/CMake.html) for instructions on how to build LLVM/Clang from source (note you will need at least the `clang` and `compiler-rt` projects enabled). Then, you will need to replace `CC=clang` in the instructions with an explicit path to your built Clang binary.
+* ASAN has only been tested so far with Clang on Linux. It may or may not work with other compilers or on other platforms - please file an issue on [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if you run into problems with such configurations (or, to report that they actually work properly!)
+* In particular, although I have not yet tried it, I have reason to believe ASAN will _not_ work properly on macOS yet - the fix for the multithreaded fork issue was actually reverted for macOS (see [here](https://github.com/llvm/llvm-project/commit/2a03854e4ce9bb1bcd79a211063bc63c4657f92c)). Please open an issue on [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if this is a problem for you.
 
 ## How to measure coverage of C and Ruby code
 

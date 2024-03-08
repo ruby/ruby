@@ -23,13 +23,16 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ IntegerNode (location: (1,4)-(1,5))
-            │       │   └── flags: decimal
+            │       │   ├── flags: decimal
+            │       │   └── value: 0
             │       └── @ IntegerNode (location: (1,7)-(1,8))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: (1,8)-(1,9) = "]"
             ├── block: ∅
             ├── operator: :+
             ├── operator_loc: (1,10)-(1,12) = "+="
             └── value:
                 @ IntegerNode (location: (1,13)-(1,14))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 2

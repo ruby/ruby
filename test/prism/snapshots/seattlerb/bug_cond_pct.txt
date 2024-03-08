@@ -15,6 +15,7 @@
             │       │       ├── content_loc: (1,14)-(1,22) = "blahblah"
             │       │       ├── closing_loc: (1,22)-(1,23) = "%"
             │       │       └── unescaped: "blahblah"
+            │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

@@ -226,6 +226,7 @@ class VCS
 
   def after_export(dir)
     FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
+    FileUtils.rm_rf(Dir.glob("#{dir}/.mailmap"))
   end
 
   def revision_handler(rev)

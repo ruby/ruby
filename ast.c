@@ -253,6 +253,11 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
     if (!iseq) {
         return Qnil;
     }
+
+    if (ISEQ_BODY(iseq)->prism) {
+        rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
+    }
+
     lines = ISEQ_BODY(iseq)->variable.script_lines;
 
     VALUE path = rb_iseq_path(iseq);
@@ -567,6 +572,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_args(1, rb_node_rational_literal_val(node));
       case NODE_IMAGINARY:
         return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(node));
+      case NODE_REGX:
+        return rb_ary_new_from_args(1, rb_node_regx_string_val(node));
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
@@ -712,8 +719,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
-      case NODE_RIPPER:
-      case NODE_RIPPER_VALUES:
       case NODE_LAST:
         break;
     }

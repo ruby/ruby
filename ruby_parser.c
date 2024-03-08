@@ -1,5 +1,6 @@
 /* This is a wrapper for parse.y */
 
+#include "internal/re.h"
 #include "internal/ruby_parser.h"
 
 #include "node.h"
@@ -358,12 +359,6 @@ syntax_error_new(void)
     return rb_class_new_instance(0, 0, rb_eSyntaxError);
 }
 
-static int
-obj_frozen(VALUE obj)
-{
-    return (int)RB_OBJ_FROZEN(obj);
-}
-
 static VALUE
 obj_write(VALUE old, VALUE *slot, VALUE young)
 {
@@ -404,12 +399,6 @@ static int *
 rb_errno_ptr2(void)
 {
     return rb_errno_ptr();
-}
-
-static int
-type_p(VALUE obj, int t)
-{
-    return (int)RB_TYPE_P(obj, t);
 }
 
 static int
@@ -454,23 +443,10 @@ ruby_vm_frozen_core(void)
     return rb_mRubyVMFrozenCore;
 }
 
-static int
-special_const_p(VALUE obj)
-{
-    return (int)RB_SPECIAL_CONST_P(obj);
-}
-
-static int
-builtin_type(VALUE obj)
-{
-    return (int)RB_BUILTIN_TYPE(obj);
-}
-
 static rb_ast_t *
 ast_new(VALUE nb)
 {
-    rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, nb);
-    return ast;
+    return IMEMO_NEW(rb_ast_t, imemo_ast, nb);
 }
 
 static VALUE
@@ -511,8 +487,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .obj_freeze = rb_obj_freeze,
     .obj_hide = rb_obj_hide,
-    .obj_frozen = obj_frozen,
-    .type_p = type_p,
     .obj_freeze_raw = OBJ_FREEZE_RAW,
 
     .fixnum_p = fixnum_p,
@@ -523,17 +497,13 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_new = rb_ary_new,
     .ary_push = rb_ary_push,
     .ary_new_from_args = rb_ary_new_from_args,
-    .ary_pop = rb_ary_pop,
-    .ary_last = rb_ary_last,
     .ary_unshift = rb_ary_unshift,
     .ary_new2 = rb_ary_new2,
-    .ary_entry = rb_ary_entry,
     .ary_clear = rb_ary_clear,
     .ary_modify = rb_ary_modify,
     .array_len = rb_array_len,
     .array_aref = RARRAY_AREF,
 
-    .sym_intern_ascii_cstr = rb_sym_intern_ascii_cstr,
     .make_temporary_id = rb_make_temporary_id,
     .is_local_id = is_local_id2,
     .is_attrset_id = is_attrset_id2,
@@ -546,7 +516,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .intern_str = rb_intern_str,
     .is_notop_id = is_notop_id2,
     .enc_symname_type = enc_symname_type,
-    .str_intern = rb_str_intern,
     .id2name = rb_id2name,
     .id2str = rb_id2str,
     .id2sym = rb_id2sym,
@@ -555,7 +524,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_catf = rb_str_catf,
     .str_cat_cstr = rb_str_cat_cstr,
     .str_subseq = rb_str_subseq,
-    .str_dup = rb_str_dup,
     .str_new_frozen = rb_str_new_frozen,
     .str_buf_new = rb_str_buf_new,
     .str_buf_cat = rb_str_buf_cat,
@@ -565,7 +533,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_resize = rb_str_resize,
     .str_new = rb_str_new,
     .str_new_cstr = rb_str_new_cstr,
-    .fstring = rb_fstring,
+    .str_to_interned_str = rb_str_to_interned_str,
     .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
     .enc_str_buf_cat = enc_str_buf_cat,
@@ -650,10 +618,9 @@ static const rb_parser_config_t rb_global_parser_config = {
     .sized_realloc_n = ruby_sized_realloc_n,
     .obj_write = obj_write,
     .obj_written = obj_written,
-    .gc_register_mark_object = rb_gc_register_mark_object,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
-    .gc_mark_movable = rb_gc_mark_movable,
+    .gc_mark_and_move = rb_gc_mark_and_move,
     .gc_location = rb_gc_location,
 
     .reg_compile = rb_reg_compile,
@@ -685,8 +652,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .eArgError = arg_error,
     .mRubyVMFrozenCore = ruby_vm_frozen_core,
     .long2int = rb_long2int,
-    .special_const_p = special_const_p,
-    .builtin_type = builtin_type,
 
     .node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal,
 
@@ -1024,6 +989,16 @@ rb_node_dregx_string_val(const NODE *node)
 }
 
 VALUE
+rb_node_regx_string_val(const NODE *node)
+{
+    rb_node_regx_t *node_reg = RNODE_REGX(node);
+    rb_parser_string_t *string = node_reg->string;
+    VALUE str = rb_enc_str_new(string->ptr, string->len, string->enc);
+
+    return rb_reg_compile(str, node_reg->options, NULL, 0);
+}
+
+VALUE
 rb_node_line_lineno_val(const NODE *node)
 {
     return INT2FIX(node->nd_loc.beg_pos.lineno);
@@ -1045,21 +1020,40 @@ VALUE
 rb_node_const_decl_val(const NODE *node)
 {
     VALUE path;
-    if (RNODE_CDECL(node)->nd_vid) {
-        path = rb_id2str(RNODE_CDECL(node)->nd_vid);
+    switch (nd_type(node)) {
+      case NODE_CDECL:
+        if (RNODE_CDECL(node)->nd_vid) {
+            path = rb_id2str(RNODE_CDECL(node)->nd_vid);
+            goto end;
+        }
+        else {
+            node = RNODE_CDECL(node)->nd_else;
+        }
+        break;
+      case NODE_COLON2:
+        break;
+      case NODE_COLON3:
+        // ::Const
+        path = rb_str_new_cstr("::");
+        rb_str_append(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
+        goto end;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
     }
-    else {
-        NODE *n = RNODE_CDECL(node)->nd_else;
-        path = rb_ary_new();
-        for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
-            rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
+
+    path = rb_ary_new();
+    if (node) {
+        for (; node && nd_type_p(node, NODE_COLON2); node = RNODE_COLON2(node)->nd_head) {
+            rb_ary_push(path, rb_id2str(RNODE_COLON2(node)->nd_mid));
         }
-        if (n && nd_type_p(n, NODE_CONST)) {
+        if (node && nd_type_p(node, NODE_CONST)) {
             // Const::Name
-            rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
+            rb_ary_push(path, rb_id2str(RNODE_CONST(node)->nd_vid));
         }
-        else if (n && nd_type_p(n, NODE_COLON3)) {
+        else if (node && nd_type_p(node, NODE_COLON3)) {
             // ::Const::Name
+            rb_ary_push(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
             rb_ary_push(path, rb_str_new(0, 0));
         }
         else {
@@ -1067,7 +1061,8 @@ rb_node_const_decl_val(const NODE *node)
             rb_ary_push(path, rb_str_new_cstr("..."));
         }
         path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
-        path = rb_fstring(path);
     }
+  end:
+    path = rb_fstring(path);
     return path;
 }

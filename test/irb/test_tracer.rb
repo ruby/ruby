@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'tempfile'
 require 'irb'
-require 'rubygems'
 
 require_relative "helper"
 

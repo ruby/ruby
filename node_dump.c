@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/hash.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
@@ -89,7 +90,7 @@ rb_dump_literal(VALUE lit)
         switch (RB_BUILTIN_TYPE(lit)) {
           case T_CLASS: case T_MODULE: case T_ICLASS:
             str = rb_class_path(lit);
-            if (FL_TEST(lit, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(lit)) {
                 str = rb_sprintf("<%"PRIsVALUE">", str);
             }
             return str;
@@ -678,7 +679,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("match expression (against $_ implicitly)");
         ANN("format: [nd_lit] (in condition)");
         ANN("example: if /foo/; foo; end");
-        F_LIT(nd_lit, RNODE_MATCH, "regexp");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
         return;
 
       case NODE_MATCH2:
@@ -748,6 +750,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [val]");
         ANN("example: 1i");
         F_VALUE(val, rb_node_imaginary_literal_val(node), "val");
+        return;
+
+      case NODE_REGX:
+        ANN("regexp literal");
+        ANN("format: [string]");
+        ANN("example: /foo/");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
         return;
 
       case NODE_ONCE:
@@ -1155,15 +1165,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [enc]");
         ANN("example: __ENCODING__");
         F_VALUE(enc, rb_node_encoding_val(node), "enc");
-        break;
+        return;
 
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
         return;
 
       case NODE_ARGS_AUX:
-      case NODE_RIPPER:
-      case NODE_RIPPER_VALUES:
       case NODE_LAST:
         break;
     }
