@@ -1110,7 +1110,7 @@ main()
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
-		cleanlibs='$(TARGET_SO).dSYM'
+		cleanlibs='$(TARGET_SO:=.dSYM)'
 		],
 [solaris*], [	LIBS="-lm $LIBS"
 		ac_cv_func_vfork=no
