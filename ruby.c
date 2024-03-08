@@ -320,7 +320,7 @@ usage(const char *name, int help, int highlight, int columns)
      * Removed -h because the user already knows that option. Others? */
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",                     "Set input record separator ($/):\n"
-            "(-0 for \\0; -00 for paragraph mode; -0777 for slurp mode)."),
+            "-0 for \\0; -00 for paragraph mode; -0777 for slurp mode."),
         M("-a",		   "",                     "Split each input line ($_) into fields ($F)"),
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
@@ -329,7 +329,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default internal and external encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;)"),
         M("-i[extension]", "",			   "Set ARGF in-place mode."),
-        M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH); multiple -I allowed."),
+        M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH);\n"
+            "multiple -I allowed."),
         M("-l",		   "",			   "Set output record separator ($\\) to $/"),
         M("-n",		   "",			   "Run program in gets loop."),
         M("-p",		   "",			   "Like -n, with printing added."),
@@ -338,7 +339,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-S",		   "",			   "Search directories found in ENV['PATH']."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
-        M("-W[lvl=2|:cat]","",   	           "Set warning flag ($-W): 0 for silent; 1 for moderate; 2 for verbose."),
+        M("-W[lvl=2|:cat]","",   	           "Set warning flag ($-W):\n"
+            "0 for silent; 1 for moderate; 2 for verbose."),
         M("-x[dirpath]",   "",			   "Execute Ruby code found in text."),
         M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
