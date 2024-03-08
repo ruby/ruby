@@ -319,8 +319,8 @@ usage(const char *name, int help, int highlight, int columns)
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
     static const struct ruby_opt_message usage_msg[] = {
-        M("-0[octal]",	   "",                     "Set input record separator ($/)"
-          ": -0 for "\\x00"; -00 for paragraph mode; -0777 for slurp mode."),
+        M("-0[octal]",	   "",                     "Set input record separator ($/):s\n"
+            "(-0 for "\\0"; -00 for paragraph mode; -0777 for slurp mode)"),
         M("-a",		   "",                     "Split each input line ($_) into fields ($F)",
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
