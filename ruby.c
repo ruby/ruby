@@ -361,7 +361,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--external-encoding=encoding", "",            "Set default external encoding."),
         M("--help",		          "",            "Print long help message; use -h for short message."),
         M("--internal-encoding=encoding", "",            "Set default internal encoding."),
-        M("--parser=parser",              "",            "Set Ruby parser: parse.y or prism.")
+        M("--parser=parser",              "",            "Set Ruby parser: parse.y or prism."),
         M("--verbose",                    "",            "Set $VERBOSE to true; ignore input from $stdin."),
         M("--version",                    "",            "Print Ruby version."),
         M("-y",                           ", --yydebug", "Print parser log; backward compatibility not guaranteed."),
