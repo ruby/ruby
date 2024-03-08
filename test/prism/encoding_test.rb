@@ -155,27 +155,19 @@ module Prism
       define_method(:"test_encoding_flags_#{encoding.name}") do
         assert_encoding_flags(encoding, escapes)
       end
-    end
 
-    encodings.each_key do |encoding|
       define_method(:"test_symbol_encoding_flags_#{encoding.name}") do
         assert_symbol_encoding_flags(encoding, symbols)
       end
-    end
 
-    encodings.each_key do |encoding|
       define_method(:"test_symbol_character_escape_encoding_flags_#{encoding.name}") do
         assert_symbol_character_escape_encoding_flags(encoding, escapes)
       end
-    end
 
-    encodings.each_key do |encoding|
       define_method(:"test_regular_expression_encoding_flags_#{encoding.name}") do
         assert_regular_expression_encoding_flags(encoding, regexps.map(&:inspect))
       end
-    end
 
-    encodings.each_key do |encoding|
       define_method(:"test_regular_expression_escape_encoding_flags_#{encoding.name}") do
         assert_regular_expression_encoding_flags(encoding, escapes.map { |e| "/#{e}/" })
       end
@@ -187,8 +179,10 @@ module Prism
     encoding_modifiers.each_value do |modifier|
       encodings.each_key do |encoding|
         define_method(:"test_regular_expression_encoding_modifiers_/#{modifier}_#{encoding.name}") do
-          regexps = regexp_sources.product(encoding_modifiers.values).map { |r, modifier| "/#{r}/#{modifier}" }
-          assert_regular_expression_encoding_flags(encoding, regexps)
+          assert_regular_expression_encoding_flags(
+            encoding,
+            regexp_sources.product(encoding_modifiers.values).map { |r, modifier| "/#{r}/#{modifier}" }
+          )
         end
       end
     end
@@ -499,7 +493,7 @@ module Prism
             eval(source).encoding
           rescue SyntaxError => error
             if encoding_errors.find { |e| error.message.include?(e) }
-              messages = error.message.split("\n").map { |m| m[/: (.+?)$/, 1] }
+              error.message.split("\n").map { |m| m[/: (.+?)$/, 1] }
             elsif skipped_errors.find { |e| error.message.include?(e) }
               next
             else
