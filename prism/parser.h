@@ -664,17 +664,6 @@ struct pm_parser {
     pm_string_t current_string;
 
     /**
-     * This string is used to pass information from the lexer to the parser. When
-     * processing regular expressions we must track the string source for the expression
-     * as well as its unescaped representation. In that case, `current_string` will hold
-     * the unescaped value while this field will hold the translated source value. There
-     * are some escape sequences in regular expressions that will cause the associated
-     * source string to have a different value than the content of the expression so we
-     * must track this state separately.
-     */
-    pm_string_t current_regular_expression_source;
-
-    /**
      * The line number at the start of the parse. This will be used to offset
      * the line numbers of all of the locations.
      */
@@ -753,6 +742,12 @@ struct pm_parser {
      * a true value.
      */
     bool frozen_string_literal;
+
+    /**
+     * True if the current regular expression being lexed contains only ASCII
+     * characters.
+     */
+    bool current_regular_expression_ascii_only;
 };
 
 #endif

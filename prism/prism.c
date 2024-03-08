@@ -8931,6 +8931,15 @@ pm_regexp_token_buffer_push_escaped(pm_regexp_token_buffer_t *token_buffer, pm_p
     parser->current.end += width;
 }
 
+static bool
+pm_slice_ascii_only_p(const uint8_t *value, size_t length) {
+    for (size_t index = 0; index < length; index++) {
+        if (value[index] & 0x80) return false;
+    }
+
+    return true;
+}
+
 /**
  * When we're about to return from lexing the current token and we know for sure
  * that we have found an escape sequence, this function is called to copy the
@@ -8945,7 +8954,8 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
 static inline void
 pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     pm_string_owned_init(&parser->current_string, (uint8_t *) pm_buffer_value(&token_buffer->base.buffer), pm_buffer_length(&token_buffer->base.buffer));
-    pm_string_owned_init(&parser->current_regular_expression_source, (uint8_t *) pm_buffer_value(&token_buffer->regexp_buffer), pm_buffer_length(&token_buffer->regexp_buffer));
+    parser->current_regular_expression_ascii_only = pm_slice_ascii_only_p((const uint8_t *) pm_buffer_value(&token_buffer->regexp_buffer), pm_buffer_length(&token_buffer->regexp_buffer));
+    pm_buffer_free(&token_buffer->regexp_buffer);
 }
 
 /**
@@ -8971,7 +8981,7 @@ static void
 pm_regexp_token_buffer_flush(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     if (token_buffer->base.cursor == NULL) {
         pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-        pm_string_shared_init(&parser->current_regular_expression_source, parser->current.start, parser->current.end);
+        parser->current_regular_expression_ascii_only = pm_slice_ascii_only_p(parser->current.start, (size_t) (parser->current.end - parser->current.start));
     } else {
         pm_buffer_append_bytes(&token_buffer->base.buffer, token_buffer->base.cursor, (size_t) (parser->current.end - token_buffer->base.cursor));
         pm_buffer_append_bytes(&token_buffer->regexp_buffer, token_buffer->base.cursor, (size_t) (parser->current.end - token_buffer->base.cursor));
@@ -17156,10 +17166,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // regular expression) or if it's not then it has interpolation.
                 pm_string_t unescaped = parser->current_string;
                 pm_token_t content = parser->current;
-
-                pm_string_t source = parser->current_regular_expression_source;
-                bool ascii_only = pm_ascii_only_p(&source);
-                pm_string_constant_init(&parser->current_regular_expression_source, "", 0);
+                bool ascii_only = parser->current_regular_expression_ascii_only;
                 parser_lex(parser);
 
                 // If we hit an end, then we can create a regular expression node
@@ -17168,7 +17175,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
                     pm_node_t *node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
                     pm_node_flag_set(node, parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, node->flags));
-                    pm_string_free(&source);
                     return node;
                 }
 
@@ -17180,7 +17186,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t closing = not_provided(parser);
                 pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
                 pm_interpolated_regular_expression_node_append(interpolated, part);
-                pm_string_free(&source);
             } else {
                 // If the first part of the body of the regular expression is not a
                 // string content, then we have interpolation and we need to create an
@@ -17192,17 +17197,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // parts into the list.
             pm_node_t *part;
             while (!match2(parser, PM_TOKEN_REGEXP_END, PM_TOKEN_EOF)) {
-                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                    pm_token_t opening = not_provided(parser);
-                    pm_token_t closing = not_provided(parser);
-
-                    pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
-                    pm_node_flag_set(node, parse_unescaped_encoding(parser));
-                    pm_string_free(&parser->current_regular_expression_source);
-
-                    parser_lex(parser);
-                    pm_interpolated_regular_expression_node_append(interpolated, node);
-                } else if ((part = parse_string_part(parser)) != NULL) {
+                if ((part = parse_string_part(parser)) != NULL) {
                     pm_interpolated_regular_expression_node_append(interpolated, part);
                 }
             }
@@ -18741,7 +18736,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .newline_list = { 0 },
         .integer_base = 0,
         .current_string = PM_STRING_EMPTY,
-        .current_regular_expression_source = PM_STRING_EMPTY,
         .start_line = 1,
         .explicit_encoding = NULL,
         .command_line = 0,
@@ -18752,7 +18746,8 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .in_keyword_arg = false,
         .current_param_name = 0,
         .semantic_token_seen = false,
-        .frozen_string_literal = false
+        .frozen_string_literal = false,
+        .current_regular_expression_ascii_only = false
     };
 
     // Initialize the constant pool. We're going to completely guess as to the
