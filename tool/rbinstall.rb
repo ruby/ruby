@@ -862,10 +862,7 @@ module RbInstall
     end
   end
 
-  class GemInstaller < Gem::Installer
-  end
-
-  class UnpackedInstaller < GemInstaller
+  class UnpackedInstaller < Gem::Installer
     def write_cache_file
     end
 
@@ -889,11 +886,6 @@ module RbInstall
       super
     end
 
-    def generate_bin_script(filename, bindir)
-      return if same_bin_script?(filename, bindir)
-      super
-    end
-
     def same_bin_script?(filename, bindir)
       path = File.join(bindir, formatted_program_filename(filename))
       begin
@@ -912,9 +904,7 @@ module RbInstall
       super unless $dryrun
       $installed_list.puts(without_destdir(default_spec_file)) if $installed_list
     end
-  end
 
-  class GemInstaller
     def install
       spec.post_install_message = nil
       RbInstall.no_write(options) {super}
@@ -925,6 +915,7 @@ module RbInstall
     end
 
     def generate_bin_script(filename, bindir)
+      return if same_bin_script?(filename, bindir)
       name = formatted_program_filename(filename)
       unless $dryrun
         super
