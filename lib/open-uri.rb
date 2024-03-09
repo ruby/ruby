@@ -746,6 +746,12 @@ module OpenURI
     #  Using +true+ also means that redirections between http and ftp are
     #  permitted.
     #
+    # [:max_redirects]
+    #  Synopsis:
+    #    :max_redirects=>int
+    #
+    #  Number of HTTP redirects allowed before OpenURI::TooManyRedirects is raised.
+    #  The default is 64.
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
     end
