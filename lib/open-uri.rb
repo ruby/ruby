@@ -212,7 +212,7 @@ module OpenURI
     end
 
     uri_set = {}
-    max_redirects = options[:max_redirects]
+    max_redirects = options[:max_redirects] || Options.fetch(:max_redirects)
     buf = nil
     while true
       redirect = catch(:open_uri_redirect) {
