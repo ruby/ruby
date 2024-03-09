@@ -220,15 +220,20 @@ def ln_sf(src, dest)
 end
 
 $made_dirs = {}
+
+def dir_creating(dir)
+  $made_dirs.fetch(dir) do
+    $made_dirs[dir] = true
+    $installed_list.puts(File.join(dir, "")) if $installed_list
+    yield if defined?(yield)
+  end
+end
+
 def makedirs(dirs)
   dirs = fu_list(dirs)
   dirs.collect! do |dir|
     realdir = with_destdir(dir)
-    realdir unless $made_dirs.fetch(dir) do
-      $made_dirs[dir] = true
-      $installed_list.puts(File.join(dir, "")) if $installed_list
-      File.directory?(realdir)
-    end
+    realdir unless dir_creating(dir) {File.directory?(realdir)}
   end.compact!
   super(dirs, :mode => $dir_mode) unless dirs.empty?
 end
@@ -667,6 +672,7 @@ module RbInstall
 
     def install
       spec.post_install_message = nil
+      dir_creating(without_destdir(gem_dir))
       RbInstall.no_write(options) {super}
     end
 
