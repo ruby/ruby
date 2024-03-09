@@ -119,9 +119,9 @@ rb_mod_name0(VALUE klass, bool *permanent)
 
 /*
  *  call-seq:
- *     mod.name    -> string
+ *     mod.name    -> string or nil
  *
- *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
+ *  Returns the name of the module <i>mod</i>.  Returns +nil+ for anonymous modules.
  */
 
 VALUE
