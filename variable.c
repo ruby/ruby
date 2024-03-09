@@ -2300,23 +2300,28 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  *   Foo::UNDEFINED_CONST    #=> :UNDEFINED_CONST: symbol returned
  *
- * In the next example when a reference is made to an undefined constant,
- * it attempts to load a file whose name is the lowercase version of the
- * constant (thus class <code>Fred</code> is assumed to be in file
- * <code>fred.rb</code>).  If found, it returns the loaded class. It
- * therefore implements an autoload feature similar to Kernel#autoload and
- * Module#autoload.
+ * As the example above shows, +const_missing+ is not required to create the
+ * missing constant in <i>mod</i>, though that is often a side-effect. The
+ * caller gets its return value when triggered. If the constant is also defined,
+ * further lookups won't hit +const_missing+ and will return the value stored in
+ * the constant as usual. Otherwise, +const_missing+ will be invoked again.
+ *
+ * In the next example, when a reference is made to an undefined constant,
+ * +const_missing+ attempts to load a file whose path is the lowercase version
+ * of the constant name (thus class <code>Fred</code> is assumed to be in file
+ * <code>fred.rb</code>). If defined as a side-effect of loading the file, the
+ * method returns the value stored in the constant. This implements an autoload
+ * feature similar to Kernel#autoload and Module#autoload, though it differs in
+ * important ways.
  *
  *   def Object.const_missing(name)
  *     @looked_for ||= {}
  *     str_name = name.to_s
- *     raise "Class not found: #{name}" if @looked_for[str_name]
+ *     raise "Constant not found: #{name}" if @looked_for[str_name]
  *     @looked_for[str_name] = 1
  *     file = str_name.downcase
  *     require file
- *     klass = const_get(name)
- *     return klass if klass
- *     raise "Class not found: #{name}"
+ *     const_get(name, false)
  *   end
  *
  */
