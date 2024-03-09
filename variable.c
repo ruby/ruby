@@ -271,19 +271,19 @@ rb_tmp_class_path(VALUE klass, bool *permanent, fallback_func fallback)
     if (!NIL_P(path)) {
         return path;
     }
-    else {
-        if (RB_TYPE_P(klass, T_MODULE)) {
-            if (rb_obj_class(klass) == rb_cModule) {
-                path = Qfalse;
-            }
-            else {
-                bool perm;
-                path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
-            }
+
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        if (rb_obj_class(klass) == rb_cModule) {
+            path = Qfalse;
         }
-        *permanent = false;
-        return fallback(klass, path);
+        else {
+            bool perm;
+            path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
+        }
     }
+
+    *permanent = false;
+    return fallback(klass, path);
 }
 
 VALUE
