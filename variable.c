@@ -131,7 +131,7 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
-// Similar to logic in rb_mod_const_get()
+// Similar to logic in rb_mod_const_get().
 static bool
 is_constant_path(VALUE name)
 {
@@ -172,8 +172,8 @@ is_constant_path(VALUE name)
  *  introspection of the module and the values that are related to it, such
  *  as instances, constants, and methods.
  *
- *  The name should be +nil+ or non-empty string that is not a valid constant
- *  name (to avoid confusing between permanent and temporary names).
+ *  The name should be +nil+ or a non-empty string that is not a valid constant
+ *  path (to avoid confusing between permanent and temporary names).
  *
  *  The method can be useful to distinguish dynamically generated classes and
  *  modules without assigning them to constants.
@@ -2228,8 +2228,7 @@ check_id_type(VALUE obj, VALUE *pname,
  *     obj.remove_instance_variable(string)    -> obj
  *
  *  Removes the named instance variable from <i>obj</i>, returning that
- *  variable's value.
- *  String arguments are converted to symbols.
+ *  variable's value. The name can be passed as a symbol or as a string.
  *
  *     class Dummy
  *       attr_reader :var
@@ -2293,8 +2292,7 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  * Invoked when a reference is made to an undefined constant in
  * <i>mod</i>. It is passed a symbol for the undefined constant, and
- * returns a value to be used for that constant. The
- * following code is an example of the same:
+ * returns a value to be used for that constant. For example, consider:
  *
  *   def Foo.const_missing(name)
  *     name # return the constant name as Symbol
