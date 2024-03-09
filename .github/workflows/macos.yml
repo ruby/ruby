@@ -90,7 +90,10 @@ jobs:
         id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
+          os: ${{ matrix.os }}
+          test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
           srcdir: src
 
       - name: Set extra test options
@@ -115,17 +118,6 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - name: Record test results in Launchable
-        uses: ./.github/actions/launchable/record-test
-        with:
-          # We need to configure the `build` directory because
-          # this composite action is executed in the default working directory.
-          report-path: ../build/launchable_reports.json
-          os: ${{ matrix.os }}
-          test-opts: ${{ matrix.test_opts }}
-          srcdir: src
-        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
         with:
