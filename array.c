@@ -2296,70 +2296,28 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  In brief:
  *
- *  - With argument +index+:
- *
- *      # Non-negative, in range.
- *      a = [:foo, 'bar', 2]
+ *      a_orig = [:foo, 'bar', 2]
+ *      # With argument index.
+ *      a = a_orig.dup
  *      a[0] = 'foo' # => "foo"
  *      a # => ["foo", "bar", 2]
- *      # Positive, out of range.
- *      a = [:foo, 'bar', 2]
+ *      a = a_orig.dup
  *      a[7] = 'foo' # => "foo"
  *      a # => [:foo, "bar", 2, nil, nil, nil, nil, "foo"]
- *      # Negative.
- *      a = [:foo, 'bar', 2]
- *      a[-1] = 'two' # => "two"
- *      a # => [:foo, "bar", "two"]
- *
- *  - With arguments +start+ and +length+:
- *
- *      # With non-array.
- *      a = [:foo, 'bar', 2]
+ *      # With arguments start and length.
+ *      a = a_orig.dup
  *      a[0, 2] = 'foo' # => "foo"
  *      a # => ["foo", 2]
- *      # Negative start.
- *      a = [:foo, 'bar', 2]
- *      a[-2, 2] = 'foo' # => "foo"
- *      a # => [:foo, "foo"]
- *      # Non-negative start out of range.
- *      a = [:foo, 'bar', 2]
+ *      a = a_orig.dup
  *      a[6, 50] = 'foo' # => "foo"
  *      a # => [:foo, "bar", 2, nil, nil, nil, "foo"]
- *      # Zero length.
- *      a = [:foo, 'bar', 2]
- *      a[1, 0] = 'foo' # => "foo"
- *      a # => [:foo, "foo", "bar", 2]
- *      # Length out of range.
- *      a = [:foo, 'bar', 2]
- *      a[1, 5] = 'foo' # => "foo"
- *      a # => [:foo, "foo"]
- *
- *  - With argument +range+:
- *
- *      # With non-array.
- *      a = [:foo, 'bar', 2]
+ *      # With argument range.
+ *      a = a_orig.dup
  *      a[0..1] = 'foo' # => "foo"
  *      a # => ["foo", 2]
- *      # Negative begin.
- *      a = [:foo, 'bar', 2]
- *      a[-2..2] = 'foo' # => "foo"
- *      a # => [:foo, "foo"]
- *      # Out-of-range begin.
- *      a = [:foo, 'bar', 2]
+ *      a = a_orig.dup
  *      a[6..50] = 'foo' # => "foo"
  *      a # => [:foo, "bar", 2, nil, nil, nil, "foo"]
- *      # Zero end.
- *      a = [:foo, 'bar', 2]
- *      a[1..0] = 'foo' # => "foo"
- *      a # => [:foo, "foo", "bar", 2]
- *      # Negative end.
- *      a = [:foo, 'bar', 2]
- *      a[1..-1] = 'foo' # => "foo"
- *      a # => [:foo, "foo"]
- *      # Out-of-range end.
- *      a = [:foo, 'bar', 2]
- *      a[1..5] = 'foo' # => "foo"
- *      a # => [:foo, "foo"]
  *
  *  When Integer argument +index+ is given, assigns +object+ to an element in +self+.
  *
