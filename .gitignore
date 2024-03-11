@@ -228,6 +228,10 @@ lcov*.info
 /lib/ruby/[1-9]*.*
 /lib/ruby/vendor_ruby
 
+# /lib/rdoc/markdown
+/lib/rdoc/markdown.rb
+/lib/rdoc/markdown/literals.rb
+
 # /misc/
 /misc/**/__pycache__
 
