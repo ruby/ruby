@@ -1390,20 +1390,22 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 	$(exec) $(MAKE) -f - $(mflags) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. RUBY="$(BASERUBY)"
 
-prepare-rdoc: main
+KPEG= .bundle/bin/kpeg
+$(KPEG): main
+$(KPEG):
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative --silent "kpeg"
 
 generate-rdoc: $(srcdir)/lib/rdoc/markdown.rb $(srcdir)/lib/rdoc/markdown/literals.rb
 
-$(srcdir)/lib/rdoc/markdown.rb: $(srcdir)/lib/rdoc/markdown.kpeg prepare-rdoc
+$(srcdir)/lib/rdoc/markdown.rb: $(srcdir)/lib/rdoc/markdown.kpeg $(KPEG)
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o $(srcdir)/lib/rdoc/markdown.rb \
+	$(XRUBY) -C "$(srcdir)" $(KPEG) -fs -o $(srcdir)/lib/rdoc/markdown.rb \
 		$(srcdir)/lib/rdoc/markdown.kpeg
 
-$(srcdir)/lib/rdoc/markdown/literals.rb: $(srcdir)/lib/rdoc/markdown/literals.kpeg prepare-rdoc
+$(srcdir)/lib/rdoc/markdown/literals.rb: $(srcdir)/lib/rdoc/markdown/literals.kpeg $(KPEG)
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o $(srcdir)/lib/rdoc/markdown/literals.rb \
+	$(XRUBY) -C "$(srcdir)" $(KPEG) -fs -o $(srcdir)/lib/rdoc/markdown/literals.rb \
 		$(srcdir)/lib/rdoc/markdown/literals.kpeg
 
 ##
