@@ -327,21 +327,21 @@ usage(const char *name, int help, int highlight, int columns)
         M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
         M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
-        M("-Fpattern",	   "",			   "Set input field separator ($;)"),
-        M("-i[extension]", "",			   "Set ARGF in-place mode."),
+        M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
+        M("-i[extension]", "",			   "Set ARGF in-place mode; create backup files with given extension."),
         M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH);\n"
             "multiple -I allowed."),
-        M("-l",		   "",			   "Set output record separator ($\\) to $/"),
+        M("-l",		   "",			   "Set output record separator ($\\), used for line-oriented output, to $/"),
         M("-n",		   "",			   "Run program in gets loop."),
         M("-p",		   "",			   "Like -n, with printing added."),
         M("-rlibrary",	   "",			   "Require the given library."),
-        M("-s",		   "",			   "Define global variables."),
+        M("-s",		   "",			   "Define global variables based on custom options."),
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
-        M("-W[lvl=2|:cat]","",   	           "Set warning flag ($-W):\n"
+        M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
-        M("-x[dirpath]",   "",			   "Execute Ruby code found in text."),
+        M("-x[dirpath]",   "",			   "Execute Ruby code found in text (within certain delimiters)."),
         M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler."),
