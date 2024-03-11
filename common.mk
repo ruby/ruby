@@ -1392,7 +1392,7 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 
 prepare-rdoc: main
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "kpeg"
+		--install-dir .bundle --conservative --silent "kpeg"
 
 generate-rdoc: $(srcdir)/lib/rdoc/markdown.rb $(srcdir)/lib/rdoc/markdown/literals.rb
 
