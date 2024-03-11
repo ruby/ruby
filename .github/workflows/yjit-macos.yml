@@ -113,8 +113,9 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: make ${{ matrix.test_task }}
-        run: |
+        run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
