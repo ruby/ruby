@@ -343,7 +343,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-w",		   "",			   "Synonym for -W1."),
         M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
-        M("-x[dirpath]",   "",			   "Execute Ruby code found in text (within certain delimiters)."),
+        M("-x[dirpath]",   "",			   "Execute Ruby code starting from a #!ruby line."),
         M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler."),
