@@ -671,11 +671,11 @@ do-install-dbg: $(PROGRAM) pre-install-dbg
 post-install-dbg::
 	@$(NULLCMD)
 
-rdoc: PHONY main srcs-doc
+rdoc: PHONY main generate-rdoc srcs-doc
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY main srcs-doc
+html: PHONY main generate-rdoc srcs-doc
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
@@ -945,7 +945,7 @@ test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+test-precheck: $(ENCSTATIC:static=lib)encs exts generate-rdoc PHONY $(DOT_WAIT)
 yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
@@ -1390,6 +1390,22 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 	$(exec) $(MAKE) -f - $(mflags) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. RUBY="$(BASERUBY)"
 
+prepare-rdoc: ruby
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "kpeg"
+
+generate-rdoc: $(srcdir)/lib/rdoc/markdown.rb $(srcdir)/lib/rdoc/markdown/literals.rb
+
+$(srcdir)/lib/rdoc/markdown.rb: $(srcdir)/lib/rdoc/markdown.kpeg prepare-rdoc
+	$(ECHO) generating $@
+	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -o lib/rdoc/markdown.rb \
+		$(srcdir)/lib/rdoc/markdown.kpeg -f
+
+$(srcdir)/lib/rdoc/markdown/literals.rb: $(srcdir)/lib/rdoc/markdown/literals.kpeg prepare-rdoc
+	$(ECHO) generating $@
+	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -o lib/rdoc/markdown/literals.rb \
+		$(srcdir)/lib/rdoc/markdown/literals.kpeg -f
+
 ##
 
 run: yes-fake miniruby$(EXEEXT) PHONY
@@ -1458,7 +1474,7 @@ lldb-ruby: $(PROGRAM) PHONY
 
 DISTPKGS = gzip,zip,all
 PKGSDIR = tmp
-dist:
+dist: generate-rdoc
 	$(BASERUBY) $(V0:1=-v) $(tooldir)/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
