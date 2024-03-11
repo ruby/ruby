@@ -325,7 +325,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
         M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
-        M("-e 'code'",     "",			   "Execute given ruby code; multiple -e allowed."),
+        M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default internal and external encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;)"),
         M("-i[extension]", "",			   "Set ARGF in-place mode."),
