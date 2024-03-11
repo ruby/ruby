@@ -1,0 +1,21 @@
+%% name = RDoc::Markdown::Literals
+
+%% header {
+# coding: UTF-8
+# frozen_string_literal: true
+# :markup: markdown
+
+##
+# This set of literals is for Ruby 1.9 regular expressions and gives full
+# unicode support.
+#
+# Unlike peg-markdown, this set of literals recognizes Unicode alphanumeric
+# characters, newlines and spaces.
+}
+
+Alphanumeric      = /\p{Word}/
+AlphanumericAscii = /[A-Za-z0-9]/
+BOM               = "\uFEFF"
+Newline           = /\n|\r\n?|\p{Zl}|\p{Zp}/
+NonAlphanumeric   = /\p{^Word}/
+Spacechar         = /\t|\p{Zs}/
