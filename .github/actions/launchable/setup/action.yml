@@ -38,11 +38,6 @@ inputs:
       Directory to (re-)checkout source codes. Launchable retrives the commit information
       from the directory.
 
-outputs:
-  enable-launchable:
-    description: "The boolean value indicating whether Launchable is enabled or not"
-    value: ${{ steps.enable-launchable.outputs.enable-launchable }}
-
 runs:
   using: composite
 
