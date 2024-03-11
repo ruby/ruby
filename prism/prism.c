@@ -2691,7 +2691,7 @@ pm_class_variable_write_node_create(pm_parser_t *parser, pm_class_variable_read_
         },
         .name = read_node->name,
         .name_loc = PM_LOCATION_NODE_VALUE((pm_node_t *) read_node),
-        .operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
+        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
 

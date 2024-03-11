@@ -1302,12 +1302,37 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @@abc = 123     # name `@@abc`
+
+              @@_test = :test # name `@@_test`
       - name: name_loc
         type: location
+        comment: |
+          The location of the variable name.
+
+              @@foo = :bar
+              ^^^^^
       - name: value
         type: node
+        comment: |
+          The value to assign to the class variable. Can be any node that
+          represents a non-void expression.
+
+              @@foo = :bar
+                      ^^^^
+
+              @@_xyz = 123
+                       ^^^
       - name: operator_loc
-        type: location?
+        type: location
+        comment: |
+          The location of the `=` operator.
+
+              @@foo = :bar
+                    ^
     comment: |
       Represents writing to a class variable.
 
