@@ -1650,7 +1650,7 @@ yes-test-bundler-parallel-precheck: yes-test-bundler-precheck
 
 test-bundler-prepare: $(TEST_RUNNABLE)-test-bundler-prepare
 no-test-bundler-prepare: no-test-bundler-precheck
-yes-test-bundler-prepare: yes-test-bundler-precheck
+yes-test-bundler-prepare: yes-test-bundler-precheck generate-rdoc
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C $(srcdir) -Ilib \
 		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
