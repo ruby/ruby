@@ -337,7 +337,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-n",		   "",			   "Run program in gets loop."),
         M("-p",		   "",			   "Like -n, with printing added."),
         M("-rlibrary",	   "",			   "Require the given library."),
-        M("-s",		   "",			   "Define global variables based on custom options."),
+        M("-s",		   "",			   "Define global variables using switches following program path."),
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
