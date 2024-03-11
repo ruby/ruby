@@ -1390,7 +1390,7 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 	$(exec) $(MAKE) -f - $(mflags) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. RUBY="$(BASERUBY)"
 
-prepare-rdoc: ruby
+prepare-rdoc: main
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "kpeg"
 
