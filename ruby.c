@@ -2122,7 +2122,11 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
     VALUE error;
     if (strcmp(opt->script, "-") == 0) {
-        rb_raise(rb_eRuntimeError, "Prism support for streaming code from stdin is not currently supported");
+        pm_options_command_line_set(options, command_line);
+        pm_options_filepath_set(options, "-");
+
+        prism_opt_init(opt);
+        error = pm_parse_stdin(result);
     }
     else if (opt->e_script) {
         command_line |= PM_OPTIONS_COMMAND_LINE_E;
