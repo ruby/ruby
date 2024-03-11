@@ -321,7 +321,7 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",                     "Set input record separator ($/):\n"
             "-0 for \\0; -00 for paragraph mode; -0777 for slurp mode."),
-        M("-a",		   "",                     "Split each input line ($_) into fields ($F)"),
+        M("-a",		   "",                     "Split each input line ($_) into fields ($F)."),
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
         M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
