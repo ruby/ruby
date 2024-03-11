@@ -469,6 +469,10 @@ benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
 	            $(srcdir)/$@ $(BENCH_OPTS) $(OPTS)
 
+clean-local:: TARGET_SO = $(PROGRAM) $(WPROGRAM) $(LIBRUBY_SO) $(STATIC_RUBY) miniruby goruby
+clean-local::
+	-$(Q)$(RMALL) $(cleanlibs)
+
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
 

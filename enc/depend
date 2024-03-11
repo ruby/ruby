@@ -35,7 +35,7 @@ ENCSOS =<%ENCS.map {|e|%> $(ENCSODIR)/<%=e%>.$(DLEXT) \
         <%}%> #
 ENCCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
-       .gsub(/\A\$\(TARGET_SO\)(.*)/) {"$(ENCSOS:=#{$1})"}
+       .gsub(/\$\(\KTARGET_SO(?=[:\)])/) {"ENCSOS"}
 }.join(" ")%>
 ENCCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
@@ -52,7 +52,7 @@ TRANSSOS =<%TRANS.map {|e|%> $(ENCSODIR)/<%=e%>.$(DLEXT) \
           <%}%> #
 TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
-       .gsub(/\A\$\(TARGET_SO\)(.*)/) {"$(TRANSSOS:=#{$1})"}
+       .gsub(/\$\(\KTARGET_SO(?=[:\)])/) {"TRANSSOS"}
 }.join(" ")%>
 TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}

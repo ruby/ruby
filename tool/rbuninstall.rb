@@ -63,6 +63,7 @@ END {
   $dirs.each do |dir|
     unlink[dir] = true
   end
+  nonempty = {}
   while dir = $dirs.pop
     dir = File.dirname(dir) while File.basename(dir) == '.'
     message "rmdir #{dir}"
@@ -76,16 +77,23 @@ END {
           raise unless File.symlink?(realdir)
           File.unlink(realdir)
         end
-      rescue Errno::ENOENT, Errno::ENOTEMPTY
+      rescue Errno::ENOTEMPTY
+        nonempty[dir] = true
+      rescue Errno::ENOENT
       rescue
         status = false
         puts $!
       else
+        nonempty.delete(dir)
         parent = File.dirname(dir)
         $dirs.push(parent) unless parent == dir or unlink[parent]
       end
     end
   end
   message
+  unless nonempty.empty?
+    puts "Non empty director#{nonempty.size == 1 ? 'y' : 'ies'}:"
+    nonempty.each_key {|dir| print "    #{dir}\n"}
+  end
   exit(status)
 }

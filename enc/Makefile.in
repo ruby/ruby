@@ -84,6 +84,9 @@ all:
 make-workdir:
 	$(Q)$(MAKEDIRS) $(WORKDIRS)
 
+.PHONY: encs all modencs libencs enc libenc trans libtrans srcs
+.PHONY: clean distclean realclean clean-srcs
+
 clean:
 
 distclean: clean
