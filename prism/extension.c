@@ -23,13 +23,14 @@ VALUE rb_cPrismParseResult;
 
 VALUE rb_cPrismDebugEncoding;
 
-ID rb_option_id_filepath;
-ID rb_option_id_encoding;
-ID rb_option_id_line;
-ID rb_option_id_frozen_string_literal;
-ID rb_option_id_version;
-ID rb_option_id_scopes;
 ID rb_option_id_command_line;
+ID rb_option_id_encoding;
+ID rb_option_id_filepath;
+ID rb_option_id_frozen_string_literal;
+ID rb_option_id_line;
+ID rb_option_id_offset;
+ID rb_option_id_scopes;
+ID rb_option_id_version;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -138,6 +139,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
     } else if (key_id == rb_option_id_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
+    } else if (key_id == rb_option_id_offset) {
+        if (!NIL_P(value)) pm_options_offset_set(options, NUM2UINT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
     } else if (key_id == rb_option_id_version) {
@@ -1297,13 +1300,14 @@ Init_prism(void) {
 
     // Intern all of the options that we support so that we don't have to do it
     // every time we parse.
-    rb_option_id_filepath = rb_intern_const("filepath");
-    rb_option_id_encoding = rb_intern_const("encoding");
-    rb_option_id_line = rb_intern_const("line");
-    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
-    rb_option_id_version = rb_intern_const("version");
-    rb_option_id_scopes = rb_intern_const("scopes");
     rb_option_id_command_line = rb_intern_const("command_line");
+    rb_option_id_encoding = rb_intern_const("encoding");
+    rb_option_id_filepath = rb_intern_const("filepath");
+    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
+    rb_option_id_line = rb_intern_const("line");
+    rb_option_id_offset = rb_intern_const("offset");
+    rb_option_id_scopes = rb_intern_const("scopes");
+    rb_option_id_version = rb_intern_const("version");
 
     /**
      * The version of the prism library.

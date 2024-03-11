@@ -18781,6 +18781,22 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         // line option
         parser->start_line = options->line;
 
+        // offset option
+        if (options->offset != 0) {
+            const uint8_t *cursor = parser->start;
+            const uint8_t *offset = cursor + options->offset;
+
+            const uint8_t *newline = NULL;
+            while ((newline = next_newline(cursor, parser->end - cursor)) != NULL) {
+                if (newline > offset) break;
+                pm_newline_list_append(&parser->newline_list, newline);
+                cursor = newline + 1;
+            }
+
+            parser->previous = (pm_token_t) { .type = PM_TOKEN_EOF, .start = offset, .end = offset };
+            parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = offset, .end = offset };
+        }
+
         // encoding option
         size_t encoding_length = pm_string_length(&options->encoding);
         if (encoding_length > 0) {
