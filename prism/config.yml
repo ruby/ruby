@@ -2143,12 +2143,37 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the instance variable, which is a `@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @x = :y       # name `:@x`
+
+              @_foo = "bar" # name `@_foo`
       - name: name_loc
         type: location
+        comment: |
+          The location of the variable name.
+
+              @_x = 1
+              ^^^
       - name: value
         type: node
+        comment: |
+          The value to assign to the instance variable. Can be any node that
+          represents a non-void expression.
+
+              @foo = :bar
+                     ^^^^
+
+              @_x = 1234
+                    ^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              @x = y
+                 ^
     comment: |
       Represents writing to an instance variable.
 
