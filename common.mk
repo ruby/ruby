@@ -1398,13 +1398,13 @@ generate-rdoc: $(srcdir)/lib/rdoc/markdown.rb $(srcdir)/lib/rdoc/markdown/litera
 
 $(srcdir)/lib/rdoc/markdown.rb: $(srcdir)/lib/rdoc/markdown.kpeg prepare-rdoc
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -o $(srcdir)/lib/rdoc/markdown.rb \
-		$(srcdir)/lib/rdoc/markdown.kpeg -f
+	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o $(srcdir)/lib/rdoc/markdown.rb \
+		$(srcdir)/lib/rdoc/markdown.kpeg
 
 $(srcdir)/lib/rdoc/markdown/literals.rb: $(srcdir)/lib/rdoc/markdown/literals.kpeg prepare-rdoc
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -o $(srcdir)/lib/rdoc/markdown/literals.rb \
-		$(srcdir)/lib/rdoc/markdown/literals.kpeg -f
+	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o $(srcdir)/lib/rdoc/markdown/literals.rb \
+		$(srcdir)/lib/rdoc/markdown/literals.kpeg
 
 ##
 
