@@ -138,6 +138,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: Install Rust
         if: ${{ matrix.rust_version }}
@@ -164,6 +166,15 @@ jobs:
       # Check that the binary was built with YJIT
       - name: Check YJIT enabled
         run: ./miniruby --yjit -v | grep "+YJIT"
+
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: ubuntu-20.04
+          test-opts: ${{ matrix.configure }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
 
       - name: make ${{ matrix.test_task }}
         run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
