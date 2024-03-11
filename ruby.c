@@ -328,10 +328,12 @@ usage(const char *name, int help, int highlight, int columns)
         M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
-        M("-i[extension]", "",			   "Set ARGF in-place mode; create backup files with given extension."),
+        M("-i[extension]", "",			   "Set ARGF in-place mode;\n"
+            "create backup files with given extension."),
         M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH);\n"
             "multiple -I allowed."),
-        M("-l",		   "",			   "Set output record separator ($\\), used for line-oriented output, to $/"),
+        M("-l",		   "",			   "Set output record separator ($\\) to $/;\n"
+            "used for line-oriented output."),
         M("-n",		   "",			   "Run program in gets loop."),
         M("-p",		   "",			   "Like -n, with printing added."),
         M("-rlibrary",	   "",			   "Require the given library."),
