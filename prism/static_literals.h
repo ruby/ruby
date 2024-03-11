@@ -106,4 +106,13 @@ pm_node_t * pm_static_literals_add(const pm_parser_t *parser, pm_static_literals
  */
 void pm_static_literals_free(pm_static_literals_t *literals);
 
+/**
+ * Create a string-based representation of the given static literal.
+ *
+ * @param buffer The buffer to write the string to.
+ * @param parser The parser that created the node.
+ * @param node The node to create a string representation of.
+ */
+PRISM_EXPORTED_FUNCTION void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
+
 #endif

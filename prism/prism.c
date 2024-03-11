@@ -12129,15 +12129,20 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
     const pm_node_t *duplicated = pm_static_literals_add(parser, literals, node);
 
     if (duplicated != NULL) {
+        pm_buffer_t buffer = { 0 };
+        pm_static_literal_inspect(&buffer, parser, duplicated);
+
         pm_diagnostic_list_append_format(
             &parser->warning_list,
             duplicated->location.start,
             duplicated->location.end,
             PM_WARN_DUPLICATED_HASH_KEY,
-            (int) (duplicated->location.end - duplicated->location.start),
-            duplicated->location.start,
+            (int) pm_buffer_length(&buffer),
+            pm_buffer_value(&buffer),
             pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line
         );
+
+        pm_buffer_free(&buffer);
     }
 }
 
