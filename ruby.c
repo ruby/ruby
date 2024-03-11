@@ -336,7 +336,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-p",		   "",			   "Like -n, with printing added."),
         M("-rlibrary",	   "",			   "Require the given library."),
         M("-s",		   "",			   "Define global variables."),
-        M("-S",		   "",			   "Search directories found in ENV['PATH']."),
+        M("-S",		   "",			   "Search directories found in the PATH environment variable."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
         M("-W[lvl=2|:cat]","",   	           "Set warning flag ($-W):\n"
