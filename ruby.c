@@ -344,9 +344,9 @@ usage(const char *name, int help, int highlight, int columns)
         M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
         M("-x[dirpath]",   "",			   "Execute Ruby code starting from a #!ruby line."),
-        M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
+        M("--jit",         "",                     "Enable JIT for the platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
-        M("--yjit",        "",                     "enable in-process JIT compiler."),
+        M("--yjit",        "",                     "Enable in-process JIT compiler."),
 #endif
 #if USE_RJIT
         M("--rjit",        "",                     "Enable pure-Ruby JIT compiler (experimental)."),
@@ -382,8 +382,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("gems",                  "", "Rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")."),
         M("error_highlight",       "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")."),
         M("did_you_mean",          "", "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")."),
-        M("syntax_suggest",        "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED"),"),
-        M("rubyopt",               "", "RUBYOPT environment variable (default: enabled),"),
+        M("syntax_suggest",        "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")."),
+        M("rubyopt",               "", "RUBYOPT environment variable (default: enabled)."),
         M("frozen-string-literal", "", "Freeze all string literals (default: disabled)."),
 #if USE_YJIT
         M("yjit",                  "", "In-process JIT compiler (default: disabled)."),
