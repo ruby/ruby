@@ -319,80 +319,83 @@ usage(const char *name, int help, int highlight, int columns)
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
     static const struct ruby_opt_message usage_msg[] = {
-        M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)\n"
-            "(-00 for paragraph mode, -0777 for slurp mode)"),
-        M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
-        M("-c",		   "",			   "check syntax only"),
-        M("-Cdirectory",   "",			   "cd to directory before executing your script"),
-        M("-d",		   ", --debug",		   "set debugging flags (set $DEBUG to true)"),
-        M("-e 'command'",  "",			   "one line of script. Several -e's allowed. Omit [programfile]"),
-        M("-Eex[:in]",     ", --encoding=ex[:in]", "specify the default external and internal character encodings"),
-        M("-Fpattern",	   "",			   "split() pattern for autosplit (-a)"),
-        M("-i[extension]", "",			   "edit ARGV files in place (make backup if extension supplied)"),
-        M("-Idirectory",   "",			   "specify $LOAD_PATH directory (may be used more than once)"),
-        M("-l",		   "",			   "enable line ending processing"),
-        M("-n",		   "",			   "assume 'while gets(); ... end' loop around your script"),
-        M("-p",		   "",			   "assume loop like -n but print line also like sed"),
-        M("-rlibrary",	   "",			   "require the library before executing your script"),
-        M("-s",		   "",			   "enable some switch parsing for switches after script name"),
-        M("-S",		   "",			   "look for the script using PATH environment variable"),
-        M("-v",		   "",			   "print the version number, then turn on verbose mode"),
-        M("-w",		   "",			   "turn warnings on for your script"),
-        M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
-        M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
+        M("-0[octal]",	   "",                     "Set input record separator ($/):\n"
+            "-0 for \\0; -00 for paragraph mode; -0777 for slurp mode."),
+        M("-a",		   "",                     "Split each input line ($_) into fields ($F)."),
+        M("-c",		   "",			   "Check syntax (no execution)."),
+        M("-Cdirpath",     "",			   "Execute program in specified directory."),
+        M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
+        M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
+        M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
+        M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
+        M("-i[extension]", "",			   "Set ARGF in-place mode;\n"
+            "create backup files with given extension."),
+        M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH);\n"
+            "multiple -I allowed."),
+        M("-l",		   "",			   "Set output record separator ($\\) to $/;\n"
+            "used for line-oriented output."),
+        M("-n",		   "",			   "Run program in gets loop."),
+        M("-p",		   "",			   "Like -n, with printing added."),
+        M("-rlibrary",	   "",			   "Require the given library."),
+        M("-s",		   "",			   "Define global variables using switches following program path."),
+        M("-S",		   "",			   "Search directories found in the PATH environment variable."),
+        M("-v",		   "",			   "Print version; set $VERBOSE to true."),
+        M("-w",		   "",			   "Synonym for -W1."),
+        M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
+            "0 for silent; 1 for moderate; 2 for verbose."),
+        M("-x[dirpath]",   "",			   "Execute Ruby code starting from a #!ruby line."),
+        M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
-        M("--yjit",        "",                     "enable in-process JIT compiler"),
+        M("--yjit",        "",                     "enable in-process JIT compiler."),
 #endif
 #if USE_RJIT
-        M("--rjit",        "",                     "enable pure-Ruby JIT compiler (experimental)"),
+        M("--rjit",        "",                     "Enable pure-Ruby JIT compiler (experimental)."),
 #endif
-        M("-h",		   "",			   "show this message, --help for more info"),
+        M("-h",		   "",			   "Print this help message; use --help for longer message."),
     };
     STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 25);
 
     static const struct ruby_opt_message help_msg[] = {
-        M("--copyright",                            "", "print the copyright"),
-        M("--dump={insns|parsetree|...}[,...]",     "",
-          "dump debug information. see below for available dump list"),
-        M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
-          "enable or disable features. see below for available features"),
-        M("--external-encoding=encoding",           ", --internal-encoding=encoding",
-          "specify the default external or internal character encoding"),
-        M("--parser={parse.y|prism}",           ", --parser=prism",
-          "the parser used to parse Ruby code (experimental)"),
-        M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
-        M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
-        M("--version",                              "", "print the version number, then exit"),
-        M("--crash-report=TEMPLATE",                "", "template of crash report files"),
-        M("-y",                          ", --yydebug", "print log of parser. Backward compatibility is not guaranteed"),
-        M("--help",			            "", "show this message, -h for short message"),
+        M("--backtrace-limit=num",        "",            "Set backtrace limit."),
+        M("--copyright",                  "",            "Print Ruby copyright."),
+        M("--crash-report=template",      "",            "Set template for crash report file."),
+        M("--disable=features",           "",            "Disable features; see list below."),
+        M("--dump=items",                 "",            "Dump items; see list below."),
+        M("--enable=features",            "",            "Enable features; see list below."),
+        M("--external-encoding=encoding", "",            "Set default external encoding."),
+        M("--help",		          "",            "Print long help message; use -h for short message."),
+        M("--internal-encoding=encoding", "",            "Set default internal encoding."),
+        M("--parser=parser",              "",            "Set Ruby parser: parse.y or prism."),
+        M("--verbose",                    "",            "Set $VERBOSE to true; ignore input from $stdin."),
+        M("--version",                    "",            "Print Ruby version."),
+        M("-y",                           ", --yydebug", "Print parser log; backward compatibility not guaranteed."),
     };
     static const struct ruby_opt_message dumps[] = {
-        M("insns",                  "", "instruction sequences"),
-        M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
-        M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
-        M("parsetree(+error-tolerant)","", "AST"),
-        M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
+        M("insns",                                   "", "Instruction sequences."),
+        M("insns_without_opt",                       "", "Instruction sequences compiled with no optimization."),
+        M("yydebug(+error-tolerant)",                "", "yydebug of yacc parser generator."),
+        M("parsetree(+error-tolerant)",              "", "Abstract syntax tree (AST)."),
+        M("parsetree_with_comment(+error-tolerant)", "", "AST with comments."),
+        M("prism_parsetree",                         "", "Prism AST."),
     };
     static const struct ruby_opt_message features[] = {
-        M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
-        M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
-        M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
-        M("syntax_suggest", "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")"),
-        M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
-        M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
+        M("gems",                  "", "Rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")."),
+        M("error_highlight",       "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")."),
+        M("did_you_mean",          "", "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")."),
+        M("syntax_suggest",        "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED"),"),
+        M("rubyopt",               "", "RUBYOPT environment variable (default: enabled),"),
+        M("frozen-string-literal", "", "Freeze all string literals (default: disabled)."),
 #if USE_YJIT
-        M("yjit", "",           "in-process JIT compiler (default: disabled)"),
+        M("yjit",                  "", "In-process JIT compiler (default: disabled)."),
 #endif
 #if USE_RJIT
-        M("rjit", "",           "pure-Ruby JIT compiler (experimental, default: disabled)"),
+        M("rjit",                  "", "Pure-Ruby JIT compiler (experimental, default: disabled)."),
 #endif
     };
     static const struct ruby_opt_message warn_categories[] = {
-        M("deprecated", "",       "deprecated features"),
-        M("experimental", "",     "experimental features"),
-        M("performance", "",      "performance issues"),
+        M("deprecated",   "", "Deprecated features."),
+        M("experimental", "", "Experimental features."),
+        M("performance",  "", "Performance issues."),
     };
 #if USE_RJIT
     extern const struct ruby_opt_message rb_rjit_option_messages[];
@@ -404,7 +407,7 @@ usage(const char *name, int help, int highlight, int columns)
     unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
-    printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
+    printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
