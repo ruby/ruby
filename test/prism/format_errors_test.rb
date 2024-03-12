@@ -15,7 +15,7 @@ module Prism
 
       assert_equal <<~'ERROR', Debug.format_errors('"%W"\u"', false)
         > 1 | "%W"\u"
-            |     ^ invalid character `\`
+            |     ^ unexpected backslash, ignoring it
             |      ^ unexpected local variable or method, expecting end-of-input
             |        ^ unterminated string meets end of file
       ERROR
