@@ -900,35 +900,13 @@ opt_new
     int argc = vm_ci_argc(cd->ci);
     VM_ASSERT((int)vm_ci_argc(cd_initialize->ci) == argc);
 
-    VALUE recv = TOPN(argc);
-    val = Qundef;
 
-    VALUE new_obj = vm_opt_new_alloc(GET_ISEQ(), recv, cd);
-    if (new_obj != Qundef) {
-        TOPN(argc) = new_obj;
+    val = vm_opt_new_helper(ec, GET_CFP(), cd, cd_initialize);
+    JIT_EXEC(ec, val);
 
-        val = vm_sendish(ec, GET_CFP(), cd_initialize, VM_BLOCK_HANDLER_NONE, mexp_search_method);
-        // FIXME: somehow the `initialize` return is what end up being the `.new` return, instead of `new_obj`.
-        // I don't get why.
-
-        JIT_EXEC(ec, val);
-
-        if (val == Qundef) {
-            RESTORE_REGS();
-            NEXT_INSN();
-        }
-        else {
-            val = new_obj;
-        }
-    }
-    else if (val == Qundef) {
-        val = vm_sendish(ec, GET_CFP(), cd, VM_BLOCK_HANDLER_NONE, mexp_search_method);
-        JIT_EXEC(ec, val);
-
-        if (val == Qundef) {
-            RESTORE_REGS();
-            NEXT_INSN();
-        }
+    if (val == Qundef) {
+        RESTORE_REGS();
+        NEXT_INSN();
     }
 }
 

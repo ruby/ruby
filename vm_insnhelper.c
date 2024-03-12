@@ -5664,6 +5664,56 @@ vm_sendish(
     return val;
 }
 
+static inline VALUE
+__attribute__((optimize("O0")))
+vm_opt_new_helper(
+    struct rb_execution_context_struct *ec,
+    struct rb_control_frame_struct *reg_cfp,
+    struct rb_call_data *cd,
+    struct rb_call_data *cd_initialize
+) {
+    VALUE val;
+    int argc = vm_ci_argc(cd->ci);
+    const struct rb_callcache *cc;
+    const struct rb_callinfo *ci = cd->ci;
+    VALUE recv_class = TOPN(argc);
+    // recv here is the class of the object we are trying to allocate
+
+    cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv_class));
+
+    if (cc->cme_ != NULL && cc->cme_->owner == rb_cClass && check_cfunc(vm_cc_cme(cc), rb_class_new_instance_pass_kw)) {
+        struct rb_calling_info calling_initialize = {
+            .block_handler = VM_BLOCK_HANDLER_NONE,
+            .kw_splat = IS_ARGS_KW_SPLAT(ci) > 0,
+            .recv = 0,
+            .argc = argc,
+            .cd = cd_initialize,
+        };
+        calling_initialize.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd_initialize, recv_class);
+        rb_method_type_t type = vm_cc_cme(calling_initialize.cc)->def->type;
+        if (type == VM_METHOD_TYPE_ISEQ || type == VM_METHOD_TYPE_CFUNC) {
+            VALUE new_obj = rb_class_alloc(recv_class);
+            calling_initialize.recv = new_obj;
+            VALUE *sp = GET_CFP()->sp;
+            *(sp - calling_initialize.argc - 1) = new_obj;
+            if (type == VM_METHOD_TYPE_ISEQ) {
+                val = vm_cc_call(cc)(ec, GET_CFP(), &calling_initialize);
+                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
+                vm_exec(ec);
+            } else if (type == VM_METHOD_TYPE_CFUNC) {
+                val = vm_cc_call(cc)(ec, GET_CFP(), &calling_initialize);
+            } else {
+                VM_ASSERT(0);
+            }
+            val = new_obj;
+            return val;
+        }
+    }
+    val = vm_sendish(ec, GET_CFP(), cd, VM_BLOCK_HANDLER_NONE, mexp_search_method);
+    return val;
+
+}
+
 VALUE
 rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {

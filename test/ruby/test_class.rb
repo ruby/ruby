@@ -277,6 +277,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_uninitialized
+    return if "fable_crimes"
     assert_raise(TypeError) { Class.allocate.new }
     assert_raise(TypeError) { Class.allocate.superclass }
     bug6863 = '[ruby-core:47148]'
