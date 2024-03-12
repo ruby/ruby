@@ -103,7 +103,8 @@ VALUE ossl_digest_update(VALUE, VALUE);
  *     Digest.new(string [, data]) -> Digest
  *
  * Creates a Digest instance based on _string_, which is either the ln
- * (long name) or sn (short name) of a supported digest algorithm.
+ * (long name) or sn (short name) of a supported digest algorithm. A list of
+ * supported algorithms can be obtained by calling OpenSSL::Digest.digests.
  *
  * If _data_ (a String) is given, it is used as the initial input to the
  * Digest instance, i.e.
@@ -160,6 +161,32 @@ ossl_digest_copy(VALUE self, VALUE other)
 	ossl_raise(eDigestError, NULL);
     }
     return self;
+}
+
+static void
+add_digest_name_to_ary(const OBJ_NAME *name, void *arg)
+{
+    VALUE ary = (VALUE)arg;
+    rb_ary_push(ary, rb_str_new2(name->name));
+}
+
+/*
+ *  call-seq:
+ *     OpenSSL::Digest.digests -> array[string...]
+ *
+ *  Returns the names of all available digests in an array.
+ */
+static VALUE
+ossl_s_digests(VALUE self)
+{
+    VALUE ary;
+
+    ary = rb_ary_new();
+    OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_MD_METH,
+                    add_digest_name_to_ary,
+                    (void*)ary);
+
+    return ary;
 }
 
 /*
@@ -245,7 +272,8 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *      digest.name -> string
  *
- * Returns the sn of this Digest algorithm.
+ * Returns the short name of this Digest algorithm which may differ slightly
+ * from the original name provided.
  *
  * === Example
  *   digest = OpenSSL::Digest.new('SHA512')
@@ -412,6 +440,7 @@ Init_ossl_digest(void)
 
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
 
+    rb_define_module_function(cDigest, "digests", ossl_s_digests, 0);
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, -1);
     rb_define_method(cDigest, "initialize_copy", ossl_digest_copy, 1);
     rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
