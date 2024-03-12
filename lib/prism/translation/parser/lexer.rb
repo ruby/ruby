@@ -167,7 +167,7 @@ module Prism
           TILDE: :tTILDE,
           UAMPERSAND: :tAMPER,
           UCOLON_COLON: :tCOLON3,
-          UDOT_DOT: :tDOT2,
+          UDOT_DOT: :tBDOT2,
           UDOT_DOT_DOT: :tBDOT3,
           UMINUS: :tUMINUS,
           UMINUS_NUM: :tUNARY_NUM,
