@@ -43,7 +43,6 @@
 
 static ID id_frozen;
 static ID id_t_object;
-static ID size_pool_edge_names[SIZE_POOL_COUNT];
 
 #define LEAF 0
 #define BLACK 0x0
@@ -1242,11 +1241,6 @@ Init_default_shapes(void)
         GET_SHAPE_TREE()->cache_size = REDBLACK_CACHE_SIZE;
     }
 #endif
-
-    // Shapes by size pool
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        size_pool_edge_names[i] = rb_make_internal_id();
-    }
 
     // Root shape
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
