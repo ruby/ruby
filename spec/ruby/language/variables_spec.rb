@@ -367,8 +367,13 @@ describe "Multiple assignment" do
 
     it "assigns indexed elements" do
       a = []
-      a[1], a[2] = 1
-      a.should == [nil, 1, nil]
+      a[1], a[2] = 1, 2
+      a.should == [nil, 1, 2]
+
+      # with splatted argument
+      a = []
+      a[*[1]], a[*[2]] = 1, 2
+      a.should == [nil, 1, 2]
     end
 
     it "assigns constants" do
@@ -925,7 +930,7 @@ describe "Instance variables" do
         obj = Object.new
         def obj.foobar; a = $specs_uninitialized_global_variable; end
 
-        -> { obj.foobar }.should complain(/warning: global variable `\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+        -> { obj.foobar }.should complain(/warning: global variable [`']\$specs_uninitialized_global_variable' not initialized/, verbose: true)
       end
 
       it "doesn't warn at lazy initialization" do

@@ -181,9 +181,16 @@ module Lrama
                 if referring_symbol[1] == 0 # Refers to LHS
                   ref.name = '$'
                 else
-                  ref.index = referring_symbol[1]
+                  ref.number = referring_symbol[1]
                 end
               end
+            end
+
+            if ref.number
+              # TODO: When Inlining is implemented, for example, if `$1` is expanded to multiple RHS tokens,
+              #       `$2` needs to access `$2 + n` to actually access it. So, after the Inlining implementation,
+              #       it needs resolves from number to index.
+              ref.index = ref.number
             end
 
             # TODO: Need to check index of @ too?

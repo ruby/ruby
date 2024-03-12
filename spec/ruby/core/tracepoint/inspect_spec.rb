@@ -44,7 +44,7 @@ describe 'TracePoint#inspect' do
       trace_point_spec_test_call
     end
 
-    inspect.should == "#<TracePoint:call `trace_point_spec_test_call'#{@path_prefix}#{__FILE__}:#{line}>"
+    inspect.should =~ /\A#<TracePoint:call [`']trace_point_spec_test_call'#{@path_prefix}#{__FILE__}:#{line}>\z/
   end
 
   it 'returns a String showing the event, method, path and line for a :return event' do
@@ -62,7 +62,7 @@ describe 'TracePoint#inspect' do
       trace_point_spec_test_return
     end
 
-    inspect.should == "#<TracePoint:return `trace_point_spec_test_return'#{@path_prefix}#{__FILE__}:#{line}>"
+    inspect.should =~ /\A#<TracePoint:return [`']trace_point_spec_test_return'#{@path_prefix}#{__FILE__}:#{line}>\z/
   end
 
   it 'returns a String showing the event, method, path and line for a :c_call event' do
@@ -76,7 +76,7 @@ describe 'TracePoint#inspect' do
       [0, 1].max
     end
 
-    inspect.should == "#<TracePoint:c_call `max'#{@path_prefix}#{__FILE__}:#{line}>"
+    inspect.should =~ /\A#<TracePoint:c_call [`']max'#{@path_prefix}#{__FILE__}:#{line}>\z/
   end
 
   it 'returns a String showing the event, path and line for a :class event' do

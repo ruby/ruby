@@ -291,7 +291,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     access_notice = "The existing key doesn't have access of yank_rubygem on http://example. Please sign in to update access."
     assert_match access_notice, @ui.output
-    assert_match "Email:", @ui.output
+    assert_match "Username/email:", @ui.output
     assert_match "Password:", @ui.output
     assert_match "Added yank_rubygem scope to the existing API key", @ui.output
     assert_match response_success, @ui.output

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/ruby-lex.rb - ruby lexcal analyzer
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -290,7 +290,7 @@ module IRB
         when :on_embdoc_beg
           indent_level = 0
         else
-          indent_level += 1
+          indent_level += 1 unless t.tok == 'alias' || t.tok == 'undef'
         end
       end
       indent_level

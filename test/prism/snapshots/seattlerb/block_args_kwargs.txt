@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,23))
                 ├── locals: [:kwargs]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,14))
                 │   ├── parameters:

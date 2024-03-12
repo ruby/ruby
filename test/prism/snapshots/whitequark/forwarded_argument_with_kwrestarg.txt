@@ -49,8 +49,7 @@
             │           │                   └── operator_loc: (1,37)-(1,39) = "**"
             │           ├── closing_loc: (1,39)-(1,40) = ")"
             │           └── block: ∅
-            ├── locals: [:argument, :**]
-            ├── locals_body_index: 2
+            ├── locals: [:argument]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,7)-(1,8) = "("

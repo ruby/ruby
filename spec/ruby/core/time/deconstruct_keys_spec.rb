@@ -37,8 +37,9 @@ ruby_version_is "3.2" do
       Time.new(2022, 10, 5, 13, 30).deconstruct_keys(['year', []]).should == {}
     end
 
-    it "ignores not existing Symbol keys" do
-      Time.new(2022, 10, 5, 13, 30).deconstruct_keys([:year, :a]).should == { year: 2022 }
+    it "ignores not existing Symbol keys and processes keys after the first non-existing one" do
+      d = Time.utc(2022, 10, 5, 13, 30)
+      d.deconstruct_keys([:year, :a, :month, :b, :day]).should == { year: 2022, month: 10, day: 5 }
     end
   end
 end

@@ -722,7 +722,9 @@ count_collision(const struct st_hash_type *type)
 #error "REBUILD_THRESHOLD should be >= 2"
 #endif
 
-static void rebuild_table_with(st_table *new_tab, st_table *tab);
+static void rebuild_table_with(st_table *const new_tab, st_table *const tab);
+static void rebuild_move_table(st_table *const new_tab, st_table *const tab);
+static void rebuild_cleanup(st_table *const tab);
 
 /* Rebuild table TAB.  Rebuilding removes all deleted bins and entries
    and can change size of the table entries and bins arrays.
@@ -748,11 +750,13 @@ rebuild_table(st_table *tab)
         new_tab = st_init_table_with_size(tab->type,
                                           2 * tab->num_entries - 1);
         rebuild_table_with(new_tab, tab);
+        rebuild_move_table(new_tab, tab);
     }
+    rebuild_cleanup(tab);
 }
 
 static void
-rebuild_table_with(st_table *new_tab, st_table *tab)
+rebuild_table_with(st_table *const new_tab, st_table *const tab)
 {
     st_index_t i, ni;
     unsigned int size_ind;
@@ -784,16 +788,24 @@ rebuild_table_with(st_table *new_tab, st_table *tab)
         new_tab->num_entries++;
         ni++;
     }
-    if (new_tab != tab) {
-        tab->entry_power = new_tab->entry_power;
-        tab->bin_power = new_tab->bin_power;
-        tab->size_ind = new_tab->size_ind;
-        free(tab->bins);
-        tab->bins = new_tab->bins;
-        free(tab->entries);
-        tab->entries = new_tab->entries;
-        free(new_tab);
-    }
+}
+
+static void
+rebuild_move_table(st_table *const new_tab, st_table *const tab)
+{
+    tab->entry_power = new_tab->entry_power;
+    tab->bin_power = new_tab->bin_power;
+    tab->size_ind = new_tab->size_ind;
+    free(tab->bins);
+    tab->bins = new_tab->bins;
+    free(tab->entries);
+    tab->entries = new_tab->entries;
+    free(new_tab);
+}
+
+static void
+rebuild_cleanup(st_table *const tab)
+{
     tab->entries_start = 0;
     tab->entries_bound = tab->num_entries;
     tab->rebuilds_num++;
@@ -2322,6 +2334,8 @@ rb_st_compact_table(st_table *tab)
         /* Compaction: */
         st_table *new_tab = st_init_table_with_size(tab->type, 2 * num);
         rebuild_table_with(new_tab, tab);
+        rebuild_move_table(new_tab, tab);
+        rebuild_cleanup(tab);
     }
 }
 

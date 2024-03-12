@@ -12,74 +12,103 @@ static VALUE rb_cPrism<%= node.name %>;
 <%- end -%>
 
 static VALUE
-pm_location_new(pm_parser_t *parser, const uint8_t *start, const uint8_t *end, VALUE source) {
-    VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(end - start) };
-    return rb_class_new_instance(3, argv, rb_cPrismLocation);
+pm_location_new(const pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    uint64_t value = ((((uint64_t) (start - parser->start)) << 32) | ((uint32_t) (end - start)));
+    return ULL2NUM(value);
 }
 
 VALUE
-pm_token_new(pm_parser_t *parser, pm_token_t *token, rb_encoding *encoding, VALUE source) {
-    ID type = rb_intern(pm_token_type_to_str(token->type));
-    VALUE location = pm_location_new(parser, token->start, token->end, source);
+pm_token_new(const pm_parser_t *parser, const pm_token_t *token, rb_encoding *encoding, VALUE source) {
+    ID type = rb_intern(pm_token_type_name(token->type));
+    VALUE location = pm_location_new(parser, token->start, token->end);
 
     VALUE argv[] = {
+        source,
         ID2SYM(type),
         rb_enc_str_new((const char *) token->start, token->end - token->start, encoding),
         location
     };
 
-    return rb_class_new_instance(3, argv, rb_cPrismToken);
+    return rb_class_new_instance(4, argv, rb_cPrismToken);
 }
 
 static VALUE
-pm_string_new(pm_string_t *string, rb_encoding *encoding) {
+pm_string_new(const pm_string_t *string, rb_encoding *encoding) {
     return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding);
 }
 
-// Create a Prism::Source object from the given parser.
 VALUE
-pm_source_new(pm_parser_t *parser, rb_encoding *encoding) {
-    VALUE source = rb_enc_str_new((const char *) parser->start, parser->end - parser->start, encoding);
-    VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
+pm_integer_new(const pm_integer_t *integer) {
+    VALUE result;
+    if (integer->values == NULL) {
+        result = UINT2NUM(integer->value);
+    } else {
+        VALUE string = rb_str_new(NULL, integer->length * 8);
+        unsigned char *bytes = (unsigned char *) RSTRING_PTR(string);
 
-    for (size_t index = 0; index < parser->newline_list.size; index++) {
-        rb_ary_push(offsets, INT2FIX(parser->newline_list.offsets[index]));
+        size_t offset = integer->length * 8;
+        for (size_t value_index = 0; value_index < integer->length; value_index++) {
+            uint32_t value = integer->values[value_index];
+
+            for (int index = 0; index < 8; index++) {
+                int byte = (value >> (4 * index)) & 0xf;
+                bytes[--offset] = byte < 10 ? byte + '0' : byte - 10 + 'a';
+            }
+        }
+
+        result = rb_funcall(string, rb_intern("to_i"), 1, UINT2NUM(16));
     }
 
-    VALUE source_argv[] = { source, LONG2NUM(parser->start_line), offsets };
+    if (integer->negative) {
+        result = rb_funcall(result, rb_intern("-@"), 0);
+    }
+
+    return result;
+}
+
+// Create a Prism::Source object from the given parser, after pm_parse() was called.
+VALUE
+pm_source_new(const pm_parser_t *parser, rb_encoding *encoding) {
+    VALUE source_string = rb_enc_str_new((const char *) parser->start, parser->end - parser->start, encoding);
+
+    VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
+    for (size_t index = 0; index < parser->newline_list.size; index++) {
+        rb_ary_push(offsets, ULONG2NUM(parser->newline_list.offsets[index]));
+    }
+
+    VALUE source_argv[] = { source_string, LONG2NUM(parser->start_line), offsets };
     return rb_class_new_instance(3, source_argv, rb_cPrismSource);
 }
 
 typedef struct pm_node_stack_node {
     struct pm_node_stack_node *prev;
-    pm_node_t *visit;
+    const pm_node_t *visit;
     bool visited;
 } pm_node_stack_node_t;
 
 static void
-pm_node_stack_push(pm_node_stack_node_t **stack, pm_node_t *visit) {
-    pm_node_stack_node_t *node = malloc(sizeof(pm_node_stack_node_t));
+pm_node_stack_push(pm_node_stack_node_t **stack, const pm_node_t *visit) {
+    pm_node_stack_node_t *node = xmalloc(sizeof(pm_node_stack_node_t));
     node->prev = *stack;
     node->visit = visit;
     node->visited = false;
     *stack = node;
 }
 
-static pm_node_t *
+static const pm_node_t *
 pm_node_stack_pop(pm_node_stack_node_t **stack) {
     pm_node_stack_node_t *current = *stack;
-    pm_node_t *visit = current->visit;
+    const pm_node_t *visit = current->visit;
 
     *stack = current->prev;
-    free(current);
+    xfree(current);
 
     return visit;
 }
 
 VALUE
-pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
-    VALUE source = pm_source_new(parser, encoding);
-    ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
+pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encoding, VALUE source) {
+    ID *constants = xcalloc(parser->constant_pool.size, sizeof(ID));
 
     for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
         pm_constant_t *constant = &parser->constant_pool.constants[index];
@@ -108,20 +137,20 @@ pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
                 continue;
             }
 
-            pm_node_t *node = node_stack->visit;
+            const pm_node_t *node = node_stack->visit;
             node_stack->visited = true;
 
             switch (PM_NODE_TYPE(node)) {
                 <%- nodes.each do |node| -%>
-                <%- if node.fields.any? { |field| [Prism::NodeField, Prism::OptionalNodeField, Prism::NodeListField].include?(field.class) } -%>
+                <%- if node.fields.any? { |field| [Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::NodeListField].include?(field.class) } -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
                     <%- node.fields.each do |field| -%>
                     <%- case field -%>
-                    <%- when Prism::NodeField, Prism::OptionalNodeField -%>
+                    <%- when Prism::Template::NodeField, Prism::Template::OptionalNodeField -%>
                     pm_node_stack_push(&node_stack, (pm_node_t *) cast-><%= field.name %>);
-                    <%- when Prism::NodeListField -%>
+                    <%- when Prism::Template::NodeListField -%>
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         pm_node_stack_push(&node_stack, (pm_node_t *) cast-><%= field.name %>.nodes[index]);
                     }
@@ -136,69 +165,78 @@ pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
             }
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         } else {
-            pm_node_t *node = pm_node_stack_pop(&node_stack);
+            const pm_node_t *node = pm_node_stack_pop(&node_stack);
 
             switch (PM_NODE_TYPE(node)) {
                 <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
-                    <%- if node.fields.any? { |field| ![Prism::NodeField, Prism::OptionalNodeField, Prism::FlagsField].include?(field.class) } -%>
+                    <%- if node.fields.any? { |field| ![Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::FlagsField].include?(field.class) } -%>
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
                     <%- end -%>
-                    VALUE argv[<%= node.fields.length + 1 %>];
-                    <%- node.fields.each_with_index do |field, index| -%>
+                    VALUE argv[<%= node.fields.length + 2 %>];
+
+                    // source
+                    argv[0] = source;
+                    <%- node.fields.each.with_index(1) do |field, index| -%>
 
                     // <%= field.name %>
                     <%- case field -%>
-                    <%- when Prism::NodeField, Prism::OptionalNodeField -%>
+                    <%- when Prism::Template::NodeField, Prism::Template::OptionalNodeField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_pop(value_stack);
-                    <%- when Prism::NodeListField -%>
+                    <%- when Prism::Template::NodeListField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         rb_ary_push(argv[<%= index %>], rb_ary_pop(value_stack));
                     }
-                    <%- when Prism::StringField -%>
+                    <%- when Prism::Template::StringField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_string_new(&cast-><%= field.name %>, encoding);
-                    <%- when Prism::ConstantField -%>
+                    <%- when Prism::Template::ConstantField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     assert(cast-><%= field.name %> != 0);
                     argv[<%= index %>] = rb_id2sym(constants[cast-><%= field.name %> - 1]);
-                    <%- when Prism::OptionalConstantField -%>
+                    <%- when Prism::Template::OptionalConstantField -%>
                     argv[<%= index %>] = cast-><%= field.name %> == 0 ? Qnil : rb_id2sym(constants[cast-><%= field.name %> - 1]);
-                    <%- when Prism::ConstantListField -%>
+                    <%- when Prism::Template::ConstantListField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         assert(cast-><%= field.name %>.ids[index] != 0);
                         rb_ary_push(argv[<%= index %>], rb_id2sym(constants[cast-><%= field.name %>.ids[index] - 1]));
                     }
-                    <%- when Prism::LocationField -%>
+                    <%- when Prism::Template::LocationField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
-                    <%- when Prism::OptionalLocationField -%>
+                    argv[<%= index %>] = pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end);
+                    <%- when Prism::Template::OptionalLocationField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
-                    <%- when Prism::UInt8Field -%>
+                    argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end);
+                    <%- when Prism::Template::UInt8Field -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = UINT2NUM(cast-><%= field.name %>);
-                    <%- when Prism::UInt32Field -%>
+                    <%- when Prism::Template::UInt32Field -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
-                    <%- when Prism::FlagsField -%>
+                    <%- when Prism::Template::FlagsField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(node->flags & ~PM_NODE_FLAG_COMMON_MASK);
+                    <%- when Prism::Template::IntegerField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+                    argv[<%= index %>] = pm_integer_new(&cast-><%= field.name %>);
+                    <%- when Prism::Template::DoubleField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+                    argv[<%= index %>] = DBL2NUM(cast-><%= field.name %>);
                     <%- else -%>
                     <%- raise -%>
                     <%- end -%>
                     <%- end -%>
 
                     // location
-                    argv[<%= node.fields.length %>] = pm_location_new(parser, node->location.start, node->location.end, source);
+                    argv[<%= node.fields.length + 1 %>] = pm_location_new(parser, node->location.start, node->location.end);
 
-                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 1 %>, argv, rb_cPrism<%= node.name %>));
+                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 2 %>, argv, rb_cPrism<%= node.name %>));
                     break;
                 }
                 <%- end -%>
@@ -209,7 +247,7 @@ pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
     }
 
     VALUE result = rb_ary_pop(value_stack);
-    free(constants);
+    xfree(constants);
     return result;
 }
 

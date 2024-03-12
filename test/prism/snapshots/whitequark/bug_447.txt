@@ -23,7 +23,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,5)-(1,11))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,5)-(1,7) = "do"
@@ -45,12 +44,12 @@
             │       │   ├── opening_loc: (3,2)-(3,3) = "["
             │       │   └── closing_loc: (3,3)-(3,4) = "]"
             │       └── @ IntegerNode (location: (3,6)-(3,7))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (3,8)-(3,14))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body: ∅
                 ├── opening_loc: (3,8)-(3,10) = "do"

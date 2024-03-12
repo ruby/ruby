@@ -1265,6 +1265,8 @@ class TestRange < Test::Unit::TestCase
     assert_operator(0.., :overlap?, 1..)
 
     assert_not_operator((1..3), :overlap?, ('a'..'d'))
+    assert_not_operator((1..), :overlap?, ('a'..))
+    assert_not_operator((..1), :overlap?, (..'a'))
 
     assert_raise(TypeError) { (0..).overlap?(1) }
     assert_raise(TypeError) { (0..).overlap?(nil) }

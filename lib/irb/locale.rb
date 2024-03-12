@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/locale.rb - internationalization module
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -94,7 +94,7 @@ module IRB # :nodoc:
       end
     end
 
-    def find(file , paths = $:)
+    def find(file, paths = $:)
       dir = File.dirname(file)
       dir = "" if dir == "."
       base = File.basename(file)

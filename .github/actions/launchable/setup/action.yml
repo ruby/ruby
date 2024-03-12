@@ -1,0 +1,149 @@
+name: Set up Launchable
+description: >-
+  Install the required dependencies and execute the necessary Launchable commands for test recording
+
+inputs:
+  report-path:
+    default: launchable_reports.json
+    required: true
+    description: The file path of the test report for uploading to Launchable
+
+  os:
+    required: true
+    description: The operating system that CI runs on. This value is used in Launchable flavor.
+
+  test-opts:
+    default: none
+    required: false
+    description: >-
+      Test options that determine how tests are run.
+      This value is used in the Launchable flavor.
+
+  launchable-token:
+    required: false
+    description: >-
+      Launchable token is needed if you want to run Launchable on your forked repository.
+      See https://github.com/ruby/ruby/wiki/CI-Servers#launchable-ci for details.
+
+  builddir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to create Launchable report file.
+
+  srcdir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to (re-)checkout source codes. Launchable retrives the commit information
+      from the directory.
+
+outputs:
+  enable-launchable:
+    description: "The boolean value indicating whether Launchable is enabled or not"
+    value: ${{ steps.enable-launchable.outputs.enable-launchable }}
+
+runs:
+  using: composite
+
+  steps:
+    - name: Enable Launchable conditionally
+      id: enable-launchable
+      run: echo "enable-launchable=true" >> $GITHUB_OUTPUT
+      shell: bash
+      if: >-
+        ${{
+        (github.repository == 'ruby/ruby' ||
+        (github.repository != 'ruby/ruby' && env.LAUNCHABLE_TOKEN)) &&
+        (matrix.test_task == 'check' || matrix.test_task == 'test-all')
+        }}
+
+    # Launchable CLI requires Python and Java.
+    # https://www.launchableinc.com/docs/resources/cli-reference/
+    - name: Set up Python
+      uses: actions/setup-python@871daa956ca9ea99f3c3e30acb424b7960676734 # v5.0.0
+      with:
+        python-version: "3.x"
+      if: steps.enable-launchable.outputs.enable-launchable
+
+    - name: Set up Java
+      uses: actions/setup-java@7a445ee88d4e23b52c33fdc7601e40278616c7f8 # v4.0.0
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+      if: steps.enable-launchable.outputs.enable-launchable
+
+    - name: Set environment variables for Launchable
+      shell: bash
+      run: |
+        : # GITHUB_PULL_REQUEST_URL are used for commenting test reports in Launchable Github App.
+        : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/link.py#L42
+        echo "GITHUB_PULL_REQUEST_URL=${{ github.event.pull_request.html_url }}" >> $GITHUB_ENV
+        : # The following envs are necessary in Launchable tokenless authentication.
+        : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L20
+        echo "LAUNCHABLE_ORGANIZATION=${{ github.repository_owner }}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_WORKSPACE=${{ github.event.repository.name }}" >> $GITHUB_ENV
+        : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
+        echo "GITHUB_PR_HEAD_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
+      if: steps.enable-launchable.outputs.enable-launchable
+
+    - name: Set up Launchable
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: |
+        set -x
+        PATH=$PATH:$(python -msite --user-base)/bin
+        echo "PATH=$PATH" >> $GITHUB_ENV
+        pip install --user launchable
+        launchable verify
+        : # The build name cannot include a slash, so we replace the string here.
+        github_ref="${{ github.ref }}"
+        github_ref="${github_ref//\//_}"
+        : # With the --name option, we need to configure a unique identifier for this build.
+        : # To avoid setting the same build name as the CI which runs on other branches, we use the branch name here.
+        : #
+        : # FIXME: Need to fix `WARNING: Failed to process a change to a file`.
+        : # https://github.com/launchableinc/cli/issues/786
+        launchable record build --name ${github_ref}_${GITHUB_PR_HEAD_SHA}
+        echo "TESTS=${TESTS} --launchable-test-reports=${{ inputs.report-path }}" >> $GITHUB_ENV
+      if: steps.enable-launchable.outputs.enable-launchable
+
+    - name: Variables to report Launchable
+      id: variables
+      shell: bash
+      run: |
+        set -x
+        : # flavor
+        test_opts="${{ inputs.test-opts }}"
+        test_opts="${test_opts// /}"
+        test_opts="${test_opts//=/:}"
+        echo test-opts="$test_opts" >> $GITHUB_OUTPUT
+        : # report-path from srcdir
+        if [ "${srcdir}" = "${{ github.workspace }}" ]; then
+          dir=
+        else
+          # srcdir must be equal to or under workspace
+          dir=$(echo ${srcdir:+${srcdir}/} | sed 's:[^/][^/]*/:../:g')
+        fi
+        report_path="${dir}${builddir:+${builddir}/}${report_path}"
+        echo report-path="${report_path}" >> $GITHUB_OUTPUT
+      if: steps.enable-launchable.outputs.enable-launchable
+      env:
+        srcdir: ${{ inputs.srcdir }}
+        builddir: ${{ inputs.builddir }}
+        report_path: ${{ inputs.report-path }}
+
+    - name: Record test results in Launchable
+      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      with:
+        shell: bash
+        working-directory: ${{ inputs.srcdir }}
+        post: |
+          : # record
+          launchable record tests --flavor os=${{ inputs.os }} --flavor test_task=${{ matrix.test_task }} --flavor test_opts=${test_opts} raw ${report_path}
+          rm -f ${report_path}
+      if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
+      env:
+        test_opts: ${{ steps.variables.outputs.test-opts }}
+        report_path: ${{ steps.variables.outputs.report-path }}

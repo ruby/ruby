@@ -7,7 +7,7 @@ RSpec.describe Bundler do
   describe "#load_marshal" do
     it "is a private method and raises an error" do
       data = Marshal.dump(Bundler)
-      expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method `load_marshal' called/)
+      expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method [`']load_marshal' called/)
     end
 
     it "loads any data" do

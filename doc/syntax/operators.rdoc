@@ -36,7 +36,7 @@ operation that specifies the behavior.
 
 == Logical Operators
 
-Logical operators are not methods, and therefor cannot be
+Logical operators are not methods, and therefore cannot be
 redefined/overloaded. They are tokenized at a lower level.
 
 Short-circuit logical operators (<code>&&</code>, <code>||</code>,

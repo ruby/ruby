@@ -52,7 +52,7 @@ class IPAddr
   # Regexp _internally_ used for parsing IPv4 address.
   RE_IPV4ADDRLIKE = %r{
     \A
-    (\d+) \. (\d+) \. (\d+) \. (\d+)
+    \d+ \. \d+ \. \d+ \. \d+
     \z
   }x
 
@@ -669,12 +669,12 @@ class IPAddr
     when Array
       octets = addr
     else
-      m = RE_IPV4ADDRLIKE.match(addr) or return nil
-      octets = m.captures
+      RE_IPV4ADDRLIKE.match?(addr) or return nil
+      octets = addr.split('.')
     end
     octets.inject(0) { |i, s|
       (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{@addr}"
-      s.match(/\A0./) and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{@addr}"
+      (s != '0') && s.start_with?('0') and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{@addr}"
       i << 8 | n
     }
   end

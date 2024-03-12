@@ -274,7 +274,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         vsig = rb_str_subseq(vsig, prefix, len);
         prefix = signame_prefix_len;
     }
-    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+    rb_raise(rb_eArgError, "unsupported signal '%.*s%"PRIsVALUE"'",
              prefix, signame_prefix, vsig);
     UNREACHABLE_RETURN(0);
 }
@@ -597,7 +597,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     sigemptyset(&sigact.sa_mask);
-#ifdef USE_SIGALTSTACK
+#if defined(USE_SIGALTSTACK) && !defined(__wasm__)
     if (handler == SIG_IGN || handler == SIG_DFL) {
         sigact.sa_handler = handler;
         sigact.sa_flags = 0;

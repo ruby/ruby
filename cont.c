@@ -1775,6 +1775,13 @@ rb_callcc(VALUE self)
         return rb_yield(val);
     }
 }
+#ifdef RUBY_ASAN_ENABLED
+/* callcc can't possibly work with ASAN; see bug #20273. Also this function
+ * definition below avoids a "defined and not used" warning. */
+MAYBE_UNUSED(static void notusing_callcc(void)) { rb_callcc(Qnil); }
+# define rb_callcc rb_f_notimplement
+#endif
+
 
 static VALUE
 make_passing_arg(int argc, const VALUE *argv)

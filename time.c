@@ -650,13 +650,13 @@ wv2timet(wideval_t w)
         wideint_t wi = FIXWV2WINT(w);
         if (TIMET_MIN == 0) {
             if (wi < 0)
-                rb_raise(rb_eRangeError, "negative value to convert into `time_t'");
+                rb_raise(rb_eRangeError, "negative value to convert into 'time_t'");
             if (TIMET_MAX < (uwideint_t)wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         else {
             if (wi < TIMET_MIN || TIMET_MAX < wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         return (time_t)wi;
     }
@@ -1501,7 +1501,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
             localtime_with_gmtoff_zone(&now, &tm, &now_gmtoff, &zone);
             now_isdst = tm.tm_isdst;
             zone = rb_fstring(zone);
-            rb_gc_register_mark_object(zone);
+            rb_vm_register_global_object(zone);
             now_zone = zone;
         }
         if (isdst_ret)
@@ -1958,6 +1958,10 @@ rb_timespec_now(struct timespec *ts)
 #endif
 }
 
+/*
+ * Sets the current time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
 {
@@ -2342,7 +2346,7 @@ zone_timelocal(VALUE zone, VALUE time)
     struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
-    t = rb_time_unmagnify(tobj->timew);
+    split_second(tobj->timew, &t, &s);
     tm = tm_from_time(rb_cTimeTM, time);
     utc = rb_check_funcall(zone, id_local_to_utc, 1, &tm);
     if (UNDEF_P(utc)) return 0;
@@ -2408,6 +2412,10 @@ vtm_day_wraparound(struct vtm *vtm)
 
 static VALUE time_init_vtm(VALUE time, struct vtm vtm, VALUE zone);
 
+/*
+ * Sets the broken-out time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
                VALUE hour, VALUE min, VALUE sec, VALUE zone)
@@ -2520,7 +2528,7 @@ two_digits(const char *ptr, const char *end, const char **endp, const char *name
         ((len > 2) && ISDIGIT(ptr[2]))) {
         VALUE mesg = rb_sprintf("two digits %s is expected", name);
         if (ptr[-1] == '-' || ptr[-1] == ':') {
-            rb_str_catf(mesg, " after `%c'", ptr[-1]);
+            rb_str_catf(mesg, " after '%c'", ptr[-1]);
         }
         rb_str_catf(mesg, ": %.*s", ((len > 10) ? 10 : (int)(end - ptr)) + 1, ptr - 1);
         rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
@@ -2537,8 +2545,12 @@ parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, 
     return rb_int_parse_cstr(ptr, len, (char **)endp, ndigits, 10, flags);
 }
 
+/*
+ * Parses _str_ and sets the broken-out time information into _time_.
+ * If _str_ is not a String, returns +nil+, otherwise returns _time_.
+ */
 static VALUE
-time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, VALUE precision)
+time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, VALUE precision)
 {
     if (NIL_P(str = rb_check_string_type(str))) return Qnil;
     if (!rb_enc_str_asciicompat_p(str)) {
@@ -2660,7 +2672,7 @@ only_year:
         .sec  = (sec < 0)  ? 0 : sec,
         .subsecx = NIL_P(subsec) ? INT2FIX(0) : subsec,
     };
-    return time_init_vtm(klass, vtm, zone);
+    return time_init_vtm(time, vtm, zone);
 }
 
 static void
@@ -5761,9 +5773,9 @@ Init_Time(void)
     sym_zone = ID2SYM(rb_intern_const("zone"));
 
     str_utc = rb_fstring_lit("UTC");
-    rb_gc_register_mark_object(str_utc);
+    rb_vm_register_global_object(str_utc);
     str_empty = rb_fstring_lit("");
-    rb_gc_register_mark_object(str_empty);
+    rb_vm_register_global_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     VALUE scTime = rb_singleton_class(rb_cTime);

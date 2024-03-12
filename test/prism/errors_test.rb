@@ -9,7 +9,7 @@ module Prism
     def test_constant_path_with_invalid_token_after
       assert_error_messages "A::$b", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected global variable, expecting end-of-input"
       ]
     end
 
@@ -26,7 +26,8 @@ module Prism
       )
 
       assert_errors expected, "module Parent module end", [
-        ["expected a constant name after `module`", 20..20]
+        ["expected a constant name after `module`", 14..20],
+        ["unexpected 'end', assuming it is closing the parent module definition", 21..24]
       ]
     end
 
@@ -98,7 +99,8 @@ module Prism
       )
 
       assert_errors expected, "BEGIN { 1 + }", [
-        ["expected an expression after the operator", 11..11]
+        ["expected an expression after the operator", 10..11],
+        ["unexpected '}', assuming it is closing the parent 'BEGIN' block", 12..13]
       ]
     end
 
@@ -149,7 +151,7 @@ module Prism
     def test_unterminated_interpolated_string
       expr = expression('"hello')
       assert_errors expr, '"hello', [
-        ["expected a closing delimiter for the string literal", 6..6]
+        ["unterminated string meets end of file", 6..6]
       ]
       assert_equal expr.unescaped, "hello"
       assert_equal expr.closing, ""
@@ -158,7 +160,7 @@ module Prism
     def test_unterminated_string
       expr = expression("'hello")
       assert_errors expr, "'hello", [
-        ["expected a closing delimiter for the string literal", 0..1]
+        ["unterminated string meets end of file", 0..1]
       ]
       assert_equal expr.unescaped, "hello"
       assert_equal expr.closing, ""
@@ -167,7 +169,7 @@ module Prism
     def test_unterminated_empty_string
       expr = expression('"')
       assert_errors expr, '"', [
-        ["expected a closing delimiter for the string literal", 1..1]
+        ["unterminated string meets end of file", 1..1]
       ]
       assert_equal expr.unescaped, ""
       assert_equal expr.closing, ""
@@ -175,8 +177,8 @@ module Prism
 
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
-        ["incomplete instance variable", 4..5],
-        ["expected a newline or semicolon after the statement", 4..4]
+        ["'@#' is not allowed as an instance variable name", 4..5],
+        ["unexpected instance variable, expecting end-of-input", 4..5]
       ]
     end
 
@@ -188,22 +190,23 @@ module Prism
 
     def test_unterminated_parenthesized_expression
       assert_errors expression('(1 + 2'), '(1 + 2', [
-        ["expected a newline or semicolon after the statement", 6..6],
-        ["cannot parse the expression", 6..6],
+        ["unexpected end of file, expecting end-of-input", 6..6],
+        ["unexpected end of file, assuming it is closing the parent top level context", 6..6],
         ["expected a matching `)`", 6..6]
       ]
     end
 
     def test_missing_terminator_in_parentheses
       assert_error_messages "(0 0)", [
-        "expected a newline or semicolon after the statement"
+        "unexpected integer, expecting end-of-input"
       ]
     end
 
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
         ["invalid `%` token", 2..3],
-        ["expected an expression after the operator", 3..3],
+        ["expected an expression after the operator", 2..3],
+        ["unexpected end of file, assuming it is closing the parent top level context", 3..3]
       ]
     end
 
@@ -221,63 +224,63 @@ module Prism
 
     def test_1_2_3
       assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 2..2],
-        ["cannot parse the expression", 2..2],
+        ["unexpected ',', expecting end-of-input", 2..3],
+        ["unexpected ',', ignoring it", 2..3],
         ["expected a matching `)`", 2..2],
-        ["expected a newline or semicolon after the statement", 2..2],
-        ["cannot parse the expression", 2..2],
-        ["expected a newline or semicolon after the statement", 5..5],
-        ["cannot parse the expression", 5..5],
-        ["expected a newline or semicolon after the statement", 8..8],
-        ["cannot parse the expression", 8..8]
+        ["unexpected ',', expecting end-of-input", 2..3],
+        ["unexpected ',', ignoring it", 2..3],
+        ["unexpected ',', expecting end-of-input", 5..6],
+        ["unexpected ',', ignoring it", 5..6],
+        ["unexpected ')', expecting end-of-input", 8..9],
+        ["unexpected ')', ignoring it", 8..9]
       ]
     end
 
     def test_return_1_2_3
       assert_error_messages "return(1, 2, 3)", [
-        "expected a newline or semicolon after the statement",
-        "cannot parse the expression",
+        "unexpected ',', expecting end-of-input",
+        "unexpected ',', ignoring it",
         "expected a matching `)`",
-        "expected a newline or semicolon after the statement",
-        "cannot parse the expression"
+        "unexpected ')', expecting end-of-input",
+        "unexpected ')', ignoring it"
       ]
     end
 
     def test_return_1
       assert_errors expression("return 1,;"), "return 1,;", [
-        ["expected an argument", 9..9]
+        ["expected an argument", 8..9]
       ]
     end
 
     def test_next_1_2_3
       assert_errors expression("next(1, 2, 3)"), "next(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 6..6],
-        ["cannot parse the expression", 6..6],
+        ["unexpected ',', expecting end-of-input", 6..7],
+        ["unexpected ',', ignoring it", 6..7],
         ["expected a matching `)`", 6..6],
-        ["expected a newline or semicolon after the statement", 12..12],
-        ["cannot parse the expression", 12..12]
+        ["unexpected ')', expecting end-of-input", 12..13],
+        ["unexpected ')', ignoring it", 12..13]
       ]
     end
 
     def test_next_1
       assert_errors expression("next 1,;"), "next 1,;", [
-        ["expected an argument", 7..7]
+        ["expected an argument", 6..7]
       ]
     end
 
     def test_break_1_2_3
       assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 7..7],
-        ["cannot parse the expression", 7..7],
+        ["unexpected ',', expecting end-of-input", 7..8],
+        ["unexpected ',', ignoring it", 7..8],
         ["expected a matching `)`", 7..7],
-        ["expected a newline or semicolon after the statement", 13..13],
-        ["cannot parse the expression", 13..13]
+        ["unexpected ')', expecting end-of-input", 13..14],
+        ["unexpected ')', ignoring it", 13..14]
       ]
     end
 
     def test_break_1
       assert_errors expression("break 1,;"), "break 1,;", [
-        ["expected an argument", 8..8]
+        ["expected an argument", 7..8]
       ]
     end
 
@@ -297,14 +300,14 @@ module Prism
     def test_top_level_constant_with_downcased_identifier
       assert_error_messages "::foo", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected local variable or method, expecting end-of-input"
       ]
     end
 
     def test_top_level_constant_starting_with_downcased_identifier
       assert_error_messages "::foo::A", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected local variable or method, expecting end-of-input"
       ]
     end
 
@@ -338,22 +341,22 @@ module Prism
         ["expected a matching `)`", 8..8],
         ["expected a `.` or `::` after the receiver in a method definition", 8..8],
         ["expected a delimiter to close the parameters", 9..9],
-        ["cannot parse the expression", 9..9],
-        ["cannot parse the expression", 11..11]
+        ["unexpected ')', ignoring it", 10..11],
+        ["unexpected '.', ignoring it", 11..12]
       ]
     end
 
     def test_def_with_empty_expression_receiver
       assert_errors expression("def ().a; end"), "def ().a; end", [
-        ["expected a receiver for the method definition", 5..5]
+        ["expected a receiver for the method definition", 4..5]
       ]
     end
 
     def test_block_beginning_with_brace_and_ending_with_end
       assert_error_messages "x.each { x end", [
-        "expected a newline or semicolon after the statement",
-        "cannot parse the expression",
-        "cannot parse the expression",
+        "unexpected 'end', expecting end-of-input",
+        "unexpected 'end', ignoring it",
+        "unexpected end of file, assuming it is closing the parent top level context",
         "expected a block beginning with `{` to end with `}`"
       ]
     end
@@ -400,8 +403,8 @@ module Prism
     def test_arguments_binding_power_for_and
       assert_error_messages "foo(*bar and baz)", [
         "expected a `)` to close the arguments",
-        "expected a newline or semicolon after the statement",
-        "cannot parse the expression"
+        "unexpected ')', expecting end-of-input",
+        "unexpected ')', ignoring it"
       ]
     end
 
@@ -440,7 +443,6 @@ module Prism
         nil,
         StatementsNode([ModuleNode([], Location(), ConstantReadNode(:A), nil, Location(), :A)]),
         [],
-        0,
         Location(),
         nil,
         nil,
@@ -472,7 +474,6 @@ module Prism
             nil,
             BlockNode(
               [],
-              0,
               nil,
               StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), :Foo)]),
               Location(),
@@ -481,7 +482,6 @@ module Prism
           )]
         ),
         [],
-        0,
         Location(),
         nil,
         nil,
@@ -532,7 +532,6 @@ module Prism
           )]
         ),
         [],
-        0,
         Location(),
         nil,
         nil,
@@ -573,7 +572,6 @@ module Prism
         ], [], nil, [], [], nil, nil),
         nil,
         [:A, :@a, :$A, :@@a],
-        4,
         Location(),
         nil,
         Location(),
@@ -590,43 +588,45 @@ module Prism
       ]
     end
 
-    def test_cannot_assign_to_a_reserved_numbered_parameter
-      expected = BeginNode(
-        Location(),
-        StatementsNode([
-          LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location())
-        ]),
-        nil,
-        nil,
-        nil,
-        Location()
-      )
-      source = <<~RUBY
-      begin
-        _1=:a;_2=:a;_3=:a;_4=:a;_5=:a
-        _6=:a;_7=:a;_8=:a;_9=:a;_10=:a
+    if RUBY_VERSION >= "3.0"
+      def test_cannot_assign_to_a_reserved_numbered_parameter
+        expected = BeginNode(
+          Location(),
+          StatementsNode([
+            LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location())
+          ]),
+          nil,
+          nil,
+          nil,
+          Location()
+        )
+        source = <<~RUBY
+        begin
+          _1=:a;_2=:a;_3=:a;_4=:a;_5=:a
+          _6=:a;_7=:a;_8=:a;_9=:a;_10=:a
+        end
+        RUBY
+        assert_errors expected, source, [
+          ["_1 is reserved for numbered parameters", 8..10],
+          ["_2 is reserved for numbered parameters", 14..16],
+          ["_3 is reserved for numbered parameters", 20..22],
+          ["_4 is reserved for numbered parameters", 26..28],
+          ["_5 is reserved for numbered parameters", 32..34],
+          ["_6 is reserved for numbered parameters", 40..42],
+          ["_7 is reserved for numbered parameters", 46..48],
+          ["_8 is reserved for numbered parameters", 52..54],
+          ["_9 is reserved for numbered parameters", 58..60],
+        ]
       end
-      RUBY
-      assert_errors expected, source, [
-        ["_1 is reserved for numbered parameters", 8..10],
-        ["_2 is reserved for numbered parameters", 14..16],
-        ["_3 is reserved for numbered parameters", 20..22],
-        ["_4 is reserved for numbered parameters", 26..28],
-        ["_5 is reserved for numbered parameters", 32..34],
-        ["_6 is reserved for numbered parameters", 40..42],
-        ["_7 is reserved for numbered parameters", 46..48],
-        ["_8 is reserved for numbered parameters", 52..54],
-        ["_9 is reserved for numbered parameters", 58..60],
-      ]
     end
 
     def test_do_not_allow_trailing_commas_in_method_parameters
@@ -645,7 +645,6 @@ module Prism
         ),
         nil,
         [:a, :b, :c],
-        3,
         Location(),
         nil,
         Location(),
@@ -662,7 +661,6 @@ module Prism
     def test_do_not_allow_trailing_commas_in_lambda_parameters
       expected = LambdaNode(
         [:a, :b],
-        2,
         Location(),
         Location(),
         Location(),
@@ -731,7 +729,6 @@ module Prism
         ),
         nil,
         [:block, :a],
-        2,
         Location(),
         nil,
         Location(),
@@ -751,8 +748,7 @@ module Prism
         nil,
         ParametersNode([], [], nil, [RequiredParameterNode(0, :a)], [], nil, BlockParameterNode(0, nil, nil, Location())),
         nil,
-        [:&, :a],
-        2,
+        [:a],
         Location(),
         nil,
         Location(),
@@ -781,8 +777,7 @@ module Prism
           nil
         ),
         nil,
-        [:"...", :a],
-        2,
+        [:a],
         Location(),
         nil,
         Location(),
@@ -811,7 +806,6 @@ module Prism
         ),
         nil,
         [:b, :a],
-        2,
         Location(),
         nil,
         Location(),
@@ -840,7 +834,6 @@ module Prism
         ),
         nil,
         [:rest, :b],
-        2,
         Location(),
         nil,
         Location(),
@@ -861,8 +854,7 @@ module Prism
         nil,
         ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil),
         nil,
-        [:"..."],
-        1,
+        [],
         Location(),
         nil,
         Location(),
@@ -892,7 +884,6 @@ module Prism
         ),
         nil,
         [:args, :a, :b],
-        3,
         Location(),
         nil,
         Location(),
@@ -923,7 +914,6 @@ module Prism
         ),
         nil,
         [:args, :a, :b],
-        3,
         Location(),
         nil,
         Location(),
@@ -954,7 +944,6 @@ module Prism
         ),
         nil,
         [:args, :a, :b],
-        3,
         Location(),
         nil,
         Location(),
@@ -977,8 +966,8 @@ module Prism
         ParametersNode(
           [RequiredParameterNode(0, :a)],
           [
-            OptionalParameterNode(0, :b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
-            OptionalParameterNode(0, :d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
+            OptionalParameterNode(0, :b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 1)),
+            OptionalParameterNode(0, :d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 2))
           ],
           nil,
           [RequiredParameterNode(0, :c), RequiredParameterNode(0, :e)],
@@ -988,7 +977,6 @@ module Prism
         ),
         nil,
         [:a, :b, :c, :d, :e],
-        5,
         Location(),
         nil,
         Location(),
@@ -1036,9 +1024,8 @@ module Prism
         Location(),
         nil,
         nil,
-        StatementsNode([IntegerNode(IntegerBaseFlags::DECIMAL)]),
+        StatementsNode([IntegerNode(IntegerBaseFlags::DECIMAL, 42)]),
         [],
-        0,
         Location(),
         nil,
         Location(),
@@ -1055,7 +1042,6 @@ module Prism
     def test_do_not_allow_forward_arguments_in_lambda_literals
       expected = LambdaNode(
         [],
-        0,
         Location(),
         Location(),
         Location(),
@@ -1080,7 +1066,6 @@ module Prism
         nil,
         BlockNode(
           [],
-          0,
           BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
           nil,
           Location(),
@@ -1139,8 +1124,8 @@ module Prism
       )
 
       assert_errors expected, "begin\n$+ = nil\n$1466 = nil\nend", [
-        ["immutable variable as a write target", 6..8],
-        ["immutable variable as a write target", 15..20]
+        ["Can't set variable $+", 6..8],
+        ["Can't set variable $1466", 15..20]
       ]
     end
 
@@ -1155,7 +1140,6 @@ module Prism
           ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b), RequiredParameterNode(ParameterFlags::REPEATED_PARAMETER, :a)], [], nil, [], [], nil, nil),
           nil,
           [:a, :b],
-          2,
           Location(),
           nil,
           Location(),
@@ -1176,7 +1160,6 @@ module Prism
         ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], RestParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location()), [], [], nil, nil),
         nil,
         [:a, :b],
-        2,
         Location(),
         nil,
         Location(),
@@ -1196,7 +1179,6 @@ module Prism
         ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], nil, [], [], KeywordRestParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location()), nil),
         nil,
         [:a, :b],
-        2,
         Location(),
         nil,
         Location(),
@@ -1216,7 +1198,6 @@ module Prism
         ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], nil, [], [], nil, BlockParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location())),
         nil,
         [:a, :b],
-        2,
         Location(),
         nil,
         Location(),
@@ -1233,10 +1214,9 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([], [OptionalParameterNode(0, :a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], RestParameterNode(0, :c, Location(), Location()), [RequiredParameterNode(0, :b)], [], nil, nil),
+        ParametersNode([], [OptionalParameterNode(0, :a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL, 1))], RestParameterNode(0, :c, Location(), Location()), [RequiredParameterNode(0, :b)], [], nil, nil),
         nil,
         [:a, :b, :c],
-        3,
         Location(),
         nil,
         Location(),
@@ -1278,20 +1258,19 @@ module Prism
 
     def test_unterminated_global_variable
       assert_errors expression("$"), "$", [
-        ["invalid global variable", 0..1]
+        ["'$' is not allowed as a global variable name", 0..1]
       ]
     end
 
     def test_invalid_global_variable_write
       assert_errors expression("$',"), "$',", [
-        ["immutable variable as a write target", 0..2],
+        ["Can't set variable $'", 0..2],
         ["unexpected write target", 0..2]
       ]
     end
 
     def test_invalid_multi_target
       error_messages = ["unexpected write target"]
-      immutable = "immutable variable as a write target"
 
       assert_error_messages "foo,", error_messages
       assert_error_messages "foo = 1; foo,", error_messages
@@ -1300,8 +1279,8 @@ module Prism
       assert_error_messages "@foo,", error_messages
       assert_error_messages "@@foo,", error_messages
       assert_error_messages "$foo,", error_messages
-      assert_error_messages "$1,", [immutable, *error_messages]
-      assert_error_messages "$+,", [immutable, *error_messages]
+      assert_error_messages "$1,", ["Can't set variable $1", *error_messages]
+      assert_error_messages "$+,", ["Can't set variable $+", *error_messages]
       assert_error_messages "Foo,", error_messages
       assert_error_messages "::Foo,", error_messages
       assert_error_messages "Foo::Foo,", error_messages
@@ -1366,23 +1345,25 @@ module Prism
       ]
     end
 
-    def test_writing_numbered_parameter
-      assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-        ["_1 is reserved for numbered parameters", 5..7]
-      ]
-    end
+    if RUBY_VERSION >= "3.0"
+      def test_writing_numbered_parameter
+        assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
+          ["_1 is reserved for numbered parameters", 5..7]
+        ]
+      end
 
-    def test_targeting_numbered_parameter
-      assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-        ["_1 is reserved for numbered parameters", 5..7]
-      ]
-    end
+      def test_targeting_numbered_parameter
+        assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
+          ["_1 is reserved for numbered parameters", 5..7]
+        ]
+      end
 
-    def test_defining_numbered_parameter
-      error_messages = ["_1 is reserved for numbered parameters"]
+      def test_defining_numbered_parameter
+        error_messages = ["_1 is reserved for numbered parameters"]
 
-      assert_error_messages "def _1; end", error_messages
-      assert_error_messages "def self._1; end", error_messages
+        assert_error_messages "def _1; end", error_messages
+        assert_error_messages "def self._1; end", error_messages
+      end
     end
 
     def test_double_scope_numbered_parameters
@@ -1431,11 +1412,13 @@ module Prism
       ]
     end
 
-    def test_numbered_parameters_in_block_arguments
-      source = "foo { |_1| }"
-      assert_errors expression(source), source, [
-        ["_1 is reserved for numbered parameters", 7..9],
-      ]
+    if RUBY_VERSION >= "3.0"
+      def test_numbered_parameters_in_block_arguments
+        source = "foo { |_1| }"
+        assert_errors expression(source), source, [
+          ["_1 is reserved for numbered parameters", 7..9],
+        ]
+      end
     end
 
     def test_conditional_predicate_closed
@@ -1487,11 +1470,12 @@ module Prism
 
     def test_shadow_args_in_lambda
       source = "->a;b{}"
+
       assert_errors expression(source), source, [
         ["expected a `do` keyword or a `{` to open the lambda block", 3..3],
-        ["expected a newline or semicolon after the statement", 7..7],
-        ["cannot parse the expression", 7..7],
-        ["expected a lambda block beginning with `do` to end with `end`", 7..7],
+        ["unexpected end of file, expecting end-of-input", 7..7],
+        ["unexpected end of file, assuming it is closing the parent top level context", 7..7],
+        ["expected a lambda block beginning with `do` to end with `end`", 7..7]
       ]
     end
 
@@ -1533,23 +1517,24 @@ module Prism
     def test_symbol_in_keyword_parameter
       source = "def foo(x:'y':); end"
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the string literal", 14..14],
+        ["unexpected label terminator, expected a string literal terminator", 12..14]
       ]
     end
 
     def test_symbol_in_hash
       source = "{x:'y':}"
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the string literal", 7..7],
+        ["unexpected label terminator, expected a string literal terminator", 5..7]
       ]
     end
 
     def test_while_endless_method
       source = "while def f = g do end"
+
       assert_errors expression(source), source, [
-        ['expected a predicate expression for the `while` statement', 22..22],
-        ['cannot parse the expression', 22..22],
-        ['expected an `end` to close the `while` statement', 22..22]
+        ["expected a predicate expression for the `while` statement", 22..22],
+        ["unexpected end of file, assuming it is closing the parent top level context", 22..22],
+        ["expected an `end` to close the `while` statement", 22..22]
       ]
     end
 
@@ -1558,22 +1543,21 @@ module Prism
         a in b + c
         a => b + c
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 6..6],
-        [message2, 6..6],
-        [message1, 17..17],
-        [message2, 17..17],
+        ["unexpected '+', expecting end-of-input", 7..8],
+        ["unexpected '+', ignoring it", 7..8],
+        ["unexpected '+', expecting end-of-input", 18..19],
+        ["unexpected '+', ignoring it", 18..19]
       ]
     end
 
     def test_rational_number_with_exponential_portion
       source = '1e1r; 1e1ri'
-      message = 'expected a newline or semicolon after the statement'
+
       assert_errors expression(source), source, [
-        [message, 3..3],
-        [message, 9..9]
+        ["unexpected local variable or method, expecting end-of-input", 3..4],
+        ["unexpected local variable or method, expecting end-of-input", 9..11]
       ]
     end
 
@@ -1859,9 +1843,10 @@ module Prism
 
     def test_non_assoc_range
       source = '1....2'
+
       assert_errors expression(source), source, [
-        ['expected a newline or semicolon after the statement', 4..4],
-        ['cannot parse the expression', 4..4],
+        ["unexpected '.', expecting end-of-input", 4..5],
+        ["unexpected '.', ignoring it", 4..5]
       ]
     end
 
@@ -1892,25 +1877,24 @@ module Prism
         undef x + 1
         undef x.z
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 9..9],
-        [message2, 9..9],
-        [message1, 23..23],
-        [message2, 23..23],
-        [message1, 39..39],
-        [message2, 39..39],
-        [message1, 57..57],
-        [message2, 57..57],
-        [message1, 71..71],
-        [message2, 71..71],
-        [message1, 87..87],
-        [message2, 87..87],
-        [message1, 97..97],
-        [message2, 97..97],
-        [message1, 109..109],
-        [message2, 109..109],
+        ["unexpected '+', expecting end-of-input", 10..11],
+        ["unexpected '+', ignoring it", 10..11],
+        ["unexpected '.', expecting end-of-input", 23..24],
+        ["unexpected '.', ignoring it", 23..24],
+        ["unexpected '+', expecting end-of-input", 40..41],
+        ["unexpected '+', ignoring it", 40..41],
+        ["unexpected '.', expecting end-of-input", 57..58],
+        ["unexpected '.', ignoring it", 57..58],
+        ["unexpected '+', expecting end-of-input", 72..73],
+        ["unexpected '+', ignoring it", 72..73],
+        ["unexpected '.', expecting end-of-input", 87..88],
+        ["unexpected '.', ignoring it", 87..88],
+        ["unexpected '+', expecting end-of-input", 98..99],
+        ["unexpected '+', ignoring it", 98..99],
+        ["unexpected '.', expecting end-of-input", 109..110],
+        ["unexpected '.', ignoring it", 109..110]
       ]
     end
 
@@ -1934,13 +1918,12 @@ module Prism
         ..1..
         ...1..
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 =  'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 3..3],
-        [message2, 3..3],
-        [message1, 10..10],
-        [message2, 10..10],
+        ["unexpected '..', expecting end-of-input", 3..5],
+        ["unexpected '..', ignoring it", 3..5],
+        ["unexpected '..', expecting end-of-input", 10..12],
+        ["unexpected '..', ignoring it", 10..12]
       ]
     end
 
@@ -2021,13 +2004,12 @@ module Prism
         foo 1 in a
         a = foo 2 in b
       RUBY
-      message1 = 'unexpected `in` keyword in arguments'
-      message2 = 'expected a newline or semicolon after the statement'
+
       assert_errors expression(source), source, [
-        [message1, 9..10],
-        [message2, 8..8],
-        [message1, 24..25],
-        [message2, 23..23],
+        ["unexpected `in` keyword in arguments", 9..10],
+        ["unexpected local variable or method, expecting end-of-input", 9..10],
+        ["unexpected `in` keyword in arguments", 24..25],
+        ["unexpected local variable or method, expecting end-of-input", 24..25]
       ]
     end
 
@@ -2047,21 +2029,20 @@ module Prism
         1 !~ 2 !~ 3
         1 <=> 2 <=> 3
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 6..6],
-        [message2, 6..6],
-        [message1, 18..18],
-        [message2, 18..18],
-        [message1, 31..31],
-        [message2, 31..31],
-        [message1, 44..44],
-        [message2, 44..44],
-        [message1, 56..56],
-        [message2, 56..56],
-        [message1, 69..69],
-        [message2, 69..69],
+        ["unexpected '==', expecting end-of-input", 7..9],
+        ["unexpected '==', ignoring it", 7..9],
+        ["unexpected '!=', expecting end-of-input", 19..21],
+        ["unexpected '!=', ignoring it", 19..21],
+        ["unexpected '===', expecting end-of-input", 32..35],
+        ["unexpected '===', ignoring it", 32..35],
+        ["unexpected '=~', expecting end-of-input", 45..47],
+        ["unexpected '=~', ignoring it", 45..47],
+        ["unexpected '!~', expecting end-of-input", 57..59],
+        ["unexpected '!~', ignoring it", 57..59],
+        ["unexpected '<=>', expecting end-of-input", 70..73],
+        ["unexpected '<=>', ignoring it", 70..73]
       ]
     end
 
@@ -2084,6 +2065,82 @@ module Prism
       errors = [["`it` is not allowed when an ordinary parameter is defined", 10..12]]
 
       assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
+    def test_singleton_method_for_literals
+      source = <<~'RUBY'
+        def (1).g; end
+        def ((a; 1)).foo; end
+        def ((return; 1)).bar; end
+        def (((1))).foo; end
+        def (__FILE__).foo; end
+        def (__ENCODING__).foo; end
+        def (__LINE__).foo; end
+        def ("foo").foo; end
+        def (3.14).foo; end
+        def (3.14i).foo; end
+        def (:foo).foo; end
+        def (:'foo').foo; end
+        def (:'f{o}').foo; end
+        def ('foo').foo; end
+        def ("foo").foo; end
+        def ("#{fo}o").foo; end
+        def (/foo/).foo; end
+        def (/f#{oo}/).foo; end
+        def ([1]).foo; end
+      RUBY
+      errors = [
+        ["cannot define singleton method for literals", 5..6],
+        ["cannot define singleton method for literals", 24..25],
+        ["cannot define singleton method for literals", 51..52],
+        ["cannot define singleton method for literals", 71..72],
+        ["cannot define singleton method for literals", 90..98],
+        ["cannot define singleton method for literals", 114..126],
+        ["cannot define singleton method for literals", 142..150],
+        ["cannot define singleton method for literals", 166..171],
+        ["cannot define singleton method for literals", 187..191],
+        ["cannot define singleton method for literals", 207..212],
+        ["cannot define singleton method for literals", 228..232],
+        ["cannot define singleton method for literals", 248..254],
+        ["cannot define singleton method for literals", 270..277],
+        ["cannot define singleton method for literals", 293..298],
+        ["cannot define singleton method for literals", 314..319],
+        ["cannot define singleton method for literals", 335..343],
+        ["cannot define singleton method for literals", 359..364],
+        ["cannot define singleton method for literals", 380..388],
+        ["cannot define singleton method for literals", 404..407]
+      ]
+      assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
+    def test_assignment_to_literal_in_conditionals
+      source = <<~RUBY
+        if (a = 2); end
+        if ($a = 2); end
+        if (@a = 2); end
+        if (@@a = 2); end
+        if a elsif b = 2; end
+        unless (a = 2); end
+        unless ($a = 2); end
+        unless (@a = 2); end
+        unless (@@a = 2); end
+        while (a = 2); end
+        while ($a = 2); end
+        while (@a = 2); end
+        while (@@a = 2); end
+        until (a = 2); end
+        until ($a = 2); end
+        until (@a = 2); end
+        until (@@a = 2); end
+        foo if a = 2
+        foo if (a, b = 2)
+        (@foo = 1) ? a : b
+        !(a = 2)
+        not a = 2
+      RUBY
+      assert_warning_messages source, [
+        "found `= literal' in conditional, should be =="
+      ] * source.lines.count
     end
 
     private

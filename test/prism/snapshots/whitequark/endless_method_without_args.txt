@@ -12,9 +12,9 @@
         │   │   @ StatementsNode (location: (1,10)-(1,12))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (1,10)-(1,12))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 42
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -32,12 +32,12 @@
         │   │       └── @ RescueModifierNode (location: (3,10)-(3,23))
         │   │           ├── expression:
         │   │           │   @ IntegerNode (location: (3,10)-(3,12))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 42
         │   │           ├── keyword_loc: (3,13)-(3,19) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (3,20)-(3,23))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -54,9 +54,9 @@
         │   │   @ StatementsNode (location: (5,15)-(5,17))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (5,15)-(5,17))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 42
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (5,0)-(5,3) = "def"
         │   ├── operator_loc: (5,8)-(5,9) = "."
         │   ├── lparen_loc: ∅
@@ -75,12 +75,12 @@
             │       └── @ RescueModifierNode (location: (7,15)-(7,28))
             │           ├── expression:
             │           │   @ IntegerNode (location: (7,15)-(7,17))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 42
             │           ├── keyword_loc: (7,18)-(7,24) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (7,25)-(7,28))
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (7,0)-(7,3) = "def"
             ├── operator_loc: (7,8)-(7,9) = "."
             ├── lparen_loc: ∅

@@ -11,7 +11,7 @@
         │   └── unescaped: ""
         └── @ InterpolatedStringNode (location: (4,0)-(4,8))
             ├── opening_loc: (4,0)-(4,8) = "<<~THERE"
-            ├── parts: (length: 8)
+            ├── parts: (length: 9)
             │   ├── @ StringNode (location: (5,0)-(6,0))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
@@ -42,12 +42,18 @@
             │   │   ├── content_loc: (9,0)-(10,0) = "\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "\n"
-            │   ├── @ StringNode (location: (10,0)-(12,0))
+            │   ├── @ StringNode (location: (10,0)-(11,0))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (10,0)-(12,0) = "  <<~BUT\\\n    but\n"
+            │   │   ├── content_loc: (10,0)-(11,0) = "  <<~BUT\\\n"
             │   │   ├── closing_loc: ∅
-            │   │   └── unescaped: "<<~BUT    but\n"
+            │   │   └── unescaped: "<<~BUT"
+            │   ├── @ StringNode (location: (11,0)-(12,0))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (11,0)-(12,0) = "    but\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "  but\n"
             │   ├── @ StringNode (location: (12,0)-(13,0))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅

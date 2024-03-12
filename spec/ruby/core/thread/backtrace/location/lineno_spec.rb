@@ -7,7 +7,7 @@ describe 'Thread::Backtrace::Location#lineno' do
     @line  = __LINE__ - 1
   end
 
-  it 'returns the absolute path of the call frame' do
+  it 'returns the line number of the call frame' do
     @frame.lineno.should == @line
   end
 

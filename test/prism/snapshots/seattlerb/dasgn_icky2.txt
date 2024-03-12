@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(8,3))
                 ├── locals: [:v]
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (2,2)-(7,5))

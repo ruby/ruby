@@ -69,7 +69,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "cat:\n", @to.res.join
+    assert_equal "[cat]\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -79,7 +79,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "cat:\n", @to.res.join
+    assert_equal "cat::\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -100,7 +100,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
   def accept_list_item_start_label
     assert_equal [""], @to.res
-    assert_equal "cat:\n  ", @to.prefix
+    assert_equal "[cat]\n  ", @to.prefix
 
     assert_equal 2, @to.indent
   end
@@ -115,7 +115,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
   def accept_list_item_start_note
     assert_equal [""], @to.res
-    assert_equal "cat:\n  ", @to.prefix
+    assert_equal "cat::\n  ", @to.prefix
 
     assert_equal 2, @to.indent
   end
@@ -243,16 +243,16 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_start_note_2
-    assert_equal "<tt>teletype</tt>:\n  teletype description\n\n", @to.res.join
+    assert_equal "<tt>teletype</tt>::\n  teletype description\n\n", @to.res.join
   end
 
   def accept_list_item_start_note_multi_description
-    assert_equal "label:\n  description one\n\n  description two\n\n",
+    assert_equal "label::\n  description one\n\n  description two\n\n",
                  @to.res.join
   end
 
   def accept_list_item_start_note_multi_label
-    assert_equal "one\ntwo:\n  two headers\n\n", @to.res.join
+    assert_equal "one::\ntwo::\n  two headers\n\n", @to.res.join
   end
 
   def accept_paragraph_b
@@ -355,8 +355,8 @@ bar ::
     NOTE_LIST
 
     expected = <<-EXPECTED
-foo
-bar:
+foo::
+bar::
   hi
 
     EXPECTED

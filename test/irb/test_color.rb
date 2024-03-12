@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'irb/color'
-require 'rubygems'
 require 'stringio'
 
 require_relative "helper"

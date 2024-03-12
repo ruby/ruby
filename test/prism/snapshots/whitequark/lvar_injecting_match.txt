@@ -9,7 +9,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ RegularExpressionNode (location: (1,0)-(1,15))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (1,0)-(1,1) = "/"
         │   │   │   ├── content_loc: (1,1)-(1,14) = "(?<match>bar)"
         │   │   │   ├── closing_loc: (1,14)-(1,15) = "/"

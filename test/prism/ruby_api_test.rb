@@ -116,6 +116,86 @@ module Prism
       assert_equal 7, location.end_character_column
     end
 
+    def test_location_code_units
+      program = Prism.parse("😀 + 😀\n😍 ||= 😍").value
+
+      # first 😀
+      location = program.statements.body.first.receiver.location
+
+      assert_equal 0, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 0, location.start_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 0, location.start_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 1, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 2, location.end_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 1, location.end_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_16LE)
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_32LE)
+
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
+
+      # second 😀
+      location = program.statements.body.first.arguments.arguments.first.location
+
+      assert_equal 4, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 5, location.start_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 4, location.start_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 5, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 7, location.end_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 5, location.end_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 4, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 5, location.start_code_units_column(Encoding::UTF_16LE)
+      assert_equal 4, location.start_code_units_column(Encoding::UTF_32LE)
+
+      assert_equal 5, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 7, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 5, location.end_code_units_column(Encoding::UTF_32LE)
+
+      # first 😍
+      location = program.statements.body.last.name_loc
+
+      assert_equal 6, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 8, location.start_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 6, location.start_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 7, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 10, location.end_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 7, location.end_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_16LE)
+      assert_equal 0, location.start_code_units_column(Encoding::UTF_32LE)
+
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
+
+      # second 😍
+      location = program.statements.body.last.value.location
+
+      assert_equal 12, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 15, location.start_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 12, location.start_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 13, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 17, location.end_code_units_offset(Encoding::UTF_16LE)
+      assert_equal 13, location.end_code_units_offset(Encoding::UTF_32LE)
+
+      assert_equal 6, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 7, location.start_code_units_column(Encoding::UTF_16LE)
+      assert_equal 6, location.start_code_units_column(Encoding::UTF_32LE)
+
+      assert_equal 7, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 9, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 7, location.end_code_units_column(Encoding::UTF_32LE)
+    end
+
     def test_heredoc?
       refute parse_expression("\"foo\"").heredoc?
       refute parse_expression("\"foo \#{1}\"").heredoc?

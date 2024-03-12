@@ -14,7 +14,8 @@
         │   ├── operator_loc: (1,4)-(1,6) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (1,7)-(1,8))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator: :+
         ├── @ ConstantOperatorWriteNode (location: (3,0)-(3,6))
         │   ├── name: :A
@@ -22,7 +23,8 @@
         │   ├── operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (3,5)-(3,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator: :+
         ├── @ ConstantPathOperatorWriteNode (location: (5,0)-(5,9))
         │   ├── target:
@@ -37,7 +39,8 @@
         │   ├── operator_loc: (5,5)-(5,7) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (5,8)-(5,9))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator: :+
         ├── @ DefNode (location: (7,0)-(7,21))
         │   ├── name: :x
@@ -58,9 +61,9 @@
         │   │           ├── operator_loc: (7,11)-(7,14) = "||="
         │   │           └── value:
         │   │               @ IntegerNode (location: (7,15)-(7,16))
-        │   │               └── flags: decimal
+        │   │               ├── flags: decimal
+        │   │               └── value: 1
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -87,9 +90,9 @@
             │           ├── operator_loc: (9,15)-(9,18) = "||="
             │           └── value:
             │               @ IntegerNode (location: (9,19)-(9,20))
-            │               └── flags: decimal
+            │               ├── flags: decimal
+            │               └── value: 1
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (9,0)-(9,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

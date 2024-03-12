@@ -129,7 +129,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (7,8)-(9,1))
         │   │               ├── locals: []
-        │   │               ├── locals_body_index: 0
         │   │               ├── parameters: ∅
         │   │               ├── body:
         │   │               │   @ StatementsNode (location: (8,2)-(8,5))
@@ -152,7 +151,6 @@
         │   └── block:
         │       @ BlockNode (location: (10,6)-(12,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (11,2)-(11,5))
@@ -190,7 +188,6 @@
         │   └── block:
         │       @ BlockNode (location: (13,9)-(15,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (14,2)-(14,5))
@@ -215,7 +212,6 @@
         │   └── block:
         │       @ BlockNode (location: (16,8)-(18,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (17,2)-(17,5))
@@ -263,7 +259,6 @@
             └── block:
                 @ BlockNode (location: (19,12)-(21,1))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (20,2)-(20,5))

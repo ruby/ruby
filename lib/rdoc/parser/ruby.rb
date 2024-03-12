@@ -789,8 +789,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     al.line   = line_no
 
     read_documentation_modifiers al, RDoc::ATTR_MODIFIERS
-    context.add_alias al
-    @stats.add_alias al
+    if al.document_self or not @track_visibility
+      context.add_alias al
+      @stats.add_alias al
+    end
 
     al
   end

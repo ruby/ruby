@@ -45,13 +45,13 @@ VALUE rb_vm_push_frame_fname(struct rb_execution_context_struct *ec, VALUE fname
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
+void rb_vm_register_global_object(VALUE obj);
 void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
 void rb_vm_pop_cfunc_frame(void);
-int rb_vm_add_root_module(VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);

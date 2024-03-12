@@ -1,0 +1,28 @@
+prelude: |
+  a = [1].freeze
+  ea = [].freeze
+  kw = {y: 1}.freeze
+  b = lambda{}
+  extend(Module.new{def arg_splat(x=0, y: 0) end})
+  extend(Module.new{def arg_splat_block(x=0, y: 0) end})
+  extend(Module.new{def arg_splat_post(x=0, y: 0) end})
+  extend(Module.new{def splat_kw_splat(x=0, y: 0) end})
+  extend(Module.new{def splat_kw_splat_block(x=0, y: 0) end})
+  extend(Module.new{def splat_kw(x=0, y: 0) end})
+  extend(Module.new{def splat_kw_block(x=0, y: 0) end})
+
+  extend(Module.new{def arg_splat(x, *a) super end})
+  extend(Module.new{def arg_splat_block(x, *a, &b) super end})
+  extend(Module.new{def arg_splat_post(*a, x) super end})
+  extend(Module.new{def splat_kw_splat(*a, **kw) super end})
+  extend(Module.new{def splat_kw_splat_block(*a, **kw, &b) super end})
+  extend(Module.new{def splat_kw(*a, y: 1) super end})
+  extend(Module.new{def splat_kw_block(*a, y: 1, &b) super end})
+benchmark:
+  arg_splat: "arg_splat(1, *ea)"
+  arg_splat_block: "arg_splat_block(1, *ea, &b)"
+  arg_splat_post: "arg_splat_post(1, *ea, &b)"
+  splat_kw_splat: "splat_kw_splat(*a, **kw)"
+  splat_kw_splat_block: "splat_kw_splat_block(*a, **kw, &b)"
+  splat_kw: "splat_kw(*a, y: 1)"
+  splat_kw_block: "splat_kw_block(*a, y: 1, &b)"

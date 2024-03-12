@@ -268,6 +268,14 @@ describe "Proc#arity" do
         @a.arity.should == 3
         @b.arity.should == 3
       end
+
+      # implicit rest
+      evaluate <<-ruby do
+          @a = lambda { |a, | }
+      ruby
+
+        @a.arity.should == 1
+      end
     end
 
     context "returns negative values" do
@@ -529,6 +537,14 @@ describe "Proc#arity" do
 
         @a.arity.should == 1
         @b.arity.should == 5
+      end
+
+      # implicit rest
+      evaluate <<-ruby do
+          @a = proc { |a, | }
+      ruby
+
+        @a.arity.should == 1
       end
     end
 

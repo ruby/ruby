@@ -27,15 +27,16 @@
         │   │           │       │   │   @ StatementsNode (location: (2,12)-(2,13))
         │   │           │       │   │   └── body: (length: 1)
         │   │           │       │   │       └── @ IntegerNode (location: (2,12)-(2,13))
-        │   │           │       │   │           └── flags: decimal
+        │   │           │       │   │           ├── flags: decimal
+        │   │           │       │   │           └── value: 1
         │   │           │       │   ├── opening_loc: (2,10)-(2,11) = "("
         │   │           │       │   └── closing_loc: (2,13)-(2,14) = ")"
         │   │           │       └── @ IntegerNode (location: (2,16)-(2,17))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,6)-(1,9) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -66,15 +67,16 @@
         │   │           │       │   │   @ StatementsNode (location: (7,11)-(7,12))
         │   │           │       │   │   └── body: (length: 1)
         │   │           │       │   │       └── @ IntegerNode (location: (7,11)-(7,12))
-        │   │           │       │   │           └── flags: decimal
+        │   │           │       │   │           ├── flags: decimal
+        │   │           │       │   │           └── value: 1
         │   │           │       │   ├── opening_loc: (7,10)-(7,11) = "("
         │   │           │       │   └── closing_loc: (7,12)-(7,13) = ")"
         │   │           │       └── @ IntegerNode (location: (7,15)-(7,16))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (6,6)-(6,9) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (6,11)-(6,12) = "("
@@ -97,10 +99,12 @@
             │       │   │   @ StatementsNode (location: (11,4)-(11,5))
             │       │   │   └── body: (length: 1)
             │       │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-            │       │   │           └── flags: decimal
+            │       │   │           ├── flags: decimal
+            │       │   │           └── value: 1
             │       │   ├── opening_loc: (11,2)-(11,3) = "("
             │       │   └── closing_loc: (11,5)-(11,6) = ")"
             │       └── @ IntegerNode (location: (11,8)-(11,9))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 2
             ├── closing_loc: ∅
             └── block: ∅

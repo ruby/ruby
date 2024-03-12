@@ -3395,7 +3395,7 @@ next_setup(Node* node, Node* next_node, regex_t* reg)
   }
   else if (type == NT_ENCLOSE) {
     EncloseNode* en = NENCLOSE(node);
-    if (en->type == ENCLOSE_MEMORY) {
+    if (en->type == ENCLOSE_MEMORY && !IS_ENCLOSE_CALLED(en)) {
       node = en->target;
       goto retry;
     }

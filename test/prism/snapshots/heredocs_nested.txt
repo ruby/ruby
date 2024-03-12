@@ -62,7 +62,8 @@
             │   │   │           │   │   │           │   │   │   @ StatementsNode (location: (17,2)-(17,3))
             │   │   │           │   │   │           │   │   │   └── body: (length: 1)
             │   │   │           │   │   │           │   │   │       └── @ IntegerNode (location: (17,2)-(17,3))
-            │   │   │           │   │   │           │   │   │           └── flags: decimal
+            │   │   │           │   │   │           │   │   │           ├── flags: decimal
+            │   │   │           │   │   │           │   │   │           └── value: 3
             │   │   │           │   │   │           │   │   └── closing_loc: (17,3)-(17,4) = "}"
             │   │   │           │   │   │           │   └── @ StringNode (location: (17,4)-(18,0))
             │   │   │           │   │   │           │       ├── flags: ∅

@@ -6,17 +6,24 @@
         ├── @ RationalNode (location: (1,0)-(1,4))
         │   └── numeric:
         │       @ FloatNode (location: (1,0)-(1,3))
+        │       └── value: 1.0
         ├── @ RationalNode (location: (2,0)-(2,3))
         │   └── numeric:
         │       @ IntegerNode (location: (2,0)-(2,2))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 0
         ├── @ IntegerNode (location: (3,0)-(3,3))
-        │   └── flags: hexadecimal
+        │   ├── flags: hexadecimal
+        │   └── value: 1
         ├── @ IntegerNode (location: (4,0)-(4,5))
-        │   └── flags: decimal
+        │   ├── flags: decimal
+        │   └── value: 1000
         ├── @ FloatNode (location: (5,0)-(5,4))
+        │   └── value: 10000000000.0
         ├── @ FloatNode (location: (6,0)-(6,14))
+        │   └── value: Infinity
         ├── @ FloatNode (location: (7,0)-(7,15))
+        │   └── value: -Infinity
         ├── @ StringNode (location: (8,0)-(8,2))
         │   ├── flags: ∅
         │   ├── opening_loc: (8,0)-(8,1) = "?"
@@ -24,13 +31,13 @@
         │   ├── closing_loc: ∅
         │   └── unescaped: "c"
         ├── @ RegularExpressionNode (location: (9,0)-(9,5))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (9,0)-(9,3) = "%r("
         │   ├── content_loc: (9,3)-(9,4) = "/"
         │   ├── closing_loc: (9,4)-(9,5) = ")"
         │   └── unescaped: "/"
         ├── @ RegularExpressionNode (location: (10,0)-(10,6))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"
@@ -55,7 +62,9 @@
         │   │       └── unescaped: "baz"
         │   └── closing_loc: (11,13)-(11,14) = ")"
         ├── @ FloatNode (location: (12,0)-(12,16))
+        │   └── value: Infinity
         ├── @ FloatNode (location: (13,0)-(13,17))
+        │   └── value: -Infinity
         └── @ CallNode (location: (14,0)-(14,10))
             ├── flags: ignore_visibility
             ├── receiver: ∅

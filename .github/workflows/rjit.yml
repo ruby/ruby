@@ -19,14 +19,6 @@ on:
       - '**.ronn'
       - '.*.yml'
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -55,7 +47,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}

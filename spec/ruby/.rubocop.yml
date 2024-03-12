@@ -43,9 +43,6 @@ Lint/InterpolationCheck:
 Lint/LiteralAsCondition:
   Enabled: false
 
-Lint/RedundantRequireStatement:
-  Enabled: false
-
 Lint/RedundantSplatExpansion:
   Enabled: false
 
@@ -104,6 +101,9 @@ Lint/OutOfRangeRegexpRef:
   Enabled: false
 
 Lint/InheritException:
+  Enabled: false
+
+Lint/SafeNavigationChain:
   Enabled: false
 
 Lint/ElseLayout:

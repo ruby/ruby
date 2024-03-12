@@ -22,7 +22,6 @@ module Prism
   autoload :LexRipper, "prism/lex_compat"
   autoload :MutationCompiler, "prism/mutation_compiler"
   autoload :NodeInspector, "prism/node_inspector"
-  autoload :RipperCompat, "prism/ripper_compat"
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Serialize, "prism/serialize"
@@ -45,7 +44,7 @@ module Prism
   #
   # For supported options, see Prism::parse.
   def self.lex_compat(source, **options)
-    LexCompat.new(source, **options).result
+    LexCompat.new(source, **options).result # steep:ignore
   end
 
   # :call-seq:
@@ -55,7 +54,7 @@ module Prism
   # returns the same tokens. Raises SyntaxError if the syntax in source is
   # invalid.
   def self.lex_ripper(source)
-    LexRipper.new(source).result
+    LexRipper.new(source).result # steep:ignore
   end
 
   # :call-seq:
@@ -95,6 +94,12 @@ require_relative "prism/parse_result/newlines"
 # module that uses FFI to call into the library.
 if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
   require "prism/prism"
+
+  # The C extension is the default backend on CRuby.
+  Prism::BACKEND = :CEXT
 else
   require_relative "prism/ffi"
+
+  # The FFI backend is used on other Ruby implementations.
+  Prism::BACKEND = :FFI
 end

@@ -107,36 +107,45 @@ dln_loaderror(const char *format, ...)
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-static size_t
-init_funcname_len(const char **file)
+struct string_part {
+    const char *ptr;
+    size_t len;
+};
+
+static struct string_part
+init_funcname_len(const char *file)
 {
-    const char *p = *file, *base, *dot = NULL;
+    const char *p = file, *base, *dot = NULL;
 
     /* Load the file as an object one */
     for (base = p; *p; p++) { /* Find position of last '/' */
         if (*p == '.' && !dot) dot = p;
         if (isdirsep(*p)) base = p+1, dot = NULL;
     }
-    *file = base;
     /* Delete suffix if it exists */
-    return (dot ? dot : p) - base;
+    const size_t len = (dot ? dot : p) - base;
+    return (struct string_part){base, len};
 }
 
-static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
+static inline char *
+concat_funcname(char *buf, const char *prefix, size_t plen, const struct string_part base)
+{
+    if (!buf) {
+        dln_memerror();
+    }
+    memcpy(buf, prefix, plen);
+    memcpy(buf + plen, base.ptr, base.len);
+    buf[plen + base.len] = '\0';
+    return buf;
+}
 
-#define init_funcname(buf, file) do {\
-    const char *base = (file);\
-    const size_t flen = init_funcname_len(&base);\
-    const size_t plen = sizeof(funcname_prefix);\
-    char *const tmp = ALLOCA_N(char, plen+flen+1);\
-    if (!tmp) {\
-        dln_memerror();\
-    }\
-    memcpy(tmp, funcname_prefix, plen);\
-    memcpy(tmp+plen, base, flen);\
-    tmp[plen+flen] = '\0';\
-    *(buf) = tmp;\
+#define build_funcname(prefix, buf, file) do {\
+    const struct string_part f = init_funcname_len(file);\
+    const size_t plen = sizeof(prefix "") - 1;\
+    *(buf) = concat_funcname(ALLOCA_N(char, plen+f.len+1), prefix, plen, f);\
 } while (0)
+
+#define init_funcname(buf, file) build_funcname(FUNCNAME_PREFIX, buf, file)
 #endif
 
 #ifdef USE_DLN_DLOPEN
@@ -498,7 +507,7 @@ dln_load(const char *file)
     typedef unsigned long long abi_version_number;
     abi_version_number binary_abi_version =
         dln_sym_callable(abi_version_number, (void), handle, EXTERNAL_PREFIX "ruby_abi_version")();
-    if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
+    if (binary_abi_version != RUBY_ABI_VERSION && abi_check_enabled_p()) {
         dln_loaderror("incompatible ABI version of binary - %s", file);
     }
 #endif

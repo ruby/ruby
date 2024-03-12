@@ -49,6 +49,42 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_configuration_file_is_skipped_with_dash_f
+    write_irbrc <<~'LINES'
+      puts '.irbrc file should be ignored when -f is used'
+    LINES
+    start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb -f}, startup_message: '')
+    write(<<~EOC)
+      'Hello, World!'
+    EOC
+    close
+    assert_screen(<<~EOC)
+      irb(main):001> 'Hello, World!'
+      => "Hello, World!"
+      irb(main):002>
+    EOC
+  end
+
+  def test_configuration_file_is_skipped_with_dash_f_for_nested_sessions
+    write_irbrc <<~'LINES'
+      puts '.irbrc file should be ignored when -f is used'
+    LINES
+    start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb -f}, startup_message: '')
+    write(<<~EOC)
+      'Hello, World!'
+      binding.irb
+      exit!
+    EOC
+    close
+    assert_screen(<<~EOC)
+      irb(main):001> 'Hello, World!'
+      => "Hello, World!"
+      irb(main):002> binding.irb
+      irb(main):003> exit!
+      irb(main):001>
+    EOC
+  end
+
   def test_nomultiline
     write_irbrc <<~'LINES'
       puts 'start IRB'
@@ -320,7 +356,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("show_cmds\n")
+    write("help\n")
     write("G") # move to the end of the screen
     write("\C-c") # quit pager
     write("'foo' + 'bar'\n") # eval something to make sure IRB resumes

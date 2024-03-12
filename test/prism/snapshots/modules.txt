@@ -18,7 +18,8 @@
         │   │           ├── name_loc: (1,9)-(1,10) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (1,13)-(1,14))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           └── operator_loc: (1,11)-(1,12) = "="
         │   ├── end_keyword_loc: (1,15)-(1,18) = "end"
         │   └── name: :A
@@ -84,7 +85,7 @@
         │   │   @ ConstantReadNode (location: (8,7)-(8,8))
         │   │   └── name: :A
         │   ├── body:
-        │   │   @ BeginNode (location: (9,1)-(9,19))
+        │   │   @ BeginNode (location: (8,0)-(9,19))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (9,1)-(9,6))
@@ -95,7 +96,8 @@
         │   │   │           ├── name_loc: (9,1)-(9,2) = "x"
         │   │   │           ├── value:
         │   │   │           │   @ IntegerNode (location: (9,5)-(9,6))
-        │   │   │           │   └── flags: decimal
+        │   │   │           │   ├── flags: decimal
+        │   │   │           │   └── value: 1
         │   │   │           └── operator_loc: (9,3)-(9,4) = "="
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (9,8)-(9,14))
@@ -168,7 +170,8 @@
             │   │   │   ├── flags: ∅
             │   │   │   └── arguments: (length: 1)
             │   │   │       └── @ IntegerNode (location: (17,9)-(17,10))
-            │   │   │           └── flags: decimal
+            │   │   │           ├── flags: decimal
+            │   │   │           └── value: 1
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   └── block: ∅
             │   ├── child:

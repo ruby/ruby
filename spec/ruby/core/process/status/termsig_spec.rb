@@ -6,7 +6,7 @@ describe "Process::Status#termsig" do
       ruby_exe("exit(0)")
     end
 
-    it "returns true" do
+    it "returns nil" do
       $?.termsig.should be_nil
     end
   end

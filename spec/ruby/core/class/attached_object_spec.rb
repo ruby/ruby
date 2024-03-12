@@ -19,13 +19,13 @@ ruby_version_is '3.2' do
     it "raises TypeError if the class is not a singleton class" do
       a = Class.new
 
-      -> { a.attached_object }.should raise_error(TypeError)
+      -> { a.attached_object }.should raise_error(TypeError, /is not a singleton class/)
     end
 
     it "raises TypeError for special singleton classes" do
-      -> { nil.singleton_class.attached_object }.should raise_error(TypeError)
-      -> { true.singleton_class.attached_object }.should raise_error(TypeError)
-      -> { false.singleton_class.attached_object }.should raise_error(TypeError)
+      -> { nil.singleton_class.attached_object }.should raise_error(TypeError, /[`']NilClass' is not a singleton class/)
+      -> { true.singleton_class.attached_object }.should raise_error(TypeError, /[`']TrueClass' is not a singleton class/)
+      -> { false.singleton_class.attached_object }.should raise_error(TypeError, /[`']FalseClass' is not a singleton class/)
     end
   end
 end

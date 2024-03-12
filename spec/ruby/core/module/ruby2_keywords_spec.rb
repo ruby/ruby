@@ -237,7 +237,7 @@ describe "Module#ruby2_keywords" do
       obj.singleton_class.class_exec do
         ruby2_keywords :not_existing
       end
-    }.should raise_error(NameError, /undefined method `not_existing'/)
+    }.should raise_error(NameError, /undefined method [`']not_existing'/)
   end
 
   it "accepts String as well" do

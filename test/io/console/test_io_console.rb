@@ -36,22 +36,22 @@ class TestIO_Console < Test::Unit::TestCase
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
 
+  exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
+    Errno.const_get(e) if Errno.const_defined?(e)
+  }
+  exceptions.compact!
+  FailedPathExceptions = (exceptions unless exceptions.empty?)
+
   def test_failed_path
-    exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
-      Errno.const_get(e) if Errno.const_defined?(e)
-    }
-    exceptions.compact!
-    omit if exceptions.empty?
     File.open(IO::NULL) do |f|
-      e = assert_raise(*exceptions) do
+      e = assert_raise(*FailedPathExceptions) do
         f.echo?
       end
       assert_include(e.message, IO::NULL)
     end
-  end
+  end if FailedPathExceptions
 
   def test_bad_keyword
-    omit if RUBY_ENGINE == 'jruby'
     assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
       File.open(IO::NULL) do |f|
         f.raw(bad: 0)

@@ -33,7 +33,7 @@
 #endif
 #endif  /* RUBY_ABI_VERSION */
 
-#ifdef RUBY_DLN_CHECK_ABI
+#if defined(RUBY_DLN_CHECK_ABI) && !defined(RUBY_EXPORT)
 
 # ifdef __cplusplus
 extern "C" {

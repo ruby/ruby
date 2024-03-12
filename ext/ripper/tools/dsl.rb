@@ -1,6 +1,6 @@
 # Simple DSL implementation for Ripper code generation
 #
-# input: /*% ripper: stmts_add(stmts_new, void_stmt) %*/
+# input: /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
 # output:
 #   VALUE v1, v2;
 #   v1 = dispatch0(stmts_new);
@@ -18,14 +18,15 @@ class DSL
   NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])(?>(?:\.|->)[a-zA-Z_][a-zA-Z0-9_]*)*/.source
   NOT_REF_PATTERN = /(?>\#.*|[^\"$@]*|"(?>\\.|[^\"])*")/.source
 
-  def initialize(code, options)
+  def initialize(code, options, lineno = nil)
+    @lineno = lineno
     @events = {}
     @error = options.include?("error")
     @brace = options.include?("brace")
     if options.include?("final")
       @final = "p->result"
     else
-      @final = (options.grep(/\A\$#{NAME_PATTERN}\z/o)[0] || "$$")
+      @final = (options.grep(/\A\$#{NAME_PATTERN}\z/o)[0] || "p->s_lvalue")
     end
     @vars = 0
 
@@ -33,8 +34,11 @@ class DSL
     p = p = "p"
 
     @code = ""
-    code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K[$@]#{TAG_PATTERN}?#{NAME_PATTERN}]o, '"\&"')
+    code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K(\$|\$:|@)#{TAG_PATTERN}?#{NAME_PATTERN}]o, '"\&"')
     @last_value = eval(code)
+  rescue SyntaxError
+    $stderr.puts "error on line #{@lineno}" if @lineno
+    raise
   end
 
   attr_reader :events
@@ -65,11 +69,15 @@ class DSL
     vars = []
     args.each do |arg|
       vars << v = new_var
-      @code << "#{ v }=#{ arg };"
+      if arg =~ /\A\$:#{NAME_PATTERN}\z/
+        @code << "#{ v }=get_value(#{arg});"
+      else
+        @code << "#{ v }=#{ arg };"
+      end
     end
     v = new_var
     d = "dispatch#{ args.size }(#{ [event, *vars].join(",") })"
-    d = "#{ vars.last }==Qundef ? #{ vars.first } : #{ d }" if qundef_check
+    d = "#{ vars.last }==rb_ripper_none ? #{ vars.first } : #{ d }" if qundef_check
     @code << "#{ v }=#{ d };"
     v
   end
@@ -88,4 +96,3 @@ class DSL
     name
   end
 end
-

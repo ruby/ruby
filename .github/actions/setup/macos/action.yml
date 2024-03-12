@@ -13,12 +13,12 @@ runs:
     - name: brew
       shell: bash
       run: |
-        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool
 
     - name: Set ENV
       shell: bash
       run: |
-        for lib in openssl@1.1 readline; do
+        for lib in openssl@1.1 gmp; do
           CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
         echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV

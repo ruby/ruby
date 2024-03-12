@@ -155,6 +155,17 @@ bool pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity);
 pm_constant_t * pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id);
 
 /**
+ * Find a constant in a constant pool. Returns the id of the constant, or 0 if
+ * the constant is not found.
+ *
+ * @param pool The pool to find the constant in.
+ * @param start A pointer to the start of the constant.
+ * @param length The length of the constant.
+ * @return The id of the constant.
+ */
+pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length);
+
+/**
  * Insert a constant into a constant pool that is a slice of a source string.
  * Returns the id of the constant, or 0 if any potential calls to resize fail.
  *
@@ -175,7 +186,7 @@ pm_constant_id_t pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const 
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length);
+pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length);
 
 /**
  * Insert a constant into a constant pool from memory that is constant. Returns

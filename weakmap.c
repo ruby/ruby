@@ -4,7 +4,6 @@
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "ruby/st.h"
-#include "ruby/st.h"
 
 /* ===== WeakMap =====
  *
@@ -39,7 +38,7 @@ wmap_live_p(VALUE obj)
 static void
 wmap_free_entry(VALUE *key, VALUE *val)
 {
-    assert(key + 1 == val);
+    RUBY_ASSERT(key + 1 == val);
 
     /* We only need to free key because val is allocated beside key on in the
      * same malloc call. */
@@ -418,7 +417,7 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
     VALUE new_val = *(((VALUE *)new_key_ptr) + 1);
 
     if (existing) {
-        assert(*(VALUE *)*key == new_key);
+        RUBY_ASSERT(*(VALUE *)*key == new_key);
     }
     else {
         VALUE *pair = xmalloc(sizeof(VALUE) * 2);
@@ -462,7 +461,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
 static VALUE
 wmap_lookup(VALUE self, VALUE key)
 {
-    assert(wmap_live_p(key));
+    RUBY_ASSERT(wmap_live_p(key));
 
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
@@ -681,7 +680,7 @@ wkmap_compact_table_i(st_data_t key, st_data_t val_obj, st_data_t _data, int _er
 static int
 wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _data, int existing)
 {
-    assert(existing);
+    RUBY_ASSERT(existing);
 
     *(VALUE *)*key_ptr = rb_gc_location(*(VALUE *)*key_ptr);
     *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
@@ -729,7 +728,7 @@ static st_index_t
 wkmap_hash(st_data_t n)
 {
     VALUE obj = *(VALUE *)n;
-    assert(wmap_live_p(obj));
+    RUBY_ASSERT(wmap_live_p(obj));
 
     return rb_any_hash(obj);
 }
@@ -772,7 +771,7 @@ static VALUE
 wkmap_aref(VALUE self, VALUE key)
 {
     VALUE obj = wkmap_lookup(self, key);
-    return obj != Qundef ? obj : Qnil;
+    return !UNDEF_P(obj) ? obj : Qnil;
 }
 
 struct wkmap_aset_args {
@@ -927,7 +926,7 @@ wkmap_getkey(VALUE self, VALUE key)
 static VALUE
 wkmap_has_key(VALUE self, VALUE key)
 {
-    return RBOOL(wkmap_lookup(self, key) != Qundef);
+    return RBOOL(!UNDEF_P(wkmap_lookup(self, key)));
 }
 
 /*

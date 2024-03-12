@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/inspector.rb - inspect methods
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -46,7 +46,7 @@ module IRB # :nodoc:
     # Determines the inspector to use where +inspector+ is one of the keys passed
     # during inspector definition.
     def self.keys_with_inspector(inspector)
-      INSPECTORS.select{|k,v| v == inspector}.collect{|k, v| k}
+      INSPECTORS.select{|k, v| v == inspector}.collect{|k, v| k}
     end
 
     # Example
@@ -113,7 +113,7 @@ module IRB # :nodoc:
     Color.colorize_code(v.inspect, colorable: Color.colorable? && Color.inspect_colorable?(v))
   }
   Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require_relative "color_printer"}){|v|
-    IRB::ColorPrinter.pp(v, '').chomp
+    IRB::ColorPrinter.pp(v, +'').chomp
   }
   Inspector.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin

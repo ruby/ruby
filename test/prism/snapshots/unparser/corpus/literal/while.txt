@@ -24,7 +24,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (2,6)-(6,3))
         │   │               ├── locals: [:bar, :foo]
-        │   │               ├── locals_body_index: 1
         │   │               ├── parameters:
         │   │               │   @ BlockParametersNode (location: (2,8)-(2,13))
         │   │               │   ├── parameters:
@@ -135,7 +134,6 @@
         │   │                       │   └── block: ∅
         │   │                       └── operator_loc: (10,6)-(10,7) = "="
         │   ├── locals: [:foo]
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (9,0)-(9,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -284,7 +282,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (28,7)-(32,3))
         │   │               ├── locals: [:baz, :foo]
-        │   │               ├── locals_body_index: 1
         │   │               ├── parameters:
         │   │               │   @ BlockParametersNode (location: (28,9)-(28,14))
         │   │               │   ├── parameters:
@@ -364,7 +361,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (36,7)-(40,3))
         │   │               ├── locals: [:foo]
-        │   │               ├── locals_body_index: 1
         │   │               ├── parameters:
         │   │               │   @ BlockParametersNode (location: (36,9)-(36,14))
         │   │               │   ├── parameters:
@@ -613,7 +609,8 @@
         │       @ StatementsNode (location: (59,2)-(59,3))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (59,2)-(59,3))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 3
         ├── @ WhileNode (location: (61,0)-(64,3))
         │   ├── flags: ∅
         │   ├── keyword_loc: (61,0)-(61,5) = "while"
@@ -635,7 +632,6 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (61,11)-(62,1))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (61,11)-(61,12) = "{"
@@ -668,7 +664,8 @@
         │       @ StatementsNode (location: (68,2)-(68,3))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (68,2)-(68,3))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 3
         └── @ UntilNode (location: (70,0)-(73,3))
             ├── flags: ∅
             ├── keyword_loc: (70,0)-(70,5) = "until"
@@ -690,7 +687,6 @@
             │   │           └── block:
             │   │               @ BlockNode (location: (70,11)-(71,1))
             │   │               ├── locals: []
-            │   │               ├── locals_body_index: 0
             │   │               ├── parameters: ∅
             │   │               ├── body: ∅
             │   │               ├── opening_loc: (70,11)-(70,12) = "{"

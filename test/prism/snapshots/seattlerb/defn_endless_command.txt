@@ -23,11 +23,11 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (1,31)-(1,33))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 42
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

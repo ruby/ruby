@@ -104,7 +104,7 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
-  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}.sort
+  srcs = Dir[*SRC_EXT.map {|e| "*.#{e}"}, base: $srcdir].map {|fn| File.basename(fn)}.sort
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
     (old_srcs.split - srcs).empty? or return false
@@ -130,6 +130,14 @@ def extract_makefile(makefile, keep = true)
   $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
   $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
   true
+end
+
+def create_makefile(target, srcprefix = nil)
+  if $static and target.include?("/")
+    base = File.basename(target)
+    $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+  end
+  super
 end
 
 def extmake(target, basedir = 'ext', maybestatic = true)
@@ -472,12 +480,13 @@ if exts = ARGV.shift
   $extension = [exts] if exts
   if ext_prefix.start_with?('.')
     @gemname = exts
-  elsif exts
-    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+    exts = []
+  else
+    exts &&= $static_ext.select {|t, *| File.fnmatch(t, exts)}
   end
 end
-ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
-exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+ext_prefix ||= 'ext'
+exts = (exts || $static_ext).sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
   when $cygwin
@@ -507,10 +516,8 @@ cond = proc {|ext, *|
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
-    d = File.dirname(d)
-    d.slice!(0, ext_prefix.length + 1)
-    d
+  incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
+    File.dirname(d)
   }.partition {|ext|
     with_config(ext, &cond)
   }
@@ -522,7 +529,7 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
+ext_prefix.chomp!("/")
 
 @ext_prefix = ext_prefix
 @inplace = inplace
@@ -545,7 +552,13 @@ extend Module.new {
   end
 
   def create_makefile(*args, &block)
-    return super unless @gemname
+    unless @gemname
+      if $static and (target = args.first).include?("/")
+        base = File.basename(target)
+        $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+      end
+      return super
+    end
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(%r(^(srcdir *= *)\$\(top_srcdir\)/\.bundle/gems/[^/]+(?=/))) {
@@ -628,7 +641,9 @@ $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 extso = []
 fails = []
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[d]
+  $static = $force_static ? true : $static_ext.fetch(d) do
+    $static_ext.any? {|t, | File.fnmatch?(t, d)}
+  end
 
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
@@ -810,7 +825,7 @@ begin
         end
         mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
         if clean and clean.begin(1)
-          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) -p $(@D)"
+          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) $(@D)"
         end
       end
     end

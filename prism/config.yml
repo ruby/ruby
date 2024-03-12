@@ -1,3 +1,248 @@
+errors:
+  - ALIAS_ARGUMENT
+  - AMPAMPEQ_MULTI_ASSIGN
+  - ARGUMENT_AFTER_BLOCK
+  - ARGUMENT_AFTER_FORWARDING_ELLIPSES
+  - ARGUMENT_BARE_HASH
+  - ARGUMENT_BLOCK_FORWARDING
+  - ARGUMENT_BLOCK_MULTI
+  - ARGUMENT_FORMAL_CLASS
+  - ARGUMENT_FORMAL_CONSTANT
+  - ARGUMENT_FORMAL_GLOBAL
+  - ARGUMENT_FORMAL_IVAR
+  - ARGUMENT_FORWARDING_UNBOUND
+  - ARGUMENT_IN
+  - ARGUMENT_NO_FORWARDING_AMP
+  - ARGUMENT_NO_FORWARDING_ELLIPSES
+  - ARGUMENT_NO_FORWARDING_STAR
+  - ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT
+  - ARGUMENT_SPLAT_AFTER_SPLAT
+  - ARGUMENT_TERM_PAREN
+  - ARGUMENT_UNEXPECTED_BLOCK
+  - ARRAY_ELEMENT
+  - ARRAY_EXPRESSION
+  - ARRAY_EXPRESSION_AFTER_STAR
+  - ARRAY_SEPARATOR
+  - ARRAY_TERM
+  - BEGIN_LONELY_ELSE
+  - BEGIN_TERM
+  - BEGIN_UPCASE_BRACE
+  - BEGIN_UPCASE_TERM
+  - BEGIN_UPCASE_TOPLEVEL
+  - BLOCK_PARAM_LOCAL_VARIABLE
+  - BLOCK_PARAM_PIPE_TERM
+  - BLOCK_TERM_BRACE
+  - BLOCK_TERM_END
+  - CANNOT_PARSE_EXPRESSION
+  - CANNOT_PARSE_STRING_PART
+  - CASE_EXPRESSION_AFTER_CASE
+  - CASE_EXPRESSION_AFTER_WHEN
+  - CASE_MATCH_MISSING_PREDICATE
+  - CASE_MISSING_CONDITIONS
+  - CASE_TERM
+  - CLASS_IN_METHOD
+  - CLASS_NAME
+  - CLASS_SUPERCLASS
+  - CLASS_TERM
+  - CLASS_UNEXPECTED_END
+  - CONDITIONAL_ELSIF_PREDICATE
+  - CONDITIONAL_IF_PREDICATE
+  - CONDITIONAL_PREDICATE_TERM
+  - CONDITIONAL_TERM
+  - CONDITIONAL_TERM_ELSE
+  - CONDITIONAL_UNLESS_PREDICATE
+  - CONDITIONAL_UNTIL_PREDICATE
+  - CONDITIONAL_WHILE_PREDICATE
+  - CONSTANT_PATH_COLON_COLON_CONSTANT
+  - DEF_ENDLESS
+  - DEF_ENDLESS_SETTER
+  - DEF_NAME
+  - DEF_NAME_AFTER_RECEIVER
+  - DEF_PARAMS_TERM
+  - DEF_PARAMS_TERM_PAREN
+  - DEF_RECEIVER
+  - DEF_RECEIVER_TERM
+  - DEF_TERM
+  - DEFINED_EXPRESSION
+  - EMBDOC_TERM
+  - EMBEXPR_END
+  - EMBVAR_INVALID
+  - END_UPCASE_BRACE
+  - END_UPCASE_TERM
+  - ESCAPE_INVALID_CONTROL
+  - ESCAPE_INVALID_CONTROL_REPEAT
+  - ESCAPE_INVALID_HEXADECIMAL
+  - ESCAPE_INVALID_META
+  - ESCAPE_INVALID_META_REPEAT
+  - ESCAPE_INVALID_UNICODE
+  - ESCAPE_INVALID_UNICODE_CM_FLAGS
+  - ESCAPE_INVALID_UNICODE_LITERAL
+  - ESCAPE_INVALID_UNICODE_LONG
+  - ESCAPE_INVALID_UNICODE_TERM
+  - EXPECT_ARGUMENT
+  - EXPECT_EOL_AFTER_STATEMENT
+  - EXPECT_EXPRESSION_AFTER_AMPAMPEQ
+  - EXPECT_EXPRESSION_AFTER_COMMA
+  - EXPECT_EXPRESSION_AFTER_EQUAL
+  - EXPECT_EXPRESSION_AFTER_LESS_LESS
+  - EXPECT_EXPRESSION_AFTER_LPAREN
+  - EXPECT_EXPRESSION_AFTER_OPERATOR
+  - EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ
+  - EXPECT_EXPRESSION_AFTER_QUESTION
+  - EXPECT_EXPRESSION_AFTER_SPLAT
+  - EXPECT_EXPRESSION_AFTER_SPLAT_HASH
+  - EXPECT_EXPRESSION_AFTER_STAR
+  - EXPECT_IDENT_REQ_PARAMETER
+  - EXPECT_LPAREN_REQ_PARAMETER
+  - EXPECT_RBRACKET
+  - EXPECT_RPAREN
+  - EXPECT_RPAREN_AFTER_MULTI
+  - EXPECT_RPAREN_REQ_PARAMETER
+  - EXPECT_STRING_CONTENT
+  - EXPECT_WHEN_DELIMITER
+  - EXPRESSION_BARE_HASH
+  - FLOAT_PARSE
+  - FOR_COLLECTION
+  - FOR_IN
+  - FOR_INDEX
+  - FOR_TERM
+  - HASH_EXPRESSION_AFTER_LABEL
+  - HASH_KEY
+  - HASH_ROCKET
+  - HASH_TERM
+  - HASH_VALUE
+  - HEREDOC_TERM
+  - INCOMPLETE_QUESTION_MARK
+  - INCOMPLETE_VARIABLE_CLASS
+  - INCOMPLETE_VARIABLE_CLASS_3_3_0
+  - INCOMPLETE_VARIABLE_INSTANCE
+  - INCOMPLETE_VARIABLE_INSTANCE_3_3_0
+  - INVALID_CHARACTER
+  - INVALID_ENCODING_MAGIC_COMMENT
+  - INVALID_FLOAT_EXPONENT
+  - INVALID_MULTIBYTE_CHAR
+  - INVALID_MULTIBYTE_CHARACTER
+  - INVALID_MULTIBYTE_ESCAPE
+  - INVALID_NUMBER_BINARY
+  - INVALID_NUMBER_DECIMAL
+  - INVALID_NUMBER_HEXADECIMAL
+  - INVALID_NUMBER_OCTAL
+  - INVALID_NUMBER_UNDERSCORE
+  - INVALID_PERCENT
+  - INVALID_PRINTABLE_CHARACTER
+  - INVALID_VARIABLE_GLOBAL
+  - INVALID_VARIABLE_GLOBAL_3_3_0
+  - IT_NOT_ALLOWED_NUMBERED
+  - IT_NOT_ALLOWED_ORDINARY
+  - LAMBDA_OPEN
+  - LAMBDA_TERM_BRACE
+  - LAMBDA_TERM_END
+  - LIST_I_LOWER_ELEMENT
+  - LIST_I_LOWER_TERM
+  - LIST_I_UPPER_ELEMENT
+  - LIST_I_UPPER_TERM
+  - LIST_W_LOWER_ELEMENT
+  - LIST_W_LOWER_TERM
+  - LIST_W_UPPER_ELEMENT
+  - LIST_W_UPPER_TERM
+  - MALLOC_FAILED
+  - MIXED_ENCODING
+  - MODULE_IN_METHOD
+  - MODULE_NAME
+  - MODULE_TERM
+  - MULTI_ASSIGN_MULTI_SPLATS
+  - MULTI_ASSIGN_UNEXPECTED_REST
+  - NO_LOCAL_VARIABLE
+  - NOT_EXPRESSION
+  - NUMBER_LITERAL_UNDERSCORE
+  - NUMBERED_PARAMETER_IT
+  - NUMBERED_PARAMETER_ORDINARY
+  - NUMBERED_PARAMETER_OUTER_SCOPE
+  - OPERATOR_MULTI_ASSIGN
+  - OPERATOR_WRITE_ARGUMENTS
+  - OPERATOR_WRITE_BLOCK
+  - PARAMETER_ASSOC_SPLAT_MULTI
+  - PARAMETER_BLOCK_MULTI
+  - PARAMETER_CIRCULAR
+  - PARAMETER_METHOD_NAME
+  - PARAMETER_NAME_REPEAT
+  - PARAMETER_NO_DEFAULT
+  - PARAMETER_NO_DEFAULT_KW
+  - PARAMETER_NUMBERED_RESERVED
+  - PARAMETER_ORDER
+  - PARAMETER_SPLAT_MULTI
+  - PARAMETER_STAR
+  - PARAMETER_UNEXPECTED_FWD
+  - PARAMETER_WILD_LOOSE_COMMA
+  - PATTERN_EXPRESSION_AFTER_BRACKET
+  - PATTERN_EXPRESSION_AFTER_COMMA
+  - PATTERN_EXPRESSION_AFTER_HROCKET
+  - PATTERN_EXPRESSION_AFTER_IN
+  - PATTERN_EXPRESSION_AFTER_KEY
+  - PATTERN_EXPRESSION_AFTER_PAREN
+  - PATTERN_EXPRESSION_AFTER_PIN
+  - PATTERN_EXPRESSION_AFTER_PIPE
+  - PATTERN_EXPRESSION_AFTER_RANGE
+  - PATTERN_EXPRESSION_AFTER_REST
+  - PATTERN_HASH_KEY
+  - PATTERN_HASH_KEY_LABEL
+  - PATTERN_IDENT_AFTER_HROCKET
+  - PATTERN_LABEL_AFTER_COMMA
+  - PATTERN_REST
+  - PATTERN_TERM_BRACE
+  - PATTERN_TERM_BRACKET
+  - PATTERN_TERM_PAREN
+  - PIPEPIPEEQ_MULTI_ASSIGN
+  - REGEXP_ENCODING_OPTION_MISMATCH
+  - REGEXP_INCOMPAT_CHAR_ENCODING
+  - REGEXP_INVALID_UNICODE_RANGE
+  - REGEXP_NON_ESCAPED_MBC
+  - REGEXP_TERM
+  - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
+  - RESCUE_EXPRESSION
+  - RESCUE_MODIFIER_VALUE
+  - RESCUE_TERM
+  - RESCUE_VARIABLE
+  - RETURN_INVALID
+  - SINGLETON_FOR_LITERALS
+  - STATEMENT_ALIAS
+  - STATEMENT_POSTEXE_END
+  - STATEMENT_PREEXE_BEGIN
+  - STATEMENT_UNDEF
+  - STRING_CONCATENATION
+  - STRING_INTERPOLATED_TERM
+  - STRING_LITERAL_EOF
+  - STRING_LITERAL_TERM
+  - SYMBOL_INVALID
+  - SYMBOL_TERM_DYNAMIC
+  - SYMBOL_TERM_INTERPOLATED
+  - TERNARY_COLON
+  - TERNARY_EXPRESSION_FALSE
+  - TERNARY_EXPRESSION_TRUE
+  - UNARY_RECEIVER
+  - UNDEF_ARGUMENT
+  - UNEXPECTED_TOKEN_CLOSE_CONTEXT
+  - UNEXPECTED_TOKEN_IGNORE
+  - UNTIL_TERM
+  - VOID_EXPRESSION
+  - WHILE_TERM
+  - WRITE_TARGET_IN_METHOD
+  - WRITE_TARGET_READONLY
+  - WRITE_TARGET_UNEXPECTED
+  - XSTRING_TERM
+warnings:
+  - AMBIGUOUS_FIRST_ARGUMENT_MINUS
+  - AMBIGUOUS_FIRST_ARGUMENT_PLUS
+  - AMBIGUOUS_PREFIX_STAR
+  - AMBIGUOUS_SLASH
+  - DOT_DOT_DOT_EOL
+  - EQUAL_IN_CONDITIONAL
+  - END_IN_METHOD
+  - DUPLICATED_HASH_KEY
+  - DUPLICATED_WHEN_CLAUSE
+  - FLOAT_OUT_OF_RANGE
+  - INTEGER_IN_FLIP_FLOP
+  - KEYWORD_EOL
 tokens:
   - name: EOF
     value: 1
@@ -690,8 +935,6 @@ nodes:
     fields:
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: parameters
         type: node?
       - name: body
@@ -729,6 +972,7 @@ nodes:
         kind: ParametersNode
       - name: locals
         type: node[]
+        kind: BlockLocalVariableNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -1136,6 +1380,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1179,6 +1426,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1260,8 +1510,6 @@ nodes:
         type: node?
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: def_keyword_loc
         type: location
       - name: operator_loc
@@ -1400,6 +1648,10 @@ nodes:
           baz if foo .. bar
                  ^^^^^^^^^^
   - name: FloatNode
+    fields:
+      - name: value
+        type: double
+        comment: The value of the floating point number as a Float.
     comment: |
       Represents a floating point number literal.
 
@@ -1549,6 +1801,9 @@ nodes:
               ^
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
         comment: |
           The elements of the hash. These can be either `AssocNode`s or `AssocSplatNode`s.
 
@@ -1575,8 +1830,12 @@ nodes:
         type: node?
       - name: elements
         type: node[]
+        kind: AssocNode
       - name: rest
         type: node?
+        kind:
+          - AssocSplatNode
+          - NoKeywordsParameterNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -1617,6 +1876,10 @@ nodes:
     fields:
       - name: numeric
         type: node
+        kind:
+          - FloatNode
+          - IntegerNode
+          - RationalNode
     comment: |
       Represents an imaginary number literal.
 
@@ -1871,6 +2134,9 @@ nodes:
       - name: flags
         type: flags
         kind: IntegerBaseFlags
+      - name: value
+        type: integer
+        comment: The value of the integer literal as a number.
     comment: |
       Represents an integer number literal.
 
@@ -1885,6 +2151,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1902,6 +2172,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1916,6 +2190,11 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
+          - InterpolatedStringNode # `"a" "#{b}"`
       - name: closing_loc
         type: location?
     newline: parts
@@ -1930,6 +2209,10 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -1944,6 +2227,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1952,6 +2239,12 @@ nodes:
 
           `foo #{bar} baz`
           ^^^^^^^^^^^^^^^^
+  - name: ItParametersNode
+    comment: |
+      Represents an implicit set of parameters through the use of the `it` keyword within a block or lambda.
+
+          -> { it + it }
+          ^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
       - name: flags
@@ -1959,6 +2252,9 @@ nodes:
         kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
     comment: |
       Represents a hash literal without opening and closing braces.
 
@@ -1985,8 +2281,6 @@ nodes:
     fields:
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: operator_loc
         type: location
       - name: opening_loc
@@ -2168,6 +2462,7 @@ nodes:
         kind: CallNode
       - name: targets
         type: node[]
+        kind: LocalVariableTargetNode
     comment: |
       Represents writing local variables using a regular expression match with named capture groups.
 
@@ -2199,10 +2494,35 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `$',`
+          - NumberedReferenceReadNode # On parsing error of `$1,`
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `*,$'`
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2216,10 +2536,30 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2363,16 +2703,36 @@ nodes:
     fields:
       - name: requireds
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
       - name: optionals
         type: node[]
+        kind: OptionalParameterNode
       - name: rest
         type: node?
+        kind:
+          - RestParameterNode
+          - ImplicitRestNode # Only in block parameters
       - name: posts
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
+          # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
+          - KeywordRestParameterNode
+          - NoKeywordsParameterNode
       - name: keywords
         type: node[]
+        kind:
+          - RequiredKeywordParameterNode
+          - OptionalKeywordParameterNode
       - name: keyword_rest
         type: node?
+        kind:
+          - KeywordRestParameterNode
+          - ForwardingParameterNode
+          - NoKeywordsParameterNode
       - name: block
         type: node?
         kind: BlockParameterNode
@@ -2778,6 +3138,9 @@ nodes:
     fields:
       - name: names
         type: node[]
+        kind:
+          - SymbolNode
+          - InterpolatedSymbolNode
       - name: keyword_loc
         type: location
     comment: |
@@ -2839,6 +3202,8 @@ nodes:
         type: location
       - name: conditions
         type: node[]
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

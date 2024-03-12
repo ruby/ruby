@@ -6,7 +6,8 @@
         ├── @ MatchRequiredNode (location: (1,0)-(1,8))
         │   ├── value:
         │   │   @ IntegerNode (location: (1,0)-(1,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
         │   │   ├── constant: ∅
@@ -25,7 +26,8 @@
         ├── @ MatchPredicateNode (location: (3,0)-(3,8))
         │   ├── value:
         │   │   @ IntegerNode (location: (3,0)-(3,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (3,5)-(3,8))
         │   │   ├── constant: ∅

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr_accessor" do
   it "creates a getter and setter for each given attribute name" do
@@ -106,4 +107,6 @@ describe "Module#attr_accessor" do
       1.foobar.should be_nil
     end
   end
+
+  it_behaves_like :module_attr_added, :attr_accessor
 end

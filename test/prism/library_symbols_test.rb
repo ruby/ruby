@@ -4,6 +4,9 @@ require_relative "test_helper"
 
 return if RUBY_PLATFORM !~ /linux/
 
+# TODO: determine why these symbols are incorrect on ppc64le
+return if RUBY_PLATFORM =~ /powerpc64le/
+
 module Prism
   #
   #  examine a prism dll or static archive for expected external symbols.

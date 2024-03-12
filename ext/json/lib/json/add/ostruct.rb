@@ -2,7 +2,10 @@
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
-require 'ostruct'
+begin
+  require 'ostruct'
+rescue LoadError
+end
 
 class OpenStruct
 
@@ -48,4 +51,4 @@ class OpenStruct
   def to_json(*args)
     as_json.to_json(*args)
   end
-end
+end if defined?(::OpenStruct)

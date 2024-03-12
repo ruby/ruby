@@ -13,6 +13,7 @@ RSpec.describe "Running mspec tag" do
   it "tags the failing specs" do
     fixtures = "spec/fixtures"
     out, ret = run_mspec("tag", "--add fails --fail #{fixtures}/tagging_spec.rb")
+    q = BACKTRACE_QUOTE
     expect(out).to eq <<EOS
 RUBY_DESCRIPTION
 .FF
@@ -26,15 +27,15 @@ Tag#me érròrs in unicode
 Tag#me errors FAILED
 Expected 1 == 2
 to be truthy but was false
-CWD/spec/fixtures/tagging_spec.rb:9:in `block (2 levels) in <top (required)>'
-CWD/spec/fixtures/tagging_spec.rb:3:in `<top (required)>'
+CWD/spec/fixtures/tagging_spec.rb:9:in #{q}block (2 levels) in <top (required)>'
+CWD/spec/fixtures/tagging_spec.rb:3:in #{q}<top (required)>'
 
 2)
 Tag#me érròrs in unicode FAILED
 Expected 1 == 2
 to be truthy but was false
-CWD/spec/fixtures/tagging_spec.rb:13:in `block (2 levels) in <top (required)>'
-CWD/spec/fixtures/tagging_spec.rb:3:in `<top (required)>'
+CWD/spec/fixtures/tagging_spec.rb:13:in #{q}block (2 levels) in <top (required)>'
+CWD/spec/fixtures/tagging_spec.rb:3:in #{q}<top (required)>'
 
 Finished in D.DDDDDD seconds
 

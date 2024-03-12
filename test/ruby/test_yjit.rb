@@ -1532,6 +1532,87 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_kwrest
+    assert_compiles(<<~RUBY, result: true, no_send_fallbacks: true)
+      def req_rest(r1:, **kwrest) = [r1, kwrest]
+      def opt_rest(r1: 1.succ, **kwrest) = [r1, kwrest]
+      def kwrest(**kwrest) = kwrest
+
+      def calls
+        [
+          [1, {}] == req_rest(r1: 1),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r1: 1, r2: 2, r3: 3),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r2: 2, r1:1, r3: 3),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r2: 2, r3: 3, r1: 1),
+
+          [2, {}] == opt_rest,
+          [2, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r3: 3),
+          [0, { r2: 2, r3: 3 }] == opt_rest(r1: 0, r3: 3, r2: 2),
+          [0, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r1: 0, r3: 3),
+          [1, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r3: 3, r1: 1),
+
+          {} == kwrest,
+          { r0: 88, r1: 99 } == kwrest(r0: 88, r1: 99),
+        ]
+      end
+
+      calls.all?
+    RUBY
+  end
+
+  def test_send_polymorphic_method_name
+    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
+      mid = "dynamic_mid_#{rand(100..200)}"
+      mid_dsym = mid.to_sym
+
+      define_method(mid) { :ok }
+
+      define_method(:send_site) { send(_1) }
+
+      [send_site(mid), send_site(mid_dsym)]
+    RUBY
+  end
+
+  def test_kw_splat_nil
+    assert_compiles(<<~'RUBY', result: %i[ok ok ok], no_send_fallbacks: true)
+      def id(x) = x
+      def kw_fw(arg, **) = id(arg, **)
+      def fw(...) = id(...)
+      def use = [fw(:ok), kw_fw(:ok), :ok.itself(**nil)]
+
+      use
+    RUBY
+  end
+
+  def test_empty_splat
+    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
+      def foo = :ok
+      def fw(...) = foo(...)
+      def use(empty) = [foo(*empty), fw]
+
+      use([])
+    RUBY
+  end
+
+  def test_byteslice_sp_invalidation
+    assert_compiles(<<~'RUBY', result: 'ok', no_send_fallbacks: true)
+      "okng".itself.byteslice(0, 2)
+    RUBY
+  end
+
+  def test_leaf_builtin
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: 1)
+      before = RubyVM::YJIT.runtime_stats[:num_send_iseq_leaf]
+      return 1 if before.nil?
+
+      def entry = self.class
+      entry
+
+      after = RubyVM::YJIT.runtime_stats[:num_send_iseq_leaf]
+      after - before
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

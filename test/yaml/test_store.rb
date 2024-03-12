@@ -177,4 +177,4 @@ class YAMLStoreTest < Test::Unit::TestCase
     end
     assert_equal(indentation_3_yaml, File.read(@yaml_store_file), bug12800)
   end
-end
+end if defined?(::YAML::Store)

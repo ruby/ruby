@@ -16,6 +16,7 @@
             │       │   └── unescaped: "foo"
             │       ├── value:
             │       │   @ IntegerNode (location: (1,7)-(1,8))
-            │       │   └── flags: decimal
+            │       │   ├── flags: decimal
+            │       │   └── value: 2
             │       └── operator_loc: ∅
             └── closing_loc: (1,9)-(1,10) = "}"

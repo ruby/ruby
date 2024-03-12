@@ -80,6 +80,16 @@ typedef struct {
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
 /**
+ * Return the size of the next character in the UTF-8 encoding.
+ *
+ * @param b The bytes to read.
+ * @param n The number of bytes that can be read.
+ * @returns The number of bytes that the next character takes if it is valid in
+ *     the encoding, or 0 if it is not.
+ */
+size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
+
+/**
  * Return the size of the next character in the UTF-8 encoding if it is an
  * alphabetical character.
  *
@@ -234,6 +244,25 @@ extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
  * need to fall back to ASCII-8BIT.
  */
 #define PM_ENCODING_US_ASCII_ENTRY (&pm_encodings[PM_ENCODING_US_ASCII])
+
+/**
+ * This is the ASCII-8BIT encoding. We need a reference to it so that pm_strpbrk
+ * can compare against it because invalid multibyte characters are not a thing
+ * in this encoding. It is also needed for handling Regexp encoding flags.
+ */
+#define PM_ENCODING_ASCII_8BIT_ENTRY (&pm_encodings[PM_ENCODING_ASCII_8BIT])
+
+/**
+ * This is the EUC-JP encoding. We need a reference to it to quickly process
+ * regular expression modifiers.
+ */
+#define PM_ENCODING_EUC_JP_ENTRY (&pm_encodings[PM_ENCODING_EUC_JP])
+
+/**
+ * This is the Windows-31J encoding. We need a reference to it to quickly
+ * process regular expression modifiers.
+ */
+#define PM_ENCODING_WINDOWS_31J_ENTRY (&pm_encodings[PM_ENCODING_WINDOWS_31J])
 
 /**
  * Parse the given name of an encoding and return a pointer to the corresponding

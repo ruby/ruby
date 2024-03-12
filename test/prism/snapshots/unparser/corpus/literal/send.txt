@@ -65,7 +65,8 @@
         │   │       │   ├── name_loc: (6,2)-(6,7) = "local"
         │   │       │   ├── value:
         │   │       │   │   @ IntegerNode (location: (6,10)-(6,11))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 1
         │   │       │   └── operator_loc: (6,8)-(6,9) = "="
         │   │       └── @ CallNode (location: (7,2)-(7,11))
         │   │           ├── flags: ∅
@@ -162,7 +163,6 @@
         │   │   │   │       │   ├── parameters: ∅
         │   │   │   │       │   ├── body: ∅
         │   │   │   │       │   ├── locals: []
-        │   │   │   │       │   ├── locals_body_index: 0
         │   │   │   │       │   ├── def_keyword_loc: (16,6)-(16,9) = "def"
         │   │   │   │       │   ├── operator_loc: ∅
         │   │   │   │       │   ├── lparen_loc: ∅
@@ -191,6 +191,7 @@
         │   │   │       │       ├── arguments: ∅
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── block: ∅
+        │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
         │   │   ├── consequent: ∅
         │   │   ├── case_keyword_loc: (16,0)-(16,4) = "case"
@@ -231,6 +232,7 @@
         │   │   │       │       ├── arguments: ∅
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── block: ∅
+        │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
         │   │   ├── consequent: ∅
         │   │   ├── case_keyword_loc: (20,0)-(20,4) = "case"
@@ -271,7 +273,6 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
         │   │   ├── operator_loc: (25,8)-(25,9) = "."
         │   │   ├── lparen_loc: ∅
@@ -295,7 +296,6 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── def_keyword_loc: (27,0)-(27,3) = "def"
         │   │   ├── operator_loc: ∅
         │   │   ├── lparen_loc: ∅
@@ -376,7 +376,6 @@
         │   │   └── block:
         │   │       @ BlockNode (location: (33,5)-(34,1))
         │   │       ├── locals: []
-        │   │       ├── locals_body_index: 0
         │   │       ├── parameters: ∅
         │   │       ├── body: ∅
         │   │       ├── opening_loc: (33,5)-(33,6) = "{"
@@ -426,7 +425,7 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ RegularExpressionNode (location: (37,1)-(37,6))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: forced_us_ascii_encoding
         │   │   │           │   ├── opening_loc: (37,1)-(37,2) = "/"
         │   │   │           │   ├── content_loc: (37,2)-(37,5) = "bar"
         │   │   │           │   ├── closing_loc: (37,5)-(37,6) = "/"
@@ -467,10 +466,12 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── left:
         │   │   │           │   @ IntegerNode (location: (38,1)-(38,2))
-        │   │   │           │   └── flags: decimal
+        │   │   │           │   ├── flags: decimal
+        │   │   │           │   └── value: 1
         │   │   │           ├── right:
         │   │   │           │   @ IntegerNode (location: (38,4)-(38,5))
-        │   │   │           │   └── flags: decimal
+        │   │   │           │   ├── flags: decimal
+        │   │   │           │   └── value: 2
         │   │   │           └── operator_loc: (38,2)-(38,4) = ".."
         │   │   ├── opening_loc: (38,0)-(38,1) = "("
         │   │   └── closing_loc: (38,5)-(38,6) = ")"
@@ -510,7 +511,7 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ RegularExpressionNode (location: (39,8)-(39,13))
-        │   │   │           │           ├── flags: ∅
+        │   │   │           │           ├── flags: forced_us_ascii_encoding
         │   │   │           │           ├── opening_loc: (39,8)-(39,9) = "/"
         │   │   │           │           ├── content_loc: (39,9)-(39,12) = "bar"
         │   │   │           │           ├── closing_loc: (39,12)-(39,13) = "/"
@@ -530,7 +531,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ RegularExpressionNode (location: (40,0)-(40,5))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (40,0)-(40,1) = "/"
         │   │   ├── content_loc: (40,1)-(40,4) = "bar"
         │   │   ├── closing_loc: (40,4)-(40,5) = "/"
@@ -555,7 +556,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ RegularExpressionNode (location: (41,0)-(41,5))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (41,0)-(41,1) = "/"
         │   │   ├── content_loc: (41,1)-(41,4) = "bar"
         │   │   ├── closing_loc: (41,4)-(41,5) = "/"
@@ -584,13 +585,15 @@
         │   ├── flags: ∅
         │   ├── left:
         │   │   @ IntegerNode (location: (42,0)-(42,1))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   ├── right:
         │   │   @ CallNode (location: (42,3)-(42,8))
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (42,3)-(42,4))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   ├── call_operator_loc: (42,4)-(42,5) = "."
         │   │   ├── name: :max
         │   │   ├── message_loc: (42,5)-(42,8) = "max"
@@ -755,7 +758,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ RegularExpressionNode (location: (49,7)-(49,12))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (49,7)-(49,8) = "/"
         │   │           ├── content_loc: (49,8)-(49,11) = "bar"
         │   │           ├── closing_loc: (49,11)-(49,12) = "/"
@@ -905,9 +908,11 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (54,4)-(54,5))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ IntegerNode (location: (54,7)-(54,8))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: (54,8)-(54,9) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (55,0)-(55,8))
@@ -1002,7 +1007,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ RegularExpressionNode (location: (57,11)-(57,16))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (57,11)-(57,12) = "/"
         │   │           │           ├── content_loc: (57,12)-(57,15) = "bar"
         │   │           │           ├── closing_loc: (57,15)-(57,16) = "/"
@@ -1736,9 +1741,11 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (74,4)-(74,5))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ IntegerNode (location: (74,7)-(74,8))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 2
         │   ├── closing_loc: (74,8)-(74,9) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (75,0)-(75,5))

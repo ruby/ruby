@@ -253,6 +253,14 @@ class TestModule < Test::Unit::TestCase
     assert_operator(Math, :const_defined?, "PI")
     assert_not_operator(Math, :const_defined?, :IP)
     assert_not_operator(Math, :const_defined?, "IP")
+
+    # Test invalid symbol name
+    # [Bug #20245]
+    EnvUtil.under_gc_stress do
+      assert_raise(EncodingError) do
+        Math.const_defined?("\xC3")
+      end
+    end
   end
 
   def each_bad_constants(m, &b)
@@ -1469,7 +1477,7 @@ class TestModule < Test::Unit::TestCase
     end
 
     %w(object_id __send__ initialize).each do |n|
-      assert_in_out_err([], <<-INPUT, [], %r"warning: undefining `#{n}' may cause serious problems$")
+      assert_in_out_err([], <<-INPUT, [], %r"warning: undefining '#{n}' may cause serious problems$")
         $VERBOSE = false
         Class.new.instance_eval { undef_method(:#{n}) }
       INPUT
@@ -3340,7 +3348,7 @@ class TestModule < Test::Unit::TestCase
       methods = singleton_class.private_instance_methods(false)
       assert_include(methods, :#{method}, ":#{method} should be private")
 
-      assert_raise_with_message(NoMethodError, /^private method `#{method}' called for /) {
+      assert_raise_with_message(NoMethodError, /^private method '#{method}' called for /) {
         recv = self
         recv.#{method}
       }

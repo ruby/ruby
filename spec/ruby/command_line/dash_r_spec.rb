@@ -16,7 +16,10 @@ describe "The -r command line option" do
     out = ruby_exe(fixture(__FILE__, "bad_syntax.rb"), options: "-r #{@test_file}", args: "2>&1", exit_status: 1)
     $?.should_not.success?
     out.should include("REQUIRED")
-    out.should include("syntax error")
+
+    # it's tempting not to rely on error message and rely only on exception class name,
+    # but CRuby before 3.2 doesn't print class name for syntax error
+    out.should include_any_of("syntax error", "SyntaxError")
   end
 
   it "does not require the file if the main script file does not exist" do

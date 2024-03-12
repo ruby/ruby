@@ -19,7 +19,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (5,6)-(5,7))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── rparen_loc: (5,7)-(5,8) = ")"
         │   └── block: ∅
         ├── @ SuperNode (location: (7,0)-(7,14))
@@ -30,11 +31,14 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 3)
         │   │       ├── @ IntegerNode (location: (7,6)-(7,7))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       ├── @ IntegerNode (location: (7,9)-(7,10))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 2
         │   │       └── @ IntegerNode (location: (7,12)-(7,13))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 3
         │   ├── rparen_loc: (7,13)-(7,14) = ")"
         │   └── block: ∅
         ├── @ SuperNode (location: (9,0)-(9,11))
@@ -71,7 +75,6 @@
         │   └── block:
         │       @ BlockNode (location: (13,6)-(13,8))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (13,6)-(13,7) = "{"
@@ -84,16 +87,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 3)
         │   │       ├── @ IntegerNode (location: (15,6)-(15,7))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       ├── @ IntegerNode (location: (15,9)-(15,10))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 2
         │   │       └── @ IntegerNode (location: (15,12)-(15,13))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 3
         │   ├── rparen_loc: (15,13)-(15,14) = ")"
         │   └── block:
         │       @ BlockNode (location: (15,15)-(15,17))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (15,15)-(15,16) = "{"
@@ -106,11 +111,14 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 3)
             │       ├── @ IntegerNode (location: (17,6)-(17,7))
-            │       │   └── flags: decimal
+            │       │   ├── flags: decimal
+            │       │   └── value: 1
             │       ├── @ IntegerNode (location: (17,9)-(17,10))
-            │       │   └── flags: decimal
+            │       │   ├── flags: decimal
+            │       │   └── value: 2
             │       └── @ IntegerNode (location: (17,12)-(17,13))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 3
             ├── rparen_loc: (17,20)-(17,21) = ")"
             └── block:
                 @ BlockArgumentNode (location: (17,15)-(17,20))

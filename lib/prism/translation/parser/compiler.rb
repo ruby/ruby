@@ -25,8 +25,8 @@ module Prism
         # offsets in the file.
         attr_reader :offset_cache
 
-        # The locals in the current scope.
-        attr_reader :locals
+        # The types of values that can be forwarded in the current scope.
+        attr_reader :forwarding
 
         # Whether or not the current node is in a destructure.
         attr_reader :in_destructure
@@ -36,13 +36,13 @@ module Prism
 
         # Initialize a new compiler with the given parser, offset cache, and
         # options.
-        def initialize(parser, offset_cache, locals: nil, in_destructure: false, in_pattern: false)
+        def initialize(parser, offset_cache, forwarding: [], in_destructure: false, in_pattern: false)
           @parser = parser
           @builder = parser.builder
           @source_buffer = parser.source_buffer
           @offset_cache = offset_cache
 
-          @locals = locals
+          @forwarding = forwarding
           @in_destructure = in_destructure
           @in_pattern = in_pattern
         end
@@ -105,13 +105,24 @@ module Prism
         # { a: 1 }
         #   ^^^^
         def visit_assoc_node(node)
-          if node.value.is_a?(ImplicitNode)
-            builder.pair_label([node.key.slice.chomp(":"), srange(node.key.location)])
-          elsif in_pattern && node.value.nil?
-            if node.key.is_a?(SymbolNode)
-              builder.match_hash_var([node.key.unescaped, srange(node.key.location)])
+          if in_pattern
+            if node.value.is_a?(ImplicitNode)
+              if node.key.is_a?(SymbolNode)
+                builder.match_hash_var([node.key.unescaped, srange(node.key.location)])
+              else
+                builder.match_hash_var_from_str(token(node.key.opening_loc), visit_all(node.key.parts), token(node.key.closing_loc))
+              end
             else
-              builder.match_hash_var_from_str(token(node.key.opening_loc), visit_all(node.key.parts), token(node.key.closing_loc))
+              builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
+            end
+          elsif node.value.is_a?(ImplicitNode)
+            if (value = node.value.value).is_a?(LocalVariableReadNode)
+              builder.pair_keyword(
+                [node.key.unescaped, srange(node.key)],
+                builder.ident([value.name, srange(node.key.value_loc)]).updated(:lvar)
+              )
+            else
+              builder.pair_label([node.key.unescaped, srange(node.key.location)])
             end
           elsif node.operator_loc
             builder.pair(visit(node.key), token(node.operator_loc), visit(node.value))
@@ -135,7 +146,7 @@ module Prism
         # { **foo }
         #   ^^^^^
         def visit_assoc_splat_node(node)
-          if node.value.nil? && locals.include?(:**)
+          if node.value.nil? && forwarding.include?(:**)
             builder.forwarded_kwrestarg(token(node.operator_loc))
           else
             builder.kwsplat(token(node.operator_loc), visit(node.value))
@@ -241,53 +252,63 @@ module Prism
             block = nil
           end
 
+          if node.call_operator_loc.nil?
+            case name
+            when :-@
+              case (receiver = node.receiver).type
+              when :integer_node, :float_node, :rational_node, :imaginary_node
+                return visit(numeric_negate(node.message_loc, receiver))
+              end
+            when :!
+              return visit_block(builder.not_op(token(node.message_loc), token(node.opening_loc), visit(node.receiver), token(node.closing_loc)), block)
+            when :=~
+              if (receiver = node.receiver).is_a?(RegularExpressionNode)
+                return builder.match_op(visit(receiver), token(node.message_loc), visit(node.arguments.arguments.first))
+              end
+            when :[]
+              return visit_block(builder.index(visit(node.receiver), token(node.opening_loc), visit_all(arguments), token(node.closing_loc)), block)
+            when :[]=
+              if node.message != "[]=" && node.arguments && block.nil? && !node.safe_navigation?
+                arguments = node.arguments.arguments[...-1]
+                arguments << node.block if node.block
+
+                return visit_block(
+                  builder.assign(
+                    builder.index_asgn(
+                      visit(node.receiver),
+                      token(node.opening_loc),
+                      visit_all(arguments),
+                      token(node.closing_loc),
+                    ),
+                    srange_find(node.message_loc.end_offset, node.arguments.arguments.last.location.start_offset, ["="]),
+                    visit(node.arguments.arguments.last)
+                  ),
+                  block
+                )
+              end
+            end
+          end
+
+          message_loc = node.message_loc
+          call_operator_loc = node.call_operator_loc
+          call_operator = [{ "." => :dot, "&." => :anddot, "::" => "::" }.fetch(call_operator_loc.slice), srange(call_operator_loc)] if call_operator_loc
+
           visit_block(
-            if name == :!
-              builder.not_op(
-                token(node.message_loc),
-                token(node.opening_loc),
-                visit(node.receiver),
-                token(node.closing_loc)
+            if name.end_with?("=") && !message_loc.slice.end_with?("=") && node.arguments && block.nil?
+              builder.assign(
+                builder.attr_asgn(visit(node.receiver), call_operator, token(message_loc)),
+                srange_find(message_loc.end_offset, node.arguments.location.start_offset, ["="]),
+                visit(node.arguments.arguments.last)
               )
-            elsif name == :[]
-              builder.index(
+            else
+              builder.call_method(
                 visit(node.receiver),
+                call_operator,
+                message_loc ? [node.name, srange(message_loc)] : nil,
                 token(node.opening_loc),
                 visit_all(arguments),
                 token(node.closing_loc)
               )
-            elsif name == :[]= && node.message != "[]=" && node.arguments && block.nil?
-              builder.assign(
-                builder.index_asgn(
-                  visit(node.receiver),
-                  token(node.opening_loc),
-                  visit_all(node.arguments.arguments[...-1]),
-                  token(node.closing_loc),
-                ),
-                srange_find(node.message_loc.end_offset, node.arguments.arguments.last.location.start_offset, ["="]),
-                visit(node.arguments.arguments.last)
-              )
-            else
-              message_loc = node.message_loc
-              call_operator_loc = node.call_operator_loc
-              call_operator = [{ "." => :dot, "&." => :anddot, "::" => "::" }.fetch(call_operator_loc.slice), srange(call_operator_loc)] if call_operator_loc
-
-              if name.end_with?("=") && !message_loc.slice.end_with?("=") && node.arguments && block.nil?
-                builder.assign(
-                  builder.attr_asgn(visit(node.receiver), call_operator, token(message_loc)),
-                  srange_find(message_loc.end_offset, node.arguments.location.start_offset, ["="]),
-                  visit(node.arguments.arguments.last)
-                )
-              else
-                builder.call_method(
-                  visit(node.receiver),
-                  call_operator,
-                  message_loc ? [node.name, srange(message_loc)] : nil,
-                  token(node.opening_loc),
-                  visit_all(arguments),
-                  token(node.closing_loc)
-                )
-              end
             end,
             block
           )
@@ -372,7 +393,7 @@ module Prism
             visit(node.constant_path),
             token(node.inheritance_operator_loc),
             visit(node.superclass),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -528,7 +549,7 @@ module Prism
                 token(node.name_loc),
                 builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
                 token(node.equal_loc),
-                node.body&.accept(copy_compiler(locals: node.locals))
+                node.body&.accept(copy_compiler(forwarding: find_forwarding(node.parameters)))
               )
             else
               builder.def_endless_method(
@@ -536,7 +557,7 @@ module Prism
                 token(node.name_loc),
                 builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
                 token(node.equal_loc),
-                node.body&.accept(copy_compiler(locals: node.locals))
+                node.body&.accept(copy_compiler(forwarding: find_forwarding(node.parameters)))
               )
             end
           elsif node.receiver
@@ -546,7 +567,7 @@ module Prism
               token(node.operator_loc),
               token(node.name_loc),
               builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
-              node.body&.accept(copy_compiler(locals: node.locals)),
+              node.body&.accept(copy_compiler(forwarding: find_forwarding(node.parameters))),
               token(node.end_keyword_loc)
             )
           else
@@ -554,7 +575,7 @@ module Prism
               token(node.def_keyword_loc),
               token(node.name_loc),
               builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
-              node.body&.accept(copy_compiler(locals: node.locals)),
+              node.body&.accept(copy_compiler(forwarding: find_forwarding(node.parameters))),
               token(node.end_keyword_loc)
             )
           end
@@ -612,9 +633,7 @@ module Prism
         # foo => [*, bar, *]
         #        ^^^^^^^^^^^
         def visit_find_pattern_node(node)
-          elements = [*node.requireds]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.posts)
+          elements = [node.left, *node.requireds, node.right]
 
           if node.constant
             builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.find_pattern(nil, visit_all(elements), nil), token(node.closing_loc))
@@ -788,8 +807,9 @@ module Prism
         end
 
         # 1i
+        # ^^
         def visit_imaginary_node(node)
-          visit_numeric(node, builder.complex([node.value, srange(node.location)]))
+          visit_numeric(node, builder.complex([imaginary_value(node), srange(node.location)]))
         end
 
         # { foo: }
@@ -875,9 +895,6 @@ module Prism
 
         # @foo = 1
         # ^^^^^^^^
-        #
-        # @foo, @bar = 1
-        # ^^^^  ^^^^
         def visit_instance_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ivar(token(node.name_loc))),
@@ -934,7 +951,7 @@ module Prism
         # "foo #{bar}"
         # ^^^^^^^^^^^^
         def visit_interpolated_string_node(node)
-          if node.opening&.start_with?("<<")
+          if node.heredoc?
             children, closing = visit_heredoc(node)
             builder.string_compose(token(node.opening_loc), children, closing)
           else
@@ -959,7 +976,7 @@ module Prism
         # `foo #{bar}`
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
-          if node.opening.start_with?("<<")
+          if node.heredoc?
             children, closing = visit_heredoc(node)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
@@ -991,24 +1008,24 @@ module Prism
 
         # -> {}
         def visit_lambda_node(node)
+          parameters = node.parameters
+
           builder.block(
             builder.call_lambda(token(node.operator_loc)),
             [node.opening, srange(node.opening_loc)],
-            if node.parameters
-              if node.parameters.is_a?(NumberedParametersNode)
-                visit(node.parameters)
-              else
-                builder.args(
-                  token(node.parameters.opening_loc),
-                  visit(node.parameters),
-                  token(node.parameters.closing_loc),
-                  false
-                )
-              end
-            else
+            if parameters.nil?
               builder.args(nil, [], nil, false)
+            elsif node.parameters.is_a?(NumberedParametersNode)
+              visit(node.parameters)
+            else
+              builder.args(
+                token(node.parameters.opening_loc),
+                visit(node.parameters),
+                token(node.parameters.closing_loc),
+                false
+              )
             end,
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: parameters.is_a?(NumberedParametersNode) ? [] : find_forwarding(parameters&.parameters))),
             [node.closing, srange(node.closing_loc)]
           )
         end
@@ -1021,9 +1038,6 @@ module Prism
 
         # foo = 1
         # ^^^^^^^
-        #
-        # foo, bar = 1
-        # ^^^  ^^^
         def visit_local_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ident(token(node.name_loc))),
@@ -1094,7 +1108,7 @@ module Prism
         # case of a syntax error. The parser gem doesn't have such a concept, so
         # we invent our own here.
         def visit_missing_node(node)
-          raise CompilationError, "Cannot compile missing nodes"
+          ::AST::Node.new(:missing, [], location: ::Parser::Source::Map.new(srange(node.location)))
         end
 
         # module Foo; end
@@ -1103,7 +1117,7 @@ module Prism
           builder.def_module(
             token(node.module_keyword_loc),
             visit(node.constant_path),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -1253,7 +1267,8 @@ module Prism
         # foo => ^(bar)
         #        ^^^^^^
         def visit_pinned_expression_node(node)
-          builder.pin(token(node.operator_loc), visit(node.expression))
+          expression = builder.begin(token(node.lparen_loc), visit(node.expression), token(node.rparen_loc))
+          builder.pin(token(node.operator_loc), expression)
         end
 
         # foo = 1 and bar => ^foo
@@ -1284,7 +1299,7 @@ module Prism
 
         # The top-level program node.
         def visit_program_node(node)
-          node.statements.accept(copy_compiler(locals: node.locals))
+          visit(node.statements)
         end
 
         # 0..5
@@ -1312,7 +1327,7 @@ module Prism
         # 1r
         # ^^
         def visit_rational_node(node)
-          visit_numeric(node, builder.rational([node.value, srange(node.location)]))
+          visit_numeric(node, builder.rational([rational_value(node), srange(node.location)]))
         end
 
         # redo
@@ -1415,7 +1430,7 @@ module Prism
             token(node.class_keyword_loc),
             token(node.operator_loc),
             visit(node.expression),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -1447,7 +1462,7 @@ module Prism
         # def foo(*); bar(*); end
         #                 ^
         def visit_splat_node(node)
-          if node.expression.nil? && locals.include?(:*)
+          if node.expression.nil? && forwarding.include?(:*)
             builder.forwarded_restarg(token(node.operator_loc))
           elsif in_destructure
             builder.restarg(token(node.operator_loc), token(node.expression&.location))
@@ -1466,8 +1481,8 @@ module Prism
         # "foo"
         # ^^^^^
         def visit_string_node(node)
-          if node.opening&.start_with?("<<")
-            children, closing = visit_heredoc(InterpolatedStringNode.new(node.opening_loc, [node.copy(opening_loc: nil, closing_loc: nil, location: node.content_loc)], node.closing_loc, node.location))
+          if node.heredoc?
+            children, closing = visit_heredoc(node.to_interpolated)
             builder.string_compose(token(node.opening_loc), children, closing)
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
@@ -1513,9 +1528,23 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
+            parts = if node.value.lines.one?
+              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+            else
+              start_offset = node.value_loc.start_offset
+
+              node.value.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.symbol_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.value_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end
@@ -1594,7 +1623,11 @@ module Prism
           builder.when(
             token(node.keyword_loc),
             visit_all(node.conditions),
-            srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset || (node.conditions.last.location.end_offset + 1), [";", "then"]),
+            if node.then_keyword_loc
+              token(node.then_keyword_loc)
+            else
+              srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset || (node.conditions.last.location.end_offset + 1), [";"])
+            end,
             visit(node.statements)
           )
         end
@@ -1627,8 +1660,8 @@ module Prism
         # `foo`
         # ^^^^^
         def visit_x_string_node(node)
-          if node.opening&.start_with?("<<")
-            children, closing = visit_heredoc(InterpolatedXStringNode.new(node.opening_loc, [StringNode.new(0, nil, node.content_loc, nil, node.unescaped, node.content_loc)], node.closing_loc, node.location))
+          if node.heredoc?
+            children, closing = visit_heredoc(node.to_interpolated)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
             builder.xstring_compose(
@@ -1658,8 +1691,43 @@ module Prism
 
         # Initialize a new compiler with the given option overrides, used to
         # visit a subtree with the given options.
-        def copy_compiler(locals: self.locals, in_destructure: self.in_destructure, in_pattern: self.in_pattern)
-          Compiler.new(parser, offset_cache, locals: locals, in_destructure: in_destructure, in_pattern: in_pattern)
+        def copy_compiler(forwarding: self.forwarding, in_destructure: self.in_destructure, in_pattern: self.in_pattern)
+          Compiler.new(parser, offset_cache, forwarding: forwarding, in_destructure: in_destructure, in_pattern: in_pattern)
+        end
+
+        # When *, **, &, or ... are used as an argument in a method call, we
+        # check if they were allowed by the current context. To determine that
+        # we build this lookup table.
+        def find_forwarding(node)
+          return [] if node.nil?
+
+          forwarding = []
+          forwarding << :* if node.rest.is_a?(RestParameterNode) && node.rest.name.nil?
+          forwarding << :** if node.keyword_rest.is_a?(KeywordRestParameterNode) && node.keyword_rest.name.nil?
+          forwarding << :& if !node.block.nil? && node.block.name.nil?
+          forwarding |= [:&, :"..."] if node.keyword_rest.is_a?(ForwardingParameterNode)
+
+          forwarding
+        end
+
+        # Because we have mutated the AST to allow for newlines in the middle of
+        # a rational, we need to manually handle the value here.
+        def imaginary_value(node)
+          Complex(0, node.numeric.is_a?(RationalNode) ? rational_value(node.numeric) : node.numeric.value)
+        end
+
+        # Negate the value of a numeric node. This is a special case where you
+        # have a negative sign on one line and then a number on the next line.
+        # In normal Ruby, this will always be a method call. The parser gem,
+        # however, marks this as a numeric literal. We have to massage the tree
+        # here to get it into the correct form.
+        def numeric_negate(message_loc, receiver)
+          case receiver.type
+          when :integer_node, :float_node
+            receiver.copy(value: -receiver.value, location: message_loc.join(receiver.location))
+          when :rational_node, :imaginary_node
+            receiver.copy(numeric: numeric_negate(message_loc, receiver.numeric), location: message_loc.join(receiver.location))
+          end
         end
 
         # Blocks can have a special set of parameters that automatically expand
@@ -1674,6 +1742,16 @@ module Prism
             parameters.keywords.empty? &&
             parameters.keyword_rest.nil? &&
             parameters.block.nil?
+        end
+
+        # Because we have mutated the AST to allow for newlines in the middle of
+        # a rational, we need to manually handle the value here.
+        def rational_value(node)
+          if node.numeric.is_a?(IntegerNode)
+            Rational(node.numeric.value)
+          else
+            Rational(node.slice.gsub(/\s/, "").chomp("r"))
+          end
         end
 
         # Locations in the parser gem AST are generated using this class. We
@@ -1710,29 +1788,29 @@ module Prism
         # Visit a block node on a call.
         def visit_block(call, block)
           if block
+            parameters = block.parameters
+
             builder.block(
               call,
               token(block.opening_loc),
-              if (parameters = block.parameters)
-                if parameters.is_a?(NumberedParametersNode)
-                  visit(parameters)
-                else
-                  builder.args(
-                    token(parameters.opening_loc),
-                    if procarg0?(parameters.parameters)
-                      parameter = parameters.parameters.requireds.first
-                      [builder.procarg0(visit(parameter))].concat(visit_all(parameters.locals))
-                    else
-                      visit(parameters)
-                    end,
-                    token(parameters.closing_loc),
-                    false
-                  )
-                end
-              else
+              if parameters.nil?
                 builder.args(nil, [], nil, false)
+              elsif parameters.is_a?(NumberedParametersNode)
+                visit(parameters)
+              else
+                builder.args(
+                  token(parameters.opening_loc),
+                  if procarg0?(parameters.parameters)
+                    parameter = parameters.parameters.requireds.first
+                    [builder.procarg0(visit(parameter))].concat(visit_all(parameters.locals))
+                  else
+                    visit(parameters)
+                  end,
+                  token(parameters.closing_loc),
+                  false
+                )
               end,
-              visit(block.body),
+              block.body&.accept(copy_compiler(forwarding: parameters.is_a?(NumberedParametersNode) ? [] : find_forwarding(parameters&.parameters))),
               token(block.closing_loc)
             )
           else
@@ -1742,12 +1820,12 @@ module Prism
 
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
-          children = []
+          children = Array.new
           node.parts.each do |part|
             pushing =
-              if part.is_a?(StringNode) && part.unescaped.count("\n") > 1
-                unescaped = part.unescaped.split("\n")
-                escaped = part.content.split("\n")
+              if part.is_a?(StringNode) && part.unescaped.include?("\n")
+                unescaped = part.unescaped.lines(chomp: true)
+                escaped = part.content.lines(chomp: true)
 
                 escaped_lengths =
                   if node.opening.end_with?("'")
@@ -1762,7 +1840,6 @@ module Prism
                 unescaped.zip(escaped_lengths).map do |unescaped_line, escaped_length|
                   end_offset = start_offset + (escaped_length || 0)
                   inner_part = builder.string_internal(["#{unescaped_line}\n", srange_offsets(start_offset, end_offset)])
-
                   start_offset = end_offset
                   inner_part
                 end

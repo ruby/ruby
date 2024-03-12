@@ -18,7 +18,8 @@
         │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (1,12)-(1,13))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -26,7 +27,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:foo]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -48,7 +48,8 @@
             │   │   │   ├── operator_loc: (3,9)-(3,10) = "="
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (3,10)-(3,11))
-            │   │   │       └── flags: decimal
+            │   │   │       ├── flags: decimal
+            │   │   │       └── value: 1
             │   │   └── @ OptionalParameterNode (location: (3,13)-(3,18))
             │   │       ├── flags: ∅
             │   │       ├── name: :bar
@@ -56,7 +57,8 @@
             │   │       ├── operator_loc: (3,16)-(3,17) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (3,17)-(3,18))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 2
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
@@ -64,7 +66,6 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:foo, :bar]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (3,5)-(3,6) = "("

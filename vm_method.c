@@ -118,7 +118,7 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
 static inline void
 vm_cme_invalidate(rb_callable_method_entry_t *cme)
 {
-    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
+    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment), "cme: %d", imemo_type((VALUE)cme));
     VM_ASSERT(callable_method_entry_p(cme));
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
@@ -301,6 +301,7 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
             VALUE refined_class = rb_refinement_module_get_refined_class(module);
             rb_clear_method_cache(refined_class, mid);
             rb_class_foreach_subclass(refined_class, clear_iclass_method_cache_by_id_for_refinements, mid);
+            rb_clear_all_refinement_method_cache();
         }
         rb_class_foreach_subclass(module, clear_iclass_method_cache_by_id, mid);
     }
@@ -308,9 +309,6 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
         clear_method_cache_by_id_in_class(klass_or_module, mid);
     }
 }
-
-// gc.c
-void rb_cc_table_free(VALUE klass);
 
 static int
 invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data)
@@ -334,6 +332,118 @@ invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data
         }
     }
     return 0; // continue to iteration
+}
+
+static st_index_t
+vm_ci_hash(VALUE v)
+{
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)v;
+    st_index_t h;
+    h = rb_hash_start(ci->mid);
+    h = rb_hash_uint(h, ci->flag);
+    h = rb_hash_uint(h, ci->argc);
+    if (ci->kwarg) {
+        for (int i = 0; i < ci->kwarg->keyword_len; i++) {
+            h = rb_hash_uint(h, ci->kwarg->keywords[i]);
+        }
+    }
+    return h;
+}
+
+static int
+vm_ci_hash_cmp(VALUE v1, VALUE v2)
+{
+    const struct rb_callinfo *ci1 = (const struct rb_callinfo *)v1;
+    const struct rb_callinfo *ci2 = (const struct rb_callinfo *)v2;
+    if (ci1->mid != ci2->mid) return 1;
+    if (ci1->flag != ci2->flag) return 1;
+    if (ci1->argc != ci2->argc) return 1;
+    if (ci1->kwarg != NULL) {
+        VM_ASSERT(ci2->kwarg != NULL); // implied by matching flags
+
+        if (ci1->kwarg->keyword_len != ci2->kwarg->keyword_len)
+            return 1;
+
+        for (int i = 0; i < ci1->kwarg->keyword_len; i++) {
+            if (ci1->kwarg->keywords[i] != ci2->kwarg->keywords[i]) {
+                return 1;
+            }
+        }
+    } else {
+        VM_ASSERT(ci2->kwarg == NULL); // implied by matching flags
+    }
+    return 0;
+}
+
+static const struct st_hash_type vm_ci_hashtype = {
+    vm_ci_hash_cmp,
+    vm_ci_hash
+};
+
+static int
+ci_lookup_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)*key;
+    st_data_t *ret = (st_data_t *)data;
+
+    if (existing) {
+        if (rb_objspace_garbage_object_p((VALUE)ci)) {
+            *ret = (st_data_t)NULL;
+            return ST_DELETE;
+        } else {
+            *ret = *key;
+            return ST_STOP;
+        }
+    }
+    else {
+        *key = *value = *ret = (st_data_t)ci;
+        return ST_CONTINUE;
+    }
+}
+
+const struct rb_callinfo *
+rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg)
+{
+    rb_vm_t *vm = GET_VM();
+    const struct rb_callinfo *ci = NULL;
+
+    if (kwarg) {
+        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+    }
+
+    struct rb_callinfo *new_ci = IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
+    new_ci->mid = mid;
+    new_ci->flag = flag;
+    new_ci->argc = argc;
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_table *ci_table = vm->ci_table;
+        VM_ASSERT(ci_table);
+
+        do {
+            st_update(ci_table, (st_data_t)new_ci, ci_lookup_i, (st_data_t)&ci);
+        } while (ci == NULL);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    VM_ASSERT(ci);
+    VM_ASSERT(vm_ci_markable(ci));
+
+    return ci;
+}
+
+void
+rb_vm_ci_free(const struct rb_callinfo *ci)
+{
+    rb_vm_t *vm = GET_VM();
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_data_t key = (st_data_t)ci;
+        st_delete(vm->ci_table, &key, NULL);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -522,6 +632,8 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
     rb_method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
+    if (!ruby_running) add_opt_method_entry(me);
+
     if (opts != NULL) {
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
@@ -651,7 +763,11 @@ static rb_method_entry_t *
 rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_definition_t *def, bool complement)
 {
     if (def) method_definition_addref(def, complement);
-    rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)def, (VALUE)called_id, owner, defined_class);
+    rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
+    *((rb_method_definition_t **)&me->def) = def;
+    me->called_id = called_id;
+    me->owner = owner;
+
     return me;
 }
 
@@ -847,7 +963,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     orig_klass = klass;
 
-    if (!FL_TEST(klass, FL_SINGLETON) &&
+    if (!RCLASS_SINGLETON_P(klass) &&
         type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
         type != VM_METHOD_TYPE_ZSUPER) {
         switch (mid) {
@@ -942,7 +1058,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     /* check mid */
     if (mid == object_id || mid == id__send__) {
         if (type == VM_METHOD_TYPE_ISEQ && search_method(klass, mid, 0)) {
-            rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
+            rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
         }
     }
 
@@ -1063,8 +1179,8 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
     }
 }
 
-static const rb_callable_method_entry_t *
-check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
+const rb_callable_method_entry_t *
+rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
 {
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
@@ -1084,7 +1200,7 @@ check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_call
         const VALUE arg = ID2SYM(mid);			\
         VALUE recv_class = (klass);			\
         ID hook_id = (hook);				\
-        if (FL_TEST((klass), FL_SINGLETON)) {		\
+        if (RCLASS_SINGLETON_P((klass))) {		\
             recv_class = RCLASS_ATTACHED_OBJECT((klass));	\
             hook_id = singleton_##hook;			\
         }						\
@@ -1149,7 +1265,7 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
@@ -1550,14 +1666,14 @@ remove_method(VALUE klass, ID mid)
     rb_class_modify_check(klass);
     klass = RCLASS_ORIGIN(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
-        rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
+        rb_warn("removing '%s' may cause serious problems", rb_id2name(mid));
     }
 
     if (!rb_id_table_lookup(RCLASS_M_TBL(klass), mid, &data) ||
         !(me = (rb_method_entry_t *)data) ||
         (!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
         UNDEFINED_REFINED_METHOD_P(me->def)) {
-        rb_name_err_raise("method `%1$s' not defined in %2$s",
+        rb_name_err_raise("method '%1$s' not defined in %2$s",
                           klass, ID2SYM(mid));
     }
 
@@ -1607,7 +1723,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
         VALUE v = argv[i];
         ID id = rb_check_id(&v);
         if (!id) {
-            rb_name_err_raise("method `%1$s' not defined in %2$s",
+            rb_name_err_raise("method '%1$s' not defined in %2$s",
                               mod, v);
         }
         remove_method(mod, id);
@@ -1780,7 +1896,7 @@ rb_undef(VALUE klass, ID id)
     }
     rb_class_modify_check(klass);
     if (id == object_id || id == id__send__ || id == idInitialize) {
-        rb_warn("undefining `%s' may cause serious problems", rb_id2name(id));
+        rb_warn("undefining '%s' may cause serious problems", rb_id2name(id));
     }
 
     me = search_method(klass, id, 0);
@@ -1840,7 +1956,7 @@ rb_undef(VALUE klass, ID id)
  *
  *     In child
  *     In parent
- *     prog.rb:23: undefined method `hello' for #<Child:0x401b3bb4> (NoMethodError)
+ *     prog.rb:23: undefined method 'hello' for #<Child:0x401b3bb4> (NoMethodError)
  */
 
 static VALUE
@@ -2783,8 +2899,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
                 rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
                         "%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
                         " the deprecated method signature, which takes one parameter",
-                        (FL_TEST(klass, FL_SINGLETON) ? obj : klass),
-                        (FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
+                        (RCLASS_SINGLETON_P(klass) ? obj : klass),
+                        (RCLASS_SINGLETON_P(klass) ? '.' : '#'),
                         QUOTE_ID(id));
                 if (!NIL_P(location)) {
                     VALUE path = RARRAY_AREF(location, 0);

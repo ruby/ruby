@@ -106,7 +106,7 @@ describe :yaml_load_unsafe, shared: true do
                                                     Date.new( 2001, 8, 12 ),
                                                     Date.new( 2001, 8, 14 ) ]
     }
-    YAML.send(@method, $complex_key_1).should == expected
+    YAML.send(@method, YAMLSpecs::COMPLEX_KEY_1).should == expected
   end
 
   describe "with iso8601 timestamp" do

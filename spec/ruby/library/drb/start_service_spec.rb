@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
 
-ruby_version_is ""..."3.4" do
+# This does not work yet when run in CRuby via make test-spec:
+# Gem::MissingSpecError: Could not find 'ruby2_keywords' (>= 0) among 28 total gem(s)
+guard_not -> { MSpecScript.instance_variable_defined?(:@testing_ruby) } do
   require_relative 'fixtures/test_server'
   require 'drb'
 

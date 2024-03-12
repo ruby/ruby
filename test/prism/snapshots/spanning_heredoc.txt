@@ -298,10 +298,10 @@
         │   │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
-        │   │           │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
-        │   │           │       │   │   ├── flags: forced_us_ascii_encoding
+        │   │           │       │   ├── @ StringNode (location: (48,12)-(48,14))
+        │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   ├── opening_loc: ∅
-        │   │           │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
+        │   │           │       │   │   ├── content_loc: (48,12)-(48,14) = "p\\"
         │   │           │       │   │   ├── closing_loc: ∅
         │   │           │       │   │   └── unescaped: "p\n"
         │   │           │       │   └── @ StringNode (location: (48,12)-(48,14))

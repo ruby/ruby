@@ -190,7 +190,7 @@ class JSONAdditionTest < Test::Unit::TestCase
     # XXX this won't work; o.foo = { :bar => true }
     o.foo = { 'bar' => true }
     assert_equal o, parse(JSON(o), :create_additions => true)
-  end
+  end if defined?(::OpenStruct)
 
   def test_set
     s = Set.new([:a, :b, :c, :a])

@@ -19,14 +19,6 @@ on:
       - '**.ronn'
       - '.*.yml'
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -55,7 +47,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -83,33 +77,23 @@ jobs:
 
       - run: $SETARCH make
 
-      - name: make btest
+      - name: make test
         run: |
-          make -s btest RUN_OPTS="$RUN_OPTS"
+          $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 30
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
-        continue-on-error: true
 
-      # - name: make test
-      #   run: |
-      #     $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 30
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUBY_TESTOPTS: '-v --tty=no'
-      #     RUN_OPTS: ${{ matrix.run_opts }}
-
-      # - name: make test-all
-      #   run: |
-      #     $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 40
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUBY_TESTOPTS: '-q --tty=no'
-      #     RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-all
+        run: |
+          $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 40
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="test_regexp.rb" --exclude="error_highlight/test_error_highlight.rb" --exclude="irb/test_context.rb" --exclude="prism/encoding_test.rb" --exclude="prism/unescape_test.rb"'
+          RUN_OPTS: ${{ matrix.run_opts }}
 
       # - name: make test-spec
       #   run: |

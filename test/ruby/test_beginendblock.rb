@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+EnvUtil.suppress_warning {require 'continuation'}
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))
@@ -67,7 +68,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
     bug8501 = '[ruby-core:55365] [Bug #8501]'
     args = ['-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
             '-e', 'at_exit{o.nope}']
-    status = assert_in_out_err(args, '', [], /undefined method `nope'/, bug8501)
+    status = assert_in_out_err(args, '', [], /undefined method 'nope'/, bug8501)
     assert_not_predicate(status, :success?, bug8501)
   end
 
@@ -131,6 +132,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_callcc_at_exit
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9110 = '[ruby-core:58329][Bug #9110]'
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug9110)
     begin;

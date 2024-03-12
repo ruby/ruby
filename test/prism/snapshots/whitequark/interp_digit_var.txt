@@ -106,13 +106,13 @@
         │   ├── closing_loc: (23,8)-(23,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ RegularExpressionNode (location: (25,1)-(25,8))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (25,1)-(25,4) = "%r{"
         │   ├── content_loc: (25,4)-(25,7) = "\#@1"
         │   ├── closing_loc: (25,7)-(25,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ RegularExpressionNode (location: (27,1)-(27,9))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (27,1)-(27,4) = "%r{"
         │   ├── content_loc: (27,4)-(27,8) = "\#@@1"
         │   ├── closing_loc: (27,8)-(27,9) = "}"
@@ -188,13 +188,13 @@
         │   ├── closing_loc: (47,6)-(47,7) = "'"
         │   └── unescaped: "\#@@1"
         ├── @ RegularExpressionNode (location: (49,1)-(49,6))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (49,1)-(49,2) = "/"
         │   ├── content_loc: (49,2)-(49,5) = "\#@1"
         │   ├── closing_loc: (49,5)-(49,6) = "/"
         │   └── unescaped: "\#@1"
         ├── @ RegularExpressionNode (location: (51,1)-(51,7))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (51,1)-(51,2) = "/"
         │   ├── content_loc: (51,2)-(51,6) = "\#@@1"
         │   ├── closing_loc: (51,6)-(51,7) = "/"

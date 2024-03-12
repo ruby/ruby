@@ -716,7 +716,15 @@ module Test
             del_status_line or puts
             error, suites = suites.partition {|r| r[:error]}
             unless suites.empty?
-              puts "\n""Retrying..."
+              puts "\n"
+              @failed_output.puts "Failed tests:"
+              suites.each {|r|
+                r[:report].each {|c, m, e|
+                  @failed_output.puts "#{c}##{m}: #{e&.class}: #{e&.message&.slice(/\A.*/)}"
+                }
+              }
+              @failed_output.puts "\n"
+              puts "Retrying..."
               @verbose = options[:verbose]
               suites.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
@@ -842,7 +850,7 @@ module Test
         end
       end
 
-      def record(suite, method, assertions, time, error)
+      def record(suite, method, assertions, time, error, source_location = nil)
         if @options.values_at(:longest, :most_asserted).any?
           @tops ||= {}
           rec = [suite.name, method, assertions, time, error]
@@ -1353,6 +1361,198 @@ module Test
       end
     end
 
+    module LaunchableOption
+      module Nothing
+        private
+        def setup_options(opts, options)
+          super
+          opts.define_tail 'Launchable options:'
+          # This is expected to be called by Test::Unit::Worker.
+          opts.on_tail '--launchable-test-reports=PATH', String, 'Do nothing'
+        end
+      end
+
+      def record(suite, method, assertions, time, error, source_location = nil)
+        if writer = @options[:launchable_test_reports]
+          if path = (source_location || suite.instance_method(method).source_location).first
+            # Launchable JSON schema is defined at
+            # https://github.com/search?q=repo%3Alaunchableinc%2Fcli+https%3A%2F%2Flaunchableinc.com%2Fschema%2FRecordTestInput&type=code.
+            e = case error
+                when nil
+                  status = 'TEST_PASSED'
+                  nil
+                when Test::Unit::PendedError
+                  status = 'TEST_SKIPPED'
+                  "Skipped:\n#{suite.name}##{method} [#{location error}]:\n#{error.message}\n"
+                when Test::Unit::AssertionFailedError
+                  status = 'TEST_FAILED'
+                  "Failure:\n#{suite.name}##{method} [#{location error}]:\n#{error.message}\n"
+                when Timeout::Error
+                  status = 'TEST_FAILED'
+                  "Timeout:\n#{suite.name}##{method}\n"
+                else
+                  status = 'TEST_FAILED'
+                  bt = Test::filter_backtrace(error.backtrace).join "\n    "
+                  "Error:\n#{suite.name}##{method}:\n#{error.class}: #{error.message.b}\n    #{bt}\n"
+                end
+            repo_path = File.expand_path("#{__dir__}/../../../")
+            relative_path = path.delete_prefix("#{repo_path}/")
+            # The test path is a URL-encoded representation.
+            # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+            test_path = {file: relative_path, class: suite.name, testcase: method}.map{|key, val|
+              "#{encode_test_path_component(key)}=#{encode_test_path_component(val)}"
+            }.join('#')
+          end
+        end
+        super
+      ensure
+        if writer && test_path && status
+          # Occasionally, the file writing operation may be paused, especially when `--repeat-count` is specified.
+          # In such cases, we proceed to execute the operation here.
+          writer.write_object do
+            writer.write_key_value('testPath', test_path)
+            writer.write_key_value('status', status)
+            writer.write_key_value('duration', time)
+            writer.write_key_value('createdAt', Time.now.to_s)
+            writer.write_key_value('stderr', e)
+            writer.write_key_value('stdout', nil)
+          end
+        end
+      end
+
+      private
+      def setup_options(opts, options)
+        super
+        opts.on_tail '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
+          require 'json'
+          require 'uri'
+          options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
+          writer.write_array('testCases')
+          main_pid = Process.pid
+          at_exit {
+            # This block is executed when the fork block in a test is completed.
+            # Therefore, we need to verify whether all tests have been completed.
+            stack = caller
+            if stack.size == 0 && main_pid == Process.pid && $!.is_a?(SystemExit)
+              writer.close
+            end
+          }
+        end
+
+        def encode_test_path_component component
+          component.to_s.gsub('%', '%25').gsub('=', '%3D').gsub('#', '%23').gsub('&', '%26')
+        end
+      end
+
+      ##
+      # JsonStreamWriter writes a JSON file using a stream.
+      # By utilizing a stream, we can minimize memory usage, especially for large files.
+      class JsonStreamWriter
+        def initialize(path)
+          @file = File.open(path, "w")
+          @file.write("{")
+          @indent_level = 0
+          @is_first_key_val = true
+          @is_first_obj = true
+          write_new_line
+        end
+
+        def write_object
+          if @is_first_obj
+            @is_first_obj = false
+          else
+            write_comma
+            write_new_line
+          end
+          @indent_level += 1
+          write_indent
+          @file.write("{")
+          write_new_line
+          @indent_level += 1
+          yield
+          @indent_level -= 1
+          write_new_line
+          write_indent
+          @file.write("}")
+          @indent_level -= 1
+          @is_first_key_val = true
+          # Occasionally, invalid JSON will be created as shown below, especially when `--repeat-count` is specified.
+          # {
+          #   "testPath": "file=test%2Ftest_timeout.rb&class=TestTimeout&testcase=test_allows_zero_seconds",
+          #   "status": "TEST_PASSED",
+          #   "duration": 2.7e-05,
+          #   "createdAt": "2024-02-09 12:21:07 +0000",
+          #   "stderr": null,
+          #   "stdout": null
+          # }: null <- here
+          # },
+          # To prevent this, IO#flush is called here.
+          @file.flush
+        end
+
+        def write_array(key)
+          @indent_level += 1
+          write_indent
+          @file.write(to_json_str(key))
+          write_colon
+          @file.write(" ", "[")
+          write_new_line
+        end
+
+        def write_key_value(key, value)
+          if @is_first_key_val
+            @is_first_key_val = false
+          else
+            write_comma
+            write_new_line
+          end
+          write_indent
+          @file.write(to_json_str(key))
+          write_colon
+          @file.write(" ")
+          @file.write(to_json_str(value))
+        end
+
+        def close
+          return if @file.closed?
+          close_array
+          @indent_level -= 1
+          write_new_line
+          @file.write("}")
+          @file.flush
+          @file.close
+        end
+
+        private
+        def to_json_str(obj)
+          JSON.dump(obj)
+        end
+
+        def write_indent
+          @file.write(" " * 2 * @indent_level)
+        end
+
+        def write_new_line
+          @file.write("\n")
+        end
+
+        def write_comma
+          @file.write(',')
+        end
+
+        def write_colon
+          @file.write(":")
+        end
+
+        def close_array
+          write_new_line
+          write_indent
+          @file.write("]")
+          @indent_level -= 1
+        end
+      end
+    end
+
     class Runner # :nodoc: all
 
       attr_accessor :report, :failures, :errors, :skips # :nodoc:
@@ -1590,16 +1790,16 @@ module Test
       # failure or error in teardown, it will be sent again with the
       # error or failure.
 
-      def record suite, method, assertions, time, error
+      def record suite, method, assertions, time, error, source_location = nil
       end
 
       def location e # :nodoc:
         last_before_assertion = ""
 
-        return '<empty>' unless e.backtrace # SystemStackError can return nil.
+        return '<empty>' unless e&.backtrace # SystemStackError can return nil.
 
         e.backtrace.reverse_each do |s|
-          break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
+          break if s =~ /in .(?:Test::Unit::(?:Core)?Assertions#)?(assert|refute|flunk|pass|fail|raise|must|wont)/
           last_before_assertion = s
         end
         last_before_assertion.sub(/:in .*$/, '')
@@ -1681,6 +1881,7 @@ module Test
       prepend Test::Unit::ExcludesOption
       prepend Test::Unit::TimeoutOption
       prepend Test::Unit::RunCount
+      prepend Test::Unit::LaunchableOption::Nothing
 
       ##
       # Begins the full test run. Delegates to +runner+'s #_run method.
@@ -1737,6 +1938,7 @@ module Test
     class AutoRunner # :nodoc: all
       class Runner < Test::Unit::Runner
         include Test::Unit::RequireFiles
+        include Test::Unit::LaunchableOption
       end
 
       attr_accessor :to_run, :options

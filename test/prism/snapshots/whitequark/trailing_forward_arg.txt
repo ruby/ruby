@@ -41,12 +41,12 @@
             │           │       │   ├── name: :a
             │           │       │   └── depth: 0
             │           │       ├── @ IntegerNode (location: (1,27)-(1,29))
-            │           │       │   └── flags: decimal
+            │           │       │   ├── flags: decimal
+            │           │       │   └── value: 42
             │           │       └── @ ForwardingArgumentsNode (location: (1,31)-(1,34))
             │           ├── closing_loc: (1,34)-(1,35) = ")"
             │           └── block: ∅
-            ├── locals: [:a, :b, :"..."]
-            ├── locals_body_index: 3
+            ├── locals: [:a, :b]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,7)-(1,8) = "("

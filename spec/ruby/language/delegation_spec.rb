@@ -31,10 +31,10 @@ describe "delegation with def(...)" do
         def delegate(...)
           target ...
         end
-       RUBY
-     end
+      RUBY
+    end
 
-     a.new.delegate(1, b: 2).should == Range.new([[], {}], nil, true)
+    a.new.delegate(1, b: 2).should == Range.new([[], {}], nil, true)
   end
 end
 
@@ -59,5 +59,35 @@ describe "delegation with def(x, ...)" do
     RUBY
 
     a.new.delegate_block(0, 1, b: 2) { |x| x }.should == [{b: 2}, [1]]
+  end
+end
+
+ruby_version_is "3.2" do
+  describe "delegation with def(*)" do
+    it "delegates rest" do
+      a = Class.new(DelegationSpecs::Target)
+      a.class_eval(<<-RUBY)
+      def delegate(*)
+        target(*)
+      end
+    RUBY
+
+      a.new.delegate(0, 1).should == [[0, 1], {}]
+    end
+  end
+end
+
+ruby_version_is "3.2" do
+  describe "delegation with def(**)" do
+    it "delegates kwargs" do
+      a = Class.new(DelegationSpecs::Target)
+      a.class_eval(<<-RUBY)
+      def delegate(**)
+        target(**)
+      end
+    RUBY
+
+      a.new.delegate(a: 1) { |x| x }.should == [[], {a: 1}]
+    end
   end
 end

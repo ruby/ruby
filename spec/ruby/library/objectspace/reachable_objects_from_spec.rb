@@ -38,7 +38,6 @@ describe "ObjectSpace.reachable_objects_from" do
   end
 
   it "finds an object stored in a Queue" do
-    require 'thread'
     o = Object.new
     q = Queue.new
     q << o
@@ -49,7 +48,6 @@ describe "ObjectSpace.reachable_objects_from" do
   end
 
   it "finds an object stored in a SizedQueue" do
-    require 'thread'
     o = Object.new
     q = SizedQueue.new(3)
     q << o

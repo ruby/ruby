@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'tempfile'
-require 'rubygems'
 require 'irb'
 require 'irb/workspace'
 require 'irb/color'
@@ -91,7 +90,7 @@ module TestIRB
         irb_path = "#{top_srcdir}/#{dir}/irb"
         File.exist?(irb_path)
       end or omit 'irb command not found'
-      assert_in_out_err(bundle_exec + ['-W0', "-C#{top_srcdir}", '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
+      assert_in_out_err(bundle_exec + ['-W0', "-C#{top_srcdir}", '-e', <<~RUBY, '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
         version = 'xyz' # typical rubygems loading file
         load('#{irb_path}')
       RUBY

@@ -9,7 +9,8 @@
         │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (1,4)-(1,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (1,2)-(1,3) = "="
         ├── @ CallNode (location: (1,7)-(1,13))
         │   ├── flags: ignore_visibility
@@ -35,7 +36,8 @@
         │   │                   │   └── unescaped: "b"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (1,12)-(1,13))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 1
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -86,7 +88,6 @@
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── locals: [:raise]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

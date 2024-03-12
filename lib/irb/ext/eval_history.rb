@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   history.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -18,7 +18,7 @@ module IRB # :nodoc:
 
       if defined?(@eval_history) && @eval_history
         @eval_history_values.push @line_no, @last_value
-        @workspace.evaluate "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
+        workspace.evaluate "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end
 
       @last_value
@@ -49,7 +49,7 @@ module IRB # :nodoc:
         else
           @eval_history_values = EvalHistory.new(no)
           IRB.conf[:__TMP__EHV__] = @eval_history_values
-          @workspace.evaluate("__ = IRB.conf[:__TMP__EHV__]")
+          workspace.evaluate("__ = IRB.conf[:__TMP__EHV__]")
           IRB.conf.delete(:__TMP_EHV__)
         end
       else

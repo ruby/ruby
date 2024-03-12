@@ -11,9 +11,11 @@
             │   @ RescueModifierNode (location: (1,4)-(1,14))
             │   ├── expression:
             │   │   @ IntegerNode (location: (1,4)-(1,5))
-            │   │   └── flags: decimal
+            │   │   ├── flags: decimal
+            │   │   └── value: 1
             │   ├── keyword_loc: (1,6)-(1,12) = "rescue"
             │   └── rescue_expression:
             │       @ IntegerNode (location: (1,13)-(1,14))
-            │       └── flags: decimal
+            │       ├── flags: decimal
+            │       └── value: 2
             └── operator_loc: (1,2)-(1,3) = "="

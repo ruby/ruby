@@ -8,6 +8,29 @@ require 'strscan'
 require 'test/unit'
 
 module StringScannerTests
+  def test_peek_byte
+    s = create_string_scanner('ab')
+    assert_equal 97, s.peek_byte
+    assert_equal 97, s.scan_byte
+    assert_equal 98, s.peek_byte
+    assert_equal 98, s.scan_byte
+    assert_nil s.peek_byte
+    assert_nil s.scan_byte
+  end
+
+  def test_scan_byte
+    s = create_string_scanner('ab')
+    assert_equal 97, s.scan_byte
+    assert_equal 98, s.scan_byte
+    assert_nil s.scan_byte
+
+    str = "\244\242".dup.force_encoding("euc-jp")
+    s = StringScanner.new(str)
+    assert_equal str.getbyte(s.pos), s.scan_byte
+    assert_equal str.getbyte(s.pos), s.scan_byte
+    assert_nil s.scan_byte
+  end
+
   def test_s_new
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
@@ -840,5 +863,13 @@ class TestStringScannerFixedAnchor < Test::Unit::TestCase
     s = create_string_scanner("ab")
     assert_equal 1, s.skip(/a/)
     assert_nil      s.skip(/^b/)
+  end
+
+  # ruby/strscan#86
+  def test_scan_shared_string
+    s = "hellohello"[5..-1]
+    ss = StringScanner.new(s).scan(/hello/)
+
+    assert_equal "hello", ss
   end
 end

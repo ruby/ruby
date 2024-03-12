@@ -232,7 +232,7 @@ RSpec.describe "global gem caching" do
       R
       expect(out).to eq "VERY_SIMPLE_BINARY_IN_C\nVERY_SIMPLE_GIT_BINARY_IN_C"
 
-      FileUtils.rm Dir[home(".bundle", "cache", "extensions", "**", "*binary_c*")]
+      FileUtils.rm_rf Dir[home(".bundle", "cache", "extensions", "**", "*binary_c*")]
 
       gem_binary_cache.join("very_simple_binary_c.rb").open("w") {|f| f << "puts File.basename(__FILE__)" }
       git_binary_cache.join("very_simple_git_binary_c.rb").open("w") {|f| f << "puts File.basename(__FILE__)" }

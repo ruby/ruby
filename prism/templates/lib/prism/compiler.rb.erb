@@ -16,7 +16,7 @@ module Prism
   #     Prism.parse("1 + 2").value.accept(SExpressions.new)
   #     # => [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
   #
-  class Compiler
+  class Compiler < Visitor
     # Visit an individual node.
     def visit(node)
       node&.accept(self)

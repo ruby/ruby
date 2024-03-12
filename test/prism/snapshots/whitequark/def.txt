@@ -10,7 +10,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -24,7 +23,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -38,7 +36,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (5,0)-(5,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -52,7 +49,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -66,7 +62,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (9,0)-(9,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -80,7 +75,6 @@
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (11,0)-(11,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

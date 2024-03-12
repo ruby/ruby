@@ -606,12 +606,12 @@ describe "C-API Kernel function" do
 
     it "calls a private method" do
       object = CApiKernelSpecs::ClassWithPrivateMethod.new
-      @s.rb_funcallv(object, :private_method, []).should == 0
+      @s.rb_funcallv(object, :private_method, []).should == :private
     end
 
     it "calls a protected method" do
       object = CApiKernelSpecs::ClassWithProtectedMethod.new
-      @s.rb_funcallv(object, :protected_method, []).should == 0
+      @s.rb_funcallv(object, :protected_method, []).should == :protected
     end
   end
 
@@ -629,12 +629,12 @@ describe "C-API Kernel function" do
 
     it "calls a private method" do
       object = CApiKernelSpecs::ClassWithPrivateMethod.new
-      @s.rb_funcallv_kw(object, :private_method, [{}]).should == 0
+      @s.rb_funcallv_kw(object, :private_method, [{}]).should == :private
     end
 
     it "calls a protected method" do
       object = CApiKernelSpecs::ClassWithProtectedMethod.new
-      @s.rb_funcallv_kw(object, :protected_method, [{}]).should == 0
+      @s.rb_funcallv_kw(object, :protected_method, [{}]).should == :protected
     end
 
     it "raises TypeError if the last argument is not a Hash" do
@@ -750,6 +750,41 @@ describe "C-API Kernel function" do
       -> {
         @s.rb_funcall_with_block_kw(object, :protected_method, [{}], proc { })
       }.should raise_error(NoMethodError, /protected/)
+    end
+  end
+
+  describe "rb_check_funcall" do
+    it "calls a method" do
+      @s.rb_check_funcall(1, :+, [2]).should == 3
+    end
+
+    it "returns Qundef if the method is not defined" do
+      obj = Object.new
+      @s.rb_check_funcall(obj, :foo, []).should == :Qundef
+    end
+
+    it "uses #respond_to? to check if the method is defined" do
+      ScratchPad.record []
+      obj = Object.new
+      def obj.respond_to?(name, priv)
+        ScratchPad << name
+        name == :foo || super
+      end
+      def obj.method_missing(name, *args)
+        name == :foo ? [name, 42] : super
+      end
+      @s.rb_check_funcall(obj, :foo, []).should == [:foo, 42]
+      ScratchPad.recorded.should == [:foo]
+    end
+
+    it "calls a private method" do
+      object = CApiKernelSpecs::ClassWithPrivateMethod.new
+      @s.rb_check_funcall(object, :private_method, []).should == :private
+    end
+
+    it "calls a protected method" do
+      object = CApiKernelSpecs::ClassWithProtectedMethod.new
+      @s.rb_check_funcall(object, :protected_method, []).should == :protected
     end
   end
 end

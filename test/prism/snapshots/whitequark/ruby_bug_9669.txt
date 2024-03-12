@@ -27,7 +27,6 @@
         │   │           ├── keyword_loc: (2,0)-(2,6) = "return"
         │   │           └── arguments: ∅
         │   ├── locals: [:b]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -52,7 +51,8 @@
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (7,0)-(7,1))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 1
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (8,0)-(8,1) = "}"
             └── operator_loc: (5,2)-(5,3) = "="

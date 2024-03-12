@@ -9,8 +9,15 @@ module Prism
     def test_format_errors
       assert_equal <<~ERROR, Debug.format_errors("<>", false)
         > 1 | <>
-            | ^ cannot parse the expression
-            |  ^ cannot parse the expression
+            | ^ unexpected '<', ignoring it
+            |  ^ unexpected '>', ignoring it
+      ERROR
+
+      assert_equal <<~'ERROR', Debug.format_errors('"%W"\u"', false)
+        > 1 | "%W"\u"
+            |     ^ invalid character `\`
+            |      ^ unexpected local variable or method, expecting end-of-input
+            |        ^ unterminated string meets end of file
       ERROR
     end
   end

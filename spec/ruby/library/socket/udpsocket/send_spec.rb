@@ -63,7 +63,7 @@ describe "UDPSocket#send" do
     @msg[1][3].should == "127.0.0.1"
   end
 
-  it "raises EMSGSIZE if data is too too big" do
+  it "raises EMSGSIZE if data is too big" do
     @socket = UDPSocket.open
     begin
       -> do

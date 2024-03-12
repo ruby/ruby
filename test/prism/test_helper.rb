@@ -43,15 +43,18 @@ module Prism
           )
         end
       when SourceFileNode
-        deconstructed_expected = expected.deconstruct_keys(nil)
-        deconstructed_actual = actual.deconstruct_keys(nil)
-        assert_equal deconstructed_expected.keys, deconstructed_actual.keys
+        expected_deconstruct = expected.deconstruct_keys(nil)
+        actual_deconstruct = actual.deconstruct_keys(nil)
+        assert_equal expected_deconstruct.keys, actual_deconstruct.keys
 
         # Filepaths can be different if test suites were run on different
         # machines. We accommodate for this by comparing the basenames, and not
         # the absolute filepaths.
-        assert_equal deconstructed_expected.except(:filepath), deconstructed_actual.except(:filepath)
-        assert_equal File.basename(deconstructed_expected[:filepath]), File.basename(deconstructed_actual[:filepath])
+        expected_filepath = expected_deconstruct.delete(:filepath)
+        actual_filepath = actual_deconstruct.delete(:filepath)
+
+        assert_equal expected_deconstruct, actual_deconstruct
+        assert_equal File.basename(expected_filepath), File.basename(actual_filepath)
       when Node
         deconstructed_expected = expected.deconstruct_keys(nil)
         deconstructed_actual = actual.deconstruct_keys(nil)

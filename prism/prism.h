@@ -9,6 +9,7 @@
 #include "prism/defines.h"
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
+#include "prism/util/pm_integer.h"
 #include "prism/util/pm_memchr.h"
 #include "prism/util/pm_strncasecmp.h"
 #include "prism/util/pm_strpbrk.h"
@@ -20,10 +21,12 @@
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/regexp.h"
+#include "prism/static_literals.h"
 #include "prism/version.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -75,6 +78,36 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
  * @return The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
+
+/**
+ * This function is used in pm_parse_stream to retrieve a line of input from a
+ * stream. It closely mirrors that of fgets so that fgets can be used as the
+ * default implementation.
+ */
+typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
+
+/**
+ * Parse a stream of Ruby source and return the tree.
+ *
+ * @param parser The parser to use.
+ * @param buffer The buffer to use.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param options The optional options to use when parsing.
+ * @return The AST representing the source.
+ */
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options);
+
+/**
+ * Parse and serialize the AST represented by the source that is read out of the
+ * given stream into to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param data The optional data to pass to the parser.
+ */
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data);
 
 /**
  * Serialize the given list of comments to the given buffer.
@@ -168,7 +201,15 @@ PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t si
  * @param token_type The token type to convert to a string.
  * @return A string representation of the given token type.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_type);
+PRISM_EXPORTED_FUNCTION const char * pm_token_type_name(pm_token_type_t token_type);
+
+/**
+ * Returns the human name of the given token type.
+ *
+ * @param token_type The token type to convert to a human name.
+ * @return The human name of the given token type.
+ */
+const char * pm_token_type_human(pm_token_type_t token_type);
 
 /**
  * Format the errors on the parser into the given buffer.
@@ -178,6 +219,15 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  * @param colorize Whether or not to colorize the errors with ANSI escape sequences.
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize);
+
+/**
+ * Dump JSON to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param parser The parser that parsed the node.
+ * @param node The node to serialize.
+ */
+PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
 
 /**
  * @mainpage

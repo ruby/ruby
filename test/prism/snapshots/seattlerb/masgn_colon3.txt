@@ -27,8 +27,10 @@
                 ├── flags: ∅
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (1,11)-(1,12))
-                │   │   └── flags: decimal
+                │   │   ├── flags: decimal
+                │   │   └── value: 1
                 │   └── @ IntegerNode (location: (1,14)-(1,15))
-                │       └── flags: decimal
+                │       ├── flags: decimal
+                │       └── value: 2
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

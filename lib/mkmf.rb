@@ -399,6 +399,11 @@ MESSAGE
       env, *commands = commands if Hash === commands.first
       envs.merge!(env) if env
     end
+
+    # disable ASAN leak reporting - conftest programs almost always don't bother
+    # to free their memory.
+    envs['ASAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('ASAN_OPTIONS')
+
     return envs, expand[commands]
   end
 
@@ -2143,7 +2148,9 @@ ARCH_FLAG = #{$ARCH_FLAG}
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = #{CONFIG['LDSHARED']}
 LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
+POSTLINK = #{config_string('POSTLINK', RbConfig::CONFIG)}
 AR = #{CONFIG['AR']}
+LD = #{CONFIG['LD']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
 }
@@ -2509,6 +2516,7 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
         mfile.puts dest
         mfile.print "clean-so::\n"
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]} #{fseprepl[stamp]}\n"
+        mfile.print "\t-$(Q)$(RM_RF) #{fseprepl['$(CLEANLIBS)']}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
         mfile.print "#{f} #{stamp}\n"

@@ -51,23 +51,6 @@ static VALUE proc_binding(VALUE self);
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
 
-/* :FIXME: The way procs are cloned has been historically different from the
- * way everything else are.  @shyouhei is not sure for the intention though.
- */
-#undef CLONESETUP
-static inline void
-CLONESETUP(VALUE clone, VALUE obj)
-{
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
-
-    const VALUE flags = RUBY_FL_PROMOTED | RUBY_FL_FINALIZE;
-    rb_obj_setup(clone, rb_singleton_class_clone(obj),
-                 RB_FL_TEST_RAW(obj, ~flags));
-    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
-    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
-}
-
 static void
 block_mark_and_move(struct rb_block *block)
 {
@@ -142,9 +125,7 @@ static VALUE
 proc_clone(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
-    CLONESETUP(procval, self);
-    rb_check_funcall(procval, idInitialize_clone, 1, &self);
-    return procval;
+    return rb_obj_clone_setup(self, procval, Qnil);
 }
 
 /* :nodoc: */
@@ -152,8 +133,7 @@ static VALUE
 proc_dup(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
-    rb_check_funcall(procval, idInitialize_dup, 1, &self);
-    return procval;
+    return rb_obj_dup_setup(self, procval);
 }
 
 /*
@@ -328,7 +308,7 @@ binding_dup(VALUE self)
     rb_vm_block_copy(bindval, &dst->block, &src->block);
     RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
-    return bindval;
+    return rb_obj_dup_setup(self, bindval);
 }
 
 /* :nodoc: */
@@ -336,8 +316,7 @@ static VALUE
 binding_clone(VALUE self)
 {
     VALUE bindval = binding_dup(self);
-    CLONESETUP(bindval, self);
-    return bindval;
+    return rb_obj_clone_setup(self, bindval, Qnil);
 }
 
 VALUE
@@ -478,13 +457,13 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 
     if (lid) {
         if (!rb_is_local_id(lid)) {
-            rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+            rb_name_err_raise("wrong local variable name '%1$s' for %2$s",
                               bindval, ID2SYM(lid));
         }
     }
     else {
         if (!rb_is_local_name(name)) {
-            rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+            rb_name_err_raise("wrong local variable name '%1$s' for %2$s",
                               bindval, name);
         }
         return 0;
@@ -557,7 +536,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
 
     sym = ID2SYM(lid);
   undefined:
-    rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
+    rb_name_err_raise("local variable '%1$s' is not defined for %2$s",
                       bindval, sym);
     UNREACHABLE_RETURN(Qundef);
 }
@@ -740,8 +719,13 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     arity.argc.min = min_argc;
     arity.argc.max = max_argc;
     rb_execution_context_t *ec = GET_EC();
-    VALUE ret = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)data, arity.packed, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
-    return (struct vm_ifunc *)ret;
+
+    struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
+    ifunc->func = func;
+    ifunc->data = data;
+    ifunc->argc = arity.argc;
+
+    return ifunc;
 }
 
 VALUE
@@ -1478,7 +1462,7 @@ rb_sym_to_proc(VALUE sym)
 
     if (!sym_proc_cache) {
         sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_gc_register_mark_object(sym_proc_cache);
+        rb_vm_register_global_object(sym_proc_cache);
         rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
     }
 
@@ -1690,7 +1674,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
-    if (obj == Qundef) {
+    if (UNDEF_P(obj)) {
         RB_OBJ_WRITE(method, &data->recv, Qundef);
         RB_OBJ_WRITE(method, &data->klass, Qundef);
     }
@@ -1957,11 +1941,11 @@ method_owner(VALUE obj)
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
-#define MSG(s) rb_fstring_lit("undefined method `%1$s' for"s" `%2$s'")
+#define MSG(s) rb_fstring_lit("undefined method '%1$s' for"s" '%2$s'")
     VALUE c = klass;
     VALUE s = Qundef;
 
-    if (FL_TEST(c, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(c)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
 
         switch (BUILTIN_TYPE(obj)) {
@@ -2112,7 +2096,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     }
 
   /* undef: */
-    rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+    rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
 }
@@ -2210,7 +2194,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
         struct METHOD *method = (struct METHOD *)RTYPEDDATA_GET_DATA(body);
         if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
             !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
-            if (FL_TEST(method->me->owner, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(method->me->owner)) {
                 rb_raise(rb_eTypeError,
                          "can't bind singleton method to a different class");
             }
@@ -2385,7 +2369,25 @@ method_clone(VALUE self)
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
-    CLONESETUP(clone, self);
+    rb_obj_clone_setup(self, clone, Qnil);
+    RB_OBJ_WRITE(clone, &data->recv, orig->recv);
+    RB_OBJ_WRITE(clone, &data->klass, orig->klass);
+    RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
+    RB_OBJ_WRITE(clone, &data->owner, orig->owner);
+    RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
+    return clone;
+}
+
+/* :nodoc: */
+static VALUE
+method_dup(VALUE self)
+{
+    VALUE clone;
+    struct METHOD *orig, *data;
+
+    TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
+    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    rb_obj_dup_setup(self, clone);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
@@ -2559,7 +2561,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         if (!NIL_P(refined_class)) methclass = refined_class;
     }
     if (!RB_TYPE_P(methclass, T_MODULE) && !RTEST(rb_obj_is_kind_of(recv, methclass))) {
-        if (FL_TEST(methclass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(methclass)) {
             rb_raise(rb_eTypeError,
                      "singleton method called for a different object");
         }
@@ -3126,11 +3128,11 @@ method_inspect(VALUE method)
         defined_class = RBASIC_CLASS(defined_class);
     }
 
-    if (data->recv == Qundef) {
+    if (UNDEF_P(data->recv)) {
         // UnboundMethod
         rb_str_buf_append(str, rb_inspect(defined_class));
     }
-    else if (FL_TEST(mklass, FL_SINGLETON)) {
+    else if (RCLASS_SINGLETON_P(mklass)) {
         VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
 
         if (UNDEF_P(data->recv)) {
@@ -3150,7 +3152,7 @@ method_inspect(VALUE method)
     }
     else {
         mklass = data->klass;
-        if (FL_TEST(mklass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(mklass)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
             if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
                 do {
@@ -4295,6 +4297,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "eql?", method_eq, 1);
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
+    rb_define_method(rb_cMethod, "dup", method_dup, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "===", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
@@ -4325,6 +4328,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "eql?", unbound_method_eq, 1);
     rb_define_method(rb_cUnboundMethod, "hash", method_hash, 0);
     rb_define_method(rb_cUnboundMethod, "clone", method_clone, 0);
+    rb_define_method(rb_cUnboundMethod, "dup", method_dup, 0);
     rb_define_method(rb_cUnboundMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);

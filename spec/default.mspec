@@ -4,13 +4,13 @@ if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
 
-# Enabld leakcheckers by ruby/mspec
-ENV["CHECK_LEAKS"] ||= "true"
+# Enable constant leak checks by ruby/mspec
+ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
 
 require "./rbconfig" unless defined?(RbConfig)
 require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
 load File.dirname(__FILE__) + '/ruby/default.mspec'
-OBJDIR = File.expand_path("spec/ruby/optional/capi/ext")
+OBJDIR = File.expand_path("spec/ruby/optional/capi/ext") unless defined?(OBJDIR)
 class MSpecScript
   @testing_ruby = true
 
@@ -30,6 +30,16 @@ class MSpecScript
       --
     ]
   end
+
+  # Disable to run for bundled gems in test-spec
+  set :bundled_gems, (File.readlines("#{srcdir}/gems/bundled_gems").map do |line|
+    next if /^\s*(?:#|$)/ =~ line
+    "#{srcdir}/spec/ruby/library/" + line.split.first
+  end.compact)
+  set :stdlibs, Dir.glob("#{srcdir}/spec/ruby/library/*")
+  set :library, get(:stdlibs).to_a - get(:bundled_gems).to_a
+
+  set :files, get(:command_line) + get(:language) + get(:core) + get(:library) + get(:security) + get(:optional)
 
   if ENV.key?("COVERAGE")
     set :excludes, ["Coverage"]
@@ -79,7 +89,7 @@ require 'mspec/runner/formatters/dotted'
 
 class DottedFormatter
   prepend Module.new {
-    BASE = __dir__ + "/ruby/"
+    BASE = __dir__ + "/ruby/" unless defined?(BASE)
 
     def initialize(out = nil)
       super

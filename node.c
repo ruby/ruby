@@ -69,7 +69,6 @@ rb_node_buffer_new(void)
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size), ruby_xmalloc);
     nb->local_tables = 0;
-    nb->mark_hash = Qnil;
     nb->tokens = Qnil;
 #ifdef UNIVERSAL_PARSER
     nb->config = config;
@@ -87,7 +86,7 @@ rb_node_buffer_new(void)
 #define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
 #define rb_gc_mark ast->node_buffer->config->gc_mark
 #define rb_gc_location ast->node_buffer->config->gc_location
-#define rb_gc_mark_movable ast->node_buffer->config->gc_mark_movable
+#define rb_gc_mark_and_move ast->node_buffer->config->gc_mark_and_move
 #undef Qnil
 #define Qnil ast->node_buffer->config->qnil
 #define Qtrue ast->node_buffer->config->qtrue
@@ -172,6 +171,8 @@ struct rb_ast_local_table_link {
 static void
 parser_string_free(rb_ast_t *ast, rb_parser_string_t *str)
 {
+    if (!str) return;
+    xfree(str->ptr);
     xfree(str);
 }
 
@@ -179,8 +180,30 @@ static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
+      case NODE_STR:
+        parser_string_free(ast, RNODE_STR(node)->string);
+        break;
+      case NODE_DSTR:
+        parser_string_free(ast, RNODE_DSTR(node)->string);
+        break;
+      case NODE_XSTR:
+        parser_string_free(ast, RNODE_XSTR(node)->string);
+        break;
+      case NODE_DXSTR:
+        parser_string_free(ast, RNODE_DXSTR(node)->string);
+        break;
       case NODE_SYM:
         parser_string_free(ast, RNODE_SYM(node)->string);
+        break;
+      case NODE_REGX:
+      case NODE_MATCH:
+        parser_string_free(ast, RNODE_REGX(node)->string);
+        break;
+      case NODE_DSYM:
+        parser_string_free(ast, RNODE_DSYM(node)->string);
+        break;
+      case NODE_DREGX:
+        parser_string_free(ast, RNODE_DREGX(node)->string);
         break;
       case NODE_FILE:
         parser_string_free(ast, RNODE_FILE(node)->path);
@@ -249,14 +272,7 @@ static bool
 nodetype_markable_p(enum node_type type)
 {
     switch (type) {
-      case NODE_MATCH:
       case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
         return true;
       default:
         return false;
@@ -328,8 +344,7 @@ rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    return ast;
+    return IMEMO_NEW(rb_ast_t, imemo_ast, (VALUE)nb);
 }
 #endif
 
@@ -354,70 +369,31 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 }
 
 static void
-mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
+mark_and_move_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
 #ifdef UNIVERSAL_PARSER
     bug_report_func rb_bug = ast->node_buffer->config->bug;
 #endif
 
     switch (nd_type(node)) {
-      case NODE_MATCH:
       case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
-        rb_gc_mark_movable(RNODE_LIT(node)->nd_lit);
+        rb_gc_mark_and_move(&RNODE_LIT(node)->nd_lit);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
     }
 }
 
-static void
-update_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
-{
-#ifdef UNIVERSAL_PARSER
-    bug_report_func rb_bug = ast->node_buffer->config->bug;
-#endif
-
-    switch (nd_type(node)) {
-      case NODE_MATCH:
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
-        RNODE_LIT(node)->nd_lit = rb_gc_location(RNODE_LIT(node)->nd_lit);
-        break;
-      default:
-        rb_bug("unreachable");
-    }
-}
-
 void
-rb_ast_update_references(rb_ast_t *ast)
+rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating)
 {
     if (ast->node_buffer) {
-        node_buffer_t *nb = ast->node_buffer;
+        rb_gc_mark_and_move(&ast->node_buffer->tokens);
 
-        iterate_node_values(ast, &nb->markable, update_ast_value, NULL);
-    }
-}
-
-void
-rb_ast_mark(rb_ast_t *ast)
-{
-    if (ast->node_buffer) {
-        rb_gc_mark(ast->node_buffer->mark_hash);
-        rb_gc_mark(ast->node_buffer->tokens);
         node_buffer_t *nb = ast->node_buffer;
-        iterate_node_values(ast, &nb->markable, mark_ast_value, NULL);
-        if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
+        iterate_node_values(ast, &nb->markable, mark_and_move_ast_value, NULL);
+
+        if (ast->body.script_lines) rb_gc_mark_and_move(&ast->body.script_lines);
     }
 }
 
@@ -460,22 +436,6 @@ void
 rb_ast_dispose(rb_ast_t *ast)
 {
     rb_ast_free(ast);
-}
-
-void
-rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
-{
-    if (NIL_P(ast->node_buffer->mark_hash)) {
-        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
-    }
-    rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
-}
-
-void
-rb_ast_delete_mark_object(rb_ast_t *ast, VALUE obj)
-{
-    if (NIL_P(ast->node_buffer->mark_hash)) return;
-    rb_hash_delete(ast->node_buffer->mark_hash, obj);
 }
 
 VALUE

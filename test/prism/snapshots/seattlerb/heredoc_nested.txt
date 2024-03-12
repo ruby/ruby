@@ -35,6 +35,7 @@
             │   │   │       └── unescaped: "a\n"
             │   │   └── closing_loc: (6,0)-(7,0) = "A\n"
             │   └── @ IntegerNode (location: (7,0)-(7,1))
-            │       └── flags: decimal
+            │       ├── flags: decimal
+            │       └── value: 0
             ├── opening_loc: (1,0)-(1,1) = "["
             └── closing_loc: (7,1)-(7,2) = "]"

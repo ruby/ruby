@@ -45,8 +45,6 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
   # Finishes consumption of `list`
 
   def accept_list_end list
-    @res << "\n"
-
     super
   end
 
@@ -59,6 +57,8 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
               4
             when :NOTE, :LABEL then
               use_prefix
+
+              @res << "\n"
 
               4
             else
@@ -81,11 +81,11 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
         attributes(label).strip
       end.join "\n"
 
-      bullets << "\n:"
+      bullets << "\n" unless bullets.empty?
 
       @prefix = ' ' * @indent
       @indent += 4
-      @prefix << bullets + (' ' * (@indent - 1))
+      @prefix << bullets << ":" << (' ' * (@indent - 1))
     else
       bullet = type == :BULLET ? '*' : @list_index.last.to_s + '.'
       @prefix = (' ' * @indent) + bullet.ljust(4)

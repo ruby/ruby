@@ -21,7 +21,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:foo]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,5)-(1,6) = "("
@@ -49,7 +48,6 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:foo, :bar]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (3,5)-(3,6) = "("

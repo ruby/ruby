@@ -15,7 +15,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ RegularExpressionNode (location: (1,4)-(1,9))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (1,4)-(1,5) = "/"
         │   │           ├── content_loc: (1,5)-(1,8) = "bar"
         │   │           ├── closing_loc: (1,8)-(1,9) = "/"
@@ -23,13 +23,13 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ RegularExpressionNode (location: (3,0)-(3,8))
-        │   ├── flags: ignore_case
+        │   ├── flags: ignore_case, forced_us_ascii_encoding
         │   ├── opening_loc: (3,0)-(3,3) = "%r{"
         │   ├── content_loc: (3,3)-(3,6) = "abc"
         │   ├── closing_loc: (3,6)-(3,8) = "}i"
         │   └── unescaped: "abc"
         ├── @ RegularExpressionNode (location: (5,0)-(5,5))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (5,0)-(5,1) = "/"
         │   ├── content_loc: (5,1)-(5,4) = "a\\b"
         │   ├── closing_loc: (5,4)-(5,5) = "/"
@@ -92,7 +92,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── receiver:
         │   │   │   │   │   @ RegularExpressionNode (location: (11,1)-(11,14))
-        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │   ├── opening_loc: (11,1)-(11,2) = "/"
         │   │   │   │   │   ├── content_loc: (11,2)-(11,13) = "(?<foo>bar)"
         │   │   │   │   │   ├── closing_loc: (11,13)-(11,14) = "/"
@@ -127,31 +127,31 @@
         │   ├── opening_loc: (11,0)-(11,1) = "["
         │   └── closing_loc: (11,26)-(11,27) = "]"
         ├── @ RegularExpressionNode (location: (13,0)-(13,6))
-        │   ├── flags: ignore_case
+        │   ├── flags: ignore_case, forced_us_ascii_encoding
         │   ├── opening_loc: (13,0)-(13,1) = "/"
         │   ├── content_loc: (13,1)-(13,4) = "abc"
         │   ├── closing_loc: (13,4)-(13,6) = "/i"
         │   └── unescaped: "abc"
         ├── @ RegularExpressionNode (location: (15,0)-(15,26))
-        │   ├── flags: ignore_case
+        │   ├── flags: ignore_case, forced_us_ascii_encoding
         │   ├── opening_loc: (15,0)-(15,3) = "%r/"
         │   ├── content_loc: (15,3)-(15,24) = "[a-z$._?][\\w$.?\#@~]*:"
         │   ├── closing_loc: (15,24)-(15,26) = "/i"
         │   └── unescaped: "[a-z$._?][\\w$.?\#@~]*:"
         ├── @ RegularExpressionNode (location: (17,0)-(17,37))
-        │   ├── flags: ignore_case
+        │   ├── flags: ignore_case, forced_us_ascii_encoding
         │   ├── opening_loc: (17,0)-(17,3) = "%r/"
         │   ├── content_loc: (17,3)-(17,35) = "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
         │   ├── closing_loc: (17,35)-(17,37) = "/i"
         │   └── unescaped: "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
         ├── @ RegularExpressionNode (location: (19,0)-(19,25))
-        │   ├── flags: ignore_case
+        │   ├── flags: ignore_case, forced_us_ascii_encoding
         │   ├── opening_loc: (19,0)-(19,3) = "%r/"
         │   ├── content_loc: (19,3)-(19,23) = "[a-z$._?][\\w$.?\#@~]*"
         │   ├── closing_loc: (19,23)-(19,25) = "/i"
         │   └── unescaped: "[a-z$._?][\\w$.?\#@~]*"
         ├── @ RegularExpressionNode (location: (21,0)-(24,1))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (21,0)-(21,3) = "%r("
         │   ├── content_loc: (21,3)-(24,0) = "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
         │   ├── closing_loc: (24,0)-(24,1) = ")"
@@ -160,7 +160,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ RegularExpressionNode (location: (26,0)-(26,8))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (26,0)-(26,1) = "/"
         │   │   ├── content_loc: (26,1)-(26,7) = "(?#\\))"
         │   │   ├── closing_loc: (26,7)-(26,8) = "/"
@@ -182,7 +182,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ RegularExpressionNode (location: (28,0)-(28,9))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (28,0)-(28,3) = "%r#"
         │   ├── content_loc: (28,3)-(28,8) = "pound"
         │   ├── closing_loc: (28,8)-(28,9) = "#"
@@ -220,7 +220,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ RegularExpressionNode (location: (32,0)-(33,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (32,0)-(32,1) = "/"
         │   │   │   ├── content_loc: (32,1)-(33,3) = "(?<a\\\nb>)"
         │   │   │   ├── closing_loc: (33,3)-(33,4) = "/"
@@ -254,7 +254,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ RegularExpressionNode (location: (35,0)-(35,18))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (35,0)-(35,1) = "/"
         │   │   │   ├── content_loc: (35,1)-(35,17) = "(?<abc>)(?<abc>)"
         │   │   │   ├── closing_loc: (35,17)-(35,18) = "/"
@@ -286,7 +286,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ RegularExpressionNode (location: (37,0)-(37,10))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (37,0)-(37,1) = "/"
         │   │   ├── content_loc: (37,1)-(37,9) = "(?<a b>)"
         │   │   ├── closing_loc: (37,9)-(37,10) = "/"
@@ -313,7 +313,8 @@
         │   ├── name_loc: (39,0)-(39,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (39,4)-(39,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (39,2)-(39,3) = "="
         └── @ CallNode (location: (40,0)-(40,24))
             ├── flags: ignore_visibility
@@ -327,7 +328,6 @@
             └── block:
                 @ BlockNode (location: (40,4)-(40,24))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (40,6)-(40,22))
@@ -338,7 +338,7 @@
                 │           │   ├── flags: ∅
                 │           │   ├── receiver:
                 │           │   │   @ RegularExpressionNode (location: (40,6)-(40,14))
-                │           │   │   ├── flags: ∅
+                │           │   │   ├── flags: forced_us_ascii_encoding
                 │           │   │   ├── opening_loc: (40,6)-(40,7) = "/"
                 │           │   │   ├── content_loc: (40,7)-(40,13) = "(?<a>)"
                 │           │   │   ├── closing_loc: (40,13)-(40,14) = "/"

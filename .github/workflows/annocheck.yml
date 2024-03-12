@@ -18,13 +18,6 @@ on:
       - '**/.document'
       - '.*.yml'
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -35,7 +28,7 @@ permissions:
 
 jobs:
   compile:
-    name: gcc-11 annocheck
+    name: test-annocheck
 
     runs-on: ubuntu-latest
 
@@ -46,7 +39,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -79,6 +74,11 @@ jobs:
           builddir: build
           makeup: true
 
+      - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
       # Minimal flags to pass the check.
       # -g0 disables backtraces when SEGV.  Do not set that.
       - name: Run configure
@@ -99,18 +99,6 @@ jobs:
       - run: make showflags
 
       - run: make
-
-      - run: make test
-
-      - run: make install
-
-      - run: make test-tool
-
-      ### test-all doesn't work: https://github.com/ruby/ruby/actions/runs/4340112185/jobs/7578344307
-      # - run: make test-all TESTS='-- ruby -ext-'
-
-      ### test-spec doesn't work: https://github.com/ruby/ruby/actions/runs/4340193212/jobs/7578505652
-      # - run: make test-spec
 
       - run: make test-annocheck
 

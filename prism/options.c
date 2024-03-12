@@ -33,11 +33,11 @@ pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_l
 }
 
 /**
- * Set the suppress warnings option on the given options struct.
+ * Sets the command line option on the given options struct.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings) {
-    options->suppress_warnings = suppress_warnings;
+pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
+    options->command_line = command_line;
 }
 
 /**
@@ -53,28 +53,41 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
     }
 
     if (length == 5) {
-        if (strncmp(version, "3.3.0", 5) == 0) {
+        if (strncmp(version, "3.3.0", length) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
             return true;
         }
 
-        if (strncmp(version, "latest", 6) == 0) {
+        if (strncmp(version, "3.4.0", length) == 0) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
     }
 
+    if (length == 6 && strncmp(version, "latest", length) == 0) {
+        options->version = PM_OPTIONS_VERSION_LATEST;
+        return true;
+    }
+
     return false;
 }
+
+// For some reason, GCC analyzer thinks we're leaking allocated scopes and
+// locals here, even though we definitely aren't. This is a false positive.
+// Ideally we wouldn't need to suppress this.
+#if defined(__GNUC__) && (__GNUC__ >= 10)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
+#endif
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+PRISM_EXPORTED_FUNCTION bool
 pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
     options->scopes_count = scopes_count;
-    options->scopes = calloc(scopes_count, sizeof(pm_options_scope_t));
-    if (options->scopes == NULL) abort();
+    options->scopes = xcalloc(scopes_count, sizeof(pm_options_scope_t));
+    return options->scopes != NULL;
 }
 
 /**
@@ -89,11 +102,11 @@ pm_options_scope_get(const pm_options_t *options, size_t index) {
  * Create a new options scope struct. This will hold a set of locals that are in
  * scope surrounding the code that is being parsed.
  */
-PRISM_EXPORTED_FUNCTION void
+PRISM_EXPORTED_FUNCTION bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
-    scope->locals = calloc(locals_count, sizeof(pm_string_t));
-    if (scope->locals == NULL) abort();
+    scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
+    return scope->locals != NULL;
 }
 
 /**
@@ -119,10 +132,10 @@ pm_options_free(pm_options_t *options) {
             pm_string_free(&scope->locals[local_index]);
         }
 
-        free(scope->locals);
+        xfree(scope->locals);
     }
 
-    free(options->scopes);
+    xfree(options->scopes);
 }
 
 /**
@@ -188,22 +201,25 @@ pm_options_read(pm_options_t *options, const char *data) {
         data += encoding_length;
     }
 
-    options->frozen_string_literal = *data++;
-    options->suppress_warnings = *data++;
+    options->frozen_string_literal = (*data++) ? true : false;
+    options->command_line = (uint8_t) *data++;
     options->version = (pm_options_version_t) *data++;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;
 
     if (scopes_count > 0) {
-        pm_options_scopes_init(options, scopes_count);
+        if (!pm_options_scopes_init(options, scopes_count)) return;
 
         for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
             uint32_t locals_count = pm_options_read_u32(data);
             data += 4;
 
             pm_options_scope_t *scope = &options->scopes[scope_index];
-            pm_options_scope_init(scope, locals_count);
+            if (!pm_options_scope_init(scope, locals_count)) {
+                pm_options_free(options);
+                return;
+            }
 
             for (size_t local_index = 0; local_index < locals_count; local_index++) {
                 uint32_t local_length = pm_options_read_u32(data);
@@ -215,3 +231,7 @@ pm_options_read(pm_options_t *options, const char *data) {
         }
     }
 }
+
+#if defined(__GNUC__) && (__GNUC__ >= 10)
+#pragma GCC diagnostic pop
+#endif

@@ -1,3 +1,5 @@
+require "pathname"
+
 module IRB
   module HistorySavingAbility # :nodoc:
     def support_history_saving?
@@ -5,7 +7,7 @@ module IRB
     end
 
     def reset_history_counter
-      @loaded_history_lines = self.class::HISTORY.size if defined? @loaded_history_lines
+      @loaded_history_lines = self.class::HISTORY.size
     end
 
     def load_history
@@ -14,7 +16,7 @@ module IRB
       if history_file = IRB.conf[:HISTORY_FILE]
         history_file = File.expand_path(history_file)
       end
-      history_file = IRB.rc_file("_history") unless history_file
+      history_file = IRB.rc_files("_history").first unless history_file
       if File.exist?(history_file)
         File.open(history_file, "r:#{IRB.conf[:LC_MESSAGES].encoding}") do |f|
           f.each { |l|
@@ -39,7 +41,7 @@ module IRB
         if history_file = IRB.conf[:HISTORY_FILE]
           history_file = File.expand_path(history_file)
         end
-        history_file = IRB.rc_file("_history") unless history_file
+        history_file = IRB.rc_files("_history").first unless history_file
 
         # Change the permission of a file that already exists[BUG #7694]
         begin
@@ -57,6 +59,12 @@ module IRB
            File.mtime(history_file) != @loaded_history_mtime
           history = history[@loaded_history_lines..-1] if @loaded_history_lines
           append_history = true
+        end
+
+        pathname = Pathname.new(history_file)
+        unless Dir.exist?(pathname.dirname)
+          warn "Warning: The directory to save IRB's history file does not exist. Please double check `IRB.conf[:HISTORY_FILE]`'s value."
+          return
         end
 
         File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|

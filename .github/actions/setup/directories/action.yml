@@ -44,6 +44,18 @@ inputs:
     description: >-
       If set to true, creates dummy files in build dir.
 
+  fetch-depth:
+    required: false
+    default: '1'
+    description: The depth of commit history fetched from the remote repository
+
+  clean:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, clean build directory.
+
 outputs: {} # nothing?
 
 runs:
@@ -79,8 +91,9 @@ runs:
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
         path: ${{ inputs.srcdir }}
+        fetch-depth: ${{ inputs.fetch-depth }}
 
-    - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+    - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: downloaded-cache
@@ -129,9 +142,33 @@ runs:
 
     - if: inputs.dummy-files == 'true'
       shell: bash
+      id: dummy-files
       working-directory: ${{ inputs.builddir }}
       run: |
         : Create dummy files in build dir
-        for basename in {a..z} {A..Z} {0..9} foo bar test zzz; do
-          echo > ${basename}.rb "raise %(do not load ${basename}.rb)"
+        set {{a..z},{A..Z},{0..9},foo,bar,test,zzz}.rb
+        for file; do \
+          echo > $file "raise 'do not load $file'"; \
         done
+        # drop {a..z}.rb if case-insensitive filesystem
+        grep -F A.rb a.rb > /dev/null && set "${@:27}"
+        echo clean="cd ${{ inputs.builddir }} && rm $*" >> $GITHUB_OUTPUT
+
+    - if: inputs.clean == 'true'
+      shell: bash
+      id: clean
+      run: |
+        echo distclean='make -C ${{ inputs.builddir }} distclean' >> $GITHUB_OUTPUT
+        echo remained-files='find ${{ inputs.builddir }} -ls' >> $GITHUB_OUTPUT
+        [ "${{ inputs.builddir }}" = "${{ inputs.srcdir }}" ] ||
+        echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
+
+    - name: clean
+      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      with:
+        working-directory:
+        post: |
+          ${{ steps.dummy-files.outputs.clean }}
+          ${{ steps.clean.outputs.distclean }}
+          ${{ steps.clean.outputs.remained-files }}
+          ${{ steps.clean.outputs.final }}

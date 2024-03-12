@@ -16,7 +16,6 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (1,2)-(1,11))
         │   │           ├── locals: []
-        │   │           ├── locals_body_index: 0
         │   │           ├── operator_loc: (1,2)-(1,4) = "->"
         │   │           ├── opening_loc: (1,5)-(1,7) = "do"
         │   │           ├── closing_loc: (1,8)-(1,11) = "end"
@@ -37,7 +36,6 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (3,2)-(3,7))
         │   │           ├── locals: []
-        │   │           ├── locals_body_index: 0
         │   │           ├── operator_loc: (3,2)-(3,4) = "->"
         │   │           ├── opening_loc: (3,5)-(3,6) = "{"
         │   │           ├── closing_loc: (3,6)-(3,7) = "}"
@@ -58,7 +56,6 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (5,2)-(5,13))
         │   │           ├── locals: []
-        │   │           ├── locals_body_index: 0
         │   │           ├── operator_loc: (5,2)-(5,4) = "->"
         │   │           ├── opening_loc: (5,7)-(5,9) = "do"
         │   │           ├── closing_loc: (5,10)-(5,13) = "end"
@@ -84,7 +81,6 @@
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (7,2)-(7,9))
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── operator_loc: (7,2)-(7,4) = "->"
             │           ├── opening_loc: (7,7)-(7,8) = "{"
             │           ├── closing_loc: (7,8)-(7,9) = "}"

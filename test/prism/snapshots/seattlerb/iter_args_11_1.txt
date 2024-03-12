@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,24))
                 ├── locals: [:a, :b, :c, :d]
-                ├── locals_body_index: 4
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,22))
                 │   ├── parameters:
@@ -32,7 +31,8 @@
                 │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,12)-(1,14))
-                │   │   │           └── flags: decimal
+                │   │   │           ├── flags: decimal
+                │   │   │           └── value: 42
                 │   │   ├── rest:
                 │   │   │   @ RestParameterNode (location: (1,16)-(1,18))
                 │   │   │   ├── flags: ∅

@@ -95,7 +95,7 @@ module Bundler
 
     def lock(opts = {})
       return if @definition.no_resolve_needed?
-      @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
+      @definition.lock(opts[:preserve_unknown_sections])
     end
 
     alias_method :gems, :specs

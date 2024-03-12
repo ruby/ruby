@@ -1,7 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
-require 'thread'
 
 describe "Module#autoload?" do
   it "returns the name of the file that will be autoloaded" do

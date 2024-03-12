@@ -48,6 +48,12 @@ Init_enc(void)
     rb_encdb_alias("ASCII", "US-ASCII");
 }
 
+/* miniruby does not support dynamic loading. */
+void
+Init_ext(void)
+{
+}
+
 #include "mini_builtin.c"
 
 void
