@@ -8350,6 +8350,27 @@ escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular
 }
 
 /**
+ * Warn about using a space or a tab character in an escape, as opposed to using
+ * \\s or \\t. Note that we can quite copy the source because the warning
+ * message replaces \\c with \\C.
+ */
+static void
+escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, const char *type) {
+#define FLAG(value) ((value & PM_ESCAPE_FLAG_CONTROL) ? "\\C-" : (value & PM_ESCAPE_FLAG_META) ? "\\M-" : "")
+
+    PM_PARSER_WARN_TOKEN_FORMAT(
+        parser,
+        parser->current,
+        PM_WARN_INVALID_CHARACTER,
+        FLAG(flags),
+        FLAG(flag),
+        type
+    );
+
+#undef FLAG
+}
+
+/**
  * Read the value of an escape into the buffer.
  */
 static void
@@ -8550,6 +8571,16 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     parser->current.end++;
                     escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
+                case ' ':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
+                case '\t':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags, 0, "\\t");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
                         pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
@@ -8590,6 +8621,16 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     parser->current.end++;
                     escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
+                case ' ':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
+                case '\t':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags, 0, "\\t");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
                         pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
@@ -8616,24 +8657,35 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             }
 
             uint8_t peeked = peek(parser);
-            if (peeked == '\\') {
-                if (flags & PM_ESCAPE_FLAG_META) {
-                    pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
+            switch (peeked) {
+                case '\\':
+                    if (flags & PM_ESCAPE_FLAG_META) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
+                        return;
+                    }
+                    parser->current.end++;
+                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
                     return;
-                }
-                parser->current.end++;
-                escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
-                return;
-            }
+                case ' ':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, "\\s");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    return;
+                case '\t':
+                    parser->current.end++;
+                    escape_read_warn(parser, flags & ~(((uint8_t) 1) << (PM_ESCAPE_FLAG_CONTROL - 1)), PM_ESCAPE_FLAG_META, "\\t");
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    return;
+                default:
+                    if (!char_is_ascii_printable(peeked)) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                        return;
+                    }
 
-            if (!char_is_ascii_printable(peeked)) {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
-                return;
+                    parser->current.end++;
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    return;
             }
-
-            parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
-            return;
         }
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
