@@ -474,11 +474,11 @@ rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
         }
         break;
       case SHAPE_FROZEN:
-      case SHAPE_T_OBJECT:
         new_shape->next_iv_index = shape->next_iv_index;
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
       case SHAPE_ROOT:
+      case SHAPE_T_OBJECT:
         rb_bug("Unreachable");
         break;
     }
