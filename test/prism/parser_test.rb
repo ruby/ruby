@@ -72,7 +72,6 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
       "comments.txt",
-      "constants.txt",
       "heredoc_with_comment.txt",
       "heredocs_leading_whitespace.txt",
       "heredocs_nested.txt",

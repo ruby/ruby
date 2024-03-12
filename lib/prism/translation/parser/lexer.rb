@@ -24,7 +24,7 @@ module Prism
           AMPERSAND_DOT: :tANDDOT,
           AMPERSAND_EQUAL: :tOP_ASGN,
           BACK_REFERENCE: :tBACK_REF,
-          BACKTICK: :tXSTRING_BEG,
+          BACKTICK: :tBACK_REF2,
           BANG: :tBANG,
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
