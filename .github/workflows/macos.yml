@@ -98,6 +98,7 @@ jobs:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+        continue-on-error: true
 
       - name: Set extra test options
         run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV

@@ -175,6 +175,7 @@ jobs:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+        continue-on-error: true
 
       - name: make ${{ matrix.test_task }}
         run: >-
