@@ -2918,10 +2918,6 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
 
     size_t size_pool_idx = rb_gc_size_pool_id_for_size(alloc_size);
 
-    if (SHAPE_IN_BASIC_FLAGS || (flags & RUBY_T_MASK) == T_OBJECT) {
-        flags |= (VALUE)size_pool_idx << SHAPE_FLAG_SHIFT;
-    }
-
     rb_ractor_newobj_cache_t *cache = &cr->newobj_cache;
 
     if (!UNLIKELY(during_gc ||

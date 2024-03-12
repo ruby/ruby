@@ -35,7 +35,7 @@ typedef uint32_t redblack_id_t;
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
 
-# define SPECIAL_CONST_SHAPE_ID (SIZE_POOL_COUNT * 2)
+# define SPECIAL_CONST_SHAPE_ID (SIZE_POOL_COUNT + 1)
 # define OBJ_TOO_COMPLEX_SHAPE_ID (SPECIAL_CONST_SHAPE_ID + 1)
 
 typedef struct redblack_node redblack_node_t;

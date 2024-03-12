@@ -1256,43 +1256,45 @@ Init_default_shapes(void)
     GET_SHAPE_TREE()->root_shape = root;
     RUBY_ASSERT(rb_shape_id(GET_SHAPE_TREE()->root_shape) == ROOT_SHAPE_ID);
 
-    // Shapes by size pool
-    for (int i = 1; i < SIZE_POOL_COUNT; i++) {
-        rb_shape_t *new_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
-        new_shape->type = SHAPE_ROOT;
-        new_shape->size_pool_index = i;
-        new_shape->ancestor_index = LEAF;
-        RUBY_ASSERT(rb_shape_id(new_shape) == (shape_id_t)i);
-    }
-
     // Make shapes for T_OBJECT
     size_t *sizes = rb_gc_size_pool_sizes();
     for (int i = 0; sizes[i] > 0; i++) {
-        rb_shape_t * shape = rb_shape_get_shape_by_id(i);
-        bool dont_care;
         rb_shape_t *t_object_shape =
-            get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT, &dont_care, true);
+            rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+        t_object_shape->type = SHAPE_T_OBJECT;
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
-        RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + SIZE_POOL_COUNT));
+        RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + 1));
     }
 
     bool dont_care;
     // Special const shape
 #if RUBY_DEBUG
-    rb_shape_t * special_const_shape =
+    rb_shape_t *special_const_shape =
 #endif
         get_next_shape_internal(root, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true);
     RUBY_ASSERT(rb_shape_id(special_const_shape) == SPECIAL_CONST_SHAPE_ID);
     RUBY_ASSERT(SPECIAL_CONST_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_frozen_shape_p(special_const_shape));
 
-    rb_shape_t * hash_fallback_shape = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
-    hash_fallback_shape->type = SHAPE_OBJ_TOO_COMPLEX;
-    hash_fallback_shape->size_pool_index = 0;
+    rb_shape_t *too_complex_shape = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
+    too_complex_shape->type = SHAPE_OBJ_TOO_COMPLEX;
+    too_complex_shape->size_pool_index = 0;
     RUBY_ASSERT(OBJ_TOO_COMPLEX_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
-    RUBY_ASSERT(rb_shape_id(hash_fallback_shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_id(too_complex_shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
+
+    // Make shapes for T_OBJECT
+    size_t *sizes = rb_gc_size_pool_sizes();
+    for (int i = 0; sizes[i] > 0; i++) {
+        rb_shape_t *t_object_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+        t_object_shape->type = SHAPE_T_OBJECT;
+        t_object_shape->size_pool_index = i;
+        t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+        t_object_shape->edges = rb_id_table_create(0);
+        t_object_shape->ancestor_index = LEAF;
+        RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + FIRST_T_OBJECT_SHAPE_ID));
+    }
 }
 
 void
