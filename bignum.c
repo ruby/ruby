@@ -161,6 +161,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define GMP_MUL_DIGITS 20
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
+#define NEWTON_RAPHSON_DIV_DIGITS 600
 
 #define GMP_DIV_DIGITS 20
 #define GMP_BIG2STR_DIGITS 20
@@ -2787,7 +2788,7 @@ rb_big_divrem_normal(VALUE x, VALUE y)
     if (xn < yn || (xn == yn && xds[xn - 1] < yds[yn - 1]))
         return rb_assoc_new(LONG2FIX(0), x);
 
-    qn = xn + BIGDIVREM_EXTRA_WORDS;
+    qn = xn - yn + BIGDIVREM_EXTRA_WORDS;
     q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
     qds = BDIGITS(q);
 
@@ -2867,7 +2868,7 @@ rb_big_divrem_gmp(VALUE x, VALUE y)
     if (xn < yn || (xn == yn && xds[xn - 1] < yds[yn - 1]))
         return rb_assoc_new(LONG2FIX(0), x);
 
-    qn = xn - yn + 1;
+    qn = xn - yn + BIGDIVREM_EXTRA_WORDS;
     q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
     qds = BDIGITS(q);
 
@@ -2887,12 +2888,168 @@ rb_big_divrem_gmp(VALUE x, VALUE y)
 }
 #endif
 
+/*
+ * Calculate approximate reciprocal of denominator with the specified accuracy.
+ * `return_value.quo(1 << (denominator_bits + accuracy_bits))` is always smaller or equal to the actual reciprocal of denominator.
+ */
+static VALUE
+big_newton_raphson_reciprocal(VALUE denominator, size_t denominator_bits, size_t accuracy_bits) {
+    /* Calculate the number of bits required in each step of Newton's method. */
+    VALUE bits_per_step = rb_ary_new();
+    while (accuracy_bits > 1) {
+        rb_ary_unshift(bits_per_step, SIZET2NUM(accuracy_bits));
+        accuracy_bits = accuracy_bits <= 5 ? accuracy_bits - 1 : (accuracy_bits + 5) / 2;
+    }
+    /* Calculate approximate reciprocal of denominator represented by `inv.quo(1 << (denominator_bits + accuracy_bits))` */
+    /* Make sure `inv * denominator` is always smaller or equal to `1 << (denominator_bits + accuracy_bits)` */
+    VALUE inv = INT2FIX(2);
+    accuracy_bits = 1;
+    while (RARRAY_LEN(bits_per_step) > 0) {
+        size_t next_accuracy_bits = FIX2LONG(rb_ary_shift(bits_per_step));
+        size_t dshift = denominator_bits > next_accuracy_bits ? denominator_bits - next_accuracy_bits : 0;
+        VALUE d = dshift == 0 ? denominator : rb_int_plus(rb_int_rshift(denominator, SIZET2NUM(dshift)), INT2FIX(1));
+        inv = rb_int_rshift(
+            rb_int_minus(
+                rb_int_lshift(inv, SIZET2NUM(1 + accuracy_bits + denominator_bits - dshift)),
+                rb_int_mul(rb_int_mul(inv, inv), d)
+            ),
+            SIZET2NUM(denominator_bits + 2 * accuracy_bits - next_accuracy_bits - dshift)
+        );
+        accuracy_bits = next_accuracy_bits;
+    }
+    return inv;
+}
+
+/* Calculate divmod by using precalculated reciprocal of denominator */
+static void
+big_newton_raphson_reciprocal_divmod(VALUE numerator, VALUE denominator, VALUE inv, size_t accuracy_bits, size_t denominator_bits, VALUE *div, VALUE *mod) {
+    /* Calculate the approximate quotient. This value is always smaller or equal to `numerator.quo(denominator)` */
+    VALUE approximate_quotient = rb_int_rshift(rb_int_mul(rb_int_rshift(numerator, SIZET2NUM(denominator_bits)), inv), SIZET2NUM(accuracy_bits));
+    /* Calculate the difference between the actual quotient and the approximate value. diff is always non-negative. */
+    VALUE diff = rb_int_minus(numerator, rb_int_mul(approximate_quotient, denominator));
+    VALUE diff_div, diff_mod;
+    if (rb_int_gt(denominator, diff) == Qtrue) {
+        diff_div = INT2FIX(0);
+        diff_mod = diff;
+    } else {
+        if (FIXNUM_P(diff)) diff = rb_int2big(FIX2LONG(diff));
+        if (FIXNUM_P(denominator)) denominator = rb_int2big(FIX2LONG(denominator));
+        diff_div = rb_big_new(BIGNUM_LEN(diff), 1);
+        diff_mod = rb_big_new(BIGNUM_LEN(denominator), 1);
+        bary_divmod_normal(
+            BDIGITS(diff_div),
+            BIGNUM_LEN(diff_div),
+            BDIGITS(diff_mod),
+            BIGNUM_LEN(diff_mod),
+            BDIGITS(diff),
+            BIGNUM_LEN(diff),
+            BDIGITS(denominator),
+            BIGNUM_LEN(denominator)
+        );
+    }
+    *div = rb_int_plus(approximate_quotient, diff_div);
+    *mod = diff_mod;
+}
+
+static void
+bary_divmod_newton_raphson(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+    RUBY_ASSERT(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+    RUBY_ASSERT(qds ? (xn - yn + 1) <= qn : 1);
+    RUBY_ASSERT(rds ? yn <= rn : 1);
+    VALUE numerator = rb_big_new(xn, 1);
+    VALUE denominator = rb_big_new(yn, 1);
+    MEMCPY(BDIGITS(numerator), xds, BDIGIT, xn);
+    MEMCPY(BDIGITS(denominator), yds, BDIGIT, yn);
+    size_t numerator_bits = FIX2LONG(rb_big_bit_length(numerator));
+    size_t denominator_bits = FIX2LONG(rb_big_bit_length(denominator));
+    VALUE mod;
+    if (xn > 2 * yn) {
+        size_t accuracy_bits = denominator_bits + BITSPERDIG;
+        VALUE inv = big_newton_raphson_reciprocal(denominator, denominator_bits, accuracy_bits);
+        if (qds != NULL) {
+            memset(qds, 0, sizeof(BDIGIT) * qn);
+        }
+        size_t num_parts = (xn - 1) / yn;
+        mod = INT2FIX(0);
+        for (size_t i = 0; i < num_parts; i++) {
+            size_t pos = (num_parts - i - 1) * yn;
+            size_t size = i == 0 ? xn - pos : yn;
+            VALUE part = rb_big_new(size, 1);
+            MEMCPY(BDIGITS(part), xds + pos, BDIGIT, size);
+            numerator = rb_int_plus(rb_int_lshift(mod, SIZET2NUM(BITSPERDIG * yn)), part);
+            VALUE div;
+            big_newton_raphson_reciprocal_divmod(numerator, denominator, inv, accuracy_bits, denominator_bits, &div, &mod);
+            if (qds != NULL) {
+                if (FIXNUM_P(div)) div = rb_int2big(FIX2LONG(div));
+                bary_add(qds + pos, qn - pos, qds + pos, qn - pos, BDIGITS(div), BIGNUM_LEN(div));
+            }
+        }
+    } else {
+        size_t accuracy_bits = numerator_bits - denominator_bits + BITSPERDIG;
+        VALUE inv = big_newton_raphson_reciprocal(denominator, denominator_bits, accuracy_bits);
+        VALUE div;
+        big_newton_raphson_reciprocal_divmod(numerator, denominator, inv, accuracy_bits, denominator_bits, &div, &mod);
+        if (qds != NULL) {
+            if (FIXNUM_P(div)) div = rb_int2big(FIX2LONG(div));
+            memset(qds, 0, sizeof(BDIGIT) * qn);
+            MEMCPY(qds, BDIGITS(div), BDIGIT, BIGNUM_LEN(div));
+        }
+    }
+
+    if (rds != NULL) {
+        if (FIXNUM_P(mod)) mod = rb_int2big(FIX2LONG(mod));
+        memset(rds, 0, sizeof(BDIGIT) * rn);
+        MEMCPY(rds, BDIGITS(mod), BDIGIT, BIGNUM_LEN(mod));
+    }
+}
+
+VALUE
+rb_big_divrem_newton_raphson(VALUE x, VALUE y)
+{
+    size_t xn = BIGNUM_LEN(x), yn = BIGNUM_LEN(y), qn, rn;
+    BDIGIT *xds = BDIGITS(x), *yds = BDIGITS(y), *qds, *rds;
+    VALUE q, r;
+
+    BARY_TRUNC(yds, yn);
+    if (yn == 0)
+        rb_num_zerodiv();
+    BARY_TRUNC(xds, xn);
+
+    if (xn < yn || (xn == yn && xds[xn - 1] < yds[yn - 1]))
+        return rb_assoc_new(LONG2FIX(0), x);
+
+    qn = xn - yn + BIGDIVREM_EXTRA_WORDS;
+    q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
+    qds = BDIGITS(q);
+
+    rn = yn;
+    r = bignew(rn, BIGNUM_SIGN(x));
+    rds = BDIGITS(r);
+
+    bary_divmod_newton_raphson(qds, qn, rds, rn, xds, xn, yds, yn);
+
+    bigtrunc(q);
+    bigtrunc(r);
+
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+
+    return rb_assoc_new(q, r);
+}
+
 static void
 bary_divmod_branch(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
 #if USE_GMP
     if (GMP_DIV_DIGITS < xn) {
         bary_divmod_gmp(qds, qn, rds, rn, xds, xn, yds, yn);
+        return;
+    }
+#else
+    /* When xn - yn <= KARATSUBA_MUL_DIGITS, calculating reciprocal of y using multiplication is not efficient */
+    if (xn - yn > KARATSUBA_MUL_DIGITS && yn > NEWTON_RAPHSON_DIV_DIGITS) {
+        bary_divmod_newton_raphson(qds, qn, rds, rn, xds, xn, yds, yn);
         return;
     }
 #endif
