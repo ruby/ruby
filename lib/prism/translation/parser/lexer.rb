@@ -250,7 +250,7 @@ module Prism
             when :tNL
               value = nil
             when :tFLOAT
-              value = Float(value)
+              value = parse_float(value)
             when :tIMAGINARY
               value = parse_complex(value)
             when :tINTEGER
@@ -259,7 +259,7 @@ module Prism
                 location = Range.new(source_buffer, offset_cache[token.location.start_offset + 1], offset_cache[token.location.end_offset])
               end
 
-              value = Integer(value)
+              value = parse_integer(value)
             when :tLABEL
               value.chomp!(":")
             when :tLABEL_END
@@ -267,7 +267,7 @@ module Prism
             when :tLCURLY
               type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
             when :tNTH_REF
-              value = Integer(value.delete_prefix("$"))
+              value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN
               value.chomp!("=")
             when :tRATIONAL
@@ -339,6 +339,20 @@ module Prism
 
         private
 
+        # Parse an integer from the string representation.
+        def parse_integer(value)
+          Integer(value)
+        rescue ArgumentError
+          0
+        end
+
+        # Parse a float from the string representation.
+        def parse_float(value)
+          Float(value)
+        rescue ArgumentError
+          0.0
+        end
+
         # Parse a complex from the string representation.
         def parse_complex(value)
           value.chomp!("i")
@@ -346,10 +360,12 @@ module Prism
           if value.end_with?("r")
             Complex(0, parse_rational(value))
           elsif value.start_with?(/0[BbOoDdXx]/)
-            Complex(0, Integer(value))
+            Complex(0, parse_integer(value))
           else
             Complex(0, value)
           end
+        rescue ArgumentError
+          0i
         end
 
         # Parse a rational from the string representation.
@@ -357,10 +373,12 @@ module Prism
           value.chomp!("r")
 
           if value.start_with?(/0[BbOoDdXx]/)
-            Rational(Integer(value))
+            Rational(parse_integer(value))
           else
             Rational(value)
           end
+        rescue ArgumentError
+          0r
         end
       end
     end
