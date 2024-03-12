@@ -126,16 +126,10 @@ struct rb_objspace; /* in vm_core.h */
 # undef RB_NEWOBJ_OF
 #endif
 
-#define NEWOBJ_OF_0(var, T, c, f, s, ec) NEWOBJ_OF_ec(var, T, c, f, s, GET_EC())
-#define NEWOBJ_OF_ec(var, T, c, f, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
-
 #define NEWOBJ_OF(var, T, c, f, s, ec) \
-        NEWOBJ_OF_HELPER(ec)(var, T, c, f, s, ec)
-
-#define NEWOBJ_OF_HELPER(ec) NEWOBJ_OF_ ## ec
+    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), s))
 
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
