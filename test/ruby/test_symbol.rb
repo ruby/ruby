@@ -120,6 +120,7 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_inspect_under_gc_compact_stress
     omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    omit "very flaky on many platforms, more so with YJIT enabled" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
     EnvUtil.under_gc_compact_stress do
       assert_inspect_evaled(':testing')
     end
