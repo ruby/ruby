@@ -5169,7 +5169,7 @@ fix_rshift(long val, unsigned long i)
  *
  */
 
-static VALUE
+VALUE
 rb_int_rshift(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {

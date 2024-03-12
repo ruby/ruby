@@ -86,6 +86,7 @@ VALUE rb_int_equal(VALUE x, VALUE y);
 VALUE rb_int_divmod(VALUE x, VALUE y);
 VALUE rb_int_and(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
+VALUE rb_int_rshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
