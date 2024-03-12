@@ -1393,18 +1393,18 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 KPEG = $(srcdir)/.bundle/bin/kpeg
 $(KPEG): main
 $(KPEG):
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+	$(BASERUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative --silent "kpeg"
 
 generate-rdoc: $(srcdir)/lib/rdoc/markdown.rb $(srcdir)/lib/rdoc/markdown/literals.rb
 
 $(srcdir)/lib/rdoc/markdown.rb: $(srcdir)/lib/rdoc/markdown.kpeg $(KPEG)
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o lib/rdoc/markdown.rb lib/rdoc/markdown.kpeg
+	$(BASERUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o lib/rdoc/markdown.rb lib/rdoc/markdown.kpeg
 
 $(srcdir)/lib/rdoc/markdown/literals.rb: $(srcdir)/lib/rdoc/markdown/literals.kpeg $(KPEG)
 	$(ECHO) generating $@
-	$(XRUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o lib/rdoc/markdown/literals.rb lib/rdoc/markdown/literals.kpeg
+	$(BASERUBY) -C "$(srcdir)" .bundle/bin/kpeg -fs -o lib/rdoc/markdown/literals.rb lib/rdoc/markdown/literals.kpeg
 
 ##
 
