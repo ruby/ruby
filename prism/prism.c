@@ -1963,6 +1963,7 @@ pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 // expose because they are not relevant beyond parsing. Therefore we'll define
 // them here and not define them in config.yml/a header file.
 static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x10;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x20;
 
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL or
@@ -2009,7 +2010,12 @@ static pm_call_node_t *
 pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_t *arguments) {
     pm_assert_value_expression(parser, receiver);
 
-    pm_call_node_t *node = pm_call_node_create(parser, pm_call_node_ignore_visibility_flag(receiver));
+    pm_node_flags_t flags = pm_call_node_ignore_visibility_flag(receiver);
+    if (arguments->block == NULL || PM_NODE_TYPE_P(arguments->block, PM_BLOCK_ARGUMENT_NODE)) {
+        flags |= PM_CALL_NODE_FLAGS_INDEX;
+    }
+
+    pm_call_node_t *node = pm_call_node_create(parser, flags);
 
     node->base.location.start = receiver->location.start;
     node->base.location.end = pm_arguments_end(arguments);
@@ -2224,30 +2230,6 @@ pm_call_node_variable_call_create(pm_parser_t *parser, pm_token_t *message) {
 
     node->name = pm_parser_constant_id_token(parser, message);
     return node;
-}
-
-/**
- * Returns whether or not this call node is a "vcall" (a call to a method name
- * without a receiver that could also have been a local variable read).
- */
-static inline bool
-pm_call_node_variable_call_p(pm_call_node_t *node) {
-    return PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_VARIABLE_CALL);
-}
-
-/**
- * Returns whether or not this call is to the [] method in the index form without a block (as
- * opposed to `foo.[]` and `foo[] { }`).
- */
-static inline bool
-pm_call_node_index_p(pm_call_node_t *node) {
-    return (
-        (node->call_operator_loc.start == NULL) &&
-        (node->message_loc.start != NULL) &&
-        (node->message_loc.start[0] == '[') &&
-        (node->message_loc.end[-1] == ']') &&
-        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE))
-    );
 }
 
 /**
@@ -4792,7 +4774,7 @@ pm_node_is_it(pm_parser_t *parser, pm_node_t *node) {
 
     // Check if it's a variable call
     pm_call_node_t *call_node = (pm_call_node_t *) node;
-    if (!pm_call_node_variable_call_p(call_node)) {
+    if (!PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
         return false;
     }
 
@@ -8678,7 +8660,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     return;
                 case '\t':
                     parser->current.end++;
-                    escape_read_warn(parser, flags & ~(((uint8_t) 1) << (PM_ESCAPE_FLAG_CONTROL - 1)), PM_ESCAPE_FLAG_META, "\\t");
+                    escape_read_warn(parser, flags & ((uint8_t) ~PM_ESCAPE_FLAG_CONTROL), PM_ESCAPE_FLAG_META, "\\t");
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
                 default:
@@ -11895,7 +11877,8 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             pm_call_node_t *call = (pm_call_node_t *) target;
 
             // If we have no arguments to the call node and we need this to be a
-            // target then this is either a method call or a local variable write.
+            // target then this is either a method call or a local variable
+            // write.
             if (
                 (call->message_loc.start != NULL) &&
                 (call->message_loc.end[-1] != '!') &&
@@ -11939,7 +11922,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (pm_call_node_index_p(call)) {
+            if (PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_INDEX)) {
                 return (pm_node_t *) pm_index_target_node_create(parser, call);
             }
         }
@@ -12099,7 +12082,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (pm_call_node_index_p(call)) {
+            if (PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_INDEX)) {
                 if (call->arguments == NULL) {
                     call->arguments = pm_arguments_node_create(parser);
                 }
@@ -17870,7 +17853,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // local variable write. This _must_ happen before the value
                     // is parsed because it could be referenced in the value.
                     pm_call_node_t *call_node = (pm_call_node_t *) node;
-                    if (pm_call_node_variable_call_p(call_node)) {
+                    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
                         pm_parser_local_add_location(parser, call_node->message_loc.start, call_node->message_loc.end);
                     }
                 }
@@ -17963,7 +17946,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (pm_call_node_variable_call_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
@@ -17978,7 +17961,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If there is no call operator and the message is "[]" then
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
-                    if (pm_call_node_index_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                         return (pm_node_t *) pm_index_and_write_node_create(parser, cast, &token, value);
                     }
@@ -18074,7 +18057,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (pm_call_node_variable_call_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
@@ -18089,7 +18072,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If there is no call operator and the message is "[]" then
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
-                    if (pm_call_node_index_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                         return (pm_node_t *) pm_index_or_write_node_create(parser, cast, &token, value);
                     }
@@ -18195,7 +18178,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (pm_call_node_variable_call_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
@@ -18210,7 +18193,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If there is no call operator and the message is "[]" then
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
-                    if (pm_call_node_index_p(cast)) {
+                    if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                         return (pm_node_t *) pm_index_operator_write_node_create(parser, cast, &token, value);
                     }
