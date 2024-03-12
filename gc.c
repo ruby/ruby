@@ -8119,7 +8119,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
     if (RB_TYPE_P(src, T_OBJECT)) {
         orig_shape = rb_shape_get_shape(src);
         if (dheap != heap && !rb_shape_obj_too_complex(src)) {
-            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + SIZE_POOL_COUNT));
+            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + FIRST_T_OBJECT_SHAPE_ID));
             new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
 
             if (!new_shape) {
