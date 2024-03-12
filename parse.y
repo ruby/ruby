@@ -2620,12 +2620,6 @@ rb_parser_ary_new_capa(rb_parser_t *p, long len)
 }
 #define rb_parser_ary_new2 rb_parser_ary_new_capa
 
-inline static rb_parser_ary_t *
-rb_parser_ary_new(rb_parser_t *p)
-{
-    return rb_parser_ary_new_capa(p, 0);
-}
-
 static rb_parser_ary_t *
 rb_parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
 {
