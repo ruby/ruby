@@ -4030,7 +4030,6 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 }
 
 static int
-__attribute__((optimize("O0")))
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (IS_INSN_ID(iobj, newarray) && iobj->link.next &&
