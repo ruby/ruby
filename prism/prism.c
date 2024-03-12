@@ -5898,8 +5898,13 @@ pm_string_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, 
     pm_string_node_t *node = PM_ALLOC_NODE(parser, pm_string_node_t);
     pm_node_flags_t flags = 0;
 
-    if (parser->frozen_string_literal) {
-        flags = PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN;
+    switch (parser->frozen_string_literal) {
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
+            flags = PM_STRING_FLAGS_MUTABLE;
+            break;
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
+            flags = PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN;
+            break;
     }
 
     *node = (pm_string_node_t) {
@@ -6298,8 +6303,13 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
     pm_string_node_t *new_node = PM_ALLOC_NODE(parser, pm_string_node_t);
     pm_node_flags_t flags = 0;
 
-    if (parser->frozen_string_literal) {
-        flags = PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN;
+    switch (parser->frozen_string_literal) {
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
+            flags = PM_STRING_FLAGS_MUTABLE;
+            break;
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
+            flags = PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN;
+            break;
     }
 
     *new_node = (pm_string_node_t) {
@@ -7173,9 +7183,9 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
 static void
 parser_lex_magic_comment_frozen_string_literal_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     if ((start + 4 <= end) && pm_strncasecmp(start, (const uint8_t *) "true", 4) == 0) {
-        parser->frozen_string_literal = true;
+        parser->frozen_string_literal = 1;
     } else if ((start + 5 <= end) && pm_strncasecmp(start, (const uint8_t *) "false", 5) == 0) {
-        parser->frozen_string_literal = false;
+        parser->frozen_string_literal = -1;
     }
 }
 
@@ -18912,7 +18922,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .in_keyword_arg = false,
         .current_param_name = 0,
         .semantic_token_seen = false,
-        .frozen_string_literal = false,
+        .frozen_string_literal = 0,
         .current_regular_expression_ascii_only = false
     };
 
@@ -18971,9 +18981,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         }
 
         // frozen_string_literal option
-        if (options->frozen_string_literal) {
-            parser->frozen_string_literal = true;
-        }
+        parser->frozen_string_literal = options->frozen_string_literal;
 
         // command_line option
         parser->command_line = options->command_line;

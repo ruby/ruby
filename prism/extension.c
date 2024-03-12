@@ -142,7 +142,7 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     } else if (key_id == rb_option_id_offset) {
         if (!NIL_P(value)) pm_options_offset_set(options, NUM2UINT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
-        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
+        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, RTEST(value));
     } else if (key_id == rb_option_id_version) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);

@@ -709,6 +709,16 @@ struct pm_parser {
     /** The command line flags given from the options. */
     uint8_t command_line;
 
+    /**
+     * Whether or not we have found a frozen_string_literal magic comment with
+     * a true or false value.
+     * May be:
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
+     */
+    int8_t frozen_string_literal;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -736,12 +746,6 @@ struct pm_parser {
      * (i.e., a token that is not a comment or whitespace).
      */
     bool semantic_token_seen;
-
-    /**
-     * Whether or not we have found a frozen_string_literal magic comment with
-     * a true value.
-     */
-    bool frozen_string_literal;
 
     /**
      * True if the current regular expression being lexed contains only ASCII

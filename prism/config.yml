@@ -673,7 +673,9 @@ flags:
       - name: FORCED_BINARY_ENCODING
         comment: "internal bytes forced the encoding to binary"
       - name: FROZEN
-        comment: "frozen by virtue of a `frozen_string_literal` comment"
+        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`"
+      - name: MUTABLE
+        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`"
     comment: Flags for string nodes.
   - name: SymbolFlags
     values:
