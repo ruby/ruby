@@ -1266,12 +1266,13 @@ Init_default_shapes(void)
     }
 
     // Make shapes for T_OBJECT
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+    size_t *sizes = rb_gc_size_pool_sizes();
+    for (int i = 0; sizes[i] > 0; i++) {
         rb_shape_t * shape = rb_shape_get_shape_by_id(i);
         bool dont_care;
-        rb_shape_t * t_object_shape =
+        rb_shape_t *t_object_shape =
             get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT, &dont_care, true);
-        t_object_shape->capacity = (uint32_t)((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+        t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
         RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + SIZE_POOL_COUNT));

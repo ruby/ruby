@@ -134,9 +134,8 @@ rb_class_allocate_instance(VALUE klass)
 
     RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
 
-    // Set the shape to the specific T_OBJECT shape which is always
-    // SIZE_POOL_COUNT away from the root shape.
-    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
+    // Set the shape to the specific T_OBJECT shape.
+    ROBJECT_SET_SHAPE_ID(obj, SIZE_POOL_COUNT + rb_gc_size_pool_id_for_size(size));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
