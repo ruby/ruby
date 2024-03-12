@@ -240,6 +240,14 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data)
     }
 }
 
+#if USE_MMTK
+static enum rb_id_table_iterator_result
+cc_table_mark_i_no_id(VALUE ccs_ptr, void *data_ptr)
+{
+    return cc_table_mark_i(0, ccs_ptr, data_ptr);
+}
+#endif
+
 void
 rb_cc_table_mark(VALUE klass)
 {
@@ -250,7 +258,7 @@ rb_cc_table_mark(VALUE klass)
             // Note: rb_id_table_foreach will look up the ID from keys by accessing
             // arrays in the heap during key2id, but the id is only used for
             // assertion which fails with an evacuating GC (such as Immix) anyway.
-            rb_id_table_foreach_values(cc_tbl, cc_table_mark_i_no_id, &data);
+            rb_id_table_foreach_values(cc_tbl, cc_table_mark_i_no_id, (void *)klass);
         } else {
 #endif
         rb_id_table_foreach(cc_tbl, cc_table_mark_i, (void *)klass);
@@ -369,8 +377,9 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
                 // When using MMTk, we must trace both the class and the cme_ field because
                 // we are still in the middle of tracing at this time,
                 // therefore reachability is not yet established.
-                UPDATE_IF_MOVED(objspace, cc->klass);
-                TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+                *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
+                *((struct rb_callable_method_entry_struct **)&cc->cme_) =
+                    (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
             }
 #endif
         }
