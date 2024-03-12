@@ -177,6 +177,12 @@ parser_string_free(rb_ast_t *ast, rb_parser_string_t *str)
 }
 
 static void
+parser_bigfree(rb_ast_t *ast, rb_parser_bignum_t *big)
+{
+    rb_parser_bigfree(xfree, big);
+}
+
+static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
@@ -209,16 +215,30 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
         parser_string_free(ast, RNODE_FILE(node)->path);
         break;
       case NODE_INTEGER:
+        parser_bigfree(ast, RNODE_INTEGER(node)->hash.data.ptr);
         xfree(RNODE_INTEGER(node)->val);
         break;
       case NODE_FLOAT:
         xfree(RNODE_FLOAT(node)->val);
         break;
       case NODE_RATIONAL:
+        parser_bigfree(ast, RNODE_RATIONAL(node)->hash.data.ptr);
         xfree(RNODE_RATIONAL(node)->val);
         break;
       case NODE_IMAGINARY:
+        switch (RNODE_IMAGINARY(node)->type) {
+          case integer_literal:
+          case rational_literal:
+            parser_bigfree(ast, RNODE_IMAGINARY(node)->hash.data.ptr);
+            break;
+          case float_literal:
+            /* noop */
+            break;
+        }
         xfree(RNODE_IMAGINARY(node)->val);
+        break;
+      case NODE_LINE:
+        parser_bigfree(ast, RNODE_LINE(node)->hash.data.ptr);
         break;
       default:
         break;
