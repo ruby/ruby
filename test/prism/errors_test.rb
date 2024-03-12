@@ -2139,7 +2139,7 @@ module Prism
         not a = 2
       RUBY
       assert_warning_messages source, [
-        "found `= literal' in conditional, should be =="
+        "found '= literal' in conditional, should be =="
       ] * source.lines.count
     end
 
