@@ -8,7 +8,7 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
-  def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+  def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
