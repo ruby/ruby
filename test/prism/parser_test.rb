@@ -78,7 +78,6 @@ module Prism
       "heredocs_nested.txt",
       "indented_file_end.txt",
       "non_alphanumeric_methods.txt",
-      "range_begin_open_inclusive.txt",
       "strings.txt",
       "xstring.txt"
     ]
