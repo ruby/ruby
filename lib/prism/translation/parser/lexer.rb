@@ -24,7 +24,7 @@ module Prism
           AMPERSAND_DOT: :tANDDOT,
           AMPERSAND_EQUAL: :tOP_ASGN,
           BACK_REFERENCE: :tBACK_REF,
-          BACKTICK: :tBACK_REF2,
+          BACKTICK: :tXSTRING_BEG,
           BANG: :tBANG,
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
@@ -324,6 +324,10 @@ module Prism
             when :tFID
               if !tokens.empty? && tokens.dig(-1, 0) == :kDEF
                 type = :tIDENTIFIER
+              end
+            when :tXSTRING_BEG
+              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT
+                type = :tBACK_REF2
               end
             end
 

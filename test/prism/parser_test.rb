@@ -77,7 +77,7 @@ module Prism
       "heredocs_nested.txt",
       "indented_file_end.txt",
       "strings.txt",
-      "xstring.txt"
+      "xstring_with_backslash.txt"
     ]
 
     Dir["*.txt", base: base].each do |name|
