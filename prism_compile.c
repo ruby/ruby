@@ -6530,18 +6530,35 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
-      case PM_NIL_NODE:
-        PM_PUTNIL_UNLESS_POPPED;
+      case PM_NIL_NODE: {
+        // nil
+        // ^^^
+        if (!popped) {
+            PUSH_INSN(ret, location, putnil);
+        }
+
         return;
+      }
       case PM_NO_KEYWORDS_PARAMETER_NODE: {
+        // def foo(**nil); end
+        //         ^^^^^
         ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg = TRUE;
         return;
       }
       case PM_NUMBERED_REFERENCE_READ_NODE: {
+        // $1
+        // ^^
         if (!popped) {
-            uint32_t reference_number = ((pm_numbered_reference_read_node_t *)node)->number;
-            ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(1), INT2FIX(reference_number << 1));
+            uint32_t reference_number = ((const pm_numbered_reference_read_node_t *) node)->number;
+
+            if (reference_number > 0) {
+                PUSH_INSN2(ret, location, getspecial, INT2FIX(1), INT2FIX(reference_number << 1));
+            }
+            else {
+                PUSH_INSN(ret, location, putnil);
+            }
         }
+
         return;
       }
       case PM_OR_NODE: {
