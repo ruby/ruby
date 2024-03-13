@@ -624,6 +624,11 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
+struct global_object_list {
+    VALUE *varptr;
+    struct global_object_list *next;
+};
+
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -705,6 +710,7 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
+    struct global_object_list *gloabl_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
