@@ -6247,7 +6247,14 @@ fn gen_send_cfunc(
 
     // Guard for variable length splat call before any modifications to the stack
     if variable_splat {
-        let splat_array = asm.stack_opnd(i32::from(kw_splat) + i32::from(block_arg));
+        let splat_array_idx = i32::from(kw_splat) + i32::from(block_arg);
+        let comptime_splat_array = jit.peek_at_stack(&asm.ctx, splat_array_idx as isize);
+        if unsafe { rb_yjit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
+            gen_counter_incr(asm, Counter::send_cfunc_splat_varg_ruby2_keywords);
+            return None;
+        }
+
+        let splat_array = asm.stack_opnd(splat_array_idx);
         guard_object_is_array(asm, splat_array, splat_array.into(), Counter::guard_send_splat_not_array);
 
         asm_comment!(asm, "guard variable length splat call servicable");
@@ -6627,7 +6634,7 @@ fn push_splat_args(required_args: u32, asm: &mut Assembler) {
     guard_object_is_not_ruby2_keyword_hash(
         asm,
         last_array_value,
-        Counter::guard_send_splatarray_last_ruby_2_keywords,
+        Counter::guard_send_splatarray_last_ruby2_keywords,
     );
 
     asm_comment!(asm, "Push arguments from array");
@@ -7051,7 +7058,7 @@ fn gen_send_iseq(
         asm_comment!(asm, "guard no ruby2_keywords hash in splat");
         let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
         asm.cmp(bad_splat, 0.into());
-        asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby_2_keywords));
+        asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }
 
     match block_arg_type {
