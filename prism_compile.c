@@ -1117,55 +1117,97 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
         int post_splat_counter = 0;
 
         for (size_t index = 0; index < arguments_node_list.size; index++) {
-            pm_node_t *argument = arguments_node_list.nodes[index];
+            const pm_node_t *argument = arguments_node_list.nodes[index];
 
             switch (PM_NODE_TYPE(argument)) {
               // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
               case PM_KEYWORD_HASH_NODE: {
-                pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
+                const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) argument;
+                const pm_node_list_t *elements = &keyword_arg->elements;
 
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
                     has_keyword_splat = true;
-                    pm_compile_hash_elements(&keyword_arg->elements, nd_line(&dummy_line_node), iseq, ret, scope_node);
+                    pm_compile_hash_elements(elements, nd_line(&dummy_line_node), iseq, ret, scope_node);
                 }
                 else {
-                    size_t len = keyword_arg->elements.size;
-
-                    // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
-                    // with symbol keys.
+                    // We need to first figure out if all elements of the
+                    // KeywordHashNode are AssocNodes with symbol keys.
                     if (PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS)) {
-                        // If they are all symbol keys then we can pass them as keyword arguments.
-                        *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+                        // If they are all symbol keys then we can pass them as
+                        // keyword arguments. The first thing we need to do is
+                        // deduplicate. We'll do this using the combination of a
+                        // Ruby hash and a Ruby array.
+                        VALUE stored_indices = rb_hash_new();
+                        VALUE keyword_indices = rb_ary_new_capa(elements->size);
+
+                        size_t size = 0;
+                        for (size_t element_index = 0; element_index < elements->size; element_index++) {
+                            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
+
+                            // Retrieve the stored index from the hash for this
+                            // keyword.
+                            VALUE keyword = pm_static_literal_value(assoc->key, scope_node);
+                            VALUE stored_index = rb_hash_aref(stored_indices, keyword);
+
+                            // If this keyword was already seen in the hash,
+                            // then mark the array at that index as false and
+                            // decrement the keyword size.
+                            if (!NIL_P(stored_index)) {
+                                rb_ary_store(keyword_indices, NUM2LONG(stored_index), Qfalse);
+                                size--;
+                            }
+
+                            // Store (and possibly overwrite) the index for this
+                            // keyword in the hash, mark the array at that index
+                            // as true, and increment the keyword size.
+                            rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
+                            rb_ary_store(keyword_indices, (long) element_index, Qtrue);
+                            size++;
+                        }
+
+                        *kw_arg = rb_xmalloc_mul_add(size, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
                         *flags |= VM_CALL_KWARG;
+
                         VALUE *keywords = (*kw_arg)->keywords;
                         (*kw_arg)->references = 0;
-                        (*kw_arg)->keyword_len = (int)len;
+                        (*kw_arg)->keyword_len = (int) size;
 
-                        for (size_t i = 0; i < len; i++) {
-                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
-                            pm_node_t *key = assoc->key;
-                            keywords[i] = pm_static_literal_value(key, scope_node);
-                            PM_COMPILE_NOT_POPPED(assoc->value);
+                        size_t keyword_index = 0;
+                        for (size_t element_index = 0; element_index < elements->size; element_index++) {
+                            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
+                            bool popped = true;
+
+                            if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
+                                keywords[keyword_index++] = pm_static_literal_value(assoc->key, scope_node);
+                                popped = false;
+                            }
+
+                            PM_COMPILE(assoc->value);
                         }
+
+                        RUBY_ASSERT(keyword_index == size);
                     } else {
-                        // If they aren't all symbol keys then we need to construct a new hash
-                        // and pass that as an argument.
+                        // If they aren't all symbol keys then we need to
+                        // construct a new hash and pass that as an argument.
                         orig_argc++;
                         *flags |= VM_CALL_KW_SPLAT;
-                        if (len > 1) {
-                            // A new hash will be created for the keyword arguments in this case,
-                            // so mark the method as passing mutable keyword splat.
+
+                        size_t size = elements->size;
+                        if (size > 1) {
+                            // A new hash will be created for the keyword
+                            // arguments in this case, so mark the method as
+                            // passing mutable keyword splat.
                             *flags |= VM_CALL_KW_SPLAT_MUT;
                         }
 
-                        for (size_t i = 0; i < len; i++) {
-                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
+                        for (size_t element_index = 0; element_index < size; element_index++) {
+                            pm_assoc_node_t *assoc = (pm_assoc_node_t *) elements->nodes[element_index];
                             PM_COMPILE_NOT_POPPED(assoc->key);
                             PM_COMPILE_NOT_POPPED(assoc->value);
                         }
 
-                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(len * 2));
+                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(size * 2));
                     }
                 }
                 break;
