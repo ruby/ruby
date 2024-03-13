@@ -327,6 +327,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_WARN_FLOAT_OUT_OF_RANGE]                = { "Float %.*s%s out of range", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_INTEGER_IN_FLIP_FLOP]              = { "integer literal in flip-flop", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_INVALID_CHARACTER]                 = { "invalid character syntax; use %s%s%s", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_INVALID_NUMBERED_REFERENCE]        = { "'%.*s' is too big for a number variable, always nil", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_KEYWORD_EOL]                       = { "`%.*s` at the end of line without an expression", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_LITERAL_IN_CONDITION_DEFAULT]      = { "%sliteral in %s", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_LITERAL_IN_CONDITION_VERBOSE]      = { "%sliteral in %s", PM_WARNING_LEVEL_VERBOSE },

@@ -10,6 +10,7 @@
 #define PRISM_DEFINES_H
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -22,7 +23,6 @@
  * some platforms they aren't included unless this is already defined.
  */
 #define __STDC_FORMAT_MACROS
-
 #include <inttypes.h>
 
 /**

@@ -247,6 +247,7 @@ warnings:
   - FLOAT_OUT_OF_RANGE
   - INTEGER_IN_FLIP_FLOP
   - INVALID_CHARACTER
+  - INVALID_NUMBERED_REFERENCE
   - KEYWORD_EOL
   - LITERAL_IN_CONDITION_DEFAULT
   - LITERAL_IN_CONDITION_VERBOSE
@@ -2677,13 +2678,13 @@ nodes:
       - name: number
         type: uint32
         comment: |
-          The (1-indexed, from the left) number of the capture group. Numbered references that would overflow a `uint32`  result in a `number` of exactly `2**32 - 1`.
+          The (1-indexed, from the left) number of the capture group. Numbered references that are too large result in this value being `0`.
 
               $1          # number `1`
 
               $5432       # number `5432`
 
-              $4294967296 # number `4294967295`
+              $4294967296 # number `0`
     comment: |
       Represents reading a numbered reference to a capture in the previous match.
 

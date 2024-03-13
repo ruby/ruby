@@ -1204,40 +1204,6 @@ pm_node_flag_set_repeated_parameter(pm_node_t *node) {
 /******************************************************************************/
 
 /**
- * Parse the decimal number represented by the range of bytes. returns
- * UINT32_MAX if the number fails to parse. This function assumes that the range
- * of bytes has already been validated to contain only decimal digits.
- */
-static uint32_t
-parse_decimal_number(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    ptrdiff_t diff = end - start;
-    assert(diff > 0 && ((unsigned long) diff < SIZE_MAX));
-    size_t length = (size_t) diff;
-
-    char *digits = xcalloc(length + 1, sizeof(char));
-    memcpy(digits, start, length);
-    digits[length] = '\0';
-
-    char *endptr;
-    errno = 0;
-    unsigned long value = strtoul(digits, &endptr, 10);
-
-    if ((digits == endptr) || (*endptr != '\0') || (errno == ERANGE)) {
-        pm_parser_err(parser, start, end, PM_ERR_INVALID_NUMBER_DECIMAL);
-        value = UINT32_MAX;
-    }
-
-    xfree(digits);
-
-    if (value > UINT32_MAX) {
-        pm_parser_err(parser, start, end, PM_ERR_INVALID_NUMBER_DECIMAL);
-        value = UINT32_MAX;
-    }
-
-    return (uint32_t) value;
-}
-
-/**
  * When you have an encoding flag on a regular expression, it takes precedence
  * over all of the previously set encoding flags. So we need to mask off any
  * previously set encoding flags before setting the new one.
@@ -5137,6 +5103,52 @@ pm_numbered_parameters_node_create(pm_parser_t *parser, const pm_location_t *loc
 }
 
 /**
+ * The maximum numbered reference value is defined as the maximum value that an
+ * integer can hold minus 1 bit for CRuby instruction sequence operand tagging.
+ */
+#define NTH_REF_MAX ((uint32_t) (INT_MAX >> 1))
+
+/**
+ * Parse the decimal number represented by the range of bytes. Returns
+ * 0 if the number fails to parse or if the number is greater than the maximum
+ * value representable by a numbered reference. This function assumes that the
+ * range of bytes has already been validated to contain only decimal digits.
+ */
+static uint32_t
+pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *token) {
+    const uint8_t *start = token->start + 1;
+    const uint8_t *end = token->end;
+
+    ptrdiff_t diff = end - start;
+    assert(diff > 0 && ((unsigned long) diff < SIZE_MAX));
+    size_t length = (size_t) diff;
+
+    char *digits = xcalloc(length + 1, sizeof(char));
+    memcpy(digits, start, length);
+    digits[length] = '\0';
+
+    char *endptr;
+    errno = 0;
+    unsigned long value = strtoul(digits, &endptr, 10);
+
+    if ((digits == endptr) || (*endptr != '\0') || (errno == ERANGE)) {
+        pm_parser_err(parser, start, end, PM_ERR_INVALID_NUMBER_DECIMAL);
+        value = 0;
+    }
+
+    xfree(digits);
+
+    if (value > NTH_REF_MAX) {
+        PM_PARSER_WARN_FORMAT(parser, start, end, PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
+        value = 0;
+    }
+
+    return (uint32_t) value;
+}
+
+#undef NTH_REF_MAX
+
+/**
  * Allocate and initialize a new NthReferenceReadNode node.
  */
 static pm_numbered_reference_read_node_t *
@@ -5149,7 +5161,7 @@ pm_numbered_reference_read_node_create(pm_parser_t *parser, const pm_token_t *na
             .type = PM_NUMBERED_REFERENCE_READ_NODE,
             .location = PM_LOCATION_TOKEN_VALUE(name),
         },
-        .number = parse_decimal_number(parser, name->start + 1, name->end)
+        .number = pm_numbered_reference_read_node_number(parser, name)
     };
 
     return node;
