@@ -74,7 +74,6 @@ module Prism
       "comments.txt",
       "heredoc_with_comment.txt",
       "heredocs_leading_whitespace.txt",
-      "heredocs_nested.txt",
       "indented_file_end.txt",
       "strings.txt",
       "xstring_with_backslash.txt"
