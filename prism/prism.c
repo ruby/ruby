@@ -13275,18 +13275,22 @@ parse_block_parameters(
     }
 
     pm_block_parameters_node_t *block_parameters = pm_block_parameters_node_create(parser, parameters, opening);
-    if ((opening->type != PM_TOKEN_NOT_PROVIDED) && accept1(parser, PM_TOKEN_SEMICOLON)) {
-        do {
-            expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
-            bool repeated = pm_parser_parameter_name_check(parser, &parser->previous);
-            pm_parser_local_add_token(parser, &parser->previous);
+    if ((opening->type != PM_TOKEN_NOT_PROVIDED)) {
+        accept1(parser, PM_TOKEN_NEWLINE);
 
-            pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
-            if (repeated) {
-                pm_node_flag_set_repeated_parameter((pm_node_t *)local);
-            }
-            pm_block_parameters_node_append_local(block_parameters, local);
-        } while (accept1(parser, PM_TOKEN_COMMA));
+        if (accept1(parser, PM_TOKEN_SEMICOLON)) {
+            do {
+                expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
+                bool repeated = pm_parser_parameter_name_check(parser, &parser->previous);
+                pm_parser_local_add_token(parser, &parser->previous);
+
+                pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
+                if (repeated) {
+                    pm_node_flag_set_repeated_parameter((pm_node_t *)local);
+                }
+                pm_block_parameters_node_append_local(block_parameters, local);
+            } while (accept1(parser, PM_TOKEN_COMMA));
+        }
     }
 
     return block_parameters;
