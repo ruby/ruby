@@ -1,11 +1,8 @@
+#!/usr/bin/env python3
 import os
 import sys
 from collections import Counter, defaultdict
 import os.path
-
-sys.path.append(os.environ['PERF_EXEC_PATH'] + '/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
-from perf_trace_context import *
-from EventClass import *
 
 # Aggregating cycles per symbol and dso
 total_cycles = 0
@@ -57,11 +54,10 @@ def categorize_symbol(dso, symbol):
 def process_event(event):
     global total_cycles, category_cycles, detailed_category_cycles, categories
 
-    sample = event["sample"]
     full_dso = event.get("dso", "Unknown_dso")
     dso = os.path.basename(full_dso)
     symbol = event.get("symbol", "[unknown]")
-    cycles = sample["period"]
+    cycles = event["sample"]["period"]
     total_cycles += cycles
 
     category = categorize_symbol(dso, symbol)
@@ -94,3 +90,27 @@ def trace_end():
         for (dso, symbol), cycles in symbols.most_common():
             symbol_ratio = (cycles / category_total) * 100
             print("{:<20} {:<50} {:>20.2f}% {:>15}".format(dso, truncate_symbol(symbol), symbol_ratio, cycles))
+
+# There are two ways to use this script:
+# 1) perf script -s misc/yjit_perf.py                     -- native interface
+# 2) perf script > perf.txt && misc/yjit_perf.py perf.txt -- hack, which doesn't require perf with Python support
+#
+# In both cases, __name__ is "__main__". The following code implements (2) when sys.argv is 2.
+if __name__ == "__main__" and len(sys.argv) == 2:
+    if len(sys.argv) != 2:
+        print("Usage: yjit_perf.py <filename>")
+        sys.exit(1)
+
+    with open(sys.argv[1], "r") as file:
+        for line in file:
+            # [Example]
+            # ruby 78207 3482.848465: 1212775 cpu_core/cycles:P/: 5c0333f682e1 [JIT] getlocal_WC_0+0x0 (/tmp/perf-78207.map)
+            row = line.split(maxsplit=6)
+
+            period = row[3] # "1212775"
+            symbol, dso = row[6].split(" (") # "[JIT] getlocal_WC_0+0x0", "/tmp/perf-78207.map)\n"
+            symbol = symbol.split("+")[0] # "[JIT] getlocal_WC_0"
+            dso = dso.split(")")[0] # "/tmp/perf-78207.map"
+
+            process_event({"dso": dso, "symbol": symbol, "sample": {"period": int(period)}})
+    trace_end()
