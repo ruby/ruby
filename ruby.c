@@ -254,6 +254,7 @@ show_usage_part(const char *str, const unsigned int namelen,
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
     unsigned int desclen = (unsigned int)strcspn(desc, "\n");
+    if (!help && desclen > 0 && strchr(".;:", desc[desclen-1])) --desclen;
     if (help && (namelen + 1 > w) && /* a padding space */
         (int)(namelen + secondlen + indent_width) >= columns) {
         printf(USAGE_INDENT "%s" "%.*s" "%s\n", sb, namelen, str, se);
@@ -341,7 +342,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
-        M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
+        M("-W[level=2|:category]", "",             "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
         M("-x[dirpath]",   "",			   "Execute Ruby code starting from a #!ruby line."),
         M("--jit",         "",                     "Enable JIT for the platform; same as " PLATFORM_JIT_OPTION "."),
@@ -363,7 +364,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--dump=items",                 "",            "Dump items; see list below."),
         M("--enable=features",            "",            "Enable features; see list below."),
         M("--external-encoding=encoding", "",            "Set default external encoding."),
-        M("--help",		          "",            "Print long help message; use -h for short message."),
+        M("--help",                       "",            "Print long help message; use -h for short message."),
         M("--internal-encoding=encoding", "",            "Set default internal encoding."),
         M("--parser=parser",              "",            "Set Ruby parser: parse.y or prism."),
         M("--verbose",                    "",            "Set $VERBOSE to true; ignore input from $stdin."),
