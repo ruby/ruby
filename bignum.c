@@ -2594,27 +2594,13 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
 #endif
 }
 
-struct big_div_struct {
-    size_t yn, zn;
-    BDIGIT *yds, *zds;
-    volatile VALUE stop;
-};
-
 static void *
-bigdivrem1(void *ptr)
+bigdivrem1(BDIGIT *yds, size_t yn, BDIGIT *zds, size_t zn)
 {
-    struct big_div_struct *bds = (struct big_div_struct*)ptr;
-    size_t yn = bds->yn;
-    size_t zn = bds->zn;
-    BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
     do {
-        if (bds->stop) {
-            bds->zn = zn;
-            return 0;
-        }
         if (zds[zn-1] == yds[yn-1]) q = BDIGMAX;
         else q = (BDIGIT)((BIGUP(zds[zn-1]) + zds[zn-2])/yds[yn-1]);
         if (q) {
@@ -2633,14 +2619,6 @@ bigdivrem1(void *ptr)
         zds[zn] = q;
     } while (zn > yn);
     return 0;
-}
-
-/* async-signal-safe */
-static void
-rb_big_stop(void *ptr)
-{
-    struct big_div_struct *bds = ptr;
-    bds->stop = Qtrue;
 }
 
 static BDIGIT
@@ -2676,7 +2654,6 @@ bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
 static void
 bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
 {
-    struct big_div_struct bds;
     size_t ynzero;
 
     RUBY_ASSERT(yn < zn);
@@ -2692,24 +2669,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
         return;
     }
 
-    bds.yn = yn - ynzero;
-    bds.zds = zds + ynzero;
-    bds.yds = yds + ynzero;
-    bds.stop = Qfalse;
-    bds.zn = zn - ynzero;
-    if (bds.zn > 10000 || bds.yn > 10000) {
-      retry:
-        bds.stop = Qfalse;
-        rb_nogvl(bigdivrem1, &bds, rb_big_stop, &bds, RB_NOGVL_UBF_ASYNC_SAFE);
-
-        if (bds.stop == Qtrue) {
-            /* execute trap handler, but exception was not raised. */
-            goto retry;
-        }
-    }
-    else {
-        bigdivrem1(&bds);
-    }
+    bigdivrem1(yds + ynzero, yn - ynzero, zds + ynzero, zn - ynzero);
 }
 
 static void
