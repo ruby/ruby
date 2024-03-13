@@ -193,8 +193,12 @@ module Prism
           Diagnostic.new(:warning, :ambiguous_prefix, { prefix: "+" }, diagnostic_location, [])
         when :ambiguous_first_argument_minus
           Diagnostic.new(:warning, :ambiguous_prefix, { prefix: "-" }, diagnostic_location, [])
+        when :ambiguous_prefix_ampersand
+          Diagnostic.new(:warning, :ambiguous_prefix, { prefix: "&" }, diagnostic_location, [])
         when :ambiguous_prefix_star
           Diagnostic.new(:warning, :ambiguous_prefix, { prefix: "*" }, diagnostic_location, [])
+        when :ambiguous_prefix_star_star
+          Diagnostic.new(:warning, :ambiguous_prefix, { prefix: "**" }, diagnostic_location, [])
         when :ambiguous_slash
           Diagnostic.new(:warning, :ambiguous_regexp, {}, diagnostic_location, [])
         when :dot_dot_dot_eol
