@@ -7595,26 +7595,33 @@ lex_optional_float_suffix(pm_parser_t *parser, bool* seen_e) {
             parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
             type = PM_TOKEN_FLOAT;
         } else {
-            // If we had a . and then something else, then it's not a float suffix on
-            // a number it's a method call or something else.
+            // If we had a . and then something else, then it's not a float
+            // suffix on a number it's a method call or something else.
             return type;
         }
     }
 
     // Here we're going to attempt to parse the optional exponent portion of a
     // float. If it's not there, it's okay and we'll just continue on.
-    if (match(parser, 'e') || match(parser, 'E')) {
-        (void) (match(parser, '+') || match(parser, '-'));
-        *seen_e = true;
+    if ((peek(parser) == 'e') || (peek(parser) == 'E')) {
+        if ((peek_offset(parser, 1) == '+') || (peek_offset(parser, 1) == '-')) {
+            parser->current.end += 2;
 
-        if (pm_char_is_decimal_digit(peek(parser))) {
+            if (pm_char_is_decimal_digit(peek(parser))) {
+                parser->current.end++;
+                parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
+            } else {
+                pm_parser_err_current(parser, PM_ERR_INVALID_FLOAT_EXPONENT);
+            }
+        } else if (pm_char_is_decimal_digit(peek_offset(parser, 1))) {
             parser->current.end++;
             parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
-            type = PM_TOKEN_FLOAT;
         } else {
-            pm_parser_err_current(parser, PM_ERR_INVALID_FLOAT_EXPONENT);
-            type = PM_TOKEN_FLOAT;
+            return type;
         }
+
+        *seen_e = true;
+        type = PM_TOKEN_FLOAT;
     }
 
     return type;
