@@ -28,6 +28,12 @@ Gem::Specification.new do |s|
     s.extensions = ["ext/stringio/extconf.rb"]
     s.files += ["ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
   end
+
+  s.extra_rdoc_files = [
+    ".document", ".rdoc_options", "COPYING", "LICENSE.txt",
+    "NEWS.md", "README.md", "docs/io.rb", "ext/stringio/.document",
+  ]
+
   s.homepage = "https://github.com/ruby/stringio"
   s.licenses = ["Ruby", "BSD-2-Clause"]
   s.required_ruby_version = ">= 2.7"
