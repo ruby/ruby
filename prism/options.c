@@ -37,7 +37,7 @@ pm_options_offset_set(pm_options_t *options, uint32_t offset) {
  */
 PRISM_EXPORTED_FUNCTION void
 pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal) {
-    options->frozen_string_literal = frozen_string_literal ? 1 : -1;
+    options->frozen_string_literal = frozen_string_literal ? PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED : PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
 }
 
 /**
