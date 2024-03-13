@@ -460,9 +460,9 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
                 // %g will not insert a .0 for 1e100 (we'll get back 1e+100). So
                 // we check for the decimal point and add it in here if it's not
                 // present.
-                if (pm_buffer_index(buffer, '.') == -1) {
-                    ssize_t exponent_index = pm_buffer_index(buffer, 'e');
-                    size_t index = exponent_index == -1 ? pm_buffer_length(buffer) : (size_t) exponent_index;
+                if (pm_buffer_index(buffer, '.') == SIZE_MAX) {
+                    size_t exponent_index = pm_buffer_index(buffer, 'e');
+                    size_t index = exponent_index == SIZE_MAX ? pm_buffer_length(buffer) : exponent_index;
                     pm_buffer_insert(buffer, index, ".0", 2);
                 }
             }

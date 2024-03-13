@@ -201,10 +201,10 @@ void pm_buffer_rstrip(pm_buffer_t *buffer);
  *
  * @param buffer The buffer to check.
  * @param value The value to check for.
- * @returns The index of the first occurrence of the value in the buffer, or -1
- *   if the value is not found.
+ * @returns The index of the first occurrence of the value in the buffer, or
+ *   SIZE_MAX if the value is not found.
  */
-ssize_t pm_buffer_index(const pm_buffer_t *buffer, char value);
+size_t pm_buffer_index(const pm_buffer_t *buffer, char value);
 
 /**
  * Insert the given string into the buffer at the given index.

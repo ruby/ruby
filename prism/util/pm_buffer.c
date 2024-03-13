@@ -286,15 +286,17 @@ pm_buffer_rstrip(pm_buffer_t *buffer) {
 /**
  * Checks if the buffer includes the given value.
  */
-ssize_t pm_buffer_index(const pm_buffer_t *buffer, char value) {
+size_t
+pm_buffer_index(const pm_buffer_t *buffer, char value) {
     const char *first = memchr(buffer->value, value, buffer->length);
-    return (first == NULL) ? -1 : (ssize_t) (first - buffer->value);
+    return (first == NULL) ? SIZE_MAX : (size_t) (first - buffer->value);
 }
 
 /**
  * Insert the given string into the buffer at the given index.
  */
-void pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
+void
+pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
     assert(index <= buffer->length);
 
     if (index == buffer->length) {
