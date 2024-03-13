@@ -448,7 +448,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number(scope_node->parser, node));
       case PM_STRING_NODE:
-        return parse_string_encoded(scope_node, node, &((pm_string_node_t *)node)->unescaped);
+        return rb_fstring(parse_string_encoded(scope_node, node, &((pm_string_node_t *)node)->unescaped));
       case PM_SYMBOL_NODE:
         return ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) node));
       case PM_TRUE_NODE:
