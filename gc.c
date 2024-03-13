@@ -3011,7 +3011,7 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 #if USE_MMTK
 // Allocate an object, bypassing size pool check.
 static inline VALUE
-rb_mmtk_newobj_of0_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
+rb_mmtk_newobj_of_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -3072,8 +3072,8 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
         size_t size_pool_size = size_pool_slot_size(size_pool_idx);
         RUBY_ASSERT(size_pool_size % MMTK_MIN_OBJ_ALIGN == 0);
 
-        return rb_mmtk_newobj_of0_inner(klass, flags, wb_protected, size_pool_size);
-    }
+        obj = rb_mmtk_newobj_of_inner(klass, flags, wb_protected, size_pool_size);
+    } else {
 #endif
 
     rb_ractor_newobj_cache_t *cache = &cr->newobj_cache;
@@ -3092,6 +3092,10 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
           newobj_slowpath_wb_protected(klass, flags, objspace, cache, size_pool_idx) :
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, size_pool_idx);
     }
+
+#if USE_MMTK
+    }
+#endif
 
     return newobj_fill(obj, v1, v2, v3);
 }
@@ -3288,7 +3292,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
         }
 
         // Now let MMTk decide.
-        bool result = mmtk_is_mmtk_object(ptr);
+        bool result = mmtk_is_mmtk_object((MMTk_Address)ptr);
 
         if (USE_RUBY_DEBUG_LOG) {
             if (result) {
@@ -14760,6 +14764,6 @@ rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep)
 VALUE
 rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
 {
-    return rb_mmtk_newobj_of0_inner(klass, flags, wb_protected, payload_size);
+    return rb_mmtk_newobj_of_inner(klass, flags, wb_protected, payload_size);
 }
 #endif
