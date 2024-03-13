@@ -612,8 +612,8 @@ class TestEnv < Test::Unit::TestCase
     <<-"end;"
       envvars_to_check = [
         "foo\0bar",
-        "#{'\xa1\xa1'}".force_encoding(Encoding::UTF_16LE),
-        "foo".force_encoding(Encoding::ISO_2022_JP),
+        "#{'\xa1\xa1'}".dup.force_encoding(Encoding::UTF_16LE),
+        "foo".dup.force_encoding(Encoding::ISO_2022_JP),
       ]
       envvars_to_check.each do |#{var_name}|
         #{str_for_yielding_exception_class(code_str)}

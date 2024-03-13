@@ -879,7 +879,7 @@ $x.sort!{|a,b| b-a}		# reverse sort
 test_ok($x == [7,5,3,2,1])
 
 # split test
-$x = "The Book of Mormon"
+$x = +"The Book of Mormon"
 test_ok($x.split(//).reverse!.join == $x.reverse)
 test_ok($x.reverse == $x.reverse!)
 test_ok("1 byte string".split(//).reverse.join(":") == "g:n:i:r:t:s: :e:t:y:b: :1")
@@ -1643,7 +1643,7 @@ test_ok(/^(?:ab+)+/ =~ "ababb" && $& == "ababb")
 test_ok(/(\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
 test_ok(/(?:\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
 
-$x = <<END;
+$x = +<<END;
 ABCD
 ABCD
 END
@@ -1682,12 +1682,12 @@ test_ok(?a == ?a)
 test_ok(?\C-a == "\1")
 test_ok(?\M-a == "\341")
 test_ok(?\M-\C-a == "\201")
-test_ok("a".upcase![0] == ?A)
-test_ok("A".downcase![0] == ?a)
-test_ok("abc".tr!("a-z", "A-Z") == "ABC")
-test_ok("aabbcccc".tr_s!("a-z", "A-Z") == "ABC")
-test_ok("abcc".squeeze!("a-z") == "abc")
-test_ok("abcd".delete!("bc") == "ad")
+test_ok("a".dup.upcase![0] == ?A)
+test_ok("A".dup.downcase![0] == ?a)
+test_ok("abc".dup.tr!("a-z", "A-Z") == "ABC")
+test_ok("aabbcccc".dup.tr_s!("a-z", "A-Z") == "ABC")
+test_ok("abcc".dup.squeeze!("a-z") == "abc")
+test_ok("abcd".dup.delete!("bc") == "ad")
 
 $x = "abcdef"
 $y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
@@ -1700,7 +1700,7 @@ $x.each_byte {|i|
 }
 test_ok(!$bad)
 
-s = "a string"
+s = +"a string"
 s[0..s.size]="another string"
 test_ok(s == "another string")
 

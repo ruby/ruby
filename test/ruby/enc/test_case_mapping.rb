@@ -47,7 +47,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   # different properties; careful: roundtrip isn't always guaranteed
   def check_swapcase_properties(expected, start, *flags)
     assert_equal expected, start.swapcase(*flags)
-    temp = start
+    temp = +start
     assert_equal expected, temp.swapcase!(*flags)
     assert_equal start, start.swapcase(*flags).swapcase(*flags)
     assert_equal expected, expected.swapcase(*flags).swapcase(*flags)
@@ -61,10 +61,10 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   end
 
   def test_invalid
-    assert_raise(ArgumentError, "Should not be possible to upcase invalid string.") { "\xEB".force_encoding('UTF-8').upcase }
-    assert_raise(ArgumentError, "Should not be possible to downcase invalid string.") { "\xEB".force_encoding('UTF-8').downcase }
-    assert_raise(ArgumentError, "Should not be possible to capitalize invalid string.") { "\xEB".force_encoding('UTF-8').capitalize }
-    assert_raise(ArgumentError, "Should not be possible to swapcase invalid string.") { "\xEB".force_encoding('UTF-8').swapcase }
+    assert_raise(ArgumentError, "Should not be possible to upcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').upcase }
+    assert_raise(ArgumentError, "Should not be possible to downcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').downcase }
+    assert_raise(ArgumentError, "Should not be possible to capitalize invalid string.") { "\xEB".dup.force_encoding('UTF-8').capitalize }
+    assert_raise(ArgumentError, "Should not be possible to swapcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').swapcase }
   end
 
   def test_general

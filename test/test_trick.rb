@@ -1,3 +1,5 @@
+# frozen_string_literal: false
+
 require "test/unit"
 require "ripper"
 require "envutil"
@@ -12,24 +14,24 @@ class TestTRICK2013 < Test::Unit::TestCase
   def test_kinaba
     src = File.join(__dir__, "../sample/trick2013/kinaba/entry.rb")
     expected = [*" ".."~"].join("") # all ASCII printables
-    assert_in_out_err(["-W0", src], "", [expected])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", [expected])
     assert_equal(expected, File.read(src).chomp.chars.sort.join)
   end
 
   def test_mame
     src = File.join(__dir__, "../sample/trick2013/mame/entry.rb")
     ignore_dsp = "def open(_file, _mode); s = ''; def s.flush; self;end; yield s; end;"
-    assert_in_out_err(["-W0"], ignore_dsp + File.read(src), File.read(src).lines(chomp: true), timeout: 60)
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal"], ignore_dsp + File.read(src), File.read(src).lines(chomp: true), timeout: 60)
   end
 
   def test_shinh
     src = File.join(__dir__, "../sample/trick2013/shinh/entry.rb")
-    assert_in_out_err(["-W0", src], "", [])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", [])
   end
 
   def test_yhara
     src = File.join(__dir__, "../sample/trick2013/yhara/entry.rb")
-    assert_in_out_err(["-W0", src], "", ["JUST ANOTHER RUBY HACKER"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", ["JUST ANOTHER RUBY HACKER"])
   end
 end
 
@@ -45,7 +47,7 @@ class TestTRICK2015 < Test::Unit::TestCase
     end
     pi = "3#{ a - b }"
 
-    assert_in_out_err(["-W0", src], "", [pi], timeout: 60)
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", [pi], timeout: 60)
     assert_equal(pi[0, 242], Ripper.tokenize(File.read(src)).grep(/\S/).map{|t|t.size%10}.join)
   end
 
@@ -60,7 +62,7 @@ class TestTRICK2015 < Test::Unit::TestCase
       s << n.to_s
     end
 
-    assert_in_out_err(["-W0", src, "27"], "", s)
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src, "27"], "", s)
   end
 
   def test_monae
@@ -78,13 +80,13 @@ class TestTRICK2015 < Test::Unit::TestCase
     end
     expected = /\A#{ expected.map {|s| "#{ Regexp.quote(s) }\s*\n" }.join }\z/
 
-    assert_in_out_err(["-W0", src], "", expected)
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", expected)
   end
 
   def test_eregon
     src = File.join(__dir__, "../sample/trick2015/eregon/entry.rb")
 
-    assert_in_out_err(["-W0", src], "", <<END.lines(chomp: true))
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", <<END.lines(chomp: true))
 1 9 4 2 3 8 7 6 5
 3 7 2 6 5 1 4 8 9
 8 5 6 7 4 9 2 3 1
@@ -123,7 +125,7 @@ p cnf 3 5
  1  3 0
 END
 
-    assert_in_out_err(["-W0", src], inp, ["s SATISFIABLE", "v 1 2 -3"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], inp, ["s SATISFIABLE", "v 1 2 -3"])
   end
 end
 
@@ -131,17 +133,17 @@ class TestTRICK2018 < Test::Unit::TestCase
   def test_01_kinaba
     src = File.join(__dir__, "../sample/trick2018/01-kinaba/entry.rb")
 
-    assert_in_out_err(["-W0", src], "", [])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", src], "", [])
   end
 
   def test_02_mame
     src = File.join(__dir__, "../sample/trick2018/02-mame/entry.rb")
 
     ignore_sleep = "def sleep(_); end;"
-    assert_in_out_err(["-W0"], ignore_sleep + File.read(src)) do |stdout, _stderr, _status|
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal"], ignore_sleep + File.read(src)) do |stdout, _stderr, _status|
       code = stdout.join("\n") + "\n"
       expected = code.lines(chomp: true)
-      assert_in_out_err(["-W0"], ignore_sleep + code, expected)
+      assert_in_out_err(["-W0", "--disable-frozen-string-literal"], ignore_sleep + code, expected)
     end
   end
 
@@ -149,7 +151,7 @@ class TestTRICK2018 < Test::Unit::TestCase
     src = File.join(__dir__, "../sample/trick2018/03-tompng/entry.rb")
 
     # only syntax check because it requires chunky_png
-    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", "-c", src], "", ["Syntax OK"])
   end
 
   def test_04_colin
@@ -172,7 +174,7 @@ class TestTRICK2018 < Test::Unit::TestCase
   end
 end
 END
-    assert_in_out_err(["-W0"], code, <<END.lines(chomp: true), encoding: "UTF-8")
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal"], code, <<END.lines(chomp: true), encoding: "UTF-8")
 Math
     Addition
         One plus one equals two.
@@ -187,7 +189,7 @@ END
     src = File.join(__dir__, "../sample/trick2018/05-tompng/entry.rb")
 
     # only syntax check because it generates 3D model data
-    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", "-c", src], "", ["Syntax OK"])
   end
 end
 
@@ -196,21 +198,21 @@ class TestTRICK2022 < Test::Unit::TestCase
     src = File.join(__dir__, "../sample/trick2022/01-tompng/entry.rb")
 
     # only syntax check because it requires matrix
-    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", "-c", src], "", ["Syntax OK"])
   end
 
   def test_02_tompng
     src = File.join(__dir__, "../sample/trick2022/02-tompng/entry.rb")
 
     # only syntax check because it works as a web server
-    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", "-c", src], "", ["Syntax OK"])
   end
 
   def test_03_mame
     src = File.join(__dir__, "../sample/trick2022/03-mame/entry.rb")
 
     # TODO
-    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+    assert_in_out_err(["-W0", "--disable-frozen-string-literal", "-c", src], "", ["Syntax OK"])
   end
 end
 

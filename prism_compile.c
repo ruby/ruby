@@ -7955,7 +7955,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             const pm_string_node_t *cast = (const pm_string_node_t *) node;
             VALUE value = rb_fstring(parse_string_encoded(scope_node, node, &cast->unescaped));
 
-            if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FROZEN)) {
+            if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FROZEN) || ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
                 PUSH_INSN1(ret, location, putobject, value);
             }
             else {

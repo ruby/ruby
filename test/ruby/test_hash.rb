@@ -1963,14 +1963,14 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_AREF_fstring_key_default_proc
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately(['--disable-frozen-string-literal'], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       h = Hash.new do |h, k|
         k.frozen?
       end
 
       str = "foo"
-      refute str.frozen? # assumes this file is frozen_string_literal: false
+      refute str.frozen?
       refute h[str]
       refute h["foo"]
     end;

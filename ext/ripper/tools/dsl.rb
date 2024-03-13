@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Simple DSL implementation for Ripper code generation
 #
 # input: /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
@@ -33,7 +35,7 @@ class DSL
     # struct parser_params *p
     p = p = "p"
 
-    @code = ""
+    @code = +""
     code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K(\$|\$:|@)#{TAG_PATTERN}?#{NAME_PATTERN}]o, '"\&"')
     @last_value = eval(code)
   rescue SyntaxError

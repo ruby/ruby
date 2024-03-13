@@ -11,7 +11,7 @@ class TestStringIOInRactor < Test::Unit::TestCase
       require "stringio"
       $VERBOSE = nil
       r = Ractor.new do
-        io = StringIO.new("")
+        io = StringIO.new(+"")
         io.puts "abc"
         io.truncate(0)
         io.puts "def"
