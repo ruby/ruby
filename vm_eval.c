@@ -1682,8 +1682,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             pm_string_t *scope_local = &options_scope->locals[local_index];
-            const char *name = rb_id2name(ISEQ_BODY(iseq)->local_table[local_index]);
-            if (name) pm_string_constant_init(scope_local, name, strlen(name));
+            ID local = ISEQ_BODY(iseq)->local_table[local_index];
+
+            if (rb_is_local_id(local)) {
+                const char *name = rb_id2name(local);
+                size_t length = strlen(name);
+
+                // Explicitly skip numbered parameters. These should not be sent
+                // into the eval.
+                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
+                    continue;
+                }
+
+                pm_string_constant_init(scope_local, name, strlen(name));
+            }
         }
 
         iseq = ISEQ_BODY(iseq)->parent_iseq;
