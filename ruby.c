@@ -343,7 +343,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-w",		   "",			   "Synonym for -W1."),
         M("-W[level=2|:category]", "", 	           "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
-        M("-x[dirpath]",   "",			   "Execute Ruby code found in text (within certain delimiters)."),
+        M("-x[dirpath]",   "",			   "Execute Ruby code found in text (within certain delimiters);"
+            "if dirpath given, execute dirpath/filepath in working directory dirpath."),
         M("--jit",         "",                     "Enable JIT for platform; same as " PLATFORM_JIT_OPTION "."),
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler."),
@@ -376,7 +377,6 @@ usage(const char *name, int help, int highlight, int columns)
         M("yydebug(+error-tolerant)",                "", "yydebug of yacc parser generator."),
         M("parsetree(+error-tolerant)",              "", "Abstract syntax tree (AST)."),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments."),
-        M("prism_parsetree",                         "", "Prism AST."),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",                  "", "Rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")."),
