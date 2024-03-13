@@ -1678,7 +1678,7 @@ module Prism
             children, closing = visit_heredoc(node.to_interpolated)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
-            parts = if node.unescaped.lines.count <= 1
+            parts = if node.unescaped.lines.one?
               [builder.string_internal([node.unescaped, srange(node.content_loc)])]
             else
               start_offset = node.content_loc.start_offset

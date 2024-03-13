@@ -326,7 +326,7 @@ module Prism
                 type = :tIDENTIFIER
               end
             when :tXSTRING_BEG
-              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT
+              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :STRING_END
                 type = :tBACK_REF2
               end
             end

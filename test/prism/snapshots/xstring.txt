@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(9,1))
+@ ProgramNode (location: (1,0)-(13,4))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(9,1))
-    └── body: (length: 4)
+    @ StatementsNode (location: (1,0)-(13,4))
+    └── body: (length: 6)
         ├── @ XStringNode (location: (1,0)-(1,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,3) = "%x["
@@ -47,9 +47,21 @@
         │   ├── content_loc: (5,1)-(5,4) = "foo"
         │   ├── closing_loc: (5,4)-(5,5) = "`"
         │   └── unescaped: "foo"
-        └── @ XStringNode (location: (7,0)-(9,1))
+        ├── @ XStringNode (location: (7,0)-(9,1))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (7,0)-(7,3) = "%x{"
+        │   ├── content_loc: (7,3)-(9,0) = "\n  foo\n"
+        │   ├── closing_loc: (9,0)-(9,1) = "}"
+        │   └── unescaped: "\n  foo\n"
+        ├── @ XStringNode (location: (11,0)-(11,2))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (11,0)-(11,1) = "`"
+        │   ├── content_loc: (11,1)-(11,1) = ""
+        │   ├── closing_loc: (11,1)-(11,2) = "`"
+        │   └── unescaped: ""
+        └── @ XStringNode (location: (13,0)-(13,4))
             ├── flags: ∅
-            ├── opening_loc: (7,0)-(7,3) = "%x{"
-            ├── content_loc: (7,3)-(9,0) = "\n  foo\n"
-            ├── closing_loc: (9,0)-(9,1) = "}"
-            └── unescaped: "\n  foo\n"
+            ├── opening_loc: (13,0)-(13,3) = "%x{"
+            ├── content_loc: (13,3)-(13,3) = ""
+            ├── closing_loc: (13,3)-(13,4) = "}"
+            └── unescaped: ""
