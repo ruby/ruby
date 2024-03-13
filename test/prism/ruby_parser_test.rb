@@ -71,6 +71,7 @@ module Prism
     # https://github.com/seattlerb/ruby_parser/issues/344
     failures = crlf | %w[
       alias.txt
+      heredocs_with_ignored_newlines.txt
       method_calls.txt
       methods.txt
       multi_write.txt
@@ -94,6 +95,7 @@ module Prism
       whitequark/lvar_injecting_match.txt
       whitequark/not.txt
       whitequark/op_asgn_cmd.txt
+      whitequark/parser_bug_640.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
       whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt
       whitequark/pattern_matching_single_line.txt

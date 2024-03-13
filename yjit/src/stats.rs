@@ -360,6 +360,7 @@ make_counters! {
     send_cfunc_toomany_args,
     send_cfunc_tracing,
     send_cfunc_splat_with_kw,
+    send_cfunc_splat_varg_ruby2_keywords,
     send_attrset_kwargs,
     send_attrset_block_arg,
     send_iseq_tailcall,
@@ -431,7 +432,7 @@ make_counters! {
     guard_send_se_cf_overflow,
     guard_send_se_protected_check_failed,
     guard_send_splatarray_length_not_equal,
-    guard_send_splatarray_last_ruby_2_keywords,
+    guard_send_splatarray_last_ruby2_keywords,
     guard_send_splat_not_array,
     guard_send_send_name_chain,
     guard_send_iseq_has_rest_and_splat_too_few,
@@ -522,6 +523,10 @@ make_counters! {
     jump_interrupted,
 
     objtostring_not_string,
+
+    getbyte_idx_not_fixnum,
+    getbyte_idx_negative,
+    getbyte_idx_out_of_bounds,
 
     splatkw_not_hash,
     splatkw_not_nil,

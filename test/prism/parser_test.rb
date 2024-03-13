@@ -45,22 +45,22 @@ module Prism
     base = File.join(__dir__, "fixtures")
 
     # These files are erroring because of the parser gem being wrong.
-    skip_incorrect = %w[
-      embdoc_no_newline_at_end.txt
+    skip_incorrect = [
+      "embdoc_no_newline_at_end.txt"
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = skip_incorrect | %w[
-      dash_heredocs.txt
-      dos_endings.txt
-      heredocs_with_ignored_newlines.txt
-      regex.txt
-      regex_char_width.txt
-      spanning_heredoc.txt
-      spanning_heredoc_newlines.txt
-      tilde_heredocs.txt
-      unescaping.txt
+    skip_all = skip_incorrect | [
+      "dash_heredocs.txt",
+      "dos_endings.txt",
+      "heredocs_with_ignored_newlines.txt",
+      "regex.txt",
+      "regex_char_width.txt",
+      "spanning_heredoc.txt",
+      "spanning_heredoc_newlines.txt",
+      "tilde_heredocs.txt",
+      "unescaping.txt"
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -70,21 +70,14 @@ module Prism
 
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
-    skip_tokens = %w[
-      comments.txt
-      constants.txt
-      endless_range_in_conditional.txt
-      heredoc_with_comment.txt
-      heredoc_with_escaped_newline_at_start.txt
-      heredocs_leading_whitespace.txt
-      heredocs_nested.txt
-      heredocs_with_ignored_newlines_and_non_empty.txt
-      indented_file_end.txt
-      non_alphanumeric_methods.txt
-      range_begin_open_inclusive.txt
-      single_quote_heredocs.txt
-      strings.txt
-      xstring.txt
+    skip_tokens = [
+      "comments.txt",
+      "heredoc_with_comment.txt",
+      "heredocs_leading_whitespace.txt",
+      "heredocs_nested.txt",
+      "indented_file_end.txt",
+      "strings.txt",
+      "xstring_with_backslash.txt"
     ]
 
     Dir["*.txt", base: base].each do |name|
@@ -93,19 +86,6 @@ module Prism
       define_method("test_#{name}") do
         assert_equal_parses(File.join(base, name), compare_tokens: !skip_tokens.include?(name))
       end
-    end
-
-    def test_warnings
-      buffer = Parser::Source::Buffer.new("inline ruby with warning", 1)
-      buffer.source = "do_something *array"
-
-      parser = Prism::Translation::Parser33.new
-      parser.diagnostics.all_errors_are_fatal = false
-      warning = nil
-      parser.diagnostics.consumer = ->(received) { warning = received }
-      parser.parse(buffer)
-      assert_equal :warning, warning.level
-      assert_includes warning.message, "has been interpreted as"
     end
 
     private
@@ -142,7 +122,7 @@ module Prism
         end
 
         if left.location != right.location
-          return "expected:\n#{left.inspect}\n#{left.location}\nactual:\n#{right.inspect}\n#{right.location}"
+          return "expected:\n#{left.inspect}\n#{left.location.inspect}\nactual:\n#{right.inspect}\n#{right.location.inspect}"
         end
 
         if left.type == :str && left.children[0] != right.children[0]
@@ -184,8 +164,6 @@ module Prism
             actual_token[0] = expected_token[0] if %i[kDO_BLOCK kDO_LAMBDA].include?(expected_token[0])
           when :tLPAREN
             actual_token[0] = expected_token[0] if expected_token[0] == :tLPAREN2
-          when :tLCURLY
-            actual_token[0] = expected_token[0] if %i[tLBRACE tLBRACE_ARG].include?(expected_token[0])
           when :tPOW
             actual_token[0] = expected_token[0] if expected_token[0] == :tDSTAR
           end

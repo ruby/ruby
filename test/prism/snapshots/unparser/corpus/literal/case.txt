@@ -19,6 +19,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (3,2)-(3,5))
         │   │   │       └── body: (length: 1)
@@ -45,6 +46,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,2)-(5,5))
         │   │           └── body: (length: 1)
@@ -87,6 +89,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements: ∅
         │   │   └── @ WhenNode (location: (9,0)-(10,5))
         │   │       ├── keyword_loc: (9,0)-(9,4) = "when"
@@ -101,6 +104,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (10,2)-(10,5))
         │   │           └── body: (length: 1)
@@ -143,6 +147,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (14,2)-(14,5))
         │   │   │       └── body: (length: 1)
@@ -169,6 +174,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (16,2)-(16,5))
         │   │           └── body: (length: 1)
@@ -221,6 +227,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (20,2)-(20,8))
         │   │           └── body: (length: 1)
@@ -262,6 +269,7 @@
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (24,2)-(24,8))
         │   │           └── body: (length: 1)
@@ -300,6 +308,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (28,2)-(28,5))
         │   │           └── body: (length: 1)
@@ -380,6 +389,7 @@
         │   │       │           │           └── block: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
@@ -429,6 +439,7 @@
             │       │           │           └── value: 1
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
+            │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (35,0)-(35,4) = "case"

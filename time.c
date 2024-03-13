@@ -1501,7 +1501,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
             localtime_with_gmtoff_zone(&now, &tm, &now_gmtoff, &zone);
             now_isdst = tm.tm_isdst;
             zone = rb_fstring(zone);
-            rb_gc_register_mark_object(zone);
+            rb_vm_register_global_object(zone);
             now_zone = zone;
         }
         if (isdst_ret)
@@ -2346,7 +2346,7 @@ zone_timelocal(VALUE zone, VALUE time)
     struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
-    t = rb_time_unmagnify(tobj->timew);
+    split_second(tobj->timew, &t, &s);
     tm = tm_from_time(rb_cTimeTM, time);
     utc = rb_check_funcall(zone, id_local_to_utc, 1, &tm);
     if (UNDEF_P(utc)) return 0;
@@ -5773,9 +5773,9 @@ Init_Time(void)
     sym_zone = ID2SYM(rb_intern_const("zone"));
 
     str_utc = rb_fstring_lit("UTC");
-    rb_gc_register_mark_object(str_utc);
+    rb_vm_register_global_object(str_utc);
     str_empty = rb_fstring_lit("");
-    rb_gc_register_mark_object(str_empty);
+    rb_vm_register_global_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     VALUE scTime = rb_singleton_class(rb_cTime);

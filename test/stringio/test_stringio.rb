@@ -237,7 +237,7 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_write_integer_overflow
     f = StringIO.new
-    f.pos = RbConfig::LIMITS["LONG_MAX"]
+    f.pos = StringIO::MAX_LENGTH
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -899,8 +899,9 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    return if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
+    intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
+    return if intptr_max > StringIO::MAX_LENGTH
+    limit = intptr_max - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}

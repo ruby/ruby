@@ -69,7 +69,7 @@ class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "cat\n:   ", @to.res.join
+    assert_equal "cat\n:   \n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -79,7 +79,7 @@ class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "cat\n:   ", @to.res.join
+    assert_equal "cat\n:   \n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -319,9 +319,7 @@ words words words words
     expected = <<-EXPECTED
 *   l1
     *   l1.1
-
 *   l2
-
     EXPECTED
 
     assert_equal expected, @to.end_accepting
@@ -342,7 +340,6 @@ words words words words
           third
 
         * second
-
 
     EXPECTED
 

@@ -31,7 +31,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	# paciasp (it also acts as BTI landing pad, so no need to insert BTI also)
 	hint #25
 #elif defined(__ARM_FEATURE_BTI_DEFAULT) && (__ARM_FEATURE_BTI_DEFAULT != 0)
-	# For the the case PAC is not enabled but BTI is.
+	# For the case PAC is not enabled but BTI is.
 	# bti c
 	hint #34
 #endif

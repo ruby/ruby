@@ -754,7 +754,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                   case EPERM:
                     // the fd doesn't support epoll
                   case EEXIST:
-                    // the fd is already registerred by another thread
+                    // the fd is already registered by another thread
                     rb_native_mutex_unlock(&timer_th.waiting_lock);
                     return false;
                   default:

@@ -2723,7 +2723,7 @@ Init_Complex(void)
                     f_complex_new_bang2(rb_cComplex, ZERO, ONE));
 
 #if !USE_FLONUM
-    rb_gc_register_mark_object(RFLOAT_0 = DBL2NUM(0.0));
+    rb_vm_register_global_object(RFLOAT_0 = DBL2NUM(0.0));
 #endif
 
     rb_provide("complex.so");	/* for backward compatibility */

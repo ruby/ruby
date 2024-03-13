@@ -305,6 +305,25 @@ that also extends to two lines
     assert_equal expected, doc
   end
 
+  def test_parse_definition_list_rich_label
+    doc = parse <<-MD
+`one`
+:    This is a definition
+
+**two**
+:    This is another definition
+    MD
+
+    expected = doc(
+      list(:NOTE,
+        item(%w[<code>one</code>],
+          para("This is a definition")),
+        item(%w[*two*],
+          para("This is another definition"))))
+
+    assert_equal expected, doc
+  end
+
   def test_parse_definition_list_no
     @parser.definition_lists = false
 

@@ -1637,7 +1637,7 @@ get_eval_default_path(void)
 
     if (!eval_default_path) {
         eval_default_path = rb_fstring_lit("(eval)");
-        rb_gc_register_mark_object(eval_default_path);
+        rb_vm_register_global_object(eval_default_path);
     }
     return eval_default_path;
 }

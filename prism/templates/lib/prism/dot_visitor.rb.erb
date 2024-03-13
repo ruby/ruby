@@ -113,15 +113,15 @@ module Prism
 
       # <%= field.name %>
       <%- case field -%>
-      <%- when Prism::NodeField -%>
+      <%- when Prism::Template::NodeField -%>
       table.field("<%= field.name %>", port: true)
       digraph.edge("#{id}:<%= field.name %> -> #{node_id(node.<%= field.name %>)};")
-      <%- when Prism::OptionalNodeField -%>
+      <%- when Prism::Template::OptionalNodeField -%>
       unless (<%= field.name %> = node.<%= field.name %>).nil?
         table.field("<%= field.name %>", port: true)
         digraph.edge("#{id}:<%= field.name %> -> #{node_id(<%= field.name %>)};")
       end
-      <%- when Prism::NodeListField -%>
+      <%- when Prism::Template::NodeListField -%>
       if node.<%= field.name %>.any?
         table.field("<%= field.name %>", port: true)
 
@@ -133,15 +133,15 @@ module Prism
       else
         table.field("<%= field.name %>", "[]")
       end
-      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField, Prism::IntegerField, Prism::DoubleField -%>
+      <%- when Prism::Template::StringField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::ConstantListField, Prism::Template::IntegerField, Prism::Template::DoubleField -%>
       table.field("<%= field.name %>", node.<%= field.name %>.inspect)
-      <%- when Prism::LocationField -%>
+      <%- when Prism::Template::LocationField -%>
       table.field("<%= field.name %>", location_inspect(node.<%= field.name %>))
-      <%- when Prism::OptionalLocationField -%>
+      <%- when Prism::Template::OptionalLocationField -%>
       unless (<%= field.name %> = node.<%= field.name %>).nil?
         table.field("<%= field.name %>", location_inspect(<%= field.name %>))
       end
-      <%- when Prism::FlagsField -%>
+      <%- when Prism::Template::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag } -%>
       table.field("<%= field.name %>", <%= flag.human %>_inspect(node))
       <%- else -%>

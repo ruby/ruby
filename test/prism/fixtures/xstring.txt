@@ -2,6 +2,12 @@
 
 `foo #{bar} baz`
 
-`f\oo`
-
 `foo`
+
+%x{
+  foo
+}
+
+``
+
+%x{}

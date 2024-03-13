@@ -72,11 +72,11 @@ Init_var_tables(void)
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
-    rb_gc_register_mark_object(autoload_mutex);
+    rb_vm_register_global_object(autoload_mutex);
 
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
-    rb_gc_register_mark_object(autoload_features);
+    rb_vm_register_global_object(autoload_features);
 }
 
 static inline bool
@@ -1442,7 +1442,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
             if (old_ivtbl) {
                 /* We need to modify old_ivtbl to have the too complex shape
                  * and hold the table because the xmalloc could trigger a GC
-                 * compaction. We want the table to be updated rather than than
+                 * compaction. We want the table to be updated rather than
                  * the original ivptr. */
 #if SHAPE_IN_BASIC_FLAGS
                 rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
@@ -1826,7 +1826,7 @@ void rb_obj_freeze_inline(VALUE x)
         }
         rb_shape_set_shape(x, next_shape);
 
-        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+        if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
         }
     }
@@ -1929,6 +1929,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
+      case SHAPE_T_OBJECT:
         return false;
       case SHAPE_IVAR:
         ASSUME(callback);
@@ -1962,7 +1963,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         }
         return false;
       case SHAPE_FROZEN:
-      case SHAPE_T_OBJECT:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
       default:
@@ -3189,6 +3189,19 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
+
+            if (UNDEF_P(ce->value)) { // autoload
+                VALUE autoload_const_value = autoload_data(klass, id);
+                if (RTEST(autoload_const_value)) {
+                    struct autoload_const *autoload_const;
+                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+
+                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
+                    }
+                }
+            }
+
             if (NIL_P(ce->file)) return rb_ary_new();
             return rb_assoc_new(ce->file, INT2NUM(ce->line));
         }
@@ -3701,7 +3714,9 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     if (!rb_is_const_id(id)) {
         rb_warn("rb_define_const: invalid name '%s' for constant", name);
     }
-    rb_gc_register_mark_object(val);
+    if (!RB_SPECIAL_CONST_P(val)) {
+        rb_vm_register_global_object(val);
+    }
     rb_const_set(klass, id, val);
 }
 
@@ -3855,7 +3870,7 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 static VALUE
 cvar_front_klass(VALUE klass)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
         if (rb_namespace_p(obj)) {
             return obj;
@@ -4064,7 +4079,7 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
-    if (FL_TEST(mod, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(mod)) {
         if (rb_namespace_p(RCLASS_ATTACHED_OBJECT(mod))) {
             data = mod_cvar_at(tmp, data);
             tmp = cvar_front_klass(tmp);

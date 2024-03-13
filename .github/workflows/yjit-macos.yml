@@ -29,7 +29,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -69,7 +71,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -89,6 +93,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
@@ -108,9 +114,20 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          test-opts: ${{ matrix.configure }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
+
       - name: make ${{ matrix.test_task }}
-        run: |
+        run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'

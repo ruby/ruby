@@ -1264,5 +1264,5 @@ rb_yjit_init_gc_hooks(void)
 {
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
-    rb_gc_register_mark_object(yjit_root);
+    rb_vm_register_global_object(yjit_root);
 }

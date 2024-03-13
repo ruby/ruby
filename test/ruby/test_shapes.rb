@@ -786,7 +786,7 @@ class TestShapes < Test::Unit::TestCase
   def test_remove_instance_variable_capacity_transition
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      t_object_shape = RubyVM::Shape.find_by_id(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT])
+      t_object_shape = RubyVM::Shape.find_by_id(RubyVM::Shape::FIRST_T_OBJECT_SHAPE_ID)
       assert_equal(RubyVM::Shape::SHAPE_T_OBJECT, t_object_shape.type)
 
       initial_capacity = t_object_shape.capacity
@@ -889,7 +889,7 @@ class TestShapes < Test::Unit::TestCase
     obj = TestObject.new
     shape = RubyVM::Shape.of(obj)
     assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
-    assert_shape_equal(RubyVM::Shape.root_shape, shape.parent)
+    assert_nil shape.parent
   end
 
   def test_str_has_root_shape
@@ -922,9 +922,8 @@ class TestShapes < Test::Unit::TestCase
 
     shape = shape.parent
     assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
+    assert_nil shape.parent
 
-    shape = shape.parent
-    assert_equal(RubyVM::Shape.root_shape.id, shape.id)
     assert_equal(1, obj.instance_variable_get(:@a))
   end
 

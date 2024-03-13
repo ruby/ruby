@@ -1102,7 +1102,7 @@ main()
 		])
 		AC_CHECK_PROGS(dsymutil, $dsymutils dsymutil)
 		AS_IF([test -n "$codesign"], [
-		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@; }${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' \$@; }${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
@@ -1110,7 +1110,7 @@ main()
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
-		cleanlibs='$(TARGET_SO).dSYM'
+		cleanlibs='$(TARGET_SO:=.dSYM)'
 		],
 [solaris*], [	LIBS="-lm $LIBS"
 		ac_cv_func_vfork=no

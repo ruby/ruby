@@ -496,7 +496,7 @@ rb_struct_define(const char *name, ...)
     }
     else {
         st = new_struct(rb_str_new2(name), rb_cStruct);
-        rb_vm_add_root_module(st);
+        rb_vm_register_global_object(st);
     }
     return setup_struct(st, ary);
 }
@@ -1705,7 +1705,7 @@ rb_data_define(VALUE super, ...)
     va_end(ar);
     if (!super) super = rb_cData;
     VALUE klass = setup_data(anonymous_struct(super), ary);
-    rb_vm_add_root_module(klass);
+    rb_vm_register_global_object(klass);
     return klass;
 }
 

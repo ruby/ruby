@@ -151,7 +151,7 @@ typedef struct pm_node {
  * <%= node.name %>
  *
  * Type: <%= node.type %>
-<%- if (node_flags = node.fields.find { |field| field.is_a? Prism::FlagsField }) -%>
+<%- if (node_flags = node.fields.find { |field| field.is_a? Prism::Template::FlagsField }) -%>
  * Flags:
 <%- found = flags.find { |flag| flag.name == node_flags.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
 <%- found.values.each do |value| -%>
@@ -164,7 +164,7 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
-<%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
+<%- node.fields.grep_v(Prism::Template::FlagsField).each do |field| -%>
 
     /**
      * <%= node.name %>#<%= field.name %>
@@ -176,16 +176,16 @@ typedef struct pm_<%= node.human %> {
     <%- end -%>
      */
     <%= case field
-    when Prism::NodeField, Prism::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
-    when Prism::NodeListField then "struct pm_node_list #{field.name}"
-    when Prism::ConstantField, Prism::OptionalConstantField then "pm_constant_id_t #{field.name}"
-    when Prism::ConstantListField then "pm_constant_id_list_t #{field.name}"
-    when Prism::StringField then "pm_string_t #{field.name}"
-    when Prism::LocationField, Prism::OptionalLocationField then "pm_location_t #{field.name}"
-    when Prism::UInt8Field then "uint8_t #{field.name}"
-    when Prism::UInt32Field then "uint32_t #{field.name}"
-    when Prism::IntegerField then "pm_integer_t #{field.name}"
-    when Prism::DoubleField then "double #{field.name}"
+    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
+    when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
+    when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Prism::Template::StringField then "pm_string_t #{field.name}"
+    when Prism::Template::LocationField, Prism::Template::OptionalLocationField then "pm_location_t #{field.name}"
+    when Prism::Template::UInt8Field then "uint8_t #{field.name}"
+    when Prism::Template::UInt32Field then "uint32_t #{field.name}"
+    when Prism::Template::IntegerField then "pm_integer_t #{field.name}"
+    when Prism::Template::DoubleField then "double #{field.name}"
     else raise field.class.name
     end
     %>;
@@ -212,6 +212,6 @@ typedef enum pm_<%= flag.human %> {
  * to specify that through the environment. It will never be true except for in
  * those build systems.
  */
-#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS %>
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS %>
 
 #endif

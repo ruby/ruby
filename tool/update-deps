@@ -152,6 +152,8 @@ FILES_NEED_VPATH = %w[
 
   prism/api_node.c
   prism/ast.h
+  prism/diagnostic.c
+  prism/diagnostic.h
   prism/node.c
   prism/prettyprint.c
   prism/serialize.c

@@ -533,7 +533,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
-    if (check && FL_TEST(klass, FL_SINGLETON)) {
+    if (check && RCLASS_SINGLETON_P(klass)) {
         VALUE origin = RCLASS_ORIGIN(klass);
         if (SINGLETON_DUMP_UNABLE_P(klass) ||
             (origin != klass && SINGLETON_DUMP_UNABLE_P(origin))) {
@@ -2538,7 +2538,7 @@ compat_allocator_table(void)
 #define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
         Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
-    rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
+    rb_vm_register_global_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }
 

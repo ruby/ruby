@@ -69,7 +69,7 @@ rb_node_buffer_new(void)
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size), ruby_xmalloc);
     nb->local_tables = 0;
-    nb->tokens = Qnil;
+    nb->tokens = 0;
 #ifdef UNIVERSAL_PARSER
     nb->config = config;
 #endif
@@ -177,6 +177,24 @@ parser_string_free(rb_ast_t *ast, rb_parser_string_t *str)
 }
 
 static void
+parser_ast_token_free(rb_ast_t *ast, rb_parser_ast_token_t *token)
+{
+    if (!token) return;
+    parser_string_free(ast, token->str);
+    xfree(token);
+}
+
+static void
+parser_tokens_free(rb_ast_t *ast, rb_parser_ary_t *tokens)
+{
+    for (long i = 0; i < tokens->len; i++) {
+        parser_ast_token_free(ast, tokens->data[i]);
+    }
+    xfree(tokens->data);
+    xfree(tokens);
+}
+
+static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
@@ -228,6 +246,9 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
 {
+    if (ast->node_buffer && ast->node_buffer->tokens) {
+        parser_tokens_free(ast, ast->node_buffer->tokens);
+    }
     iterate_node_values(ast, &nb->unmarkable, free_ast_value, NULL);
     node_buffer_list_free(ast, &nb->unmarkable);
     node_buffer_list_free(ast, &nb->markable);
@@ -388,8 +409,6 @@ void
 rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating)
 {
     if (ast->node_buffer) {
-        rb_gc_mark_and_move(&ast->node_buffer->tokens);
-
         node_buffer_t *nb = ast->node_buffer;
         iterate_node_values(ast, &nb->markable, mark_and_move_ast_value, NULL);
 
@@ -436,18 +455,6 @@ void
 rb_ast_dispose(rb_ast_t *ast)
 {
     rb_ast_free(ast);
-}
-
-VALUE
-rb_ast_tokens(rb_ast_t *ast)
-{
-    return ast->node_buffer->tokens;
-}
-
-void
-rb_ast_set_tokens(rb_ast_t *ast, VALUE tokens)
-{
-    RB_OBJ_WRITE(ast, &ast->node_buffer->tokens, tokens);
 }
 
 VALUE

@@ -125,16 +125,31 @@ static VALUE
 parse_integer(const pm_integer_node_t *node)
 {
     const pm_integer_t *integer = &node->value;
+    VALUE result;
 
-    VALUE result = UINT2NUM(integer->head.value);
-    size_t shift = 0;
+    if (integer->values == NULL) {
+        result = UINT2NUM(integer->value);
+    } else {
+        VALUE string = rb_str_new(NULL, integer->length * 8);
+        unsigned char *bytes = (unsigned char *) RSTRING_PTR(string);
 
-    for (pm_integer_word_t *node = integer->head.next; node != NULL; node = node->next) {
-        VALUE receiver = rb_funcall(UINT2NUM(node->value), rb_intern("<<"), 1, ULONG2NUM(++shift * 32));
-        result = rb_funcall(receiver, rb_intern("|"), 1, result);
+        size_t offset = integer->length * 8;
+        for (size_t value_index = 0; value_index < integer->length; value_index++) {
+            uint32_t value = integer->values[value_index];
+
+            for (int index = 0; index < 8; index++) {
+                int byte = (value >> (4 * index)) & 0xf;
+                bytes[--offset] = byte < 10 ? byte + '0' : byte - 10 + 'a';
+            }
+        }
+
+        result = rb_funcall(string, rb_intern("to_i"), 1, UINT2NUM(16));
     }
 
-    if (integer->negative) result = rb_funcall(result, rb_intern("-@"), 0);
+    if (integer->negative) {
+        result = rb_funcall(result, rb_intern("-@"), 0);
+    }
+
     return result;
 }
 
@@ -2292,7 +2307,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         break;
       }
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
-        // Local variables can be targetted by placing identifiers in the place
+        // Local variables can be targeted by placing identifiers in the place
         // of a pattern. For example, foo in bar. This results in the value
         // being matched being written to that local variable.
         pm_local_variable_target_node_t *cast = (pm_local_variable_target_node_t *) node;
@@ -2343,6 +2358,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         CHECK(pm_compile_pattern(iseq, scope_node, cast->right, ret, matched_label, unmatched_label, in_single_pattern, true, true, base_index));
         break;
       }
+      case PM_PARENTHESES_NODE:
+        // Parentheses are allowed to wrap expressions in pattern matching and
+        // they do nothing since they can only wrap individual expressions and
+        // not groups. In this case we'll recurse back into this same function
+        // with the body of the parentheses.
+        return pm_compile_pattern(iseq, scope_node, ((pm_parentheses_node_t *) node)->body, ret, matched_label, unmatched_label, in_single_pattern, in_alternation_pattern, use_deconstructed_cache, base_index);
       case PM_PINNED_EXPRESSION_NODE:
         // Pinned expressions are a way to match against the value of an
         // expression that should be evaluated at runtime. This looks like:
@@ -8085,7 +8106,7 @@ pm_parse_result_free(pm_parse_result_t *result)
  * as well.
  */
 static bool
-pm_parse_input_error_utf8_p(const pm_parser_t *parser, const pm_location_t *location)
+pm_parse_process_error_utf8_p(const pm_parser_t *parser, const pm_location_t *location)
 {
     const size_t start_line = pm_newline_list_line_column(&parser->newline_list, location->start, 1).line;
     const size_t end_line = pm_newline_list_line_column(&parser->newline_list, location->end, 1).line;
@@ -8107,7 +8128,7 @@ pm_parse_input_error_utf8_p(const pm_parser_t *parser, const pm_location_t *loca
  * information as possible about the errors that were encountered.
  */
 static VALUE
-pm_parse_input_error(const pm_parse_result_t *result)
+pm_parse_process_error(const pm_parse_result_t *result)
 {
     const pm_diagnostic_t *head = (const pm_diagnostic_t *) result->parser.error_list.head;
     bool valid_utf8 = true;
@@ -8125,7 +8146,7 @@ pm_parse_input_error(const pm_parse_result_t *result)
         // contain invalid byte sequences. So if any source examples include
         // invalid UTF-8 byte sequences, we will skip showing source examples
         // entirely.
-        if (valid_utf8 && !pm_parse_input_error_utf8_p(&result->parser, &error->location)) {
+        if (valid_utf8 && !pm_parse_process_error_utf8_p(&result->parser, &error->location)) {
             valid_utf8 = false;
         }
     }
@@ -8157,19 +8178,18 @@ pm_parse_input_error(const pm_parse_result_t *result)
  * result object is zeroed out.
  */
 static VALUE
-pm_parse_input(pm_parse_result_t *result, VALUE filepath)
+pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
 {
-    // Set up the parser and parse the input.
-    pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
-    RB_GC_GUARD(filepath);
-
     pm_parser_t *parser = &result->parser;
-    pm_parser_init(parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
-    const pm_node_t *node = pm_parse(parser);
+
+    // First, set up the scope node so that the AST node is attached and can be
+    // freed regardless of whether or we return an error.
+    pm_scope_node_t *scope_node = &result->node;
+    pm_scope_node_init(node, scope_node, NULL);
 
     // If there are errors, raise an appropriate error and free the result.
-    if (result->parser.error_list.size > 0) {
-        VALUE error = pm_parse_input_error(result);
+    if (parser->error_list.size > 0) {
+        VALUE error = pm_parse_process_error(result);
 
         // TODO: We need to set the backtrace.
         // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
@@ -8193,9 +8213,6 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
-    pm_scope_node_t *scope_node = &result->node;
-    pm_scope_node_init(node, scope_node, NULL);
-
     scope_node->encoding = rb_enc_find(parser->encoding->name);
     if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
 
@@ -8285,7 +8302,13 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath)
 VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
-    VALUE error = pm_parse_input(result, filepath);
+    pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
+    RB_GC_GUARD(filepath);
+
+    pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
+    pm_node_t *node = pm_parse(&result->parser);
+
+    VALUE error = pm_parse_process(result, node);
 
     // If we're parsing a filepath, then we need to potentially support the
     // SCRIPT_LINES__ constant, which can be a hash that has an array of lines
@@ -8320,9 +8343,9 @@ pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
 
 /**
  * Parse the given source that corresponds to the given filepath and store the
- * resulting scope node in the given parse result struct. This function could
- * potentially raise a Ruby error. It is assumed that the parse result object is
- * zeroed out.
+ * resulting scope node in the given parse result struct. It is assumed that the
+ * parse result object is zeroed out. If the string fails to parse, then a Ruby
+ * error is returned.
  */
 VALUE
 pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
@@ -8332,7 +8355,54 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
     rb_encoding *encoding = rb_enc_get(source);
     pm_options_encoding_set(&result->options, rb_enc_name(encoding));
 
-    return pm_parse_input(result, filepath);
+    pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
+    RB_GC_GUARD(filepath);
+
+    pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
+    pm_node_t *node = pm_parse(&result->parser);
+
+    return pm_parse_process(result, node);
+}
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects.
+ */
+static char *
+pm_parse_stdin_fgets(char *string, int size, void *stream)
+{
+    RUBY_ASSERT(size > 0);
+
+    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    if (NIL_P(line)) {
+        return NULL;
+    }
+
+    const char *cstr = StringValueCStr(line);
+    size_t length = strlen(cstr);
+
+    memcpy(string, cstr, length);
+    string[length] = '\0';
+
+    return string;
+}
+
+/**
+ * Parse the source off STDIN and store the resulting scope node in the given
+ * parse result struct. It is assumed that the parse result object is zeroed
+ * out. If the stream fails to parse, then a Ruby error is returned.
+ */
+VALUE
+pm_parse_stdin(pm_parse_result_t *result)
+{
+    pm_buffer_t buffer;
+    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) rb_stdin, pm_parse_stdin_fgets, &result->options);
+
+    // Copy the allocated buffer contents into the input string so that it gets
+    // freed. At this point we've handed over ownership, so we don't need to
+    // free the buffer itself.
+    pm_string_owned_init(&result->input, (uint8_t *) pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+
+    return pm_parse_process(result, node);
 }
 
 #undef NEW_ISEQ

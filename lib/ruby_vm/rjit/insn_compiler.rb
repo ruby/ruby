@@ -3736,7 +3736,7 @@ module RubyVM::RJIT
 
           ctx.upgrade_opnd_type(insn_opnd, Type::Flonum)
         end
-      elsif C.FL_TEST(known_klass, C::RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
+      elsif C.RCLASS_SINGLETON_P(known_klass) && comptime_obj == C.rb_class_attached_object(known_klass)
         # Singleton classes are attached to one specific object, so we can
         # avoid one memory access (and potentially the is_heap check) by
         # looking for the expected object directly.

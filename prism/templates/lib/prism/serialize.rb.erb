@@ -1,15 +1,5 @@
 require "stringio"
-
-# Polyfill for String#unpack1 with the offset parameter.
-if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset }
-  String.prepend(
-    Module.new {
-      def unpack1(format, offset: 0) # :nodoc:
-        offset == 0 ? super(format) : self[offset..].unpack1(format)
-      end
-    }
-  )
-end
+require "prism/polyfill/string"
 
 module Prism
   # A module responsible for deserializing parse results.
@@ -44,6 +34,37 @@ module Prism
     end
 
     class Loader # :nodoc:
+      if RUBY_ENGINE == "truffleruby"
+        # StringIO is synchronized and that adds a high overhead on TruffleRuby.
+        class FastStringIO # :nodoc:
+          attr_accessor :pos
+
+          def initialize(string)
+            @string = string
+            @pos = 0
+          end
+
+          def getbyte
+            byte = @string.getbyte(@pos)
+            @pos += 1
+            byte
+          end
+
+          def read(n)
+            slice = @string.byteslice(@pos, n)
+            @pos += n
+            slice
+          end
+
+          def eof?
+            @pos >= @string.bytesize
+          end
+        end
+      else
+        FastStringIO = ::StringIO
+      end
+      private_constant :FastStringIO
+
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
       attr_reader :start_line
@@ -52,9 +73,9 @@ module Prism
         @encoding = Encoding::UTF_8
 
         @input = source.source.dup
+        raise unless serialized.encoding == Encoding::BINARY
         @serialized = serialized
-        @io = StringIO.new(serialized)
-        @io.set_encoding(Encoding::BINARY)
+        @io = FastStringIO.new(serialized)
 
         @constant_pool_offset = nil
         @constant_pool = nil
@@ -66,7 +87,7 @@ module Prism
       def load_header
         raise "Invalid serialization" if io.read(5) != "PRISM"
         raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
-        only_semantic_fields = io.read(1).unpack1("C")
+        only_semantic_fields = io.getbyte
         unless only_semantic_fields == 0
           raise "Invalid serialization (location fields must be included but are not)"
         end
@@ -95,12 +116,23 @@ module Prism
         end
       end
 
+      DIAGNOSTIC_TYPES = [
+        <%- errors.each do |error| -%>
+        <%= error.name.downcase.to_sym.inspect %>,
+        <%- end -%>
+        <%- warnings.each do |warning| -%>
+        <%= warning.name.downcase.to_sym.inspect %>,
+        <%- end -%>
+      ].freeze
+
+      private_constant :DIAGNOSTIC_TYPES
+
       def load_metadata
         comments = load_comments
         magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
         data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location_object, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -137,7 +169,7 @@ module Prism
 
         comments, magic_comments, data_loc, errors, warnings = load_metadata
 
-        @constant_pool_offset = io.read(4).unpack1("L")
+        @constant_pool_offset = load_uint32
         @constant_pool = Array.new(load_varuint, nil)
 
         [load_node, comments, magic_comments, data_loc, errors, warnings]
@@ -186,7 +218,7 @@ module Prism
         io.read(8).unpack1("D")
       end
 
-      def load_serialized_length
+      def load_uint32
         io.read(4).unpack1("L")
       end
 
@@ -234,14 +266,14 @@ module Prism
 
         unless constant
           offset = constant_pool_offset + index * 8
-          start = serialized.unpack1("L", offset: offset)
-          length = serialized.unpack1("L", offset: offset + 4)
+          start = @serialized.unpack1("L", offset: offset)
+          length = @serialized.unpack1("L", offset: offset + 4)
 
           constant =
             if start.nobits?(1 << 31)
               input.byteslice(start, length).force_encoding(@encoding).to_sym
             else
-              serialized.byteslice(start & ((1 << 31) - 1), length).force_encoding(@encoding).to_sym
+              @serialized.byteslice(start & ((1 << 31) - 1), length).force_encoding(@encoding).to_sym
             end
 
           constant_pool[index] = constant
@@ -294,24 +326,24 @@ module Prism
           <%- nodes.each_with_index do |node, index| -%>
           when <%= index + 1 %> then
             <%- if node.needs_serialized_length? -%>
-            load_serialized_length
+            load_uint32
             <%- end -%>
             <%= node.name %>.new(
               source, <%= (node.fields.map { |field|
               case field
-              when Prism::NodeField then "load_node"
-              when Prism::OptionalNodeField then "load_optional_node"
-              when Prism::StringField then "load_string"
-              when Prism::NodeListField then "Array.new(load_varuint) { load_node }"
-              when Prism::ConstantField then "load_required_constant"
-              when Prism::OptionalConstantField then "load_optional_constant"
-              when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
-              when Prism::LocationField then "load_location"
-              when Prism::OptionalLocationField then "load_optional_location"
-              when Prism::UInt8Field then "io.getbyte"
-              when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
-              when Prism::IntegerField then "load_integer"
-              when Prism::DoubleField then "load_double"
+              when Prism::Template::NodeField then "load_node"
+              when Prism::Template::OptionalNodeField then "load_optional_node"
+              when Prism::Template::StringField then "load_string"
+              when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node }"
+              when Prism::Template::ConstantField then "load_required_constant"
+              when Prism::Template::OptionalConstantField then "load_optional_constant"
+              when Prism::Template::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
+              when Prism::Template::LocationField then "load_location"
+              when Prism::Template::OptionalLocationField then "load_optional_location"
+              when Prism::Template::UInt8Field then "io.getbyte"
+              when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+              when Prism::Template::IntegerField then "load_integer"
+              when Prism::Template::DoubleField then "load_double"
               else raise
               end
             } + ["location"]).join(", ") -%>)
@@ -331,24 +363,24 @@ module Prism
             -> {
               location = load_location
               <%- if node.needs_serialized_length? -%>
-              load_serialized_length
+              load_uint32
               <%- end -%>
               <%= node.name %>.new(
                 source, <%= (node.fields.map { |field|
                 case field
-                when Prism::NodeField then "load_node"
-                when Prism::OptionalNodeField then "load_optional_node"
-                when Prism::StringField then "load_string"
-                when Prism::NodeListField then "Array.new(load_varuint) { load_node }"
-                when Prism::ConstantField then "load_required_constant"
-                when Prism::OptionalConstantField then "load_optional_constant"
-                when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
-                when Prism::LocationField then "load_location"
-                when Prism::OptionalLocationField then "load_optional_location"
-                when Prism::UInt8Field then "io.getbyte"
-                when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
-                when Prism::IntegerField then "load_integer"
-                when Prism::DoubleField then "load_double"
+                when Prism::Template::NodeField then "load_node"
+                when Prism::Template::OptionalNodeField then "load_optional_node"
+                when Prism::Template::StringField then "load_string"
+                when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node }"
+                when Prism::Template::ConstantField then "load_required_constant"
+                when Prism::Template::OptionalConstantField then "load_optional_constant"
+                when Prism::Template::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
+                when Prism::Template::LocationField then "load_location"
+                when Prism::Template::OptionalLocationField then "load_optional_location"
+                when Prism::Template::UInt8Field then "io.getbyte"
+                when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+                when Prism::Template::IntegerField then "load_integer"
+                when Prism::Template::DoubleField then "load_double"
                 else raise
                 end
               } + ["location"]).join(", ") -%>)

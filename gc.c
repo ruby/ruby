@@ -2665,6 +2665,44 @@ rb_gc_size_allocatable_p(size_t size)
     return size <= size_pool_slot_size(SIZE_POOL_COUNT - 1);
 }
 
+static size_t size_pool_sizes[SIZE_POOL_COUNT + 1] = { 0 };
+
+size_t *
+rb_gc_size_pool_sizes(void)
+{
+    if (size_pool_sizes[0] == 0) {
+        for (unsigned char i = 0; i < SIZE_POOL_COUNT; i++) {
+            size_pool_sizes[i] = rb_size_pool_slot_size(i);
+        }
+    }
+
+    return size_pool_sizes;
+}
+
+size_t
+rb_gc_size_pool_id_for_size(size_t size)
+{
+    size += RVALUE_OVERHEAD;
+
+    size_t slot_count = CEILDIV(size, BASE_SLOT_SIZE);
+
+    /* size_pool_idx is ceil(log2(slot_count)) */
+    size_t size_pool_idx = 64 - nlz_int64(slot_count - 1);
+
+    if (size_pool_idx >= SIZE_POOL_COUNT) {
+        rb_bug("rb_gc_size_pool_id_for_size: allocation size too large "
+               "(size=%"PRIuSIZE"u, size_pool_idx=%"PRIuSIZE"u)", size, size_pool_idx);
+    }
+
+#if RGENGC_CHECK_MODE
+    rb_objspace_t *objspace = &rb_objspace;
+    GC_ASSERT(size <= (size_t)size_pools[size_pool_idx].slot_size);
+    if (size_pool_idx > 0) GC_ASSERT(size > (size_t)size_pools[size_pool_idx - 1].slot_size);
+#endif
+
+    return size_pool_idx;
+}
+
 static inline VALUE
 ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache,
                            size_t size_pool_idx)
@@ -2752,30 +2790,6 @@ newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
     p->as.values.v2 = v2;
     p->as.values.v3 = v3;
     return obj;
-}
-
-static inline size_t
-size_pool_idx_for_size(size_t size)
-{
-    size += RVALUE_OVERHEAD;
-
-    size_t slot_count = CEILDIV(size, BASE_SLOT_SIZE);
-
-    /* size_pool_idx is ceil(log2(slot_count)) */
-    size_t size_pool_idx = 64 - nlz_int64(slot_count - 1);
-
-    if (size_pool_idx >= SIZE_POOL_COUNT) {
-        rb_bug("size_pool_idx_for_size: allocation size too large "
-               "(size=%"PRIuSIZE"u, size_pool_idx=%"PRIuSIZE"u)", size, size_pool_idx);
-    }
-
-#if RGENGC_CHECK_MODE
-    rb_objspace_t *objspace = &rb_objspace;
-    GC_ASSERT(size <= (size_t)size_pools[size_pool_idx].slot_size);
-    if (size_pool_idx > 0) GC_ASSERT(size > (size_t)size_pools[size_pool_idx - 1].slot_size);
-#endif
-
-    return size_pool_idx;
 }
 
 static VALUE
@@ -2902,11 +2916,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
         }
     }
 
-    size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
-
-    if (SHAPE_IN_BASIC_FLAGS || (flags & RUBY_T_MASK) == T_OBJECT) {
-        flags |= (VALUE)size_pool_idx << SHAPE_FLAG_SHIFT;
-    }
+    size_t size_pool_idx = rb_gc_size_pool_id_for_size(alloc_size);
 
     rb_ractor_newobj_cache_t *cache = &cr->newobj_cache;
 
@@ -3763,7 +3773,7 @@ internal_object_p(VALUE obj)
             break;
           case T_CLASS:
             if (!p->as.basic.klass) break;
-            if (FL_TEST(obj, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(obj)) {
                 return rb_singleton_class_internal_p(obj);
             }
             return 0;
@@ -8086,7 +8096,7 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
     }
 
     if (rb_gc_size_allocatable_p(obj_size)){
-        idx = size_pool_idx_for_size(obj_size);
+        idx = rb_gc_size_pool_id_for_size(obj_size);
     }
     return &size_pools[idx];
 }
@@ -8109,7 +8119,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
     if (RB_TYPE_P(src, T_OBJECT)) {
         orig_shape = rb_shape_get_shape(src);
         if (dheap != heap && !rb_shape_obj_too_complex(src)) {
-            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + SIZE_POOL_COUNT));
+            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + FIRST_T_OBJECT_SHAPE_ID));
             new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
 
             if (!new_shape) {
@@ -8692,25 +8702,9 @@ rb_gc_writebarrier_remember(VALUE obj)
 void
 rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
-    if (RVALUE_WB_UNPROTECTED(obj) && !RVALUE_WB_UNPROTECTED(dest)) {
-        if (!RVALUE_OLD_P(dest)) {
-            MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(dest), dest);
-            RVALUE_AGE_RESET(dest);
-        }
-        else {
-            RVALUE_DEMOTE(objspace, dest);
-        }
+    if (RVALUE_WB_UNPROTECTED(obj)) {
+        rb_gc_writebarrier_unprotect(dest);
     }
-
-    check_rvalue_consistency(dest);
-}
-
-VALUE
-rb_obj_rgengc_promoted_p(VALUE obj)
-{
-    return RBOOL(OBJ_PROMOTED(obj));
 }
 
 size_t
@@ -8767,29 +8761,13 @@ rb_gc_force_recycle(VALUE obj)
     /* no-op */
 }
 
-#ifndef MARK_OBJECT_ARY_BUCKET_SIZE
-#define MARK_OBJECT_ARY_BUCKET_SIZE 1024
-#endif
-
 void
 rb_gc_register_mark_object(VALUE obj)
 {
     if (!is_pointer_to_heap(&rb_objspace, (void *)obj))
         return;
 
-    RB_VM_LOCK_ENTER();
-    {
-        VALUE ary_ary = GET_VM()->mark_object_ary;
-        VALUE ary = rb_ary_last(0, 0, ary_ary);
-
-        if (NIL_P(ary) || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
-            ary = rb_ary_hidden_new(MARK_OBJECT_ARY_BUCKET_SIZE);
-            rb_ary_push(ary_ary, ary);
-        }
-
-        rb_ary_push(ary, obj);
-    }
-    RB_VM_LOCK_LEAVE();
+    rb_vm_register_global_object(obj);
 }
 
 void

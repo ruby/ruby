@@ -2516,6 +2516,7 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
         mfile.puts dest
         mfile.print "clean-so::\n"
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]} #{fseprepl[stamp]}\n"
+        mfile.print "\t-$(Q)$(RM_RF) #{fseprepl['$(CLEANLIBS)']}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
         mfile.print "#{f} #{stamp}\n"

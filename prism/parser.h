@@ -234,6 +234,9 @@ typedef struct pm_lex_mode {
              * a tilde heredoc.
              */
             size_t common_whitespace;
+
+            /** True if the previous token ended with a line continuation. */
+            bool line_continuation;
         } heredoc;
     } as;
 
@@ -706,6 +709,16 @@ struct pm_parser {
     /** The command line flags given from the options. */
     uint8_t command_line;
 
+    /**
+     * Whether or not we have found a frozen_string_literal magic comment with
+     * a true or false value.
+     * May be:
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
+     */
+    int8_t frozen_string_literal;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -735,10 +748,10 @@ struct pm_parser {
     bool semantic_token_seen;
 
     /**
-     * Whether or not we have found a frozen_string_literal magic comment with
-     * a true value.
+     * True if the current regular expression being lexed contains only ASCII
+     * characters.
      */
-    bool frozen_string_literal;
+    bool current_regular_expression_ascii_only;
 };
 
 #endif

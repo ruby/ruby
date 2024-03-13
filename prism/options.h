@@ -14,6 +14,22 @@
 #include <stdint.h>
 
 /**
+ * String literals should be made frozen.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED   ((int8_t) -1)
+
+/**
+ * String literals may be frozen or mutable depending on the implementation
+ * default.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET      ((int8_t)  0)
+
+/**
+ * String literals should be made mutable.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED    ((int8_t)  1)
+
+/**
  * A scope of locals surrounding the code that is being parsed.
  */
 typedef struct pm_options_scope {
@@ -51,6 +67,12 @@ typedef struct {
     int32_t line;
 
     /**
+     * The offset within the file that the parse starts on. This value is
+     * 0-indexed.
+     */
+    uint32_t offset;
+
+    /**
      * The name of the encoding that the source file is in. Note that this must
      * correspond to a name that can be found with Encoding.find in Ruby.
      */
@@ -79,8 +101,14 @@ typedef struct {
     /** A bitset of the various options that were set on the command line. */
     uint8_t command_line;
 
-    /** Whether or not the frozen string literal option has been set. */
-    bool frozen_string_literal;
+    /**
+    * Whether or not the frozen string literal option has been set.
+    * May be:
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
+    */
+    int8_t frozen_string_literal;
 } pm_options_t;
 
 /**
@@ -135,6 +163,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, cons
  * @param line The line to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t line);
+
+/**
+ * Set the offset option on the given options struct.
+ *
+ * @param options The options struct to set the offset on.
+ * @param offset The offset to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_offset_set(pm_options_t *options, uint32_t offset);
 
 /**
  * Set the encoding option on the given options struct.
@@ -231,6 +267,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `4`     | the length of the filepath |
  * | ...     | the filepath bytes         |
  * | `4`     | the line number            |
+ * | `4`     | the offset                 |
  * | `4`     | the length the encoding    |
  * | ...     | the encoding bytes         |
  * | `1`     | frozen string literal      |

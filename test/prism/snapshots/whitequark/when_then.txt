@@ -25,6 +25,7 @@
             │       │       ├── content_loc: (1,16)-(1,19) = "bar"
             │       │       ├── closing_loc: (1,19)-(1,20) = "'"
             │       │       └── unescaped: "bar"
+            │       ├── then_keyword_loc: (1,21)-(1,25) = "then"
             │       └── statements:
             │           @ StatementsNode (location: (1,26)-(1,29))
             │           └── body: (length: 1)

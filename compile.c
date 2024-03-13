@@ -11863,6 +11863,10 @@ ibf_load_id(const struct ibf_load *load, const ID id_index)
         return 0;
     }
     VALUE sym = ibf_load_object(load, id_index);
+    if (rb_integer_type_p(sym)) {
+        /* Load hidden local variables as indexes */
+        return NUM2ULONG(sym);
+    }
     return rb_sym2id(sym);
 }
 
@@ -12386,7 +12390,12 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     int i;
 
     for (i=0; i<size; i++) {
-        table[i] = ibf_dump_id(dump, body->local_table[i]);
+        VALUE v = ibf_dump_id(dump, body->local_table[i]);
+        if (v == 0) {
+            /* Dump hidden local variables as indexes, so load_from_binary will work with them */
+            v = ibf_dump_object(dump, ULONG2NUM(body->local_table[i]));
+        }
+        table[i] = v;
     }
 
     IBF_W_ALIGN(ID);

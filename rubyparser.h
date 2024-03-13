@@ -189,6 +189,22 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
+typedef struct rb_parser_ast_token {
+    int id;
+    const char *type_name;
+    rb_parser_string_t *str;
+    rb_code_location_t loc;
+} rb_parser_ast_token_t;
+
+/*
+ * Array-like object for parser
+ */
+typedef struct rb_parser_ary {
+    rb_parser_ast_token_t **data;
+    long len;  // current size
+    long capa; // capacity
+} rb_parser_ary_t;
+
 /* Header part of AST Node */
 typedef struct RNode {
     VALUE flags;
@@ -1340,6 +1356,10 @@ typedef struct rb_parser_config_struct {
     void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
+    int enc_coderange_broken;
+    int (*enc_mbminlen)(rb_encoding *enc);
+    bool (*enc_isascii)(OnigCodePoint c, rb_encoding *enc);
+    OnigCodePoint (*enc_mbc_to_codepoint)(const char *p, const char *e, rb_encoding *enc);
 
     /* Ractor */
     VALUE (*ractor_make_shareable)(VALUE obj);

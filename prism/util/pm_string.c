@@ -58,7 +58,7 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
  * `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
  * `mmap`, and on other POSIX systems we'll use `read`.
  */
-bool
+PRISM_EXPORTED_FUNCTION bool
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
@@ -144,6 +144,108 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 }
 
 /**
+ * Read the file indicated by the filepath parameter into source and load its
+ * contents and size into the given `pm_string_t`. The given `pm_string_t`
+ * should be freed using `pm_string_free` when it is no longer used.
+ */
+PRISM_EXPORTED_FUNCTION bool
+pm_string_file_init(pm_string_t *string, const char *filepath) {
+#ifdef _WIN32
+    // Open the file for reading.
+    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (file == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    // Get the file size.
+    DWORD file_size = GetFileSize(file, NULL);
+    if (file_size == INVALID_FILE_SIZE) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // If the file is empty, then we don't need to do anything else, we'll set
+    // the source to a constant empty string and return.
+    if (file_size == 0) {
+        CloseHandle(file);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    // Create a buffer to read the file into.
+    uint8_t *source = xmalloc(file_size);
+    if (source == NULL) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // Read the contents of the file
+    DWORD bytes_read;
+    if (!ReadFile(file, source, file_size, &bytes_read, NULL)) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // Check the number of bytes read
+    if (bytes_read != file_size) {
+        xfree(source);
+        CloseHandle(file);
+        return false;
+    }
+
+    CloseHandle(file);
+    *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = (size_t) file_size };
+    return true;
+#elif defined(_POSIX_MAPPED_FILES)
+    FILE *file = fopen(filepath, "rb");
+    if (file == NULL) {
+        return false;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+
+    if (file_size == -1) {
+        fclose(file);
+        return false;
+    }
+
+    if (file_size == 0) {
+        fclose(file);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    size_t length = (size_t) file_size;
+    uint8_t *source = xmalloc(length);
+    if (source == NULL) {
+        fclose(file);
+        return false;
+    }
+
+    fseek(file, 0, SEEK_SET);
+    size_t bytes_read = fread(source, length, 1, file);
+    fclose(file);
+
+    if (bytes_read != 1) {
+        xfree(source);
+        return false;
+    }
+
+    *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
+    return true;
+#else
+    (void) string;
+    (void) filepath;
+    perror("pm_string_file_init is not implemented for this platform");
+    return false;
+#endif
+}
+
+/**
  * Returns the memory size associated with the string.
  */
 size_t
@@ -166,7 +268,7 @@ pm_string_ensure_owned(pm_string_t *string) {
     size_t length = pm_string_length(string);
     const uint8_t *source = pm_string_source(string);
 
-    uint8_t *memory = malloc(length);
+    uint8_t *memory = xmalloc(length);
     if (!memory) return;
 
     pm_string_owned_init(string, memory, length);
@@ -217,7 +319,7 @@ pm_string_free(pm_string_t *string) {
     void *memory = (void *) string->source;
 
     if (string->type == PM_STRING_OWNED) {
-        free(memory);
+        xfree(memory);
 #ifdef PRISM_HAS_MMAP
     } else if (string->type == PM_STRING_MAPPED && string->length) {
 #if defined(_WIN32)

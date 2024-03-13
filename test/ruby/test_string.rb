@@ -9,9 +9,6 @@ class TestString < Test::Unit::TestCase
 
   def initialize(*args)
     @cls = String
-    @aref_re_nth = true
-    @aref_re_silent = false
-    @aref_slicebang_silent = true
     super
   end
 
@@ -153,14 +150,12 @@ CODE
     assert_equal(nil,      S("FooBar")[S("xyzzy")])
     assert_equal(nil,      S("FooBar")[S("plugh")])
 
-    if @aref_re_nth
-      assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 1])
-      assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 2])
-      assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, 3])
-      assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -1])
-      assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -2])
-      assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, -3])
-    end
+    assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 1])
+    assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 2])
+    assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, 3])
+    assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -1])
+    assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -2])
+    assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, -3])
 
     o = Object.new
     def o.to_int; 2; end
@@ -206,24 +201,18 @@ CODE
     assert_equal(S("BarBar"), s)
     s[/..r$/] = S("Foo")
     assert_equal(S("BarFoo"), s)
-    if @aref_re_silent
-      s[/xyzzy/] = S("None")
-      assert_equal(S("BarFoo"), s)
-    else
-      assert_raise(IndexError) { s[/xyzzy/] = S("None") }
-    end
-    if @aref_re_nth
-      s[/([A-Z]..)([A-Z]..)/, 1] = S("Foo")
-      assert_equal(S("FooFoo"), s)
-      s[/([A-Z]..)([A-Z]..)/, 2] = S("Bar")
-      assert_equal(S("FooBar"), s)
-      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
-      s[/([A-Z]..)([A-Z]..)/, -1] = S("Foo")
-      assert_equal(S("FooFoo"), s)
-      s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
-      assert_equal(S("BarFoo"), s)
-      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
-    end
+    assert_raise(IndexError) { s[/xyzzy/] = S("None") }
+
+    s[/([A-Z]..)([A-Z]..)/, 1] = S("Foo")
+    assert_equal(S("FooFoo"), s)
+    s[/([A-Z]..)([A-Z]..)/, 2] = S("Bar")
+    assert_equal(S("FooBar"), s)
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
+    s[/([A-Z]..)([A-Z]..)/, -1] = S("Foo")
+    assert_equal(S("FooFoo"), s)
+    s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
+    assert_equal(S("BarFoo"), s)
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")
@@ -1744,20 +1733,11 @@ CODE
     assert_equal(S("FooBa"), a)
 
     a = S("FooBar")
-    if @aref_slicebang_silent
-      assert_nil( a.slice!(6) )
-      assert_nil( a.slice!(6r) )
-    else
-      assert_raise(IndexError) { a.slice!(6) }
-      assert_raise(IndexError) { a.slice!(6r) }
-    end
+    assert_nil( a.slice!(6) )
+    assert_nil( a.slice!(6r) )
     assert_equal(S("FooBar"), a)
 
-    if @aref_slicebang_silent
-      assert_nil( a.slice!(-7) )
-    else
-      assert_raise(IndexError) { a.slice!(-7) }
-    end
+    assert_nil( a.slice!(-7) )
     assert_equal(S("FooBar"), a)
 
     a = S("FooBar")
@@ -1769,17 +1749,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
     assert_nil(a.slice!(7,2))      # Maybe should be six?
-    else
-    assert_raise(IndexError) {a.slice!(7,2)}     # Maybe should be six?
-    end
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
     assert_nil(a.slice!(-7,10))
-    else
-    assert_raise(IndexError) {a.slice!(-7,10)}
-    end
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")
@@ -1791,17 +1763,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
     assert_equal(S(""), a.slice!(6..2))
-    else
-    assert_raise(RangeError) {a.slice!(6..2)}
-    end
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
     assert_nil(a.slice!(-10..-7))
-    else
-    assert_raise(RangeError) {a.slice!(-10..-7)}
-    end
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")
@@ -1813,17 +1777,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
-      assert_nil(a.slice!(/xyzzy/))
-    else
-      assert_raise(IndexError) {a.slice!(/xyzzy/)}
-    end
+    assert_nil(a.slice!(/xyzzy/))
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
-      assert_nil(a.slice!(/plugh/))
-    else
-      assert_raise(IndexError) {a.slice!(/plugh/)}
-    end
+    assert_nil(a.slice!(/plugh/))
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")

@@ -53,12 +53,11 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
         case PM_INTEGER_NODE: {
             // Integers hash their value.
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            const uint32_t *value = &integer->head.value;
-
-            uint32_t hash = murmur_hash((const uint8_t *) value, sizeof(uint32_t));
-            for (const pm_integer_word_t *word = integer->head.next; word != NULL; word = word->next) {
-                value = &word->value;
-                hash ^= murmur_hash((const uint8_t *) value, sizeof(uint32_t));
+            uint32_t hash;
+            if (integer->values) {
+                hash = murmur_hash((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length);
+            } else {
+                hash = murmur_hash((const uint8_t *) &integer->value, sizeof(uint32_t));
             }
 
             if (integer->negative) {
@@ -135,7 +134,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
     if (hash->size * 2 >= hash->capacity) {
         // First, allocate space for the new node list.
         uint32_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
-        pm_node_t **new_nodes = calloc(new_capacity, sizeof(pm_node_t *));
+        pm_node_t **new_nodes = xcalloc(new_capacity, sizeof(pm_node_t *));
         if (new_nodes == NULL) return NULL;
 
         // It turns out to be more efficient to mask the hash value than to use
@@ -155,7 +154,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
         }
 
         // Finally, free the old node list and update the hash.
-        free(hash->nodes);
+        xfree(hash->nodes);
         hash->nodes = new_nodes;
         hash->capacity = new_capacity;
     }
@@ -188,7 +187,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_parser_t *parser, pm_node_t *
  */
 static void
 pm_node_hash_free(pm_node_hash_t *hash) {
-    if (hash->capacity > 0) free(hash->nodes);
+    if (hash->capacity > 0) xfree(hash->nodes);
 }
 
 /**
@@ -204,9 +203,9 @@ pm_int64_value(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            if (integer->length > 0) return integer->negative ? INT64_MIN : INT64_MAX;
+            if (integer->values) return integer->negative ? INT64_MIN : INT64_MAX;
 
-            int64_t value = (int64_t) integer->head.value;
+            int64_t value = (int64_t) integer->value;
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
@@ -371,4 +370,183 @@ pm_static_literals_free(pm_static_literals_t *literals) {
     pm_node_hash_free(&literals->string_nodes);
     pm_node_hash_free(&literals->regexp_nodes);
     pm_node_hash_free(&literals->symbol_nodes);
+}
+
+/**
+ * A helper to determine if the given node is a static literal that is positive.
+ * This is used for formatting imaginary nodes.
+ */
+static bool
+pm_static_literal_positive_p(const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_FLOAT_NODE:
+            return ((const pm_float_node_t *) node)->value > 0;
+        case PM_INTEGER_NODE:
+            return !((const pm_integer_node_t *) node)->value.negative;
+        case PM_RATIONAL_NODE:
+            return pm_static_literal_positive_p(((const pm_rational_node_t *) node)->numeric);
+        case PM_IMAGINARY_NODE:
+            return pm_static_literal_positive_p(((const pm_imaginary_node_t *) node)->numeric);
+        default:
+            assert(false && "unreachable");
+            return false;
+    }
+}
+
+/**
+ * Inspect a rational node that wraps a float node. This is going to be a
+ * poor-man's version of the Ruby `Rational#to_s` method, because we're not
+ * going to try to reduce the rational by finding the GCD. We'll leave that for
+ * a future improvement.
+ */
+static void
+pm_rational_inspect(pm_buffer_t *buffer, pm_rational_node_t *node) {
+    const uint8_t *start = node->base.location.start;
+    const uint8_t *end = node->base.location.end - 1; // r
+
+    while (start < end && *start == '0') start++; // 0.1 -> .1
+    while (end > start && end[-1] == '0') end--; // 1.0 -> 1.
+    size_t length = (size_t) (end - start);
+
+    const uint8_t *point = memchr(start, '.', length);
+    assert(point && "should have a decimal point");
+
+    uint8_t *digits = malloc(length - 1);
+    if (digits == NULL) return;
+
+    memcpy(digits, start, (unsigned long) (point - start));
+    memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
+
+    pm_integer_t numerator = { 0 };
+    pm_integer_parse(&numerator, PM_INTEGER_BASE_DECIMAL, digits, digits + length - 1);
+
+    pm_buffer_append_byte(buffer, '(');
+    pm_integer_string(buffer, &numerator);
+    pm_buffer_append_string(buffer, "/1", 2);
+    for (size_t index = 0; index < (size_t) (end - point - 1); index++) pm_buffer_append_byte(buffer, '0');
+    pm_buffer_append_byte(buffer, ')');
+
+    pm_integer_free(&numerator);
+    free(digits);
+}
+
+/**
+ * Create a string-based representation of the given static literal.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
+    assert(PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL));
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_FALSE_NODE:
+            pm_buffer_append_string(buffer, "false", 5);
+            break;
+        case PM_FLOAT_NODE: {
+            const double value = ((const pm_float_node_t *) node)->value;
+
+            if (isinf(value)) {
+                if (*node->location.start == '-') {
+                    pm_buffer_append_byte(buffer, '-');
+                }
+                pm_buffer_append_string(buffer, "Infinity", 8);
+            } else if (value == 0.0) {
+                if (*node->location.start == '-') {
+                    pm_buffer_append_byte(buffer, '-');
+                }
+                pm_buffer_append_string(buffer, "0.0", 3);
+            } else {
+                pm_buffer_append_format(buffer, "%g", value);
+
+                // %g will not insert a .0 for 1e100 (we'll get back 1e+100). So
+                // we check for the decimal point and add it in here if it's not
+                // present.
+                if (pm_buffer_index(buffer, '.') == SIZE_MAX) {
+                    size_t exponent_index = pm_buffer_index(buffer, 'e');
+                    size_t index = exponent_index == SIZE_MAX ? pm_buffer_length(buffer) : exponent_index;
+                    pm_buffer_insert(buffer, index, ".0", 2);
+                }
+            }
+
+            break;
+        }
+        case PM_IMAGINARY_NODE: {
+            const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
+            pm_buffer_append_string(buffer, "(0", 2);
+            if (pm_static_literal_positive_p(numeric)) pm_buffer_append_byte(buffer, '+');
+            pm_static_literal_inspect(buffer, parser, numeric);
+            if (PM_NODE_TYPE_P(numeric, PM_RATIONAL_NODE)) pm_buffer_append_byte(buffer, '*');
+            pm_buffer_append_string(buffer, "i)", 2);
+            break;
+        }
+        case PM_INTEGER_NODE:
+            pm_integer_string(buffer, &((const pm_integer_node_t *) node)->value);
+            break;
+        case PM_NIL_NODE:
+            pm_buffer_append_string(buffer, "nil", 3);
+            break;
+        case PM_RATIONAL_NODE: {
+            const pm_node_t *numeric = ((const pm_rational_node_t *) node)->numeric;
+
+            switch (PM_NODE_TYPE(numeric)) {
+                case PM_INTEGER_NODE:
+                    pm_buffer_append_byte(buffer, '(');
+                    pm_static_literal_inspect(buffer, parser, numeric);
+                    pm_buffer_append_string(buffer, "/1)", 3);
+                    break;
+                case PM_FLOAT_NODE:
+                    pm_rational_inspect(buffer, (pm_rational_node_t *) node);
+                    break;
+                default:
+                    assert(false && "unreachable");
+                    break;
+            }
+
+            break;
+        }
+        case PM_REGULAR_EXPRESSION_NODE: {
+            const pm_string_t *unescaped = &((const pm_regular_expression_node_t *) node)->unescaped;
+            pm_buffer_append_byte(buffer, '/');
+            pm_buffer_append_source(buffer, pm_string_source(unescaped), pm_string_length(unescaped), PM_BUFFER_ESCAPING_RUBY);
+            pm_buffer_append_byte(buffer, '/');
+
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE)) pm_buffer_append_string(buffer, "m", 1);
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE)) pm_buffer_append_string(buffer, "i", 1);
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED)) pm_buffer_append_string(buffer, "x", 1);
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) pm_buffer_append_string(buffer, "n", 1);
+
+            break;
+        }
+        case PM_SOURCE_ENCODING_NODE:
+            pm_buffer_append_format(buffer, "#<Encoding:%s>", parser->encoding->name);
+            break;
+        case PM_SOURCE_FILE_NODE: {
+            const pm_string_t *filepath = &((const pm_source_file_node_t *) node)->filepath;
+            pm_buffer_append_byte(buffer, '"');
+            pm_buffer_append_source(buffer, pm_string_source(filepath), pm_string_length(filepath), PM_BUFFER_ESCAPING_RUBY);
+            pm_buffer_append_byte(buffer, '"');
+            break;
+        }
+        case PM_SOURCE_LINE_NODE:
+            pm_buffer_append_format(buffer, "%d", pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line);
+            break;
+        case PM_STRING_NODE: {
+            const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;
+            pm_buffer_append_byte(buffer, '"');
+            pm_buffer_append_source(buffer, pm_string_source(unescaped), pm_string_length(unescaped), PM_BUFFER_ESCAPING_RUBY);
+            pm_buffer_append_byte(buffer, '"');
+            break;
+        }
+        case PM_SYMBOL_NODE: {
+            const pm_string_t *unescaped = &((const pm_symbol_node_t *) node)->unescaped;
+            pm_buffer_append_byte(buffer, ':');
+            pm_buffer_append_source(buffer, pm_string_source(unescaped), pm_string_length(unescaped), PM_BUFFER_ESCAPING_RUBY);
+            break;
+        }
+        case PM_TRUE_NODE:
+            pm_buffer_append_string(buffer, "true", 4);
+            break;
+        default:
+            assert(false && "unreachable");
+            break;
+    }
 }

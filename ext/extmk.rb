@@ -825,7 +825,7 @@ begin
         end
         mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
         if clean and clean.begin(1)
-          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) -p $(@D)"
+          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) $(@D)"
         end
       end
     end

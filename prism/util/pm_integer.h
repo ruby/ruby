@@ -15,30 +15,25 @@
 #include <stdlib.h>
 
 /**
- * A node in the linked list of a pm_integer_t.
- */
-typedef struct pm_integer_word {
-    /** A pointer to the next node in the list. */
-    struct pm_integer_word *next;
-
-    /** The value of the node. */
-    uint32_t value;
-} pm_integer_word_t;
-
-/**
- * This structure represents an arbitrary-sized integer. It is implemented as a
- * linked list of 32-bit integers, with the least significant digit at the head
- * of the list.
+ * A structure represents an arbitrary-sized integer.
  */
 typedef struct {
-    /** The number of nodes in the linked list that have been allocated. */
+    /**
+     * Embedded value for small integer. This value is set to 0 if the value
+     * does not fit into uint32_t.
+     */
+    uint32_t value;
+
+    /**
+     * The number of allocated values. length is set to 0 if the integer fits
+     * into uint32_t.
+     */
     size_t length;
 
     /**
-     * The head of the linked list, embedded directly so that allocations do not
-     * need to be performed for small integers.
+     * List of 32-bit integers. Set to NULL if the integer fits into uint32_t.
      */
-    pm_integer_word_t head;
+    uint32_t *values;
 
     /**
      * Whether or not the integer is negative. It is stored this way so that a
@@ -62,7 +57,7 @@ typedef enum {
     /** The decimal base, indicated by a 0d, 0D, or empty prefix. */
     PM_INTEGER_BASE_DECIMAL,
 
-    /** The hexidecimal base, indicated by a 0x or 0X prefix. */
+    /** The hexadecimal base, indicated by a 0x or 0X prefix. */
     PM_INTEGER_BASE_HEXADECIMAL,
 
     /**

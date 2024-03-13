@@ -1615,5 +1615,5 @@ Init_load(void)
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
     ruby_dln_libmap = rb_hash_new_with_size(0);
-    rb_gc_register_mark_object(ruby_dln_libmap);
+    rb_vm_register_global_object(ruby_dln_libmap);
 }

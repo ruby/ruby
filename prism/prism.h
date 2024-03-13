@@ -80,6 +80,36 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 
 /**
+ * This function is used in pm_parse_stream to retrieve a line of input from a
+ * stream. It closely mirrors that of fgets so that fgets can be used as the
+ * default implementation.
+ */
+typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
+
+/**
+ * Parse a stream of Ruby source and return the tree.
+ *
+ * @param parser The parser to use.
+ * @param buffer The buffer to use.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param options The optional options to use when parsing.
+ * @return The AST representing the source.
+ */
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options);
+
+/**
+ * Parse and serialize the AST represented by the source that is read out of the
+ * given stream into to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param data The optional data to pass to the parser.
+ */
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data);
+
+/**
  * Serialize the given list of comments to the given buffer.
  *
  * @param parser The parser to serialize.

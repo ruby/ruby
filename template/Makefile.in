@@ -269,6 +269,8 @@ ACTIONS_ENDGROUP = @$(NULLCMD)
 
 DESTDIR       = @DESTDIR@
 
+cleanlibs = @cleanlibs@
+
 configure_args = @configure_args@
 #### End of variables
 
@@ -491,8 +493,9 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	$(Q)find . \( -name '*.bc' -o -name '*.[is]' \) -delete
-	-$(Q)$(RMALL) exe/ *.dSYM
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.bc)
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.i)
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.s)
 
 distclean-local::
 	$(Q)$(RM) \

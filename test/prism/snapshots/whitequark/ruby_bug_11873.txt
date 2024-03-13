@@ -112,7 +112,7 @@
         │   │       │   ├── closing_loc: (3,7)-(3,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (3,10)-(3,13))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (3,10)-(3,11) = "/"
         │   │           ├── content_loc: (3,11)-(3,12) = "x"
         │   │           ├── closing_loc: (3,12)-(3,13) = "/"
@@ -173,7 +173,7 @@
         │   │       │   ├── closing_loc: (5,7)-(5,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (5,10)-(5,14))
-        │   │           ├── flags: multi_line
+        │   │           ├── flags: multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (5,10)-(5,11) = "/"
         │   │           ├── content_loc: (5,11)-(5,12) = "x"
         │   │           ├── closing_loc: (5,12)-(5,14) = "/m"
@@ -295,7 +295,7 @@
         │   │       │   ├── closing_loc: (9,8)-(9,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (9,11)-(9,14))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (9,11)-(9,12) = "/"
         │   │           ├── content_loc: (9,12)-(9,13) = "x"
         │   │           ├── closing_loc: (9,13)-(9,14) = "/"
@@ -356,7 +356,7 @@
         │   │       │   ├── closing_loc: (11,8)-(11,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (11,11)-(11,15))
-        │   │           ├── flags: multi_line
+        │   │           ├── flags: multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (11,11)-(11,12) = "/"
         │   │           ├── content_loc: (11,12)-(11,13) = "x"
         │   │           ├── closing_loc: (11,13)-(11,15) = "/m"
@@ -488,7 +488,7 @@
         │   │       │       ├── opening_loc: (15,3)-(15,4) = "{"
         │   │       │       └── closing_loc: (15,7)-(15,8) = "}"
         │   │       └── @ RegularExpressionNode (location: (15,10)-(15,13))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (15,10)-(15,11) = "/"
         │   │           ├── content_loc: (15,11)-(15,12) = "x"
         │   │           ├── closing_loc: (15,12)-(15,13) = "/"
@@ -554,7 +554,7 @@
         │   │       │       ├── opening_loc: (17,3)-(17,4) = "{"
         │   │       │       └── closing_loc: (17,7)-(17,8) = "}"
         │   │       └── @ RegularExpressionNode (location: (17,10)-(17,14))
-        │   │           ├── flags: multi_line
+        │   │           ├── flags: multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (17,10)-(17,11) = "/"
         │   │           ├── content_loc: (17,11)-(17,12) = "x"
         │   │           ├── closing_loc: (17,12)-(17,14) = "/m"
@@ -686,7 +686,7 @@
         │   │       │       ├── opening_loc: (21,3)-(21,4) = "{"
         │   │       │       └── closing_loc: (21,8)-(21,9) = "}"
         │   │       └── @ RegularExpressionNode (location: (21,11)-(21,14))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (21,11)-(21,12) = "/"
         │   │           ├── content_loc: (21,12)-(21,13) = "x"
         │   │           ├── closing_loc: (21,13)-(21,14) = "/"
@@ -752,7 +752,7 @@
             │       │       ├── opening_loc: (23,3)-(23,4) = "{"
             │       │       └── closing_loc: (23,8)-(23,9) = "}"
             │       └── @ RegularExpressionNode (location: (23,11)-(23,15))
-            │           ├── flags: multi_line
+            │           ├── flags: multi_line, forced_us_ascii_encoding
             │           ├── opening_loc: (23,11)-(23,12) = "/"
             │           ├── content_loc: (23,12)-(23,13) = "x"
             │           ├── closing_loc: (23,13)-(23,15) = "/m"

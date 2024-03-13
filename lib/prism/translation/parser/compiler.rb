@@ -116,7 +116,14 @@ module Prism
               builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
-            builder.pair_label([node.key.unescaped, srange(node.key.location)])
+            if (value = node.value.value).is_a?(LocalVariableReadNode)
+              builder.pair_keyword(
+                [node.key.unescaped, srange(node.key)],
+                builder.ident([value.name, srange(node.key.value_loc)]).updated(:lvar)
+              )
+            else
+              builder.pair_label([node.key.unescaped, srange(node.key.location)])
+            end
           elsif node.operator_loc
             builder.pair(visit(node.key), token(node.operator_loc), visit(node.value))
           elsif node.key.is_a?(SymbolNode) && node.key.opening_loc.nil?
@@ -254,6 +261,10 @@ module Prism
               end
             when :!
               return visit_block(builder.not_op(token(node.message_loc), token(node.opening_loc), visit(node.receiver), token(node.closing_loc)), block)
+            when :=~
+              if (receiver = node.receiver).is_a?(RegularExpressionNode)
+                return builder.match_op(visit(receiver), token(node.message_loc), visit(node.arguments.arguments.first))
+              end
             when :[]
               return visit_block(builder.index(visit(node.receiver), token(node.opening_loc), visit_all(arguments), token(node.closing_loc)), block)
             when :[]=
@@ -796,6 +807,7 @@ module Prism
         end
 
         # 1i
+        # ^^
         def visit_imaginary_node(node)
           visit_numeric(node, builder.complex([imaginary_value(node), srange(node.location)]))
         end
@@ -883,9 +895,6 @@ module Prism
 
         # @foo = 1
         # ^^^^^^^^
-        #
-        # @foo, @bar = 1
-        # ^^^^  ^^^^
         def visit_instance_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ivar(token(node.name_loc))),
@@ -1029,9 +1038,6 @@ module Prism
 
         # foo = 1
         # ^^^^^^^
-        #
-        # foo, bar = 1
-        # ^^^  ^^^
         def visit_local_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.ident(token(node.name_loc))),
@@ -1481,9 +1487,23 @@ module Prism
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
           else
+            parts = if node.unescaped.lines.count <= 1
+              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+            else
+              start_offset = node.content_loc.start_offset
+
+              node.unescaped.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.string_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end
@@ -1522,9 +1542,23 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
+            parts = if node.value.lines.one?
+              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+            else
+              start_offset = node.value_loc.start_offset
+
+              node.value.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.symbol_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.value_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end
@@ -1603,7 +1637,11 @@ module Prism
           builder.when(
             token(node.keyword_loc),
             visit_all(node.conditions),
-            srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset || (node.conditions.last.location.end_offset + 1), [";", "then"]),
+            if node.then_keyword_loc
+              token(node.then_keyword_loc)
+            else
+              srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset || (node.conditions.last.location.end_offset + 1), [";"])
+            end,
             visit(node.statements)
           )
         end
@@ -1640,9 +1678,23 @@ module Prism
             children, closing = visit_heredoc(node.to_interpolated)
             builder.xstring_compose(token(node.opening_loc), children, closing)
           else
+            parts = if node.unescaped.lines.one?
+              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+            else
+              start_offset = node.content_loc.start_offset
+
+              node.unescaped.lines.map do |line|
+                end_offset = start_offset + line.length
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+            end
+
             builder.xstring_compose(
               token(node.opening_loc),
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])],
+              parts,
               token(node.closing_loc)
             )
           end
@@ -1796,7 +1848,7 @@ module Prism
 
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
-          children = []
+          children = Array.new
           node.parts.each do |part|
             pushing =
               if part.is_a?(StringNode) && part.unescaped.include?("\n")

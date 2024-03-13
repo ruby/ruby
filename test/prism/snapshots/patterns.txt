@@ -165,7 +165,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (9,7)-(9,12))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (9,7)-(9,8) = "/"
         │   │   ├── content_loc: (9,8)-(9,11) = "foo"
         │   │   ├── closing_loc: (9,11)-(9,12) = "/"
@@ -719,14 +719,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ RegularExpressionNode (location: (35,7)-(35,12))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (35,7)-(35,8) = "/"
         │   │   │   ├── content_loc: (35,8)-(35,11) = "foo"
         │   │   │   ├── closing_loc: (35,11)-(35,12) = "/"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ RegularExpressionNode (location: (35,16)-(35,21))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (35,16)-(35,17) = "/"
         │   │   │   ├── content_loc: (35,17)-(35,20) = "foo"
         │   │   │   ├── closing_loc: (35,20)-(35,21) = "/"
@@ -2543,7 +2543,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (112,7)-(112,12))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (112,7)-(112,8) = "/"
         │   │   ├── content_loc: (112,8)-(112,11) = "foo"
         │   │   ├── closing_loc: (112,11)-(112,12) = "/"
@@ -3126,7 +3126,7 @@
         │   │   └── @ InNode (location: (143,10)-(143,23))
         │   │       ├── pattern:
         │   │       │   @ RegularExpressionNode (location: (143,13)-(143,18))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (143,13)-(143,14) = "/"
         │   │       │   ├── content_loc: (143,14)-(143,17) = "foo"
         │   │       │   ├── closing_loc: (143,17)-(143,18) = "/"
@@ -3914,7 +3914,7 @@
         │   │       │   │   @ StatementsNode (location: (170,13)-(170,18))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ RegularExpressionNode (location: (170,13)-(170,18))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: forced_us_ascii_encoding
         │   │       │   │           ├── opening_loc: (170,13)-(170,14) = "/"
         │   │       │   │           ├── content_loc: (170,14)-(170,17) = "foo"
         │   │       │   │           ├── closing_loc: (170,17)-(170,18) = "/"

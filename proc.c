@@ -1462,7 +1462,7 @@ rb_sym_to_proc(VALUE sym)
 
     if (!sym_proc_cache) {
         sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_gc_register_mark_object(sym_proc_cache);
+        rb_vm_register_global_object(sym_proc_cache);
         rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
     }
 
@@ -1945,7 +1945,7 @@ rb_method_name_error(VALUE klass, VALUE str)
     VALUE c = klass;
     VALUE s = Qundef;
 
-    if (FL_TEST(c, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(c)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
 
         switch (BUILTIN_TYPE(obj)) {
@@ -2194,7 +2194,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
         struct METHOD *method = (struct METHOD *)RTYPEDDATA_GET_DATA(body);
         if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
             !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
-            if (FL_TEST(method->me->owner, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(method->me->owner)) {
                 rb_raise(rb_eTypeError,
                          "can't bind singleton method to a different class");
             }
@@ -2561,7 +2561,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         if (!NIL_P(refined_class)) methclass = refined_class;
     }
     if (!RB_TYPE_P(methclass, T_MODULE) && !RTEST(rb_obj_is_kind_of(recv, methclass))) {
-        if (FL_TEST(methclass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(methclass)) {
             rb_raise(rb_eTypeError,
                      "singleton method called for a different object");
         }
@@ -3132,7 +3132,7 @@ method_inspect(VALUE method)
         // UnboundMethod
         rb_str_buf_append(str, rb_inspect(defined_class));
     }
-    else if (FL_TEST(mklass, FL_SINGLETON)) {
+    else if (RCLASS_SINGLETON_P(mklass)) {
         VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
 
         if (UNDEF_P(data->recv)) {
@@ -3152,7 +3152,7 @@ method_inspect(VALUE method)
     }
     else {
         mklass = data->klass;
-        if (FL_TEST(mklass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(mklass)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
             if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
                 do {

@@ -1861,6 +1861,10 @@ Init_stringio(void)
 
     rb_include_module(StringIO, rb_mEnumerable);
     rb_define_alloc_func(StringIO, strio_s_allocate);
+
+    /* Maximum length that a StringIO instance can hold */
+    rb_define_const(StringIO, "MAX_LENGTH", LONG2NUM(LONG_MAX));
+
     rb_define_singleton_method(StringIO, "new", strio_s_new, -1);
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);

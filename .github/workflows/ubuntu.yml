@@ -24,6 +24,7 @@ jobs:
   make:
     strategy:
       matrix:
+        os: [ubuntu-22.04, ubuntu-20.04]
         test_task: [check]
         arch: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
@@ -31,24 +32,31 @@ jobs:
         include:
           - test_task: check
             arch: i686
+            os: ubuntu-22.04
           - test_task: check
             configure: '--disable-yjit'
+            os: ubuntu-22.04
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
+            os: ubuntu-22.04
           - test_task: test-bundler-parallel
+            os: ubuntu-22.04
           - test_task: test-bundled-gems
+            os: ubuntu-22.04
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -63,19 +71,20 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
+      - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
-
-      - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
-        with:
-          ruby-version: '3.0'
-          bundler: none
 
       - name: Run configure
         env:
@@ -101,8 +110,12 @@ jobs:
         id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
+          os: ${{ matrix.os }}
+          test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
           srcdir: src
+        continue-on-error: true
 
       - name: make ${{ matrix.test_task }}
         run: >-
@@ -123,17 +136,6 @@ jobs:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - name: Record test results in Launchable
-        uses: ./.github/actions/launchable/record-test
-        with:
-          # We need to configure the `build` directory because
-          # this composite action is executed in the default working directory.
-          report-path: ../build/launchable_reports.json
-          os: ubuntu-20.04
-          test-opts: ${{ matrix.configure }}
-          srcdir: src
-        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
         with:

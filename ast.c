@@ -774,10 +774,35 @@ ast_node_last_column(rb_execution_context_t *ec, VALUE self)
 static VALUE
 ast_node_all_tokens(rb_execution_context_t *ec, VALUE self)
 {
+    long i;
     struct ASTNodeData *data;
+    rb_parser_ary_t *parser_tokens;
+    rb_parser_ast_token_t *parser_token;
+    VALUE str, loc, token, all_tokens;
+
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_ast_tokens(data->ast);
+    parser_tokens = data->ast->node_buffer->tokens;
+    if (parser_tokens == NULL) {
+        return Qnil;
+    }
+
+    all_tokens = rb_ary_new2(parser_tokens->len);
+    for (i = 0; i < parser_tokens->len; i++) {
+        parser_token = parser_tokens->data[i];
+        str = rb_str_new(parser_token->str->ptr, parser_token->str->len);
+        loc = rb_ary_new_from_args(4,
+            INT2FIX(parser_token->loc.beg_pos.lineno),
+            INT2FIX(parser_token->loc.beg_pos.column),
+            INT2FIX(parser_token->loc.end_pos.lineno),
+            INT2FIX(parser_token->loc.end_pos.column)
+        );
+        token = rb_ary_new_from_args(4, INT2FIX(parser_token->id), ID2SYM(rb_intern(parser_token->type_name)), str, loc);
+        rb_ary_push(all_tokens, token);
+    }
+    rb_obj_freeze(all_tokens);
+
+    return all_tokens;
 }
 
 static VALUE

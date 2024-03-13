@@ -16445,12 +16445,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListLabel = StrChunk:label @Sp @Newline { label }
+  # DefinitionListLabel = Inline:label @Sp @Newline { label }
   def _DefinitionListLabel
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StrChunk)
+      _tmp = apply(:_Inline)
       label = @result
       unless _tmp
         self.pos = _save
@@ -16777,7 +16777,7 @@ class RDoc::Markdown
   Rules[:_TableAlign] = rule_info("TableAlign", "< /:?-+:?/ > @Sp {                 text.start_with?(\":\") ?                 (text.end_with?(\":\") ? :center : :left) :                 (text.end_with?(\":\") ? :right : nil)               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
-  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
+  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "Inline:label @Sp @Newline { label }")
   Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "@NonindentSpace \":\" @Space Inlines:a @BlankLine+ { paragraph a }")
   # :startdoc:
 end

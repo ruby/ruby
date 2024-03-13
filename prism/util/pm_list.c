@@ -41,7 +41,7 @@ pm_list_free(pm_list_t *list) {
 
     while (node != NULL) {
         next = node->next;
-        free(node);
+        xfree(node);
         node = next;
     }
 

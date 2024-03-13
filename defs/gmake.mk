@@ -469,6 +469,10 @@ benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
 	            $(srcdir)/$@ $(BENCH_OPTS) $(OPTS)
 
+clean-local:: TARGET_SO = $(PROGRAM) $(WPROGRAM) $(LIBRUBY_SO) $(STATIC_RUBY) miniruby goruby
+clean-local::
+	-$(Q)$(RMALL) $(cleanlibs)
+
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
 
@@ -504,6 +508,9 @@ $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RU
 	$(ECHO) building $@
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
+ifneq ($(POSTLINK),)
+	$(Q) $(POSTLINK)
+endif
 	$(Q) $(RMALL) $@.*
 
 rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))

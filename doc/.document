@@ -9,4 +9,4 @@ rdoc
 regexp
 rjit
 yjit
-command_line
+ruby

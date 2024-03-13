@@ -301,6 +301,7 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
             VALUE refined_class = rb_refinement_module_get_refined_class(module);
             rb_clear_method_cache(refined_class, mid);
             rb_class_foreach_subclass(refined_class, clear_iclass_method_cache_by_id_for_refinements, mid);
+            rb_clear_all_refinement_method_cache();
         }
         rb_class_foreach_subclass(module, clear_iclass_method_cache_by_id, mid);
     }
@@ -962,7 +963,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     orig_klass = klass;
 
-    if (!FL_TEST(klass, FL_SINGLETON) &&
+    if (!RCLASS_SINGLETON_P(klass) &&
         type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
         type != VM_METHOD_TYPE_ZSUPER) {
         switch (mid) {
@@ -1199,7 +1200,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
         const VALUE arg = ID2SYM(mid);			\
         VALUE recv_class = (klass);			\
         ID hook_id = (hook);				\
-        if (FL_TEST((klass), FL_SINGLETON)) {		\
+        if (RCLASS_SINGLETON_P((klass))) {		\
             recv_class = RCLASS_ATTACHED_OBJECT((klass));	\
             hook_id = singleton_##hook;			\
         }						\
@@ -1264,7 +1265,7 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
@@ -2898,8 +2899,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
                 rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
                         "%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
                         " the deprecated method signature, which takes one parameter",
-                        (FL_TEST(klass, FL_SINGLETON) ? obj : klass),
-                        (FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
+                        (RCLASS_SINGLETON_P(klass) ? obj : klass),
+                        (RCLASS_SINGLETON_P(klass) ? '.' : '#'),
                         QUOTE_ID(id));
                 if (!NIL_P(location)) {
                     VALUE path = RARRAY_AREF(location, 0);

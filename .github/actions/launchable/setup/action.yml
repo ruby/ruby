@@ -8,11 +8,28 @@ inputs:
     required: true
     description: The file path of the test report for uploading to Launchable
 
+  os:
+    required: true
+    description: The operating system that CI runs on. This value is used in Launchable flavor.
+
+  test-opts:
+    default: none
+    required: false
+    description: >-
+      Test options that determine how tests are run.
+      This value is used in the Launchable flavor.
+
   launchable-token:
     required: false
     description: >-
       Launchable token is needed if you want to run Launchable on your forked repository.
       See https://github.com/ruby/ruby/wiki/CI-Servers#launchable-ci for details.
+
+  builddir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to create Launchable report file.
 
   srcdir:
     required: false
@@ -79,9 +96,10 @@ runs:
         PATH=$PATH:$(python -msite --user-base)/bin
         echo "PATH=$PATH" >> $GITHUB_ENV
         pip install --user launchable
-        launchable verify
+        launchable verify || true
         : # The build name cannot include a slash, so we replace the string here.
-        github_ref="$(echo ${{ github.ref }} | sed 's/\//_/g')"
+        github_ref="${{ github.ref }}"
+        github_ref="${github_ref//\//_}"
         : # With the --name option, we need to configure a unique identifier for this build.
         : # To avoid setting the same build name as the CI which runs on other branches, we use the branch name here.
         : #
@@ -90,3 +108,42 @@ runs:
         launchable record build --name ${github_ref}_${GITHUB_PR_HEAD_SHA}
         echo "TESTS=${TESTS} --launchable-test-reports=${{ inputs.report-path }}" >> $GITHUB_ENV
       if: steps.enable-launchable.outputs.enable-launchable
+
+    - name: Variables to report Launchable
+      id: variables
+      shell: bash
+      run: |
+        set -x
+        : # flavor
+        test_opts="${{ inputs.test-opts }}"
+        test_opts="${test_opts// /}"
+        test_opts="${test_opts//=/:}"
+        echo test-opts="$test_opts" >> $GITHUB_OUTPUT
+        : # report-path from srcdir
+        if [ "${srcdir}" = "${{ github.workspace }}" ]; then
+          dir=
+        else
+          # srcdir must be equal to or under workspace
+          dir=$(echo ${srcdir:+${srcdir}/} | sed 's:[^/][^/]*/:../:g')
+        fi
+        report_path="${dir}${builddir:+${builddir}/}${report_path}"
+        echo report-path="${report_path}" >> $GITHUB_OUTPUT
+      if: steps.enable-launchable.outputs.enable-launchable
+      env:
+        srcdir: ${{ inputs.srcdir }}
+        builddir: ${{ inputs.builddir }}
+        report_path: ${{ inputs.report-path }}
+
+    - name: Record test results in Launchable
+      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      with:
+        shell: bash
+        working-directory: ${{ inputs.srcdir }}
+        post: |
+          : # record
+          launchable record tests --flavor os=${{ inputs.os }} --flavor test_task=${{ matrix.test_task }} --flavor test_opts=${test_opts} raw ${report_path}
+          rm -f ${report_path}
+      if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
+      env:
+        test_opts: ${{ steps.variables.outputs.test-opts }}
+        report_path: ${{ steps.variables.outputs.report-path }}

@@ -8,7 +8,7 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
-  def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+  def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
@@ -46,7 +46,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
       assert_operator(r.size, :<=, 25)
-      longer = r[1..-1].select {|x| x.size > 80}
+      longer = r[1..-1].select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -858,7 +858,7 @@ class TestRubyOptions < Test::Unit::TestCase
     KILL_SELF = "Process.kill :SEGV, $$"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt)
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -867,9 +867,10 @@ class TestRubyOptions < Test::Unit::TestCase
     args.unshift(env)
 
     test_stdin = ""
+    tests = [//, list] unless block
 
-    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt)
+    assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test
@@ -897,7 +898,7 @@ class TestRubyOptions < Test::Unit::TestCase
     }
   end
 
-  def assert_crash_report(path, cmd = nil)
+  def assert_crash_report(path, cmd = nil, &block)
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd
@@ -908,7 +909,8 @@ class TestRubyOptions < Test::Unit::TestCase
       else
         cmd = ['-e', SEGVTest::KILL_SELF]
       end
-      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir)
+      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir, &block)
+      next if block
       reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
       assert_equal(1, reports.size)
       assert_pattern_list(list, File.read(File.join(dir, reports.first)))
@@ -945,12 +947,8 @@ class TestRubyOptions < Test::Unit::TestCase
     else
       omit "/bin/echo not found"
     end
-    env = {"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p", "RUBY_ON_BUG"=>nil}
-    assert_in_out_err([env], SEGVTest::KILL_SELF,
-                      encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions) do |stdout, stderr, status|
-      assert_empty(stderr)
-      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-:#{status.pid}"], stdout)
+    assert_crash_report("| #{echo} %e:%f:%p") do |stdin, stdout, status|
+      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-e:#{status.pid}"], stdin)
     end
   end
 

@@ -75,6 +75,7 @@ module TestIRB
     def test_irb_info_multiline
       FileUtils.touch("#{@tmpdir}/.inputrc")
       FileUtils.touch("#{@tmpdir}/.irbrc")
+      FileUtils.touch("#{@tmpdir}/_irbrc")
 
       out, err = execute_lines(
         "irb_info",
@@ -86,7 +87,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath:\s.+\n
+        \.irbrc\spaths:.*\.irbrc.*_irbrc\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -110,7 +111,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath:\s.+\n
+        \.irbrc\spaths:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -196,7 +197,7 @@ module TestIRB
         IRB\sversion:\sirb .+\n
         InputMethod:\sAbstract\sInputMethod\n
         Completion: .+\n
-        \.irbrc\spath: .+\n
+        \.irbrc\spaths: .+\n
         RUBY_PLATFORM: .+\n
         LANG\senv:\sja_JP\.UTF-8\n
         LC_ALL\senv:\sen_US\.UTF-8\n

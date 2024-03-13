@@ -566,13 +566,13 @@
         │   ├── closing_loc: (48,2)-(48,3) = "\""
         │   └── unescaped: ""
         ├── @ RegularExpressionNode (location: (49,0)-(49,5))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (49,0)-(49,1) = "/"
         │   ├── content_loc: (49,1)-(49,4) = "foo"
         │   ├── closing_loc: (49,4)-(49,5) = "/"
         │   └── unescaped: "foo"
         ├── @ RegularExpressionNode (location: (50,0)-(50,28))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (50,0)-(50,1) = "/"
         │   ├── content_loc: (50,1)-(50,27) = "[^-+',.\\/:@[:alnum:]\\[\\]]+"
         │   ├── closing_loc: (50,27)-(50,28) = "/"
@@ -633,25 +633,25 @@
         │   │       └── closing_loc: (53,11)-(53,12) = "}"
         │   └── closing_loc: (53,12)-(53,13) = "/"
         ├── @ RegularExpressionNode (location: (54,0)-(54,4))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (54,0)-(54,1) = "/"
         │   ├── content_loc: (54,1)-(54,3) = "\\n"
         │   ├── closing_loc: (54,3)-(54,4) = "/"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (55,0)-(55,4))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (55,0)-(55,1) = "/"
         │   ├── content_loc: (55,1)-(55,3) = "\\n"
         │   ├── closing_loc: (55,3)-(55,4) = "/"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (56,0)-(56,5))
-        │   ├── flags: extended
+        │   ├── flags: extended, forced_us_ascii_encoding
         │   ├── opening_loc: (56,0)-(56,1) = "/"
         │   ├── content_loc: (56,1)-(56,3) = "\\n"
         │   ├── closing_loc: (56,3)-(56,5) = "/x"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (57,0)-(57,7))
-        │   ├── flags: extended
+        │   ├── flags: extended, forced_us_ascii_encoding
         │   ├── opening_loc: (57,0)-(57,1) = "/"
         │   ├── content_loc: (57,1)-(57,5) = "\\/\\/"
         │   ├── closing_loc: (57,5)-(57,7) = "/x"

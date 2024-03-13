@@ -7582,7 +7582,7 @@ Init_File(void)
      *
      * ==== File::RDONLY
      *
-     * Flag File::RDONLY specifies the the stream should be opened for reading only:
+     * Flag File::RDONLY specifies the stream should be opened for reading only:
      *
      *   filepath = '/tmp/t.tmp'
      *   f = File.new(filepath, File::RDONLY)

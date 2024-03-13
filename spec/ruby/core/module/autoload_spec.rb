@@ -406,6 +406,8 @@ describe "Module#autoload" do
     before :each do
       @path = fixture(__FILE__, "autoload_during_autoload_after_define.rb")
       ModuleSpecs::Autoload.autoload :DuringAutoloadAfterDefine, @path
+      @autoload_location = [__FILE__, __LINE__ - 1]
+      @const_location = [@path, 2]
       @remove << :DuringAutoloadAfterDefine
       raise unless ModuleSpecs::Autoload.autoload?(:DuringAutoloadAfterDefine) == @path
     end
@@ -436,6 +438,15 @@ describe "Module#autoload" do
         ModuleSpecs::Autoload.autoload?(:DuringAutoloadAfterDefine)
       }
       results.should == [@path, nil, @path, nil]
+    end
+
+    ruby_bug("#20188", ""..."3.4") do
+      it "returns the real constant location in autoload thread and returns the autoload location in other threads for Module#const_source_location" do
+        results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+          ModuleSpecs::Autoload.const_source_location(:DuringAutoloadAfterDefine)
+        }
+        results.should == [@autoload_location, @const_location, @autoload_location, @const_location]
+      end
     end
   end
 

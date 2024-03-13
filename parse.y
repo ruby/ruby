@@ -634,7 +634,7 @@ struct parser_params {
     /* id for terms */
     int token_id;
     /* Array for term tokens */
-    VALUE tokens;
+    rb_parser_ary_t *tokens;
 #else
     /* Ripper only */
 
@@ -875,170 +875,170 @@ peek_end_expect_token_locations(struct parser_params *p)
     return p->end_expect_token_locations;
 }
 
-static ID
-parser_token2id(struct parser_params *p, enum yytokentype tok)
+static const char *
+parser_token2char(struct parser_params *p, enum yytokentype tok)
 {
     switch ((int) tok) {
-#define TOKEN2ID(tok) case tok: return rb_intern(#tok);
-#define TOKEN2ID2(tok, name) case tok: return rb_intern(name);
-      TOKEN2ID2(' ', "words_sep")
-      TOKEN2ID2('!', "!")
-      TOKEN2ID2('%', "%");
-      TOKEN2ID2('&', "&");
-      TOKEN2ID2('*', "*");
-      TOKEN2ID2('+', "+");
-      TOKEN2ID2('-', "-");
-      TOKEN2ID2('/', "/");
-      TOKEN2ID2('<', "<");
-      TOKEN2ID2('=', "=");
-      TOKEN2ID2('>', ">");
-      TOKEN2ID2('?', "?");
-      TOKEN2ID2('^', "^");
-      TOKEN2ID2('|', "|");
-      TOKEN2ID2('~', "~");
-      TOKEN2ID2(':', ":");
-      TOKEN2ID2(',', ",");
-      TOKEN2ID2('.', ".");
-      TOKEN2ID2(';', ";");
-      TOKEN2ID2('`', "`");
-      TOKEN2ID2('\n', "nl");
-      TOKEN2ID2('{', "{");
-      TOKEN2ID2('}', "}");
-      TOKEN2ID2('[', "[");
-      TOKEN2ID2(']', "]");
-      TOKEN2ID2('(', "(");
-      TOKEN2ID2(')', ")");
-      TOKEN2ID2('\\', "backslash");
-      TOKEN2ID(keyword_class);
-      TOKEN2ID(keyword_module);
-      TOKEN2ID(keyword_def);
-      TOKEN2ID(keyword_undef);
-      TOKEN2ID(keyword_begin);
-      TOKEN2ID(keyword_rescue);
-      TOKEN2ID(keyword_ensure);
-      TOKEN2ID(keyword_end);
-      TOKEN2ID(keyword_if);
-      TOKEN2ID(keyword_unless);
-      TOKEN2ID(keyword_then);
-      TOKEN2ID(keyword_elsif);
-      TOKEN2ID(keyword_else);
-      TOKEN2ID(keyword_case);
-      TOKEN2ID(keyword_when);
-      TOKEN2ID(keyword_while);
-      TOKEN2ID(keyword_until);
-      TOKEN2ID(keyword_for);
-      TOKEN2ID(keyword_break);
-      TOKEN2ID(keyword_next);
-      TOKEN2ID(keyword_redo);
-      TOKEN2ID(keyword_retry);
-      TOKEN2ID(keyword_in);
-      TOKEN2ID(keyword_do);
-      TOKEN2ID(keyword_do_cond);
-      TOKEN2ID(keyword_do_block);
-      TOKEN2ID(keyword_do_LAMBDA);
-      TOKEN2ID(keyword_return);
-      TOKEN2ID(keyword_yield);
-      TOKEN2ID(keyword_super);
-      TOKEN2ID(keyword_self);
-      TOKEN2ID(keyword_nil);
-      TOKEN2ID(keyword_true);
-      TOKEN2ID(keyword_false);
-      TOKEN2ID(keyword_and);
-      TOKEN2ID(keyword_or);
-      TOKEN2ID(keyword_not);
-      TOKEN2ID(modifier_if);
-      TOKEN2ID(modifier_unless);
-      TOKEN2ID(modifier_while);
-      TOKEN2ID(modifier_until);
-      TOKEN2ID(modifier_rescue);
-      TOKEN2ID(keyword_alias);
-      TOKEN2ID(keyword_defined);
-      TOKEN2ID(keyword_BEGIN);
-      TOKEN2ID(keyword_END);
-      TOKEN2ID(keyword__LINE__);
-      TOKEN2ID(keyword__FILE__);
-      TOKEN2ID(keyword__ENCODING__);
-      TOKEN2ID(tIDENTIFIER);
-      TOKEN2ID(tFID);
-      TOKEN2ID(tGVAR);
-      TOKEN2ID(tIVAR);
-      TOKEN2ID(tCONSTANT);
-      TOKEN2ID(tCVAR);
-      TOKEN2ID(tLABEL);
-      TOKEN2ID(tINTEGER);
-      TOKEN2ID(tFLOAT);
-      TOKEN2ID(tRATIONAL);
-      TOKEN2ID(tIMAGINARY);
-      TOKEN2ID(tCHAR);
-      TOKEN2ID(tNTH_REF);
-      TOKEN2ID(tBACK_REF);
-      TOKEN2ID(tSTRING_CONTENT);
-      TOKEN2ID(tREGEXP_END);
-      TOKEN2ID(tDUMNY_END);
-      TOKEN2ID(tSP);
-      TOKEN2ID(tUPLUS);
-      TOKEN2ID(tUMINUS);
-      TOKEN2ID(tPOW);
-      TOKEN2ID(tCMP);
-      TOKEN2ID(tEQ);
-      TOKEN2ID(tEQQ);
-      TOKEN2ID(tNEQ);
-      TOKEN2ID(tGEQ);
-      TOKEN2ID(tLEQ);
-      TOKEN2ID(tANDOP);
-      TOKEN2ID(tOROP);
-      TOKEN2ID(tMATCH);
-      TOKEN2ID(tNMATCH);
-      TOKEN2ID(tDOT2);
-      TOKEN2ID(tDOT3);
-      TOKEN2ID(tBDOT2);
-      TOKEN2ID(tBDOT3);
-      TOKEN2ID(tAREF);
-      TOKEN2ID(tASET);
-      TOKEN2ID(tLSHFT);
-      TOKEN2ID(tRSHFT);
-      TOKEN2ID(tANDDOT);
-      TOKEN2ID(tCOLON2);
-      TOKEN2ID(tCOLON3);
-      TOKEN2ID(tOP_ASGN);
-      TOKEN2ID(tASSOC);
-      TOKEN2ID(tLPAREN);
-      TOKEN2ID(tLPAREN_ARG);
-      TOKEN2ID(tRPAREN);
-      TOKEN2ID(tLBRACK);
-      TOKEN2ID(tLBRACE);
-      TOKEN2ID(tLBRACE_ARG);
-      TOKEN2ID(tSTAR);
-      TOKEN2ID(tDSTAR);
-      TOKEN2ID(tAMPER);
-      TOKEN2ID(tLAMBDA);
-      TOKEN2ID(tSYMBEG);
-      TOKEN2ID(tSTRING_BEG);
-      TOKEN2ID(tXSTRING_BEG);
-      TOKEN2ID(tREGEXP_BEG);
-      TOKEN2ID(tWORDS_BEG);
-      TOKEN2ID(tQWORDS_BEG);
-      TOKEN2ID(tSYMBOLS_BEG);
-      TOKEN2ID(tQSYMBOLS_BEG);
-      TOKEN2ID(tSTRING_END);
-      TOKEN2ID(tSTRING_DEND);
-      TOKEN2ID(tSTRING_DBEG);
-      TOKEN2ID(tSTRING_DVAR);
-      TOKEN2ID(tLAMBEG);
-      TOKEN2ID(tLABEL_END);
-      TOKEN2ID(tIGNORED_NL);
-      TOKEN2ID(tCOMMENT);
-      TOKEN2ID(tEMBDOC_BEG);
-      TOKEN2ID(tEMBDOC);
-      TOKEN2ID(tEMBDOC_END);
-      TOKEN2ID(tHEREDOC_BEG);
-      TOKEN2ID(tHEREDOC_END);
-      TOKEN2ID(k__END__);
-      TOKEN2ID(tLOWEST);
-      TOKEN2ID(tUMINUS_NUM);
-      TOKEN2ID(tLAST_TOKEN);
-#undef TOKEN2ID
-#undef TOKEN2ID2
+#define TOKEN2CHAR(tok) case tok: return (#tok);
+#define TOKEN2CHAR2(tok, name) case tok: return (name);
+      TOKEN2CHAR2(' ', "word_sep");
+      TOKEN2CHAR2('!', "!")
+      TOKEN2CHAR2('%', "%");
+      TOKEN2CHAR2('&', "&");
+      TOKEN2CHAR2('*', "*");
+      TOKEN2CHAR2('+', "+");
+      TOKEN2CHAR2('-', "-");
+      TOKEN2CHAR2('/', "/");
+      TOKEN2CHAR2('<', "<");
+      TOKEN2CHAR2('=', "=");
+      TOKEN2CHAR2('>', ">");
+      TOKEN2CHAR2('?', "?");
+      TOKEN2CHAR2('^', "^");
+      TOKEN2CHAR2('|', "|");
+      TOKEN2CHAR2('~', "~");
+      TOKEN2CHAR2(':', ":");
+      TOKEN2CHAR2(',', ",");
+      TOKEN2CHAR2('.', ".");
+      TOKEN2CHAR2(';', ";");
+      TOKEN2CHAR2('`', "`");
+      TOKEN2CHAR2('\n', "nl");
+      TOKEN2CHAR2('{', "\"{\"");
+      TOKEN2CHAR2('}', "\"}\"");
+      TOKEN2CHAR2('[', "\"[\"");
+      TOKEN2CHAR2(']', "\"]\"");
+      TOKEN2CHAR2('(', "\"(\"");
+      TOKEN2CHAR2(')', "\")\"");
+      TOKEN2CHAR2('\\', "backslash");
+      TOKEN2CHAR(keyword_class);
+      TOKEN2CHAR(keyword_module);
+      TOKEN2CHAR(keyword_def);
+      TOKEN2CHAR(keyword_undef);
+      TOKEN2CHAR(keyword_begin);
+      TOKEN2CHAR(keyword_rescue);
+      TOKEN2CHAR(keyword_ensure);
+      TOKEN2CHAR(keyword_end);
+      TOKEN2CHAR(keyword_if);
+      TOKEN2CHAR(keyword_unless);
+      TOKEN2CHAR(keyword_then);
+      TOKEN2CHAR(keyword_elsif);
+      TOKEN2CHAR(keyword_else);
+      TOKEN2CHAR(keyword_case);
+      TOKEN2CHAR(keyword_when);
+      TOKEN2CHAR(keyword_while);
+      TOKEN2CHAR(keyword_until);
+      TOKEN2CHAR(keyword_for);
+      TOKEN2CHAR(keyword_break);
+      TOKEN2CHAR(keyword_next);
+      TOKEN2CHAR(keyword_redo);
+      TOKEN2CHAR(keyword_retry);
+      TOKEN2CHAR(keyword_in);
+      TOKEN2CHAR(keyword_do);
+      TOKEN2CHAR(keyword_do_cond);
+      TOKEN2CHAR(keyword_do_block);
+      TOKEN2CHAR(keyword_do_LAMBDA);
+      TOKEN2CHAR(keyword_return);
+      TOKEN2CHAR(keyword_yield);
+      TOKEN2CHAR(keyword_super);
+      TOKEN2CHAR(keyword_self);
+      TOKEN2CHAR(keyword_nil);
+      TOKEN2CHAR(keyword_true);
+      TOKEN2CHAR(keyword_false);
+      TOKEN2CHAR(keyword_and);
+      TOKEN2CHAR(keyword_or);
+      TOKEN2CHAR(keyword_not);
+      TOKEN2CHAR(modifier_if);
+      TOKEN2CHAR(modifier_unless);
+      TOKEN2CHAR(modifier_while);
+      TOKEN2CHAR(modifier_until);
+      TOKEN2CHAR(modifier_rescue);
+      TOKEN2CHAR(keyword_alias);
+      TOKEN2CHAR(keyword_defined);
+      TOKEN2CHAR(keyword_BEGIN);
+      TOKEN2CHAR(keyword_END);
+      TOKEN2CHAR(keyword__LINE__);
+      TOKEN2CHAR(keyword__FILE__);
+      TOKEN2CHAR(keyword__ENCODING__);
+      TOKEN2CHAR(tIDENTIFIER);
+      TOKEN2CHAR(tFID);
+      TOKEN2CHAR(tGVAR);
+      TOKEN2CHAR(tIVAR);
+      TOKEN2CHAR(tCONSTANT);
+      TOKEN2CHAR(tCVAR);
+      TOKEN2CHAR(tLABEL);
+      TOKEN2CHAR(tINTEGER);
+      TOKEN2CHAR(tFLOAT);
+      TOKEN2CHAR(tRATIONAL);
+      TOKEN2CHAR(tIMAGINARY);
+      TOKEN2CHAR(tCHAR);
+      TOKEN2CHAR(tNTH_REF);
+      TOKEN2CHAR(tBACK_REF);
+      TOKEN2CHAR(tSTRING_CONTENT);
+      TOKEN2CHAR(tREGEXP_END);
+      TOKEN2CHAR(tDUMNY_END);
+      TOKEN2CHAR(tSP);
+      TOKEN2CHAR(tUPLUS);
+      TOKEN2CHAR(tUMINUS);
+      TOKEN2CHAR(tPOW);
+      TOKEN2CHAR(tCMP);
+      TOKEN2CHAR(tEQ);
+      TOKEN2CHAR(tEQQ);
+      TOKEN2CHAR(tNEQ);
+      TOKEN2CHAR(tGEQ);
+      TOKEN2CHAR(tLEQ);
+      TOKEN2CHAR(tANDOP);
+      TOKEN2CHAR(tOROP);
+      TOKEN2CHAR(tMATCH);
+      TOKEN2CHAR(tNMATCH);
+      TOKEN2CHAR(tDOT2);
+      TOKEN2CHAR(tDOT3);
+      TOKEN2CHAR(tBDOT2);
+      TOKEN2CHAR(tBDOT3);
+      TOKEN2CHAR(tAREF);
+      TOKEN2CHAR(tASET);
+      TOKEN2CHAR(tLSHFT);
+      TOKEN2CHAR(tRSHFT);
+      TOKEN2CHAR(tANDDOT);
+      TOKEN2CHAR(tCOLON2);
+      TOKEN2CHAR(tCOLON3);
+      TOKEN2CHAR(tOP_ASGN);
+      TOKEN2CHAR(tASSOC);
+      TOKEN2CHAR(tLPAREN);
+      TOKEN2CHAR(tLPAREN_ARG);
+      TOKEN2CHAR(tRPAREN);
+      TOKEN2CHAR(tLBRACK);
+      TOKEN2CHAR(tLBRACE);
+      TOKEN2CHAR(tLBRACE_ARG);
+      TOKEN2CHAR(tSTAR);
+      TOKEN2CHAR(tDSTAR);
+      TOKEN2CHAR(tAMPER);
+      TOKEN2CHAR(tLAMBDA);
+      TOKEN2CHAR(tSYMBEG);
+      TOKEN2CHAR(tSTRING_BEG);
+      TOKEN2CHAR(tXSTRING_BEG);
+      TOKEN2CHAR(tREGEXP_BEG);
+      TOKEN2CHAR(tWORDS_BEG);
+      TOKEN2CHAR(tQWORDS_BEG);
+      TOKEN2CHAR(tSYMBOLS_BEG);
+      TOKEN2CHAR(tQSYMBOLS_BEG);
+      TOKEN2CHAR(tSTRING_END);
+      TOKEN2CHAR(tSTRING_DEND);
+      TOKEN2CHAR(tSTRING_DBEG);
+      TOKEN2CHAR(tSTRING_DVAR);
+      TOKEN2CHAR(tLAMBEG);
+      TOKEN2CHAR(tLABEL_END);
+      TOKEN2CHAR(tIGNORED_NL);
+      TOKEN2CHAR(tCOMMENT);
+      TOKEN2CHAR(tEMBDOC_BEG);
+      TOKEN2CHAR(tEMBDOC);
+      TOKEN2CHAR(tEMBDOC_END);
+      TOKEN2CHAR(tHEREDOC_BEG);
+      TOKEN2CHAR(tHEREDOC_END);
+      TOKEN2CHAR(k__END__);
+      TOKEN2CHAR(tLOWEST);
+      TOKEN2CHAR(tUMINUS_NUM);
+      TOKEN2CHAR(tLAST_TOKEN);
+#undef TOKEN2CHAR
+#undef TOKEN2CHAR2
     }
 
     rb_bug("parser_token2id: unknown token %d", tok);
@@ -2565,8 +2565,8 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
     return str;
 }
 
-#ifndef UNIVERSAL_PARSER
 #ifndef RIPPER
+#ifndef UNIVERSAL_PARSER
 # define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len,                            \
@@ -2587,7 +2587,67 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
             memcmp(ptr1, ptr2, len1) != 0);
 }
 #endif
-#endif
+
+static void
+rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
+{
+    long i;
+    if (ary->capa < len) {
+        ary->capa = len;
+        ary->data = xrealloc(ary->data, sizeof(void *) * len);
+        for (i = ary->len; i < len; i++) {
+            ary->data[i] = 0;
+        }
+    }
+}
+
+static rb_parser_ary_t *
+rb_parser_ary_new_capa(rb_parser_t *p, long len)
+{
+    if (len < 0) {
+        rb_bug("negative array size (or size too big): %ld", len);
+    }
+    rb_parser_ary_t *ary = xcalloc(1, sizeof(rb_parser_ary_t));
+    ary->len = 0;
+    ary->capa = len;
+    if (0 < len) {
+        ary->data = (rb_parser_ast_token_t **)xcalloc(len, sizeof(rb_parser_ast_token_t *));
+    }
+    else {
+        ary->data = NULL;
+    }
+    return ary;
+}
+#define rb_parser_ary_new2 rb_parser_ary_new_capa
+
+static rb_parser_ary_t *
+rb_parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
+{
+    if (ary->len == ary->capa) {
+        rb_parser_ary_extend(p, ary, ary->len == 0 ? 1 : ary->len * 2);
+    }
+    ary->data[ary->len++] = val;
+    return ary;
+}
+
+static void
+rb_parser_ast_token_free(rb_parser_t *p, rb_parser_ast_token_t *token)
+{
+    if (!token) return;
+    rb_parser_string_free(p, token->str);
+    xfree(token);
+}
+
+static void
+rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
+{
+    for (long i = 0; i < tokens->len; i++) {
+        rb_parser_ast_token_free(p, tokens->data[i]);
+    }
+    xfree(tokens);
+}
+
+#endif /* !RIPPER */
 %}
 
 %expect 0
@@ -7035,35 +7095,100 @@ parser_has_token(struct parser_params *p)
     return pcur > ptok;
 }
 
-static VALUE
-code_loc_to_ary(struct parser_params *p, const rb_code_location_t *loc)
+static const char *
+escaped_char(int c)
 {
-    VALUE ary = rb_ary_new_from_args(4,
-        INT2NUM(loc->beg_pos.lineno), INT2NUM(loc->beg_pos.column),
-        INT2NUM(loc->end_pos.lineno), INT2NUM(loc->end_pos.column));
-    rb_obj_freeze(ary);
+    switch (c) {
+      case '"': return "\\\"";
+      case '\\': return "\\\\";
+      case '\0': return "\\0";
+      case '\n': return "\\n";
+      case '\r': return "\\r";
+      case '\t': return "\\t";
+      case '\f': return "\\f";
+      case '\013': return "\\v";
+      case '\010': return "\\b";
+      case '\007': return "\\a";
+      case '\033': return "\\e";
+      case '\x7f': return "\\c?";
+    }
+    return NULL;
+}
 
-    return ary;
+static rb_parser_string_t *
+rb_parser_str_escape(struct parser_params *p, rb_parser_string_t *str)
+{
+    rb_encoding *enc = p->enc;
+    const char *ptr = str->ptr;
+    const char *pend = ptr + str->len;
+    const char *prev = ptr;
+    char charbuf[5] = {'\\', 'x', 0, 0, 0};
+    rb_parser_string_t * result = rb_parser_string_new(p, 0, 0);
+    int asciicompat = rb_enc_asciicompat(enc);
+
+    while (ptr < pend) {
+        unsigned int c;
+        const char *cc;
+        int n = rb_enc_precise_mbclen(ptr, pend, enc);
+        if (!MBCLEN_CHARFOUND_P(n)) {
+            if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            n = rb_enc_mbminlen(enc);
+            if (pend < ptr + n)
+                n = (int)(pend - ptr);
+            while (n--) {
+                c = *ptr & 0xf0 >> 4;
+                charbuf[2] = (c < 10) ? '0' + c : 'A' + c - 10;
+                c = *ptr & 0x0f;
+                charbuf[3] = (c < 10) ? '0' + c : 'A' + c - 10;
+                rb_parser_str_buf_cat(p, result, charbuf, 4);
+                prev = ++ptr;
+            }
+            continue;
+        }
+        n = MBCLEN_CHARFOUND_LEN(n);
+        c = rb_enc_mbc_to_codepoint(ptr, pend, enc);
+        ptr += n;
+        cc = escaped_char(c);
+        if (cc) {
+            if (ptr - n > prev) rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
+            rb_parser_str_buf_cat(p, result, cc, strlen(cc));
+            prev = ptr;
+        }
+        else if (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c)) {
+        }
+        else {
+            if (ptr - n > prev) {
+                rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
+                prev = ptr - n;
+            }
+            rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            prev = ptr;
+        }
+    }
+    if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+
+    return result;
 }
 
 static void
-parser_append_tokens(struct parser_params *p, VALUE str, enum yytokentype t, int line)
+parser_append_tokens(struct parser_params *p, rb_parser_string_t *str, enum yytokentype t, int line)
 {
-    VALUE ary;
-    int token_id;
-
-    ary = rb_ary_new2(4);
-    token_id = p->token_id;
-    rb_ary_push(ary, INT2FIX(token_id));
-    rb_ary_push(ary, ID2SYM(parser_token2id(p, t)));
-    rb_ary_push(ary, str);
-    rb_ary_push(ary, code_loc_to_ary(p, p->yylloc));
-    rb_obj_freeze(ary);
-    rb_ary_push(p->tokens, ary);
+    rb_parser_ast_token_t *token = xcalloc(1, sizeof(rb_parser_ast_token_t));
+    token->id = p->token_id;
+    token->type_name = parser_token2char(p, t);
+    token->str = str;
+    token->loc.beg_pos = p->yylloc->beg_pos;
+    token->loc.end_pos = p->yylloc->end_pos;
+    rb_parser_ary_push(p, p->tokens, token);
     p->token_id++;
 
     if (p->debug) {
-        rb_parser_printf(p, "Append tokens (line: %d) %"PRIsVALUE"\n", line, ary);
+        rb_parser_string_t *str_escaped = rb_parser_str_escape(p, str);
+        rb_parser_printf(p, "Append tokens (line: %d) [%d, :%s, \"%s\", [%d, %d, %d, %d]]\n",
+                            line, token->id, token->type_name, str_escaped->ptr,
+                            token->loc.beg_pos.lineno, token->loc.beg_pos.column,
+                            token->loc.end_pos.lineno, token->loc.end_pos.column);
+        rb_parser_string_free(p, str_escaped);
     }
 }
 
@@ -7077,7 +7202,7 @@ parser_dispatch_scan_event(struct parser_params *p, enum yytokentype t, int line
     RUBY_SET_YYLLOC(*p->yylloc);
 
     if (p->keep_tokens) {
-        VALUE str = STR_NEW(p->lex.ptok, p->lex.pcur - p->lex.ptok);
+        rb_parser_string_t *str = rb_parser_encoding_string_new(p, p->lex.ptok, p->lex.pcur - p->lex.ptok, p->enc);
         parser_append_tokens(p, str, t, line);
     }
 
@@ -7095,7 +7220,8 @@ parser_dispatch_delayed_token(struct parser_params *p, enum yytokentype t, int l
     RUBY_SET_YYLLOC_OF_DELAYED_TOKEN(*p->yylloc);
 
     if (p->keep_tokens) {
-        parser_append_tokens(p, p->delayed.token, t, line);
+        rb_parser_string_t *str = rb_str_to_parser_string(p, p->delayed.token);
+        parser_append_tokens(p, str, t, line);
     }
 
     p->delayed.token = Qnil;
@@ -7607,7 +7733,7 @@ yycompile0(VALUE arg)
         tree = NEW_NIL(&NULL_LOC);
     }
     else {
-        VALUE tokens = p->tokens;
+        rb_parser_ary_t *tokens = p->tokens;
         NODE *prelude;
         NODE *body = parser_append_options(p, RNODE_SCOPE(tree)->nd_body);
         prelude = block_append(p, p->eval_tree_begin, body);
@@ -7615,8 +7741,8 @@ yycompile0(VALUE arg)
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
         p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
-            rb_obj_freeze(tokens);
-            rb_ast_set_tokens(p->ast, tokens);
+            p->ast->node_buffer->tokens = tokens;
+            p->tokens = NULL;
         }
     }
     p->ast->body.root = tree;
@@ -9230,7 +9356,7 @@ parser_dispatch_heredoc_end(struct parser_params *p, int line)
         dispatch_delayed_token(p, tSTRING_CONTENT);
 
     if (p->keep_tokens) {
-        VALUE str = STR_NEW(p->lex.ptok, p->lex.pend - p->lex.ptok);
+        rb_parser_string_t *str = rb_parser_encoding_string_new(p, p->lex.ptok, p->lex.pend - p->lex.ptok, p->enc);
         RUBY_SET_YYLLOC_OF_HEREDOC_END(*p->yylloc);
         parser_append_tokens(p, str, tHEREDOC_END, line);
     }
@@ -15973,7 +16099,7 @@ parser_initialize(struct parser_params *p)
     p->error_buffer = Qfalse;
     p->end_expect_token_locations = NULL;
     p->token_id = 0;
-    p->tokens = Qnil;
+    p->tokens = NULL;
 #else
     p->result = Qnil;
     p->parsing_thread = Qnil;
@@ -16006,7 +16132,6 @@ rb_ruby_parser_mark(void *ptr)
 #ifndef RIPPER
     rb_gc_mark(p->debug_lines);
     rb_gc_mark(p->error_buffer);
-    rb_gc_mark(p->tokens);
 #else
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
@@ -16027,6 +16152,12 @@ rb_ruby_parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
+
+#ifndef RIPPER
+    if (p->tokens) {
+        rb_parser_tokens_free(p, p->tokens);
+    }
+#endif
 
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
@@ -16145,8 +16276,7 @@ void
 rb_ruby_parser_keep_tokens(rb_parser_t *p)
 {
     p->keep_tokens = 1;
-    // TODO
-    p->tokens = rb_ary_new();
+    p->tokens = rb_parser_ary_new_capa(p, 10);
 }
 
 #ifndef UNIVERSAL_PARSER

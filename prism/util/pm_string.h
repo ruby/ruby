@@ -110,6 +110,17 @@ void pm_string_constant_init(pm_string_t *string, const char *source, size_t len
 PRISM_EXPORTED_FUNCTION bool pm_string_mapped_init(pm_string_t *string, const char *filepath);
 
 /**
+ * Read the file indicated by the filepath parameter into source and load its
+ * contents and size into the given `pm_string_t`. The given `pm_string_t`
+ * should be freed using `pm_string_free` when it is no longer used.
+ *
+ * @param string The string to initialize.
+ * @param filepath The filepath to read.
+ * @return Whether or not the file was successfully read.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_string_file_init(pm_string_t *string, const char *filepath);
+
+/**
  * Returns the memory size associated with the string.
  *
  * @param string The string to get the memory size of.

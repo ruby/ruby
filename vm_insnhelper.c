@@ -957,7 +957,7 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-        if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+        if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
                 RCLASS_EXT(CREF_CLASS(cref))->cloned) {
             return key_cref;
         }
@@ -1171,7 +1171,7 @@ vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_l
     }
 
     while (CREF_NEXT(cref) &&
-           (NIL_P(CREF_CLASS(cref)) || FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+           (NIL_P(CREF_CLASS(cref)) || RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
             CREF_PUSHED_BY_EVAL(cref) || CREF_SINGLETON(cref))) {
         cref = CREF_NEXT(cref);
     }

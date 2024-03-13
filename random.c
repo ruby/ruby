@@ -596,7 +596,7 @@ fill_random_bytes_crypt(void *seed, size_t size)
             if (prov != INVALID_HCRYPTPROV) {
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-                rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
+                rb_vm_register_global_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
             }
         }
         else {			/* another thread acquired */

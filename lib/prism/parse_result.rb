@@ -87,9 +87,9 @@ module Prism
 
       while left <= right
         mid = left + (right - left) / 2
-        return mid if offsets[mid] == byte_offset
+        return mid if (offset = offsets[mid]) == byte_offset
 
-        if offsets[mid] < byte_offset
+        if offset < byte_offset
           left = mid + 1
         else
           right = mid - 1
@@ -262,7 +262,7 @@ module Prism
 
     # Returns true if the given other location is equal to this location.
     def ==(other)
-      other.is_a?(Location) &&
+      Location === other &&
         other.start_offset == start_offset &&
         other.end_offset == end_offset
     end
@@ -275,13 +275,6 @@ module Prism
       raise "Incompatible locations" if start_offset > other.start_offset
 
       Location.new(source, start_offset, other.end_offset - start_offset)
-    end
-
-    # Returns a null location that does not correspond to a source and points to
-    # the beginning of the file. Useful for when you want a location object but
-    # do not care where it points.
-    def self.null
-      new(nil, 0, 0) # steep:ignore
     end
   end
 
@@ -373,6 +366,10 @@ module Prism
 
   # This represents an error that was encountered during parsing.
   class ParseError
+    # The type of error. This is an _internal_ symbol that is used for
+    # communicating with translation layers. It is not meant to be public API.
+    attr_reader :type
+
     # The message associated with this error.
     attr_reader :message
 
@@ -383,7 +380,8 @@ module Prism
     attr_reader :level
 
     # Create a new error object with the given message and location.
-    def initialize(message, location, level)
+    def initialize(type, message, location, level)
+      @type = type
       @message = message
       @location = location
       @level = level
@@ -391,17 +389,21 @@ module Prism
 
     # Implement the hash pattern matching interface for ParseError.
     def deconstruct_keys(keys)
-      { message: message, location: location, level: level }
+      { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this error.
     def inspect
-      "#<Prism::ParseError @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
+      "#<Prism::ParseError @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
 
   # This represents a warning that was encountered during parsing.
   class ParseWarning
+    # The type of warning. This is an _internal_ symbol that is used for
+    # communicating with translation layers. It is not meant to be public API.
+    attr_reader :type
+
     # The message associated with this warning.
     attr_reader :message
 
@@ -412,7 +414,8 @@ module Prism
     attr_reader :level
 
     # Create a new warning object with the given message and location.
-    def initialize(message, location, level)
+    def initialize(type, message, location, level)
+      @type = type
       @message = message
       @location = location
       @level = level
@@ -420,12 +423,12 @@ module Prism
 
     # Implement the hash pattern matching interface for ParseWarning.
     def deconstruct_keys(keys)
-      { message: message, location: location, level: level }
+      { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this warning.
     def inspect
-      "#<Prism::ParseWarning @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
+      "#<Prism::ParseWarning @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
 
@@ -541,7 +544,7 @@ module Prism
 
     # Returns true if the given other token is equal to this token.
     def ==(other)
-      other.is_a?(Token) &&
+      Token === other &&
         other.type == type &&
         other.value == value
     end

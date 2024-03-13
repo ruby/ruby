@@ -23,15 +23,21 @@ module Prism
     #     size_t       -> :size_t
     #     void         -> :void
     #
-    def self.resolve_type(type)
+    def self.resolve_type(type, callbacks)
       type = type.strip
-      type.end_with?("*") ? :pointer : type.delete_prefix("const ").to_sym
+
+      if !type.end_with?("*")
+        type.delete_prefix("const ").to_sym
+      else
+        type = type.delete_suffix("*").rstrip
+        callbacks.include?(type.to_sym) ? type.to_sym : :pointer
+      end
     end
 
     # Read through the given header file and find the declaration of each of the
     # given functions. For each one, define a function with the same name and
     # signature as the C function.
-    def self.load_exported_functions_from(header, *functions)
+    def self.load_exported_functions_from(header, *functions, callbacks)
       File.foreach(File.expand_path("../../include/#{header}", __dir__)) do |line|
         # We only want to attempt to load exported functions.
         next unless line.start_with?("PRISM_EXPORTED_FUNCTION ")
@@ -55,24 +61,28 @@ module Prism
 
         # Resolve the type of the argument by dropping the name of the argument
         # first if it is present.
-        arg_types.map! { |type| resolve_type(type.sub(/\w+$/, "")) }
+        arg_types.map! { |type| resolve_type(type.sub(/\w+$/, ""), callbacks) }
 
         # Attach the function using the FFI library.
-        attach_function name, arg_types, resolve_type(return_type)
+        attach_function name, arg_types, resolve_type(return_type, [])
       end
 
       # If we didn't find all of the functions, raise an error.
       raise "Could not find functions #{functions.inspect}" unless functions.empty?
     end
 
+    callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+
     load_exported_functions_from(
       "prism.h",
       "pm_version",
       "pm_serialize_parse",
+      "pm_serialize_parse_stream",
       "pm_serialize_parse_comments",
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
-      "pm_parse_success_p"
+      "pm_parse_success_p",
+      [:pm_parse_stream_fgets_t]
     )
 
     load_exported_functions_from(
@@ -81,7 +91,8 @@ module Prism
       "pm_buffer_init",
       "pm_buffer_value",
       "pm_buffer_length",
-      "pm_buffer_free"
+      "pm_buffer_free",
+      []
     )
 
     load_exported_functions_from(
@@ -90,7 +101,8 @@ module Prism
       "pm_string_free",
       "pm_string_source",
       "pm_string_length",
-      "pm_string_sizeof"
+      "pm_string_sizeof",
+      []
     )
 
     # This object represents a pm_buffer_t. We only use it as an opaque pointer,
@@ -215,11 +227,34 @@ module Prism
     end
 
     # Mirror the Prism.parse_file API by using the serialization API. This uses
-    # native strings instead of Ruby strings because it allows us to use mmap when
-    # it is available.
+    # native strings instead of Ruby strings because it allows us to use mmap
+    # when it is available.
     def parse_file(filepath, **options)
       options[:filepath] = filepath
       LibRubyParser::PrismString.with_file(filepath) { |string| parse_common(string, string.read, options) }
+    end
+
+    # Mirror the Prism.parse_stream API by using the serialization API.
+    def parse_stream(stream, **options)
+      LibRubyParser::PrismBuffer.with do |buffer|
+        source = +""
+        callback = -> (string, size, _) {
+          raise "Expected size to be >= 0, got: #{size}" if size <= 0
+
+          if !(line = stream.gets(size - 1)).nil?
+            source << line
+            string.write_string("#{line}\x00", line.bytesize + 1)
+          end
+        }
+
+        # In the pm_serialize_parse_stream function it accepts a pointer to the
+        # IO object as a void* and then passes it through to the callback as the
+        # third argument, but it never touches it itself. As such, since we have
+        # access to the IO object already through the closure of the lambda, we
+        # can pass a null pointer here and not worry.
+        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, dump_options(options))
+        Prism.load(source, buffer.read)
+      end
     end
 
     # Mirror the Prism.parse_comments API by using the serialization API.
@@ -346,6 +381,9 @@ module Prism
 
       template << "l"
       values << options.fetch(:line, 1)
+
+      template << "L"
+      values << options.fetch(:offset, 0)
 
       template << "L"
       if (encoding = options[:encoding])

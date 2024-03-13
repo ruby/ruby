@@ -6,9 +6,9 @@ endif
 
 ifeq ($(filter Makefile,$(MAKEFILE_LIST)),)
 include Makefile
+endif
 
 GNUmakefile: $(srcdir)/template/GNUmakefile.in
-endif
 
 override silence := $(if $(findstring s,$(firstword $(MFLAGS))),yes,no)
 
@@ -29,5 +29,3 @@ override UNICODE_TABLES_DEPENDENTS = \
 
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk
-
-GNUmakefile: $(srcdir)/template/GNUmakefile.in

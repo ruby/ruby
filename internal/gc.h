@@ -79,14 +79,6 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_MARK_MOVABLE_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
-} while (0)
-#define RUBY_MARK_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark(markobj);} \
-} while (0)
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
@@ -134,19 +126,10 @@ struct rb_objspace; /* in vm_core.h */
 # undef RB_NEWOBJ_OF
 #endif
 
-#define NEWOBJ_OF_0(var, T, c, f, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of(GET_EC(), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
-#define NEWOBJ_OF_ec(var, T, c, f, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
-
 #define NEWOBJ_OF(var, T, c, f, s, ec) \
-        NEWOBJ_OF_HELPER(ec)(var, T, c, f, s, ec)
-
-#define NEWOBJ_OF_HELPER(ec) NEWOBJ_OF_ ## ec
+    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), s))
 
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
@@ -240,6 +223,8 @@ static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
+size_t *rb_gc_size_pool_sizes(void);
+size_t rb_gc_size_pool_id_for_size(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
 bool rb_gc_is_ptr_to_obj(const void *ptr);
 

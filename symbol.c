@@ -95,12 +95,12 @@ Init_sym(void)
 
     VALUE dsym_fstrs = rb_ident_hash_new();
     symbols->dsymbol_fstr_hash = dsym_fstrs;
-    rb_gc_register_mark_object(dsym_fstrs);
+    rb_vm_register_global_object(dsym_fstrs);
     rb_obj_hide(dsym_fstrs);
 
     symbols->str_sym = st_init_table_with_size(&symhash, 1000);
     symbols->ids = rb_ary_hidden_new(0);
-    rb_gc_register_mark_object(symbols->ids);
+    rb_vm_register_global_object(symbols->ids);
 
     Init_op_tbl();
     Init_id();

@@ -21,6 +21,7 @@
         │   │       │       ├── value_loc: (2,6)-(2,8) = "hi"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "hi"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
@@ -33,6 +34,7 @@
         │   │   │   ├── keyword_loc: (5,11)-(5,15) = "when"
         │   │   │   ├── conditions: (length: 1)
         │   │   │   │   └── @ TrueNode (location: (5,16)-(5,20))
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (5,22)-(5,30))
         │   │   │       └── body: (length: 1)
@@ -59,6 +61,7 @@
         │   │       ├── keyword_loc: (5,32)-(5,36) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ FalseNode (location: (5,37)-(5,42))
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,44)-(5,53))
         │   │           └── body: (length: 1)
@@ -103,6 +106,7 @@
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
@@ -125,6 +129,7 @@
         │   │       │       ├── value_loc: (10,6)-(10,8) = "hi"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "hi"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (11,0)-(13,3))
@@ -161,6 +166,7 @@
         │   │       │   │   └── name: :FooBar
         │   │       │   └── @ ConstantReadNode (location: (15,24)-(15,31))
         │   │       │       └── name: :BazBonk
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (15,0)-(15,4) = "case"
@@ -204,6 +210,7 @@
         │   │       │       │           └── block: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (17,0)-(17,4) = "case"
@@ -224,6 +231,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (23,0)-(25,3))
@@ -254,6 +262,7 @@
         │   │       │       ├── value_loc: (28,9)-(28,10) = "b"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "b"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (29,5)-(30,6))
@@ -271,6 +280,7 @@
         │   │       │   └── @ IntegerNode (location: (32,19)-(32,20))
         │   │       │       ├── flags: decimal
         │   │       │       └── value: 1
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
@@ -294,6 +304,7 @@
         │   │       │   └── @ IntegerNode (location: (35,5)-(35,6))
         │   │       │       ├── flags: decimal
         │   │       │       └── value: 3
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
@@ -317,6 +328,7 @@
         │   │       │   └── @ IntegerNode (location: (38,18)-(38,19))
         │   │       │       ├── flags: decimal
         │   │       │       └── value: 3
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (38,0)-(38,4) = "case"

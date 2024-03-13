@@ -744,8 +744,6 @@ typedef struct rb_vm_struct {
     VALUE coverages, me2counter;
     int coverage_mode;
 
-    st_table * defined_module_hash;
-
     struct rb_objspace *objspace;
 
     rb_at_exit_list *at_exit;

@@ -153,12 +153,12 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
-    M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
-    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
-    M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
-    M("--rjit-disable",            "", "Disable RJIT for lazily enabling it with RubyVM::RJIT.enable"),
-    M("--rjit-trace",              "", "Allow TracePoint during JIT compilation"),
-    M("--rjit-trace-exits",        "", "Trace side exit locations"),
+    M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")."),
+    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")."),
+    M("--rjit-stats",              "", "Enable collecting RJIT statistics."),
+    M("--rjit-disable",            "", "Disable RJIT for lazily enabling it with RubyVM::RJIT.enable."),
+    M("--rjit-trace",              "", "Allow TracePoint during JIT compilation."),
+    M("--rjit-trace-exits",        "", "Trace side exit locations."),
 #ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
 #endif

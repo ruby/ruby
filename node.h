@@ -40,7 +40,7 @@ struct node_buffer_struct {
     // - text of token
     // - location info
     // Array, whose entry is array
-    VALUE tokens;
+    rb_parser_ary_t *tokens;
 #ifdef UNIVERSAL_PARSER
     const rb_parser_config_t *config;
 #endif
@@ -55,7 +55,6 @@ rb_ast_t *rb_ast_new(void);
 #endif
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
-VALUE rb_ast_tokens(rb_ast_t *ast);
 #if RUBY_DEBUG
 void rb_ast_node_type_change(NODE *n, enum node_type type);
 #endif
@@ -65,7 +64,6 @@ void rb_node_init(NODE *n, enum node_type type);
 void rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating);
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
-void rb_ast_set_tokens(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);

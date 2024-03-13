@@ -117,7 +117,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -136,6 +138,8 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: Install Rust
         if: ${{ matrix.rust_version }}
@@ -163,8 +167,21 @@ jobs:
       - name: Check YJIT enabled
         run: ./miniruby --yjit -v | grep "+YJIT"
 
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: ubuntu-20.04
+          test-opts: ${{ matrix.configure }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
+
       - name: make ${{ matrix.test_task }}
-        run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
+        run: >-
+          make -s -j ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug
+          YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'

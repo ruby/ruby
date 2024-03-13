@@ -1,5 +1,7 @@
 #include "prism/diagnostic.h"
 
+#define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
+
 /** This struct holds the data for each diagnostic. */
 typedef struct {
     /** The message associated with the diagnostic. */
@@ -71,7 +73,7 @@ typedef struct {
  * * `PM_WARNING_LEVEL_DEFAULT` - Warnings that appear for `ruby -c -e 'code'`.
  * * `PM_WARNING_LEVEL_VERBOSE` - Warnings that appear with `-w`, as in `ruby -w -c -e 'code'`.
  */
-static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
+static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     // Special error that can be replaced
     [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_FATAL },
 
@@ -202,7 +204,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_NUMBER_OCTAL]               = { "invalid octal number", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_UNDERSCORE]          = { "invalid underscore placement in number", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_CHARACTER]                  = { "invalid character 0x%X", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INVALID_MULTIBYTE_CHAR]             = { "invalid multibyte char (%s)", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_INVALID_MULTIBYTE_ESCAPE]           = { "invalid multibyte escape: /%.*s/", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_PERCENT]                    = { "invalid `%` token", PM_ERROR_LEVEL_FATAL }, // TODO WHAT?
     [PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0]      = { "`%.*s' is not allowed as a global variable name", PM_ERROR_LEVEL_FATAL },
@@ -268,7 +272,12 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_PATTERN_TERM_BRACKET]               = { "expected a `]` to close the pattern expression", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_PATTERN_TERM_PAREN]                 = { "expected a `)` to close the pattern expression", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_PIPEPIPEEQ_MULTI_ASSIGN]            = { "unexpected `||=` in a multiple assignment", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH]    = { "regexp encoding option '%c' differs from source encoding '%s'", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING]      = { "incompatible character encoding: /%.*s/", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_REGEXP_NON_ESCAPED_MBC]             = { "/.../n has a non escaped non ASCII character in non ASCII-8BIT script: /%.*s/", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_REGEXP_INVALID_UNICODE_RANGE]       = { "invalid Unicode range: /%.*s/", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_REGEXP_TERM]                        = { "expected a closing delimiter for the regular expression", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP]   = { "UTF-8 character in non UTF-8 regexp: /%s/", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_RESCUE_EXPRESSION]                  = { "expected a rescued expression", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_RESCUE_MODIFIER_VALUE]              = { "expected a value after the `rescue` modifier", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_RESCUE_TERM]                        = { "expected a closing delimiter for the `rescue` clause", PM_ERROR_LEVEL_FATAL },
@@ -304,19 +313,47 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     // Warnings
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_MINUS]    = { "ambiguous first argument; put parentheses or a space even after `-` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = { "ambiguous first argument; put parentheses or a space even after `+` operator", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND]        = { "ambiguous `&` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_PREFIX_STAR]             = { "ambiguous `*` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_AMBIGUOUS_PREFIX_STAR_STAR]        = { "ambiguous `**` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_SLASH]                   = { "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_COMPARISON_AFTER_COMPARISON]       = { "comparison '%.*s' after comparison", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_DOT_DOT_DOT_EOL]                   = { "... at EOL, should be parenthesized?", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_DUPLICATED_HASH_KEY]               = { "key %.*s is duplicated and overwritten on line %" PRIi32, PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_DUPLICATED_WHEN_CLAUSE]            = { "duplicated 'when' clause with line %" PRIi32 " is ignored", PM_WARNING_LEVEL_VERBOSE },
-    [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_EQUAL_IN_CONDITIONAL_3_3_0]        = { "found `= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_EQUAL_IN_CONDITIONAL]              = { "found '= literal' in conditional, should be ==", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_END_IN_METHOD]                     = { "END in method; use at_exit", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_FLOAT_OUT_OF_RANGE]                = { "Float %.*s%s out of range", PM_WARNING_LEVEL_VERBOSE },
-    [PM_WARN_INTEGER_IN_FLIP_FLOP]              = { "integer literal in flip-flop", PM_WARNING_LEVEL_DEFAULT }
+    [PM_WARN_INTEGER_IN_FLIP_FLOP]              = { "integer literal in flip-flop", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_INVALID_CHARACTER]                 = { "invalid character syntax; use %s%s%s", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_KEYWORD_EOL]                       = { "`%.*s` at the end of line without an expression", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_LITERAL_IN_CONDITION_DEFAULT]      = { "%sliteral in %s", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_LITERAL_IN_CONDITION_VERBOSE]      = { "%sliteral in %s", PM_WARNING_LEVEL_VERBOSE },
+    [PM_WARN_UNEXPECTED_CARRIAGE_RETURN]        = { "encountered \\r in middle of line, treated as a mere space", PM_WARNING_LEVEL_DEFAULT }
 };
+
+/**
+ * Get the human-readable name of the given diagnostic ID.
+ */
+const char *
+pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
+    switch (diag_id) {
+        <%- errors.each do |error| -%>
+        case PM_ERR_<%= error.name %>: return "<%= error.name.downcase %>";
+        <%- end -%>
+        <%- warnings.each do |warning| -%>
+        case PM_WARN_<%= warning.name %>: return "<%= warning.name.downcase %>";
+        <%- end -%>
+    }
+
+    assert(false && "unreachable");
+    return "";
+}
 
 static inline const char *
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
-    assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+    assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     const char *message = diagnostic_messages[diag_id].message;
     assert(message);
@@ -326,7 +363,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 
 static inline uint8_t
 pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
-    assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+    assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     return (uint8_t) diagnostic_messages[diag_id].level;
 }
@@ -336,11 +373,12 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  */
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { start, end },
+        .diag_id = diag_id,
         .message = pm_diagnostic_message(diag_id),
         .owned = false,
         .level = pm_diagnostic_level(diag_id)
@@ -367,15 +405,15 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) {
         return false;
     }
 
     size_t length = (size_t) (result + 1);
-    char *message = (char *) malloc(length);
+    char *message = (char *) xmalloc(length);
     if (message == NULL) {
-        free(diagnostic);
+        xfree(diagnostic);
         return false;
     }
 
@@ -385,6 +423,7 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { start, end },
+        .diag_id = diag_id,
         .message = message,
         .owned = true,
         .level = pm_diagnostic_level(diag_id)
@@ -404,8 +443,8 @@ pm_diagnostic_list_free(pm_list_t *list) {
     while (node != NULL) {
         pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
 
-        if (node->owned) free((void *) node->message);
-        free(node);
+        if (node->owned) xfree((void *) node->message);
+        xfree(node);
 
         node = next;
     }

@@ -32,6 +32,7 @@
 #endif
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
@@ -2388,7 +2389,7 @@ name_err_mesg_to_str(VALUE obj)
                 VALUE klass;
               object:
                 klass = CLASS_OF(obj);
-                if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
+                if (RB_TYPE_P(klass, T_CLASS) && RCLASS_SINGLETON_P(klass)) {
                     s = FAKE_CSTR(&s_str, "");
                     if (obj == rb_vm_top_self()) {
                         c = FAKE_CSTR(&c_str, "main");

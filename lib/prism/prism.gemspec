@@ -14,6 +14,7 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ["lib"]
   spec.files = [
+    "BSDmakefile",
     "CHANGELOG.md",
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
@@ -34,7 +35,7 @@ Gem::Specification.new do |spec|
     "docs/parser_translation.md",
     "docs/parsing_rules.md",
     "docs/releasing.md",
-    "docs/ripper.md",
+    "docs/ripper_translation.md",
     "docs/ruby_api.md",
     "docs/ruby_parser_translation.md",
     "docs/serialization.md",
@@ -86,6 +87,7 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/comments.rb",
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/pattern.rb",
+    "lib/prism/polyfill/string.rb",
     "lib/prism/serialize.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
@@ -95,7 +97,8 @@ Gem::Specification.new do |spec|
     "lib/prism/translation/parser/lexer.rb",
     "lib/prism/translation/parser/rubocop.rb",
     "lib/prism/translation/ripper.rb",
-    "lib/prism/translation/ripper/ripper_compiler.rb",
+    "lib/prism/translation/ripper/sexp.rb",
+    "lib/prism/translation/ripper/shim.rb",
     "lib/prism/translation/ruby_parser.rb",
     "lib/prism/visitor.rb",
     "src/diagnostic.c",

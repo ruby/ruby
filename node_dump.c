@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/hash.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
@@ -89,7 +90,7 @@ rb_dump_literal(VALUE lit)
         switch (RB_BUILTIN_TYPE(lit)) {
           case T_CLASS: case T_MODULE: case T_ICLASS:
             str = rb_class_path(lit);
-            if (FL_TEST(lit, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(lit)) {
                 str = rb_sprintf("<%"PRIsVALUE">", str);
             }
             return str;

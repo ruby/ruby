@@ -43,7 +43,7 @@ describe "Invoking a method" do
   end
 
   describe "with optional arguments" do
-    it "uses the optional argument if none is is passed" do
+    it "uses the optional argument if none is passed" do
       specs.fooM0O1.should == [1]
     end
 

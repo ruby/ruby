@@ -34,6 +34,8 @@ jobs:
           - test_task: test-all
             test_opts: --repeat-count=2
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: test-bundler-parallel
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundled-gems
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
       fail-fast: false
@@ -46,7 +48,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -65,6 +69,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 10
@@ -88,8 +93,12 @@ jobs:
         id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
+          os: ${{ matrix.os }}
+          test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
           srcdir: src
+        continue-on-error: true
 
       - name: Set extra test options
         run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
@@ -113,17 +122,6 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - name: Record test results in Launchable
-        uses: ./.github/actions/launchable/record-test
-        with:
-          # We need to configure the `build` directory because
-          # this composite action is executed in the default working directory.
-          report-path: ../build/launchable_reports.json
-          os: ${{ matrix.os }}
-          test-opts: ${{ matrix.test_opts }}
-          srcdir: src
-        if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
 
       - uses: ./.github/actions/slack
         with:

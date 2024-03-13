@@ -23,13 +23,14 @@ VALUE rb_cPrismParseResult;
 
 VALUE rb_cPrismDebugEncoding;
 
-ID rb_option_id_filepath;
-ID rb_option_id_encoding;
-ID rb_option_id_line;
-ID rb_option_id_frozen_string_literal;
-ID rb_option_id_version;
-ID rb_option_id_scopes;
 ID rb_option_id_command_line;
+ID rb_option_id_encoding;
+ID rb_option_id_filepath;
+ID rb_option_id_frozen_string_literal;
+ID rb_option_id_line;
+ID rb_option_id_offset;
+ID rb_option_id_scopes;
+ID rb_option_id_version;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -138,8 +139,10 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
     } else if (key_id == rb_option_id_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
+    } else if (key_id == rb_option_id_offset) {
+        if (!NIL_P(value)) pm_options_offset_set(options, NUM2UINT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
-        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
+        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, RTEST(value));
     } else if (key_id == rb_option_id_version) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
@@ -254,7 +257,7 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
 
     const char * string_source = (const char *) pm_string_source(&options->filepath);
 
-    if (!pm_string_mapped_init(input, string_source)) {
+    if (!pm_string_file_init(input, string_source)) {
         pm_options_free(options);
 
 #ifdef _WIN32
@@ -310,7 +313,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
-    char* dup = malloc(length);
+    char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
     pm_string_constant_init(&input, dup, length);
 #endif
@@ -318,7 +321,7 @@ dump(int argc, VALUE *argv, VALUE self) {
     VALUE value = dump_input(&input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
-    free(dup);
+    xfree(dup);
 #endif
 
     pm_string_free(&input);
@@ -452,12 +455,13 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
         }
 
         VALUE error_argv[] = {
+            ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id))),
             rb_enc_str_new_cstr(error->message, encoding),
             rb_class_new_instance(3, location_argv, rb_cPrismLocation),
             level
         };
 
-        rb_ary_push(errors, rb_class_new_instance(3, error_argv, rb_cPrismParseError));
+        rb_ary_push(errors, rb_class_new_instance(4, error_argv, rb_cPrismParseError));
     }
 
     return errors;
@@ -491,15 +495,34 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
         }
 
         VALUE warning_argv[] = {
+            ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id))),
             rb_enc_str_new_cstr(warning->message, encoding),
             rb_class_new_instance(3, location_argv, rb_cPrismLocation),
             level
         };
 
-        rb_ary_push(warnings, rb_class_new_instance(3, warning_argv, rb_cPrismParseWarning));
+        rb_ary_push(warnings, rb_class_new_instance(4, warning_argv, rb_cPrismParseWarning));
     }
 
     return warnings;
+}
+
+/**
+ * Create a new parse result from the given parser, value, encoding, and source.
+ */
+static VALUE
+parse_result_create(pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source) {
+    VALUE result_argv[] = {
+        value,
+        parser_comments(parser, source),
+        parser_magic_comments(parser, source),
+        parser_data_loc(parser, source),
+        parser_errors(parser, encoding, source),
+        parser_warnings(parser, encoding, source),
+        source
+    };
+
+    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
 }
 
 /******************************************************************************/
@@ -608,19 +631,11 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         value = parse_lex_data.tokens;
     }
 
-    VALUE result_argv[] = {
-        value,
-        parser_comments(&parser, source),
-        parser_magic_comments(&parser, source),
-        parser_data_loc(&parser, source),
-        parser_errors(&parser, parse_lex_data.encoding, source),
-        parser_warnings(&parser, parse_lex_data.encoding, source),
-        source
-    };
-
+    VALUE result = parse_result_create(&parser, value, parse_lex_data.encoding, source);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+
+    return result;
 }
 
 /**
@@ -680,17 +695,8 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
-    VALUE result_argv[] = {
-        pm_ast_new(&parser, node, encoding, source),
-        parser_comments(&parser, source),
-        parser_magic_comments(&parser, source),
-        parser_data_loc(&parser, source),
-        parser_errors(&parser, encoding, source),
-        parser_warnings(&parser, encoding, source),
-        source
-    };
-
-    VALUE result = rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+    VALUE value = pm_ast_new(&parser, node, encoding, source);
+    VALUE result = parse_result_create(&parser, value, encoding, source) ;
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -733,7 +739,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
-    char* dup = malloc(length);
+    char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
     pm_string_constant_init(&input, dup, length);
 #endif
@@ -741,12 +747,66 @@ parse(int argc, VALUE *argv, VALUE self) {
     VALUE value = parse_input(&input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
-    free(dup);
+    xfree(dup);
 #endif
 
     pm_string_free(&input);
     pm_options_free(&options);
     return value;
+}
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects.
+ */
+static char *
+parse_stream_fgets(char *string, int size, void *stream) {
+    RUBY_ASSERT(size > 0);
+
+    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    if (NIL_P(line)) {
+        return NULL;
+    }
+
+    const char *cstr = StringValueCStr(line);
+    size_t length = strlen(cstr);
+
+    memcpy(string, cstr, length);
+    string[length] = '\0';
+
+    return string;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_stream(stream, **options) -> ParseResult
+ *
+ * Parse the given object that responds to `gets` and return a ParseResult
+ * instance. The options that are supported are the same as Prism::parse.
+ */
+static VALUE
+parse_stream(int argc, VALUE *argv, VALUE self) {
+    VALUE stream;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &stream, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
+
+    pm_parser_t parser;
+    pm_buffer_t buffer;
+
+    pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, &options);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+
+    VALUE source = pm_source_new(&parser, encoding);
+    VALUE value = pm_ast_new(&parser, node, encoding, source);
+    VALUE result = parse_result_create(&parser, value, encoding, source);
+
+    pm_node_destroy(&parser, node);
+    pm_buffer_free(&buffer);
+    pm_parser_free(&parser);
+
+    return result;
 }
 
 /**
@@ -990,26 +1050,16 @@ integer_parse(VALUE self, VALUE source) {
     pm_integer_t integer = { 0 };
     pm_integer_parse(&integer, PM_INTEGER_BASE_UNKNOWN, start, start + length);
 
-    VALUE number = UINT2NUM(integer.head.value);
-    size_t shift = 0;
-
-    for (pm_integer_word_t *node = integer.head.next; node != NULL; node = node->next) {
-        VALUE receiver = rb_funcall(UINT2NUM(node->value), rb_intern("<<"), 1, ULONG2NUM(++shift * 32));
-        number = rb_funcall(receiver, rb_intern("|"), 1, number);
-    }
-
-    if (integer.negative) number = rb_funcall(number, rb_intern("-@"), 0);
-
     pm_buffer_t buffer = { 0 };
     pm_integer_string(&buffer, &integer);
 
     VALUE string = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
     pm_buffer_free(&buffer);
-    pm_integer_free(&integer);
 
     VALUE result = rb_ary_new_capa(2);
-    rb_ary_push(result, number);
+    rb_ary_push(result, pm_integer_new(&integer));
     rb_ary_push(result, string);
+    pm_integer_free(&integer);
 
     return result;
 }
@@ -1140,6 +1190,40 @@ format_errors(VALUE self, VALUE source, VALUE colorize) {
 }
 
 /**
+ * call-seq:
+ *   Debug::static_inspect(source) -> String
+ *
+ * Inspect the node as it would be inspected by the warnings used in static
+ * literal sets.
+ */
+static VALUE
+static_inspect(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+
+    pm_node_t *program = pm_parse(&parser);
+    pm_node_t *node = ((pm_program_node_t *) program)->statements->body.nodes[0];
+
+    pm_buffer_t buffer = { 0 };
+    pm_static_literal_inspect(&buffer, &parser, node);
+
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
+
+    pm_buffer_free(&buffer);
+    pm_node_destroy(&parser, program);
+    pm_parser_free(&parser);
+    pm_string_free(&input);
+    pm_options_free(&options);
+
+    return result;
+}
+
+/**
  * call-seq: Debug::Encoding.all -> Array[Debug::Encoding]
  *
  * Return an array of all of the encodings that prism knows about.
@@ -1250,13 +1334,14 @@ Init_prism(void) {
 
     // Intern all of the options that we support so that we don't have to do it
     // every time we parse.
-    rb_option_id_filepath = rb_intern_const("filepath");
-    rb_option_id_encoding = rb_intern_const("encoding");
-    rb_option_id_line = rb_intern_const("line");
-    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
-    rb_option_id_version = rb_intern_const("version");
-    rb_option_id_scopes = rb_intern_const("scopes");
     rb_option_id_command_line = rb_intern_const("command_line");
+    rb_option_id_encoding = rb_intern_const("encoding");
+    rb_option_id_filepath = rb_intern_const("filepath");
+    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
+    rb_option_id_line = rb_intern_const("line");
+    rb_option_id_offset = rb_intern_const("offset");
+    rb_option_id_scopes = rb_intern_const("scopes");
+    rb_option_id_version = rb_intern_const("version");
 
     /**
      * The version of the prism library.
@@ -1269,6 +1354,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_stream", parse_stream, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse_comments", parse_comments, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, -1);
@@ -1286,6 +1372,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
+    rb_define_singleton_method(rb_cPrismDebug, "static_inspect", static_inspect, -1);
 
     // Next, define the functions that are exposed through the private
     // Debug::Encoding class.

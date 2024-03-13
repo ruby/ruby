@@ -395,33 +395,41 @@ module IRB # :nodoc:
   # Run the config file
   def IRB.run_config
     if @CONF[:RC]
-      begin
-        file = rc_file
+      rc_files.each do |rc|
         # Because rc_file always returns `HOME/.irbrc` even if no rc file is present, we can't warn users about missing rc files.
         # Otherwise, it'd be very noisy.
-        load file if File.exist?(file)
+        load rc if File.exist?(rc)
       rescue StandardError, ScriptError => e
-        warn "Error loading RC file '#{file}':\n#{e.full_message(highlight: false)}"
+        warn "Error loading RC file '#{rc}':\n#{e.full_message(highlight: false)}"
       end
     end
   end
 
   IRBRC_EXT = "rc"
   def IRB.rc_file(ext = IRBRC_EXT)
+    warn "rc_file is deprecated, please use rc_files instead."
+    rc_files(ext).first
+  end
+
+  def IRB.rc_files(ext = IRBRC_EXT)
     if !@CONF[:RC_NAME_GENERATOR]
+      @CONF[:RC_NAME_GENERATOR] ||= []
+      existing_rc_file_generators = []
+
       rc_file_generators do |rcgen|
-        @CONF[:RC_NAME_GENERATOR] ||= rcgen
-        if File.exist?(rcgen.call(IRBRC_EXT))
-          @CONF[:RC_NAME_GENERATOR] = rcgen
-          break
-        end
+        @CONF[:RC_NAME_GENERATOR] << rcgen
+        existing_rc_file_generators << rcgen if File.exist?(rcgen.call(ext))
+      end
+
+      if existing_rc_file_generators.any?
+        @CONF[:RC_NAME_GENERATOR] = existing_rc_file_generators
       end
     end
-    case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
-    when String
+
+    @CONF[:RC_NAME_GENERATOR].map do |rc|
+      rc_file = rc.call(ext)
+      fail IllegalRCNameGenerator unless rc_file.is_a?(String)
       rc_file
-    else
-      fail IllegalRCNameGenerator
     end
   end
 
