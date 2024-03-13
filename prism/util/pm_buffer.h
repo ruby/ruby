@@ -15,14 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_MSC_VER) && !defined(ssize_t)
-# ifdef _WIN64
-#   define ssize_t __int64
-# else
-#   define ssize_t int
-# endif
-#endif
-
 /**
  * A pm_buffer_t is a simple memory buffer that stores data in a contiguous
  * block of memory.
