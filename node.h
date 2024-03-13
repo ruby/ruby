@@ -15,8 +15,7 @@
 #include "rubyparser.h"
 #include "ruby/backward/2/attributes.h"
 
-typedef void (*bug_report_func)(const char *fmt, ...);
-
+typedef void (*bug_report_func)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
     long len; /* Length of nodes */
