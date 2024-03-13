@@ -2960,6 +2960,10 @@ rb_vm_mark(void *ptr)
             rb_gc_mark(rb_ractor_self(r));
         }
 
+        for (struct global_object_list *list = vm->gloabl_object_list; list; list = list->next) {
+            rb_gc_mark_maybe(*list->varptr);
+        }
+
         rb_gc_mark_movable(vm->mark_object_ary);
         rb_gc_mark_movable(vm->load_path);
         rb_gc_mark_movable(vm->load_path_snapshot);
@@ -3101,6 +3105,13 @@ ruby_vm_destruct(rb_vm_t *vm)
             vm->frozen_strings = 0;
         }
         RB_ALTSTACK_FREE(vm->main_altstack);
+
+        struct global_object_list *next;
+        for (struct global_object_list *list = vm->gloabl_object_list; list; list = next) {
+            next = list->next;
+            xfree(list);
+        }
+
         if (objspace) {
             if (rb_free_at_exit) {
                 rb_objspace_free_objects(objspace);

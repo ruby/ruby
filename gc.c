@@ -735,11 +735,6 @@ struct heap_page_body {
     /* RVALUE values[]; */
 };
 
-struct gc_list {
-    VALUE *varptr;
-    struct gc_list *next;
-};
-
 #define STACK_CHUNK_SIZE 500
 
 typedef struct stack_chunk {
@@ -904,7 +899,6 @@ typedef struct rb_objspace {
         size_t weak_references_count;
         size_t retained_weak_references_count;
     } profile;
-    struct gc_list *global_list;
 
     VALUE gc_stress_mode;
 
@@ -1160,7 +1154,6 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define during_gc		objspace->flags.during_gc
 #define finalizing		objspace->atomic_flags.finalizing
 #define finalizer_table 	objspace->finalizer_table
-#define global_list		objspace->global_list
 #define ruby_gc_stressful	objspace->flags.gc_stressful
 #define ruby_gc_stress_mode     objspace->gc_stress_mode
 #if GC_DEBUG_STRESS_TO_CLASS
@@ -1932,13 +1925,6 @@ rb_objspace_free(rb_objspace_t *objspace)
     free(objspace->profile.records);
     objspace->profile.records = NULL;
 
-    if (global_list) {
-        struct gc_list *list, *next;
-        for (list = global_list; list; list = next) {
-            next = list->next;
-            xfree(list);
-        }
-    }
     if (heap_pages_sorted) {
         size_t i;
         size_t total_heap_pages = heap_allocated_pages;
@@ -7098,7 +7084,6 @@ show_mark_ticks(void)
 static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
-    struct gc_list *list;
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
@@ -7148,10 +7133,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     mark_current_machine_context(objspace, ec);
 
     /* mark protected global variables */
-    MARK_CHECKPOINT("global_list");
-    for (list = global_list; list; list = list->next) {
-        gc_mark_maybe(objspace, *list->varptr);
-    }
 
     MARK_CHECKPOINT("end_proc");
     rb_mark_end_proc();
@@ -8754,15 +8735,14 @@ rb_gc_register_mark_object(VALUE obj)
 void
 rb_gc_register_address(VALUE *addr)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    struct gc_list *tmp;
+    rb_vm_t *vm = GET_VM();
 
     VALUE obj = *addr;
 
-    tmp = ALLOC(struct gc_list);
-    tmp->next = global_list;
+    struct global_object_list *tmp = ALLOC(struct global_object_list);
+    tmp->next = vm->gloabl_object_list;
     tmp->varptr = addr;
-    global_list = tmp;
+    vm->gloabl_object_list = tmp;
 
     /*
      * Because some C extensions have assignment-then-register bugs,
@@ -8779,17 +8759,17 @@ rb_gc_register_address(VALUE *addr)
 void
 rb_gc_unregister_address(VALUE *addr)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    struct gc_list *tmp = global_list;
+    rb_vm_t *vm = GET_VM();
+    struct global_object_list *tmp = vm->gloabl_object_list;
 
     if (tmp->varptr == addr) {
-        global_list = tmp->next;
+        vm->gloabl_object_list = tmp->next;
         xfree(tmp);
         return;
     }
     while (tmp->next) {
         if (tmp->next->varptr == addr) {
-            struct gc_list *t = tmp->next;
+            struct global_object_list *t = tmp->next;
 
             tmp->next = tmp->next->next;
             xfree(t);
