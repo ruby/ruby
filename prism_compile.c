@@ -2358,6 +2358,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         CHECK(pm_compile_pattern(iseq, scope_node, cast->right, ret, matched_label, unmatched_label, in_single_pattern, true, true, base_index));
         break;
       }
+      case PM_PARENTHESES_NODE:
+        // Parentheses are allowed to wrap expressions in pattern matching and
+        // they do nothing since they can only wrap individual expressions and
+        // not groups. In this case we'll recurse back into this same function
+        // with the body of the parentheses.
+        return pm_compile_pattern(iseq, scope_node, ((pm_parentheses_node_t *) node)->body, ret, matched_label, unmatched_label, in_single_pattern, in_alternation_pattern, use_deconstructed_cache, base_index);
       case PM_PINNED_EXPRESSION_NODE:
         // Pinned expressions are a way to match against the value of an
         // expression that should be evaluated at runtime. This looks like:
