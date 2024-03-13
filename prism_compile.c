@@ -6991,11 +6991,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 break;
               }
               case PM_NUMBERED_PARAMETERS_NODE: {
-                body->param.lead_num = ((pm_numbered_parameters_node_t *) scope_node->parameters)->maximum;
+                uint32_t maximum = ((pm_numbered_parameters_node_t *) scope_node->parameters)->maximum;
+                body->param.lead_num = maximum;
+                body->param.flags.ambiguous_param0 = maximum == 1;
                 break;
               }
               case PM_IT_PARAMETERS_NODE:
                 body->param.lead_num = 1;
+                body->param.flags.ambiguous_param0 = true;
                 break;
               default:
                 rb_bug("Unexpected node type for parameters: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
