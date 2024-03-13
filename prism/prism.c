@@ -9912,7 +9912,10 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     pm_token_type_t type = PM_TOKEN_AMPERSAND;
-                    if (lex_state_spcarg_p(parser, space_seen) || lex_state_beg_p(parser)) {
+                    if (lex_state_spcarg_p(parser, space_seen)) {
+                        pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND);
+                        type = PM_TOKEN_UAMPERSAND;
+                    } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_UAMPERSAND;
                     }
 
