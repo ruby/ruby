@@ -320,10 +320,10 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_compile_opt_aset
-    assert_compiles('[1,2,3][2] = 4', insns: %i[opt_aset])
-    assert_compiles('{}[:foo] = :bar', insns: %i[opt_aset])
-    assert_compiles('[1,2,3][0..-1] = []', insns: %i[opt_aset])
-    assert_compiles('"foo"[3] = "d"', insns: %i[opt_aset])
+    assert_compiles('[1,2,3][2] = 4', insns: %i[opt_aset], frozen_string_literal: false)
+    assert_compiles('{}[:foo] = :bar', insns: %i[opt_aset], frozen_string_literal: false)
+    assert_compiles('[1,2,3][0..-1] = []', insns: %i[opt_aset], frozen_string_literal: false)
+    assert_compiles('"foo"[3] = "d"', insns: %i[opt_aset], frozen_string_literal: false)
   end
 
   def test_compile_attr_set
@@ -1471,8 +1471,8 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       h = Hash.new { nil }
-      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
-      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+      foo("\x80".b, "\xA1A1".dup.force_encoding("EUC-JP"), h)
+      foo("\x80".b, "\xA1A1".dup.force_encoding("EUC-JP"), h)
     RUBY
   end
 
@@ -1489,7 +1489,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_aref_with
-    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar")
+    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar", frozen_string_literal: false)
       h = {"foo" => "bar"}
 
       h["foo"]
@@ -1671,7 +1671,7 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
 
     script = <<~RUBY
-      #{"# frozen_string_literal: true" if frozen_string_literal}
+      #{"# frozen_string_literal: " + frozen_string_literal.to_s unless frozen_string_literal.nil?}
       _test_proc = -> {
         #{test_script}
       }

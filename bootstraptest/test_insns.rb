@@ -354,7 +354,7 @@ tests = [
   [ 'opt_ge', %q{ +0.0.next_float >= 0.0 }, ],
   [ 'opt_ge', %q{              ?z >= ?a }, ],
 
-  [ 'opt_ltlt', %q{  '' << 'true' }, ],
+  [ 'opt_ltlt', %q{  +'' << 'true' }, ],
   [ 'opt_ltlt', %q{ ([] << 'true').join }, ],
   [ 'opt_ltlt', %q{ (1 << 31) == 2147483648 }, ],
 
@@ -363,7 +363,7 @@ tests = [
   [ 'opt_aref', %q{ 'true'[0] == ?t }, ],
   [ 'opt_aset', %q{ [][0] = true }, ],
   [ 'opt_aset', %q{ {}[0] = true }, ],
-  [ 'opt_aset', %q{ x = 'frue'; x[0] = 't'; x }, ],
+  [ 'opt_aset', %q{ x = +'frue'; x[0] = 't'; x }, ],
   [ 'opt_aset', <<-'},', ], # {
     # opt_aref / opt_aset mixup situation
     class X; def x; {}; end; end

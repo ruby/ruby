@@ -2265,7 +2265,7 @@ class TestTranscode < Test::Unit::TestCase
           result = th.map(&:value)
         end
       end
-      expected = "\xa4\xa2".force_encoding(Encoding::EUC_JP)
+      expected = "\xa4\xa2".dup.force_encoding(Encoding::EUC_JP)
       assert_equal([expected]*num, result, bug11277)
     end;
   end

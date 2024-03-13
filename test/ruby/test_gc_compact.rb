@@ -372,7 +372,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       Fiber.new {
         str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4
-        $ary = STR_COUNT.times.map { "" << str }
+        $ary = STR_COUNT.times.map { +"" << str }
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)

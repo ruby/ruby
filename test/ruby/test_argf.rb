@@ -593,7 +593,7 @@ class TestArgf < Test::Unit::TestCase
   def test_read2
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         ARGF.read(8, s)
         p s
       };
@@ -604,7 +604,7 @@ class TestArgf < Test::Unit::TestCase
   def test_read2_with_not_empty_buffer
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = "0123456789"
+        s = +"0123456789"
         ARGF.read(8, s)
         p s
       };
@@ -617,7 +617,7 @@ class TestArgf < Test::Unit::TestCase
       {#
         nil while ARGF.gets
         p ARGF.read
-        p ARGF.read(0, "")
+        p ARGF.read(0, +"")
       };
       assert_equal("nil\n\"\"\n", f.read)
     end
@@ -626,13 +626,13 @@ class TestArgf < Test::Unit::TestCase
   def test_readpartial
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         begin
           loop do
             s << ARGF.readpartial(1)
-            t = ""; ARGF.readpartial(1, t); s << t
+            t = +""; ARGF.readpartial(1, t); s << t
             # not empty buffer
-            u = "abcdef"; ARGF.readpartial(1, u); s << u
+            u = +"abcdef"; ARGF.readpartial(1, u); s << u
           end
         rescue EOFError
           puts s
@@ -645,11 +645,11 @@ class TestArgf < Test::Unit::TestCase
   def test_readpartial2
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}") do |f|
       {#
-        s = ""
+        s = +""
         begin
           loop do
             s << ARGF.readpartial(1)
-            t = ""; ARGF.readpartial(1, t); s << t
+            t = +""; ARGF.readpartial(1, t); s << t
           end
         rescue EOFError
           $stdout.binmode
@@ -680,7 +680,7 @@ class TestArgf < Test::Unit::TestCase
   def test_getc
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         while c = ARGF.getc
           s << c
         end
@@ -706,7 +706,7 @@ class TestArgf < Test::Unit::TestCase
   def test_readchar
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         begin
           while c = ARGF.readchar
             s << c
@@ -784,7 +784,7 @@ class TestArgf < Test::Unit::TestCase
   def test_each_char
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         ARGF.each_char {|c| s << c }
         puts s
       };
@@ -1073,7 +1073,7 @@ class TestArgf < Test::Unit::TestCase
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}") do |f|
       {#
         $stdout.sync = true
-        :wait_readable == ARGF.read_nonblock(1, "", exception: false) or
+        :wait_readable == ARGF.read_nonblock(1, +"", exception: false) or
           abort "did not return :wait_readable"
 
         begin
@@ -1086,7 +1086,7 @@ class TestArgf < Test::Unit::TestCase
         IO.select([ARGF]) == [[ARGF], [], []] or
           abort 'did not awaken for readability (before byte)'
 
-        buf = ''
+        buf = +''
         buf.object_id == ARGF.read_nonblock(1, buf).object_id or
           abort "read destination buffer failed"
         print buf

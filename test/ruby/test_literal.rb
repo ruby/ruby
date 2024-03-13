@@ -142,6 +142,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_frozen_string
+    default = eval("'test'").frozen?
+
     all_assertions do |a|
       a.for("false with indicator") do
         str = eval("# -*- frozen-string-literal: false -*-\n""'foo'")
@@ -161,19 +163,19 @@ class TestRubyLiteral < Test::Unit::TestCase
       end
       a.for("false with preceding garbage") do
         str = eval("# x frozen-string-literal: false\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("true with preceding garbage") do
         str = eval("# x frozen-string-literal: true\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("false with succeeding garbage") do
         str = eval("# frozen-string-literal: false x\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("true with succeeding garbage") do
         str = eval("# frozen-string-literal: true x\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
     end
   end

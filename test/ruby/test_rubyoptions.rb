@@ -1196,13 +1196,16 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_frozen_string_literal_debug
+    default_frozen = eval("'test'").frozen?
+
     with_debug_pat = /created at/
     wo_debug_pat = /can\'t modify frozen String: "\w+" \(FrozenError\)\n\z/
     frozen = [
       ["--enable-frozen-string-literal", true],
       ["--disable-frozen-string-literal", false],
-      [nil, false],
     ]
+    frozen << [nil, false] unless default_frozen
+
     debugs = [
       ["--debug-frozen-string-literal", true],
       ["--debug=frozen-string-literal", true],

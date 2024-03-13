@@ -168,7 +168,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_disasm_encoding
-    src = "\u{3042} = 1; \u{3042}; \u{3043}"
+    src = +"\u{3042} = 1; \u{3042}; \u{3043}"
     asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
