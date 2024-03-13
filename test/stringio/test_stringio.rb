@@ -237,8 +237,9 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_write_integer_overflow
     f = StringIO.new
-    f.pos = RbConfig::LIMITS["LONG_MAX"]
     assert_raise(ArgumentError) {
+      # JRuby errors when setting pos to an out-of-range value
+      f.pos = RbConfig::LIMITS["LONG_MAX"]
       f.write("pos + len overflows")
     }
   end
