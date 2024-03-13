@@ -319,6 +319,15 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
     end
 
+    it "ignores commented out keys" do
+      create_file bundled_app(".bundle/config"), <<~C
+        # BUNDLE_MY-PERSONAL-SERVER__ORG: my-personal-server.org
+      C
+
+      expect(Bundler.ui).not_to receive(:warn)
+      expect(settings.all).to be_empty
+    end
+
     it "converts older keys with dashes" do
       config("BUNDLE_MY-PERSONAL-SERVER__ORG" => "my-personal-server.org")
       expect(Bundler.ui).to receive(:warn).with(
