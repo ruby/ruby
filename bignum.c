@@ -5060,13 +5060,25 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
             xds[xn] = bary_small_lshift(xds, xds, xn, shift);
         }
 
-        bigdivrem_restoring(xds, qn, tds, bn);
+        if (bn > NEWTON_RAPHSON_DIV_DIGITS) {
+            rds = xds;
+            rn = bn;
+            qds = xds + bn;
+            qn = qn - bn;
+            VALUE tmpq = 0, tmpr = 0;
+            BDIGIT* tmpqds = ALLOCV_N(BDIGIT, tmpq, qn + BIGDIVREM_EXTRA_WORDS);
+            BDIGIT* tmprds = ALLOCV_N(BDIGIT, tmpr, rn);
+            bary_divmod_newton_raphson(tmpqds, qn + BIGDIVREM_EXTRA_WORDS, tmprds, rn, xds, qn + bn, tds, bn);
+            MEMCPY(qds, tmpqds, BDIGIT, qn);
+            MEMCPY(rds, tmprds, BDIGIT, rn);
+        } else {
+            bigdivrem_restoring(xds, qn, tds, bn);
+            rds = xds;
+            rn = bn;
 
-        rds = xds;
-        rn = bn;
-
-        qds = xds + bn;
-        qn = qn - bn;
+            qds = xds + bn;
+            qn = qn - bn;
+        }
 
         if (shift) {
             bary_small_rshift(rds, rds, rn, shift, 0);
