@@ -1256,7 +1256,7 @@ class Reline::LineEditor
         item_mbchars = item.grapheme_clusters
       end
       size = [memo_mbchars.size, item_mbchars.size].min
-      result = ''
+      result = +''
       size.times do |i|
         if @config.completion_ignore_case
           if memo_mbchars[i].casecmp?(item_mbchars[i])
@@ -2935,7 +2935,7 @@ class Reline::LineEditor
   end
 
   private def ed_delete_prev_char(key, arg: 1)
-    deleted = ''
+    deleted = +''
     arg.times do
       if @cursor > 0
         byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
