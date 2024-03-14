@@ -22,6 +22,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Exception
+
+  * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
+    `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [Feature #13557]
+
 ## Stdlib updates
 
 The following default gems are updated.

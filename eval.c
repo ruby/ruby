@@ -761,7 +761,8 @@ rb_f_raise(int argc, VALUE *argv)
  *  object that returns an +Exception+ object when sent an +exception+
  *  message).  The optional second parameter sets the message associated with
  *  the exception (accessible via Exception#message), and the third parameter
- *  is an array of callback information (accessible via Exception#backtrace).
+ *  is an array of callback information (accessible via
+ *  Exception#backtrace_locations or Exception#backtrace).
  *  The +cause+ of the generated exception (accessible via Exception#cause)
  *  is automatically set to the "current" exception (<code>$!</code>), if any.
  *  An alternative value, either an +Exception+ object or +nil+, can be
@@ -771,7 +772,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  <code>begin...end</code> blocks.
  *
  *     raise "Failed to create socket"
- *     raise ArgumentError, "No parameters", caller
+ *     raise ArgumentError, "No parameters", caller_locations
  */
 
 static VALUE
