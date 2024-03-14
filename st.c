@@ -2340,8 +2340,19 @@ rb_st_compact_table(st_table *tab)
 }
 
 #if USE_MMTK
+// Update a deduplication table.
+//
+// This function forwards reachable entries and removes dead entries of deduplication tables.
+// The frozen string table and the CI table are such tables.  We assume keys are always equal to
+// their respective values.
+//
+// This function is intended to be faster than existing updating functions based on st_foreach.
+// This function never attempts to compare elements by value or by hash (which is unsafe during GC
+// because some value-comparing or hash-computing operations may depend on weak tables or fields
+// which are not yet updated), and never touches entries that hold non-reference values
+// (SPECIAL_CONST_P).
 void
-rb_mmtk_st_update_fstring_table(st_table *tab)
+rb_mmtk_st_update_dedup_table(st_table *tab)
 {
     for (st_index_t ind = tab->entries_start; ind < tab->entries_bound; ind++) {
         if (DELETED_ENTRY_P(&tab->entries[ind])) {
@@ -2371,6 +2382,10 @@ rb_mmtk_st_update_fstring_table(st_table *tab)
                 tab->entries[ind].record = new_key;
             }
         }
+    }
+
+    if (tab->bins == NULL) {
+        return;
     }
 
     st_index_t num_bins = get_bins_num(tab);

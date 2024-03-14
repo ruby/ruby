@@ -14636,11 +14636,15 @@ rb_mmtk_on_overloaded_cme_delete(st_data_t key, st_data_t value, void *arg)
 void
 rb_mmtk_update_frozen_strings_table(void)
 {
+    // The frozen strings table is a deduplicating table for frozen strings.
+    // Used as a HashSet (key always equals value).
+    // Hashed by string content.
+
 #if USE_RUBY_DEBUG_LOG
     size_t size1 = GET_VM()->frozen_strings->num_entries;
 #endif
 
-    rb_mmtk_st_update_fstring_table(GET_VM()->frozen_strings);
+    rb_mmtk_st_update_dedup_table(GET_VM()->frozen_strings);
 
 #if USE_RUBY_DEBUG_LOG
     size_t size2 = GET_VM()->frozen_strings->num_entries;
@@ -14714,6 +14718,26 @@ rb_mmtk_update_overloaded_cme_table(void)
                               NULL);
 }
 
+void
+rb_mmtk_update_ci_table(void)
+{
+    // The CI table is a deduplicating table for callinfo.
+    // Used as a HashSet (key always equals value).
+    // Compared and hashed by callinfo fields.  Two CIs are equal if all fields are equal.
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size1 = GET_VM()->ci_table->num_entries;
+#endif
+
+    rb_mmtk_st_update_dedup_table(GET_VM()->ci_table);
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size2 = GET_VM()->ci_table->num_entries;
+#endif
+
+    RUBY_DEBUG_LOG("CI table size: %zu -> %zu.  Removed: %zu\n",
+        size1, size2, size1-size2);
+}
 /////////////// END: Global table updating ////////////////
 
 // Workaround private functions
