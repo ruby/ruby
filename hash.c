@@ -2922,8 +2922,32 @@ hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existi
     return hash_aset(key, val, arg, existing);
 }
 
+// Like +hash_aset+, but stashes away the pre-existing value (if any) into +val+
+static int
+hash_exchange_value(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    st_data_t *arg_value = (st_data_t *)arg->arg;
+    st_data_t pre_existing_value = existing ? *val : Qnil;
+    *val = *arg_value;
+    *arg_value = pre_existing_value;
+
+    return ST_CONTINUE;
+}
+
+// Like +hash_aset_str+, but stashes away the pre-existing value (if any) into +val+
+static int
+hash_exchange_value_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    if (!existing && !RB_OBJ_FROZEN(*key)) {
+        *key = rb_hash_key_str(*key);
+    }
+    return hash_exchange_value(key, val, arg, existing);
+}
+
 NOINSERT_UPDATE_CALLBACK(hash_aset)
 NOINSERT_UPDATE_CALLBACK(hash_aset_str)
+NOINSERT_UPDATE_CALLBACK(hash_exchange_value)
+NOINSERT_UPDATE_CALLBACK(hash_exchange_value_str)
 
 /*
  *  call-seq:
@@ -2952,17 +2976,58 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
-    bool iter_p = hash_iterating_p(hash);
-
     rb_hash_modify(hash);
 
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
+        RHASH_UPDATE(hash, key, hash_aset, val);
     }
     else {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset_str, val);
+        RHASH_UPDATE(hash, key, hash_aset_str, val);
     }
+
     return val;
+}
+
+/*
+ *  call-seq:
+ *    hash.exchange_value(key, new_value) -> old_value
+ *
+ *  Associates the given +new_value+ with the given +key+,
+ *  and returns the old value that used to be associated with the +key+,
+ *  or +nil+ if there wasn't one.
+ *
+ *  If the given +key+ exists, replaces its value with the given +new_value+,
+ *  and returns the old value, without affecting the ordering
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *    h = { k: "old value" }
+ *    h.exchange_value(:k, "new value") # => "old value"
+ *    h # => { k: "new value" }
+ *
+ *  If +key+ does not exist, adds the +key+ and +new_value+, and returns +nil+;
+ *  the new entry is last in the order
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *    h = { foo: 1 }
+ *    h.exchange_value(:bar, 2) # => nil
+ *    h.exchange_value(:baz, 2) # => nil
+ *    h # => { foo: 1, bar: 2, baz: 3 }
+ *
+ *  Importantly, this method guarantees that this exchange happens with a
+ *  single Hash lookup, unlike using #[] and #[]= separately.
+ */
+
+static VALUE
+rb_hash_exchange_value(VALUE hash, VALUE key, VALUE val)
+{
+    st_data_t value = (st_data_t)val;
+    rb_hash_modify(hash);
+
+    if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
+        RHASH_UPDATE(hash, key, hash_exchange_value, &value);
+    }
+    else {
+        RHASH_UPDATE(hash, key, hash_exchange_value_str, &value);
+    }
+    return (VALUE)value;
 }
 
 /*
@@ -7074,6 +7139,8 @@ static const rb_data_type_t env_data_type = {
  *  - #assoc: Returns a 2-element array containing a given key and its value.
  *  - #dig: Returns the object in nested objects that is specified
  *    by a given key and additional arguments.
+ *  - #exchange_value: Returns the value associated with a given key,
+ *    simultaneously repalcing it with the a given value.
  *  - #fetch: Returns the value for a given key.
  *  - #fetch_values: Returns array containing the values associated with given keys.
  *  - #key: Returns the key for the first-found entry with a given value.
@@ -7086,6 +7153,7 @@ static const rb_data_type_t env_data_type = {
  *  ==== Methods for Assigning
  *
  *  - #[]=, #store: Associates a given key with a given value.
+ *  - #exchange_value: Associates a given key with a given value, and returns the previous value.
  *  - #merge: Returns the hash formed by merging each given hash into a copy of +self+.
  *  - #merge!, #update: Merges each given hash into +self+.
  *  - #replace: Replaces the entire contents of +self+ with the contents of a given hash.
@@ -7171,6 +7239,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "fetch", rb_hash_fetch_m, -1);
     rb_define_method(rb_cHash, "[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash, "store", rb_hash_aset, 2);
+    rb_define_method(rb_cHash, "exchange_value", rb_hash_exchange_value, 2);
     rb_define_method(rb_cHash, "default", rb_hash_default, -1);
     rb_define_method(rb_cHash, "default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
