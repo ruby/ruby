@@ -8785,8 +8785,6 @@ rb_global_variable(VALUE *var)
     rb_gc_register_address(var);
 }
 
-#define GC_NOTIFY 0
-
 enum {
     gc_stress_no_major,
     gc_stress_no_immediate_sweep,
