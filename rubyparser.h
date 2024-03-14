@@ -35,7 +35,7 @@
 #endif
 
 #if defined(__GNUC__)
-# if defined(__MINGW32__) || defined(__MINGW64__)
+# if defined(__MINGW_PRINTF_FORMAT)
 #   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, argument_index)))
 # else
 #   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
