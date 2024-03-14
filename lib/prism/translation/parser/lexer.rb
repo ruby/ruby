@@ -295,8 +295,24 @@ module Prism
               unless (lines = token.value.lines).one?
                 start_offset = offset_cache[token.location.start_offset]
                 lines.map do |line|
-                  end_offset = start_offset + line.length
-                  tokens << [:tSTRING_CONTENT, [line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
+                  newline = line.end_with?("\r\n") ? "\r\n" : "\n"
+                  chomped_line = line.chomp
+                  if match = chomped_line.match(/(?<backslashes>\\+)\z/)
+                    adjustment = match[:backslashes].size / 2
+                    adjusted_line = chomped_line.delete_suffix("\\" * adjustment)
+                    if match[:backslashes].size.odd?
+                      adjusted_line.delete_suffix!("\\")
+                      adjustment += 2
+                    else
+                      adjusted_line << newline
+                    end
+                  else
+                    adjusted_line = line
+                    adjustment = 0
+                  end
+
+                  end_offset = start_offset + adjusted_line.length + adjustment
+                  tokens << [:tSTRING_CONTENT, [adjusted_line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
                   start_offset = end_offset
                 end
                 next
