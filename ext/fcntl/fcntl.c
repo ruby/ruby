@@ -28,7 +28,10 @@ pack up your own arguments to pass as args for locking functions, etc.
 #include "ruby.h"
 #include <fcntl.h>
 
-/* Fcntl loads the constants defined in the system's <fcntl.h> C header
+/*
+ * Document-module: Fcntl
+ *
+ * Fcntl loads the constants defined in the system's <fcntl.h> C header
  * file, and used with both the fcntl(2) and open(2) POSIX system calls.
  *
  * To perform a fcntl(2) operation, use IO::fcntl.
@@ -69,6 +72,7 @@ Init_fcntl(void)
 {
     VALUE mFcntl = rb_define_module("Fcntl");
 
+    /* The version string. */
     rb_define_const(mFcntl, "VERSION", rb_str_new_cstr(FCNTL_VERSION));
 
 #ifdef F_DUPFD
