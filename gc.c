@@ -8740,9 +8740,9 @@ rb_gc_register_address(VALUE *addr)
     VALUE obj = *addr;
 
     struct global_object_list *tmp = ALLOC(struct global_object_list);
-    tmp->next = vm->gloabl_object_list;
+    tmp->next = vm->global_object_list;
     tmp->varptr = addr;
-    vm->gloabl_object_list = tmp;
+    vm->global_object_list = tmp;
 
     /*
      * Because some C extensions have assignment-then-register bugs,
@@ -8760,10 +8760,10 @@ void
 rb_gc_unregister_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
-    struct global_object_list *tmp = vm->gloabl_object_list;
+    struct global_object_list *tmp = vm->global_object_list;
 
     if (tmp->varptr == addr) {
-        vm->gloabl_object_list = tmp->next;
+        vm->global_object_list = tmp->next;
         xfree(tmp);
         return;
     }

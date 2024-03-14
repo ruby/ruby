@@ -710,7 +710,7 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
-    struct global_object_list *gloabl_object_list;
+    struct global_object_list *global_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
