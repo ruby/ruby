@@ -388,7 +388,7 @@ module IRB
 
         if doc_namespace
           rec_class = rec.is_a?(Module) ? rec : rec.class
-          "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}"
+          "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}" rescue nil
         else
           select_message(receiver, message, candidates, sep)
         end
@@ -418,7 +418,7 @@ module IRB
           vars = (bind.local_variables | bind.eval_instance_variables).collect{|m| m.to_s}
           perfect_match_var = vars.find{|m| m.to_s == input}
           if perfect_match_var
-            eval("#{perfect_match_var}.class.name", bind)
+            eval("#{perfect_match_var}.class.name", bind) rescue nil
           else
             candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
             candidates |= ReservedWords
