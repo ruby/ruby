@@ -2922,8 +2922,32 @@ hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existi
     return hash_aset(key, val, arg, existing);
 }
 
+// Like +hash_aset+, but stashes away the pre-existing value (if any) into +val+
+static int
+hash_exchange_value(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    st_data_t *arg_value = (st_data_t *)arg->arg;
+    st_data_t pre_existing_value = existing ? *val : Qnil;
+    *val = *arg_value;
+    *arg_value = pre_existing_value;
+
+    return ST_CONTINUE;
+}
+
+// Like +hash_aset_str+, but stashes away the pre-existing value (if any) into +val+
+static int
+hash_exchange_value_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    if (!existing && !RB_OBJ_FROZEN(*key)) {
+        *key = rb_hash_key_str(*key);
+    }
+    return hash_exchange_value(key, val, arg, existing);
+}
+
 NOINSERT_UPDATE_CALLBACK(hash_aset)
 NOINSERT_UPDATE_CALLBACK(hash_aset_str)
+NOINSERT_UPDATE_CALLBACK(hash_exchange_value)
+NOINSERT_UPDATE_CALLBACK(hash_exchange_value_str)
 
 /*
  *  call-seq:
@@ -2952,17 +2976,31 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
-    bool iter_p = hash_iterating_p(hash);
-
     rb_hash_modify(hash);
 
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
+        RHASH_UPDATE(hash, key, hash_aset, val);
     }
     else {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset_str, val);
+        RHASH_UPDATE(hash, key, hash_aset_str, val);
     }
+
     return val;
+}
+
+static VALUE
+rb_hash_exchange_value(VALUE hash, VALUE key, VALUE val)
+{
+    st_data_t value = (st_data_t)val;
+    rb_hash_modify(hash);
+
+    if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
+        RHASH_UPDATE(hash, key, hash_exchange_value, &value);
+    }
+    else {
+        RHASH_UPDATE(hash, key, hash_exchange_value_str, &value);
+    }
+    return (VALUE)value;
 }
 
 /*
@@ -7171,6 +7209,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "fetch", rb_hash_fetch_m, -1);
     rb_define_method(rb_cHash, "[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash, "store", rb_hash_aset, 2);
+    rb_define_method(rb_cHash, "exchange_value", rb_hash_exchange_value, 2);
     rb_define_method(rb_cHash, "default", rb_hash_default, -1);
     rb_define_method(rb_cHash, "default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
