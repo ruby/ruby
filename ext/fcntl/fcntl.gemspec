@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = ["ext/fcntl/extconf.rb", "ext/fcntl/fcntl.c"]
+  spec.extra_rdoc_files = ["LICENSE.txt", "README.md"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
