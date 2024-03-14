@@ -2884,16 +2884,18 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
 }
 
 void
-rb_freeze_singleton_class(VALUE x)
+rb_freeze_singleton_class(VALUE attached_object)
 {
-    /* should not propagate to meta-meta-class, and so on */
-    if (!RCLASS_SINGLETON_P(x)) {
-        VALUE klass = RBASIC_CLASS(x);
-        if (klass && // no class when hidden from ObjectSpace
-            FL_TEST_RAW(klass, FL_SINGLETON) &&
-            !OBJ_FROZEN_RAW(klass)) {
-            OBJ_FREEZE(klass);
-        }
+    VALUE klass;
+
+    /* Freeze singleton classes of singleton class, as singleton class is frozen, and so on  */
+    /* In each iteration, check the current object's class pointer is the singleton class of the object. */
+    while ((klass = RBASIC_CLASS(attached_object)) &&
+                FL_TEST_RAW(klass, FL_SINGLETON) &&
+                !OBJ_FROZEN_RAW(klass) &&
+                (RCLASS_ATTACHED_OBJECT(klass) == attached_object)) {
+        attached_object = klass;
+        OBJ_FREEZE(attached_object);
     }
 }
 
