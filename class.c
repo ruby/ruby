@@ -2263,13 +2263,17 @@ singleton_class_of(VALUE obj)
 void
 rb_freeze_singleton_class(VALUE x)
 {
-    /* should not propagate to meta-meta-class, and so on */
-    if (!RCLASS_SINGLETON_P(x)) {
-        VALUE klass = RBASIC_CLASS(x);
-        if (klass && // no class when hidden from ObjectSpace
-            FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
-            OBJ_FREEZE_RAW(klass);
-        }
+    VALUE klass = x;
+
+    /* Freeze singleton classes of singleton class, as singleton class is frozen, and so on  */
+    while ((klass = RBASIC_CLASS(klass)) && FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
+        VALUE object = klass;
+        while ((object = RCLASS_ATTACHED_OBJECT(object)) && RB_TYPE_P(object, T_CLASS) && object != x);
+        /* Stop processing the singleton class chain when walking the attached object chain
+         * does not result in the original object
+         */
+        if (object != x) break;
+        OBJ_FREEZE_RAW(klass);
     }
 }
 
