@@ -24,7 +24,7 @@ racc            1.7.3   https://github.com/ruby/racc
 mutex_m         0.2.0   https://github.com/ruby/mutex_m
 getoptlong      0.2.1   https://github.com/ruby/getoptlong
 base64          0.2.0   https://github.com/ruby/base64
-bigdecimal      3.1.6   https://github.com/ruby/bigdecimal 741fb93b566959663269ecd988e278a974528a1d
+bigdecimal      3.1.7   https://github.com/ruby/bigdecimal
 observer        0.1.2   https://github.com/ruby/observer
 abbrev          0.1.2   https://github.com/ruby/abbrev
 resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
