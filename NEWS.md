@@ -84,6 +84,8 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## C API updates
 
+* `rb_newobj` and `rb_newobj_of` (and corresponding macros `RB_NEWOBJ`, `RB_NEWOBJ_OF`, `NEWOBJ`, `NEWOBJ_OF`) have been removed [[Feature #20265]].
+
 ## Implementation improvements
 
 * `Array#each` is rewritten in Ruby for better performance [[Feature #20182]].
@@ -95,3 +97,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
 [Feature #20182]: https://bugs.ruby-lang.org/issues/20182
+[Feature #20265]: https://bugs.ruby-lang.org/issues/20265
