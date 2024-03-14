@@ -225,17 +225,13 @@ Init_fcntl(void)
      */
     rb_define_const(mFcntl, "O_WRONLY", INT2NUM(O_WRONLY));
 #endif
-#ifdef O_ACCMODE
+#ifndef O_ACCMODE
+    int O_ACCMODE = (O_RDONLY | O_WRONLY | O_RDWR);
+#endif
     /*
      * Mask to extract the read/write flags
      */
     rb_define_const(mFcntl, "O_ACCMODE", INT2FIX(O_ACCMODE));
-#else
-    /*
-     * Mask to extract the read/write flags
-     */
-    rb_define_const(mFcntl, "O_ACCMODE", INT2FIX(O_RDONLY | O_WRONLY | O_RDWR));
-#endif
 #ifdef F_DUP2FD
     /*
      * It is a FreeBSD specific constant and equivalent
