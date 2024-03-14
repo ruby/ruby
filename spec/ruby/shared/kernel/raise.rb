@@ -148,10 +148,13 @@ describe :kernel_raise, shared: true do
   end
 
   ruby_version_is "3.4" do
+    locations = caller_locations(1, 2)
     it "allows Exception, message, and backtrace_locations parameters" do
       -> do
-        @object.raise(ArgumentError, "message", caller_locations)
-      end.should raise_error(ArgumentError, "message")
+        @object.raise(ArgumentError, "message", locations)
+      end.should raise_error(ArgumentError, "message") { |error|
+        error.backtrace_locations.map(&:to_s).should == locations.map(&:to_s)
+      }
     end
   end
 end

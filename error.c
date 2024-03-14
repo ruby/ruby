@@ -1862,8 +1862,8 @@ rb_check_backtrace(VALUE bt)
  *     exc.set_backtrace(backtrace)   ->  array
  *
  *  Sets the backtrace information associated with +exc+. The +backtrace+ must
- *  be an array of String objects or a single String in the format described
- *  in Exception#backtrace.
+ *  be an array of Thread::Backtrace::Location objects or an array of String objects
+ *  or a single String in the format described in Exception#backtrace.
  *
  */
 
