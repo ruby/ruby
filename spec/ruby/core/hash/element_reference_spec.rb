@@ -30,7 +30,7 @@ describe "Hash#[]" do
   end
 
   it "does not create copies of the immediate default value" do
-    str = "foo"
+    str = +"foo"
     h = Hash.new(str)
     a = h[:a]
     b = h[:b]

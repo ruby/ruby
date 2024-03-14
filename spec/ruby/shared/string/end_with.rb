@@ -55,7 +55,7 @@ describe :end_with, shared: true do
   it "checks that we are starting to match at the head of a character" do
     "\xC3\xA9".send(@method).should_not.end_with?("\xA9")
     "\xe3\x81\x82".send(@method).should_not.end_with?("\x82")
-    "ab".force_encoding("UTF-16BE").send(@method).should_not.end_with?(
-        "b".force_encoding("UTF-16BE"))
+    "ab".dup.force_encoding("UTF-16BE").send(@method).should_not.end_with?(
+        "b".dup.force_encoding("UTF-16BE"))
   end
 end

@@ -9,26 +9,26 @@ describe "String#each_byte" do
   end
 
   it "keeps iterating from the old position (to new string end) when self changes" do
-    r = ""
-    s = "hello world"
+    r = +""
+    s = +"hello world"
     s.each_byte do |c|
       r << c
       s.insert(0, "<>") if r.size < 3
     end
     r.should == "h><>hello world"
 
-    r = ""
-    s = "hello world"
+    r = +""
+    s = +"hello world"
     s.each_byte { |c| s.slice!(-1); r << c }
     r.should == "hello "
 
-    r = ""
-    s = "hello world"
+    r = +""
+    s = +"hello world"
     s.each_byte { |c| s.slice!(0); r << c }
     r.should == "hlowrd"
 
-    r = ""
-    s = "hello world"
+    r = +""
+    s = +"hello world"
     s.each_byte { |c| s.slice!(0..-1); r << c }
     r.should == "h"
   end

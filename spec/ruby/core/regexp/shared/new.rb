@@ -489,12 +489,12 @@ describe :regexp_new_string, shared: true do
     end
 
     it "returns a Regexp with the input String's encoding" do
-      str = "\x82\xa0".force_encoding(Encoding::Shift_JIS)
+      str = "\x82\xa0".dup.force_encoding(Encoding::Shift_JIS)
       Regexp.send(@method, str).encoding.should == Encoding::Shift_JIS
     end
 
     it "returns a Regexp with source String having the input String's encoding" do
-      str = "\x82\xa0".force_encoding(Encoding::Shift_JIS)
+      str = "\x82\xa0".dup.force_encoding(Encoding::Shift_JIS)
       Regexp.send(@method, str).source.encoding.should == Encoding::Shift_JIS
     end
   end

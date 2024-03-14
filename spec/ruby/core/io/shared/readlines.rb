@@ -99,7 +99,7 @@ describe :io_readlines_options_19, shared: true do
       end
 
       it "accepts non-ASCII data as separator" do
-        result = IO.send(@method, @name, "\303\250".force_encoding("utf-8"), &@object)
+        result = IO.send(@method, @name, "\303\250".dup.force_encoding("utf-8"), &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_arbitrary_separator
       end
     end

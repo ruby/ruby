@@ -191,11 +191,11 @@ describe "String#byterindex with String" do
     end
 
     it "handles a substring in a superset encoding" do
-      'abc'.force_encoding(Encoding::US_ASCII).byterindex('é').should == nil
+      'abc'.dup.force_encoding(Encoding::US_ASCII).byterindex('é').should == nil
     end
 
     it "handles a substring in a subset encoding" do
-      'été'.byterindex('t'.force_encoding(Encoding::US_ASCII)).should == 2
+      'été'.byterindex('t'.dup.force_encoding(Encoding::US_ASCII)).should == 2
     end
   end
 end

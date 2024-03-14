@@ -1459,7 +1459,7 @@ ruby_version_is "3.1" do
   describe "Inside 'endless' method definitions" do
     it "allows method calls without parenthesis" do
       eval <<-ruby
-        def greet(person) = "Hi, ".concat person
+        def greet(person) = "Hi, ".dup.concat person
       ruby
 
       greet("Homer").should == "Hi, Homer"

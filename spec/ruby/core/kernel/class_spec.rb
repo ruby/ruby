@@ -19,7 +19,7 @@ describe "Kernel#class" do
   end
 
   it "returns the first non-singleton class" do
-    a = "hello"
+    a = +"hello"
     def a.my_singleton_method; end
     a.class.should equal(String)
   end

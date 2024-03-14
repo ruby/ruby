@@ -197,16 +197,16 @@ describe "String#rindex with String" do
   end
 
   it "handles a substring in a superset encoding" do
-    'abc'.force_encoding(Encoding::US_ASCII).rindex('é').should == nil
+    'abc'.dup.force_encoding(Encoding::US_ASCII).rindex('é').should == nil
   end
 
   it "handles a substring in a subset encoding" do
-    'été'.rindex('t'.force_encoding(Encoding::US_ASCII)).should == 1
+    'été'.rindex('t'.dup.force_encoding(Encoding::US_ASCII)).should == 1
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-    str = 'abc'.force_encoding("ISO-2022-JP")
-    pattern = 'b'.force_encoding("EUC-JP")
+    str = 'abc'.dup.force_encoding("ISO-2022-JP")
+    pattern = 'b'.dup.force_encoding("EUC-JP")
 
     -> { str.rindex(pattern) }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
   end

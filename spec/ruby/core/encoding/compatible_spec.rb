@@ -7,7 +7,7 @@ require_relative '../../spec_helper'
 describe "Encoding.compatible? String, String" do
   describe "when the first's Encoding is valid US-ASCII" do
     before :each do
-      @str = "abc".force_encoding Encoding::US_ASCII
+      @str = "abc".dup.force_encoding Encoding::US_ASCII
     end
 
     it "returns US-ASCII when the second's is US-ASCII" do
@@ -33,28 +33,28 @@ describe "Encoding.compatible? String, String" do
 
   describe "when the first's Encoding is ASCII compatible and ASCII only" do
     it "returns the first's Encoding if the second is ASCII compatible and ASCII only" do
-      [ [Encoding, "abc".force_encoding("UTF-8"), "123".force_encoding("Shift_JIS"), Encoding::UTF_8],
-        [Encoding, "123".force_encoding("Shift_JIS"), "abc".force_encoding("UTF-8"), Encoding::Shift_JIS]
+      [ [Encoding, "abc".dup.force_encoding("UTF-8"), "123".dup.force_encoding("Shift_JIS"), Encoding::UTF_8],
+        [Encoding, "123".dup.force_encoding("Shift_JIS"), "abc".dup.force_encoding("UTF-8"), Encoding::Shift_JIS]
       ].should be_computed_by(:compatible?)
     end
 
     it "returns the first's Encoding if the second is ASCII compatible and ASCII only" do
-      [ [Encoding, "abc".force_encoding("BINARY"), "123".force_encoding("US-ASCII"), Encoding::BINARY],
-        [Encoding, "123".force_encoding("US-ASCII"), "abc".force_encoding("BINARY"), Encoding::US_ASCII]
+      [ [Encoding, "abc".dup.force_encoding("BINARY"), "123".dup.force_encoding("US-ASCII"), Encoding::BINARY],
+        [Encoding, "123".dup.force_encoding("US-ASCII"), "abc".dup.force_encoding("BINARY"), Encoding::US_ASCII]
       ].should be_computed_by(:compatible?)
     end
 
     it "returns the second's Encoding if the second is ASCII compatible but not ASCII only" do
-      [ [Encoding, "abc".force_encoding("UTF-8"), "\xff".force_encoding("Shift_JIS"), Encoding::Shift_JIS],
-        [Encoding, "123".force_encoding("Shift_JIS"), "\xff".force_encoding("UTF-8"), Encoding::UTF_8],
-        [Encoding, "abc".force_encoding("BINARY"), "\xff".force_encoding("US-ASCII"), Encoding::US_ASCII],
-        [Encoding, "123".force_encoding("US-ASCII"), "\xff".force_encoding("BINARY"), Encoding::BINARY],
+      [ [Encoding, "abc".dup.force_encoding("UTF-8"), "\xff".dup.force_encoding("Shift_JIS"), Encoding::Shift_JIS],
+        [Encoding, "123".dup.force_encoding("Shift_JIS"), "\xff".dup.force_encoding("UTF-8"), Encoding::UTF_8],
+        [Encoding, "abc".dup.force_encoding("BINARY"), "\xff".dup.force_encoding("US-ASCII"), Encoding::US_ASCII],
+        [Encoding, "123".dup.force_encoding("US-ASCII"), "\xff".dup.force_encoding("BINARY"), Encoding::BINARY],
       ].should be_computed_by(:compatible?)
     end
 
     it "returns nil if the second's Encoding is not ASCII compatible" do
-      a = "abc".force_encoding("UTF-8")
-      b = "1234".force_encoding("UTF-16LE")
+      a = "abc".dup.force_encoding("UTF-8")
+      b = "1234".dup.force_encoding("UTF-16LE")
       Encoding.compatible?(a, b).should be_nil
     end
   end
@@ -75,7 +75,7 @@ describe "Encoding.compatible? String, String" do
 
   describe "when the first's Encoding is not ASCII compatible" do
     before :each do
-      @str = "abc".force_encoding Encoding::UTF_7
+      @str = "abc".dup.force_encoding Encoding::UTF_7
     end
 
     it "returns nil when the second String is US-ASCII" do
@@ -91,14 +91,14 @@ describe "Encoding.compatible? String, String" do
     end
 
     it "returns the Encoding when the second's Encoding is not ASCII compatible but the same as the first's Encoding" do
-      encoding = Encoding.compatible?(@str, "def".force_encoding("utf-7"))
+      encoding = Encoding.compatible?(@str, "def".dup.force_encoding("utf-7"))
       encoding.should == Encoding::UTF_7
     end
   end
 
   describe "when the first's Encoding is invalid" do
     before :each do
-      @str = "\xff".force_encoding Encoding::UTF_8
+      @str = "\xff".dup.force_encoding Encoding::UTF_8
     end
 
     it "returns the first's Encoding when the second's Encoding is US-ASCII" do
@@ -114,11 +114,11 @@ describe "Encoding.compatible? String, String" do
     end
 
     it "returns nil when the second's Encoding is invalid and ASCII only" do
-      Encoding.compatible?(@str, "\x7f".force_encoding("utf-16be")).should be_nil
+      Encoding.compatible?(@str, "\x7f".dup.force_encoding("utf-16be")).should be_nil
     end
 
     it "returns nil when the second's Encoding is invalid and not ASCII only" do
-      Encoding.compatible?(@str, "\xff".force_encoding("utf-16be")).should be_nil
+      Encoding.compatible?(@str, "\xff".dup.force_encoding("utf-16be")).should be_nil
     end
 
     it "returns the Encoding when the second's Encoding is invalid but the same as the first" do
@@ -129,7 +129,7 @@ describe "Encoding.compatible? String, String" do
   describe "when the first String is empty and the second is not" do
     describe "and the first's Encoding is ASCII compatible" do
       before :each do
-        @str = "".force_encoding("utf-8")
+        @str = "".dup.force_encoding("utf-8")
       end
 
       it "returns the first's encoding when the second String is ASCII only" do
@@ -143,7 +143,7 @@ describe "Encoding.compatible? String, String" do
 
     describe "when the first's Encoding is not ASCII compatible" do
       before :each do
-        @str = "".force_encoding Encoding::UTF_7
+        @str = "".dup.force_encoding Encoding::UTF_7
       end
 
       it "returns the second string's encoding" do
@@ -154,7 +154,7 @@ describe "Encoding.compatible? String, String" do
 
   describe "when the second String is empty" do
     before :each do
-      @str = "abc".force_encoding("utf-7")
+      @str = "abc".dup.force_encoding("utf-7")
     end
 
     it "returns the first Encoding" do
@@ -165,7 +165,7 @@ end
 
 describe "Encoding.compatible? String, Regexp" do
   it "returns US-ASCII if both are US-ASCII" do
-    str = "abc".force_encoding("us-ascii")
+    str = "abc".dup.force_encoding("us-ascii")
     Encoding.compatible?(str, /abc/).should == Encoding::US_ASCII
   end
 
@@ -180,15 +180,15 @@ describe "Encoding.compatible? String, Regexp" do
   it "returns the String's Encoding if the String is not ASCII only" do
     [ [Encoding, "\xff",                                  Encoding::BINARY],
       [Encoding, "\u3042".encode("utf-8"),                Encoding::UTF_8],
-      [Encoding, "\xa4\xa2".force_encoding("euc-jp"),     Encoding::EUC_JP],
-      [Encoding, "\x82\xa0".force_encoding("shift_jis"),  Encoding::Shift_JIS],
+      [Encoding, "\xa4\xa2".dup.force_encoding("euc-jp"),     Encoding::EUC_JP],
+      [Encoding, "\x82\xa0".dup.force_encoding("shift_jis"),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, /abc/)
   end
 end
 
 describe "Encoding.compatible? String, Symbol" do
   it "returns US-ASCII if both are ASCII only" do
-    str = "abc".force_encoding("us-ascii")
+    str = "abc".dup.force_encoding("us-ascii")
     Encoding.compatible?(str, :abc).should == Encoding::US_ASCII
   end
 
@@ -203,8 +203,8 @@ describe "Encoding.compatible? String, Symbol" do
   it "returns the String's Encoding if the String is not ASCII only" do
     [ [Encoding, "\xff",                                  Encoding::BINARY],
       [Encoding, "\u3042".encode("utf-8"),                Encoding::UTF_8],
-      [Encoding, "\xa4\xa2".force_encoding("euc-jp"),     Encoding::EUC_JP],
-      [Encoding, "\x82\xa0".force_encoding("shift_jis"),  Encoding::Shift_JIS],
+      [Encoding, "\xa4\xa2".dup.force_encoding("euc-jp"),     Encoding::EUC_JP],
+      [Encoding, "\x82\xa0".dup.force_encoding("shift_jis"),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, :abc)
   end
 end
@@ -221,8 +221,8 @@ describe "Encoding.compatible? String, Encoding" do
   it "returns the String's encoding if the Encoding is US-ASCII" do
     [ [Encoding, "\xff",                                  Encoding::BINARY],
       [Encoding, "\u3042".encode("utf-8"),                Encoding::UTF_8],
-      [Encoding, "\xa4\xa2".force_encoding("euc-jp"),     Encoding::EUC_JP],
-      [Encoding, "\x82\xa0".force_encoding("shift_jis"),  Encoding::Shift_JIS],
+      [Encoding, "\xa4\xa2".dup.force_encoding("euc-jp"),     Encoding::EUC_JP],
+      [Encoding, "\x82\xa0".dup.force_encoding("shift_jis"),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, Encoding::US_ASCII)
   end
 
@@ -242,7 +242,7 @@ end
 
 describe "Encoding.compatible? Regexp, String" do
   it "returns US-ASCII if both are US-ASCII" do
-    str = "abc".force_encoding("us-ascii")
+    str = "abc".dup.force_encoding("us-ascii")
     Encoding.compatible?(/abc/, str).should == Encoding::US_ASCII
   end
 
@@ -256,8 +256,8 @@ describe "Encoding.compatible? Regexp, Regexp" do
   it "returns the first's Encoding if it is not US-ASCII and not ASCII only" do
     [ [Encoding, Regexp.new("\xff"),                                  Encoding::BINARY],
       [Encoding, Regexp.new("\u3042".encode("utf-8")),                Encoding::UTF_8],
-      [Encoding, Regexp.new("\xa4\xa2".force_encoding("euc-jp")),     Encoding::EUC_JP],
-      [Encoding, Regexp.new("\x82\xa0".force_encoding("shift_jis")),  Encoding::Shift_JIS],
+      [Encoding, Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp")),     Encoding::EUC_JP],
+      [Encoding, Regexp.new("\x82\xa0".dup.force_encoding("shift_jis")),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, /abc/)
   end
 end
@@ -270,15 +270,15 @@ describe "Encoding.compatible? Regexp, Symbol" do
   it "returns the first's Encoding if it is not US-ASCII and not ASCII only" do
     [ [Encoding, Regexp.new("\xff"),                                  Encoding::BINARY],
       [Encoding, Regexp.new("\u3042".encode("utf-8")),                Encoding::UTF_8],
-      [Encoding, Regexp.new("\xa4\xa2".force_encoding("euc-jp")),     Encoding::EUC_JP],
-      [Encoding, Regexp.new("\x82\xa0".force_encoding("shift_jis")),  Encoding::Shift_JIS],
+      [Encoding, Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp")),     Encoding::EUC_JP],
+      [Encoding, Regexp.new("\x82\xa0".dup.force_encoding("shift_jis")),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, /abc/)
   end
 end
 
 describe "Encoding.compatible? Symbol, String" do
   it "returns US-ASCII if both are ASCII only" do
-    str = "abc".force_encoding("us-ascii")
+    str = "abc".dup.force_encoding("us-ascii")
     Encoding.compatible?(str, :abc).should == Encoding::US_ASCII
   end
 end
@@ -291,8 +291,8 @@ describe "Encoding.compatible? Symbol, Regexp" do
   it "returns the Regexp's Encoding if it is not US-ASCII and not ASCII only" do
     a = Regexp.new("\xff")
     b = Regexp.new("\u3042".encode("utf-8"))
-    c = Regexp.new("\xa4\xa2".force_encoding("euc-jp"))
-    d = Regexp.new("\x82\xa0".force_encoding("shift_jis"))
+    c = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    d = Regexp.new("\x82\xa0".dup.force_encoding("shift_jis"))
 
     [ [Encoding, :abc, a, Encoding::BINARY],
       [Encoding, :abc, b, Encoding::UTF_8],
@@ -310,8 +310,8 @@ describe "Encoding.compatible? Symbol, Symbol" do
   it "returns the first's Encoding if it is not ASCII only" do
     [ [Encoding, "\xff".to_sym,                                  Encoding::BINARY],
       [Encoding, "\u3042".encode("utf-8").to_sym,                Encoding::UTF_8],
-      [Encoding, "\xa4\xa2".force_encoding("euc-jp").to_sym,     Encoding::EUC_JP],
-      [Encoding, "\x82\xa0".force_encoding("shift_jis").to_sym,  Encoding::Shift_JIS],
+      [Encoding, "\xa4\xa2".dup.force_encoding("euc-jp").to_sym,     Encoding::EUC_JP],
+      [Encoding, "\x82\xa0".dup.force_encoding("shift_jis").to_sym,  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, :abc)
   end
 end

@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 describe :string_encode, shared: true do
   describe "when passed no options" do
     it "transcodes to Encoding.default_internal when set" do

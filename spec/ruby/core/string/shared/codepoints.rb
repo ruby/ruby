@@ -7,7 +7,7 @@ describe :string_codepoints, shared: true do
   end
 
   it "raises an ArgumentError when self has an invalid encoding and a method is called on the returned Enumerator" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
     -> { s.send(@method).to_a }.should raise_error(ArgumentError)
   end
@@ -21,7 +21,7 @@ describe :string_codepoints, shared: true do
   end
 
   it "raises an ArgumentError if self's encoding is invalid and a block is given" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
     -> { s.send(@method) { } }.should raise_error(ArgumentError)
   end
@@ -49,7 +49,7 @@ describe :string_codepoints, shared: true do
 
   it "round-trips to the original String using Integer#chr" do
     s = "\u{13}\u{7711}\u{1010}"
-    s2 = ""
+    s2 = +""
     s.send(@method) {|n| s2 << n.chr(Encoding::UTF_8)}
     s.should == s2
   end

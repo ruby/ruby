@@ -8,26 +8,26 @@ describe "StringIO.open when passed [Object, mode]" do
   end
 
   it "returns the blocks return value when yielding" do
-    ret = StringIO.open("example", "r") { :test }
+    ret = StringIO.open(+"example", "r") { :test }
     ret.should equal(:test)
   end
 
   it "yields self to the passed block" do
     io = nil
-    StringIO.open("example", "r") { |strio| io = strio }
+    StringIO.open(+"example", "r") { |strio| io = strio }
     io.should be_kind_of(StringIO)
   end
 
   it "closes self after yielding" do
     io = nil
-    StringIO.open("example", "r") { |strio| io = strio }
+    StringIO.open(+"example", "r") { |strio| io = strio }
     io.closed?.should be_true
   end
 
   it "even closes self when an exception is raised while yielding" do
     io = nil
     begin
-      StringIO.open("example", "r") do |strio|
+      StringIO.open(+"example", "r") do |strio|
         io = strio
         raise "Error"
       end
@@ -38,14 +38,14 @@ describe "StringIO.open when passed [Object, mode]" do
 
   it "sets self's string to nil after yielding" do
     io = nil
-    StringIO.open("example", "r") { |strio| io = strio }
+    StringIO.open(+"example", "r") { |strio| io = strio }
     io.string.should be_nil
   end
 
   it "even sets self's string to nil when an exception is raised while yielding" do
     io = nil
     begin
-      StringIO.open("example", "r") do |strio|
+      StringIO.open(+"example", "r") do |strio|
         io = strio
         raise "Error"
       end
@@ -55,81 +55,81 @@ describe "StringIO.open when passed [Object, mode]" do
   end
 
   it "sets the mode based on the passed mode" do
-    io = StringIO.open("example", "r")
+    io = StringIO.open(+"example", "r")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
-    io = StringIO.open("example", "rb")
+    io = StringIO.open(+"example", "rb")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
-    io = StringIO.open("example", "r+")
+    io = StringIO.open(+"example", "r+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "rb+")
+    io = StringIO.open(+"example", "rb+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "w")
+    io = StringIO.open(+"example", "w")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "wb")
+    io = StringIO.open(+"example", "wb")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "w+")
+    io = StringIO.open(+"example", "w+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "wb+")
+    io = StringIO.open(+"example", "wb+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "a")
+    io = StringIO.open(+"example", "a")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "ab")
+    io = StringIO.open(+"example", "ab")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "a+")
+    io = StringIO.open(+"example", "a+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", "ab+")
+    io = StringIO.open(+"example", "ab+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
 
   it "allows passing the mode as an Integer" do
-    io = StringIO.open("example", IO::RDONLY)
+    io = StringIO.open(+"example", IO::RDONLY)
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
-    io = StringIO.open("example", IO::RDWR)
+    io = StringIO.open(+"example", IO::RDWR)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", IO::WRONLY)
+    io = StringIO.open(+"example", IO::WRONLY)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", IO::WRONLY | IO::TRUNC)
+    io = StringIO.open(+"example", IO::WRONLY | IO::TRUNC)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", IO::RDWR | IO::TRUNC)
+    io = StringIO.open(+"example", IO::RDWR | IO::TRUNC)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", IO::WRONLY | IO::APPEND)
+    io = StringIO.open(+"example", IO::WRONLY | IO::APPEND)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
-    io = StringIO.open("example", IO::RDWR | IO::APPEND)
+    io = StringIO.open(+"example", IO::RDWR | IO::APPEND)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
@@ -141,7 +141,7 @@ describe "StringIO.open when passed [Object, mode]" do
   it "tries to convert the passed mode to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("r")
-    io = StringIO.open("example", obj)
+    io = StringIO.open(+"example", obj)
 
     io.closed_read?.should be_false
     io.closed_write?.should be_true
@@ -163,16 +163,16 @@ describe "StringIO.open when passed [Object]" do
 
   it "yields self to the passed block" do
     io = nil
-    ret = StringIO.open("example") { |strio| io = strio }
+    ret = StringIO.open(+"example") { |strio| io = strio }
     io.should equal(ret)
   end
 
   it "sets the mode to read-write (r+)" do
-    io = StringIO.open("example")
+    io = StringIO.open(+"example")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.new("example")
+    io = StringIO.new(+"example")
     io.printf("%d", 123)
     io.string.should == "123mple"
   end
@@ -204,7 +204,7 @@ describe "StringIO.open when passed no arguments" do
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
-    io = StringIO.new("example")
+    io = StringIO.new(+"example")
     io.printf("%d", 123)
     io.string.should == "123mple"
   end

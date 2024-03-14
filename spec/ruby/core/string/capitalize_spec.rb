@@ -90,7 +90,7 @@ end
 
 describe "String#capitalize!" do
   it "capitalizes self in place" do
-    a = "hello"
+    a = +"hello"
     a.capitalize!.should equal(a)
     a.should == "Hello"
   end
@@ -103,13 +103,13 @@ describe "String#capitalize!" do
 
   describe "full Unicode case mapping" do
     it "modifies self in place for all of Unicode with no option" do
-      a = "äöÜ"
+      a = +"äöÜ"
       a.capitalize!
       a.should == "Äöü"
     end
 
     it "only capitalizes the first resulting character when upcasing a character produces a multi-character sequence" do
-      a = "ß"
+      a = +"ß"
       a.capitalize!
       a.should == "Ss"
     end
@@ -121,7 +121,7 @@ describe "String#capitalize!" do
     end
 
     it "updates string metadata" do
-      capitalized = "ßeT"
+      capitalized = +"ßeT"
       capitalized.capitalize!
 
       capitalized.should == "Sset"
@@ -133,7 +133,7 @@ describe "String#capitalize!" do
 
   describe "modifies self in place for ASCII-only case mapping" do
     it "does not capitalize non-ASCII characters" do
-      a = "ßet"
+      a = +"ßet"
       a.capitalize!(:ascii)
       a.should == "ßet"
     end
@@ -147,13 +147,13 @@ describe "String#capitalize!" do
 
   describe "modifies self in place for full Unicode case mapping adapted for Turkic languages" do
     it "capitalizes ASCII characters according to Turkic semantics" do
-      a = "iSa"
+      a = +"iSa"
       a.capitalize!(:turkic)
       a.should == "İsa"
     end
 
     it "allows Lithuanian as an extra option" do
-      a = "iSa"
+      a = +"iSa"
       a.capitalize!(:turkic, :lithuanian)
       a.should == "İsa"
     end
@@ -165,13 +165,13 @@ describe "String#capitalize!" do
 
   describe "modifies self in place for full Unicode case mapping adapted for Lithuanian" do
     it "currently works the same as full Unicode case mapping" do
-      a = "iß"
+      a = +"iß"
       a.capitalize!(:lithuanian)
       a.should == "Iß"
     end
 
     it "allows Turkic as an extra option (and applies Turkic semantics)" do
-      a = "iß"
+      a = +"iß"
       a.capitalize!(:lithuanian, :turkic)
       a.should == "İß"
     end
@@ -190,12 +190,12 @@ describe "String#capitalize!" do
   end
 
   it "returns nil when no changes are made" do
-    a = "Hello"
+    a = +"Hello"
     a.capitalize!.should == nil
     a.should == "Hello"
 
-    "".capitalize!.should == nil
-    "H".capitalize!.should == nil
+    (+"").capitalize!.should == nil
+    (+"H").capitalize!.should == nil
   end
 
   it "raises a FrozenError when self is frozen" do

@@ -75,7 +75,7 @@ describe "String#rjust with length, padding" do
 
   describe "with width" do
     it "returns a String in the same encoding as the original" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.rjust 5
       result.should == "  abc"
       result.encoding.should equal(Encoding::IBM437)
@@ -84,7 +84,7 @@ describe "String#rjust with length, padding" do
 
   describe "with width, pattern" do
     it "returns a String in the compatible encoding" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.rjust 5, "あ"
       result.should == "ああabc"
       result.encoding.should equal(Encoding::UTF_8)

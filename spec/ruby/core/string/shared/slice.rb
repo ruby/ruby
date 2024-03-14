@@ -84,8 +84,8 @@ describe :string_slice_index_length, shared: true do
     s = "hello there"
     s.send(@method, 1, 9).encoding.should == s.encoding
 
-    a = "hello".force_encoding("binary")
-    b = " there".force_encoding("ISO-8859-1")
+    a = "hello".dup.force_encoding("binary")
+    b = " there".dup.force_encoding("ISO-8859-1")
     c = (a + b).force_encoding(Encoding::US_ASCII)
 
     c.send(@method, 0, 5).encoding.should == Encoding::US_ASCII

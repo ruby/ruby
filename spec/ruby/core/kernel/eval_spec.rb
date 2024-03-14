@@ -350,9 +350,6 @@ CODE
     end
 
     it "allows a magic encoding comment and a subsequent frozen_string_literal magic comment" do
-      # Make sure frozen_string_literal is not default true
-      eval("'foo'".b).frozen?.should be_false
-
       code = <<CODE.b
 # encoding: UTF-8
 # frozen_string_literal: true
@@ -403,6 +400,7 @@ CODE
     end
 
     it "ignores the frozen_string_literal magic comment if it appears after a token and warns if $VERBOSE is true" do
+      default_frozen_string_literal = "test".frozen?
       code = <<CODE
 some_token_before_magic_comment = :anything
 # frozen_string_literal: true
@@ -411,11 +409,11 @@ class EvalSpecs
 end
 CODE
       -> { eval(code) }.should complain(/warning: [`']frozen_string_literal' is ignored after any tokens/, verbose: true)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == default_frozen_string_literal
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
 
       -> { eval(code) }.should_not complain(verbose: false)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == default_frozen_string_literal
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
     end
   end

@@ -179,11 +179,7 @@ static VALUE object_spec_rb_method_boundp(VALUE self, VALUE obj, VALUE method, V
 }
 
 static VALUE object_spec_rb_special_const_p(VALUE self, VALUE value) {
-  if (rb_special_const_p(value)) {
-    return Qtrue;
-  } else {
-    return Qfalse;
-  }
+  return rb_special_const_p(value);
 }
 
 static VALUE so_to_id(VALUE self, VALUE obj) {

@@ -15,7 +15,7 @@ describe :argf_read, shared: true do
 
   it "treats second argument as an output buffer" do
     argf [@file1_name] do
-      buffer = ""
+      buffer = +""
       @argf.send(@method, @file1.size, buffer)
       buffer.should == @file1
     end
@@ -23,7 +23,7 @@ describe :argf_read, shared: true do
 
   it "clears output buffer before appending to it" do
     argf [@file1_name] do
-      buffer = "to be cleared"
+      buffer = +"to be cleared"
       @argf.send(@method, @file1.size, buffer)
       buffer.should == @file1
     end

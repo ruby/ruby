@@ -1,6 +1,6 @@
 describe :stringio_write, shared: true do
   before :each do
-    @io = StringIO.new('12345')
+    @io = StringIO.new(+'12345')
   end
 
   it "tries to convert the passed Object to a String using #to_s" do
@@ -13,7 +13,7 @@ end
 
 describe :stringio_write_string, shared: true do
   before :each do
-    @io = StringIO.new('12345')
+    @io = StringIO.new(+'12345')
   end
 
   # TODO: RDoc says that #write appends at the current position.
@@ -106,10 +106,10 @@ end
 
 describe :stringio_write_not_writable, shared: true do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.send(@method, "test") }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.send(@method, "test") }.should raise_error(IOError)
   end
@@ -117,7 +117,7 @@ end
 
 describe :stringio_write_append, shared: true do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self" do

@@ -21,7 +21,7 @@ describe "Array#fill" do
 
   it "does not replicate the filler" do
     ary = [1, 2, 3, 4]
-    str = "x"
+    str = +"x"
     ary.fill(str).should == [str, str, str, str]
     str << "y"
     ary.should == [str, str, str, str]

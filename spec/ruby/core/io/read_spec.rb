@@ -294,19 +294,19 @@ describe "IO#read" do
   it "clears the output buffer if there is nothing to read" do
     @io.pos = 10
 
-    buf = 'non-empty string'
+    buf = +'non-empty string'
 
     @io.read(10, buf).should == nil
 
     buf.should == ''
 
-    buf = 'non-empty string'
+    buf = +'non-empty string'
 
     @io.read(nil, buf).should == ""
 
     buf.should == ''
 
-    buf = 'non-empty string'
+    buf = +'non-empty string'
 
     @io.read(0, buf).should == ""
 
@@ -344,53 +344,53 @@ describe "IO#read" do
   end
 
   it "places the specified number of bytes in the buffer" do
-    buf = ""
+    buf = +""
     @io.read 5, buf
 
     buf.should == "12345"
   end
 
   it "expands the buffer when too small" do
-    buf = "ABCDE"
+    buf = +"ABCDE"
     @io.read nil, buf
 
     buf.should == @contents
   end
 
   it "overwrites the buffer" do
-    buf = "ABCDEFGHIJ"
+    buf = +"ABCDEFGHIJ"
     @io.read nil, buf
 
     buf.should == @contents
   end
 
   it "truncates the buffer when too big" do
-    buf = "ABCDEFGHIJKLMNO"
+    buf = +"ABCDEFGHIJKLMNO"
     @io.read nil, buf
     buf.should == @contents
 
     @io.rewind
 
-    buf = "ABCDEFGHIJKLMNO"
+    buf = +"ABCDEFGHIJKLMNO"
     @io.read 5, buf
     buf.should == @contents[0..4]
   end
 
   it "returns the given buffer" do
-    buf = ""
+    buf = +""
 
     @io.read(nil, buf).should equal buf
   end
 
   it "returns the given buffer when there is nothing to read" do
-    buf = ""
+    buf = +""
 
     @io.read
     @io.read(nil, buf).should equal buf
   end
 
   it "coerces the second argument to string and uses it as a buffer" do
-    buf = "ABCDE"
+    buf = +"ABCDE"
     obj = mock("buff")
     obj.should_receive(:to_str).any_number_of_times.and_return(buf)
 
@@ -588,13 +588,13 @@ describe :io_read_internal_encoding, shared: true do
 
   describe "when passed nil for limit" do
     it "sets the buffer to a transcoded String" do
-      result = @io.read(nil, buf = "")
+      result = @io.read(nil, buf = +"")
       buf.should equal(result)
       buf.should == "ありがとう\n"
     end
 
     it "sets the buffer's encoding to the internal encoding" do
-      buf = "".force_encoding Encoding::ISO_8859_1
+      buf = "".dup.force_encoding Encoding::ISO_8859_1
       @io.read(nil, buf)
       buf.encoding.should equal(Encoding::UTF_8)
     end
@@ -612,14 +612,14 @@ describe :io_read_size_internal_encoding, shared: true do
   end
 
   it "does not change the buffer's encoding when passed a limit" do
-    buf = "".force_encoding Encoding::ISO_8859_1
+    buf = "".dup.force_encoding Encoding::ISO_8859_1
     @io.read(4, buf)
     buf.should == [164, 162, 164, 234].pack('C*').force_encoding(Encoding::ISO_8859_1)
     buf.encoding.should equal(Encoding::ISO_8859_1)
   end
 
   it "truncates the buffer but does not change the buffer's encoding when no data remains" do
-    buf = "abc".force_encoding Encoding::ISO_8859_1
+    buf = "abc".dup.force_encoding Encoding::ISO_8859_1
     @io.read
 
     @io.read(1, buf).should be_nil

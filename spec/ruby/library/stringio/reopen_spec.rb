@@ -3,21 +3,21 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#reopen when passed [Object, Integer]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "reopens self with the passed Object in the passed mode" do
-    @io.reopen("reopened", IO::RDONLY)
+    @io.reopen(+"reopened", IO::RDONLY)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
 
-    @io.reopen("reopened, twice", IO::WRONLY)
+    @io.reopen(+"reopened, twice", IO::WRONLY)
     @io.closed_read?.should be_true
     @io.closed_write?.should be_false
     @io.string.should == "reopened, twice"
 
-    @io.reopen("reopened, another time", IO::RDWR)
+    @io.reopen(+"reopened, another time", IO::RDWR)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
     @io.string.should == "reopened, another time"
@@ -25,7 +25,7 @@ describe "StringIO#reopen when passed [Object, Integer]" do
 
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
-    obj.should_receive(:to_str).and_return("to_str")
+    obj.should_receive(:to_str).and_return(+"to_str")
     @io.reopen(obj, IO::RDWR)
     @io.string.should == "to_str"
   end
@@ -51,39 +51,39 @@ end
 
 describe "StringIO#reopen when passed [Object, Object]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "reopens self with the passed Object in the passed mode" do
-    @io.reopen("reopened", "r")
+    @io.reopen(+"reopened", "r")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
 
-    @io.reopen("reopened, twice", "r+")
+    @io.reopen(+"reopened, twice", "r+")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
     @io.string.should == "reopened, twice"
 
-    @io.reopen("reopened, another", "w+")
+    @io.reopen(+"reopened, another", "w+")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
     @io.string.should == ""
 
-    @io.reopen("reopened, another time", "r+")
+    @io.reopen(+"reopened, another time", "r+")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
     @io.string.should == "reopened, another time"
   end
 
   it "truncates the passed String when opened in truncate mode" do
-    @io.reopen(str = "reopened", "w")
+    @io.reopen(str = +"reopened", "w")
     str.should == ""
   end
 
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
-    obj.should_receive(:to_str).and_return("to_str")
+    obj.should_receive(:to_str).and_return(+"to_str")
     @io.reopen(obj, "r")
     @io.string.should == "to_str"
   end
@@ -94,20 +94,20 @@ describe "StringIO#reopen when passed [Object, Object]" do
 
   it "resets self's position to 0" do
     @io.read(5)
-    @io.reopen("reopened")
+    @io.reopen(+"reopened")
     @io.pos.should eql(0)
   end
 
   it "resets self's line number to 0" do
     @io.gets
-    @io.reopen("reopened")
+    @io.reopen(+"reopened")
     @io.lineno.should eql(0)
   end
 
   it "tries to convert the passed mode Object to an Integer using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("r")
-    @io.reopen("reopened", obj)
+    @io.reopen(+"reopened", obj)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
@@ -128,13 +128,13 @@ end
 
 describe "StringIO#reopen when passed [String]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "reopens self with the passed String in read-write mode" do
     @io.close
 
-    @io.reopen("reopened")
+    @io.reopen(+"reopened")
 
     @io.closed_write?.should be_false
     @io.closed_read?.should be_false
@@ -144,20 +144,20 @@ describe "StringIO#reopen when passed [String]" do
 
   it "resets self's position to 0" do
     @io.read(5)
-    @io.reopen("reopened")
+    @io.reopen(+"reopened")
     @io.pos.should eql(0)
   end
 
   it "resets self's line number to 0" do
     @io.gets
-    @io.reopen("reopened")
+    @io.reopen(+"reopened")
     @io.lineno.should eql(0)
   end
 end
 
 describe "StringIO#reopen when passed [Object]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "raises a TypeError when passed an Object that can't be converted to a StringIO" do
@@ -172,7 +172,7 @@ describe "StringIO#reopen when passed [Object]" do
 
   it "tries to convert the passed Object to a StringIO using #to_strio" do
     obj = mock("to_strio")
-    obj.should_receive(:to_strio).and_return(StringIO.new("to_strio"))
+    obj.should_receive(:to_strio).and_return(StringIO.new(+"to_strio"))
     @io.reopen(obj)
     @io.string.should == "to_strio"
   end
@@ -180,7 +180,7 @@ end
 
 describe "StringIO#reopen when passed no arguments" do
   before :each do
-    @io = StringIO.new("example\nsecond line")
+    @io = StringIO.new(+"example\nsecond line")
   end
 
   it "resets self's mode to read-write" do
@@ -208,40 +208,40 @@ end
 # for details.
 describe "StringIO#reopen" do
   before :each do
-    @io = StringIO.new('hello','a')
+    @io = StringIO.new(+'hello','a')
   end
 
   # TODO: find out if this is really a bug
   it "reopens a stream when given a String argument" do
-    @io.reopen('goodbye').should == @io
+    @io.reopen(+'goodbye').should == @io
     @io.string.should == 'goodbye'
     @io << 'x'
     @io.string.should == 'xoodbye'
   end
 
   it "reopens a stream in append mode when flagged as such" do
-    @io.reopen('goodbye', 'a').should == @io
+    @io.reopen(+'goodbye', 'a').should == @io
     @io.string.should == 'goodbye'
     @io << 'x'
     @io.string.should == 'goodbyex'
   end
 
   it "reopens and truncate when reopened in write mode" do
-    @io.reopen('goodbye', 'wb').should == @io
+    @io.reopen(+'goodbye', 'wb').should == @io
     @io.string.should == ''
     @io << 'x'
     @io.string.should == 'x'
   end
 
   it "truncates the given string, not a copy" do
-    str = 'goodbye'
+    str = +'goodbye'
     @io.reopen(str, 'w')
     @io.string.should == ''
     str.should == ''
   end
 
   it "does not truncate the content even when the StringIO argument is in the truncate mode" do
-    orig_io = StringIO.new("Original StringIO", IO::RDWR|IO::TRUNC)
+    orig_io = StringIO.new(+"Original StringIO", IO::RDWR|IO::TRUNC)
     orig_io.write("BLAH") # make sure the content is not empty
 
     @io.reopen(orig_io)

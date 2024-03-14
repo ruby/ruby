@@ -3,7 +3,7 @@ require 'stringio'
 describe :net_httpresponse_body, shared: true do
   before :each do
     @res = Net::HTTPUnknownResponse.new("1.0", "???", "test response")
-    @socket = Net::BufferedIO.new(StringIO.new("test body"))
+    @socket = Net::BufferedIO.new(StringIO.new(+"test body"))
   end
 
   it "returns the read body" do

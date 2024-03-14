@@ -33,7 +33,7 @@ end
 
 describe :stringio_getc_not_readable, shared: true do
   it "raises an IOError" do
-    io = StringIO.new("xyz", "w")
+    io = StringIO.new(+"xyz", "w")
     -> { io.send(@method) }.should raise_error(IOError)
 
     io = StringIO.new("xyz")

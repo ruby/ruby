@@ -59,7 +59,7 @@ describe "IO#readpartial" do
   end
 
   it "discards the existing buffer content upon successful read" do
-    buffer = "existing content"
+    buffer = +"existing content"
     @wr.write("hello world")
     @wr.close
     @rd.readpartial(11, buffer)
@@ -74,7 +74,7 @@ describe "IO#readpartial" do
   end
 
   it "discards the existing buffer content upon error" do
-    buffer = 'hello'
+    buffer = +'hello'
     @wr.close
     -> { @rd.readpartial(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty
@@ -95,7 +95,7 @@ describe "IO#readpartial" do
 
   ruby_bug "#18421", ""..."3.0.4" do
     it "clears and returns the given buffer if the length argument is 0" do
-      buffer = "existing content"
+      buffer = +"existing content"
       @rd.readpartial(0, buffer).should == buffer
       buffer.should == ""
     end

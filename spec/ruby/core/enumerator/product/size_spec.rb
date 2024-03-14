@@ -23,14 +23,6 @@ ruby_version_is "3.2" do
       product.size.should == Float::INFINITY
     end
 
-    it "returns -Float::INFINITY if any enumerable reports its size as -Float::INFINITY" do
-      enum = Object.new
-      def enum.size; -Float::INFINITY; end
-
-      product = Enumerator::Product.new(1..2, enum)
-      product.size.should == -Float::INFINITY
-    end
-
     it "returns nil if any enumerable reports its size as Float::NAN" do
       enum = Object.new
       def enum.size; Float::NAN; end

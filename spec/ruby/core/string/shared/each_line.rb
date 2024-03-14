@@ -106,7 +106,7 @@ describe :string_each_line, shared: true do
   end
 
   it "does not care if the string is modified while substituting" do
-    str = "hello\nworld."
+    str = +"hello\nworld."
     out = []
     str.send(@method){|x| out << x; str[-1] = '!' }.should == "hello\nworld!"
     out.should == ["hello\n", "world."]

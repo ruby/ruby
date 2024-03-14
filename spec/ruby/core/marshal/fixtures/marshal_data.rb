@@ -38,7 +38,7 @@ class UserDefinedWithIvar
   attr_reader :a, :b, :c
 
   def initialize
-    @a = 'stuff'
+    @a = +'stuff'
     @a.instance_variable_set :@foo, :UserDefinedWithIvar
     @b = 'more'
     @c = @b
@@ -267,7 +267,7 @@ module MarshalSpec
     end
   end
 
-  module_eval(<<~ruby.force_encoding(Encoding::UTF_8))
+  module_eval(<<~ruby.dup.force_encoding(Encoding::UTF_8))
     class MultibyteぁあぃいClass
     end
 
@@ -313,7 +313,7 @@ module MarshalSpec
                        "\004\b\"\012small"],
     "String big" => ['big' * 100,
                      "\004\b\"\002,\001#{'big' * 100}"],
-    "String extended" => [''.extend(Meths), # TODO: check for module on load
+    "String extended" => [''.dup.extend(Meths), # TODO: check for module on load
                           "\004\be:\nMeths\"\000"],
     "String subclass" => [UserString.new,
                           "\004\bC:\017UserString\"\000"],
@@ -420,7 +420,7 @@ module MarshalSpec
                     "\x04\bI\"\nsmall\x06:\x06EF"],
     "String big" => ['big' * 100,
                     "\x04\bI\"\x02,\x01bigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbig\x06:\x06EF"],
-    "String extended" => [''.extend(Meths), # TODO: check for module on load
+    "String extended" => [''.dup.extend(Meths), # TODO: check for module on load
                           "\x04\bIe:\nMeths\"\x00\x06:\x06EF"],
     "String subclass" => [UserString.new,
                           "\004\bC:\017UserString\"\000"],

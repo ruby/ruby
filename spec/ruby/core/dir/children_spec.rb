@@ -47,7 +47,7 @@ describe "Dir.children" do
     encoding = Encoding.find("filesystem")
     encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
-      children.should include("こんにちは.txt".force_encoding(encoding))
+      children.should include("こんにちは.txt".dup.force_encoding(encoding))
     end
     children.first.encoding.should equal(Encoding.find("filesystem"))
   end
@@ -113,7 +113,7 @@ describe "Dir#children" do
     encoding = Encoding.find("filesystem")
     encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
-      children.should include("こんにちは.txt".force_encoding(encoding))
+      children.should include("こんにちは.txt".dup.force_encoding(encoding))
     end
     children.first.encoding.should equal(Encoding.find("filesystem"))
   end

@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#<< when passed [Object]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "returns self" do
@@ -44,10 +44,10 @@ end
 
 describe "StringIO#<< when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io << "test" }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io << "test" }.should raise_error(IOError)
   end
@@ -55,7 +55,7 @@ end
 
 describe "StringIO#<< when in append mode" do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self, ignoring current position" do

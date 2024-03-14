@@ -40,7 +40,7 @@ describe "String#partition with String" do
   end
 
   it "handles a pattern in a superset encoding" do
-    string = "hello".force_encoding(Encoding::US_ASCII)
+    string = "hello".dup.force_encoding(Encoding::US_ASCII)
 
     result = string.partition("é")
 
@@ -51,7 +51,7 @@ describe "String#partition with String" do
   end
 
   it "handles a pattern in a subset encoding" do
-    pattern = "o".force_encoding(Encoding::US_ASCII)
+    pattern = "o".dup.force_encoding(Encoding::US_ASCII)
 
     result = "héllo world".partition(pattern)
 

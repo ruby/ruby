@@ -6,7 +6,7 @@ describe "IO#puts" do
     @before_separator = $/
     @name = tmp("io_puts.txt")
     @io = new_io @name
-    ScratchPad.record ""
+    ScratchPad.record(+"")
     def @io.write(str)
       ScratchPad << str
     end

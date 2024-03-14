@@ -238,7 +238,7 @@ describe "A singleton method definition" do
   end
 
   it "can be declared for a global variable" do
-    $__a__ = "hi"
+    $__a__ = +"hi"
     def $__a__.foo
       7
     end

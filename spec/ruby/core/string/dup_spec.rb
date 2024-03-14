@@ -51,7 +51,7 @@ describe "String#dup" do
   end
 
   it "does not modify the original setbyte-mutated string when changing dupped string" do
-    orig = "a"
+    orig = +"a"
     orig.setbyte 0, "b".ord
     copy = orig.dup
     orig.setbyte 0, "c".ord

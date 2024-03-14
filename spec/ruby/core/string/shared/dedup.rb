@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 describe :string_dedup, shared: true do
   it 'returns self if the String is frozen' do
     input  = 'foo'.freeze

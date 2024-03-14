@@ -4,7 +4,7 @@ require "stringio"
 
 describe "Net::HTTPGenericRequest#exec when passed socket, version, path" do
   before :each do
-    @socket = StringIO.new("")
+    @socket = StringIO.new(+"")
     @buffered_socket = Net::BufferedIO.new(@socket)
   end
 

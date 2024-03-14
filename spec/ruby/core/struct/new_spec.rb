@@ -48,7 +48,7 @@ describe "Struct.new" do
   end
 
   it "allows non-ASCII member name" do
-    name = "r\xe9sum\xe9".force_encoding(Encoding::ISO_8859_1).to_sym
+    name = "r\xe9sum\xe9".dup.force_encoding(Encoding::ISO_8859_1).to_sym
     struct = Struct.new(name)
     struct.new("foo").send(name).should == "foo"
   end

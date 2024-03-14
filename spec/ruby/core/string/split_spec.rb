@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 
 describe "String#split with String" do
   it "throws an ArgumentError if the string  is not a valid" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { s.split }.should raise_error(ArgumentError)
     -> { s.split(':') }.should raise_error(ArgumentError)
@@ -12,7 +12,7 @@ describe "String#split with String" do
 
   it "throws an ArgumentError if the pattern is not a valid string" do
     str = 'проверка'
-    broken_str = "\xDF".force_encoding(Encoding::UTF_8)
+    broken_str = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { str.split(broken_str) }.should raise_error(ArgumentError)
   end
@@ -229,7 +229,7 @@ end
 
 describe "String#split with Regexp" do
   it "throws an ArgumentError if the string  is not a valid" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { s.split(/./) }.should raise_error(ArgumentError)
   end
@@ -409,7 +409,7 @@ describe "String#split with Regexp" do
   end
 
   it "returns an ArgumentError if an invalid UTF-8 string is supplied" do
-    broken_str = 'проверка' # in russian, means "test"
+    broken_str = +'проверка' # in russian, means "test"
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
