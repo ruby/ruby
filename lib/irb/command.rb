@@ -196,7 +196,12 @@ module IRB # :nodoc:
         :irb_history, :History, "command/history",
         [:history, NO_OVERRIDE],
         [:hist, NO_OVERRIDE],
-      ]
+      ],
+
+      [
+        :irb_disable_irb, :DisableIrb, "command/disable_irb",
+        [:disable_irb, NO_OVERRIDE],
+      ],
     ]
 
 
