@@ -3983,7 +3983,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  duphash
             *  send
             */
-            if (optimize_args_splat_no_copy(iseq, iobj, niobj->next,
+            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
                 VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT, VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
 
             if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
