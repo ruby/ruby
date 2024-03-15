@@ -354,7 +354,7 @@ make_counters! {
     send_refined_method,
     send_private_not_fcall,
     send_cfunc_kw_splat_non_nil,
-    send_cfunc_ruby_array_varg,
+    send_cfunc_splat_neg2,
     send_cfunc_argc_mismatch,
     send_cfunc_block_arg,
     send_cfunc_toomany_args,

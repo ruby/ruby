@@ -4678,3 +4678,19 @@ assert_equal '[0, {1=>1}]', %q{
 
   test(KwInit, [Hash.ruby2_keywords_hash({1 => 1})])
 }
+
+# arity=-2 cfuncs
+assert_equal '["", "1/2", [0, [:ok, 1]]]', %q{
+  def test_cases(file, chain)
+    new_chain = chain.allocate # to call initialize directly
+    new_chain.send(:initialize, [0], ok: 1)
+
+    [
+      file.join,
+      file.join("1", "2"),
+      new_chain.to_a,
+    ]
+  end
+
+  test_cases(File, Enumerator::Chain)
+}

@@ -6174,9 +6174,9 @@ fn gen_send_cfunc(
     let variable_splat = flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc == -1;
     let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
 
-    // If the function expects a Ruby array of arguments
-    if cfunc_argc < 0 && cfunc_argc != -1 {
-        gen_counter_incr(asm, Counter::send_cfunc_ruby_array_varg);
+    // If it's a splat and the method expects a Ruby array of arguments
+    if cfunc_argc == -2 && flags & VM_CALL_ARGS_SPLAT != 0 {
+        gen_counter_incr(asm, Counter::send_cfunc_splat_neg2);
         return None;
     }
 
@@ -6461,7 +6461,19 @@ fn gen_send_cfunc(
             asm.stack_opnd(argc),
         ]
     }
-    else {
+    // Variadic method taking a Ruby array
+    else if cfunc_argc == -2 {
+        // Slurp up all the arguments into an array
+        let stack_args = asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32));
+        let args_array = asm.ccall(
+            rb_ec_ary_new_from_values as _,
+            vec![EC, passed_argc.into(), stack_args]
+        );
+
+        // Example signature:
+        // VALUE neg2_method(VALUE self, VALUE argv)
+        vec![asm.stack_opnd(argc), args_array]
+    } else {
         panic!("unexpected cfunc_args: {}", cfunc_argc)
     };
 
