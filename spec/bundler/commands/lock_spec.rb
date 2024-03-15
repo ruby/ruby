@@ -138,7 +138,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", raise_on_error: false
 
-    expect(err).to match(/locally installed gems/)
+    expect(err).to match(/cached gems or installed locally/)
   end
 
   it "does not fetch remote checksums with --local" do
@@ -1211,7 +1211,7 @@ RSpec.describe "bundle lock" do
       Because rails >= 7.0.4 depends on railties = 7.0.4
         and rails < 7.0.4 depends on railties = 7.0.3.1,
         railties = 7.0.3.1 OR = 7.0.4 is required.
-      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally,
         version solving has failed.
     ERR
   end
@@ -1322,7 +1322,7 @@ RSpec.describe "bundle lock" do
       Thus, rails >= 7.0.2.3, < 7.0.4 cannot be used.
       And because rails >= 7.0.4 depends on activemodel = 7.0.4,
         rails >= 7.0.2.3 requires activemodel = 7.0.4.
-      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
+      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally
         and Gemfile depends on rails >= 7.0.2.3,
         version solving has failed.
     ERR

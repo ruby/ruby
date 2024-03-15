@@ -1422,6 +1422,43 @@ RSpec.describe "bundle update --bundler" do
     end
   end
 
+  it "does not claim to update to Bundler version to a wrong version when cached gems are present" do
+    pristine_system_gems "bundler-2.99.0"
+
+    build_repo4 do
+      build_gem "rack", "3.0.9.1"
+
+      build_bundler "2.99.0"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          rack (3.0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+       rack
+
+      BUNDLED WITH
+         2.99.0
+    L
+
+    bundle :cache, verbose: true
+
+    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+    expect(out).not_to include("Updating bundler to")
+  end
+
   it "does not update the bundler version in the lockfile if the latest version is not compatible with current ruby", :ruby_repo do
     pristine_system_gems "bundler-2.3.9"
 

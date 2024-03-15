@@ -17,7 +17,7 @@ module Bundler
         @remotes = []
         @dependency_names = []
         @allow_remote = false
-        @allow_cached = false
+        @allow_cached = options["allow_cached"] || false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
 
@@ -133,7 +133,7 @@ module Bundler
           # sources, and large_idx.merge! small_idx is way faster than
           # small_idx.merge! large_idx.
           index = @allow_remote ? remote_specs.dup : Index.new
-          index.merge!(cached_specs) if @allow_cached || @allow_remote
+          index.merge!(cached_specs) if @allow_cached
           index.merge!(installed_specs) if @allow_local
           index
         end

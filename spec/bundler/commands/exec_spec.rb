@@ -885,7 +885,7 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'rack (= 2)' in cached gems or installed locally.
 
 The source contains the following gems matching 'rack':
   * rack-0.9.1
@@ -915,7 +915,7 @@ Run `bundle install` to install missing gems.
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'rack (= 2)' in cached gems or installed locally.
 
 The source contains the following gems matching 'rack':
   * rack-1.0.0
