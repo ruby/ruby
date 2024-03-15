@@ -34,7 +34,6 @@ module Prism
 
       assert_warning("\"#{__FILE__}\"")
       assert_warning("\"foo\"")
-      assert_warning("\"#{__FILE__}\"", "__FILE__")
 
       assert_warning("/foo/")
 

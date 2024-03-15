@@ -5801,10 +5801,21 @@ pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) 
     pm_source_file_node_t *node = PM_ALLOC_NODE(parser, pm_source_file_node_t);
     assert(file_keyword->type == PM_TOKEN_KEYWORD___FILE__);
 
+    pm_node_flags_t flags = 0;
+
+    switch (parser->frozen_string_literal) {
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
+            flags |= PM_STRING_FLAGS_MUTABLE;
+            break;
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
+            flags |= PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN;
+            break;
+    }
+
     *node = (pm_source_file_node_t) {
         {
             .type = PM_SOURCE_FILE_NODE,
-            .flags = PM_NODE_FLAG_STATIC_LITERAL,
+            .flags = flags,
             .location = PM_LOCATION_TOKEN_VALUE(file_keyword),
         },
         .filepath = parser->filepath

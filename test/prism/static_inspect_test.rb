@@ -58,7 +58,7 @@ module Prism
     end
 
     def test_source_file
-      assert_equal __FILE__.inspect, static_inspect("__FILE__", filepath: __FILE__)
+      assert_equal __FILE__.inspect, static_inspect("__FILE__", filepath: __FILE__, frozen_string_literal: true)
     end
 
     def test_source_line

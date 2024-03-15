@@ -3123,6 +3123,9 @@ nodes:
           ^^^^^^^^^^^^
   - name: SourceFileNode
     fields:
+      - name: flags
+        type: flags
+        kind: StringFlags
       - name: filepath
         type: string
     comment: |

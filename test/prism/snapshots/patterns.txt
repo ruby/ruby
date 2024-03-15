@@ -445,6 +445,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceFileNode (location: (23,7)-(23,15))
+        │   │   ├── flags: ∅
         │   │   └── filepath: "patterns.txt"
         │   └── operator_loc: (23,4)-(23,6) = "=>"
         ├── @ MatchRequiredNode (location: (24,0)-(24,15))
@@ -1153,9 +1154,11 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SourceFileNode (location: (49,7)-(49,15))
+        │   │   │   ├── flags: ∅
         │   │   │   └── filepath: "patterns.txt"
         │   │   ├── right:
         │   │   │   @ SourceFileNode (location: (49,19)-(49,27))
+        │   │   │   ├── flags: ∅
         │   │   │   └── filepath: "patterns.txt"
         │   │   └── operator_loc: (49,16)-(49,18) = ".."
         │   └── operator_loc: (49,4)-(49,6) = "=>"
@@ -2823,6 +2826,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceFileNode (location: (126,7)-(126,15))
+        │   │   ├── flags: ∅
         │   │   └── filepath: "patterns.txt"
         │   └── operator_loc: (126,4)-(126,6) = "in"
         ├── @ MatchPredicateNode (location: (127,0)-(127,15))
@@ -3504,6 +3508,7 @@
         │   │   └── @ InNode (location: (157,10)-(157,26))
         │   │       ├── pattern:
         │   │       │   @ SourceFileNode (location: (157,13)-(157,21))
+        │   │       │   ├── flags: ∅
         │   │       │   └── filepath: "patterns.txt"
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (157,10)-(157,12) = "in"
@@ -4460,6 +4465,7 @@
         │   │       │   │   @ StatementsNode (location: (184,13)-(184,21))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceFileNode (location: (184,13)-(184,21))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── filepath: "patterns.txt"
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
