@@ -1836,6 +1836,7 @@ static VALUE
 eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
+    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     struct rb_block block;
     const rb_iseq_t *iseq;
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
@@ -1860,6 +1861,10 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
 
+    if (NAMESPACE_LOCAL_P(ns)) {
+        rb_vm_using_module(ns->refiner);
+    }
+
     /* kick */
     return vm_exec(ec);
 }
@@ -1868,6 +1873,7 @@ static VALUE
 eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
+    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     rb_binding_t *bind = Check_TypedStruct(scope, &ruby_binding_data_type);
     const rb_iseq_t *iseq = eval_make_iseq(src, file, line, &bind->block);
     if (!iseq) {
@@ -1879,6 +1885,10 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
     /* save new env */
     if (ISEQ_BODY(iseq)->local_table_size > 0) {
         vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
+    }
+
+    if (NAMESPACE_LOCAL_P(ns)) {
+        rb_vm_using_module(ns->refiner);
     }
 
     /* kick */

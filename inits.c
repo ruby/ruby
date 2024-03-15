@@ -76,6 +76,7 @@ rb_call_inits(void)
     CALL(gc_stress);
     CALL(shape);
     CALL(Prism);
+    CALL(Namespace);
 
     // enable builtin loading
     CALL(builtin);
