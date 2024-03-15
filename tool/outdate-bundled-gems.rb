@@ -9,8 +9,8 @@ until ARGV.empty?
   when '--'
     ARGV.shift
     break
-  when '-n', '--dryrun'
-    ## -n, --dryrun  Don't remove
+  when '-n', '--dry-run', '--dryrun'
+    ## -n, --dry-run  Don't remove
     fu = FileUtils::DryRun
   when /\A--make=/
     # just to run when `make -n`

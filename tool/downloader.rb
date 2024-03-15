@@ -424,8 +424,8 @@ if $0 == __FILE__
     when '-u', '--update', '--if-modified'
       ## -u, --update, --if-modified  Download newer files only.
       since = true
-    when '-n', '--dryrun'
-      ## -n, --dryrun  Do not download actually.
+    when '-n', '--dry-run', '--dryrun'
+      ## -n, --dry-run  Do not download actually.
       options[:dryrun] = true
     when '--cache-dir'
       ## --cache-dir DIRECTORY  Cache downloaded files in the directory.
