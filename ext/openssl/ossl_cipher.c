@@ -442,8 +442,8 @@ ossl_cipher_final(VALUE self)
  *  call-seq:
  *     cipher.name -> string
  *
- *  Returns the name of the cipher which may differ slightly from the original
- *  name provided.
+ *  Returns the short name of the cipher which may differ slightly from the
+ *  original name provided.
  */
 static VALUE
 ossl_cipher_name(VALUE self)
