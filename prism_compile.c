@@ -4167,8 +4167,17 @@ pm_compile_case_node_dispatch(VALUE dispatch, const pm_node_t *node, LABEL *labe
     VALUE key = Qundef;
 
     switch (PM_NODE_TYPE(node)) {
+      case PM_FLOAT_NODE: {
+        key = pm_static_literal_value(node, scope_node);
+        double intptr;
+
+        if (modf(RFLOAT_VALUE(key), &intptr) == 0.0) {
+            key = (FIXABLE(intptr) ? LONG2FIX((long) intptr) : rb_dbl2big(intptr));
+        }
+
+        break;
+      }
       case PM_FALSE_NODE:
-      case PM_FLOAT_NODE:
       case PM_INTEGER_NODE:
       case PM_NIL_NODE:
       case PM_SOURCE_FILE_NODE:
