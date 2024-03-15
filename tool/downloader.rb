@@ -407,26 +407,42 @@ if $0 == __FILE__
 
     case ARGV[0]
     when '-d', '--destdir'
+      ## -d, --destdir DIRECTORY  Download into the directory
       destdir = ARGV[1]
       ARGV.shift
     when '-p', '--prefix'
-      # strip directory names from the name to download, and add the
-      # prefix instead.
+      ## -p, --prefix  Strip directory names from the name to download,
+      ##   and add the prefix instead.
       prefix = ARGV[1]
       ARGV.shift
     when '-e', '--exist', '--non-existent-only'
+      ## -e, --exist, --non-existent-only  Skip already existent files.
       since = nil
     when '-a', '--always'
+      ## -a, --always  Download all files.
       since = false
     when '-u', '--update', '--if-modified'
+      ## -u, --update, --if-modified  Download newer files only.
       since = true
     when '-n', '--dryrun'
+      ## -n, --dryrun  Do not download actually.
       options[:dryrun] = true
     when '--cache-dir'
+      ## --cache-dir DIRECTORY  Cache downloaded files in the directory.
       options[:cache_dir] = ARGV[1]
       ARGV.shift
     when /\A--cache-dir=(.*)/m
       options[:cache_dir] = $1
+    when /\A--help\z/
+      ## --help  Print this message
+      puts "Usage: #$0 [options] relative-url..."
+      File.foreach(__FILE__) do |line|
+        line.sub!(/^ *## /, "") or next
+        break if line.chomp!.empty?
+        opt, desc = line.split(/ {2,}/, 2)
+        printf "  %-28s  %s\n", opt, desc
+      end
+      exit
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else
