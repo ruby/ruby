@@ -3560,6 +3560,10 @@ rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 {
     rb_ec_set_vm_stack(ec, stack, size);
 
+#if VM_CHECK_MODE > 0
+    MEMZERO(stack, VALUE, size); // malloc memory could have the VM canary in it
+#endif
+
     ec->cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
     vm_push_frame(ec,
