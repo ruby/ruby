@@ -2858,6 +2858,11 @@ module Prism
         on_var_ref(on_kw("self"))
       end
 
+      # A shareable constant.
+      def visit_shareable_constant_node(node)
+        visit(node.write)
+      end
+
       # class << self; end
       # ^^^^^^^^^^^^^^^^^^
       def visit_singleton_class_node(node)

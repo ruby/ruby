@@ -448,6 +448,13 @@ typedef struct {
     void (*callback)(void *data, pm_parser_t *parser, pm_token_t *token);
 } pm_lex_callback_t;
 
+/** The type of shareable constant value that can be set. */
+typedef uint8_t pm_shareable_constant_value_t;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_NONE = 0x0;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = 0x1;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = 0x2;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = 0x4;
+
 /**
  * This struct represents a node in a linked list of scopes. Some scopes can see
  * into their parent scopes, while others cannot.
@@ -486,6 +493,12 @@ typedef struct pm_scope {
      * about how many numbered parameters exist.
      */
     int8_t numbered_parameters;
+
+    /**
+     * The current state of constant shareability for this scope. This is
+     * changed by magic shareable_constant_value comments.
+     */
+    pm_shareable_constant_value_t shareable_constant;
 
     /**
      * A boolean indicating whether or not this scope can see into its parent.

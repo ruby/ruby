@@ -1423,6 +1423,11 @@ module Prism
           builder.self(token(node.location))
         end
 
+        # A shareable constant.
+        def visit_shareable_constant_node(node)
+          visit(node.write)
+        end
+
         # class << self; end
         # ^^^^^^^^^^^^^^^^^^
         def visit_singleton_class_node(node)

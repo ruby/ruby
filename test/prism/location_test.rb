@@ -781,6 +781,15 @@ module Prism
       assert_location(SelfNode, "self")
     end
 
+    def test_ShareableConstantNode
+      source = <<~RUBY
+        # shareable_constant_value: literal
+        C = { foo: 1 }
+      RUBY
+
+      assert_location(ShareableConstantNode, source, 36...50)
+    end
+
     def test_SingletonClassNode
       assert_location(SingletonClassNode, "class << self; end")
     end
@@ -915,8 +924,7 @@ module Prism
 
     def assert_location(kind, source, expected = 0...source.length, **options)
       result = Prism.parse(source, **options)
-      assert_equal [], result.comments
-      assert_equal [], result.errors
+      assert result.success?
 
       node = result.value.statements.body.last
       node = yield node if block_given?

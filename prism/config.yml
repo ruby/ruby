@@ -248,6 +248,7 @@ warnings:
   - INTEGER_IN_FLIP_FLOP
   - INVALID_CHARACTER
   - INVALID_NUMBERED_REFERENCE
+  - INVALID_SHAREABLE_CONSTANT_VALUE
   - KEYWORD_EOL
   - LITERAL_IN_CONDITION_DEFAULT
   - LITERAL_IN_CONDITION_VERBOSE
@@ -667,6 +668,15 @@ flags:
       - name: FORCED_US_ASCII_ENCODING
         comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
+  - name: ShareableConstantNodeFlags
+    values:
+      - name: LITERAL
+        comment: "constant writes that should be modified with shareable constant value literal"
+      - name: EXPERIMENTAL_EVERYTHING
+        comment: "constant writes that should be modified with shareable constant value experimental everything"
+      - name: EXPERIMENTAL_COPY
+        comment: "constant writes that should be modified with shareable constant value experimental copy"
+    comment: Flags for shareable constant nodes.
   - name: StringFlags
     values:
       - name: FORCED_UTF8_ENCODING
@@ -3063,6 +3073,29 @@ nodes:
 
           self
           ^^^^
+  - name: ShareableConstantNode
+    fields:
+      - name: flags
+        type: flags
+        kind: ShareableConstantNodeFlags
+      - name: write
+        type: node
+        kind:
+          - ConstantWriteNode
+          - ConstantAndWriteNode
+          - ConstantOrWriteNode
+          - ConstantOperatorWriteNode
+          - ConstantPathWriteNode
+          - ConstantPathAndWriteNode
+          - ConstantPathOrWriteNode
+          - ConstantPathOperatorWriteNode
+        comment: The constant write that should be modified with the shareability state.
+    comment: |
+      This node wraps a constant write to indicate that when the value is written, it should have its shareability state modified.
+
+          # shareable_constant_value: literal
+          C = { a: 1 }
+          ^^^^^^^^^^^^
   - name: SingletonClassNode
     fields:
       - name: locals

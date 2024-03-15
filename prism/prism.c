@@ -5732,6 +5732,25 @@ pm_self_node_create(pm_parser_t *parser, const pm_token_t *token) {
 }
 
 /**
+ * Allocate and initialize a new ShareableConstantNode node.
+ */
+static pm_shareable_constant_node_t *
+pm_shareable_constant_node_create(pm_parser_t *parser, pm_node_t *write, pm_shareable_constant_value_t value) {
+    pm_shareable_constant_node_t *node = PM_ALLOC_NODE(parser, pm_shareable_constant_node_t);
+
+    *node = (pm_shareable_constant_node_t) {
+        {
+            .type = PM_SHAREABLE_CONSTANT_NODE,
+            .flags = (pm_node_flags_t) value,
+            .location = PM_LOCATION_NODE_VALUE(write)
+        },
+        .write = write
+    };
+
+    return node;
+}
+
+/**
  * Allocate a new SingletonClassNode node.
  */
 static pm_singleton_class_node_t *
@@ -6745,6 +6764,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
         .locals = { 0 },
         .parameters = PM_SCOPE_PARAMETERS_NONE,
         .numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_NONE,
+        .shareable_constant = (closed || parser->current_scope == NULL) ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
         .closed = closed
     };
 
@@ -6788,6 +6808,27 @@ pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t * tok
 static inline void
 pm_parser_scope_forwarding_keywords_check(pm_parser_t *parser, const pm_token_t * token) {
     pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH);
+}
+
+/**
+ * Get the current state of constant shareability.
+ */
+static inline pm_shareable_constant_value_t
+pm_parser_scope_shareable_constant_get(pm_parser_t *parser) {
+    return parser->current_scope->shareable_constant;
+}
+
+/**
+ * Set the current state of constant shareability. We'll set it on all of the
+ * open scopes so that reads are quick.
+ */
+static void
+pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constant_value_t shareable_constant) {
+    pm_scope_t *scope = parser->current_scope;
+
+    do {
+        scope->shareable_constant = shareable_constant;
+    } while (!scope->closed && (scope = scope->previous) != NULL);
 }
 
 /**
@@ -7342,6 +7383,28 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         if (!semantic_token_seen) {
             if (key_length == 21 && pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
                 parser_lex_magic_comment_frozen_string_literal_value(parser, value_start, value_end);
+            }
+        }
+
+        // If we have hit a ractor pragma, attempt to lex that.
+        uint32_t value_length = (uint32_t) (value_end - value_start);
+        if (key_length == 24 && pm_strncasecmp(key_source, (const uint8_t *) "shareable_constant_value", 24) == 0) {
+            if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "none", 4) == 0) {
+                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_NONE);
+            } else if (value_length == 7 && pm_strncasecmp(value_start, (const uint8_t *) "literal", 7) == 0) {
+                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_LITERAL);
+            } else if (value_length == 23 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_everything", 23) == 0) {
+                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING);
+            } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
+                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
+            } else {
+                PM_PARSER_WARN_TOKEN_FORMAT(
+                    parser,
+                    parser->current,
+                    PM_WARN_INVALID_SHAREABLE_CONSTANT_VALUE,
+                    (int) value_length,
+                    (const char *) value_start
+                );
             }
         }
 
@@ -11992,6 +12055,21 @@ parse_target_validate(pm_parser_t *parser, pm_node_t *target) {
 }
 
 /**
+ * Potentially wrap a constant write node in a shareable constant node depending
+ * on the current state.
+ */
+static pm_node_t *
+parse_shareable_constant_write(pm_parser_t *parser, pm_node_t *write) {
+    pm_shareable_constant_value_t shareable_constant = pm_parser_scope_shareable_constant_get(parser);
+
+    if (shareable_constant != PM_SCOPE_SHAREABLE_CONSTANT_NONE) {
+        return (pm_node_t *) pm_shareable_constant_node_create(parser, write, shareable_constant);
+    }
+
+    return write;
+}
+
+/**
  * Convert the given node into a valid write node.
  */
 static pm_node_t *
@@ -12005,15 +12083,17 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             pm_node_destroy(parser, target);
             return (pm_node_t *) node;
         }
-        case PM_CONSTANT_PATH_NODE:
-            return (pm_node_t *) pm_constant_path_write_node_create(parser, (pm_constant_path_node_t *) target, operator, value);
+        case PM_CONSTANT_PATH_NODE: {
+            pm_node_t *node = (pm_node_t *) pm_constant_path_write_node_create(parser, (pm_constant_path_node_t *) target, operator, value);
+            return parse_shareable_constant_write(parser, node);
+        }
         case PM_CONSTANT_READ_NODE: {
-            pm_constant_write_node_t *node = pm_constant_write_node_create(parser, (pm_constant_read_node_t *) target, operator, value);
+            pm_node_t *node = (pm_node_t *) pm_constant_write_node_create(parser, (pm_constant_read_node_t *) target, operator, value);
             if (context_def_p(parser)) {
-                pm_parser_err_node(parser, (pm_node_t *) node, PM_ERR_WRITE_TARGET_IN_METHOD);
+                pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
             pm_node_destroy(parser, target);
-            return (pm_node_t *) node;
+            return parse_shareable_constant_write(parser, node);
         }
         case PM_BACK_REFERENCE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
@@ -17954,16 +18034,18 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
-                    return (pm_node_t *) pm_constant_path_and_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_path_and_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
-                    pm_node_t *result = (pm_node_t *) pm_constant_and_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_and_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
-                    return result;
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
@@ -18065,16 +18147,18 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
-                    return (pm_node_t *) pm_constant_path_or_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_path_or_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
-                    pm_node_t *result = (pm_node_t *) pm_constant_or_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_or_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
-                    return result;
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
@@ -18186,16 +18270,18 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
-                    return (pm_node_t *) pm_constant_path_operator_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_path_operator_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
+
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
-                    pm_node_t *result = (pm_node_t *) pm_constant_operator_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
+                    pm_node_t *write = (pm_node_t *) pm_constant_operator_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
-                    return result;
+                    return parse_shareable_constant_write(parser, write);
                 }
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
