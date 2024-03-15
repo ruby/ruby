@@ -7879,6 +7879,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN(ret, location, putself);
         }
         return;
+      case PM_SHAREABLE_CONSTANT_NODE:
+        // A value that is being written to a constant that is being marked as
+        // shared depending on the current lexical context.
+        PM_COMPILE(((const pm_shareable_constant_node_t *) node)->write);
+        return;
       case PM_SINGLETON_CLASS_NODE: {
         // class << self; end
         // ^^^^^^^^^^^^^^^^^^
