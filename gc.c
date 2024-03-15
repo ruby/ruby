@@ -13078,7 +13078,6 @@ str_len_no_raise(VALUE str)
             memcpy(buff + pos, (s), rb_strlen_lit(s) + 1); \
         } \
     } while (0)
-#define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")
 
 static size_t
@@ -13340,7 +13339,6 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
     return pos;
 }
 
-#undef TF
 #undef C
 
 const char *
