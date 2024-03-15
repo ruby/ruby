@@ -73,7 +73,6 @@ module Prism
     skip_tokens = [
       "comments.txt",
       "heredoc_with_comment.txt",
-      "heredocs_leading_whitespace.txt",
       "indented_file_end.txt",
       "strings.txt",
       "xstring_with_backslash.txt"
