@@ -25,6 +25,7 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/namespace.h"
 #include "internal/object.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
@@ -447,6 +448,7 @@ struct rb_global_variable {
     rb_gvar_marker_t *marker;
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
+    bool namespace_ready;
 };
 
 struct rb_global_entry {
@@ -522,6 +524,13 @@ rb_gvar_ractor_local(const char *name)
     entry->ractor_local = true;
 }
 
+void
+rb_gvar_namespace_ready(const char *name)
+{
+    struct rb_global_entry *entry = rb_find_global_entry(rb_intern(name));
+    entry->var->namespace_ready = true;
+}
+
 static void
 rb_gvar_undef_compactor(void *var)
 {
@@ -547,6 +556,7 @@ rb_global_entry(ID id)
 
         var->block_trace = 0;
         var->trace = 0;
+        var->namespace_ready = false;
         rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
     }
     return entry;
@@ -900,13 +910,27 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
     return val;
 }
 
+#define USE_NAMESPACE_GVAR_TBL(ns,entry) \
+    (NAMESPACE_LOCAL_P(ns) && \
+     (!entry || !entry->var->namespace_ready || entry->var->setter != rb_gvar_readonly_setter))
+
 VALUE
 rb_gvar_set(ID id, VALUE val)
 {
+    VALUE retval;
     struct rb_global_entry *entry;
+    const rb_namespace_t *ns = rb_current_namespace();
+
     entry = rb_global_entry(id);
 
-    return rb_gvar_set_entry(entry, val);
+    if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+        rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
+        retval = val;
+        // TODO: think about trace
+    } else {
+        retval = rb_gvar_set_entry(entry, val);
+    }
+    return retval;
 }
 
 VALUE
@@ -918,9 +942,27 @@ rb_gv_set(const char *name, VALUE val)
 VALUE
 rb_gvar_get(ID id)
 {
+    VALUE retval, gvars, key;
     struct rb_global_entry *entry = rb_global_entry(id);
     struct rb_global_variable *var = entry->var;
-    return (*var->getter)(entry->id, var->data);
+    const rb_namespace_t *ns = rb_current_namespace();
+
+    if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+        gvars = ns->gvar_tbl;
+        key = rb_id2sym(entry->id);
+        if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
+            retval = rb_hash_aref(gvars, key);
+        } else {
+            retval = (*var->getter)(entry->id, var->data);
+            if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                retval = rb_funcall(retval, rb_intern("clone"), 0);
+            }
+            rb_hash_aset(gvars, key, retval);
+        }
+    } else {
+        retval = (*var->getter)(entry->id, var->data);
+    }
+    return retval;
 }
 
 VALUE
@@ -974,6 +1016,7 @@ rb_f_global_variables(void)
     if (!rb_ractor_main_p()) {
         rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
+    /* gvar access (get/set) in namespaces creates gvar entries globally */
 
     rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
     if (!NIL_P(backref)) {
@@ -2398,6 +2441,9 @@ struct autoload_const {
     // The shared "autoload_data" if multiple constants are defined from the same feature.
     VALUE autoload_data_value;
 
+    // The namespace object when the autoload is called in a namespace (otherwise, Qnil)
+    VALUE namespace;
+
     // The module we are loading a constant into.
     VALUE module;
 
@@ -2552,6 +2598,7 @@ struct autoload_arguments {
     VALUE module;
     ID name;
     VALUE feature;
+    VALUE namespace;
 };
 
 static VALUE
@@ -2621,6 +2668,7 @@ autoload_synchronized(VALUE _arguments)
     {
         struct autoload_const *autoload_const;
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
+        autoload_const->namespace = arguments->namespace;
         autoload_const->module = arguments->module;
         autoload_const->name = arguments->name;
         autoload_const->value = Qundef;
@@ -2637,6 +2685,12 @@ autoload_synchronized(VALUE _arguments)
 void
 rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
+    rb_namespace_t *ns = GET_THREAD()->ns;
+    VALUE current_namespace = Qnil;
+    if (NAMESPACE_LOCAL_P(ns)) {
+        current_namespace = ns->ns_object;
+    }
+
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
@@ -2650,6 +2704,7 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
         .module = module,
         .name = name,
         .feature = feature,
+        .namespace = current_namespace,
     };
 
     VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
@@ -2913,6 +2968,8 @@ autoload_apply_constants(VALUE _arguments)
 static VALUE
 autoload_feature_require(VALUE _arguments)
 {
+    VALUE receiver = rb_vm_top_self();
+
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
@@ -2920,7 +2977,11 @@ autoload_feature_require(VALUE _arguments)
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
-    VALUE result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, arguments->autoload_data->feature);
+    if (RTEST(autoload_const->namespace)) {
+        receiver = autoload_const->namespace; // TODO: rb_get_namespace_t(autoload_const->namespace)->top_self ?
+    }
+
+    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
     if (RTEST(result)) {
         return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
@@ -3061,8 +3122,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 static VALUE
 rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, current;
+    VALUE value, current, refinement;
     bool first_iteration = true;
+    const rb_namespace_t *ns = rb_current_namespace();
 
     for (current = klass;
             RTEST(current);
@@ -3082,6 +3144,13 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         // iclass in the chain.
         tmp = current;
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
+
+        if (NAMESPACE_LOCAL_P(ns)) {
+            refinement = rb_refinement_if_exist(ns->refiner, tmp);
+            if (!NIL_P(refinement)) {
+                tmp = refinement;
+            }
+        }
 
         // Do the lookup. Loop in case of autoload.
         while ((ce = rb_const_lookup(tmp, id))) {
@@ -3602,9 +3671,12 @@ const_set(VALUE klass, ID id, VALUE val)
     }
 }
 
+#define IS_REFINEMENT_P(klass) (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT))
+
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
+    klass = rb_mod_changed_in_current_namespace(klass);
     const_set(klass, id, val);
     const_added(klass, id);
 }

@@ -591,6 +591,7 @@ ripper.o: $(top_srcdir)/internal/gc.h
 ripper.o: $(top_srcdir)/internal/hash.h
 ripper.o: $(top_srcdir)/internal/imemo.h
 ripper.o: $(top_srcdir)/internal/io.h
+ripper.o: $(top_srcdir)/internal/namespace.h
 ripper.o: $(top_srcdir)/internal/numeric.h
 ripper.o: $(top_srcdir)/internal/parse.h
 ripper.o: $(top_srcdir)/internal/rational.h

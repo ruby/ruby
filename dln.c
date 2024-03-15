@@ -26,6 +26,7 @@ static void dln_loaderror(const char *format, ...);
 #include "dln.h"
 #include "internal.h"
 #include "internal/compilers.h"
+#include "internal/namespace.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -383,9 +384,13 @@ dln_open(const char *file)
 # ifndef RTLD_GLOBAL
 #  define RTLD_GLOBAL 0
 # endif
+# ifndef RTLD_LOCAL
+#  define RTLD_LOCAL 0 /* TODO: 0??? some systems (including libc) use 0x00100 for RTLD_GLOBAL, 0x00000 for RTLD_LOCAL */
+# endif
 
     /* Load file */
-    handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
+    int mode = rb_namespace_available() ? RTLD_LAZY|RTLD_LOCAL : RTLD_LAZY|RTLD_GLOBAL;
+    handle = dlopen(file, mode);
     if (handle == NULL) {
         error = dln_strerror();
         goto failed;
@@ -497,8 +502,8 @@ abi_check_enabled_p(void)
 }
 #endif
 
-void *
-dln_load(const char *file)
+static void *
+dln_load_and_init(const char *file, const char *init_fct_name)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
     void *handle = dln_open(file);
@@ -512,9 +517,6 @@ dln_load(const char *file)
     }
 #endif
 
-    char *init_fct_name;
-    init_funcname(&init_fct_name, file);
-
     /* Call the init code */
     dln_sym_callable(void, (void), handle, init_fct_name)();
 
@@ -524,6 +526,7 @@ dln_load(const char *file)
     {
         void (*init_fct)(void);
 
+        /* TODO: check - AIX's load system call will return the first/last symbol/function? */
         init_fct = (void(*)(void))load((char*)file, 1, 0);
         if (init_fct == NULL) {
             aix_loaderror(file);
@@ -539,4 +542,30 @@ dln_load(const char *file)
 #endif
 
     return 0;			/* dummy return */
+}
+
+void *
+dln_load(const char *file)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    char *init_fct_name;
+    init_funcname(&init_fct_name, file);
+    return dln_load_and_init(file, init_fct_name);
+#else
+    dln_notimplement();
+    return 0;
+#endif
+}
+
+void *
+dln_load_feature(const char *file, const char *fname)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    char *init_fct_name;
+    init_funcname(&init_fct_name, fname);
+    return dln_load_and_init(file, init_fct_name);
+#else
+    dln_notimplement();
+    return 0;
+#endif
 }
