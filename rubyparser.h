@@ -34,6 +34,18 @@
 #endif
 #endif
 
+#if defined(__GNUC__)
+# if defined(__MINGW_PRINTF_FORMAT)
+#   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, argument_index)))
+# else
+#   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
+# endif
+#elif defined(__clang__)
+# define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((__format__(__printf__, string_index, argument_index)))
+#else
+# define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index)
+#endif
+
 /*
  * Parser String
  */
@@ -1403,10 +1415,10 @@ typedef struct rb_parser_config_struct {
     int (*memcicmp)(const void *x, const void *y, long len);
 
     /* Error */
-    void (*compile_warn)(const char *file, int line, const char *fmt, ...);
-    void (*compile_warning)(const char *file, int line, const char *fmt, ...);
-    void (*bug)(const char *fmt, ...);
-    void (*fatal)(const char *fmt, ...);
+    void (*compile_warn)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
+    void (*compile_warning)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
+    void (*bug)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
+    void (*fatal)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
     VALUE (*verbose)(void);
     int *(*errno_ptr)(void);
 
