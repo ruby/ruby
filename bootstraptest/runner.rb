@@ -548,7 +548,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     end
   end
 
-  def make_srcfile(frozen_string_literal: true)
+  def make_srcfile(frozen_string_literal: nil)
     filename = "bootstraptest.#{self.path}_#{self.lineno}_#{self.id}.rb"
     File.open(filename, 'w') {|f|
       f.puts "#frozen_string_literal:#{frozen_string_literal}" unless frozen_string_literal.nil?

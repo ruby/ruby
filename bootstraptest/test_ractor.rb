@@ -1421,7 +1421,7 @@ assert_equal '[false, false, true, true]', %q{
 }
 
 # TracePoint with normal Proc should be Ractor local
-assert_equal '[7, 11]', %q{
+assert_equal '[6, 10]', %q{
   rs = []
   TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
     Ractor.new{ # line 5
