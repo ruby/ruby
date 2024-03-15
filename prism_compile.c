@@ -7919,8 +7919,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // __FILE__
         // ^^^^^^^^
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node);
-            PUSH_INSN1(ret, location, putstring, value);
+            const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
+            VALUE string = parse_string(scope_node, &cast->filepath);
+
+            if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
+                string = rb_fstring(string);
+                PUSH_INSN1(ret, location, putobject, string);
+            }
+            else {
+                PUSH_INSN1(ret, location, putstring, string);
+            }
         }
         return;
       }
