@@ -289,7 +289,7 @@ module Prism
               elsif ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_CONTENT && next_token.value.lines.count <= 1 && (next_next_token = lexed[index + 1][0]) && next_next_token.type == :STRING_END
                 next_location = token.location.join(next_next_token.location)
                 type = :tSTRING
-                value = next_token.value
+                value = next_token.value.gsub("\\\\", "\\")
                 location = Range.new(source_buffer, offset_cache[next_location.start_offset], offset_cache[next_location.end_offset])
                 index += 2
               elsif value.start_with?("<<")
