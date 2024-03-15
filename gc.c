@@ -13355,17 +13355,6 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     return buff;
 }
 
-const char *
-rb_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
-{
-    asan_unpoisoning_object(obj) {
-        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
-        if (pos >= buff_size) {} // truncated
-    }
-
-    return buff;
-}
-
 #undef APPEND_S
 #undef APPEND_F
 #undef BUFF_ARGS
@@ -13403,7 +13392,12 @@ obj_info_basic(VALUE obj)
 {
     rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
     char *const buff = obj_info_buffers[index];
-    return rb_raw_obj_info_basic(buff, OBJ_INFO_BUFFERS_SIZE, obj);
+
+    asan_unpoisoning_object(obj) {
+        rb_raw_obj_info_common(buff, OBJ_INFO_BUFFERS_SIZE, obj);
+    }
+
+    return buff;
 }
 #else
 static const char *
