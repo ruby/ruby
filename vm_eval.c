@@ -1663,6 +1663,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, line);
 
+    pm_options_frozen_string_literal_set(&result.options, rb_iseq_opt_frozen_string_literal());
+
     // Cout scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
     do {

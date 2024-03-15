@@ -904,3 +904,35 @@ assert_normal_exit %q{
     Class
   end
 }, '[ruby-core:30293]'
+
+assert_equal "false", <<~RUBY, "literal strings are mutable", "--disable-frozen-string-literal"
+  'test'.frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "literal strings are frozen", "--disable-frozen-string-literal", frozen_string_literal: true
+  'test'.frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "literal strings are frozen", "--enable-frozen-string-literal"
+  'test'.frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "literal strings are mutable", "--enable-frozen-string-literal", frozen_string_literal: false
+  'test'.frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "__FILE__ is mutable", "--disable-frozen-string-literal"
+  __FILE__.frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "__FILE__ is frozen", "--disable-frozen-string-literal", frozen_string_literal: true
+  __FILE__.frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "__FILE__ is frozen", "--enable-frozen-string-literal"
+  __FILE__.frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "__FILE__ is mutable", "--enable-frozen-string-literal", frozen_string_literal: false
+  __FILE__.frozen?
+RUBY

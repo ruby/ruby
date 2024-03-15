@@ -733,6 +733,12 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
 
 static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
 
+int
+rb_iseq_opt_frozen_string_literal(void)
+{
+    return COMPILE_OPTION_DEFAULT.frozen_string_literal;
+}
+
 static void
 set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 {
@@ -1241,6 +1247,8 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
+
+    pm_options_frozen_string_literal_set(&result.options, option.frozen_string_literal);
 
     VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {
