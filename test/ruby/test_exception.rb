@@ -1064,8 +1064,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def capture_warning_warn(category: false)
     verbose = $VERBOSE
-    deprecated = Warning[:deprecated]
-    experimental = Warning[:experimental]
+    categories = Warning.categories.to_h {|cat| [cat, Warning[cat]]}
     warning = []
 
     ::Warning.class_eval do
@@ -1084,15 +1083,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
 
     $VERBOSE = true
-    Warning[:deprecated] = true
-    Warning[:experimental] = true
+    Warning.categories.each {|cat| Warning[cat] = true}
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
-    Warning[:deprecated] = deprecated
-    Warning[:experimental] = experimental
+    categories.each {|cat, flag| Warning[cat] = flag}
 
     ::Warning.class_eval do
       remove_method :warn
@@ -1189,48 +1186,24 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def test_warning_category
     assert_raise(TypeError) {Warning[nil]}
     assert_raise(ArgumentError) {Warning[:XXXX]}
-    assert_include([true, false], Warning[:deprecated])
-    assert_include([true, false], Warning[:experimental])
-  end
 
-  def test_warning_category_deprecated
-    warning = EnvUtil.verbose_warning do
-      deprecated = Warning[:deprecated]
-      Warning[:deprecated] = true
-      Warning.warn "deprecated feature", category: :deprecated
-    ensure
-      Warning[:deprecated] = deprecated
-    end
-    assert_equal "deprecated feature", warning
+    all_assertions_foreach("categories", *Warning.categories) do |cat|
+      value = Warning[cat]
+      assert_include([true, false], value)
 
-    warning = EnvUtil.verbose_warning do
-      deprecated = Warning[:deprecated]
-      Warning[:deprecated] = false
-      Warning.warn "deprecated feature", category: :deprecated
+      enabled = EnvUtil.verbose_warning do
+        Warning[cat] = true
+        Warning.warn "#{cat} feature", category: cat
+      end
+      disabled = EnvUtil.verbose_warning do
+        Warning[cat] = false
+        Warning.warn "#{cat} feature", category: cat
+      end
     ensure
-      Warning[:deprecated] = deprecated
+      Warning[cat] = value
+      assert_equal "#{cat} feature", enabled
+      assert_empty disabled
     end
-    assert_empty warning
-  end
-
-  def test_warning_category_experimental
-    warning = EnvUtil.verbose_warning do
-      experimental = Warning[:experimental]
-      Warning[:experimental] = true
-      Warning.warn "experimental feature", category: :experimental
-    ensure
-      Warning[:experimental] = experimental
-    end
-    assert_equal "experimental feature", warning
-
-    warning = EnvUtil.verbose_warning do
-      experimental = Warning[:experimental]
-      Warning[:experimental] = false
-      Warning.warn "experimental feature", category: :experimental
-    ensure
-      Warning[:experimental] = experimental
-    end
-    assert_empty warning
   end
 
   def test_undef_Warning_warn
