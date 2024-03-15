@@ -19,6 +19,13 @@
 extern ID ruby_static_id_signo;
 extern ID ruby_static_id_status;
 VALUE rb_refinement_module_get_refined_class(VALUE module);
+VALUE rb_refinement_if_exist(VALUE refiner, VALUE refined);
+struct rb_refinements_refine_pair {
+    VALUE refinement;
+    VALUE refinements;
+};
+void rb_refinement_setup(struct rb_refinements_refine_pair *pair, VALUE module, VALUE klass);
+void rb_vm_using_module(VALUE module);
 void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 VALUE rb_top_main_class(const char *method);

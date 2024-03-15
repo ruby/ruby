@@ -756,6 +756,7 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def->original_id = mid;
     static uintptr_t method_serial = 1;
     def->method_serial = method_serial++;
+    def->ns = rb_current_namespace();
     return def;
 }
 

@@ -1466,6 +1466,8 @@ module RubyVM::RJIT # :nodoc: all
       calling: [CType::Pointer.new { self.rb_calling_info }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), calling)")],
       top_self: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), top_self)")],
       top_wrapper: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), top_wrapper)")],
+      namespaces: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), namespaces)")],
+      ns: [CType::Pointer.new { self.rb_namespace_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ns)")],
       priority: [CType::Immediate.parse("int8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), priority)")],
       running_time_us: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), running_time_us)")],
       blocking_region_buffer: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), blocking_region_buffer)")],
@@ -1635,6 +1637,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_calling_info
     CType::Stub.new(:rb_calling_info)
+  end
+
+  def C.rb_namespace_t
+    CType::Stub.new(:rb_namespace_t)
   end
 
   def C.rb_nativethread_lock_t

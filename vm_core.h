@@ -94,6 +94,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
+#include "internal/namespace.h"
 #include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
@@ -286,6 +287,7 @@ struct rb_calling_info {
     int argc;
     bool kw_splat;
     VALUE heap_argv;
+    const rb_namespace_t *proc_ns;
 };
 
 #ifndef VM_ARGC_STACK_MAX
@@ -869,6 +871,7 @@ typedef struct rb_control_frame_struct {
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;        // cfp[7]
 #endif
+    const rb_namespace_t *ns; // TODO: This is probably NOT OK
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
@@ -1100,6 +1103,9 @@ typedef struct rb_thread_struct {
     /* for load(true) */
     VALUE top_self;
     VALUE top_wrapper;
+    /* for namespace */
+    VALUE namespaces; // Stack of namespaces
+    rb_namespace_t *ns; // The current one
 
     /* thread control */
 
@@ -1240,6 +1246,7 @@ RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
     const struct rb_block block;
+    const rb_namespace_t *ns;
     unsigned int is_from_method: 1;	/* bool */
     unsigned int is_lambda: 1;		/* bool */
     unsigned int is_isolated: 1;        /* bool */
@@ -1351,6 +1358,7 @@ enum vm_frame_env_flags {
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
     VM_FRAME_FLAG_PASSED    = 0x0800,
+    VM_FRAME_FLAG_HOOKED    = 0x1000,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1410,6 +1418,12 @@ static inline int
 VM_FRAME_CFRAME_KW_P(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_KW) != 0;
+}
+
+static inline int
+VM_FRAME_HOOKED_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_HOOKED) != 0;
 }
 
 static inline int

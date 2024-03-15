@@ -24,6 +24,7 @@
 #include "internal/class.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/namespace.h"
 #include "internal/object.h"
 #include "internal/string.h"
 #include "internal/variable.h"
@@ -358,12 +359,19 @@ rb_check_inheritable(VALUE super)
 VALUE
 rb_class_new(VALUE super)
 {
+    ID id_namespace;
+    rb_namespace_t *ns = GET_THREAD()->ns;
+
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
     VALUE klass = rb_class_boot(super);
 
     if (super != rb_cObject && super != rb_cBasicObject) {
         RCLASS_EXT(klass)->max_iv_count = RCLASS_EXT(super)->max_iv_count;
+    }
+    if (ns) {
+        CONST_ID(id_namespace, "__namespace__");
+        rb_ivar_set(klass, id_namespace, ns->ns_object);
     }
 
     return klass;
@@ -983,8 +991,12 @@ rb_define_class(const char *name, VALUE super)
 {
     VALUE klass;
     ID id;
+    rb_namespace_t *ns = GET_THREAD()->ns;
 
     id = rb_intern(name);
+    if (NAMESPACE_LOCAL_P(ns)) {
+        return rb_define_class_id_under(ns->ns_object, id, super);
+    }
     if (rb_const_defined(rb_cObject, id)) {
         klass = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(klass, T_CLASS)) {
@@ -1077,7 +1089,17 @@ module_new(VALUE klass)
 VALUE
 rb_module_new(void)
 {
-    return module_new(rb_cModule);
+    VALUE module;
+    ID id_namespace;
+    rb_namespace_t *ns = GET_THREAD()->ns;
+
+    module = module_new(rb_cModule);
+    if (ns) {
+        CONST_ID(id_namespace, "__namespace__");
+        rb_ivar_set(module, id_namespace, ns->ns_object);
+    }
+
+    return module;
 }
 
 VALUE
@@ -1098,8 +1120,12 @@ rb_define_module(const char *name)
 {
     VALUE module;
     ID id;
+    rb_namespace_t *ns = GET_THREAD()->ns;
 
     id = rb_intern(name);
+    if (NAMESPACE_LOCAL_P(ns)) {
+        return rb_define_module_id_under(ns->ns_object, id);
+    }
     if (rb_const_defined(rb_cObject, id)) {
         module = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(module, T_MODULE)) {

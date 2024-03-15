@@ -21,6 +21,7 @@
 #include "internal/gc.h"
 #include "internal/inits.h"
 #include "internal/missing.h"
+#include "internal/namespace.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/re.h"
@@ -1108,6 +1109,7 @@ vm_proc_create_from_captured(VALUE klass,
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
@@ -1117,6 +1119,7 @@ vm_proc_create_from_captured(VALUE klass,
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
+    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -1148,10 +1151,12 @@ proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, in
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
+    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -2802,8 +2807,12 @@ VALUE
 rb_iseq_eval(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
+    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     VALUE val;
     vm_set_top_stack(ec, iseq);
+    if (NAMESPACE_LOCAL_P(ns)) {
+        rb_vm_using_module(ns->refiner);
+    }
     val = vm_exec(ec);
     return val;
 }
@@ -2812,9 +2821,12 @@ VALUE
 rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
+    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     VALUE val;
-
     vm_set_main_stack(ec, iseq);
+    if (NAMESPACE_LOCAL_P(ns)) {
+        rb_vm_using_module(ns->refiner);
+    }
     val = vm_exec(ec);
     return val;
 }
@@ -2862,6 +2874,26 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
                   0, reg_cfp->sp, 0, 0);
 
     val = (*func)(arg);
+
+    rb_vm_pop_frame(ec);
+    return val;
+}
+
+VALUE
+rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
+                 VALUE block_handler, VALUE filename)
+{
+    rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    VALUE val;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+                  recv, block_handler,
+                  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
+                  0, reg_cfp->sp, 0, 0);
+
+    val = (*func)(arg1, arg2);
 
     rb_vm_pop_frame(ec);
     return val;
@@ -3459,6 +3491,8 @@ thread_mark(void *ptr)
     rb_gc_mark(th->pending_interrupt_mask_stack);
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
+    rb_gc_mark(th->namespaces);
+    if (th->ns && th->ns->is_local) rb_namespace_entry_mark(th->ns);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
@@ -3606,6 +3640,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->last_status = Qnil;
     th->top_wrapper = 0;
     th->top_self = vm->top_self; // 0 while self == 0
+    th->namespaces = 0;
+    th->ns = 0;
     th->value = Qundef;
 
     th->ec->errinfo = Qnil;
@@ -3633,10 +3669,16 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 VALUE
 rb_thread_alloc(VALUE klass)
 {
+    rb_namespace_t *ns;
+    rb_execution_context_t *ec = GET_EC();
     VALUE self = thread_alloc(klass);
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
+    if ((ns = rb_ec_thread_ptr(ec)->ns) == 0) {
+        ns = rb_global_namespace();
+    }
+    target_th->ns = ns;
     return self;
 }
 
@@ -4184,6 +4226,8 @@ Init_VM(void)
         th->vm = vm;
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
+        th->namespaces = 0;
+        th->ns = 0;
 
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->iseq = iseq;
