@@ -318,7 +318,7 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_glob_warning_opendir
     with_enc_path do |dir|
-      open("#{dir}/x", "w") {}
+      File.binwrite("#{dir}/x", "")
       File.chmod(0300, dir)
       next if File.readable?(dir)
       assert_warning(/#{dir}/) do
@@ -329,7 +329,7 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_glob_warning_match_all
     with_enc_path do |dir|
-      open("#{dir}/x", "w") {}
+      File.binwrite("#{dir}/x", "")
       File.chmod(0000, dir)
       next if File.readable?(dir)
       assert_warning(/#{dir}/) do

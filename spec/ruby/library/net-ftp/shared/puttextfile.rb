@@ -27,8 +27,8 @@ describe :net_ftp_puttextfile, shared: true do
   it "sends the contents of the passed local_file, using \\r\\n as the newline separator" do
     @ftp.send(@method, @local_fixture_file, "text")
 
-    remote_lines = open(@remote_tmp_file,    "rb") {|f| f.read }
-    local_lines  = open(@local_fixture_file, "rb") {|f| f.read }
+    remote_lines = File.binread(@remote_tmp_file)
+    local_lines  = File.binread(@local_fixture_file)
 
     remote_lines.should_not == local_lines
     remote_lines.should == local_lines.gsub("\n", "\r\n")
