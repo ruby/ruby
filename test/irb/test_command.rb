@@ -20,6 +20,7 @@ module TestIRB
       @xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
       save_encodings
       IRB.instance_variable_get(:@CONF).clear
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
     end
 

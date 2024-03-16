@@ -11,6 +11,8 @@ end
 class IRB::RenderingTest < Yamatanooroti::TestCase
   def setup
     @original_term = ENV['TERM']
+    @home_backup = ENV['HOME']
+    @xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
     ENV['TERM'] = "xterm-256color"
     @pwd = Dir.pwd
     suffix = '%010d' % Random.rand(0..65535)
@@ -24,12 +26,16 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     @irbrc_backup = ENV['IRBRC']
     @irbrc_file = ENV['IRBRC'] = File.join(@tmpdir, 'temporaty_irbrc')
     File.unlink(@irbrc_file) if File.exist?(@irbrc_file)
+    ENV['HOME'] = File.join(@tmpdir, 'home')
+    ENV['XDG_CONFIG_HOME'] = File.join(@tmpdir, 'xdg_config_home')
   end
 
   def teardown
     FileUtils.rm_rf(@tmpdir)
     ENV['IRBRC'] = @irbrc_backup
     ENV['TERM'] = @original_term
+    ENV['HOME'] = @home_backup
+    ENV['XDG_CONFIG_HOME'] = @xdg_config_home_backup
   end
 
   def test_launch

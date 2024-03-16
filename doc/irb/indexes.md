@@ -165,9 +165,6 @@ for each entry that is pre-defined, the initial value is given:
 - `:RC`: Whether a {configuration file}[rdoc-ref:IRB@Configuration+File]
   was found and interpreted;
   initial value: `true` if a configuration file was found, `false` otherwise.
-- `:RC_NAME_GENERATOR`: \Proc to generate paths of potential
-  {configuration files}[rdoc-ref:IRB@Configuration+File];
-  initial value: `=> #<Proc:0x000055f9bebfed80 /var/lib/gems/3.0.0/gems/irb-1.8.3/lib/irb/init.rb:401>`.
 - `:SAVE_HISTORY`: Number of commands to save in
   {input command history}[rdoc-ref:IRB@Input+Command+History];
   initial value: `1000`.

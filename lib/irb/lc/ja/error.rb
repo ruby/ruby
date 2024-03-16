@@ -47,11 +47,6 @@ module IRB
       super("プロンプトモード(#{val})は定義されていません.")
     end
   end
-  class IllegalRCGenerator < StandardError
-    def initialize
-      super("RC_NAME_GENERATORが正しく定義されていません.")
-    end
-  end
 
   # :startdoc:
 end

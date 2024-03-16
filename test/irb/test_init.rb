@@ -14,10 +14,15 @@ module TestIRB
       ENV["HOME"] = @tmpdir = File.realpath(Dir.mktmpdir("test_irb_init_#{$$}"))
     end
 
+    def reset_rc_name_generators
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
+    end
+
     def teardown
       ENV.update(@backup_env)
       FileUtils.rm_rf(@tmpdir)
       IRB.conf.delete(:SCRIPT)
+      reset_rc_name_generators
     end
 
     def test_setup_with_argv_preserves_global_argv
@@ -34,133 +39,65 @@ module TestIRB
       assert_equal orig, $0
     end
 
-    def test_rc_file
-      verbose, $VERBOSE = $VERBOSE, nil
-      tmpdir = @tmpdir
-      Dir.chdir(tmpdir) do
-        ENV["XDG_CONFIG_HOME"] = "#{tmpdir}/xdg"
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_equal(tmpdir+"/.irbrc", IRB.rc_file)
-        assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-        assert_file.not_exist?(tmpdir+"/xdg")
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        FileUtils.touch(tmpdir+"/.irbrc")
-        assert_equal(tmpdir+"/.irbrc", IRB.rc_file)
-        assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-        assert_file.not_exist?(tmpdir+"/xdg")
-      end
-    ensure
-      $VERBOSE = verbose
-    end
-
-    def test_rc_file_in_subdir
-      verbose, $VERBOSE = $VERBOSE, nil
-      tmpdir = @tmpdir
-      Dir.chdir(tmpdir) do
-        FileUtils.mkdir_p("#{tmpdir}/mydir")
-        Dir.chdir("#{tmpdir}/mydir") do
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          assert_equal(tmpdir+"/.irbrc", IRB.rc_file)
-          assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          FileUtils.touch(tmpdir+"/.irbrc")
-          assert_equal(tmpdir+"/.irbrc", IRB.rc_file)
-          assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-        end
-      end
-    ensure
-      $VERBOSE = verbose
-    end
-
     def test_rc_files
       tmpdir = @tmpdir
       Dir.chdir(tmpdir) do
-        ENV["XDG_CONFIG_HOME"] = "#{tmpdir}/xdg"
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_includes IRB.rc_files, tmpdir+"/.irbrc"
-        assert_includes IRB.rc_files("_history"), tmpdir+"/.irb_history"
-        assert_file.not_exist?(tmpdir+"/xdg")
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        FileUtils.touch(tmpdir+"/.irbrc")
-        assert_includes IRB.rc_files, tmpdir+"/.irbrc"
-        assert_includes IRB.rc_files("_history"), tmpdir+"/.irb_history"
-        assert_file.not_exist?(tmpdir+"/xdg")
-      end
-    end
-
-    def test_rc_files_in_subdir
-      tmpdir = @tmpdir
-      Dir.chdir(tmpdir) do
-        FileUtils.mkdir_p("#{tmpdir}/mydir")
-        Dir.chdir("#{tmpdir}/mydir") do
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          assert_includes IRB.rc_files, tmpdir+"/.irbrc"
-          assert_includes IRB.rc_files("_history"), tmpdir+"/.irb_history"
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          FileUtils.touch(tmpdir+"/.irbrc")
-          assert_includes IRB.rc_files, tmpdir+"/.irbrc"
-          assert_includes IRB.rc_files("_history"), tmpdir+"/.irb_history"
+        home = ENV['HOME'] = "#{tmpdir}/home"
+        xdg_config_home = ENV['XDG_CONFIG_HOME'] = "#{tmpdir}/xdg"
+        reset_rc_name_generators
+        assert_empty(IRB.irbrc_files)
+        assert_equal("#{home}/.irb_history", IRB.rc_file('_history'))
+        FileUtils.mkdir_p(home)
+        FileUtils.mkdir_p("#{xdg_config_home}/irb")
+        FileUtils.mkdir_p("#{home}/.config/irb")
+        reset_rc_name_generators
+        assert_empty(IRB.irbrc_files)
+        assert_equal("#{xdg_config_home}/irb/irb_history", IRB.rc_file('_history'))
+        home_irbrc = "#{home}/.irbrc"
+        config_irbrc = "#{home}/.config/irb/irbrc"
+        xdg_config_irbrc = "#{xdg_config_home}/irb/irbrc"
+        [home_irbrc, config_irbrc, xdg_config_irbrc].each do |file|
+          FileUtils.touch(file)
         end
+        current_dir_irbrcs = %w[.irbrc irbrc _irbrc $irbrc].map { |file| "#{tmpdir}/#{file}" }
+        current_dir_irbrcs.each { |file| FileUtils.touch(file) }
+        reset_rc_name_generators
+        assert_equal([xdg_config_irbrc, home_irbrc, *current_dir_irbrcs], IRB.irbrc_files)
+        assert_equal(xdg_config_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = nil
+        reset_rc_name_generators
+        assert_equal([home_irbrc, config_irbrc, *current_dir_irbrcs], IRB.irbrc_files)
+        assert_equal(home_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = ''
+        reset_rc_name_generators
+        assert_equal([home_irbrc, config_irbrc] + current_dir_irbrcs, IRB.irbrc_files)
+        assert_equal(home_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = xdg_config_home
+        ENV['IRBRC'] = "#{tmpdir}/.irbrc"
+        reset_rc_name_generators
+        assert_equal([ENV['IRBRC'], xdg_config_irbrc, home_irbrc] + (current_dir_irbrcs - [ENV['IRBRC']]), IRB.irbrc_files)
+        assert_equal(ENV['IRBRC'] + '_history', IRB.rc_file('_history'))
+        ENV['IRBRC'] = ENV['HOME'] = ENV['XDG_CONFIG_HOME'] = nil
+        reset_rc_name_generators
+        assert_equal(current_dir_irbrcs, IRB.irbrc_files)
+        assert_nil(IRB.rc_file('_history'))
       end
     end
 
-    def test_rc_files_has_file_from_xdg_env
+    def test_duplicated_rc_files
       tmpdir = @tmpdir
-      ENV["XDG_CONFIG_HOME"] = "#{tmpdir}/xdg"
-      xdg_config = ENV["XDG_CONFIG_HOME"]+"/irb/irbrc"
-
-      FileUtils.mkdir_p(xdg_config)
-
       Dir.chdir(tmpdir) do
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_includes IRB.rc_files, xdg_config
-      end
-    ensure
-      ENV["XDG_CONFIG_HOME"] = nil
-    end
-
-    def test_rc_files_has_file_from_irbrc_env
-      tmpdir = @tmpdir
-      ENV["IRBRC"] = "#{tmpdir}/irb"
-
-      FileUtils.mkdir_p(ENV["IRBRC"])
-
-      Dir.chdir(tmpdir) do
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_includes IRB.rc_files, ENV["IRBRC"]
-      end
-    ensure
-      ENV["IRBRC"] = nil
-    end
-
-    def test_rc_files_has_file_from_home_env
-      tmpdir = @tmpdir
-      ENV["HOME"] = "#{tmpdir}/home"
-
-      FileUtils.mkdir_p(ENV["HOME"])
-
-      Dir.chdir(tmpdir) do
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_includes IRB.rc_files, ENV["HOME"]+"/.irbrc"
-        assert_includes IRB.rc_files, ENV["HOME"]+"/.config/irb/irbrc"
-      end
-    ensure
-      ENV["HOME"] = nil
-    end
-
-    def test_rc_files_contains_non_env_files
-      tmpdir = @tmpdir
-      FileUtils.mkdir_p("#{tmpdir}/.irbrc")
-      FileUtils.mkdir_p("#{tmpdir}/_irbrc")
-      FileUtils.mkdir_p("#{tmpdir}/irb.rc")
-      FileUtils.mkdir_p("#{tmpdir}/$irbrc")
-
-      Dir.chdir(tmpdir) do
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_includes IRB.rc_files, tmpdir+"/.irbrc"
-        assert_includes IRB.rc_files, tmpdir+"/_irbrc"
-        assert_includes IRB.rc_files, tmpdir+"/irb.rc"
-        assert_includes IRB.rc_files, tmpdir+"/$irbrc"
+        ENV['XDG_CONFIG_HOME'] = "#{ENV['HOME']}/.config"
+        FileUtils.mkdir_p("#{ENV['XDG_CONFIG_HOME']}/irb")
+        env_irbrc = ENV['IRBRC'] = "#{tmpdir}/_irbrc"
+        xdg_config_irbrc = "#{ENV['XDG_CONFIG_HOME']}/irb/irbrc"
+        home_irbrc = "#{ENV['HOME']}/.irbrc"
+        current_dir_irbrc = "#{tmpdir}/irbrc"
+        [env_irbrc, xdg_config_irbrc, home_irbrc, current_dir_irbrc].each do |file|
+          FileUtils.touch(file)
+        end
+        reset_rc_name_generators
+        assert_equal([env_irbrc, xdg_config_irbrc, home_irbrc, current_dir_irbrc], IRB.irbrc_files)
       end
     end
 
