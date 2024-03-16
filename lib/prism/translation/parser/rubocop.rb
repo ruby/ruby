@@ -6,8 +6,8 @@ warn "WARN: Prism is directly supported since RuboCop 1.62. The `prism/translati
 require "parser"
 require "rubocop"
 
-require "prism"
-require "prism/translation/parser"
+require_relative "../../prism"
+require_relative "../parser"
 
 module Prism
   module Translation
@@ -31,12 +31,12 @@ module Prism
             if ruby_version == Prism::Translation::Parser::VERSION_3_3
               warn "WARN: Setting `TargetRubyVersion: 80_82_73_83_77.33` is deprecated. " \
                    "Set to `ParserEngine: parser_prism` and `TargetRubyVersion: 3.3` instead."
-              require "prism/translation/parser33"
+              require_relative "../parser33"
               Prism::Translation::Parser33
             elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
               warn "WARN: Setting `TargetRubyVersion: 80_82_73_83_77.34` is deprecated. " \
                    "Set to `ParserEngine: parser_prism` and `TargetRubyVersion: 3.4` instead."
-              require "prism/translation/parser34"
+              require_relative "../parser34"
               Prism::Translation::Parser34
             else
               super
@@ -49,12 +49,12 @@ module Prism
             if ruby_version == Prism::Translation::Parser::VERSION_3_3
               warn "WARN: Setting `TargetRubyVersion: 80_82_73_83_77.33` is deprecated. " \
                    "Set to `ParserEngine: parser_prism` and `TargetRubyVersion: 3.3` instead."
-              require "prism/translation/parser33"
+              require_relative "../parser33"
               Prism::Translation::Parser33
             elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
               warn "WARN: Setting `TargetRubyVersion: 80_82_73_83_77.34` is deprecated. " \
                    "Set to `ParserEngine: parser_prism` and `TargetRubyVersion: 3.4` instead."
-              require "prism/translation/parser34"
+              require_relative "../parser34"
               Prism::Translation::Parser34
             else
               super

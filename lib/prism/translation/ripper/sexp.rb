@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "prism/translation/ripper"
+require_relative "../ripper"
 
 module Prism
   module Translation
