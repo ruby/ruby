@@ -33,25 +33,25 @@ encdirs << 'enc' if encdirs.empty?
 files = {}
 encdirs.each do |encdir|
   next unless File.directory?(encdir)
-  Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
+  Dir.glob("*.[ch]", base: encdir).sort_by {|e|
     e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
   }.each do |fn|
     next if files[fn]
     files[fn] = true
-    open(File.join(encdir,fn)) do |f|
+    File.open(File.join(encdir, fn)) do |f|
       name = nil
       f.each_line do |line|
         if (/^#ifndef RUBY/ =~ line)..(/^#endif/ =~ line)
-        elsif (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
-          if $1
+        elsif /^OnigEncodingDefine/.match?(line)
+          if (n = f.gets("\n\};")[/"(.*?)"/, 1]) # swallow the initializer block
             if name
-              lines << %[ENC_SET_BASE("#$1", "#{name}");]
+              lines << %[ENC_SET_BASE("#{n}", "#{name}");]
             else
-              name = $1
+              name = n
             end
-            check_duplication(defs, $1, fn, f.lineno)
+            check_duplication(defs, n, fn, f.lineno)
             next if BUILTIN_ENCODINGS[name]
-            encodings << $1
+            encodings << n
             count += 1
           end
         else

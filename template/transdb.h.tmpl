@@ -1,4 +1,4 @@
-<%
+<% #-*- mode: ruby -*-
 #
 # static const rb_transcoder
 # rb_from_US_ASCII = {
@@ -22,30 +22,27 @@ transdirs = transdirs.sort_by {|td|
 
 files = {}
 names_t = []
-converter_list = []
 transdirs.each do |transdir|
   names = Dir.entries(transdir)
-  names_t += names.map {|n| /(?!\A)\.trans\z/ =~ n ? $` : nil }.compact
-  names_c = names.map {|n| /(?!\A)\.c\z/ =~ n ? $` : nil }.compact
-  (names_t & names_c).map {|n|
-    "#{n}.c"
-  }.sort_by {|e|
+  names_t += names.map {|n| n[/.+(?=\.trans\z)/]}.compact
+  names_c = names.map {|n| n[/.+(?=\.c\z)/]}.compact
+  (names_t & names_c).sort_by {|e|
     e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
   }.each do |fn|
     next if files[fn]
     files[fn] = true
-    path = File.join(transdir,fn)
-    open(path) do |f|
+    path = File.join(transdir, "#{fn}.c")
+    File.open(path) do |f|
       f.each_line do |line|
-        if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
-          if $1 && $2
-            from_to = "%s to %s" % [$1, $2]
+        if (/^static const rb_transcoder/ =~ line)
+          if (/"(.*?)"\s*,\s*"(.*?)"/ =~ f.gets("\n\};")) # swallow the initializer block
+            from_to = [$1.freeze, $2.freeze].freeze
             if converters[from_to]
-              raise ArgumentError, '%s:%d: transcode "%s" is already registered at %s:%d' %
-              [path, f.lineno, from_to, *converters[from_to].values_at(3, 4)]
+              raise ArgumentError,
+                    '%s:%d: transcode "%s to %s" is already registered at %s:%d' %
+                    [path, f.lineno, *from_to, *converters[from_to].values_at(3, 4)]
             else
-              converters[from_to] = [$1, $2, fn[0..-3], path, f.lineno]
-              converter_list << from_to
+              converters[from_to] = [fn, path, f.lineno]
             end
           end
         end
@@ -53,7 +50,6 @@ transdirs.each do |transdir|
     end
   end
 end
-converter_list.each do |from_to|
-  from, to, fn = *converters[from_to]
+converters.each do |(from, to), (fn)|
 %>rb_declare_transcoder("<%=from%>", "<%=to%>", "<%=fn%>");
 % end
