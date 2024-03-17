@@ -36,18 +36,17 @@ transdirs.each do |transdir|
     files[fn] = true
     path = File.join(transdir,fn)
     open(path) do |f|
-      transcoder_def = false
       f.each_line do |line|
-        transcoder_def = true if /^static const rb_transcoder/ =~ line
-        if transcoder_def && /"(.*?)"\s*,\s*"(.*?)"/ =~ line
-          transcoder_def = false
-          from_to = "%s to %s" % [$1, $2]
-          if converters[from_to]
-            raise ArgumentError, '%s:%d: transcode "%s" is already registered at %s:%d' %
-            [path, f.lineno, from_to, *converters[from_to].values_at(3, 4)]
-          else
-            converters[from_to] = [$1, $2, fn[0..-3], path, f.lineno]
-            converter_list << from_to
+        if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
+          if $1 && $2
+            from_to = "%s to %s" % [$1, $2]
+            if converters[from_to]
+              raise ArgumentError, '%s:%d: transcode "%s" is already registered at %s:%d' %
+              [path, f.lineno, from_to, *converters[from_to].values_at(3, 4)]
+            else
+              converters[from_to] = [$1, $2, fn[0..-3], path, f.lineno]
+              converter_list << from_to
+            end
           end
         end
       end
