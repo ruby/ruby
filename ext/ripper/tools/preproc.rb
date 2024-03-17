@@ -58,9 +58,6 @@ def prelude(f, out)
     when /\A%%/
       out << "%%\n"
       return
-    when /\A%token/, /\A%type/, /\A} <node(?>_\w+)?>/
-      # types in %union which have corresponding set_yylval_* macro.
-      out << line
     else
       if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
         case line
@@ -72,8 +69,8 @@ def prelude(f, out)
           @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
         end
       end
-      out << line
     end
+    out << line
   end
 end
 
