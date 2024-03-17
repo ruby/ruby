@@ -6878,63 +6878,11 @@ BDIGIT rb_bdigit_dbl_isqrt(BDIGIT_DBL);
 # define BDIGIT_DBL_TO_DOUBLE(n) (double)(n)
 #endif
 
-static BDIGIT *
-estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
-{
-    enum {dbl_per_bdig = roomof(DBL_MANT_DIG,BITSPERDIG)};
-    const int zbits = nlz(nds[len-1]);
-    VALUE x = *xp = bignew_1(0, xn, 1); /* division may release the GVL */
-    BDIGIT *xds = BDIGITS(x);
-    BDIGIT_DBL d = bary2bdigitdbl(nds+len-dbl_per_bdig, dbl_per_bdig);
-    BDIGIT lowbits = 1;
-    int rshift = (int)((BITSPERDIG*2-zbits+(len&BITSPERDIG&1) - DBL_MANT_DIG + 1) & ~1);
-    double f;
-
-    if (rshift > 0) {
-        lowbits = (BDIGIT)d & ~(~(BDIGIT)1U << rshift);
-        d >>= rshift;
-    }
-    else if (rshift < 0) {
-        d <<= -rshift;
-        d |= nds[len-dbl_per_bdig-1] >> (BITSPERDIG+rshift);
-    }
-    f = sqrt(BDIGIT_DBL_TO_DOUBLE(d));
-    d = (BDIGIT_DBL)ceil(f);
-    if (BDIGIT_DBL_TO_DOUBLE(d) == f) {
-        if (lowbits || (lowbits = !bary_zero_p(nds, len-dbl_per_bdig)))
-            ++d;
-    }
-    else {
-        lowbits = 1;
-    }
-    rshift /= 2;
-    rshift += (2-(len&1))*BITSPERDIG/2;
-    if (rshift >= 0) {
-        if (nlz((BDIGIT)d) + rshift >= BITSPERDIG) {
-            /* (d << rshift) does cause overflow.
-             * example: Integer.sqrt(0xffff_ffff_ffff_ffff ** 2)
-             */
-            d = ~(BDIGIT_DBL)0;
-        }
-        else {
-            d <<= rshift;
-        }
-    }
-    BDIGITS_ZERO(xds, xn-2);
-    bdigitdbl2bary(&xds[xn-2], 2, d);
-
-    if (!lowbits) return NULL; /* special case, exact result */
-    return xds;
-}
-
 VALUE
 rb_big_isqrt(VALUE n)
 {
     BDIGIT *nds = BDIGITS(n);
     size_t len = BIGNUM_LEN(n);
-    size_t xn = (len+1) / 2;
-    VALUE x;
-    BDIGIT *xds;
 
     if (len <= 2) {
         BDIGIT sq = rb_bdigit_dbl_isqrt(bary2bdigitdbl(nds, len));
@@ -6944,25 +6892,19 @@ rb_big_isqrt(VALUE n)
         return ULONG2NUM(sq);
 #endif
     }
-    else if ((xds = estimate_initial_sqrt(&x, xn, nds, len)) != 0) {
-        size_t tn = xn + BIGDIVREM_EXTRA_WORDS;
-        VALUE t = bignew_1(0, tn, 1);
-        BDIGIT *tds = BDIGITS(t);
-        tn = BIGNUM_LEN(t);
-
-        /* t = n/x */
-        while (bary_divmod_branch(tds, tn, NULL, 0, nds, len, xds, xn),
-               bary_cmp(tds, tn, xds, xn) < 0) {
-            int carry;
-            BARY_TRUNC(tds, tn);
-            /* x = (x+t)/2 */
-            carry = bary_add(xds, xn, xds, xn, tds, tn);
-            bary_small_rshift(xds, xds, xn, 1, carry);
-            tn = BIGNUM_LEN(t);
+    else {
+        size_t shift = FIX2LONG(rb_big_bit_length(n)) / 4;
+        VALUE n2 = rb_int_rshift(n, SIZET2NUM(2 * shift));
+        VALUE x = FIXNUM_P(n2) ? LONG2FIX(rb_ulong_isqrt(FIX2ULONG(n2))) : rb_big_isqrt(n2);
+        /* x = (x+n/x)/2 */
+        x = rb_int_plus(rb_int_lshift(x, SIZET2NUM(shift - 1)), rb_int_idiv(rb_int_rshift(n, SIZET2NUM(shift + 1)), x));
+        VALUE xx = rb_int_mul(x, x);
+        while (rb_int_gt(xx, n)) {
+            xx = rb_int_minus(xx, rb_int_minus(rb_int_plus(x, x), INT2FIX(1)));
+            x = rb_int_minus(x, INT2FIX(1));
         }
+        return x;
     }
-    RBASIC_SET_CLASS_RAW(x, rb_cInteger);
-    return x;
 }
 
 #if USE_GMP
