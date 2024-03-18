@@ -4093,7 +4093,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *      end
  *
  *      def respond_to_missing?(name, include_private = false)
- *        DELEGATE.include?(name) or super
+ *        DELEGATE.include?(name)
  *      end
  *    end
  *
