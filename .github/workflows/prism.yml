@@ -95,13 +95,13 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="test_regexp.rb" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb"'
           RUN_OPTS: ${{ matrix.run_opts }}
 
-      # - name: make test-spec
-      #   run: |
-      #     $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 10
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-prism-spec
+        run: |
+          $SETARCH make -s test-prism-spec SPECOPTS="$SPECOPTS"
+        timeout-minutes: 10
+        env:
+          GNUMAKEFLAGS: ''
+          SPECOPTS: "-T -W:no-experimental -T --parser=prism"
 
       - uses: ./.github/actions/slack
         with:
