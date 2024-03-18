@@ -573,7 +573,12 @@ module RbInstall
           return [] if name.empty?
 
           feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
-          Array(feature.sub("$(TARGET)", name))
+          feature = feature.sub("$(TARGET)", name)
+
+          target_prefix = makefile[/^target_prefix[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+          feature = File.join(target_prefix.delete_prefix("/"), feature) unless target_prefix.empty?
+
+          Array(feature)
         end
 
         def makefile_path
