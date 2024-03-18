@@ -124,7 +124,7 @@ module Prism
         when :argument_block_multi
           Diagnostic.new(:error, :block_and_blockarg, {}, diagnostic_location, [])
         when :argument_formal_constant
-          Diagnostic.new(:error, :formal_argument, {}, diagnostic_location, [])
+          Diagnostic.new(:error, :argument_const, {}, diagnostic_location, [])
         when :argument_formal_class
           Diagnostic.new(:error, :argument_cvar, {}, diagnostic_location, [])
         when :argument_formal_global
