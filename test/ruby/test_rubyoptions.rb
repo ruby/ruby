@@ -1138,17 +1138,17 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(['-p', '-e', 'sub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
   end
 
-  def assert_norun_with_rflag(*opt)
+  def assert_norun_with_rflag(*opt, test_stderr: [])
     bug10435 = "[ruby-dev:48712] [Bug #10435]: should not run with #{opt} option"
     stderr = []
     Tempfile.create(%w"bug10435- .rb") do |script|
       dir, base = File.split(script.path)
       File.write(script, "abort ':run'\n")
       opts = ['-C', dir, '-r', "./#{base}", *opt]
-      _, e = assert_in_out_err([*opts, '-ep'], "", //)
+      _, e = assert_in_out_err([*opts, '-ep'], "", //, test_stderr)
       stderr.concat(e) if e
       stderr << "---"
-      _, e = assert_in_out_err([*opts, base], "", //)
+      _, e = assert_in_out_err([*opts, base], "", //, test_stderr)
       stderr.concat(e) if e
     end
     assert_not_include(stderr, ":run", bug10435)
@@ -1169,6 +1169,15 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
     assert_norun_with_rflag('--dump=parsetree+error_tolerant')
     assert_norun_with_rflag('--dump=parse+error_tolerant')
+  end
+
+  def test_dump_parsetree_error_tolerant
+    assert_in_out_err(['--dump=parse', '-e', 'begin'],
+                      "", [], /unexpected end-of-input/, success: false)
+    assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],
+                      "", /^# @/, /unexpected end-of-input/, success: true)
+    assert_in_out_err(['--dump=+error_tolerant', '-e', 'begin p :run'],
+                      "", [], /unexpected end-of-input/, success: false)
   end
 
   def test_dump_insns_with_rflag
