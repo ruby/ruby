@@ -454,7 +454,7 @@ EOM
 
         if entry.file?
           File.open(destination, "wb") {|out| copy_stream(entry, out) }
-          FileUtils.chmod file_mode(entry.header.mode), destination
+          FileUtils.chmod file_mode(entry.header.mode) & ~File.umask, destination
         end
 
         verbose destination
