@@ -3192,7 +3192,7 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
 
 static bool
 optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
-                                 unsigned int set_flags, unsigned int unset_flags)
+                            unsigned int set_flags, unsigned int unset_flags, unsigned int remove_flags)
 {
     LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
     if ((set_flags & VM_CALL_ARGS_BLOCKARG) && (set_flags & VM_CALL_KW_SPLAT) &&
@@ -3210,7 +3210,7 @@ optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
         RUBY_ASSERT(flags & VM_CALL_ARGS_SPLAT_MUT);
         OPERAND_AT(iobj, 0) = Qfalse;
         const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
-            flags & ~VM_CALL_ARGS_SPLAT_MUT, vm_ci_argc(ci), vm_ci_kwarg(ci));
+            flags & ~(VM_CALL_ARGS_SPLAT_MUT|remove_flags), vm_ci_argc(ci), vm_ci_kwarg(ci));
         RB_OBJ_WRITTEN(iseq, ci, nci);
         OPERAND_AT(niobj, 0) = (VALUE)nci;
         return true;
@@ -3902,7 +3902,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         *  send
         */
         if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-            VM_CALL_ARGS_SPLAT, VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
+            VM_CALL_ARGS_SPLAT, VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0)) goto optimized_splat;
 
         if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
             niobj = niobj->next;
@@ -3919,7 +3919,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  send
             */
             if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT)) goto optimized_splat;
+                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT, 0)) goto optimized_splat;
 
             /*
             * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
@@ -3933,7 +3933,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  send
             */
             if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT, VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
+                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT, VM_CALL_ARGS_BLOCKARG, 0)) goto optimized_splat;
 
             if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
                     IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
@@ -3953,7 +3953,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *  send
                 */
                 optimize_args_splat_no_copy(iseq, iobj, niobj,
-                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0);
+                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0, 0);
             }
         } else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
             /*
@@ -3968,28 +3968,34 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  send
             */
             optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT);
+                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT, 0);
         } else if (IS_NEXT_INSN_ID(niobj, duphash)) {
             niobj = niobj->next;
 
             /*
-            * Eliminate array allocation for f(*a, kw: 1)
+            * Eliminate array and hash allocation for f(*a, kw: 1)
             *
             *  splatarray true
             *  duphash
             *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT and not ARGS_BLOCKARG
             * =>
             *  splatarray false
-            *  duphash
-            *  send
+            *  putobject
+            *  send ARGS_SPLAT|KW_SPLAT
             */
             if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT, VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
+                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT, VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT_MUT)) {
+
+                ((INSN*)niobj)->insn_id = BIN(putobject);
+                OPERAND_AT(niobj, 0) = rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)));
+
+                goto optimized_splat;
+            }
 
             if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
                     IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
                 /*
-                * Eliminate array allocation for f(*a, kw: 1, &{arg,lvar,@iv})
+                * Eliminate array and hash allocation for f(*a, kw: 1, &{arg,lvar,@iv})
                 *
                 *  splatarray true
                 *  duphash
@@ -3997,12 +4003,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT|ARGS_BLOCKARG
                 * =>
                 *  splatarray false
-                *  duphash
+                *  putobject
                 *  getlocal / getinstancevariable / getblockparamproxy
-                *  send
+                *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
                 */
-                optimize_args_splat_no_copy(iseq, iobj, niobj->next,
-                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT|VM_CALL_ARGS_BLOCKARG, 0);
+                if (optimize_args_splat_no_copy(iseq, iobj, niobj->next,
+                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT|VM_CALL_ARGS_BLOCKARG, 0, VM_CALL_KW_SPLAT_MUT)) {
+
+                    ((INSN*)niobj)->insn_id = BIN(putobject);
+                    OPERAND_AT(niobj, 0) = rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)));
+                }
             }
         }
     }

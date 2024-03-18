@@ -3268,6 +3268,8 @@ rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
  *  blocks.
  *
  *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
+ *
+ *  See Kernel#raise for more information.
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)

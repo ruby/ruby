@@ -507,16 +507,16 @@ class TestParse < Test::Unit::TestCase
     end
     def t.dummy(_)
     end
-    eval <<-END, nil, __FILE__, __LINE__+1
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
       t[42, &blk] ||= 42
-    END
-    assert_equal([:aref, :aset], a)
-    a.clear
-    eval <<-END, nil, __FILE__, __LINE__+1
-    t[42, &blk] ||= t.dummy 42 # command_asgn test
-    END
-    assert_equal([:aref, :aset], a)
-    blk
+    end;
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
+      t[42, &blk] ||= t.dummy 42 # command_asgn test
+    end;
   end
 
   def test_backquote
@@ -914,20 +914,6 @@ x = __ENCODING__
 
   def test_set_backref
     assert_syntax_error("$& = 1", /Can't set variable/)
-  end
-
-  def test_arg_concat
-    o = Object.new
-    class << o; self; end.instance_eval do
-      define_method(:[]=) {|*r, &b| b.call(r) }
-    end
-    r = nil
-    assert_nothing_raised do
-      eval <<-END, nil, __FILE__, __LINE__+1
-        o[&proc{|x| r = x }] = 1
-      END
-    end
-    assert_equal([1], r)
   end
 
   def test_void_expr_stmts_value

@@ -90,7 +90,6 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
-        id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os }}

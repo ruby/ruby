@@ -47,11 +47,6 @@ module IRB
       super("Undefined prompt mode(#{val}).")
     end
   end
-  class IllegalRCGenerator < StandardError
-    def initialize
-      super("Define illegal RC_NAME_GENERATOR.")
-    end
-  end
 
   # :startdoc:
 end

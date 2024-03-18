@@ -278,7 +278,7 @@ module Prism
               value = nil
             when :tSTRING_BEG
               if token.type == :HEREDOC_START
-                heredoc_identifier_stack.push(value.match(/<<[-~]?["']?(?<heredoc_identifier>.*?)["']?\z/)[:heredoc_identifier])
+                heredoc_identifier_stack.push(value.match(/<<[-~]?["'`]?(?<heredoc_identifier>.*?)["'`]?\z/)[:heredoc_identifier])
               end
               if ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_END
                 next_location = token.location.join(next_token.location)
@@ -294,7 +294,12 @@ module Prism
                 index += 2
               elsif value.start_with?("<<")
                 quote = value[2] == "-" || value[2] == "~" ? value[3] : value[2]
-                value = "<<#{quote == "'" || quote == "\"" ? quote : "\""}"
+                if quote == "`"
+                  type = :tXSTRING_BEG
+                  value = "<<`"
+                else
+                  value = "<<#{quote == "'" || quote == "\"" ? quote : "\""}"
+                end
               end
             when :tSTRING_CONTENT
               unless (lines = token.value.lines).one?

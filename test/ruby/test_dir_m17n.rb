@@ -318,7 +318,7 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_glob_warning_opendir
     with_enc_path do |dir|
-      open("#{dir}/x", "w") {}
+      File.binwrite("#{dir}/x", "")
       File.chmod(0300, dir)
       next if File.readable?(dir)
       assert_warning(/#{dir}/) do
@@ -329,7 +329,7 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_glob_warning_match_all
     with_enc_path do |dir|
-      open("#{dir}/x", "w") {}
+      File.binwrite("#{dir}/x", "")
       File.chmod(0000, dir)
       next if File.readable?(dir)
       assert_warning(/#{dir}/) do
@@ -362,7 +362,7 @@ class TestDir_M17N < Test::Unit::TestCase
   def test_glob_encoding
     with_tmpdir do
       list = %W"file_one.ext file_two.ext \u{6587 4ef6}1.txt \u{6587 4ef6}2.txt"
-      list.each {|f| open(f, "w") {}}
+      list.each {|f| File.binwrite(f, "")}
       a = "file_one*".dup.force_encoding Encoding::IBM437
       b = "file_two*".dup.force_encoding Encoding::EUC_JP
       assert_equal([a, b].map(&:encoding), Dir[a, b].map(&:encoding))

@@ -14,9 +14,18 @@ Note that each entry is kept to a minimum, see links for details.
   and not calling any conversion methods.
   [[Bug #20064]]
 
+* Block passing is no longer allowed in index.  [[Bug #19918]]
+
+* Keyword arguments are no longer allowed in index.  [[Bug #20218]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
+
+* Exception
+
+  * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
+    `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [Feature #13557]
 
 ## Stdlib updates
 
@@ -95,6 +104,8 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
+[Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
 [Feature #20182]: https://bugs.ruby-lang.org/issues/20182
+[Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265

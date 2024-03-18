@@ -1,6 +1,9 @@
 #!ruby -an
 BEGIN {
   require 'fileutils'
+  require_relative 'lib/colorize'
+
+  color = Colorize.new
 
   dir = ARGV.shift
   ARGF.eof?
@@ -14,21 +17,23 @@ next unless n
 next if n =~ /^#/
 
 if File.directory?(n)
-  puts "updating #{n} ..."
+  puts "updating #{color.notice(n)} ..."
   system("git", "fetch", "--all", chdir: n) or abort
 else
-  puts "retrieving #{n} ..."
+  puts "retrieving #{color.notice(n)} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
 
 if r
-  puts "fetching #{r} ..."
+  puts "fetching #{color.notice(r)} ..."
   system("git", "fetch", "origin", r, chdir: n) or abort
 end
 
 c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
-puts "checking out #{c} (v=#{v}, r=#{r}) ..."
+print %[checking out #{color.notice(c)} (v=#{color.info(v)}]
+print %[, r=#{color.info(r)}] if r
+puts ") ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)
 end

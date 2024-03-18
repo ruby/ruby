@@ -17,11 +17,11 @@ module TestIRB
       @backup_irbrc = ENV.delete("IRBRC")
       @backup_default_external = Encoding.default_external
       ENV["HOME"] = @tmpdir
-      IRB.conf[:RC_NAME_GENERATOR] = nil
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
     end
 
     def teardown
-      IRB.conf[:RC_NAME_GENERATOR] = nil
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
       ENV["HOME"] = @backup_home
       ENV["XDG_CONFIG_HOME"] = @backup_xdg_config_home
       ENV["IRBRC"] = @backup_irbrc
@@ -144,7 +144,7 @@ module TestIRB
       io.class::HISTORY << 'line1'
       io.class::HISTORY << 'line2'
 
-      history_file = IRB.rc_files("_history").first
+      history_file = IRB.rc_file("_history")
       assert_not_send [File, :file?, history_file]
       File.write(history_file, "line0\n")
       io.save_history
@@ -183,6 +183,16 @@ module TestIRB
       IRB.conf[:HISTORY_FILE] = backup_history_file
     end
 
+    def test_no_home_no_history_file_does_not_raise_history_save
+      ENV['HOME'] = nil
+      io = TestInputMethodWithRelineHistory.new
+      assert_nil(IRB.rc_file('_history'))
+      assert_nothing_raised do
+        io.load_history
+        io.save_history
+      end
+    end
+
     private
 
     def history_concurrent_use_for_input_method(input_method)
@@ -217,7 +227,7 @@ module TestIRB
     def assert_history(expected_history, initial_irb_history, input, input_method = TestInputMethodWithRelineHistory, locale: IRB::Locale.new)
       IRB.conf[:LC_MESSAGES] = locale
       actual_history = nil
-      history_file = IRB.rc_files("_history").first
+      history_file = IRB.rc_file("_history")
       ENV["HOME"] = @tmpdir
       File.open(history_file, "w") do |f|
         f.write(initial_irb_history)

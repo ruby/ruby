@@ -9,10 +9,18 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -W[level=2]       ruby -W と同じ.
   --context-mode n  新しいワークスペースを作成した時に関連する Binding
 		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
+  --extra-doc-dir   指定したディレクトリのドキュメントを追加で読み込む.
   --echo	    実行結果を表示する(デフォルト).
   --noecho	    実行結果を表示しない.
+  --echo-on-assignment
+                    代入結果を表示する.
+  --noecho-on-assignment
+                    代入結果を表示しない.
+  --truncate-echo-on-assignment
+                    truncateされた代入結果を表示する(デフォルト).
   --inspect	    結果出力にinspectを用いる.
   --noinspect	    結果出力にinspectを用いない.
+  --no-pager        ページャを使用しない.
   --multiline       マルチラインエディタを利用する.
   --nomultiline     マルチラインエディタを利用しない.
   --singleline      シングルラインエディタを利用する.
@@ -34,6 +42,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --sample-book-mode/--simple-prompt
 		    非常にシンプルなプロンプトを用いるモードです.
   --noprompt	    プロンプト表示を行なわない.
+  --script          スクリプトモード(最初の引数をスクリプトファイルとして扱う、デフォルト)
+  --noscript        引数をargvとして扱う.
   --single-irb	    irb 中で self を実行して得られるオブジェクトをサ
 		    ブ irb と共有する.
   --tracer	    コマンド実行時にトレースを行なう.

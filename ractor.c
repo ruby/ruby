@@ -590,7 +590,7 @@ ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_clea
         RACTOR_UNLOCK(cr);
         {
             if (cf_func) {
-                int state;
+                enum ruby_tag_type state;
                 EC_PUSH_TAG(ec);
                 if ((state = EC_EXEC_TAG()) == TAG_NONE) {
                     rb_thread_check_ints();
@@ -1319,7 +1319,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
             type = basket_type_will;
         }
         else {
-            int state;
+            enum ruby_tag_type state;
 
             // begin
             EC_PUSH_TAG(ec);

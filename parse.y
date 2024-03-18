@@ -13872,9 +13872,38 @@ new_bv(struct parser_params *p, ID name)
     dyna_var(p, name);
 }
 
+static void
+aryset_check(struct parser_params *p, NODE *args)
+{
+    NODE *block = 0, *kwds = 0;
+    if (args && nd_type_p(args, NODE_BLOCK_PASS)) {
+        block = RNODE_BLOCK_PASS(args)->nd_body;
+        args = RNODE_BLOCK_PASS(args)->nd_head;
+    }
+    if (args && nd_type_p(args, NODE_ARGSCAT)) {
+        args = RNODE_ARGSCAT(args)->nd_body;
+    }
+    if (args && nd_type_p(args, NODE_ARGSPUSH)) {
+        kwds = RNODE_ARGSPUSH(args)->nd_body;
+    }
+    else {
+        for (NODE *next = args; next && nd_type_p(next, NODE_LIST);
+             next = RNODE_LIST(next)->nd_next) {
+            kwds = RNODE_LIST(next)->nd_head;
+        }
+    }
+    if (kwds && nd_type_p(kwds, NODE_HASH) && !RNODE_HASH(kwds)->nd_brace) {
+        yyerror1(&kwds->nd_loc, "keyword arg given in index");
+    }
+    if (block) {
+        yyerror1(&block->nd_loc, "block arg given in index");
+    }
+}
+
 static NODE *
 aryset(struct parser_params *p, NODE *recv, NODE *idx, const YYLTYPE *loc)
 {
+    aryset_check(p, idx);
     return NEW_ATTRASGN(recv, tASET, idx, loc);
 }
 
@@ -15331,6 +15360,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
 {
     NODE *asgn;
 
+    aryset_check(p, args);
     args = make_list(args, args_loc);
     asgn = NEW_OP_ASGN1(ary, op, args, rhs, loc);
     fixpos(asgn, ary);

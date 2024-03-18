@@ -35,7 +35,8 @@ class Colorize
     "bright_blue"=>"94", "bright_magenta"=>"95", "bright_cyan"=>"96", "bright_white"=>"97",
 
     # abstract decorations
-    "pass"=>"green", "fail"=>"red;bold", "skip"=>"yellow;bold", "note"=>"bright_yellow",
+    "pass"=>"green", "fail"=>"red;bold", "skip"=>"yellow;bold",
+    "note"=>"bright_yellow", "notice"=>"bright_yellow", "info"=>"bright_magenta",
   }
 
   def coloring?

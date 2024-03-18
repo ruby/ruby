@@ -340,24 +340,6 @@ assert_equal '1',       %q( class C; def m() 7 end; private :m end
 assert_equal '1',       %q( class C; def m() 1 end; private :m end
                             C.new.send(:m) )
 
-# with block
-assert_equal '[[:ok1, :foo], [:ok2, :foo, :bar]]',
-%q{
-  class C
-    def [](a)
-      $ary << [yield, a]
-    end
-    def []=(a, b)
-      $ary << [yield, a, b]
-    end
-  end
-
-  $ary = []
-  C.new[:foo, &lambda{:ok1}]
-  C.new[:foo, &lambda{:ok2}] = :bar
-  $ary
-}
-
 # with
 assert_equal '[:ok1, [:ok2, 11]]', %q{
   class C
@@ -404,7 +386,6 @@ $result
 
 # aset and splat
 assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;Foo.new[1,*a=[2,3]]=4}
-assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;def m(&blk)Foo.new[1,*a=[2,3],&blk]=4;end;m{}}
 
 # post test
 assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, NilClass, nil, nil]}, %q{
@@ -1107,10 +1088,6 @@ assert_equal 'ok', %q{
     'ok'
   end
 }
-assert_equal 'ok', %q{
-  [0][0, &proc{}] += 21
-  'ok'
-}, '[ruby-core:30534]'
 
 # should not cache when splat
 assert_equal 'ok', %q{
