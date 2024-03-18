@@ -2118,6 +2118,10 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
     pm_options_frozen_string_literal_set(&result->options, rb_iseq_opt_frozen_string_literal());
 
+    if (opt->ext.enc.name != 0) {
+        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    }
+
     uint8_t command_line = 0;
     if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
     if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
