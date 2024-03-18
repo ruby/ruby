@@ -8996,9 +8996,6 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     unsigned int flag = 0;
     int asgnflag = 0;
     ID id = RNODE_OP_ASGN1(node)->nd_mid;
-    int boff = 0;
-    int keyword_len = 0;
-    struct rb_callinfo_kwarg *keywords = NULL;
 
     /*
      * a[x] (op)= y
@@ -9032,32 +9029,14 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
       case NODE_ZLIST:
         argc = INT2FIX(0);
         break;
-      case NODE_BLOCK_PASS:
-        boff = 1;
-        /* fall through */
       default:
-        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_index, &flag, &keywords);
-        if (flag & VM_CALL_KW_SPLAT) {
-            if (boff) {
-                ADD_INSN(ret, node, splatkw);
-            }
-            else {
-                /* Make sure to_hash is only called once and not twice */
-                ADD_INSN(ret, node, dup);
-                ADD_INSN(ret, node, splatkw);
-                ADD_INSN(ret, node, pop);
-            }
-        }
+        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_index, &flag, NULL);
         CHECK(!NIL_P(argc));
     }
-    int dup_argn = FIX2INT(argc) + 1 + boff;
-    if (keywords) {
-        keyword_len = keywords->keyword_len;
-        dup_argn += keyword_len;
-    }
+    int dup_argn = FIX2INT(argc) + 1;
     ADD_INSN1(ret, node, dupn, INT2FIX(dup_argn));
     flag |= asgnflag;
-    ADD_SEND_R(ret, node, idAREF, argc, NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT|VM_CALL_KW_SPLAT_MUT)), keywords);
+    ADD_SEND_R(ret, node, idAREF, argc, NULL, INT2FIX(flag & ~VM_CALL_ARGS_SPLAT_MUT), NULL);
 
     if (id == idOROP || id == idANDOP) {
         /* a[x] ||= y  or  a[x] &&= y
@@ -9085,57 +9064,17 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN1(ret, node, setn, INT2FIX(dup_argn+1));
         }
         if (flag & VM_CALL_ARGS_SPLAT) {
-            if (flag & VM_CALL_KW_SPLAT) {
-                ADD_INSN1(ret, node, topn, INT2FIX(2 + boff));
-                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                    ADD_INSN1(ret, node, splatarray, Qtrue);
-                    flag |= VM_CALL_ARGS_SPLAT_MUT;
-                }
+            if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
                 ADD_INSN(ret, node, swap);
-                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
-                ADD_INSN1(ret, node, setn, INT2FIX(2 + boff));
-                ADD_INSN(ret, node, pop);
-            }
-            else {
-                if (boff > 0) {
-                    ADD_INSN1(ret, node, dupn, INT2FIX(3));
-                    ADD_INSN(ret, node, swap);
-                    ADD_INSN(ret, node, pop);
-                }
-                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                    ADD_INSN(ret, node, swap);
-                    ADD_INSN1(ret, node, splatarray, Qtrue);
-                    ADD_INSN(ret, node, swap);
-                    flag |= VM_CALL_ARGS_SPLAT_MUT;
-                }
-                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
-                if (boff > 0) {
-                    ADD_INSN1(ret, node, setn, INT2FIX(3));
-                    ADD_INSN(ret, node, pop);
-                    ADD_INSN(ret, node, pop);
-                }
-            }
-            ADD_SEND_R(ret, node, idASET, argc, NULL, INT2FIX(flag), keywords);
-        }
-        else if (flag & VM_CALL_KW_SPLAT) {
-            if (boff > 0) {
-                ADD_INSN1(ret, node, topn, INT2FIX(2));
+                ADD_INSN1(ret, node, splatarray, Qtrue);
                 ADD_INSN(ret, node, swap);
-                ADD_INSN1(ret, node, setn, INT2FIX(3));
-                ADD_INSN(ret, node, pop);
+                flag |= VM_CALL_ARGS_SPLAT_MUT;
             }
-            ADD_INSN(ret, node, swap);
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
-        }
-        else if (keyword_len) {
-            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+1));
-            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+0));
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
+            ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
+            ADD_SEND_R(ret, node, idASET, argc, NULL, INT2FIX(flag), NULL);
         }
         else {
-            if (boff > 0)
-                ADD_INSN(ret, node, swap);
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
+            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), NULL);
         }
         ADD_INSN(ret, node, pop);
         ADD_INSNL(ret, node, jump, lfin);
@@ -9154,22 +9093,17 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         }
         if (flag & VM_CALL_ARGS_SPLAT) {
             if (flag & VM_CALL_KW_SPLAT) {
-                ADD_INSN1(ret, node, topn, INT2FIX(2 + boff));
+                ADD_INSN1(ret, node, topn, INT2FIX(2));
                 if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
                     ADD_INSN1(ret, node, splatarray, Qtrue);
                     flag |= VM_CALL_ARGS_SPLAT_MUT;
                 }
                 ADD_INSN(ret, node, swap);
                 ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
-                ADD_INSN1(ret, node, setn, INT2FIX(2 + boff));
+                ADD_INSN1(ret, node, setn, INT2FIX(2));
                 ADD_INSN(ret, node, pop);
             }
             else {
-                if (boff > 0) {
-                    ADD_INSN1(ret, node, dupn, INT2FIX(3));
-                    ADD_INSN(ret, node, swap);
-                    ADD_INSN(ret, node, pop);
-                }
                 if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
                     ADD_INSN(ret, node, swap);
                     ADD_INSN1(ret, node, splatarray, Qtrue);
@@ -9177,35 +9111,11 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
                     flag |= VM_CALL_ARGS_SPLAT_MUT;
                 }
                 ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
-                if (boff > 0) {
-                    ADD_INSN1(ret, node, setn, INT2FIX(3));
-                    ADD_INSN(ret, node, pop);
-                    ADD_INSN(ret, node, pop);
-                }
             }
-            ADD_SEND_R(ret, node, idASET, argc, NULL, INT2FIX(flag), keywords);
-        }
-        else if (flag & VM_CALL_KW_SPLAT) {
-            if (boff > 0) {
-                ADD_INSN1(ret, node, topn, INT2FIX(2));
-                ADD_INSN(ret, node, swap);
-                ADD_INSN1(ret, node, setn, INT2FIX(3));
-                ADD_INSN(ret, node, pop);
-            }
-            ADD_INSN(ret, node, swap);
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
-        }
-        else if (keyword_len) {
-            ADD_INSN(ret, node, dup);
-            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+2));
-            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+1));
-            ADD_INSN(ret, node, pop);
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
+            ADD_SEND_R(ret, node, idASET, argc, NULL, INT2FIX(flag), NULL);
         }
         else {
-            if (boff > 0)
-                ADD_INSN(ret, node, swap);
-            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
+            ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), NULL);
         }
         ADD_INSN(ret, node, pop);
     }
