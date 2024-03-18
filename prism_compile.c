@@ -4019,7 +4019,7 @@ pm_opt_aref_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
         ((const pm_arguments_node_t *) node->arguments)->arguments.size == 1 &&
         PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
         node->block == NULL &&
-        !frozen_string_literal_p(iseq) &&
+        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
     );
 }
@@ -4038,7 +4038,7 @@ pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
         ((const pm_arguments_node_t *) node->arguments)->arguments.size == 2 &&
         PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
         node->block == NULL &&
-        !frozen_string_literal_p(iseq) &&
+        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
     );
 }
