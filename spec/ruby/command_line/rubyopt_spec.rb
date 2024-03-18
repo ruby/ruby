@@ -25,12 +25,12 @@ describe "Processing RUBYOPT" do
   guard -> { not CROSS_COMPILING } do
     it "prints the version number for '-v'" do
       ENV["RUBYOPT"] = '-v'
-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
     end
 
     it "ignores whitespace around the option" do
       ENV["RUBYOPT"] = ' -v '
-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
     end
   end
 
