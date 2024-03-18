@@ -7391,8 +7391,10 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         // We only want to handle frozen string literal comments if it's before
         // any semantic tokens have been seen.
-        if (!semantic_token_seen) {
-            if (key_length == 21 && pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
+        if (key_length == 21 && pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
+            if (semantic_token_seen) {
+                pm_parser_warn_token(parser, &parser->current, PM_WARN_IGNORED_FROZEN_STRING_LITERAL);
+            } else {
                 parser_lex_magic_comment_frozen_string_literal_value(parser, value_start, value_end);
             }
         }
