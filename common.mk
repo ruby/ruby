@@ -12345,7 +12345,6 @@ prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/diagnostic.$(OBJEXT): {$(VPATH)}config.h
 prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/diagnostic.c
 prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
@@ -12353,7 +12352,6 @@ prism/encoding.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.c
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
-prism/encoding.$(OBJEXT): {$(VPATH)}config.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12568,7 +12566,6 @@ prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
-prism/node.$(OBJEXT): {$(VPATH)}config.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/node.c
@@ -12579,7 +12576,6 @@ prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.c
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.h
-prism/pack.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12594,7 +12590,6 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
-prism/prettyprint.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/prettyprint.$(OBJEXT): {$(VPATH)}prism/prettyprint.c
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12621,7 +12616,6 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
-prism/prism.$(OBJEXT): {$(VPATH)}config.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/version.h
@@ -12642,7 +12636,6 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
-prism/regexp.$(OBJEXT): {$(VPATH)}config.h
 prism/regexp.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/encoding.h
@@ -12666,7 +12659,6 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
-prism/serialize.$(OBJEXT): {$(VPATH)}config.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/serialize.c
@@ -12695,7 +12687,6 @@ prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/token_type.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/token_type.$(OBJEXT): {$(VPATH)}config.h
 prism/token_type.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/token_type.$(OBJEXT): {$(VPATH)}prism/token_type.c
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12703,16 +12694,13 @@ prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.c
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
-prism/util/pm_buffer.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.c
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
-prism/util/pm_char.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_constant_pool.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_constant_pool.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.c
 prism/util/pm_constant_pool.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
-prism/util/pm_constant_pool.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
@@ -12722,7 +12710,6 @@ prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/util/pm_list.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.c
 prism/util/pm_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
-prism/util/pm_list.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/parser.h
@@ -12734,25 +12721,20 @@ prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/util/pm_memchr.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
-prism/util/pm_memchr.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_memchr.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/util/pm_newline_list.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_newline_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.c
 prism/util/pm_newline_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
-prism/util/pm_newline_list.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_state_stack.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_state_stack.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.c
 prism/util/pm_state_stack.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
-prism/util/pm_state_stack.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.c
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/util/pm_string.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.c
 prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
-prism/util/pm_string_list.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
@@ -12771,7 +12753,6 @@ prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.c
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
-prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/util/pm_strpbrk.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 prism_init.$(OBJEXT): $(hdrdir)/ruby.h
