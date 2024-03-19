@@ -1526,6 +1526,24 @@ x = __ENCODING__
     assert_not_ractor_shareable(obj)
     assert_equal obj, a
     assert !obj.equal?(a)
+
+    bug_20339 = '[ruby-core:117186] [Bug #20339]'
+    bug_20341 = '[ruby-core:117197] [Bug #20341]'
+    a, b = eval_separately(<<~'end;')
+      # shareable_constant_value: literal
+      foo = 1
+      bar = 2
+      A = { foo => bar }
+      B = [foo, bar]
+      [A, B]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal([1], a.keys, bug_20339)
+    assert_equal([2], a.values, bug_20339)
+    assert_equal(1, b[0], bug_20341)
+    assert_equal(2, b[1], bug_20341)
   end
 
   def test_shareable_constant_value_nested

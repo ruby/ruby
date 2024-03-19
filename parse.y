@@ -14068,13 +14068,13 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 }
 
 static NODE *
-const_decl_path(struct parser_params *p, NODE **dest)
+const_decl_path(struct parser_params *p, NODE *dest)
 {
-    NODE *n = *dest;
-    if (!nd_type_p(n, NODE_CALL)) {
-        const YYLTYPE *loc = &n->nd_loc;
-        VALUE path = rb_node_const_decl_val(n);
-        *dest = n = NEW_LIT(path, loc);
+    NODE *n = dest;
+    if (!nd_type_p(dest, NODE_CALL)) {
+        const YYLTYPE *loc = &dest->nd_loc;
+        VALUE path = rb_node_const_decl_val(dest);
+        n = NEW_LIT(path, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
     }
     return n;
@@ -14096,7 +14096,7 @@ make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTY
 }
 
 static NODE *
-ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
+ensure_shareable_node(struct parser_params *p, NODE *dest, NODE *value, const YYLTYPE *loc)
 {
     NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
     NODE *args = NEW_LIST(value, loc);
@@ -14147,7 +14147,7 @@ shareable_literal_value(struct parser_params *p, NODE *node)
 
 static NODE *
 shareable_literal_constant(struct parser_params *p, enum shareability shareable,
-                           NODE **dest, NODE *value, const YYLTYPE *loc, size_t level)
+                           NODE *dest, NODE *value, const YYLTYPE *loc, size_t level)
 {
 # define shareable_literal_constant_next(n) \
     shareable_literal_constant(p, shareable, dest, (n), &(n)->nd_loc, level+1)
@@ -14297,7 +14297,7 @@ shareable_constant_value(struct parser_params *p, enum shareability shareable,
 
       case shareable_literal:
         {
-            NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
+            NODE *lit = shareable_literal_constant(p, shareable, lhs, value, loc, 0);
             if (lit) return lit;
             return value;
         }
@@ -14306,7 +14306,7 @@ shareable_constant_value(struct parser_params *p, enum shareability shareable,
       case shareable_copy:
       case shareable_everything:
         {
-            NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
+            NODE *lit = shareable_literal_constant(p, shareable, lhs, value, loc, 0);
             if (lit) return lit;
             return make_shareable_node(p, value, shareable == shareable_copy, loc);
         }
