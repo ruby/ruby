@@ -64,7 +64,7 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-RDOC          = $(XRUBY) "$(tooldir)/rdoc-srcdir"
+RDOC          = $(XRUBY) "$(tooldir)/rdoc-srcdir" $(srcdir)
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
@@ -670,6 +670,8 @@ do-install-dbg: $(PROGRAM) pre-install-dbg
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=dbg
 post-install-dbg::
 	@$(NULLCMD)
+
+srcs-doc: prepare-gems
 
 rdoc: PHONY main srcs-doc
 	@echo Generating RDoc documentation

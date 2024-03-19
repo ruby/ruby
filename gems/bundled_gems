@@ -33,3 +33,4 @@ drb             2.2.1   https://github.com/ruby/drb
 nkf             0.2.0   https://github.com/ruby/nkf
 syslog          0.1.2   https://github.com/ruby/syslog
 csv             3.2.8   https://github.com/ruby/csv
+rdoc            6.6.2   https://github.com/ruby/rdoc

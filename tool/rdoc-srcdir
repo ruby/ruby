@@ -1,5 +1,10 @@
 #!ruby
 
+# TODO: We should load rdoc from gemspec, but it is not easy to do because
+# rdoc depends psych. We cannot load psych from gemspec.
+rdoc_path = Dir.glob("#{ARGV[0]}/.bundle/gems/rdoc-*").first
+$LOAD_PATH.unshift("#{rdoc_path}/lib")
+
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.
