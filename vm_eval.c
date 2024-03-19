@@ -505,21 +505,21 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc)
     return gccct_method_search_slowpath(vm, klass, mid, argc, index);
 }
 
-/*!
- * \internal
+/**
+ * @internal
  * calls the specified method.
  *
  * This function is called by functions in rb_call* family.
- * \param ec     current execution context
- * \param recv   receiver of the method
- * \param mid    an ID that represents the name of the method
- * \param argc   the number of method arguments
- * \param argv   a pointer to an array of method arguments
- * \param scope
- * \param self   self in the caller. Qundef means no self is considered and
+ * @param ec     current execution context
+ * @param recv   receiver of the method
+ * @param mid    an ID that represents the name of the method
+ * @param argc   the number of method arguments
+ * @param argv   a pointer to an array of method arguments
+ * @param scope
+ * @param self   self in the caller. Qundef means no self is considered and
  *               protected methods cannot be called
  *
- * \note \a self is used in order to controlling access to protected methods.
+ * @note `self` is used in order to controlling access to protected methods.
  */
 static inline VALUE
 rb_call0(rb_execution_context_t *ec,
@@ -881,16 +881,16 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
 }
 
 
-/*!
- * \internal
+/**
+ * @internal
  * calls the specified method.
  *
  * This function is called by functions in rb_call* family.
- * \param recv   receiver
- * \param mid    an ID that represents the name of the method
- * \param argc   the number of method arguments
- * \param argv   a pointer to an array of method arguments
- * \param scope
+ * @param recv   receiver
+ * @param mid    an ID that represents the name of the method
+ * @param argc   the number of method arguments
+ * @param argv   a pointer to an array of method arguments
+ * @param scope
  */
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
@@ -1141,15 +1141,15 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     return rb_funcallv(recv, mid, n, argv);
 }
 
-/*!
+/**
  * Calls a method only if it is the basic method of `ancestor`
  * otherwise returns Qundef;
- * \param recv   receiver of the method
- * \param mid    an ID that represents the name of the method
- * \param ancestor the Class that defined the basic method
- * \param argc   the number of arguments
- * \param argv   pointer to an array of method arguments
- * \param kw_splat bool
+ * @param recv   receiver of the method
+ * @param mid    an ID that represents the name of the method
+ * @param ancestor the Class that defined the basic method
+ * @param argc   the number of arguments
+ * @param argv   pointer to an array of method arguments
+ * @param kw_splat bool
  */
 VALUE
 rb_check_funcall_basic_kw(VALUE recv, ID mid, VALUE ancestor, int argc, const VALUE *argv, int kw_splat)

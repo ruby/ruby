@@ -660,9 +660,9 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 /**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_copy
- * \param[in,out] obj the receiver being initialized
- * \param[in] orig    the object to be copied from.
+ * Default implementation of `#initialize_copy`
+ * @param[in,out] obj the receiver being initialized
+ * @param[in] orig    the object to be copied from.
  *++
  */
 VALUE
@@ -676,13 +676,13 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
-/*!
+/**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_dup
+ * Default implementation of `#initialize_dup`
  *
- * \param[in,out] obj the receiver being initialized
- * \param[in] orig    the object to be dup from.
+ * @param[in,out] obj the receiver being initialized
+ * @param[in] orig    the object to be dup from.
  *++
  **/
 VALUE
@@ -692,14 +692,14 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
     return obj;
 }
 
-/*!
+/**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_clone
+ * Default implementation of `#initialize_clone`
  *
- * \param[in] The number of arguments
- * \param[in] The array of arguments
- * \param[in] obj the receiver being initialized
+ * @param[in] The number of arguments
+ * @param[in] The array of arguments
+ * @param[in] obj the receiver being initialized
  *++
  **/
 static VALUE
@@ -2213,12 +2213,12 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
  *     BasicObject.superclass   #=> nil
  *
  *--
- * Returns the superclass of \a klass. Equivalent to \c Class\#superclass in Ruby.
+ * Returns the superclass of `klass`. Equivalent to `Class#superclass` in Ruby.
  *
  * It skips modules.
- * \param[in] klass a Class object
- * \return the superclass, or \c Qnil if \a klass does not have a parent class.
- * \sa rb_class_get_superclass
+ * @param[in] klass a Class object
+ * @return the superclass, or `Qnil` if `klass` does not have a parent class.
+ * @sa rb_class_get_superclass
  *++
  */
 
