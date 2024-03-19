@@ -45,7 +45,7 @@ The following default gems are updated.
 * irb 1.12.0
 * net-http 0.4.1
 * prism 0.24.0
-* reline 0.4.3
+* reline 0.5.0.pre.1
 * resolv 0.4.0
 * stringio 3.1.1
 * strscan 3.1.1
