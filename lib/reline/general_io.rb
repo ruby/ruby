@@ -57,7 +57,7 @@ class Reline::GeneralIO
   end
 
   def self.get_screen_size
-    [1, 1]
+    [24, 80]
   end
 
   def self.cursor_pos

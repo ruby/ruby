@@ -29,12 +29,19 @@ module Reline
       else
         encoding = Encoding::UTF_8
       end
+      @original_get_screen_size = IOGate.method(:get_screen_size)
+      IOGate.singleton_class.remove_method(:get_screen_size)
+      def IOGate.get_screen_size
+        [24, 80]
+      end
       Reline::GeneralIO.reset(encoding: encoding) unless ansi
       core.config.instance_variable_set(:@test_mode, true)
       core.config.reset
     end
 
     def test_reset
+      IOGate.singleton_class.remove_method(:get_screen_size)
+      IOGate.define_singleton_method(:get_screen_size, @original_get_screen_size)
       remove_const('IOGate')
       const_set('IOGate', @original_iogate)
       Reline::GeneralIO.reset
@@ -147,11 +154,22 @@ class Reline::TestCase < Test::Unit::TestCase
   end
 
   def assert_cursor(expected)
-    assert_equal(expected, @line_editor.instance_variable_get(:@cursor))
+    # This test satisfies nothing because there is no `@cursor` anymore
+    # Test editor_cursor_position instead
+    cursor_x = @line_editor.instance_eval do
+      line_before_cursor = whole_lines[@line_index].byteslice(0, @byte_pointer)
+      Reline::Unicode.calculate_width(line_before_cursor)
+    end
+    assert_equal(expected, cursor_x)
   end
 
   def assert_cursor_max(expected)
-    assert_equal(expected, @line_editor.instance_variable_get(:@cursor_max))
+    # This test satisfies nothing because there is no `@cursor_max` anymore
+    cursor_max = @line_editor.instance_eval do
+      line = whole_lines[@line_index]
+      Reline::Unicode.calculate_width(line)
+    end
+    assert_equal(expected, cursor_max)
   end
 
   def assert_line_index(expected)
