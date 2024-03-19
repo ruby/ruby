@@ -6818,7 +6818,7 @@ pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t * tok
 
 static inline void
 pm_parser_scope_forwarding_keywords_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH);
+    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR);
 }
 
 /**

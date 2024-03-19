@@ -135,6 +135,8 @@ module Prism
           Diagnostic.new(:error, :no_anonymous_blockarg, {}, diagnostic_location, [])
         when :argument_no_forwarding_star
           Diagnostic.new(:error, :no_anonymous_restarg, {}, diagnostic_location, [])
+        when :argument_no_forwarding_star_star
+          Diagnostic.new(:error, :no_anonymous_kwrestarg, {}, diagnostic_location, [])
         when :begin_lonely_else
           location = location.copy(length: 4)
           diagnostic_location = build_range(location, offset_cache)
