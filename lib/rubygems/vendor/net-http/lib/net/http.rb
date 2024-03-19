@@ -106,7 +106,7 @@ module Gem::Net   #:nodoc:
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
   # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem/URI/Generic.html] object
+  # A Ruby {Gem::URI::Generic}[rdoc-ref:Gem::URI::Generic] object
   # represents an internet URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
