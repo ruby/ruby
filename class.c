@@ -225,14 +225,14 @@ rb_class_detach_module_subclasses(VALUE klass)
 /**
  * Allocates a struct RClass for a new class.
  *
- * \param flags     initial value for basic.flags of the returned class.
- * \param klass     the class of the returned class.
- * \return          an uninitialized Class object.
- * \pre  \p klass must refer \c Class class or an ancestor of Class.
- * \pre  \code (flags | T_CLASS) != 0  \endcode
- * \post the returned class can safely be \c #initialize 'd.
+ * @param flags     initial value for basic.flags of the returned class.
+ * @param klass     the class of the returned class.
+ * @return          an uninitialized Class object.
+ * @pre  `klass` must refer `Class` class or an ancestor of Class.
+ * @pre  `(flags | T_CLASS) != 0`
+ * @post the returned class can safely be `#initialize` 'd.
  *
- * \note this function is not Class#allocate.
+ * @note this function is not Class#allocate.
  */
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
@@ -267,14 +267,14 @@ RCLASS_M_TBL_INIT(VALUE c)
     RCLASS_M_TBL(c) = rb_id_table_create(0);
 }
 
-/*!
+/**
  * A utility function that wraps class_alloc.
  *
  * allocates a class and initializes safely.
- * \param super     a class from which the new class derives.
- * \return          a class object.
- * \pre  \a super must be a class.
- * \post the metaclass of the new class is Class.
+ * @param super     a class from which the new class derives.
+ * @return          a class object.
+ * @pre  `super` must be a class.
+ * @post the metaclass of the new class is Class.
  */
 VALUE
 rb_class_boot(VALUE super)
@@ -732,7 +732,7 @@ rb_singleton_class_internal_p(VALUE sklass)
             !rb_singleton_class_has_metaclass_p(sklass));
 }
 
-/*!
+/**
  * whether k has a metaclass
  * @retval 1 if \a k has a metaclass
  * @retval 0 otherwise
@@ -741,25 +741,25 @@ rb_singleton_class_internal_p(VALUE sklass)
     (FL_TEST(METACLASS_OF(k), FL_SINGLETON) && \
      rb_singleton_class_has_metaclass_p(k))
 
-/*!
- * ensures \a klass belongs to its own eigenclass.
- * @return the eigenclass of \a klass
- * @post \a klass belongs to the returned eigenclass.
- *       i.e. the attached object of the eigenclass is \a klass.
+/**
+ * ensures `klass` belongs to its own eigenclass.
+ * @return the eigenclass of `klass`
+ * @post `klass` belongs to the returned eigenclass.
+ *       i.e. the attached object of the eigenclass is `klass`.
  * @note this macro creates a new eigenclass if necessary.
  */
 #define ENSURE_EIGENCLASS(klass) \
     (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
 
-/*!
- * Creates a metaclass of \a klass
- * \param klass     a class
- * \return          created metaclass for the class
- * \pre \a klass is a Class object
- * \pre \a klass has no singleton class.
- * \post the class of \a klass is the returned class.
- * \post the returned class is meta^(n+1)-class when \a klass is a meta^(n)-klass for n >= 0
+/**
+ * Creates a metaclass of `klass`
+ * @param klass     a class
+ * @return          created metaclass for the class
+ * @pre `klass` is a Class object
+ * @pre `klass` has no singleton class.
+ * @post the class of `klass` is the returned class.
+ * @post the returned class is meta^(n+1)-class when `klass` is a meta^(n)-klass for n >= 0
  */
 static inline VALUE
 make_metaclass(VALUE klass)
@@ -790,11 +790,11 @@ make_metaclass(VALUE klass)
     return metaclass;
 }
 
-/*!
- * Creates a singleton class for \a obj.
- * \pre \a obj must not a immediate nor a special const.
- * \pre \a obj must not a Class object.
- * \pre \a obj has no singleton class.
+/**
+ * Creates a singleton class for `obj`.
+ * @pre `obj` must not be an immediate nor a special const.
+ * @pre `obj` must not be a Class object.
+ * @pre `obj` has no singleton class.
  */
 static inline VALUE
 make_singleton_class(VALUE obj)
@@ -925,15 +925,15 @@ Init_class_hierarchy(void)
 }
 
 
-/*!
- * \internal
+/**
+ * @internal
  * Creates a new *singleton class* for an object.
  *
- * \pre \a obj has no singleton class.
- * \note DO NOT USE the function in an extension libraries. Use \ref rb_singleton_class.
- * \param obj     An object.
- * \param unused  ignored.
- * \return        The singleton class of the object.
+ * @pre `obj` has no singleton class.
+ * @note DO NOT USE the function in an extension libraries. Use @ref rb_singleton_class.
+ * @param obj     An object.
+ * @param unused  ignored.
+ * @return        The singleton class of the object.
  */
 VALUE
 rb_make_metaclass(VALUE obj, VALUE unused)
@@ -959,13 +959,13 @@ rb_define_class_id(ID id, VALUE super)
 }
 
 
-/*!
+/**
  * Calls Class#inherited.
- * \param super  A class which will be called #inherited.
+ * @param super  A class which will be called #inherited.
  *               NULL means Object class.
- * \param klass  A Class object which derived from \a super
- * \return the value \c Class#inherited's returns
- * \pre Each of \a super and \a klass must be a \c Class object.
+ * @param klass  A Class object which derived from `super`
+ * @return the value `Class#inherited` returns
+ * @pre Each of `super` and `klass` must be a `Class` object.
  */
 VALUE
 rb_class_inherited(VALUE super, VALUE klass)
@@ -2214,13 +2214,13 @@ rb_special_singleton_class(VALUE obj)
     return special_singleton_class_of(obj);
 }
 
-/*!
- * \internal
- * Returns the singleton class of \a obj. Creates it if necessary.
+/**
+ * @internal
+ * Returns the singleton class of `obj`. Creates it if necessary.
  *
- * \note DO NOT expose the returned singleton class to
+ * @note DO NOT expose the returned singleton class to
  *       outside of class.c.
- *       Use \ref rb_singleton_class instead for
+ *       Use @ref rb_singleton_class instead for
  *       consistency of the metaclass hierarchy.
  */
 static VALUE
@@ -2276,12 +2276,12 @@ rb_freeze_singleton_class(VALUE x)
     }
 }
 
-/*!
- * Returns the singleton class of \a obj, or nil if obj is not a
+/**
+ * Returns the singleton class of `obj`, or nil if obj is not a
  * singleton object.
  *
- * \param obj an arbitrary object.
- * \return the singleton class or nil.
+ * @param obj an arbitrary object.
+ * @return the singleton class or nil.
  */
 VALUE
 rb_singleton_class_get(VALUE obj)

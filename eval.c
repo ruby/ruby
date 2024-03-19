@@ -410,11 +410,11 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     return rb_const_list(data);
 }
 
-/*!
- * Asserts that \a klass is not a frozen class.
- * \param[in] klass a \c Module object
- * \exception RuntimeError if \a klass is not a class or frozen.
- * \ingroup class
+/**
+ * Asserts that `klass` is not a frozen class.
+ * @param[in] klass a `Module` object
+ * @exception RuntimeError if `klass` is not a class or frozen.
+ * @ingroup class
  */
 void
 rb_class_modify_check(VALUE klass)
@@ -666,12 +666,12 @@ rb_exc_exception(VALUE mesg, enum ruby_tag_type tag, VALUE cause)
     rb_longjmp(GET_EC(), tag, mesg, cause);
 }
 
-/*!
+/**
  * Raises an exception in the current thread.
- * \param[in] mesg an Exception class or an \c Exception object.
- * \exception always raises an instance of the given exception class or
- *   the given \c Exception object.
- * \ingroup exception
+ * @param[in] mesg an Exception class or an `Exception` object.
+ * @exception always raises an instance of the given exception class or
+ *   the given `Exception` object.
+ * @ingroup exception
  */
 void
 rb_exc_raise(VALUE mesg)
