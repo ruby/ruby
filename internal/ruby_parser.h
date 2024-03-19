@@ -12,6 +12,7 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef UNIVERSAL_PARSER
+const rb_parser_config_t *rb_ruby_parser_config(void);
 rb_parser_t *rb_parser_params_allocate(void);
 rb_parser_t *rb_parser_params_new(void);
 #endif
