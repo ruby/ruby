@@ -3629,6 +3629,9 @@ CODE
   end
 
   def test_chilled_string_setivar
+    deprecated = Warning[:deprecated]
+    Warning[:deprecated] = false
+
     String.class_eval <<~RUBY, __FILE__, __LINE__ + 1
       def setivar!
         @ivar = 42
@@ -3641,6 +3644,8 @@ CODE
     ensure
       String.undef_method(:setivar!)
     end
+  ensure
+    Warning[:deprecated] = deprecated
   end
 
   private
