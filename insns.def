@@ -887,6 +887,29 @@ opt_send_without_block
     }
 }
 
+/* Invoke constructor */
+DEFINE_INSN
+opt_new
+(CALL_DATA cd, CALL_DATA cd_initialize)
+(...)
+(VALUE val)
+// attr bool handles_sp = true;
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
+    int argc = vm_ci_argc(cd->ci);
+    VM_ASSERT((int)vm_ci_argc(cd_initialize->ci) == argc);
+
+
+    val = vm_opt_new_helper(ec, GET_CFP(), cd, cd_initialize);
+    JIT_EXEC(ec, val);
+
+    if (val == Qundef) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
 objtostring

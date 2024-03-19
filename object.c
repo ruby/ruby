@@ -1264,7 +1264,11 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *
  * Returns a new BasicObject.
  */
-#define rb_obj_initialize rb_obj_dummy0
+VALUE
+rb_obj_initialize(VALUE _self)
+{
+    return Qnil;
+}
 
 /*
  * Not documented
@@ -2105,7 +2109,7 @@ rb_class_alloc_m(VALUE klass)
     return class_call_alloc_func(allocator, klass);
 }
 
-static VALUE
+VALUE
 rb_class_alloc(VALUE klass)
 {
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
