@@ -809,6 +809,7 @@ typedef struct rb_objspace {
         unsigned int mode : 2;
         unsigned int immediate_sweep : 1;
         unsigned int dont_gc : 1;
+        unsigned int dont_major: 1;
         unsigned int dont_incremental : 1;
         unsigned int during_gc : 1;
         unsigned int during_compacting : 1;
@@ -1169,6 +1170,18 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define dont_gc_off()         (objspace->flags.dont_gc = 0)
 #define dont_gc_set(b)        (((int)b), objspace->flags.dont_gc = (b))
 #define dont_gc_val()         (objspace->flags.dont_gc)
+#endif
+
+#if 0
+#define dont_major_on()          (fprintf(stderr, "dont_major_on@%s:%d\n",      __FILE__, __LINE__), objspace->flags.dont_major = 1)
+#define dont_major_off()         (fprintf(stderr, "dont_major_off@%s:%d\n",     __FILE__, __LINE__), objspace->flags.dont_major = 0)
+#define dont_major_set(b)        (fprintf(stderr, "dont_major_set(%d)@%s:%d\n", __FILE__, __LINE__), (int)b), objspace->flags.dont_major = (b))
+#define dont_major_val()         (objspace->flags.dont_major)
+#else
+#define dont_major_on()          (objspace->flags.dont_major = 1)
+#define dont_major_off()         (objspace->flags.dont_major = 0)
+#define dont_major_set(b)        (((int)b), objspace->flags.dont_major = (b))
+#define dont_major_val()         (objspace->flags.dont_major)
 #endif
 
 static inline enum gc_mode
@@ -2037,6 +2050,20 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
+static size_t
+heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, size_t free_slots, size_t total_slots, size_t used);
+
+static void
+size_pool_allocatable_pages_expand(rb_objspace_t *objspace, rb_size_pool_t *size_pool,
+                                   size_t swept_slots, size_t total_slots, size_t total_pages)
+{
+    size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots, total_slots, total_pages);
+
+    if (extend_page_count > size_pool->allocatable_pages) {
+        size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
+    }
+}
+
 static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
@@ -2538,6 +2565,14 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
                         rb_memerror();
                     }
                     else {
+                        if (size_pool->allocatable_pages == 0 && dont_major_val()) {
+                            size_pool_allocatable_pages_expand(objspace, size_pool,
+                                    size_pool->freed_slots + size_pool->empty_slots,
+                                    heap->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots,
+                                    heap->total_pages + SIZE_POOL_TOMB_HEAP(size_pool)->total_pages);
+                            GC_ASSERT(size_pool->allocatable_pages > 0);
+                        }
+
                         /* Do steps of incremental marking or lazy sweeping. */
                         gc_continue(objspace, size_pool, heap);
 
@@ -5613,11 +5648,7 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         }
 
         if (grow_heap) {
-            size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots, total_slots, total_pages);
-
-            if (extend_page_count > size_pool->allocatable_pages) {
-                size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
-            }
+            size_pool_allocatable_pages_expand(objspace, size_pool, swept_slots, total_slots, total_pages);
         }
     }
 }
@@ -6648,6 +6679,16 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_aging(rb_objspace_t *objspace, VALUE obj)
 {
+    /* Disable aging if Major GC's are disabled. This will prevent longish lived
+     * objects filling up the heap at the expense of marking many more objects.
+     *
+     * We should always pre-warm our process when disabling majors, by running
+     * GC manually several times so that most objects likely to become oldgen
+     * are already oldgen.
+     */
+    if(dont_major_val())
+        return;
+
     struct heap_page *page = GET_HEAP_PAGE(obj);
 
     GC_ASSERT(RVALUE_MARKING(obj) == FALSE);
@@ -9013,6 +9054,10 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         do_full_mark = TRUE;
     }
 
+    /* if major gc has been disabled, never do a full mark */
+    if (dont_major_val()) {
+        do_full_mark = FALSE;
+    }
     gc_needs_major_flags = GPR_FLAG_NONE;
 
     if (do_full_mark && (reason & GPR_FLAG_MAJOR_MASK) == 0) {
@@ -9403,6 +9448,9 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
                            GPR_FLAG_IMMEDIATE_SWEEP |
                            GPR_FLAG_METHOD);
 
+    int old_disable_major = dont_major_val();
+    dont_major_off();
+
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (RTEST(compact)) {
         GC_ASSERT(GC_COMPACTION_SUPPORTED);
@@ -9418,6 +9466,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
 
+    dont_major_set(old_disable_major);
     return Qnil;
 }
 
@@ -10484,8 +10533,13 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_compact(VALUE self)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+    int old_major_disabled = dont_major_val();
+    dont_major_off();
+
     /* Run GC with compaction enabled */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
+    dont_major_set(old_major_disabled);
 
     return gc_compact_stats(self);
 }
@@ -11197,7 +11251,7 @@ VALUE
 rb_objspace_gc_enable(rb_objspace_t *objspace)
 {
     int old = dont_gc_val();
-
+    dont_major_off();
     dont_gc_off();
     return RBOOL(old);
 }
@@ -11231,6 +11285,21 @@ rb_gc_disable(void)
 }
 
 VALUE
+rb_objspace_gc_disable_major(rb_objspace_t *objspace)
+{
+    int old = dont_major_val();
+    dont_major_on();
+    return RBOOL(old);
+}
+
+VALUE
+rb_gc_disable_major(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return rb_objspace_gc_disable_major(objspace);
+}
+
+VALUE
 rb_objspace_gc_disable(rb_objspace_t *objspace)
 {
     gc_rest(objspace);
@@ -11241,6 +11310,12 @@ static VALUE
 gc_disable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_disable();
+}
+
+static VALUE
+gc_disable_major(rb_execution_context_t *ec, VALUE _)
+{
+    return rb_gc_disable_major();
 }
 
 #if GC_CAN_COMPILE_COMPACTION

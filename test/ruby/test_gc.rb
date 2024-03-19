@@ -52,6 +52,41 @@ class TestGc < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_disable_major
+    GC.enable
+    GC.start
+
+    GC.disable_major
+    major_count = GC.stat[:major_gc_count]
+    minor_count = GC.stat[:minor_gc_count]
+
+    arr = []
+    (GC.stat_heap[0][:heap_eden_slots] * 2).times do
+      arr << Object.new
+      Object.new
+    end
+
+    assert_equal(major_count, GC.stat[:major_gc_count])
+    assert_operator(minor_count, :<=, GC.stat[:minor_gc_count])
+    assert_nil(GC.start)
+  ensure
+    GC.enable
+    GC.start
+  end
+
+  def test_disable_major_gc_start_always_works
+    GC.enable
+    GC.disable_major
+
+    major_count = GC.stat[:major_gc_count]
+    GC.start
+
+    assert_operator(major_count, :<, GC.stat[:major_gc_count])
+  ensure
+    GC.enable_major
+    GC.start
+  end
+
   def test_start_full_mark
     return unless use_rgengc?
     omit 'stress' if GC.stress

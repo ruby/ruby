@@ -71,6 +71,17 @@ module GC
   end
 
   #  call-seq:
+  #     GC.disable_major    -> true or false
+  #
+  #  Disables major garbage collection, returning +true+ if major garbage
+  #  collection was already disabled.
+  #
+  #     GC.disable_major   #=> false
+  #     GC.disable_major   #=> true
+  def self.disable_major
+    Primitive.gc_disable_major
+  end
+  #  call-seq:
   #    GC.stress	    -> integer, true or false
   #
   #  Returns current status of \GC stress mode.
