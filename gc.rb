@@ -81,6 +81,23 @@ module GC
   def self.disable_major
     Primitive.gc_disable_major
   end
+
+  #  call-seq:
+  #     GC.needs_major?    -> true or false, nil
+  #
+  #  Used in conjunction with `GC.disable_major`. If Major GC's are disabled,
+  #  then `GC.needs_major?` will report whether manually running a major GC is
+  #  recommended.
+  #
+  #  If Majors are disabled, then the first time the heap runs out of space
+  #  during a minor, new pages will be allocated and this method will start
+  #  returning true.
+  #
+  #  If Major GC's are not disabled then this function will always return `nil`
+  def self.needs_major?
+    Primitive.gc_needs_major_p
+  end
+
   #  call-seq:
   #    GC.stress	    -> integer, true or false
   #
