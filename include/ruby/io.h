@@ -137,7 +137,124 @@ struct rb_io_encoding {
     VALUE ecopts;
 };
 
-struct rb_io;
+#ifndef HAVE_RB_IO_T
+#define HAVE_RB_IO_T 1
+/** Ruby's IO, metadata and buffers. */
+struct rb_io {
+    /** The IO's Ruby level counterpart. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE self;
+
+    /** stdio ptr for read/write, if available. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    FILE *stdio_file;
+
+    /** file descriptor. */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_descriptor"))
+    int fd;
+
+    /** mode flags: FMODE_XXXs */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_mode"))
+    int mode;
+
+    /** child's pid (for pipes) */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_pid_t pid;
+
+    /** number of lines read */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int lineno;
+
+    /** pathname for file */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_path"))
+    VALUE pathv;
+
+    /** finalize proc */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    void (*finalize)(struct rb_io*,int);
+
+    /** Write buffer. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t wbuf;
+
+    /**
+     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
+     * ::rb_io_t::cbuf, which also concerns read IO.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t rbuf;
+
+    /**
+     * Duplex IO object, if set.
+     *
+     * @see rb_io_set_write_io()
+     */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_get_write_io"))
+    VALUE tied_io_for_writing;
+
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
+
+    /** Encoding converter used when reading from this IO. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_econv_t *readconv;
+
+    /**
+     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
+     * ::rb_io_t::rbuf
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t cbuf;
+
+    /** Encoding converter used when writing to this IO. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_econv_t *writeconv;
+
+    /**
+     * This is, when set, an instance  of ::rb_cString which holds the "common"
+     * encoding.   Write  conversion  can  convert strings  twice...   In  case
+     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
+     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE writeconv_asciicompat;
+
+    /** Whether ::rb_io_t::writeconv is already set up. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int writeconv_initialized;
+
+    /**
+     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
+     * initialising ::rb_io_t::writeconv.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int writeconv_pre_ecflags;
+
+    /**
+     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
+     * ::rb_io_t::writeconv.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE writeconv_pre_ecopts;
+
+    /**
+     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
+     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
+     * next to its arguments.
+     *
+     * This of course doesn't help inter-process IO interleaves, though.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE write_lock;
+
+    /**
+     * The timeout associated with this IO when performing blocking operations.
+     */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_timeout/rb_io_set_timeout"))
+    VALUE timeout;
+};
+#endif
+
 typedef struct rb_io rb_io_t;
 
 /** @alias{rb_io_enc_t} */
