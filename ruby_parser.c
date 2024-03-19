@@ -685,6 +685,12 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
 };
 
+const rb_parser_config_t *
+rb_ruby_parser_config(void)
+{
+    return &rb_global_parser_config;
+}
+
 rb_parser_t *
 rb_parser_params_allocate(void)
 {
