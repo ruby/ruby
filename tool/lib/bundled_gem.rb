@@ -11,7 +11,8 @@ module BundledGem
     "time", # net-ftp
     "singleton", # prime
     "ipaddr", # rinda
-    "forwardable" # prime, rinda
+    "forwardable", # prime, rinda
+    "psych" # rdoc
   ]
 
   module_function
