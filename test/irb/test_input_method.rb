@@ -1,7 +1,10 @@
 # frozen_string_literal: false
 
 require "irb"
-require "rdoc"
+begin
+  require "rdoc"
+rescue LoadError
+end
 require_relative "helper"
 
 module TestIRB
@@ -169,4 +172,4 @@ module TestIRB
       File.exist?(RDoc::RI::Paths::BASE)
     end
   end
-end
+end if defined?(RDoc)

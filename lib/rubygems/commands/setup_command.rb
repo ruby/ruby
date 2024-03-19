@@ -340,6 +340,8 @@ By default, this RubyGems will install gem as:
 
       require_relative "../rdoc"
 
+      return false unless defined?(Gem::RDoc)
+
       fake_spec = Gem::Specification.new "rubygems", Gem::VERSION
       def fake_spec.full_gem_path
         File.expand_path "../../..", __dir__

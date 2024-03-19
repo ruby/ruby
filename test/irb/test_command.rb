@@ -756,6 +756,11 @@ module TestIRB
     end
   end
 
+  begin
+    require "rdoc"
+  rescue LoadError
+  end
+
   class ShowDocTest < CommandTestCase
     def test_show_doc
       out, err = execute_lines(
@@ -788,7 +793,7 @@ module TestIRB
       # this is the only way to reset the redefined method without coupling the test with its implementation
       EnvUtil.suppress_warning { load "irb/command/help.rb" }
     end
-  end
+  end if defined?(RDoc)
 
   class EditTest < CommandTestCase
     def setup
