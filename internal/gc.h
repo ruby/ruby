@@ -199,10 +199,6 @@ VALUE rb_objspace_gc_enable(struct rb_objspace *);
 VALUE rb_objspace_gc_disable(struct rb_objspace *);
 void ruby_gc_set_params(void);
 void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
-#if __has_attribute(alloc_align)
-__attribute__((__alloc_align__(1)))
-#endif
-RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2));
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 size_t rb_malloc_grow_capa(size_t current_capacity, size_t type_size);
