@@ -113,6 +113,8 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/prism.$(OBJEXT) \
 		prism_init.$(OBJEXT)
 
+GC_OBJS       = rubygc.$(OBJEXT)
+
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
@@ -394,7 +396,7 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
-ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
+ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) $(LIBRUBYGC) \
 		$(srcdir)/template/configure-ext.mk.tmpl
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
@@ -423,7 +425,7 @@ programs: $(PROGRAM) $(WPROGRAM) $(arch)-fake.rb
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(GC_OBJS) $(ARCHFILE)
 
 objs: $(ALLOBJS)
 
@@ -454,11 +456,15 @@ program: $(SHOWFLAGS) $(DOT_WAIT) $(PROGRAM)
 wprogram: $(SHOWFLAGS) $(DOT_WAIT) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
-$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(LIBRUBYGC) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
 $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
+$(LIBRUBYGC_A): $(GC_OBJS)
+
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(BUILTIN_ENCOBJS)
+
+$(LIBRUBYGC_SO): $(LIBRUBYGC_A) $(PREP)
 
 $(LIBRUBY_EXTS):
 	@$(NULLCMD) > $@
@@ -719,6 +725,7 @@ clear-installed-list: PHONY
 clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	$(Q)$(RM) $(GC_OBJS) $(LIBRUBYGC_A) $(LIBRUBYGC_SO) $(LIBRUBYGC) $(LIBRUBYGC_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
@@ -6976,6 +6983,7 @@ eval.$(OBJEXT): {$(VPATH)}ractor_core.h
 eval.$(OBJEXT): {$(VPATH)}rjit.h
 eval.$(OBJEXT): {$(VPATH)}ruby_assert.h
 eval.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+eval.$(OBJEXT): {$(VPATH)}rubygc.h
 eval.$(OBJEXT): {$(VPATH)}rubyparser.h
 eval.$(OBJEXT): {$(VPATH)}shape.h
 eval.$(OBJEXT): {$(VPATH)}st.h
@@ -16408,6 +16416,18 @@ ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_parser.c
 ruby_parser.$(OBJEXT): {$(VPATH)}rubyparser.h
 ruby_parser.$(OBJEXT): {$(VPATH)}st.h
+rubygc.$(OBJEXT): {$(VPATH)}config.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+rubygc.$(OBJEXT): {$(VPATH)}internal/config.h
+rubygc.$(OBJEXT): {$(VPATH)}rubygc.c
+rubygc.$(OBJEXT): {$(VPATH)}rubygc.h
 ruby_parser.$(OBJEXT): {$(VPATH)}subst.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h

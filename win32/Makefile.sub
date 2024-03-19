@@ -193,6 +193,12 @@ RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0
 RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
 !endif
 !endif
+!ifndef RUBYGC_SO_NAME
+RUBYGC_SO_NAME = $(RT)-$(RUBY_BASE_NAME)gc$(MAJOR)$(MINOR)0
+!if "$(ARCH)" != "i386"
+RUBYGC_SO_NAME = $(ARCH)-$(RUBYGC_SO_NAME)
+!endif
+!endif
 !ifndef RUBY_PLATFORM
 RUBY_PLATFORM = $(arch)
 !endif
@@ -379,6 +385,7 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 !endif
 RUBYDEF = $(RUBY_SO_NAME).def
+RUBYGCDEF = $(RUBYGC_SO_NAME).def
 !if "$(CROSS_COMPILING)" == "yes"
 MINIRUBY = $(RUBY) -I$(MAKEDIR) -r$(arch)-fake
 RUNRUBY = $(MINIRUBY)
@@ -427,6 +434,13 @@ LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 LIBRUBYARG_SHARED = $(LIBRUBY)
 LIBRUBY_RELATIVE = yes
+
+LIBRUBYGC_A     = $(RUBYGC_SO_NAME)-static.lib
+LIBRUBYGC_SO    = $(RUBYGC_SO_NAME).dll
+LIBRUBYGC_SONAME= $(RUBYGC_SO_NAME).dll
+LIBRUBYGC       = $(RUBYGC_SO_NAME).lib
+LIBRUBYGCARG    = $(LIBRUBYGC)
+LIBRUBYGCARG_SHARED = $(LIBRUBYGC)
 
 THREAD_MODEL  = win32
 THREAD_IMPL_H   = thread_$(THREAD_MODEL).h
@@ -1062,6 +1076,14 @@ s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,;t t
 s,@LIBRUBYARG@,$$(LIBRUBYARG_SHARED),;t t
 s,@LIBRUBYARG_STATIC@,$$(LIBRUBY_A) $$(MAINLIBS),;t t
 s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
+s,@RUBYGC_SO_NAME@,$(RUBYGC_SO_NAME),;t t
+s,@LIBRUBYGC_A@,$$(RUBYGC_SO_NAME)-static.lib,;t t
+s,@LIBRUBYGC_SO@,$$(RUBYGC_SO_NAME).dll,;t t
+s,@LIBRUBYGC_ALIASES@,$(LIBRUBYGC_ALIASES),;t t
+s,@LIBRUBYGC@,$$(RUBYGC_SO_NAME).lib,;t t
+s,@LIBRUBYGCARG@,$$(LIBRUBYGCARG_SHARED),;t t
+s,@LIBRUBYGCARG_STATIC@,$$(LIBRUBYGC_A) $$(MAINLIBS),;t t
+s,@LIBRUBYGCARG_SHARED@,$$(LIBRUBYGC),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
@@ -1142,7 +1164,7 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(GC_OBJS) $(COMMONOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
 		$(Q) $(LDSHARED_1)
@@ -1155,7 +1177,7 @@ miniruby.rc:
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
-			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+			$(OUTFLAG)$@ $(LIBRUBYARG) $(LIBRUBYGCARG) -link $(LDFLAGS) $(XLDFLAGS)
 ! if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -1167,7 +1189,7 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
-			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
+			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) $(LIBRUBYGCARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 ! if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
@@ -1194,25 +1216,36 @@ PRE_LIBRUBY_UPDATE = $(RM) $(LIBRUBY_EXTS)
 PRE_LIBRUBY_UPDATE =
 !endif
 
-$(LIBRUBY_A):	$(OBJS) $(INITOBJS)
+$(LIBRUBY_A):	$(OBJS) $(LIBRUBY_A_OBJS) $(INITOBJS)
 !if "$(EXTSTATIC)" != ""
 		@-$(PRE_LIBRUBY_UPDATE)
 !endif
 		$(ECHO) linking static-library $(@:\=/)
-		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
+		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(LIBRUBY_A_OBJS) $(INITOBJS)
+
+$(LIBRUBYGC_A): $(GC_OBJS)
+!if "$(EXTSTATIC)" != ""
+		@-$(PRE_LIBRUBY_UPDATE)
+!endif
+		$(ECHO) linking static-library $(@:\=/)
+		$(Q) $(AR) $(ARFLAGS)$@ $(GC_OBJS)
 
 $(LIBRUBY):	$(RUBYDEF)
 		$(ECHO) linking import-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+$(LIBRUBYGC):	$(RUBYGCDEF)
+		$(ECHO) linking import-library $(@:\=/)
+		$(Q) $(AR) $(ARFLAGS)$@ -def:$(RUBYGCDEF)
+
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(LIBRUBYGC_A) $(LIBRUBYGC_LIB) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
 !if "$(EXTSTATIC)" == ""
 		@-$(PRE_LIBRUBY_UPDATE)
 !endif
 		$(ECHO) linking shared-library $(@:\=/)
-		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
-			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
+		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) $(LIBRUBYGC_A)\
+			$(RUBY_SO_NAME).res $(SOLIBS) $(LIBRUBY_LINK) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 !if defined(LDSHARED_0)
@@ -1226,6 +1259,11 @@ $(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
+
+$(RUBYGCDEF):	$(LIBRUBYGC_A) $(RBCONFIG)
+		$(ECHO) generating $(@:\=/)
+		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
+		  -output=$@ -arch=$(ARCH) $(LIBRUBYGC_A)
 
 {$(win_srcdir)}.def.lib:
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<

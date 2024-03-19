@@ -37,7 +37,28 @@ jobs:
             configure: '--disable-yjit'
             os: ubuntu-22.04
           - test_task: check
+            configure: '--enable-shared'
+            os: ubuntu-22.04
+          - test_task: check
             configure: '--enable-shared --enable-load-relative'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared-gc'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared-gc --enable-load-relative-gc'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared --enable-shared-gc'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared --enable-shared-gc --enable-load-relative'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared --enable-shared-gc --enable-load-relative-gc'
+            os: ubuntu-22.04
+          - test_task: check
+            configure: '--enable-shared --enable-shared-gc --enable-load-relative --enable-load-relative-gc'
             os: ubuntu-22.04
           - test_task: test-bundler-parallel
             os: ubuntu-22.04

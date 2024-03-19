@@ -523,6 +523,8 @@ MSG
 
   def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
+    librubygcarg = $extmk ? $LIBRUBYGCARG_STATIC : "$(LIBRUBYGCARG)"
+
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{conftest_source}",
                                   'arch_hdrdir' => $arch_hdrdir.quote,
@@ -533,7 +535,7 @@ MSG
                                   'ARCH_FLAG' => "#$ARCH_FLAG",
                                   'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                                  'LIBS' => "#{librubyarg} #{opt} #$LIBS")
+                                  'LIBS' => "#{librubyarg} #{librubygcarg} #{opt} #$LIBS")
     conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
     conf
   end
@@ -2124,6 +2126,8 @@ LIBRUBY = #{CONFIG['LIBRUBY']}
 LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
+LIBRUBYGCARG_SHARED = #{$LIBRUBYGCARG_SHARED}
+LIBRUBYGCARG_STATIC = #{$LIBRUBYGCARG_STATIC}
 empty =
 OUTFLAG = #{OUTFLAG}$(empty)
 COUTFLAG = #{COUTFLAG}$(empty)
@@ -2446,7 +2450,7 @@ extout = #{$extout && $extout.quote}
 extout_prefix = #{$extout_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
-LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
+LIBS = #{$LIBRUBYARG} #{$LIBRUBYGCARG} #{$libs} #{$LIBS}
 ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
 SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs.join(" ")}
@@ -2669,6 +2673,7 @@ site-install-rb: install-rb
     $makefile_created = false
     $arg_config = []
     $enable_shared = config['ENABLE_SHARED'] == 'yes'
+    $enable_shared_gc = config['ENABLE_SHARED_GC'] == 'yes'
     $defs = []
     $extconf_h = nil
     $config_dirs = {}
@@ -2704,8 +2709,11 @@ site-install-rb: install-rb
     $ASMEXT = config_string('ASMEXT', &:dup) || 'S'
     $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
     $LIBRUBYARG = ""
+    $LIBRUBYGCARG = ""
     $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
     $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
+    $LIBRUBYGCARG_STATIC = config['LIBRUBYGCARG_STATIC']
+    $LIBRUBYGCARG_SHARED = config['LIBRUBYGCARG_SHARED']
     $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(#{config["libdirname"] || "libdir"})"]
     $DEFLIBPATH.unshift(".")
     $LIBPATH = []
@@ -2719,6 +2727,12 @@ site-install-rb: install-rb
     $libs = ""
     if $enable_shared or RbConfig.expand(config["LIBRUBY"].dup) != RbConfig.expand(config["LIBRUBY_A"].dup)
       $LIBRUBYARG = config['LIBRUBYARG']
+    end
+
+    librubygc = config["LIBRUBYGC"] || ""
+    librubygc_a = config["LIBRUBYGC_A"] || ""
+    if $enable_shared_gc or RbConfig.expand(librubygc.dup) != RbConfig.expand(librubygc_a.dup)
+      $LIBRUBYGCARG = config['LIBRUBYGCARG']
     end
 
     $LOCAL_LIBS = ""
@@ -2804,6 +2818,7 @@ MESSAGE
   $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
   RbConfig.expand(CONFIG["RUBY_SO_NAME"])
+  RbConfig.expand(CONFIG["RUBYGC_SO_NAME"] || "")
 
   # :startdoc:
 

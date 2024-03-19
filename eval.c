@@ -12,6 +12,9 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#ifdef RUBY_SHARED_GC
+#include "rubygc.h"
+#endif
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -96,6 +99,9 @@ ruby_setup(void)
 void
 ruby_init(void)
 {
+#ifdef RUBY_SHARED_GC
+    GC_Init();
+#endif
     int state = ruby_setup();
     if (state) {
         if (RTEST(ruby_debug)) {

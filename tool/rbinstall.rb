@@ -388,11 +388,17 @@ if CONFIG["vendordir"]
 end
 mandir = CONFIG["mandir", true]
 docdir = CONFIG["docdir", true]
+
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
+load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
 dll = CONFIG["LIBRUBY_SO", enable_shared]
 lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
-load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
+
+enable_shared_gc = CONFIG["ENABLE_SHARED_GC"] == 'yes'
+dll_gc = CONFIG["LIBRUBYGC_SO", enable_shared_gc]
+lib_gc = CONFIG["LIBRUBYGC", true]
+arc_gc = CONFIG["LIBRUBYGC_A", true]
 
 rdoc_noinst = %w[created.rid]
 
@@ -805,6 +811,9 @@ install?(:local, :arch, :bin, :'bin-arch') do
   if enable_shared and dll != lib
     install bins.add(dll), dest, :mode => $prog_mode, :strip => $strip
   end
+  if enable_shared_gc and dll_gc != lib_gc
+    install bins.add(dll_gc), dest, :mode => $prog_mode, :strip => $strip
+  end
   if archbindir
     prepare "binary command links", bindir
     relpath = Path.relative(archbindir, bindir)
@@ -822,6 +831,14 @@ install?(:local, :arch, :lib, :'lib-arch') do
   if dll == lib and dll != arc
     for link in CONFIG["LIBRUBY_ALIASES"].split - [File.basename(dll)]
       ln_sf(dll, File.join(libdir, link))
+    end
+  end
+
+  install lib_gc, libdir, :mode => $prog_mode, :strip => $strip unless lib_gc == arc_gc
+  install arc_gc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
+  if dll_gc == lib_gc and dll_gc != arc_gc
+    for link in CONFIG["LIBRUBYGC_ALIASES"].split - [File.basename(dll_gc)]
+      ln_sf(dll_gc, File.join(libdir, link))
     end
   end
 
