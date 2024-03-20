@@ -552,6 +552,23 @@ module RbInstall
         requirable_features.sort
       end
 
+      private
+
+      def features_from_makefile(makefile_path)
+        makefile = File.read(makefile_path)
+
+        name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        return [] if name.empty?
+
+        feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        feature = feature.sub("$(TARGET)", name)
+
+        target_prefix = makefile[/^target_prefix[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        feature = File.join(target_prefix.delete_prefix("/"), feature) unless target_prefix.empty?
+
+        Array(feature)
+      end
+
       class Ext < self
         def requirable_features
           # install ext only when it's configured
@@ -567,18 +584,7 @@ module RbInstall
         end
 
         def ext_features
-          makefile = File.read(makefile_path)
-
-          name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
-          return [] if name.empty?
-
-          feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
-          feature = feature.sub("$(TARGET)", name)
-
-          target_prefix = makefile[/^target_prefix[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
-          feature = File.join(target_prefix.delete_prefix("/"), feature) unless target_prefix.empty?
-
-          Array(feature)
+          features_from_makefile(makefile_path)
         end
 
         def makefile_path
@@ -596,6 +602,12 @@ module RbInstall
 
       class Lib < self
         def requirable_features
+          ruby_features + ext_features
+        end
+
+        private
+
+        def ruby_features
           gemname = File.basename(gemspec, ".gemspec")
           base = relative_base || gemname
           # for lib/net/net-smtp.gemspec
@@ -616,6 +628,19 @@ module RbInstall
           end
 
           files
+        end
+
+        def ext_features
+          loaded_gemspec = Gem::Specification.load("#{root}/#{gemspec}")
+          extension = loaded_gemspec.extensions.first
+          return [] unless extension
+
+          extconf = File.expand_path(extension, srcdir)
+          ext_build_dir = File.dirname(extconf)
+          makefile_path = "#{ext_build_dir}/Makefile"
+          return [] unless File.exist?(makefile_path)
+
+          features_from_makefile(makefile_path)
         end
 
         def root
