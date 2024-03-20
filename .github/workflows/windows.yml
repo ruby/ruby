@@ -97,7 +97,7 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
@@ -105,7 +105,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
 
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
