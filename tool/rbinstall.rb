@@ -751,11 +751,17 @@ module RbInstall
       class Ext < self
         def skip_install?(files)
           # install ext only when it's configured
-          !File.exist?("#{$ext_build_dir}/#{relative_base}/Makefile")
+          !File.exist?("#{makefile_dir}/Makefile")
         end
 
         def ruby_libraries
-          Dir.glob("lib/**/*.rb", base: "#{srcdir}/ext/#{relative_base}")
+          Dir.glob("lib/**/*.rb", base: makefile_dir)
+        end
+
+        private
+
+        def makefile_dir
+          File.expand_path("#{$ext_build_dir}/#{relative_base}", srcdir)
         end
       end
 
