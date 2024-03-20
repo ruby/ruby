@@ -782,7 +782,11 @@ module RbInstall
         end
 
         def makefile_dir
-          File.expand_path("#{$ext_build_dir}/#{relative_base}", srcdir)
+          "#{root}/#{relative_base}"
+        end
+
+        def root
+          File.expand_path($ext_build_dir, srcdir)
         end
       end
 
@@ -794,7 +798,7 @@ module RbInstall
           if m = /.*(?=-(.*)\z)/.match(gemname)
             base = File.join(base, *m.to_a.select {|n| !base.include?(n)})
           end
-          files = Dir.glob("#{base}{.rb,/**/*.rb}", base: "#{srcdir}/lib")
+          files = Dir.glob("#{base}{.rb,/**/*.rb}", base: root)
           if !relative_base and files.empty? # no files at the toplevel
             # pseudo gem like ruby2_keywords
             files << "#{gemname}.rb"
@@ -808,6 +812,10 @@ module RbInstall
           end
 
           files
+        end
+
+        def root
+          "#{srcdir}/lib"
         end
       end
     end
