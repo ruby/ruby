@@ -558,6 +558,18 @@ class TestSuper < Test::Unit::TestCase
     end
   end
 
+  def test_zsuper_kw_splat_not_mutable
+    extend(Module.new{def a(**k) k[:a] = 1 end})
+    extend(Module.new do
+      def a(**k)
+        before = k.dup
+        super
+        [before, k]
+      end
+    end)
+    assert_equal(*a)
+  end
+
   def test_from_eval
     bug10263 = '[ruby-core:65122] [Bug #10263a]'
     a = Class.new do
