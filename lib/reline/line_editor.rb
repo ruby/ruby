@@ -153,7 +153,7 @@ class Reline::LineEditor
     scroll_into_view
     Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
-    @rendered_screen.lines = nil
+    @rendered_screen.lines = []
     @rendered_screen.cursor_y = 0
     render_differential
   end
@@ -164,7 +164,7 @@ class Reline::LineEditor
       scrolldown = render_differential
       Reline::IOGate.scroll_down scrolldown
       Reline::IOGate.move_cursor_column 0
-      @rendered_screen.lines = nil
+      @rendered_screen.lines = []
       @rendered_screen.cursor_y = 0
       case @old_trap
       when 'DEFAULT', 'SYSTEM_DEFAULT'
@@ -217,7 +217,7 @@ class Reline::LineEditor
     @dialogs = []
     @resized = false
     @cache = {}
-    @rendered_screen = RenderedScreen.new(base_y: 0, lines: nil, cursor_y: 0)
+    @rendered_screen = RenderedScreen.new(base_y: 0, lines: [], cursor_y: 0)
     reset_line
   end
 
@@ -421,7 +421,7 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
     Reline::IOGate.move_cursor_column 0
 
-    num_lines = @rendered_screen.lines&.size
+    num_lines = @rendered_screen.lines.size
     return unless num_lines && num_lines >= 1
 
     Reline::IOGate.move_cursor_down num_lines - 1
@@ -430,7 +430,7 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_up 1
     end
     Reline::IOGate.erase_after_cursor
-    @rendered_screen.lines = nil
+    @rendered_screen.lines = []
     @rendered_screen.cursor_y = 0
   end
 
@@ -455,7 +455,7 @@ class Reline::LineEditor
   def render_differential
     wrapped_cursor_x, wrapped_cursor_y = wrapped_cursor_position
 
-    rendered_lines = @rendered_screen.lines || []
+    rendered_lines = @rendered_screen.lines
     new_lines = wrapped_lines.flatten[screen_scroll_top, screen_height].map do |l|
       [[0, Reline::Unicode.calculate_width(l, true), l]]
     end
@@ -528,7 +528,7 @@ class Reline::LineEditor
     @cleared = false
     Reline::IOGate.clear_screen
     @screen_size = Reline::IOGate.get_screen_size
-    @rendered_screen.lines = nil
+    @rendered_screen.lines = []
     @rendered_screen.base_y = 0
     @rendered_screen.cursor_y = 0
   end
