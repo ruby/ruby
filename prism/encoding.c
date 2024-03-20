@@ -2358,6 +2358,8 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
+
 static pm_unicode_codepoint_t
 pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     if (b[0] < 0x80) {
@@ -2452,6 +2454,8 @@ pm_encoding_cesu_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+#endif
+
 #undef UNICODE_ALPHA_CODEPOINTS_LENGTH
 #undef UNICODE_ALNUM_CODEPOINTS_LENGTH
 #undef UNICODE_ISUPPER_CODEPOINTS_LENGTH
@@ -2479,6 +2483,8 @@ static const uint8_t pm_encoding_ascii_table[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ex
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Fx
 };
+
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
 
 /**
  * Each element of the following table contains a bitfield that indicates a
@@ -3918,6 +3924,7 @@ PRISM_ENCODING_TABLE(windows_1258)
 PRISM_ENCODING_TABLE(windows_874)
 
 #undef PRISM_ENCODING_TABLE
+#endif
 
 /**
  * Returns the size of the next character in the ASCII encoding. This basically
@@ -3976,6 +3983,122 @@ pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_
 }
 
 /**
+ * For a lot of encodings the default is that they are a single byte long no
+ * matter what the codepoint, so this function is shared between them.
+ */
+static size_t
+pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return 1;
+}
+
+/**
+ * Returns the size of the next character in the EUC-JP encoding, or 0 if a
+ * character cannot be decoded from the given bytes.
+ */
+static size_t
+pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
+    // These are the single byte characters.
+    if (*b < 0x80) {
+        return 1;
+    }
+
+    // These are the double byte characters.
+    if ((n > 1) && ((b[0] == 0x8E) || (b[0] >= 0xA1 && b[0] <= 0xFE)) && (b[1] >= 0xA1 && b[1] <= 0xFE)) {
+        return 2;
+    }
+
+    // These are the triple byte characters.
+    if ((n > 2) && (b[0] == 0x8F) && (b[1] >= 0xA1 && b[2] <= 0xFE) && (b[2] >= 0xA1 && b[2] <= 0xFE)) {
+        return 3;
+    }
+
+    return 0;
+}
+
+/**
+ * Returns the size of the next character in the EUC-JP encoding if it is an
+ * uppercase character.
+ */
+static bool
+pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_euc_jp_char_width(b, n);
+
+    if (width == 1) {
+        return pm_encoding_ascii_isupper_char(b, n);
+    } else if (width == 2) {
+        return (
+            (b[0] == 0xA3 && b[1] >= 0xC1 && b[1] <= 0xDA) ||
+            (b[0] == 0xA6 && b[1] >= 0xA1 && b[1] <= 0xB8) ||
+            (b[0] == 0xA7 && b[1] >= 0xA1 && b[1] <= 0xC1)
+        );
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding, or 0 if a
+ * character cannot be decoded from the given bytes.
+ */
+static size_t
+pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
+    // These are the single byte characters.
+    if (b[0] < 0x80 || (b[0] >= 0xA1 && b[0] <= 0xDF)) {
+        return 1;
+    }
+
+    // These are the double byte characters.
+    if ((n > 1) && ((b[0] >= 0x81 && b[0] <= 0x9F) || (b[0] >= 0xE0 && b[0] <= 0xFC)) && (b[1] >= 0x40 && b[1] <= 0xFC && b[1] != 0x7F)) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * alphanumeric character.
+ */
+static size_t
+pm_encoding_shift_jis_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alnum_char(b, n)) : width;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * alphabetical character.
+ */
+static size_t
+pm_encoding_shift_jis_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alpha_char(b, n)) : width;
+}
+
+/**
+ * Returns the size of the next character in the Shift_JIS encoding if it is an
+ * uppercase character.
+ */
+static bool
+pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    size_t width = pm_encoding_shift_jis_char_width(b, n);
+
+    if (width == 1) {
+        return pm_encoding_ascii_isupper_char(b, n);
+    } else if (width == 2) {
+        return (
+            ((b[0] == 0x82) && (b[1] >= 0x60 && b[1] <= 0x79)) ||
+            ((b[0] == 0x83) && (b[1] >= 0x9F && b[1] <= 0xB6)) ||
+            ((b[0] == 0x84) && (b[1] >= 0x40 && b[1] <= 0x60))
+        );
+    } else {
+        return width;
+    }
+}
+
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
+
+/**
  * Certain encodings are equivalent to ASCII below 0x80, so it works for our
  * purposes to have a function here that first checks the bounds and then falls
  * back to checking the ASCII lookup table.
@@ -3983,15 +4106,6 @@ pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_
 static bool
 pm_encoding_ascii_isupper_char_7bit(const uint8_t *b, ptrdiff_t n) {
     return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
-}
-
-/**
- * For a lot of encodings the default is that they are a single byte long no
- * matter what the codepoint, so this function is shared between them.
- */
-static size_t
-pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return 1;
 }
 
 /**
@@ -4073,51 +4187,6 @@ pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
     }
 
     return 0;
-}
-
-/**
- * Returns the size of the next character in the EUC-JP encoding, or 0 if a
- * character cannot be decoded from the given bytes.
- */
-static size_t
-pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
-    // These are the single byte characters.
-    if (*b < 0x80) {
-        return 1;
-    }
-
-    // These are the double byte characters.
-    if ((n > 1) && ((b[0] == 0x8E) || (b[0] >= 0xA1 && b[0] <= 0xFE)) && (b[1] >= 0xA1 && b[1] <= 0xFE)) {
-        return 2;
-    }
-
-    // These are the triple byte characters.
-    if ((n > 2) && (b[0] == 0x8F) && (b[1] >= 0xA1 && b[2] <= 0xFE) && (b[2] >= 0xA1 && b[2] <= 0xFE)) {
-        return 3;
-    }
-
-    return 0;
-}
-
-/**
- * Returns the size of the next character in the EUC-JP encoding if it is an
- * uppercase character.
- */
-static bool
-pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    size_t width = pm_encoding_euc_jp_char_width(b, n);
-
-    if (width == 1) {
-        return pm_encoding_ascii_isupper_char(b, n);
-    } else if (width == 2) {
-        return (
-            (b[0] == 0xA3 && b[1] >= 0xC1 && b[1] <= 0xDA) ||
-            (b[0] == 0xA6 && b[1] >= 0xA1 && b[1] <= 0xB8) ||
-            (b[0] == 0xA7 && b[1] >= 0xA1 && b[1] <= 0xC1)
-        );
-    } else {
-        return false;
-    }
 }
 
 /**
@@ -4218,65 +4287,7 @@ pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
     return 0;
 }
 
-/**
- * Returns the size of the next character in the Shift_JIS encoding, or 0 if a
- * character cannot be decoded from the given bytes.
- */
-static size_t
-pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
-    // These are the single byte characters.
-    if (b[0] < 0x80 || (b[0] >= 0xA1 && b[0] <= 0xDF)) {
-        return 1;
-    }
-
-    // These are the double byte characters.
-    if ((n > 1) && ((b[0] >= 0x81 && b[0] <= 0x9F) || (b[0] >= 0xE0 && b[0] <= 0xFC)) && (b[1] >= 0x40 && b[1] <= 0xFC && b[1] != 0x7F)) {
-        return 2;
-    }
-
-    return 0;
-}
-
-/**
- * Returns the size of the next character in the Shift_JIS encoding if it is an
- * alphanumeric character.
- */
-static size_t
-pm_encoding_shift_jis_alnum_char(const uint8_t *b, ptrdiff_t n) {
-    size_t width = pm_encoding_shift_jis_char_width(b, n);
-    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alnum_char(b, n)) : width;
-}
-
-/**
- * Returns the size of the next character in the Shift_JIS encoding if it is an
- * alphabetical character.
- */
-static size_t
-pm_encoding_shift_jis_alpha_char(const uint8_t *b, ptrdiff_t n) {
-    size_t width = pm_encoding_shift_jis_char_width(b, n);
-    return width == 1 ? ((b[0] >= 0x80) || pm_encoding_ascii_alpha_char(b, n)) : width;
-}
-
-/**
- * Returns the size of the next character in the Shift_JIS encoding if it is an
- * uppercase character.
- */
-static bool
-pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    size_t width = pm_encoding_shift_jis_char_width(b, n);
-
-    if (width == 1) {
-        return pm_encoding_ascii_isupper_char(b, n);
-    } else if (width == 2) {
-        return (
-            ((b[0] == 0x82) && (b[1] >= 0x60 && b[1] <= 0x79)) ||
-            ((b[0] == 0x83) && (b[1] >= 0x9F && b[1] <= 0xB6)) ||
-            ((b[0] == 0x84) && (b[1] >= 0x40 && b[1] <= 0x60))
-        );
-    } else {
-        return width;
-    }
-}
+#endif
 
 /**
  * This is the table of all of the encodings that prism supports.
@@ -4290,6 +4301,14 @@ const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_utf_8_isupper_char,
         .multibyte = true
     },
+    [PM_ENCODING_US_ASCII] = {
+        .name = "US-ASCII",
+        .char_width = pm_encoding_ascii_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char,
+        .alpha_char = pm_encoding_ascii_alpha_char,
+        .isupper_char = pm_encoding_ascii_isupper_char,
+        .multibyte = false
+    },
     [PM_ENCODING_ASCII_8BIT] = {
         .name = "ASCII-8BIT",
         .char_width = pm_encoding_single_char_width,
@@ -4298,6 +4317,24 @@ const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_ascii_isupper_char,
         .multibyte = false
     },
+    [PM_ENCODING_EUC_JP] = {
+        .name = "EUC-JP",
+        .char_width = pm_encoding_euc_jp_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_euc_jp_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_WINDOWS_31J] = {
+        .name = "Windows-31J",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_shift_jis_alnum_char,
+        .alpha_char = pm_encoding_shift_jis_alpha_char,
+        .isupper_char = pm_encoding_shift_jis_isupper_char,
+        .multibyte = true
+    },
+
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
     [PM_ENCODING_BIG5] = {
         .name = "Big5",
         .char_width = pm_encoding_big5_char_width,
@@ -4392,14 +4429,6 @@ const pm_encoding_t pm_encodings[] = {
         .alnum_char = pm_encoding_ascii_alnum_char_7bit,
         .alpha_char = pm_encoding_ascii_alpha_char_7bit,
         .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-        .multibyte = true
-    },
-    [PM_ENCODING_EUC_JP] = {
-        .name = "EUC-JP",
-        .char_width = pm_encoding_euc_jp_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-        .isupper_char = pm_encoding_euc_jp_isupper_char,
         .multibyte = true
     },
     [PM_ENCODING_EUC_JP_MS] = {
@@ -4874,14 +4903,6 @@ const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_tis_620_isupper_char,
         .multibyte = false
     },
-    [PM_ENCODING_US_ASCII] = {
-        .name = "US-ASCII",
-        .char_width = pm_encoding_ascii_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char,
-        .alpha_char = pm_encoding_ascii_alpha_char,
-        .isupper_char = pm_encoding_ascii_isupper_char,
-        .multibyte = false
-    },
     [PM_ENCODING_UTF8_MAC] = {
         .name = "UTF8-MAC",
         .char_width = pm_encoding_utf_8_char_width,
@@ -4986,14 +5007,6 @@ const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_windows_1258_isupper_char,
         .multibyte = false
     },
-    [PM_ENCODING_WINDOWS_31J] = {
-        .name = "Windows-31J",
-        .char_width = pm_encoding_shift_jis_char_width,
-        .alnum_char = pm_encoding_shift_jis_alnum_char,
-        .alpha_char = pm_encoding_shift_jis_alpha_char,
-        .isupper_char = pm_encoding_shift_jis_isupper_char,
-        .multibyte = true
-    },
     [PM_ENCODING_WINDOWS_874] = {
         .name = "Windows-874",
         .char_width = pm_encoding_single_char_width,
@@ -5002,6 +5015,7 @@ const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_windows_874_isupper_char,
         .multibyte = false
     }
+#endif
 };
 
 /**
@@ -5016,11 +5030,13 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     // UTF-8 can contain extra information at the end about the platform it is
     // encoded on, such as UTF-8-MAC or UTF-8-UNIX. We'll ignore those suffixes.
     if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "UTF-8", 5) == 0)) {
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
         // We need to explicitly handle UTF-8-HFS, as that one needs to switch
         // over to being UTF8-MAC.
         if (width == 9 && (pm_strncasecmp(start + 5, (const uint8_t *) "-HFS", 4) == 0)) {
             return &pm_encodings[PM_ENCODING_UTF8_MAC];
         }
+#endif
 
         // Otherwise we'll return the default UTF-8 encoding.
         return PM_ENCODING_UTF_8_ENTRY;
@@ -5040,11 +5056,16 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 break;
             case 'B': case 'b':
                 ENCODING1("BINARY", PM_ENCODING_ASCII_8BIT);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("Big5", PM_ENCODING_BIG5);
                 ENCODING2("Big5-HKSCS", "Big5-HKSCS:2008", PM_ENCODING_BIG5_HKSCS);
                 ENCODING1("Big5-UAO", PM_ENCODING_BIG5_UAO);
+#endif
                 break;
             case 'C': case 'c':
+                ENCODING1("CP65001", PM_ENCODING_UTF_8);
+                ENCODING2("CP932", "csWindows31J", PM_ENCODING_WINDOWS_31J);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("CESU-8", PM_ENCODING_CESU_8);
                 ENCODING1("CP437", PM_ENCODING_IBM437);
                 ENCODING1("CP720", PM_ENCODING_IBM720);
@@ -5064,7 +5085,6 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("CP874", PM_ENCODING_WINDOWS_874);
                 ENCODING1("CP878", PM_ENCODING_KOI8_R);
                 ENCODING1("CP863", PM_ENCODING_IBM863);
-                ENCODING2("CP932", "csWindows31J", PM_ENCODING_WINDOWS_31J);
                 ENCODING1("CP936", PM_ENCODING_GBK);
                 ENCODING1("CP949", PM_ENCODING_CP949);
                 ENCODING1("CP950", PM_ENCODING_CP950);
@@ -5079,25 +5099,30 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("CP1257", PM_ENCODING_WINDOWS_1257);
                 ENCODING1("CP1258", PM_ENCODING_WINDOWS_1258);
                 ENCODING1("CP51932", PM_ENCODING_CP51932);
-                ENCODING1("CP65001", PM_ENCODING_UTF_8);
+#endif
                 break;
             case 'E': case 'e':
                 ENCODING2("EUC-JP", "eucJP", PM_ENCODING_EUC_JP);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING2("eucJP-ms", "euc-jp-ms", PM_ENCODING_EUC_JP_MS);
                 ENCODING2("EUC-JIS-2004", "EUC-JISX0213", PM_ENCODING_EUC_JIS_2004);
                 ENCODING2("EUC-KR", "eucKR", PM_ENCODING_EUC_KR);
                 ENCODING2("EUC-CN", "eucCN", PM_ENCODING_GB2312);
                 ENCODING2("EUC-TW", "eucTW", PM_ENCODING_EUC_TW);
                 ENCODING1("Emacs-Mule", PM_ENCODING_EMACS_MULE);
+#endif
                 break;
             case 'G': case 'g':
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("GBK", PM_ENCODING_GBK);
                 ENCODING1("GB12345", PM_ENCODING_GB12345);
                 ENCODING1("GB18030", PM_ENCODING_GB18030);
                 ENCODING1("GB1988", PM_ENCODING_GB1988);
                 ENCODING1("GB2312", PM_ENCODING_GB2312);
+#endif
                 break;
             case 'I': case 'i':
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("IBM437", PM_ENCODING_IBM437);
                 ENCODING1("IBM720", PM_ENCODING_IBM720);
                 ENCODING1("IBM737", PM_ENCODING_IBM737);
@@ -5129,12 +5154,16 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING2("ISO-8859-14", "ISO8859-14", PM_ENCODING_ISO_8859_14);
                 ENCODING2("ISO-8859-15", "ISO8859-15", PM_ENCODING_ISO_8859_15);
                 ENCODING2("ISO-8859-16", "ISO8859-16", PM_ENCODING_ISO_8859_16);
+#endif
                 break;
             case 'K': case 'k':
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("KOI8-R", PM_ENCODING_KOI8_R);
                 ENCODING1("KOI8-U", PM_ENCODING_KOI8_U);
+#endif
                 break;
             case 'M': case 'm':
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("macCentEuro", PM_ENCODING_MAC_CENT_EURO);
                 ENCODING1("macCroatian", PM_ENCODING_MAC_CROATIAN);
                 ENCODING1("macCyrillic", PM_ENCODING_MAC_CYRILLIC);
@@ -5147,31 +5176,39 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("macThai", PM_ENCODING_MAC_THAI);
                 ENCODING1("macTurkish", PM_ENCODING_MAC_TURKISH);
                 ENCODING1("macUkraine", PM_ENCODING_MAC_UKRAINE);
+#endif
                 break;
             case 'P': case 'p':
                 ENCODING1("PCK", PM_ENCODING_WINDOWS_31J);
                 break;
             case 'S': case 's':
-                ENCODING1("Shift_JIS", PM_ENCODING_SHIFT_JIS);
                 ENCODING1("SJIS", PM_ENCODING_WINDOWS_31J);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
+                ENCODING1("Shift_JIS", PM_ENCODING_SHIFT_JIS);
                 ENCODING1("SJIS-DoCoMo", PM_ENCODING_SJIS_DOCOMO);
                 ENCODING1("SJIS-KDDI", PM_ENCODING_SJIS_KDDI);
                 ENCODING1("SJIS-SoftBank", PM_ENCODING_SJIS_SOFTBANK);
                 ENCODING1("stateless-ISO-2022-JP", PM_ENCODING_STATELESS_ISO_2022_JP);
                 ENCODING1("stateless-ISO-2022-JP-KDDI", PM_ENCODING_STATELESS_ISO_2022_JP_KDDI);
+#endif
                 break;
             case 'T': case 't':
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("TIS-620", PM_ENCODING_TIS_620);
+#endif
                 break;
             case 'U': case 'u':
                 ENCODING1("US-ASCII", PM_ENCODING_US_ASCII);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING2("UTF8-MAC", "UTF-8-HFS", PM_ENCODING_UTF8_MAC);
                 ENCODING1("UTF8-DoCoMo", PM_ENCODING_UTF8_DOCOMO);
                 ENCODING1("UTF8-KDDI", PM_ENCODING_UTF8_KDDI);
                 ENCODING1("UTF8-SoftBank", PM_ENCODING_UTF8_SOFTBANK);
+#endif
                 break;
             case 'W': case 'w':
                 ENCODING1("Windows-31J", PM_ENCODING_WINDOWS_31J);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING1("Windows-874", PM_ENCODING_WINDOWS_874);
                 ENCODING1("Windows-1250", PM_ENCODING_WINDOWS_1250);
                 ENCODING1("Windows-1251", PM_ENCODING_WINDOWS_1251);
@@ -5182,6 +5219,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("Windows-1256", PM_ENCODING_WINDOWS_1256);
                 ENCODING1("Windows-1257", PM_ENCODING_WINDOWS_1257);
                 ENCODING1("Windows-1258", PM_ENCODING_WINDOWS_1258);
+#endif
                 break;
             case '6':
                 ENCODING1("646", PM_ENCODING_US_ASCII);

@@ -19316,6 +19316,41 @@ pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse
     return node;
 }
 
+/**
+ * Parse the source and return true if it parses without errors or warnings.
+ */
+PRISM_EXPORTED_FUNCTION bool
+pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
+    pm_options_t options = { 0 };
+    pm_options_read(&options, data);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, source, size, &options);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_node_destroy(&parser, node);
+
+    bool result = parser.error_list.size == 0 && parser.warning_list.size == 0;
+    pm_parser_free(&parser);
+    pm_options_free(&options);
+
+    return result;
+}
+
+#undef PM_CASE_KEYWORD
+#undef PM_CASE_OPERATOR
+#undef PM_CASE_WRITABLE
+#undef PM_STRING_EMPTY
+#undef PM_LOCATION_NODE_BASE_VALUE
+#undef PM_LOCATION_NODE_VALUE
+#undef PM_LOCATION_NULL_VALUE
+#undef PM_LOCATION_TOKEN_VALUE
+
+// We optionally support serializing to a binary string. For systems that don't
+// want or need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_SERIALIZATION define.
+#ifndef PRISM_EXCLUDE_SERIALIZATION
+
 static inline void
 pm_serialize_header(pm_buffer_t *buffer) {
     pm_buffer_append_string(buffer, "PRISM", 5);
@@ -19402,14 +19437,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_options_free(&options);
 }
 
-#undef PM_CASE_KEYWORD
-#undef PM_CASE_OPERATOR
-#undef PM_CASE_WRITABLE
-#undef PM_STRING_EMPTY
-#undef PM_LOCATION_NODE_BASE_VALUE
-#undef PM_LOCATION_NODE_VALUE
-#undef PM_LOCATION_NULL_VALUE
-#undef PM_LOCATION_TOKEN_VALUE
+#endif
 
 /** An error that is going to be formatted into the output. */
 typedef struct {

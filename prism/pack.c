@@ -1,16 +1,43 @@
 #include "prism/pack.h"
 
+// We optionally support parsing String#pack templates. For systems that don't
+// want or need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_PACK define.
+#ifdef PRISM_EXCLUDE_PACK
+
+void pm_pack_parse(void) {}
+
+#else
+
 #include <stdbool.h>
 #include <errno.h>
 
 static uintmax_t
-strtoumaxc(const char **format);
+strtoumaxc(const char **format) {
+    uintmax_t value = 0;
+    while (**format >= '0' && **format <= '9') {
+        if (value > UINTMAX_MAX / 10) {
+            errno = ERANGE;
+        }
+        value = value * 10 + ((uintmax_t) (**format - '0'));
+        (*format)++;
+    }
+    return value;
+}
 
 PRISM_EXPORTED_FUNCTION pm_pack_result
-pm_pack_parse(pm_pack_variant variant, const char **format, const char *format_end,
-                            pm_pack_type *type, pm_pack_signed *signed_type, pm_pack_endian *endian, pm_pack_size *size,
-                            pm_pack_length_type *length_type, uint64_t *length, pm_pack_encoding *encoding) {
-
+pm_pack_parse(
+    pm_pack_variant variant,
+    const char **format,
+    const char *format_end,
+    pm_pack_type *type,
+    pm_pack_signed *signed_type,
+    pm_pack_endian *endian,
+    pm_pack_size *size,
+    pm_pack_length_type *length_type,
+    uint64_t *length,
+    pm_pack_encoding *encoding
+) {
     if (*encoding == PM_PACK_ENCODING_START) {
         *encoding = PM_PACK_ENCODING_US_ASCII;
     }
@@ -479,15 +506,4 @@ pm_size_to_native(pm_pack_size size) {
     }
 }
 
-static uintmax_t
-strtoumaxc(const char **format) {
-    uintmax_t value = 0;
-    while (**format >= '0' && **format <= '9') {
-        if (value > UINTMAX_MAX / 10) {
-            errno = ERANGE;
-        }
-        value = value * 10 + ((uintmax_t) (**format - '0'));
-        (*format)++;
-    }
-    return value;
-}
+#endif

@@ -17,11 +17,11 @@ module Prism
       "# -*- \s\t\v encoding \s\t\v : \s\t\v ascii \s\t\v -*-",
       "# -*- foo: bar; encoding: ascii -*-",
       "# coding \t \r  \v   :     \t \v    \r   ascii-8bit",
-      "# vim: filetype=ruby, fileencoding=big5, tabsize=3, shiftwidth=3"
+      "# vim: filetype=ruby, fileencoding=windows-31j, tabsize=3, shiftwidth=3"
     ]
 
-    examples.each do |example|
-      define_method(:"test_magic_comment_#{example}") do
+    examples.each.with_index(1) do |example, index|
+      define_method(:"test_magic_comment_#{index}") do
         assert_magic_comment(example)
       end
     end
