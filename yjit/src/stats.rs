@@ -261,7 +261,7 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 15] = [
+pub const DEFAULT_COUNTERS: [Counter; 16] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
@@ -278,6 +278,7 @@ pub const DEFAULT_COUNTERS: [Counter; 15] = [
     Counter::invalidate_ractor_spawn,
     Counter::invalidate_constant_state_bump,
     Counter::invalidate_constant_ic_fill,
+    Counter::invalidate_no_singleton_class,
 ];
 
 /// Macro to increase a counter by name and count
@@ -559,6 +560,7 @@ make_counters! {
     invalidate_ractor_spawn,
     invalidate_constant_state_bump,
     invalidate_constant_ic_fill,
+    invalidate_no_singleton_class,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.

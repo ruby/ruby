@@ -4725,3 +4725,31 @@ assert_equal '["", "1/2", [0, [:ok, 1]]]', %q{
 
   test_cases(File, Enumerator::Chain)
 }
+
+# singleton class should invalidate Type::CString assumption
+assert_equal 'foo', %q{
+  def define_singleton(str, define)
+    if define
+      # Wrap a C method frame to avoid exiting JIT code on defineclass
+      [nil].reverse_each do
+        class << str
+          def +(_)
+            "foo"
+          end
+        end
+      end
+    end
+    "bar"
+  end
+
+  def entry(define)
+    str = ""
+    # When `define` is false, #+ compiles to rb_str_plus() without a class guard.
+    # When the code is reused with `define` is true, the class of `str` is changed
+    # to a singleton class, so the block should be invalidated.
+    str + define_singleton(str, define)
+  end
+
+  entry(false)
+  entry(true)
+}

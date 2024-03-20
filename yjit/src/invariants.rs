@@ -53,6 +53,12 @@ pub struct Invariants {
     /// A map from a block to a set of IDs that it is assuming have not been
     /// redefined.
     block_constant_states: HashMap<BlockRef, HashSet<ID>>,
+
+    /// A map from a class to a set of blocks that assume objects of the class
+    /// will have no singleton class. When the set is empty, it means that
+    /// there has been a singleton class for the class after boot, so you cannot
+    /// assume no singleton class going forward.
+    no_singleton_classes: HashMap<VALUE, HashSet<BlockRef>>,
 }
 
 /// Private singleton instance of the invariants global struct.
@@ -69,6 +75,7 @@ impl Invariants {
                 single_ractor: HashSet::new(),
                 constant_state_blocks: HashMap::new(),
                 block_constant_states: HashMap::new(),
+                no_singleton_classes: HashMap::new(),
             });
         }
     }
@@ -128,6 +135,23 @@ pub fn track_method_lookup_stability_assumption(
         .entry(callee_cme)
         .or_default()
         .insert(uninit_block);
+}
+
+/// Track that a block will assume that `klass` objects will have no singleton class.
+pub fn track_no_singleton_class_assumption(uninit_block: BlockRef, klass: VALUE) {
+    Invariants::get_instance()
+        .no_singleton_classes
+        .entry(klass)
+        .or_default()
+        .insert(uninit_block);
+}
+
+/// Returns true if we've seen a singleton class of a given class since boot.
+pub fn has_singleton_class_of(klass: VALUE) -> bool {
+    Invariants::get_instance()
+        .no_singleton_classes
+        .get(&klass)
+        .map_or(false, |blocks| blocks.is_empty())
 }
 
 // Checks rb_method_basic_definition_p and registers the current block for invalidation if method
@@ -391,6 +415,11 @@ pub fn block_assumptions_free(blockref: BlockRef) {
     if invariants.constant_state_blocks.is_empty() {
         invariants.constant_state_blocks.shrink_to_fit();
     }
+
+    // Remove tracking for blocks assumping no singleton class
+    for (_, blocks) in invariants.no_singleton_classes.iter_mut() {
+        blocks.remove(&blockref);
+    }
 }
 
 /// Callback from the opt_setinlinecache instruction in the interpreter.
@@ -455,6 +484,35 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
             panic!("ic->get_insn_index not set properly");
         }
     });
+}
+
+/// Invalidate blocks that assume objects of a given class will have no singleton class.
+#[no_mangle]
+pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
+    // Skip tracking singleton classes during boot. Such objects already have a singleton class
+    // before entering JIT code, so they get rejected when they're checked for the first time.
+    if unsafe { INVARIANTS.is_none() } {
+        return;
+    }
+
+    // We apply this optimization only to Array, Hash, and String for now.
+    if unsafe { [rb_cArray, rb_cHash, rb_cString].contains(&klass) } {
+        let no_singleton_classes = &mut Invariants::get_instance().no_singleton_classes;
+        match no_singleton_classes.get_mut(&klass) {
+            Some(blocks) => {
+                // Invalidate existing blocks and let has_singleton_class_of()
+                // return true when they are compiled again
+                for block in mem::take(blocks) {
+                    invalidate_block_version(&block);
+                    incr_counter!(invalidate_no_singleton_class);
+                }
+            }
+            None => {
+                // Let has_singleton_class_of() return true for this class
+                no_singleton_classes.insert(klass, HashSet::new());
+            }
+        }
+    }
 }
 
 // Invalidate all generated code and patch C method return code to contain
