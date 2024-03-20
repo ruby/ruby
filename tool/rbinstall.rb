@@ -553,12 +553,10 @@ module RbInstall
       end
 
       class Ext < self
-        def skip_install?(files)
-          # install ext only when it's configured
-          !File.exist?("#{makefile_dir}/Makefile")
-        end
-
         def ruby_libraries
+          # install ext only when it's configured
+          return [] unless File.exist?("#{makefile_dir}/Makefile")
+
           Dir.glob("lib/**/*.rb", base: makefile_dir)
         end
 
@@ -570,10 +568,6 @@ module RbInstall
       end
 
       class Lib < self
-        def skip_install?(files)
-          files.empty?
-        end
-
         def ruby_libraries
           gemname = File.basename(gemspec, ".gemspec")
           base = relative_base || gemname
@@ -763,7 +757,7 @@ def install_default_gem(dir, srcdir, bindir)
     spec = load_gemspec("#{base}/#{src}")
     file_collector = RbInstall::Specs::FileCollector.for(srcdir, dir, src)
     files = file_collector.collect
-    if file_collector.skip_install?(files)
+    if files.empty?
       next
     end
     spec.files = files
