@@ -725,8 +725,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
             }
             else {
-                if (!(kw_flag & VM_CALL_KW_SPLAT_MUT)) {
+                if (!(kw_flag & VM_CALL_KW_SPLAT_MUT) && !ISEQ_BODY(iseq)->param.flags.has_kw) {
                     converted_keyword_hash = rb_hash_dup(converted_keyword_hash);
+                    kw_flag |= VM_CALL_KW_SPLAT_MUT;
                 }
 
                 if (last_arg != converted_keyword_hash) {
