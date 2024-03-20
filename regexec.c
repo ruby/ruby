@@ -2240,7 +2240,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   UChar *pkeep;
   char *alloca_base;
   char *xmalloc_base = NULL;
-  OnigStackType *stk_alloc, *stk_base, *stk, *stk_end;
+  OnigStackType *stk_alloc, *stk_base = NULL, *stk, *stk_end;
   OnigStackType *stkp; /* used as any purpose. */
   OnigStackIndex si;
   OnigStackIndex *repeat_stk;
@@ -4142,6 +4142,11 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   STACK_SAVE;
   xfree(xmalloc_base);
   return ONIGERR_UNEXPECTED_BYTECODE;
+
+ timeout:
+  xfree(xmalloc_base);
+  xfree(stk_base);
+  HANDLE_REG_TIMEOUT_IN_MATCH_AT;
 }
 
 
