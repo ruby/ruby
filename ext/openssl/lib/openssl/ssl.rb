@@ -28,6 +28,7 @@ module OpenSSL
           opts = OpenSSL::SSL::OP_ALL
           opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
           opts |= OpenSSL::SSL::OP_NO_COMPRESSION
+          opts |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
           opts
         }.call
       }
