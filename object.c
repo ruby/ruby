@@ -119,7 +119,7 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    VALUE ignored_flags = RUBY_FL_PROMOTED;
+    VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
     RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
@@ -453,15 +453,12 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
     return obj;
 }
 
-static VALUE
-mutable_obj_clone(VALUE obj, VALUE kwfreeze)
+VALUE
+rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 {
-    VALUE clone, singleton;
     VALUE argv[2];
 
-    clone = rb_obj_alloc(rb_obj_class(obj));
-
-    singleton = rb_singleton_class_clone_and_attach(obj, clone);
+    VALUE singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);
     if (FL_TEST(singleton, FL_SINGLETON)) {
         rb_singleton_class_attached(singleton, clone);
@@ -528,11 +525,27 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
     return clone;
 }
 
+static VALUE
+mutable_obj_clone(VALUE obj, VALUE kwfreeze)
+{
+    VALUE clone = rb_obj_alloc(rb_obj_class(obj));
+    return rb_obj_clone_setup(obj, clone, kwfreeze);
+}
+
 VALUE
 rb_obj_clone(VALUE obj)
 {
     if (special_object_p(obj)) return obj;
     return mutable_obj_clone(obj, Qnil);
+}
+
+VALUE
+rb_obj_dup_setup(VALUE obj, VALUE dup)
+{
+    init_copy(dup, obj);
+    rb_funcall(dup, id_init_dup, 1, obj);
+
+    return dup;
 }
 
 /*
@@ -583,10 +596,7 @@ rb_obj_dup(VALUE obj)
         return obj;
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
-    init_copy(dup, obj);
-    rb_funcall(dup, id_init_dup, 1, obj);
-
-    return dup;
+    return rb_obj_dup_setup(obj, dup);
 }
 
 /*
