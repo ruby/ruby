@@ -1606,18 +1606,35 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       using R
+      def m
+        C.new.m
+      end
+
       assert_equal(:foo, C.new.m)
+      assert_equal(:foo, m)
 
       module R
         refine C do
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           alias m m
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           def m
             :bar
           end
+
+          assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+          assert_equal(:bar, m, "[Bug #20285]")
         end
       end
 
       assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+      assert_equal(:bar, m, "[Bug #20285]")
     end;
   end
 
