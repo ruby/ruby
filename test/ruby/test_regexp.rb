@@ -2033,6 +2033,18 @@ class TestRegexp < Test::Unit::TestCase
     assert /^(?:.+){2,4}?b|b/.match? "aaaabaa"
   end
 
+  def test_bug_20207 # [Bug #20207]
+    assert(!'clan'.match?(/(?=.*a)(?!.*n)/))
+  end
+
+  def test_bug_20212 # [Bug #20212]
+    regex = Regexp.new(
+      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+)\Z/x
+    )
+    string = "www.google.com"
+    100.times.each { assert(regex.match?(string)) }
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
