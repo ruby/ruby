@@ -1,5 +1,10 @@
 #include "prism.h"
 
+// We optionally support serializing to a binary string. For systems that don't
+// want or need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_SERIALIZATION define.
+#ifndef PRISM_EXCLUDE_SERIALIZATION
+
 #include <stdio.h>
 
 static inline uint32_t
@@ -394,23 +399,4 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_options_free(&options);
 }
 
-/**
- * Parse the source and return true if it parses without errors or warnings.
- */
-PRISM_EXPORTED_FUNCTION bool
-pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
-    pm_options_t options = { 0 };
-    pm_options_read(&options, data);
-
-    pm_parser_t parser;
-    pm_parser_init(&parser, source, size, &options);
-
-    pm_node_t *node = pm_parse(&parser);
-    pm_node_destroy(&parser, node);
-
-    bool result = parser.error_list.size == 0 && parser.warning_list.size == 0;
-    pm_parser_free(&parser);
-    pm_options_free(&options);
-
-    return result;
-}
+#endif

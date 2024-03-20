@@ -75,19 +75,21 @@ module Prism
       assert_equal 5, tokens.length
     end
 
-    def test_dump_file
-      assert_nothing_raised do
-        Prism.dump_file(__FILE__)
-      end
+    if !ENV["PRISM_BUILD_MINIMAL"]
+      def test_dump_file
+        assert_nothing_raised do
+          Prism.dump_file(__FILE__)
+        end
 
-      error = assert_raise Errno::ENOENT do
-        Prism.dump_file("idontexist.rb")
-      end
+        error = assert_raise Errno::ENOENT do
+          Prism.dump_file("idontexist.rb")
+        end
 
-      assert_equal "No such file or directory - idontexist.rb", error.message
+        assert_equal "No such file or directory - idontexist.rb", error.message
 
-      assert_raise TypeError do
-        Prism.dump_file(nil)
+        assert_raise TypeError do
+          Prism.dump_file(nil)
+        end
       end
     end
 
@@ -259,9 +261,11 @@ module Prism
           warn("Created snapshot at #{snapshot}.")
         end
 
-        # Next, assert that the value can be serialized and deserialized without
-        # changing the shape of the tree.
-        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, filepath: relative)).value)
+        if !ENV["PRISM_BUILD_MINIMAL"]
+          # Next, assert that the value can be serialized and deserialized
+          # without changing the shape of the tree.
+          assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, filepath: relative)).value)
+        end
 
         # Next, check that the location ranges of each node in the tree are a
         # superset of their respective child nodes.
@@ -318,7 +322,9 @@ module Prism
           result = Prism.parse(snippet, filepath: relative)
           assert_empty result.errors
 
-          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, filepath: relative)).value)
+          if !ENV["PRISM_BUILD_MINIMAL"]
+            assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, filepath: relative)).value)
+          end
         end
       end
     end

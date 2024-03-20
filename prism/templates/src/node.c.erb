@@ -247,6 +247,10 @@ pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *nod
     }
 }
 
+// We optionally support dumping to JSON. For systems that don't want or need
+// this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
+#ifndef PRISM_EXCLUDE_JSON
+
 static void
 pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
     const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
@@ -360,3 +364,5 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             break;
     }
 }
+
+#endif

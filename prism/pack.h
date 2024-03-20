@@ -6,6 +6,15 @@
 #ifndef PRISM_PACK_H
 #define PRISM_PACK_H
 
+// We optionally support parsing String#pack templates. For systems that don't
+// want or need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_PACK define.
+#ifdef PRISM_EXCLUDE_PACK
+
+void pm_pack_parse(void);
+
+#else
+
 #include "prism/defines.h"
 
 #include <stdint.h>
@@ -148,5 +157,7 @@ pm_pack_parse(
  * @return The native size.
  */
 PRISM_EXPORTED_FUNCTION size_t pm_size_to_native(pm_pack_size size);
+
+#endif
 
 #endif

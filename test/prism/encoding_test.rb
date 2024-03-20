@@ -9,9 +9,12 @@ module Prism
     codepoints_1byte = 0...0x100
     encodings = {
       Encoding::ASCII_8BIT =>   codepoints_1byte,
-      Encoding::US_ASCII =>     codepoints_1byte,
-      Encoding::Windows_1253 => codepoints_1byte
+      Encoding::US_ASCII =>     codepoints_1byte
     }
+
+    if !ENV["PRISM_BUILD_MINIMAL"]
+      encodings[Encoding::Windows_1253] = codepoints_1byte
+    end
 
     # By default we don't test every codepoint in these encodings because it
     # takes a very long time.
@@ -205,21 +208,6 @@ module Prism
       assert_equal Encoding.find("utf-8"), actual
     end
 
-    # This test may be a little confusing. Basically when we use our strpbrk, it
-    # takes into account the encoding of the file.
-    def test_strpbrk_multibyte
-      result = Prism.parse(<<~RUBY)
-        # encoding: Shift_JIS
-        %w[\x81\x5c]
-      RUBY
-
-      assert(result.errors.empty?)
-      assert_equal(
-        (+"\x81\x5c").force_encoding(Encoding::Shift_JIS),
-        result.value.statements.body.first.elements.first.unescaped
-      )
-    end
-
     def test_utf_8_variations
       %w[
         utf-8-unix
@@ -238,22 +226,39 @@ module Prism
       assert_equal Encoding.find("ascii-8bit"), encoding
     end
 
-    def test_slice_encoding
-      slice = Prism.parse("# encoding: Shift_JIS\nア").value.slice
-      assert_equal (+"ア").force_encoding(Encoding::SHIFT_JIS), slice
-      assert_equal Encoding::SHIFT_JIS, slice.encoding
-    end
+    if !ENV["PRISM_BUILD_MINIMAL"]
+      # This test may be a little confusing. Basically when we use our strpbrk,
+      # it takes into account the encoding of the file.
+      def test_strpbrk_multibyte
+        result = Prism.parse(<<~RUBY)
+          # encoding: Shift_JIS
+          %w[\x81\x5c]
+        RUBY
 
-    def test_multibyte_escapes
-      [
-        ["'", "'"],
-        ["\"", "\""],
-        ["`", "`"],
-        ["/", "/"],
-        ["<<'HERE'\n", "\nHERE"],
-        ["<<-HERE\n", "\nHERE"]
-      ].each do |opening, closing|
-        assert Prism.parse_success?("# encoding: shift_jis\n'\\\x82\xA0'\n")
+        assert(result.errors.empty?)
+        assert_equal(
+          (+"\x81\x5c").force_encoding(Encoding::Shift_JIS),
+          result.value.statements.body.first.elements.first.unescaped
+        )
+      end
+
+      def test_slice_encoding
+        slice = Prism.parse("# encoding: Shift_JIS\nア").value.slice
+        assert_equal (+"ア").force_encoding(Encoding::SHIFT_JIS), slice
+        assert_equal Encoding::SHIFT_JIS, slice.encoding
+      end
+
+      def test_multibyte_escapes
+        [
+          ["'", "'"],
+          ["\"", "\""],
+          ["`", "`"],
+          ["/", "/"],
+          ["<<'HERE'\n", "\nHERE"],
+          ["<<-HERE\n", "\nHERE"]
+        ].each do |opening, closing|
+          assert Prism.parse_success?("# encoding: shift_jis\n'\\\x82\xA0'\n")
+        end
       end
     end
 
