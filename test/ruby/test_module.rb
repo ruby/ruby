@@ -253,6 +253,14 @@ class TestModule < Test::Unit::TestCase
     assert_operator(Math, :const_defined?, "PI")
     assert_not_operator(Math, :const_defined?, :IP)
     assert_not_operator(Math, :const_defined?, "IP")
+
+    # Test invalid symbol name
+    # [Bug #20245]
+    EnvUtil.under_gc_stress do
+      assert_raise(EncodingError) do
+        Math.const_defined?("\xC3")
+      end
+    end
   end
 
   def each_bad_constants(m, &b)
