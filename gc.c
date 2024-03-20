@@ -10391,7 +10391,9 @@ gc_compact_stats(VALUE self)
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
-    if (gc_object_moved_p(&rb_objspace, obj)) {
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, obj)) {
         rb_bug("ROOT %s points to MOVED: %p -> %s", category, (void *)obj, obj_info(rb_gc_location(obj)));
     }
 }
@@ -10575,7 +10577,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
-    objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
+    objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, (void *)objspace);
     objspace_each_objects(objspace, heap_check_moved_i, NULL, TRUE);
 
     objspace->rcompactor.compare_func = NULL;
