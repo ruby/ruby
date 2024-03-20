@@ -173,6 +173,8 @@ module Prism
           Diagnostic.new(:error, :duplicate_argument, {}, diagnostic_location, [])
         when :parameter_numbered_reserved
           Diagnostic.new(:error, :reserved_for_numparam, { name: location.slice }, diagnostic_location, [])
+        when :regexp_unknown_options
+          Diagnostic.new(:error, :regexp_options, { options: location.slice[1..] }, diagnostic_location, [])
         when :singleton_for_literals
           Diagnostic.new(:error, :singleton_literal, {}, diagnostic_location, [])
         when :string_literal_eof

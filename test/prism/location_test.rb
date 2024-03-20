@@ -527,6 +527,7 @@ module Prism
 
     def test_InterpolatedRegularExpressionNode
       assert_location(InterpolatedRegularExpressionNode, "/\#{foo}/")
+      assert_location(InterpolatedRegularExpressionNode, "/\#{foo}/io")
     end
 
     def test_InterpolatedStringNode
@@ -730,6 +731,7 @@ module Prism
 
     def test_RegularExpressionNode
       assert_location(RegularExpressionNode, "/foo/")
+      assert_location(RegularExpressionNode, "/foo/io")
     end
 
     def test_RequiredKeywordParameterNode

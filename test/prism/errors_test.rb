@@ -2067,6 +2067,20 @@ module Prism
       assert_errors expression(source), source, errors, compare_ripper: false
     end
 
+    def test_regular_expression_with_unknown_regexp_options
+      source = "/foo/AZaz"
+      errors = [["unknown regexp options: AZaz", 4..9]]
+
+      assert_errors expression(source), source, errors
+    end
+
+    def test_interpolated_regular_expression_with_unknown_regexp_options
+      source = "/\#{foo}/AZaz"
+      errors = [["unknown regexp options: AZaz", 7..12]]
+
+      assert_errors expression(source), source, errors
+    end
+
     def test_singleton_method_for_literals
       source = <<~'RUBY'
         def (1).g; end

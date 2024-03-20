@@ -1214,10 +1214,12 @@ pm_node_flag_set_repeated_parameter(pm_node_t *node) {
  * Parse out the options for a regular expression.
  */
 static inline pm_node_flags_t
-pm_regular_expression_flags_create(const pm_token_t *closing) {
+pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closing) {
     pm_node_flags_t flags = 0;
 
     if (closing->type == PM_TOKEN_REGEXP_END) {
+        pm_buffer_t unknown_flags = { 0 };
+
         for (const uint8_t *flag = closing->start + 1; flag < closing->end; flag++) {
             switch (*flag) {
                 case 'i': flags |= PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE; break;
@@ -1230,9 +1232,16 @@ pm_regular_expression_flags_create(const pm_token_t *closing) {
                 case 's': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J); break;
                 case 'u': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_UTF_8); break;
 
-                default: assert(false && "unreachable");
+                default: pm_buffer_append_byte(&unknown_flags, *flag);
             }
         }
+
+        size_t unknown_flags_length = pm_buffer_length(&unknown_flags);
+        if (unknown_flags_length != 0) {
+            char *word = unknown_flags_length >= 2 ? "options" : "option";
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_REGEXP_UNKNOWN_OPTIONS, word, unknown_flags_length, pm_buffer_value(&unknown_flags));
+        }
+        pm_buffer_free(&unknown_flags);
     }
 
     return flags;
@@ -4297,10 +4306,10 @@ pm_interpolated_regular_expression_node_append(pm_interpolated_regular_expressio
 }
 
 static inline void
-pm_interpolated_regular_expression_node_closing_set(pm_interpolated_regular_expression_node_t *node, const pm_token_t *closing) {
+pm_interpolated_regular_expression_node_closing_set(pm_parser_t *parser, pm_interpolated_regular_expression_node_t *node, const pm_token_t *closing) {
     node->closing_loc = PM_LOCATION_TOKEN_VALUE(closing);
     node->base.location.end = closing->end;
-    pm_node_flag_set((pm_node_t *)node, pm_regular_expression_flags_create(closing));
+    pm_node_flag_set((pm_node_t *)node, pm_regular_expression_flags_create(parser, closing));
 }
 
 /**
@@ -5528,7 +5537,7 @@ pm_regular_expression_node_create_unescaped(pm_parser_t *parser, const pm_token_
     *node = (pm_regular_expression_node_t) {
         {
             .type = PM_REGULAR_EXPRESSION_NODE,
-            .flags = pm_regular_expression_flags_create(closing) | PM_NODE_FLAG_STATIC_LITERAL,
+            .flags = pm_regular_expression_flags_create(parser, closing) | PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = MIN(opening->start, closing->start),
                 .end = MAX(opening->end, closing->end)
@@ -17490,7 +17499,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
             }
 
-            pm_interpolated_regular_expression_node_closing_set(interpolated, &closing);
+            pm_interpolated_regular_expression_node_closing_set(parser, interpolated, &closing);
             return (pm_node_t *) interpolated;
         }
         case PM_TOKEN_BACKTICK:
