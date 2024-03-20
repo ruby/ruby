@@ -7095,15 +7095,15 @@ fn gen_send_iseq(
     }
 
     match block_arg_type {
-        Some(Type::Nil) => {
+        Some(BlockArg::Nil) => {
             // We have a nil block arg, so let's pop it off the args
             asm.stack_pop(1);
         }
-        Some(Type::BlockParamProxy) => {
+        Some(BlockArg::BlockParamProxy) => {
             // We don't need the actual stack value
             asm.stack_pop(1);
         }
-        Some(Type::TProc) => {
+        Some(BlockArg::TProc) => {
             // Place the proc as the block handler. We do this early because
             // the block arg being at the top of the stack gets in the way of
             // rest param handling later. Also, since there are C calls that
@@ -7136,7 +7136,6 @@ fn gen_send_iseq(
         None => {
             // Nothing to do
         }
-        _ => unreachable!(),
     }
 
     if kw_splat {
@@ -7396,9 +7395,9 @@ fn gen_send_iseq(
     } else if let Some(captured_opnd) = captured_opnd {
         let ep_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32)); // captured->ep
         SpecVal::PrevEPOpnd(ep_opnd)
-    } else if let Some(Type::TProc) = block_arg_type {
+    } else if let Some(BlockArg::TProc) = block_arg_type {
         SpecVal::BlockHandler(Some(BlockHandler::AlreadySet))
-    } else if let Some(Type::BlockParamProxy) = block_arg_type {
+    } else if let Some(BlockArg::BlockParamProxy) = block_arg_type {
         SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
     } else {
         SpecVal::BlockHandler(block)
@@ -7942,12 +7941,22 @@ fn exit_if_has_rest_and_optional_and_block(asm: &mut Assembler, iseq_has_rest: b
     )
 }
 
+#[derive(Clone, Copy)]
+enum BlockArg {
+    Nil,
+    /// A special sentinel value indicating the block parameter should be read from
+    /// the current surrounding cfp
+    BlockParamProxy,
+    /// A proc object. Could be an instance of a subclass of ::rb_cProc
+    TProc,
+}
+
 #[must_use]
 fn exit_if_unsupported_block_arg_type(
     jit: &mut JITState,
     asm: &mut Assembler,
     supplying_block_arg: bool
-) -> Option<Option<Type>> {
+) -> Option<Option<BlockArg>> {
     let block_arg_type = if supplying_block_arg {
         asm.ctx.get_opnd_type(StackOpnd(0))
     } else {
@@ -7956,16 +7965,15 @@ fn exit_if_unsupported_block_arg_type(
     };
 
     match block_arg_type {
-        Type::Nil | Type::BlockParamProxy => {
-            // We'll handle this later
-            Some(Some(block_arg_type))
-        }
+        // We'll handle Nil and BlockParamProxy later
+        Type::Nil => Some(Some(BlockArg::Nil)),
+        Type::BlockParamProxy => Some(Some(BlockArg::BlockParamProxy)),
         _ if {
             let sample_block_arg = jit.peek_at_stack(&asm.ctx, 0);
             unsafe { rb_obj_is_proc(sample_block_arg) }.test()
         } => {
             // Speculate that we'll have a proc as the block arg
-            Some(Some(Type::TProc))
+            Some(Some(BlockArg::TProc))
         }
         _ => {
             gen_counter_incr(asm, Counter::send_iseq_block_arg_type);
