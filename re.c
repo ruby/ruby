@@ -88,6 +88,9 @@ static const char casetable[] = {
 # error >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
+// The process-global timeout for regexp matching
+rb_hrtime_t rb_reg_match_time_limit = 0;
+
 int
 rb_memcicmp(const void *x, const void *y, long len)
 {
@@ -1732,6 +1735,23 @@ reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_p
         ONIG_OPTION_NONE);
 }
 
+struct rb_reg_onig_match_args {
+    VALUE re;
+    VALUE str;
+    struct reg_onig_search_args args;
+    struct re_registers regs;
+
+    OnigPosition result;
+};
+
+static VALUE
+rb_reg_onig_match_try(VALUE value_args)
+{
+    struct rb_reg_onig_match_args *args = (struct rb_reg_onig_match_args *)value_args;
+    args->result = rb_reg_onig_match(args->re, args->str, reg_onig_search, &args->args, &args->regs);
+    return Qnil;
+}
+
 /* returns byte offset */
 static long
 rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
@@ -1742,22 +1762,38 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return -1;
     }
 
-    struct reg_onig_search_args args = {
-        .pos = pos,
-        .range = reverse ? 0 : len,
+    struct rb_reg_onig_match_args args = {
+        .re = re,
+        .str = str,
+        .args = {
+            .pos = pos,
+            .range = reverse ? 0 : len,
+        },
+        .regs = {0}
     };
 
-    struct re_registers regs = {0};
+    /* If there is a timeout set, then rb_reg_onig_match could raise a
+     * Regexp::TimeoutError so we want to protect it from leaking memory. */
+    if (rb_reg_match_time_limit) {
+        int state;
+        rb_protect(rb_reg_onig_match_try, (VALUE)&args, &state);
+        if (state) {
+            onig_region_free(&args.regs, false);
+            rb_jump_tag(state);
+        }
+    }
+    else {
+        rb_reg_onig_match_try((VALUE)&args);
+    }
 
-    OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, &regs);
-    if (result == ONIG_MISMATCH) {
+    if (args.result == ONIG_MISMATCH) {
         rb_backref_set(Qnil);
         return ONIG_MISMATCH;
     }
 
     VALUE match = match_alloc(rb_cMatch);
     rb_matchext_t *rm = RMATCH_EXT(match);
-    rm->regs = regs;
+    rm->regs = args.regs;
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -1774,7 +1810,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     rb_backref_set(match);
     if (set_match) *set_match = match;
 
-    return result;
+    return args.result;
 }
 
 long
@@ -4601,12 +4637,9 @@ re_warn(const char *s)
     rb_warn("%s", s);
 }
 
-// The process-global timeout for regexp matching
-rb_hrtime_t rb_reg_match_time_limit = 0;
-
 // This function is periodically called during regexp matching
-void
-rb_reg_check_timeout(regex_t *reg, void *end_time_)
+bool
+rb_reg_timeout_p(regex_t *reg, void *end_time_)
 {
     rb_hrtime_t *end_time = (rb_hrtime_t *)end_time_;
 
@@ -4631,10 +4664,18 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
     }
     else {
         if (*end_time < rb_hrtime_now()) {
-            // timeout is exceeded
-            rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
+            // Timeout has exceeded
+            return true;
         }
     }
+
+    return false;
+}
+
+void
+rb_reg_raise_timeout(void)
+{
+    rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
 }
 
 /*
