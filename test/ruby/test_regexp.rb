@@ -2008,6 +2008,14 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_bug_20098 # [Bug #20098]
+    assert /a((.|.)|bc){,4}z/.match? 'abcbcbcbcz'
+    assert /a(b+?c*){4,5}z/.match? 'abbbccbbbccbcbcz'
+    assert /a(b+?(.|.)){2,3}z/.match? 'abbbcbbbcbbbcz'
+    assert /a(b*?(.|.)[bc]){2,5}z/.match? 'abcbbbcbcccbcz'
+    assert /^(?:.+){2,4}?b|b/.match? "aaaabaa"
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
