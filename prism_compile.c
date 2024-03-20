@@ -8245,15 +8245,39 @@ pm_parse_process_error_utf8_p(const pm_parser_t *parser, const pm_location_t *lo
 static VALUE
 pm_parse_process_error(const pm_parse_result_t *result)
 {
-    const pm_diagnostic_t *head = (const pm_diagnostic_t *) result->parser.error_list.head;
+    const pm_parser_t *parser = &result->parser;
+    const pm_diagnostic_t *head = (const pm_diagnostic_t *) parser->error_list.head;
     bool valid_utf8 = true;
+
+    pm_buffer_t buffer = { 0 };
+    const pm_string_t *filepath = &parser->filepath;
 
     for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
         // Any errors with the level PM_ERROR_LEVEL_ARGUMENT effectively take
         // over as the only argument that gets raised. This is to allow priority
         // messages that should be handled before anything else.
         if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
-            return rb_exc_new(rb_eArgError, error->message, strlen(error->message));
+            int32_t line_number = (int32_t) pm_location_line_number(parser, &error->location);
+
+            pm_buffer_append_format(
+                &buffer,
+                "%.*s:%" PRIi32 ": %s",
+                (int) pm_string_length(filepath),
+                pm_string_source(filepath),
+                line_number,
+                error->message
+            );
+
+            if (pm_parse_process_error_utf8_p(parser, &error->location)) {
+                pm_buffer_append_byte(&buffer, '\n');
+
+                pm_list_node_t *list_node = (pm_list_node_t *) error;
+                pm_list_t error_list = { .size = 1, .head = list_node, .tail = list_node };
+
+                pm_parser_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
+            }
+
+            return rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
         }
 
         // It is implicitly assumed that the error messages will be encodeable
@@ -8261,16 +8285,22 @@ pm_parse_process_error(const pm_parse_result_t *result)
         // contain invalid byte sequences. So if any source examples include
         // invalid UTF-8 byte sequences, we will skip showing source examples
         // entirely.
-        if (valid_utf8 && !pm_parse_process_error_utf8_p(&result->parser, &error->location)) {
+        if (valid_utf8 && !pm_parse_process_error_utf8_p(parser, &error->location)) {
             valid_utf8 = false;
         }
     }
 
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
+    pm_buffer_append_format(
+        &buffer,
+        "%.*s:%" PRIi32 ": syntax error%s found\n",
+        (int) pm_string_length(filepath),
+        pm_string_source(filepath),
+        (int32_t) pm_location_line_number(parser, &head->location),
+        (parser->error_list.size > 1) ? "s" : ""
+    );
 
     if (valid_utf8) {
-        pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
+        pm_parser_errors_format(&result->parser, &result->parser.error_list, &buffer, rb_stderr_tty_p(), true);
     }
     else {
         const pm_string_t *filepath = &result->parser.filepath;
@@ -8486,6 +8516,10 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
     pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
 
     rb_encoding *encoding = rb_enc_get(source);
+    if (!rb_enc_asciicompat(encoding)) {
+        return rb_exc_new_cstr(rb_eArgError, "invalid source encoding");
+    }
+
     pm_options_encoding_set(&result->options, rb_enc_name(encoding));
 
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));

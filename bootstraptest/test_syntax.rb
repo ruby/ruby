@@ -529,7 +529,7 @@ assert_equal %q{1}, %q{
 }
 def assert_syntax_error expected, code, message = ''
   assert_match /^#{Regexp.escape(expected)}/,
-    "begin eval(%q{#{code}}, nil, '', 0)"'; rescue SyntaxError => e; e.message[/(?:\A:(?:\d+:)?(?: syntax error,)?|\^) (.*)/, 1] end', message
+    "begin eval(%q{#{code}}, nil, '', 0)"'; rescue SyntaxError => e; p e.message[/(?:\^|\A:(?:\d+:)?(?: syntax error,)?) (.*)/, 1]; e.message[/(?:\^|\A:(?:\d+:)?(?! syntax errors? found)(?: syntax error,)?) (.*)/, 1] end', message
 end
 assert_syntax_error "unterminated string meets end of file", '().."', '[ruby-dev:29732]'
 assert_equal %q{[]}, %q{$&;[]}, '[ruby-dev:31068]'

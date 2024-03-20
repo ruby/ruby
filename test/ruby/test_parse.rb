@@ -803,14 +803,20 @@ x = __ENCODING__
 # coding: foo
       END
     end
-    assert_include(e.message, "# coding: foo\n          ^~~")
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding: foo\n")
+    assert_include(message, "          ^")
 
     e = assert_raise(ArgumentError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = foo
       END
     end
-    assert_include(e.message, "# coding = foo\n           ^~~")
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding = foo\n")
+    assert_include(message, "           ^")
   end
 
   def test_utf8_bom

@@ -19523,7 +19523,7 @@ typedef struct {
 
 #define PM_COLOR_GRAY "\033[38;5;102m"
 #define PM_COLOR_RED "\033[1;31m"
-#define PM_COLOR_RESET "\033[0m"
+#define PM_COLOR_RESET "\033[m"
 
 static inline pm_error_t *
 pm_parser_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
@@ -19579,7 +19579,11 @@ pm_parser_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_l
 
 static inline void
 pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, int32_t line, pm_buffer_t *buffer) {
-    size_t index = (size_t) (line - parser->start_line);
+    int32_t line_delta = line - parser->start_line;
+    assert(line_delta >= 0);
+
+    size_t index = (size_t) line_delta;
+    assert(index < newline_list->size);
 
     const uint8_t *start = &parser->start[newline_list->offsets[index]];
     const uint8_t *end;
@@ -19602,8 +19606,7 @@ pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t 
  * Format the errors on the parser into the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize) {
-    const pm_list_t *error_list = &parser->error_list;
+pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, bool colorize, bool inline_messages) {
     assert(error_list->size != 0);
 
     // First, we're going to sort all of the errors by line number using an
@@ -19700,7 +19703,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // the source before the error to give some context. We'll be careful not to
     // display the same line twice in case the errors are close enough in the
     // source.
-    int32_t last_line = 0;
+    int32_t last_line = parser->start_line - 1;
     const pm_encoding_t *encoding = parser->encoding;
 
     for (size_t index = 0; index < error_list->size; index++) {
@@ -19726,12 +19729,15 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         // the line that has the error in it.
         if ((index == 0) || (error->line != last_line)) {
             if (colorize) {
-                pm_buffer_append_string(buffer, PM_COLOR_RED "> " PM_COLOR_RESET, 13);
+                pm_buffer_append_string(buffer, PM_COLOR_RED "> " PM_COLOR_RESET, 12);
             } else {
                 pm_buffer_append_string(buffer, "> ", 2);
             }
             pm_parser_errors_format_line(parser, newline_list, error_format.number_prefix, error->line, buffer);
         }
+
+        const uint8_t *start = &parser->start[newline_list->offsets[error->line - start_line]];
+        if (start == parser->end) pm_buffer_append_byte(buffer, '\n');
 
         // Now we'll display the actual error message. We'll do this by first
         // putting the prefix to the line, then a bunch of blank spaces
@@ -19746,13 +19752,11 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
 
         size_t column = 0;
-        const uint8_t *start = &parser->start[newline_list->offsets[error->line - start_line]];
-
         while (column < error->column_end) {
             if (column < error->column_start) {
                 pm_buffer_append_byte(buffer, ' ');
             } else if (colorize) {
-                pm_buffer_append_string(buffer, PM_COLOR_RED "^" PM_COLOR_RESET, 12);
+                pm_buffer_append_string(buffer, PM_COLOR_RED "^" PM_COLOR_RESET, 11);
             } else {
                 pm_buffer_append_byte(buffer, '^');
             }
@@ -19761,10 +19765,13 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
             column += (char_width == 0 ? 1 : char_width);
         }
 
-        pm_buffer_append_byte(buffer, ' ');
+        if (inline_messages) {
+            pm_buffer_append_byte(buffer, ' ');
 
-        const char *message = error->error->message;
-        pm_buffer_append_string(buffer, message, strlen(message));
+            const char *message = error->error->message;
+            pm_buffer_append_string(buffer, message, strlen(message));
+        }
+
         pm_buffer_append_byte(buffer, '\n');
 
         // Here we determine how many lines of padding to display after the
