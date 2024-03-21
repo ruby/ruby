@@ -8752,12 +8752,6 @@ rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
 }
 
 void
-rb_gc_force_recycle(VALUE obj)
-{
-    /* no-op */
-}
-
-void
 rb_gc_register_mark_object(VALUE obj)
 {
     if (!is_pointer_to_heap(&rb_objspace, (void *)obj))
