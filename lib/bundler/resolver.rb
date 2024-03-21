@@ -158,7 +158,7 @@ module Bundler
     def versions_for(package, range=VersionRange.any)
       versions = range.select_versions(@sorted_versions[package])
 
-      sort_versions(package, versions)
+      sort_versions_by_preferred(package, versions)
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
@@ -275,7 +275,7 @@ module Bundler
         groups
       end
 
-      sort_versions(package, versions)
+      sort_versions_by_preferred(package, versions)
     end
 
     def source_for(name)
@@ -357,7 +357,7 @@ module Bundler
       requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
     end
 
-    def sort_versions(package, versions)
+    def sort_versions_by_preferred(package, versions)
       if versions.size > 1
         @gem_version_promoter.sort_versions(package, versions).reverse
       else
