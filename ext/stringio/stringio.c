@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.1"
+#define STRINGIO_VERSION "3.0.1.1"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -984,7 +984,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
     len = RSTRING_LEN(str);
     rest = pos - len;
     if (cl > pos) {
-	long ex = (rest < 0 ? cl-pos : cl+rest);
+	long ex = cl - (rest < 0 ? pos : len);
 	rb_str_modify_expand(str, ex);
 	rb_str_set_len(str, len + ex);
 	s = RSTRING_PTR(str);
