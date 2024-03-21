@@ -18,7 +18,7 @@ module Lrama
       end
 
       def to_s
-        "#{super} location: #{location}"
+        "value: `#{s_value}`, location: #{location}"
       end
 
       def referred_by?(string)

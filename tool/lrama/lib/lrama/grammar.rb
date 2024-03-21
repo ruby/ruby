@@ -3,6 +3,7 @@ require "lrama/grammar/auxiliary"
 require "lrama/grammar/binding"
 require "lrama/grammar/code"
 require "lrama/grammar/counter"
+require "lrama/grammar/destructor"
 require "lrama/grammar/error_token"
 require "lrama/grammar/parameterizing_rule"
 require "lrama/grammar/percent_code"
@@ -34,7 +35,7 @@ module Lrama
     def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term,
                                         :find_symbol_by_number!, :find_symbol_by_id!, :token_to_symbol,
                                         :find_symbol_by_s_value!, :fill_symbol_number, :fill_nterm_type,
-                                        :fill_printer, :fill_error_token, :sort_by_number!
+                                        :fill_printer, :fill_destructor, :fill_error_token, :sort_by_number!
 
 
     def initialize(rule_counter)
@@ -43,6 +44,7 @@ module Lrama
       # Code defined by "%code"
       @percent_codes = []
       @printers = []
+      @destructors = []
       @error_tokens = []
       @symbols_resolver = Grammar::Symbols::Resolver.new
       @types = []
@@ -63,6 +65,10 @@ module Lrama
 
     def add_percent_code(id:, code:)
       @percent_codes << PercentCode.new(id.s_value, code.s_value)
+    end
+
+    def add_destructor(ident_or_tags:, token_code:, lineno:)
+      @destructors << Destructor.new(ident_or_tags: ident_or_tags, token_code: token_code, lineno: lineno)
     end
 
     def add_printer(ident_or_tags:, token_code:, lineno:)
@@ -345,6 +351,7 @@ module Lrama
       fill_symbol_number
       fill_nterm_type(@types)
       fill_printer(@printers)
+      fill_destructor(@destructors)
       fill_error_token(@error_tokens)
       sort_by_number!
     end
