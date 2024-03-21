@@ -26,24 +26,22 @@ jobs:
       matrix:
         test_task: ['check']
         test_opts: ['']
-        os:
-          - macos-12
-          - macos-13
-          - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+        os: ['']
         include:
           - test_task: test-all
             test_opts: --repeat-count=2
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundler-parallel
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundled-gems
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: check
+            os: macos-12
+          - test_task: check
+            os: macos-13
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
 
     if: >-
       ${{!(false

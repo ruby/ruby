@@ -24,32 +24,29 @@ jobs:
   make:
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-20.04]
         test_task: [check]
         arch: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
+        os: ['']
         # specifying other jobs with `include` to avoid redundant tests
         include:
           - test_task: check
             arch: i686
-            os: ubuntu-22.04
           - test_task: check
             configure: '--disable-yjit'
-            os: ubuntu-22.04
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
-            os: ubuntu-22.04
           - test_task: test-bundler-parallel
-            os: ubuntu-22.04
           - test_task: test-bundled-gems
-            os: ubuntu-22.04
+          - test_task: check
+            os: ubuntu-20.04
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
 
     if: >-
       ${{!(false
