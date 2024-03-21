@@ -24,12 +24,9 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [check]
-        arch: ['']
-        configure: ['cppflags=-DVM_CHECK_MODE']
-        os: ['']
-        # specifying other jobs with `include` to avoid redundant tests
         include:
+          - test_task: check
+            configure: 'cppflags=-DVM_CHECK_MODE'
           - test_task: check
             arch: i686
           - test_task: check

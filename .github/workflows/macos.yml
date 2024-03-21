@@ -24,10 +24,8 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check']
-        test_opts: ['']
-        os: ['']
         include:
+          - test_task: check
           - test_task: test-all
             test_opts: --repeat-count=2
           - test_task: test-bundler-parallel
