@@ -273,7 +273,7 @@ new_struct(VALUE name, VALUE super)
         rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
         rb_mod_remove_const(super, ID2SYM(id));
     }
-    return rb_define_class_id_under(super, id, super);
+    return rb_define_class_id_under_no_pin(super, id, super);
 }
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
@@ -491,8 +491,13 @@ rb_struct_define(const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    if (!name) st = anonymous_struct(rb_cStruct);
-    else st = new_struct(rb_str_new2(name), rb_cStruct);
+    if (!name) {
+        st = anonymous_struct(rb_cStruct);
+    }
+    else {
+        st = new_struct(rb_str_new2(name), rb_cStruct);
+        rb_vm_add_root_module(st);
+    }
     return setup_struct(st, ary);
 }
 
@@ -506,7 +511,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
+    return setup_struct(rb_define_class_id_under(outer, rb_intern(name), rb_cStruct), ary);
 }
 
 /*
@@ -1699,7 +1704,9 @@ rb_data_define(VALUE super, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
     if (!super) super = rb_cData;
-    return setup_data(anonymous_struct(super), ary);
+    VALUE klass = setup_data(anonymous_struct(super), ary);
+    rb_vm_add_root_module(klass);
+    return klass;
 }
 
 /*
