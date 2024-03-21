@@ -534,6 +534,20 @@ module TestStruct
     assert_equal [[:req, :_]], klass.instance_method(:c=).parameters
   end
 
+  def test_named_structs_are_not_rooted
+    # [Bug #20311]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        Struct.new("A")
+        Struct.send(:remove_const, :A)
+      end
+
+      1_000.times(&code)
+    PREP
+      50_000.times(&code)
+    CODE
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

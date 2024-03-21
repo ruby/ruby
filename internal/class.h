@@ -175,6 +175,7 @@ void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);
+VALUE rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super);
 VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
