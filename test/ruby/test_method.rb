@@ -1614,4 +1614,12 @@ class TestMethod < Test::Unit::TestCase
   def test_invalidating_CC_ASAN
     assert_ruby_status(['-e', 'using Module.new'])
   end
+
+  def test_kwarg_eval_memory_leak
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+      100_000.times do
+        eval("Hash.new(foo: 123)")
+      end
+    RUBY
+  end
 end

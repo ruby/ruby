@@ -2809,6 +2809,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
+        rb_gc_update_tbl_refs(vm->ci_table);
         rb_gc_update_tbl_refs(vm->frozen_strings);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->load_path = rb_gc_location(vm->load_path);
@@ -3046,6 +3047,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->loading_table);
             vm->loading_table = 0;
         }
+        if (vm->ci_table) {
+            st_free_table(vm->ci_table);
+            vm->ci_table = NULL;
+        }
         if (vm->frozen_strings) {
             st_free_table(vm->frozen_strings);
             vm->frozen_strings = 0;
@@ -3136,6 +3141,7 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_workqueue(&vm->workqueue) +
         rb_st_memsize(vm->defined_module_hash) +
         vm_memsize_at_exit_list(vm->at_exit) +
+        rb_st_memsize(vm->ci_table) +
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
@@ -4220,6 +4226,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
+    vm->ci_table = st_init_table(&vm_ci_hashtype);
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 

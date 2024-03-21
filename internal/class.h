@@ -44,7 +44,7 @@ struct rb_classext_struct {
     VALUE *iv_ptr;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
-    struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
+    struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
     struct rb_id_table *cvc_tbl;
     size_t superclass_depth;
     VALUE *superclasses;
