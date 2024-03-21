@@ -53,9 +53,30 @@ module Bundler
     # @return [Specification] A new instance of the Specification Array sorted and
     #    possibly filtered.
     def sort_versions(package, specs)
-      specs = filter_versions(package, specs)
+      locked_version = package.locked_version
 
-      sort_dep_specs(specs, package)
+      result = specs.sort do |a, b|
+        unless package.prerelease_specified? || pre?
+          a_pre = a.prerelease?
+          b_pre = b.prerelease?
+
+          next -1 if a_pre && !b_pre
+          next  1 if b_pre && !a_pre
+        end
+
+        if major? || locked_version.nil?
+          a <=> b
+        elsif either_version_older_than_locked?(a, b, locked_version)
+          a <=> b
+        elsif segments_do_not_match?(a, b, :major)
+          b <=> a
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
+          b <=> a
+        else
+          a <=> b
+        end
+      end
+      post_sort(result, package.unlock?, locked_version)
     end
 
     # @return [bool] Convenience method for testing value of level variable.
@@ -90,33 +111,6 @@ module Bundler
     end
 
     private
-
-    def sort_dep_specs(specs, package)
-      locked_version = package.locked_version
-
-      result = specs.sort do |a, b|
-        unless package.prerelease_specified? || pre?
-          a_pre = a.prerelease?
-          b_pre = b.prerelease?
-
-          next -1 if a_pre && !b_pre
-          next  1 if b_pre && !a_pre
-        end
-
-        if major? || locked_version.nil?
-          a <=> b
-        elsif either_version_older_than_locked?(a, b, locked_version)
-          a <=> b
-        elsif segments_do_not_match?(a, b, :major)
-          b <=> a
-        elsif !minor? && segments_do_not_match?(a, b, :minor)
-          b <=> a
-        else
-          a <=> b
-        end
-      end
-      post_sort(result, package.unlock?, locked_version)
-    end
 
     def either_version_older_than_locked?(a, b, locked_version)
       a.version < locked_version || b.version < locked_version

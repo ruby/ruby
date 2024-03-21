@@ -58,18 +58,18 @@ RSpec.describe Bundler::GemVersionPromoter do
       context "when level is minor" do
         before { gvp.level = :minor }
 
-        it "removes downgrades and major upgrades" do
+        it "sorts highest minor within same major in last position" do
           versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
-          expect(versions).to eq %w[0.3.0 0.3.1 0.9.0]
+          expect(versions).to eq %w[0.2.0 2.0.1 2.1.0 1.0.0 0.3.0 0.3.1 0.9.0]
         end
       end
 
       context "when level is patch" do
         before { gvp.level = :patch }
 
-        it "removes downgrades and major and minor upgrades" do
+        it "sorts highest patch within same minor in last position" do
           versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
-          expect(versions).to eq %w[0.3.0 0.3.1]
+          expect(versions).to eq %w[0.2.0 2.1.0 2.0.1 1.0.0 0.9.0 0.3.0 0.3.1]
         end
       end
     end
