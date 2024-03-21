@@ -337,6 +337,120 @@ invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data
     return 0; // continue to iteration
 }
 
+static st_index_t
+vm_ci_hash(VALUE v)
+{
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)v;
+    st_index_t h;
+    h = rb_hash_start(ci->mid);
+    h = rb_hash_uint(h, ci->flag);
+    h = rb_hash_uint(h, ci->argc);
+    if (ci->kwarg) {
+        for (int i = 0; i < ci->kwarg->keyword_len; i++) {
+            h = rb_hash_uint(h, ci->kwarg->keywords[i]);
+        }
+    }
+    return h;
+}
+
+static int
+vm_ci_hash_cmp(VALUE v1, VALUE v2)
+{
+    const struct rb_callinfo *ci1 = (const struct rb_callinfo *)v1;
+    const struct rb_callinfo *ci2 = (const struct rb_callinfo *)v2;
+    if (ci1->mid != ci2->mid) return 1;
+    if (ci1->flag != ci2->flag) return 1;
+    if (ci1->argc != ci2->argc) return 1;
+    if (ci1->kwarg != NULL) {
+        VM_ASSERT(ci2->kwarg != NULL); // implied by matching flags
+
+        if (ci1->kwarg->keyword_len != ci2->kwarg->keyword_len)
+            return 1;
+
+        for (int i = 0; i < ci1->kwarg->keyword_len; i++) {
+            if (ci1->kwarg->keywords[i] != ci2->kwarg->keywords[i]) {
+                return 1;
+            }
+        }
+    } else {
+        VM_ASSERT(ci2->kwarg == NULL); // implied by matching flags
+    }
+    return 0;
+}
+
+static const struct st_hash_type vm_ci_hashtype = {
+    vm_ci_hash_cmp,
+    vm_ci_hash
+};
+
+static int
+ci_lookup_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)*key;
+    st_data_t *ret = (st_data_t *)data;
+
+    if (existing) {
+        if (rb_objspace_garbage_object_p((VALUE)ci)) {
+            *ret = (st_data_t)NULL;
+            return ST_DELETE;
+        } else {
+            *ret = *key;
+            return ST_STOP;
+        }
+    }
+    else {
+        *key = *value = *ret = (st_data_t)ci;
+        return ST_CONTINUE;
+    }
+}
+
+const struct rb_callinfo *
+rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg)
+{
+    rb_vm_t *vm = GET_VM();
+    const struct rb_callinfo *ci = NULL;
+
+    if (kwarg) {
+        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+    }
+    const struct rb_callinfo *new_ci = (const struct rb_callinfo *)
+        rb_imemo_new(
+                imemo_callinfo,
+                (VALUE)mid,
+                (VALUE)flag,
+                (VALUE)argc,
+                (VALUE)kwarg);
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_table *ci_table = vm->ci_table;
+        VM_ASSERT(ci_table);
+
+        do {
+            st_update(ci_table, (st_data_t)new_ci, ci_lookup_i, (st_data_t)&ci);
+        } while (ci == NULL);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    VM_ASSERT(ci);
+    VM_ASSERT(vm_ci_markable(ci));
+
+    return ci;
+}
+
+void
+rb_vm_ci_free(const struct rb_callinfo *ci)
+{
+    rb_vm_t *vm = GET_VM();
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_data_t key = (st_data_t)ci;
+        st_delete(vm->ci_table, &key, NULL);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
 void
 rb_clear_all_refinement_method_cache(void)
 {

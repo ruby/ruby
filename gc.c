@@ -3791,6 +3791,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_callinfo:
             {
                 const struct rb_callinfo * ci = ((const struct rb_callinfo *)obj);
+                rb_vm_ci_free(ci);
                 if (ci->kwarg) {
                     ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
                     if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);

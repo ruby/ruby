@@ -197,12 +197,13 @@ vm_ci_dump(const struct rb_callinfo *ci)
       (((VALUE)(argc)) << CI_EMBED_ARGC_SHFT) |  \
       RUBY_FIXNUM_FLAG))
 
+// vm_method.c
+const struct rb_callinfo *rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg);
+void rb_vm_ci_free(const struct rb_callinfo *);
+
 static inline const struct rb_callinfo *
 vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
-    if (kwarg) {
-        ((struct rb_callinfo_kwarg *)kwarg)->references++;
-    }
     if (USE_EMBED_CI && VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
         RB_DEBUG_COUNTER_INC(ci_packed);
         return vm_ci_new_id(mid, flag, argc, kwarg);
@@ -211,13 +212,7 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
     const bool debug = 0;
     if (debug) ruby_debug_printf("%s:%d ", file, line);
 
-    // TODO: dedup
-    const struct rb_callinfo *ci = (const struct rb_callinfo *)
-      rb_imemo_new(imemo_callinfo,
-                   (VALUE)mid,
-                   (VALUE)flag,
-                   (VALUE)argc,
-                   (VALUE)kwarg);
+    const struct rb_callinfo *ci = rb_vm_ci_lookup(mid, flag, argc, kwarg);
     if (debug) rp(ci);
     if (kwarg) {
         RB_DEBUG_COUNTER_INC(ci_kw);
