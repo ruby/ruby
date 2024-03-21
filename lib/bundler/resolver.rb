@@ -51,24 +51,20 @@ module Bundler
       end
 
       @sorted_versions = Hash.new do |candidates, package|
-        candidates[package] = if package.root?
-          [root_version]
-        else
-          all_versions_for(package).sort
-        end
+        candidates[package] = all_versions_for(package).sort
       end
+
+      @sorted_versions[root] = [root_version]
 
       root_dependencies = prepare_dependencies(@requirements, @packages)
 
       @cached_dependencies = Hash.new do |dependencies, package|
-        dependencies[package] = if package.root?
-          { root_version => root_dependencies }
-        else
-          Hash.new do |versions, version|
-            versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
-          end
+        dependencies[package] = Hash.new do |versions, version|
+          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
         end
       end
+
+      @cached_dependencies[root] = { root_version => root_dependencies }
 
       logger = Bundler::UI::Shell.new
       logger.level = debug? ? "debug" : "warn"
