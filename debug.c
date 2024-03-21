@@ -219,7 +219,11 @@ ruby_env_debug_option(const char *str, int len, void *arg)
         } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \
-    if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
+    if (NAME_MATCH_VALUE(name)) { \
+        if (!len) req; \
+        else SET_UINT_LIST(name, vals, num); \
+        return 1; \
+    }
 
     if (NAME_MATCH("gc_stress")) {
         rb_gc_stress_set(Qtrue);
@@ -227,22 +231,15 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     }
     SET_WHEN("core", ruby_enable_coredump, 1);
     SET_WHEN("ci", ruby_on_ci, 1);
-    if (NAME_MATCH_VALUE("rgengc")) {
-        if (!len) ruby_rgengc_debug = 1;
-        else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
-        return 1;
-    }
+    SET_WHEN_UINT("rgengc", &ruby_rgengc_debug, 1, ruby_rgengc_debug = 1);
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
 # endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
-    if (NAME_MATCH_VALUE("codepage")) {
-        if (!len) fprintf(stderr, "missing codepage argument");
-        else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
-        return 1;
-    }
+    SET_WHEN_UINT("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage),
+                  fprintf(stderr, "missing codepage argument"));
 #endif
     return 0;
 }
