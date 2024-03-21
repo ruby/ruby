@@ -1,4 +1,5 @@
 require "forwardable"
+require "lrama/grammar/code/destructor_code"
 require "lrama/grammar/code/initial_action_code"
 require "lrama/grammar/code/no_reference_code"
 require "lrama/grammar/code/printer_code"

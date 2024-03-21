@@ -1145,7 +1145,12 @@ yydestruct (const char *yymsg,
   YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp<%= output.user_args %>);
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YY_USE (yykind);
+  switch (yykind)
+    {
+<%= output.symbol_actions_for_destructor -%>
+      default:
+        break;
+    }
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 

@@ -1,5 +1,69 @@
 # NEWS for Lrama
 
+## Lrama 0.6.4 (2024-03-22)
+
+### Parameterizing rules (preceded, terminated, delimited)
+
+Support `preceded`, `terminated` and `delimited` rules.
+
+```
+program: preceded(opening, X)
+
+// Expanded to
+
+program: preceded_opening_X
+preceded_opening_X: opening X
+```
+
+```
+program: terminated(X, closing)
+
+// Expanded to
+
+program: terminated_X_closing
+terminated_X_closing: X closing
+```
+
+```
+program: delimited(opening, X, closing)
+
+// Expanded to
+
+program: delimited_opening_X_closing
+delimited_opening_X_closing: opening X closing
+```
+
+https://github.com/ruby/lrama/pull/382
+
+### Support `%destructor` declaration
+
+User can set codes for freeing semantic value resources by using `%destructor`.
+In general, these resources are freed by actions or after parsing.
+However if syntax error happens in parsing, these codes may not be executed.
+Codes associated to `%destructor` are executed when semantic value is popped from the stack by an error.
+
+```
+%token <val1> NUM
+%type <val2> expr2
+%type <val3> expr
+
+%destructor {
+    printf("destructor for val1: %d\n", $$);
+} <val1> // printer for TAG
+
+%destructor {
+    printf("destructor for val2: %d\n", $$);
+} <val2>
+
+%destructor {
+    printf("destructor for expr: %d\n", $$);
+} expr // printer for symbol
+```
+
+Bison supports this feature from 1.75b.
+
+https://github.com/ruby/lrama/pull/385
+
 ## Lrama 0.6.3 (2024-02-15)
 
 ### Bring Your Own Stack
@@ -34,6 +98,8 @@ primary: k_if expr_value then compstmt if_tail k_end
           }
 ```
 
+https://github.com/ruby/lrama/pull/367
+
 ## Lrama 0.6.2 (2024-01-27)
 
 ### %no-stdlib directive
@@ -51,7 +117,7 @@ Allow to pass an instantiated rule to other parameterizing rules.
 
 ```
 %rule constant(X) : X
-              ;
+                  ;
 
 %rule option(Y) : /* empty */
                 | Y

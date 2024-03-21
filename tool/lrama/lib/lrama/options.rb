@@ -18,6 +18,7 @@ module Lrama
       @trace_opts = nil
       @report_opts = nil
       @y = STDIN
+      @debug = false
     end
   end
 end
