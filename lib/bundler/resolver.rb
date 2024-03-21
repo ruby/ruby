@@ -158,7 +158,13 @@ module Bundler
     def versions_for(package, range=VersionRange.any)
       versions = range.select_versions(@sorted_versions[package])
 
-      sort_versions_by_preferred(package, versions)
+      # Conditional avoids (among other things) calling
+      # sort_versions_by_preferred with the root package
+      if versions.size > 1
+        sort_versions_by_preferred(package, versions)
+      else
+        versions
+      end
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
@@ -358,11 +364,7 @@ module Bundler
     end
 
     def sort_versions_by_preferred(package, versions)
-      if versions.size > 1
-        @gem_version_promoter.sort_versions(package, versions)
-      else
-        versions
-      end
+      @gem_version_promoter.sort_versions(package, versions)
     end
 
     def repository_for(package)
