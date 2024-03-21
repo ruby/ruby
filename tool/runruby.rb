@@ -136,6 +136,13 @@ if File.file?(libruby_so)
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
 end
+
+librubygc_so = File.join(abs_archdir, config['LIBRUBYGC_SO'])
+if File.file?(librubygc_so)
+  if e = config['LIBPATHENV'] and !e.empty?
+    env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
+  end
+end
 # Work around a bug in FreeBSD 13.2 which can cause fork(2) to hang
 # See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=271490
 env['LD_BIND_NOW'] = 'yes' if /freebsd/ =~ RUBY_PLATFORM
