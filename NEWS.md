@@ -11,7 +11,7 @@ Note that each entry is kept to a minimum, see links for details.
   as if they were frozen. If they are mutated a deprecation warning is emited.
   These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
   To disable this change you can run Ruby with the `--disable-frozen-string-literal` command line
-  argument. [Feature #20205]
+  argument. [[Feature #20205]]
 
 * `it` is added to reference a block parameter. [[Feature #18980]]
 
@@ -116,4 +116,5 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
 [Feature #20182]: https://bugs.ruby-lang.org/issues/20182
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
+[Feature #20205]: https://bugs.ruby-lang.org/issues/20205
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
