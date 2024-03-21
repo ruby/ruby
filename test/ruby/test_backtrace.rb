@@ -397,7 +397,6 @@ class TestBacktrace < Test::Unit::TestCase
     end;
 
     err = ["-:7:in 'Object#bar': bar! (RuntimeError)",
-           "\tfrom -:4:in 'Object#bar'",
            "\tfrom -:9:in '<main>'",
            "-:2:in 'Object#foo': foo! (RuntimeError)",
            "\tfrom -:5:in 'Object#bar'",
