@@ -359,7 +359,7 @@ module Bundler
 
     def sort_versions_by_preferred(package, versions)
       if versions.size > 1
-        @gem_version_promoter.sort_versions(package, versions).reverse
+        @gem_version_promoter.sort_versions(package, versions)
       else
         versions
       end

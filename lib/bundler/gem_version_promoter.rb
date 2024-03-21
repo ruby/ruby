@@ -59,20 +59,20 @@ module Bundler
           a_pre = a.prerelease?
           b_pre = b.prerelease?
 
-          next -1 if a_pre && !b_pre
-          next  1 if b_pre && !a_pre
+          next 1 if a_pre && !b_pre
+          next -1 if b_pre && !a_pre
         end
 
         if major? || locked_version.nil?
-          a <=> b
+          b <=> a
         elsif either_version_older_than_locked?(a, b, locked_version)
-          a <=> b
+          b <=> a
         elsif segments_do_not_match?(a, b, :major)
-          b <=> a
-        elsif !minor? && segments_do_not_match?(a, b, :minor)
-          b <=> a
-        else
           a <=> b
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
+          a <=> b
+        else
+          b <=> a
         end
       end
       post_sort(result, package.unlock?, locked_version)
@@ -137,13 +137,13 @@ module Bundler
       if unlock || locked_version.nil?
         result
       else
-        move_version_to_end(result, locked_version)
+        move_version_to_beginning(result, locked_version)
       end
     end
 
-    def move_version_to_end(result, version)
+    def move_version_to_beginning(result, version)
       move, keep = result.partition {|s| s.version.to_s == version.to_s }
-      keep.concat(move)
+      move.concat(keep)
     end
   end
 end
