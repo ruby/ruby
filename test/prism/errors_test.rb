@@ -1091,7 +1091,7 @@ module Prism
       )
 
       assert_errors expected, "class A; return; end", [
-        ["invalid `return` in a class or module body", 15..16]
+        ["invalid `return` in a class or module body", 9..15]
       ]
     end
 
@@ -1106,7 +1106,7 @@ module Prism
       )
 
       assert_errors expected, "module A; return; end", [
-        ["invalid `return` in a class or module body", 16..17]
+        ["invalid `return` in a class or module body", 10..16]
       ]
     end
 
