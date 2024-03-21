@@ -275,7 +275,7 @@ module Bundler
         groups
       end
 
-      sort_versions_by_preferred(package, versions)
+      @gem_version_promoter.filter_versions(package, versions)
     end
 
     def source_for(name)

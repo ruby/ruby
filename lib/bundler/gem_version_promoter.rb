@@ -53,7 +53,7 @@ module Bundler
     # @return [Specification] A new instance of the Specification Array sorted and
     #    possibly filtered.
     def sort_versions(package, specs)
-      specs = filter_dep_specs(specs, package) if strict
+      specs = filter_versions(package, specs)
 
       sort_dep_specs(specs, package)
     end
@@ -73,9 +73,9 @@ module Bundler
       pre == true
     end
 
-    private
+    def filter_versions(package, specs)
+      return specs unless strict
 
-    def filter_dep_specs(specs, package)
       locked_version = package.locked_version
       return specs if locked_version.nil? || major?
 
@@ -88,6 +88,8 @@ module Bundler
         all_match && gsv >= locked_version
       end
     end
+
+    private
 
     def sort_dep_specs(specs, package)
       locked_version = package.locked_version
