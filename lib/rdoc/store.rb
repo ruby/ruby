@@ -978,7 +978,7 @@ class RDoc::Store
     case obj
     when true, false, nil, Array, Class, Encoding, Hash, Integer, String, Symbol, RDoc::Text
     else
-      unless obj.class.name.start_with("RDoc::")
+      unless obj.class.name.start_with?("RDoc::")
         raise TypeError, "not permitted class: #{obj.class.name}"
       end
     end
