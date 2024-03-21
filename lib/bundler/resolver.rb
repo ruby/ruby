@@ -156,7 +156,7 @@ module Bundler
     end
 
     def versions_for(package, range=VersionRange.any)
-      versions = range.select_versions(@sorted_versions[package])
+      versions = select_sorted_versions(package, range)
 
       # Conditional avoids (among other things) calling
       # sort_versions_by_preferred with the root package
@@ -381,11 +381,12 @@ module Bundler
 
         next [dep_package, dep_constraint] if name == "bundler"
 
-        versions = versions_for(dep_package, dep_constraint.range)
+        dep_range = dep_constraint.range
+        versions = select_sorted_versions(dep_package, dep_range)
         if versions.empty? && dep_package.ignores_prereleases?
           @sorted_versions.delete(dep_package)
           dep_package.consider_prereleases!
-          versions = versions_for(dep_package, dep_constraint.range)
+          versions = select_sorted_versions(dep_package, dep_range)
         end
         next [dep_package, dep_constraint] unless versions.empty?
 
@@ -393,6 +394,10 @@ module Bundler
 
         raise_not_found!(dep_package)
       end.compact.to_h
+    end
+
+    def select_sorted_versions(package, range)
+      range.select_versions(@sorted_versions[package])
     end
 
     def other_specs_matching_message(specs, requirement)
