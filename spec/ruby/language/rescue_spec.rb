@@ -553,6 +553,23 @@ describe "The rescue keyword" do
     eval('1.+((1 rescue 1))').should == 2
   end
 
+  ruby_version_is "3.4" do
+    it "does not introduce extra backtrace entries" do
+      def foo
+        begin
+          raise "oops"
+        rescue
+          return caller(0, 2)
+        end
+      end
+      line = __LINE__
+      foo.should == [
+        "#{__FILE__}:#{line-3}:in 'foo'",
+        "#{__FILE__}:#{line+1}:in 'block (3 levels) in <top (required)>'"
+      ]
+    end
+  end
+
   describe "inline form" do
     it "can be inlined" do
       a = 1/0 rescue 1

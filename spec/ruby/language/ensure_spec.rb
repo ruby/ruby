@@ -328,4 +328,21 @@ describe "An ensure block inside 'do end' block" do
 
     result.should == :begin
   end
+
+  ruby_version_is "3.4" do
+    it "does not introduce extra backtrace entries" do
+      def foo
+        begin
+          raise "oops"
+        ensure
+          return caller(0, 2)
+        end
+      end
+      line = __LINE__
+      foo.should == [
+        "#{__FILE__}:#{line-3}:in 'foo'",
+        "#{__FILE__}:#{line+1}:in 'block (3 levels) in <top (required)>'"
+      ]
+    end
+  end
 end
