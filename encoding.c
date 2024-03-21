@@ -1543,7 +1543,14 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         if (NIL_P(encoding)) {
             def->index = -1;
             def->enc = 0;
-            st_insert(enc_table->names, (st_data_t)strdup(name),
+            char *name_dup = strdup(name);
+
+            st_data_t existing_name = (st_data_t)name_dup;
+            if (st_delete(enc_table->names, &existing_name, NULL)) {
+                xfree((void *)existing_name);
+            }
+
+            st_insert(enc_table->names, (st_data_t)name_dup,
                       (st_data_t)UNSPECIFIED_ENCODING);
         }
         else {
