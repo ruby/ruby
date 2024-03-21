@@ -45,13 +45,12 @@ module Bundler
 
     # Given a Resolver::Package and an Array of Specifications of available
     # versions for a gem, this method will return the Array of Specifications
-    # sorted (and possibly truncated if strict is true) in an order to give
-    # preference to the current level (:major, :minor or :patch) when resolution
-    # is deciding what versions best resolve all dependencies in the bundle.
+    # sorted in an order to give preference to the current level (:major, :minor
+    # or :patch) when resolution is deciding what versions best resolve all
+    # dependencies in the bundle.
     # @param package [Resolver::Package] The package being resolved.
     # @param specs [Specification] An array of Specifications for the package.
-    # @return [Specification] A new instance of the Specification Array sorted and
-    #    possibly filtered.
+    # @return [Specification] A new instance of the Specification Array sorted.
     def sort_versions(package, specs)
       locked_version = package.locked_version
 
@@ -94,6 +93,15 @@ module Bundler
       pre == true
     end
 
+    # Given a Resolver::Package and an Array of Specifications of available
+    # versions for a gem, this method will truncate the Array if strict
+    # is true. That means filtering out downgrades from the version currently
+    # locked, and filtering out upgrades that go past the selected level (major,
+    # minor, or patch).
+    # @param package [Resolver::Package] The package being resolved.
+    # @param specs [Specification] An array of Specifications for the package.
+    # @return [Specification] A new instance of the Specification Array
+    #   truncated.
     def filter_versions(package, specs)
       return specs unless strict
 
