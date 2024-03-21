@@ -301,6 +301,7 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
             VALUE refined_class = rb_refinement_module_get_refined_class(module);
             rb_clear_method_cache(refined_class, mid);
             rb_class_foreach_subclass(refined_class, clear_iclass_method_cache_by_id_for_refinements, mid);
+            rb_clear_all_refinement_method_cache();
         }
         rb_class_foreach_subclass(module, clear_iclass_method_cache_by_id, mid);
     }
