@@ -16379,7 +16379,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         (parser->current_context->context == PM_CONTEXT_CLASS) ||
                         (parser->current_context->context == PM_CONTEXT_MODULE)
                     ) {
-                        pm_parser_err_current(parser, PM_ERR_RETURN_INVALID);
+                        pm_parser_err_previous(parser, PM_ERR_RETURN_INVALID);
                     }
                     return (pm_node_t *) pm_return_node_create(parser, &keyword, arguments.arguments);
                 }
