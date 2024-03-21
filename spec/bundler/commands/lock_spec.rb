@@ -392,6 +392,22 @@ RSpec.describe "bundle lock" do
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
 
+    it "shows proper error when Gemfile changes forbid patch upgrades, and --patch --strict is given" do
+      # force next minor via Gemfile
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo', '1.5.0'
+        gem 'qux'
+      G
+
+      bundle "lock --update foo --patch --strict", raise_on_error: false
+
+      expect(err).to include(
+        "foo is locked to 1.4.3, while Gemfile is requesting foo (= 1.5.0). " \
+        "--strict --patch was specified, but there are no patch level upgrades from 1.4.3 satisfying foo (= 1.5.0), so version solving has failed"
+      )
+    end
+
     context "pre" do
       it "defaults to major" do
         bundle "lock --update --pre"

@@ -342,6 +342,17 @@ module Bundler
       @gem_version_promoter.filter_versions(package, @all_versions[package])
     end
 
+    def raise_all_versions_filtered_out!(package)
+      level = @gem_version_promoter.level
+      name = package.name
+      locked_version = package.locked_version
+      requirement = package.dependency
+
+      raise GemNotFound,
+        "#{name} is locked to #{locked_version}, while Gemfile is requesting #{requirement}. " \
+        "--strict --#{level} was specified, but there are no #{level} level upgrades from #{locked_version} satisfying #{requirement}, so version solving has failed"
+    end
+
     def filter_matching_specs(specs, requirements)
       Array(requirements).flat_map do |requirement|
         specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
@@ -391,6 +402,11 @@ module Bundler
           dep_package.consider_prereleases!
           versions = select_sorted_versions(dep_package, dep_range)
         end
+
+        if versions.empty? && select_all_versions(dep_package, dep_range).any?
+          raise_all_versions_filtered_out!(dep_package)
+        end
+
         next [dep_package, dep_constraint] unless versions.empty?
 
         next unless dep_package.current_platform?
@@ -401,6 +417,10 @@ module Bundler
 
     def select_sorted_versions(package, range)
       range.select_versions(@sorted_versions[package])
+    end
+
+    def select_all_versions(package, range)
+      range.select_versions(@all_versions[package])
     end
 
     def other_specs_matching_message(specs, requirement)
