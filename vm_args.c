@@ -687,6 +687,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 rest_last = rb_hash_dup(rest_last);
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
+                // Unset rest_dupped set by anon_rest as we may need to modify splat in this case
+                args->rest_dupped = false;
+
                 if (ignore_keyword_hash_p(rest_last, iseq, &kw_flag, &converted_keyword_hash)) {
                     arg_rest_dup(args);
                     rb_ary_pop(args->rest);
