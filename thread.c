@@ -259,7 +259,6 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
 }
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
-MAYBE_UNUSED(static void rb_thread_sched_destroy(struct rb_thread_sched *sched));
 MAYBE_UNUSED(static bool th_has_dedicated_nt(const rb_thread_t *th));
 MAYBE_UNUSED(static int waitfd_to_waiting_flag(int wfd_event));
 
