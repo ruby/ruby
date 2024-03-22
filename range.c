@@ -2373,8 +2373,16 @@ range_overlap(VALUE range, VALUE other)
     if (empty_region_p(self_beg, other_end, other_excl)) return Qfalse;
     if (empty_region_p(other_beg, self_end, self_excl)) return Qfalse;
 
-    /* if both begin values are equal, no more comparisons needed */
-    if (rb_equal(self_beg, other_beg)) return Qtrue;
+    if (!NIL_P(self_beg) && !NIL_P(other_beg)) {
+        VALUE cmp = rb_funcall(self_beg, id_cmp, 1, other_beg);
+        if (NIL_P(cmp)) return Qfalse;
+        /* if both begin values are equal, no more comparisons needed */
+        if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
+    }
+    else if (NIL_P(self_beg) && NIL_P(other_beg)) {
+        VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
+        return RBOOL(!NIL_P(cmp));
+    }
 
     if (empty_region_p(self_beg, self_end, self_excl)) return Qfalse;
     if (empty_region_p(other_beg, other_end, other_excl)) return Qfalse;
