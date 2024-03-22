@@ -2835,6 +2835,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal({a: 1}, kw)
   end
 
+  def test_anon_splat_ruby2_keywords_bug_20388
+    extend(Module.new{def process(action, ...) 1 end})
+    extend(Module.new do
+      def process(action, *args)
+        args.freeze
+        super
+      end
+      ruby2_keywords :process
+    end)
+
+    assert_equal(1, process(:foo, bar: :baz))
+  end
+
   def test_top_ruby2_keywords
     assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
       def bar(*a, **kw)
