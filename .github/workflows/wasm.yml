@@ -120,7 +120,7 @@ jobs:
             --host wasm32-unknown-wasi \
             --with-baseruby=$PWD/../baseruby/install/bin/ruby \
             --with-static-linked-ext \
-            --with-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,gdbm,json,json/generator,json/parser,nkf,objspace,pathname,racc/cparse,rbconfig/sizeof,ripper,stringio,strscan,monitor \
+            --with-ext=cgi/escape,continuation,coverage,date,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,json,json/generator,json/parser,objspace,pathname,rbconfig/sizeof,ripper,stringio,strscan,monitor \
             LDFLAGS=" \
               -Xlinker --stack-first \
               -Xlinker -z -Xlinker stack-size=16777216 \
