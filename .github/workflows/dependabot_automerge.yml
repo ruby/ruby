@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Dependabot metadata
-        uses: dependabot/fetch-metadata@c9c4182bf1b97f5224aee3906fd373f6b61b4526 # v1.6.0
+        uses: dependabot/fetch-metadata@0fb21704c18a42ce5aa8d720ea4b912f5e6babef # v2.0.0
         id: metadata
 
       - name: Wait for status checks
