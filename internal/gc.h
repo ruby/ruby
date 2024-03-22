@@ -189,7 +189,6 @@ typedef struct ractor_newobj_cache {
 } rb_ractor_newobj_cache_t;
 
 /* gc.c */
-extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
@@ -223,6 +222,8 @@ void rb_gc_mark_weak(VALUE *ptr);
 void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
+
+void rb_gc_stress_set(VALUE flag);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \

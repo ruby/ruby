@@ -185,9 +185,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     int ov;
     size_t retlen;
     unsigned long n;
+#define NAME_MATCH(name) (len == sizeof(name) - 1 && strncmp(str, (name), len) == 0)
 #define SET_WHEN(name, var, val) do {	    \
-        if (len == sizeof(name) - 1 &&	    \
-            strncmp(str, (name), len) == 0) { \
+        if (NAME_MATCH(name)) { \
             (var) = (val);		    \
             return 1;			    \
         }				    \
@@ -221,7 +221,10 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 #define SET_WHEN_UINT(name, vals, num, req) \
     if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
 
-    SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
+    if (NAME_MATCH("gc_stress")) {
+        rb_gc_stress_set(Qtrue);
+        return 1;
+    }
     SET_WHEN("core", ruby_enable_coredump, 1);
     SET_WHEN("ci", ruby_on_ci, 1);
     if (NAME_MATCH_VALUE("rgengc")) {
