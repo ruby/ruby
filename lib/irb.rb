@@ -145,7 +145,6 @@ require_relative "irb/pager"
 # *   The value of variable `$XDG_CONFIG_HOME/irb/irbrc`, if defined.
 # *   File `$HOME/.irbrc`, if it exists.
 # *   File `$HOME/.config/irb/irbrc`, if it exists.
-# *   File `.config/irb/irbrc` in the current directory, if it exists.
 # *   File `.irbrc` in the current directory, if it exists.
 # *   File `irb.rc` in the current directory, if it exists.
 # *   File `_irbrc` in the current directory, if it exists.
