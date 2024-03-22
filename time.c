@@ -2346,7 +2346,7 @@ zone_timelocal(VALUE zone, VALUE time)
     struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
-    split_second(tobj->timew, &t, &s);
+    wdivmod(tobj->timew, WINT2FIXWV(TIME_SCALE), &t, &s);
     tm = tm_from_time(rb_cTimeTM, time);
     utc = rb_check_funcall(zone, id_local_to_utc, 1, &tm);
     if (UNDEF_P(utc)) return 0;
