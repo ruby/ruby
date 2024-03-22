@@ -517,6 +517,12 @@ cond = proc {|ext, *|
   incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
     File.dirname(d)
   }.partition {|ext|
+    if @gemname
+      ext = ext[%r[\A[^/]+]] # extract gem name
+      Dir.glob("*.gemspec", base: "#$top_srcdir/#{ext_prefix}/#{ext}") do |g|
+        break ext = g if ext.start_with?("#{g.chomp!(".gemspec")}-")
+      end
+    end
     with_config(ext, &cond)
   }
   incl.sort!
