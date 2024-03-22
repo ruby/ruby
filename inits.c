@@ -73,7 +73,6 @@ rb_call_inits(void)
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
-    CALL(gc_stress);
     CALL(shape);
     CALL(Prism);
 

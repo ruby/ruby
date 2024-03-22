@@ -439,8 +439,6 @@ typedef struct {
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
-
-    VALUE gc_stress;
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
@@ -462,8 +460,6 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
-
-    FALSE,
 };
 
 /* GC_DEBUG:
@@ -1135,10 +1131,6 @@ RVALUE_AGE_SET(VALUE obj, int age)
     if (unless_objspace_vm) objspace = unless_objspace_vm->objspace; \
     else /* return; or objspace will be warned uninitialized */
 
-#define ruby_initial_gc_stress	gc_params.gc_stress
-
-VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
-
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
 #define malloc_allocated_size 	objspace->malloc_params.allocated_size
@@ -1389,7 +1381,6 @@ NO_SANITIZE("memory", static inline int is_pointer_to_heap(rb_objspace_t *objspa
 static size_t obj_memsize_of(VALUE obj, int use_all_types);
 static void gc_verify_internal_consistency(rb_objspace_t *objspace);
 
-static void gc_stress_set(rb_objspace_t *objspace, VALUE flag);
 static VALUE gc_disable_no_rest(rb_objspace_t *);
 
 static double getrusage_time(void);
@@ -3550,14 +3541,6 @@ Init_heap(void)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
-}
-
-void
-Init_gc_stress(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-
-    gc_stress_set(objspace, ruby_initial_gc_stress);
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
@@ -11163,9 +11146,11 @@ gc_stress_get(rb_execution_context_t *ec, VALUE self)
     return ruby_gc_stress_mode;
 }
 
-static void
-gc_stress_set(rb_objspace_t *objspace, VALUE flag)
+void
+rb_gc_stress_set(VALUE flag)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+
     objspace->flags.gc_stressful = RTEST(flag);
     objspace->gc_stress_mode = flag;
 }
@@ -11173,8 +11158,8 @@ gc_stress_set(rb_objspace_t *objspace, VALUE flag)
 static VALUE
 gc_stress_set_m(rb_execution_context_t *ec, VALUE self, VALUE flag)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    gc_stress_set(objspace, flag);
+
+    rb_gc_stress_set(flag);
     return flag;
 }
 
