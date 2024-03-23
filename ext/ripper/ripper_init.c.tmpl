@@ -3,13 +3,13 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "internal/imemo.h" /* needed by ruby_parser.h */
+#include "rubyparser.h"
+#define YYSTYPE_IS_DECLARED
+#include "parse.h"
 #include "internal/parse.h"
 #include "internal/ruby_parser.h"
 #include "node.h"
-#include "rubyparser.h"
 #include "eventids1.h"
-#define YYSTYPE_IS_DECLARED
-#include "parse.h"
 #include "eventids2.h"
 #include "ripper_init.h"
 

@@ -200,6 +200,8 @@ typedef struct rb_code_location_struct {
     rb_code_position_t beg_pos;
     rb_code_position_t end_pos;
 } rb_code_location_t;
+#define YYLTYPE rb_code_location_t
+#define YYLTYPE_IS_DECLARED 1
 
 typedef struct rb_parser_ast_token {
     int id;
@@ -673,7 +675,7 @@ typedef struct RNode_LIT {
 typedef struct RNode_INTEGER {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
 } rb_node_integer_t;
@@ -681,14 +683,14 @@ typedef struct RNode_INTEGER {
 typedef struct RNode_FLOAT {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -703,7 +705,7 @@ enum rb_numeric_type {
 typedef struct RNode_IMAGINARY {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -1377,10 +1379,6 @@ typedef struct rb_parser_config_struct {
     int (*local_defined)(ID, const void*);
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
     int (*dvar_defined)(ID, const void*);
-
-    /* Compile (parse.y) */
-    int (*literal_cmp)(VALUE val, VALUE lit);
-    parser_st_index_t (*literal_hash)(VALUE a);
 
     /* Error (Exception) */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)

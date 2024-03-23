@@ -54,6 +54,10 @@
 #define st_delete rb_parser_st_delete
 #undef st_is_member
 #define st_is_member parser_st_is_member
+#undef st_init_table
+#define st_init_table rb_parser_st_init_table
+#undef st_lookup
+#define st_lookup rb_parser_st_lookup
 
 #define rb_encoding void
 
@@ -226,9 +230,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
-
-#define literal_cmp  p->config->literal_cmp
-#define literal_hash p->config->literal_hash
 
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise

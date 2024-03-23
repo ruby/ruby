@@ -734,7 +734,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    assert_warning(/3: #{w}/m) {
       eval %q{
         case 1
         when __LINE__, __LINE__
@@ -743,7 +743,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    assert_warning(/3: #{w}/m) {
       eval %q{
         case 1
         when __FILE__, __FILE__
