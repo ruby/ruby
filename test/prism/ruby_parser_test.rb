@@ -18,7 +18,7 @@ end
 Sexp.prepend(
   Module.new do
     def ==(other)
-      super && line == other.line && max_line == other.max_line && file == other.file
+      super && line == other.line && line_max == other.line_max && file == other.file
     end
   end
 )
