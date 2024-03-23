@@ -717,7 +717,7 @@ def load_gemspec(file, base = nil)
     "[" + files.join(", ") + "]"
   end
   code.gsub!(/IO\.popen\(.*git.*?\)/) do
-    "[" + files.join(", ") + "].each"
+    "[" + files.join(", ") + "]; false && itself"
   end
 
   spec = eval(code, binding, file)
