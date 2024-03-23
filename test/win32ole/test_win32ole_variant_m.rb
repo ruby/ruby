@@ -8,6 +8,11 @@ require "test/unit"
 if defined?(WIN32OLE::VARIANT)
   class TestWin32OLE_VARIANT_MODULE < Test::Unit::TestCase
     include WIN32OLE::VARIANT
+
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::VariantType, WIN32OLE::VARIANT)
+    end
+
     def test_variant
       assert_equal(0, VT_EMPTY)
       assert_equal(1, VT_NULL)

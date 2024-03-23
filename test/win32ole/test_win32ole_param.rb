@@ -27,6 +27,10 @@ if defined?(WIN32OLE::Param)
       @param_key = m_add.params[0]
     end
 
+    def test_constants_backward_compatibility
+      assert_equal(WIN32OLE::Param, ::WIN32OLE_PARAM)
+    end
+
     def test_s_new
       assert_raise(ArgumentError) {
         WIN32OLE::Param.new("hoge")

@@ -17,6 +17,10 @@ if defined?(WIN32OLE::Variant)
       WIN32OLE.locale = @orglocale
     end
 
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::Variant, ::WIN32OLE_VARIANT)
+    end
+
     def test_s_new
       obj = WIN32OLE::Variant.new('foo')
       assert_instance_of(WIN32OLE::Variant, obj)

@@ -167,6 +167,11 @@ if defined?(WIN32OLE)
       assert_instance_of(WIN32OLE, @dict2)
     end
 
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::RuntimeError, ::WIN32OLERuntimeError)
+      assert_equal(WIN32OLE::QueryInterfaceError, ::WIN32OLEQueryInterfaceError)
+    end
+
     def test_s_new_exc
       assert_raise(TypeError) {
         WIN32OLE.new(1)

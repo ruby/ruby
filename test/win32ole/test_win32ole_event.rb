@@ -30,6 +30,10 @@ swbemsink_available =
 
 if defined?(WIN32OLE::Event)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::Event, ::WIN32OLE_EVENT)
+    end
+
     def test_s_new_exception
       assert_raise(TypeError) {
         WIN32OLE::Event.new("A")
