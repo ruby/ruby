@@ -7078,9 +7078,8 @@ static inline uint8_t
 peek_at(pm_parser_t *parser, const uint8_t *cursor) {
     if (cursor < parser->end) {
         return *cursor;
-    } else {
-        return '\0';
     }
+    return '\0';
 }
 
 /**
