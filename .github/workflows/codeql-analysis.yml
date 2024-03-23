@@ -59,7 +59,7 @@ jobs:
             os: ubuntu-latest
           # ruby analysis used large memory. We need to use a larger runner.
           - language: ruby
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'ubuntu-latest' }}
 
     steps:
       - name: Checkout repository
