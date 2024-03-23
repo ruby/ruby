@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 require 'test/unit'
 
+return unless /darwin/ =~ RUBY_PLATFORM
+
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args)
-    omit if RUBY_PLATFORM !~ /darwin/
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
   end
 
   def test_darwin_invalid_call
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle::Function.new(Fiddle::Pointer.new(1), [], Fiddle::TYPE_VOID).call'])
+    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_call(1)'])
   end
 
   def test_darwin_segv_in_syscall
@@ -16,6 +17,6 @@ class TestVMDump < Test::Unit::TestCase
   end
 
   def test_darwin_invalid_access
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).inspect'])
+    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_access(100)'])
   end
 end
