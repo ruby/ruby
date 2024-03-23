@@ -424,7 +424,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fatal_in_fiber
-    assert_in_out_err(["-r-test-/fatal/rb_fatal", "-e", <<-EOS], "", [], /ok/)
+    assert_in_out_err(["-r-test-/fatal", "-e", <<-EOS], "", [], /ok/)
       Fiber.new{
         Bug.rb_fatal "ok"
       }.resume
