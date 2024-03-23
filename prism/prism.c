@@ -973,9 +973,9 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
 
 /**
  * In a lot of places in the tree you can have tokens that are not provided but
- * that do not cause an error. For example, in a method call without
- * parentheses. In these cases we set the token to the "not provided" type. For
- * example:
+ * that do not cause an error. For example, this happens in a method call
+ * without parentheses. In these cases we set the token to the "not provided" type.
+ * For example:
  *
  *     pm_token_t token = not_provided(parser);
  */
@@ -5473,7 +5473,7 @@ pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *ope
     pm_range_node_t *node = PM_ALLOC_NODE(parser, pm_range_node_t);
     pm_node_flags_t flags = 0;
 
-    // Indicate that this node an exclusive range if the operator is `...`.
+    // Indicate that this node is an exclusive range if the operator is `...`.
     if (operator->type == PM_TOKEN_DOT_DOT_DOT || operator->type == PM_TOKEN_UDOT_DOT_DOT) {
         flags |= PM_RANGE_FLAGS_EXCLUDE_END;
     }
@@ -7104,7 +7104,7 @@ peek(pm_parser_t *parser) {
 
 /**
  * If the character to be read matches the given value, then returns true and
- * advanced the current pointer.
+ * advances the current pointer.
  */
 static inline bool
 match(pm_parser_t *parser, uint8_t value) {
@@ -8152,7 +8152,7 @@ lex_interpolation(pm_parser_t *parser, const uint8_t *pound) {
         return PM_TOKEN_STRING_CONTENT;
     }
 
-    // Now we'll check against the character the follows the #. If it constitutes
+    // Now we'll check against the character that follows the #. If it constitutes
     // valid interplation, we'll handle that, otherwise we'll return
     // PM_TOKEN_NOT_PROVIDED.
     switch (pound[1]) {
@@ -8184,7 +8184,7 @@ lex_interpolation(pm_parser_t *parser, const uint8_t *pound) {
                 return PM_TOKEN_EMBVAR;
             }
 
-            // If we didn't get an valid interpolation, then this is just regular
+            // If we didn't get a valid interpolation, then this is just regular
             // string content. This is like if we get "#@-". In this case the caller
             // should keep lexing.
             parser->current.end = pound + 1;
@@ -9557,7 +9557,7 @@ parser_lex(pm_parser_t *parser) {
                         // we need to return the call operator.
                         if (next_content[0] == '.') {
                             // To match ripper, we need to emit an ignored newline even though
-                            // its a real newline in the case that we have a beginless range
+                            // it's a real newline in the case that we have a beginless range
                             // on a subsequent line.
                             if (peek_at(parser, next_content + 1) == '.') {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -10503,7 +10503,7 @@ parser_lex(pm_parser_t *parser) {
                         )
                     {
                         // Since we know we're about to add an __END__ comment, we know we
-                        // need at add all of the newlines to get the correct column
+                        // need to add all of the newlines to get the correct column
                         // information for it.
                         const uint8_t *cursor = parser->current.end;
                         while ((cursor = next_newline(cursor, parser->end - cursor)) != NULL) {
@@ -11354,7 +11354,7 @@ parser_lex(pm_parser_t *parser) {
                     case '\\': {
                         // If we hit an escape, then we need to skip past
                         // however many characters the escape takes up. However
-                        // it's important that if \n or \r\n are escaped that we
+                        // it's important that if \n or \r\n are escaped, we
                         // stop looping before the newline and not after the
                         // newline so that we can still potentially find the
                         // terminator of the heredoc.
@@ -11835,7 +11835,6 @@ parse_value_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bo
  * CRuby parsers that are generated would resolve this by using a lookahead and
  * potentially backtracking. We attempt to do this by just looking at the next
  * token and making a decision based on that. I am not sure if this is going to
- *
  * work in all cases, it may need to be refactored later. But it appears to work
  * for now.
  */
@@ -11868,7 +11867,7 @@ token_begins_expression_p(pm_token_type_t type) {
         case PM_TOKEN_SEMICOLON:
             // The reason we need this short-circuit is because we're using the
             // binding powers table to tell us if the subsequent token could
-            // potentially be the start of an expression . If there _is_ a binding
+            // potentially be the start of an expression. If there _is_ a binding
             // power for one of these tokens, then we should remove it from this list
             // and let it be handled by the default case below.
             assert(pm_binding_powers[type].left == PM_BINDING_POWER_UNSET);
@@ -12433,7 +12432,7 @@ pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *li
 }
 
 /**
- * Parse all of the elements of a hash. returns true if a double splat was found.
+ * Parse all of the elements of a hash. Return true if a double splat was found.
  */
 static bool
 parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
@@ -12871,7 +12870,7 @@ update_parameter_state(pm_parser_t *parser, pm_token_t *token, pm_parameters_ord
     if (state == PM_PARAMETERS_NO_CHANGE) return;
 
     // If we see another ordered argument after a optional argument
-    // we only continue parsing ordered arguments until we stop seeing ordered arguments
+    // we only continue parsing ordered arguments until we stop seeing ordered arguments.
     if (*current == PM_PARAMETERS_ORDER_OPTIONAL && state == PM_PARAMETERS_ORDER_NAMED) {
         *current = PM_PARAMETERS_ORDER_AFTER_OPTIONAL;
         return;
@@ -13322,7 +13321,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, bool def_p) {
 
     // The end node locations on rescue nodes will not be set correctly
     // since we won't know the end until we've found all consequent
-    // clauses. This sets the end location on all rescues once we know it
+    // clauses. This sets the end location on all rescues once we know it.
     if (current) {
         const uint8_t *end_to_set = current->base.location.end;
         current = parent_node->rescue_clause;
@@ -15185,7 +15184,7 @@ parse_negative_numeric(pm_node_t *node) {
 }
 
 /**
- * Returns a string content token at a particular location that is empty.
+ * Return a string content token at a particular location that is empty.
  */
 static pm_token_t
 parse_strings_empty_content(const uint8_t *location) {
@@ -17849,7 +17848,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
 }
 
 /**
- * Ensures a call node that is about to become a call operator node does not
+ * Ensure a call node that is about to become a call operator node does not
  * have arguments or a block attached. If it does, then we'll need to add an
  * error message and destroy the arguments/block. Ideally we would keep the node
  * around so that consumers would still have access to it, but we don't have a
@@ -18790,8 +18789,8 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         case PM_RANGE_NODE:
             // Range operators are non-associative, so that it does not
             // associate with other range operators (i.e. `..1..` should be
-            // rejected.) For this reason, we check such a case for unary ranges
-            // here, and if so, it returns the node immediately,
+            // rejected). For this reason, we check such a case for unary ranges
+            // here, and if so, it returns the node immediately.
             if ((((pm_range_node_t *) node)->left == NULL) && pm_binding_powers[parser->current.type].left >= PM_BINDING_POWER_RANGE) {
                 return node;
             }
