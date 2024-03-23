@@ -63,8 +63,8 @@ RUBY_ALIGNAS(SIZEOF_VALUE)
 RBasic {
 
     /**
-     * Per-object  flags.  Each  Ruby  object has its own  characteristics apart
-     * from its class.  For instance, whether an object  is frozen or not is not
+     * Per-object flags.   Each Ruby object  has its own  characteristics apart
+     * from its class.  For instance, whether an object is frozen or not is not
      * controlled by its class.  This is where such properties are stored.
      *
      * @see enum ::ruby_fl_type
