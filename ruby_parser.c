@@ -93,32 +93,6 @@ dvar_defined(ID id, const void *p)
     return rb_dvar_defined(id, (const rb_iseq_t *)p);
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
-static int
-literal_cmp(VALUE val, VALUE lit)
-{
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
 static int
 is_usascii_enc(void *enc)
 {
@@ -610,9 +584,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .local_defined = local_defined,
     .dvar_defined = dvar_defined,
-
-    .literal_cmp = literal_cmp,
-    .literal_hash = literal_hash,
 
     .syntax_error_append = syntax_error_append,
     .raise = rb_raise,
