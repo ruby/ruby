@@ -372,12 +372,12 @@ class Reline::LineEditor
         # do nothing
       elsif level == :blank
         Reline::IOGate.move_cursor_column base_x
-        @output.write "\e[0m#{' ' * width}"
+        @output.write "#{Reline::IOGate::RESET_COLOR}#{' ' * width}"
       else
         x, w, content = new_items[level]
         content = Reline::Unicode.take_range(content, base_x - x, width) unless x == base_x && w == width
         Reline::IOGate.move_cursor_column base_x
-        @output.write "\e[0m#{content}\e[0m"
+        @output.write "#{Reline::IOGate::RESET_COLOR}#{content}#{Reline::IOGate::RESET_COLOR}"
       end
       base_x += width
     end

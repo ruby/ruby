@@ -1,6 +1,8 @@
 require 'io/wait'
 
 class Reline::GeneralIO
+  RESET_COLOR = '' # Do not send color reset sequence
+
   def self.reset(encoding: nil)
     @@pasting = false
     if encoding

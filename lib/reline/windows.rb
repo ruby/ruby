@@ -1,6 +1,8 @@
 require 'fiddle/import'
 
 class Reline::Windows
+  RESET_COLOR = "\e[0m"
+
   def self.encoding
     Encoding::UTF_8
   end
