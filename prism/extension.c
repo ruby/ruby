@@ -730,7 +730,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
- *       code. By default prism assumes you want to parse with the latest vesion
+ *       code. By default prism assumes you want to parse with the latest version
  *       of Ruby syntax (which you can trigger with `nil` or `"latest"`). You
  *       may also restrict the syntax to a specific version of Ruby. The
  *       supported values are `"3.3.0"` and `"3.4.0"`.

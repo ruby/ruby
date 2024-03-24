@@ -5602,7 +5602,7 @@ pm_rescue_modifier_node_create(pm_parser_t *parser, pm_node_t *expression, const
 }
 
 /**
- * Allocate and initiliaze a new RescueNode node.
+ * Allocate and initialize a new RescueNode node.
  */
 static pm_rescue_node_t *
 pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
@@ -10416,7 +10416,7 @@ parser_lex(pm_parser_t *parser) {
                             }
                             default:
                                 // If we get to this point, then we have a % that is completely
-                                // unparseable. In this case we'll just drop it from the parser
+                                // unparsable. In this case we'll just drop it from the parser
                                 // and skip past it and hope that the next token is something
                                 // that we can parse.
                                 pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
@@ -14426,7 +14426,7 @@ parse_heredoc_dedent_string(pm_string_t *string, size_t common_whitespace) {
 static void
 parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_whitespace) {
     // The next node should be dedented if it's the first node in the list or if
-    // if follows a string node.
+    // it follows a string node.
     bool dedent_next = true;
 
     // Iterate over all nodes, and trim whitespace accordingly. We're going to
@@ -17949,7 +17949,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
     if (pm_regexp_named_capture_group_names(pm_string_source(content), pm_string_length(content), &named_captures, parser->encoding_changed, parser->encoding) && (named_captures.length > 0)) {
         // Since we should not create a MatchWriteNode when all capture names
-        // are invalid, creating a MatchWriteNode is delayed here.
+        // are invalid, creating a MatchWriteNode is delaid here.
         pm_match_write_node_t *match = NULL;
         pm_constant_id_list_t names = { 0 };
 
@@ -19616,7 +19616,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
 
     // Now we're going to determine how we're going to format line numbers and
     // blank lines based on the maximum number of digits in the line numbers
-    // that are going to be displayed.
+    // that are going to be displaid.
     pm_error_format_t error_format;
     int32_t max_line_number = errors[error_list->size - 1].line - start_line;
 
@@ -19707,7 +19707,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         pm_error_t *error = &errors[index];
 
         // Here we determine how many lines of padding of the source to display,
-        // based on the difference from the last line that was displayed.
+        // based on the difference from the last line that was displaid.
         if (error->line - last_line > 1) {
             if (error->line - last_line > 2) {
                 if ((index != 0) && (error->line - last_line > 3)) {
@@ -19739,7 +19739,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         // the width of the error, then the error message itself.
         //
         // Note that this doesn't take into account the width of the actual
-        // character when displayed in the terminal. For some east-asian
+        // character when displaid in the terminal. For some east-asian
         // languages or emoji, this means it can be thrown off pretty badly. We
         // will need to solve this eventually.
         pm_buffer_append_string(buffer, "  ", 2);

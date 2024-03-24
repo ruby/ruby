@@ -151,7 +151,7 @@
 #else
     #ifndef xmalloc
         /**
-         * The malloc function that should be used. This can be overriden with
+         * The malloc function that should be used. This can be overridden with
          * the PRISM_XALLOCATOR define.
          */
         #define xmalloc malloc
@@ -159,7 +159,7 @@
 
     #ifndef xrealloc
         /**
-         * The realloc function that should be used. This can be overriden with
+         * The realloc function that should be used. This can be overridden with
          * the PRISM_XALLOCATOR define.
          */
         #define xrealloc realloc
@@ -167,7 +167,7 @@
 
     #ifndef xcalloc
         /**
-         * The calloc function that should be used. This can be overriden with
+         * The calloc function that should be used. This can be overridden with
          * the PRISM_XALLOCATOR define.
          */
         #define xcalloc calloc
@@ -175,7 +175,7 @@
 
     #ifndef xfree
         /**
-         * The free function that should be used. This can be overriden with the
+         * The free function that should be used. This can be overridden with the
          * PRISM_XALLOCATOR define.
          */
         #define xfree free

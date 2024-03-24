@@ -286,14 +286,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `0`   | use the latest version of prism |
  * | `1`   | use the version of prism that is vendored in CRuby 3.3.0 |
  *
- * Each scope is layed out as follows:
+ * Each scope is laid out as follows:
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |
  * | ...     | the locals                 |
  *
- * Each local is layed out as follows:
+ * Each local is laid out as follows:
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
