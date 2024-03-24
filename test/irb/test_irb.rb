@@ -70,11 +70,8 @@ module TestIRB
         type "exit"
       end
 
-      # Input cramped together due to how Reline's Reline::GeneralIO works
-      assert_include(
-        output,
-        "irb(main):001> irb(main):002> irb(main):002>  irb(main):002>   => nil\r\n"
-      )
+      assert_not_match(/irb\(main\):001> (\r*\n)?=> nil/, output)
+      assert_match(/irb\(main\):002>   (\r*\n)?=> nil/, output)
     end
   end
 
