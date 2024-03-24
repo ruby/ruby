@@ -128,10 +128,11 @@ module Lrama
             end
           when Lrama::Lexer::Token::UserCode
             prefix = token.referred ? "@" : "$@"
+            tag = token.tag || lhs_tag
             new_token = Lrama::Lexer::Token::Ident.new(s_value: prefix + @midrule_action_counter.increment.to_s)
             @replaced_rhs << new_token
 
-            rule_builder = RuleBuilder.new(@rule_counter, @midrule_action_counter, i, lhs_tag: lhs_tag, skip_preprocess_references: true)
+            rule_builder = RuleBuilder.new(@rule_counter, @midrule_action_counter, i, lhs_tag: tag, skip_preprocess_references: true)
             rule_builder.lhs = new_token
             rule_builder.user_code = token
             rule_builder.complete_input
