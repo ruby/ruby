@@ -197,9 +197,12 @@ begin
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n\C-[k")
+      write("i\n:a")
+      write("\C-[h")
       close
       assert_screen(<<~EOC)
-        Multiline REPL.
+        (ins)prompt> :a
+        => :a
         (ins)prompt> :a
         => :a
         (cmd)prompt> :a
