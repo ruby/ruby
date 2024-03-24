@@ -331,8 +331,10 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       pre_input_hook&.call
-      @dialog_proc_list.each_pair do |name_sym, d|
-        line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
+      unless Reline::IOGate == Reline::GeneralIO
+        @dialog_proc_list.each_pair do |name_sym, d|
+          line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
+        end
       end
 
       unless config.test_mode
