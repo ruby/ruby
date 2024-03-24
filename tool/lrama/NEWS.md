@@ -1,5 +1,45 @@
 # NEWS for Lrama
 
+## Lrama 0.6.5 (2024-03-25)
+
+### Typed Midrule Actions
+
+User can specify the type of mid rule action by tag (`<bar>`) instead of specifying it with in an action.
+
+```
+primary: k_case expr_value terms?
+           {
+               $<val>$ = p->case_labels;
+               p->case_labels = Qnil;
+           }
+         case_body
+         k_end
+           {
+             ...
+           }
+```
+
+can be written as
+
+```
+primary: k_case expr_value terms?
+           {
+               $$ = p->case_labels;
+               p->case_labels = Qnil;
+           }<val>
+         case_body
+         k_end
+           {
+             ...
+           }
+```
+
+`%destructor` for midrule action is invoked only when tag is specified by Typed Midrule Actions.
+
+Difference from Bison's Typed Midrule Actions is that tag is postposed in Lrama however it's preposed in Bison.
+
+Bison supports this feature from 3.1.
+
 ## Lrama 0.6.4 (2024-03-22)
 
 ### Parameterizing rules (preceded, terminated, delimited)
