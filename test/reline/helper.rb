@@ -136,9 +136,14 @@ class Reline::TestCase < Test::Unit::TestCase
     end
   end
 
-  def assert_line(expected)
-    expected = convert_str(expected)
-    assert_equal(expected, @line_editor.line)
+  def assert_line_around_cursor(before, after)
+    before = convert_str(before)
+    after = convert_str(after)
+    line = @line_editor.line
+    byte_pointer = @line_editor.instance_variable_get(:@byte_pointer)
+    actual_before = line.byteslice(0, byte_pointer)
+    actual_after = line.byteslice(byte_pointer..)
+    assert_equal([before, after], [actual_before, actual_after])
   end
 
   def assert_byte_pointer_size(expected)
@@ -151,25 +156,6 @@ class Reline::TestCase < Test::Unit::TestCase
         <#{expected.inspect} (#{expected.encoding.inspect})> expected but was
         <#{chunk.inspect} (#{chunk.encoding.inspect})> in <Terminal #{Reline::GeneralIO.encoding.inspect}>
       EOM
-  end
-
-  def assert_cursor(expected)
-    # This test satisfies nothing because there is no `@cursor` anymore
-    # Test editor_cursor_position instead
-    cursor_x = @line_editor.instance_eval do
-      line_before_cursor = whole_lines[@line_index].byteslice(0, @byte_pointer)
-      Reline::Unicode.calculate_width(line_before_cursor)
-    end
-    assert_equal(expected, cursor_x)
-  end
-
-  def assert_cursor_max(expected)
-    # This test satisfies nothing because there is no `@cursor_max` anymore
-    cursor_max = @line_editor.instance_eval do
-      line = whole_lines[@line_index]
-      Reline::Unicode.calculate_width(line)
-    end
-    assert_equal(expected, cursor_max)
   end
 
   def assert_line_index(expected)
