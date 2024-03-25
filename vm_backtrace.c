@@ -287,15 +287,14 @@ location_label(rb_backtrace_location_t *loc)
  *	    1.times do
  *	      puts caller_locations(0).first.label
  *	    end
- *
  *	  end
  *	end
  *
  * The result of calling +foo+ is this:
  *
- *	label: foo
- *	label: block in foo
- *	label: block (2 levels) in foo
+ *	foo
+ *	block in foo
+ *	block (2 levels) in foo
  *
  */
 static VALUE
@@ -315,10 +314,28 @@ location_base_label(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the label of this frame without decoration.
+ * Returns the base label of this frame, which is usually equal to the label,
+ * without decoration.
  *
- * For example, if the label is `foo`, this method returns `foo` as well, but if
- * the label is +rescue in foo+, this method returns just +foo+.
+ * Consider the following example:
+ *
+ *	def foo
+ *	  puts caller_locations(0).first.base_label
+ *
+ *	  1.times do
+ *	    puts caller_locations(0).first.base_label
+ *
+ *	    1.times do
+ *	      puts caller_locations(0).first.base_label
+ *	    end
+ *	  end
+ *	end
+ *
+ * The result of calling +foo+ is this:
+ *
+ *	foo
+ *	foo
+ *	foo
  */
 static VALUE
 location_base_label_m(VALUE self)
