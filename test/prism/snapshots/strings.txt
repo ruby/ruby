@@ -337,7 +337,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── parts: (length: 3)
         │   │   │   │   ├── @ StringNode (location: (67,5)-(67,6))
-        │   │   │   │   │   ├── flags: frozen
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   ├── content_loc: (67,5)-(67,6) = "b"
         │   │   │   │   │   ├── closing_loc: ∅
@@ -359,7 +359,7 @@
         │   │   │   │   │   │           └── block: ∅
         │   │   │   │   │   └── closing_loc: (67,9)-(67,10) = "}"
         │   │   │   │   └── @ StringNode (location: (67,10)-(67,11))
-        │   │   │   │       ├── flags: frozen
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (67,10)-(67,11) = "d"
         │   │   │   │       ├── closing_loc: ∅
@@ -495,13 +495,13 @@
         │   ├── opening_loc: ∅
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (99,0)-(99,2))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (99,0)-(99,1) = "?"
         │   │   │   ├── content_loc: (99,1)-(99,2) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ StringNode (location: (99,3)-(99,6))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (99,3)-(99,4) = "\""
         │   │       ├── content_loc: (99,4)-(99,5) = "a"
         │   │       ├── closing_loc: (99,5)-(99,6) = "\""

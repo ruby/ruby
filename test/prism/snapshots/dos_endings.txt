@@ -18,13 +18,13 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (1,5)-(1,9))
-        │   │           │   │   ├── flags: frozen
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: (1,5)-(1,6) = "\""
         │   │           │   │   ├── content_loc: (1,6)-(1,8) = "hi"
         │   │           │   │   ├── closing_loc: (1,8)-(1,9) = "\""
         │   │           │   │   └── unescaped: "hi"
         │   │           │   └── @ StringNode (location: (2,5)-(2,12))
-        │   │           │       ├── flags: frozen
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: (2,5)-(2,6) = "\""
         │   │           │       ├── content_loc: (2,6)-(2,11) = "there"
         │   │           │       ├── closing_loc: (2,11)-(2,12) = "\""

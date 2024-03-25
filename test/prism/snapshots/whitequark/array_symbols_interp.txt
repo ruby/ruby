@@ -41,7 +41,7 @@
             │       ├── opening_loc: ∅
             │       ├── parts: (length: 2)
             │       │   ├── @ StringNode (location: (3,3)-(3,6))
-            │       │   │   ├── flags: frozen
+            │       │   │   ├── flags: ∅
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (3,3)-(3,6) = "foo"
             │       │   │   ├── closing_loc: ∅

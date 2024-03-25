@@ -20,7 +20,7 @@
             │   │   │   │           └── value: 1
             │   │   │   └── closing_loc: (1,4)-(1,5) = "}"
             │   │   └── @ StringNode (location: (1,5)-(1,18))
-            │   │       ├── flags: frozen
+            │   │       ├── flags: ∅
             │   │       ├── opening_loc: ∅
             │   │       ├── content_loc: (1,5)-(1,18) = "(?<match>bar)"
             │   │       ├── closing_loc: ∅

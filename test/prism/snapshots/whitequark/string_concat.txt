@@ -22,7 +22,7 @@
             │   │   │           └── name: :@a
             │   │   └── closing_loc: (1,7)-(1,8) = "\""
             │   └── @ StringNode (location: (1,9)-(1,14))
-            │       ├── flags: frozen
+            │       ├── flags: ∅
             │       ├── opening_loc: (1,9)-(1,10) = "\""
             │       ├── content_loc: (1,10)-(1,13) = "bar"
             │       ├── closing_loc: (1,13)-(1,14) = "\""

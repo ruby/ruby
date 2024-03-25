@@ -19,7 +19,7 @@
             │       │   │   │           └── value: 1
             │       │   │   └── closing_loc: (1,6)-(1,7) = "}"
             │       │   └── @ StringNode (location: (1,7)-(1,8))
-            │       │       ├── flags: frozen
+            │       │       ├── flags: ∅
             │       │       ├── opening_loc: ∅
             │       │       ├── content_loc: (1,7)-(1,8) = "b"
             │       │       ├── closing_loc: ∅

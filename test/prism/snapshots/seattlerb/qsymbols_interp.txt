@@ -16,7 +16,7 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── parts: (length: 2)
             │   │   │   ├── @ StringNode (location: (1,5)-(1,6))
-            │   │   │   │   ├── flags: frozen
+            │   │   │   │   ├── flags: ∅
             │   │   │   │   ├── opening_loc: ∅
             │   │   │   │   ├── content_loc: (1,5)-(1,6) = "b"
             │   │   │   │   ├── closing_loc: ∅
