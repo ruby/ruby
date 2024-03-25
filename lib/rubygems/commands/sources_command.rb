@@ -59,7 +59,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
         say "#{source_uri} added to sources"
       end
-    rescue URI::Error, ArgumentError
+    rescue Gem::URI::Error, ArgumentError
       say "#{source_uri} is not a URI"
       terminate_interaction 1
     rescue Gem::RemoteFetcher::FetchError => e
@@ -81,7 +81,7 @@ Do you want to add this source?
   end
 
   def check_rubygems_https(source_uri) # :nodoc:
-    uri = URI source_uri
+    uri = Gem::URI source_uri
 
     if uri.scheme && uri.scheme.casecmp("http").zero? &&
        uri.host.casecmp("rubygems.org").zero?

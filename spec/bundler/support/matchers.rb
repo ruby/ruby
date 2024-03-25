@@ -97,32 +97,6 @@ module Spec
       end
     end
 
-    RSpec::Matchers.define :take_less_than do |seconds|
-      match do |actual|
-        start_time = Time.now
-
-        actual.call
-
-        actual_time = (Time.now - start_time).to_f
-
-        acceptable = actual_time < seconds
-
-        @errors = ["took #{actual_time} seconds"] unless acceptable
-
-        acceptable
-      end
-
-      failure_message do
-        super() + " but:\n" + @errors.map {|e| indent(e) }.join("\n")
-      end
-
-      failure_message_when_negated do
-        super() + " but:\n" + @errors.map {|e| indent(e) }.join("\n")
-      end
-
-      supports_block_expectations
-    end
-
     define_compound_matcher :read_as, [exist] do |file_contents|
       diffable
 

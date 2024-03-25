@@ -1003,8 +1003,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_all_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
 
-    # TODO: maybe try: find_all { |s| spec === dep }
-
     Gem::Dependency.new(name, *requirements).matching_specs
   end
 
@@ -1021,8 +1019,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
-
-    # TODO: maybe try: find { |s| spec === dep }
 
     Gem::Dependency.new(name, *requirements).to_spec
   end
@@ -2079,7 +2075,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Duplicates array_attributes from +other_spec+ so state isn't shared.
+  # Duplicates Array and Gem::Requirement attributes from +other_spec+ so state isn't shared.
+  #
 
   def initialize_copy(other_spec)
     self.class.array_attributes.each do |name|
@@ -2101,6 +2098,9 @@ class Gem::Specification < Gem::BasicSpecification
         raise e
       end
     end
+
+    @required_ruby_version = other_spec.required_ruby_version.dup
+    @required_rubygems_version = other_spec.required_rubygems_version.dup
   end
 
   def base_dir

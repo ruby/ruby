@@ -20,7 +20,7 @@ RSpec.describe Bundler::Fetcher::Index do
   end
 
   context "error handling" do
-    let(:remote_uri) { Bundler::URI("http://remote-uri.org") }
+    let(:remote_uri) { Gem::URI("http://remote-uri.org") }
     before do
       allow(rubygems).to receive(:fetch_all_remote_specs) { raise Gem::RemoteFetcher::FetchError.new(error_message, display_uri) }
       allow(subject).to receive(:remote_uri).and_return(remote_uri)

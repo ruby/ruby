@@ -11,7 +11,8 @@ RSpec.describe "bundle install with complex dependencies", realworld: true do
       gem "mongoid", ">= 0.10.2"
     G
 
-    expect { bundle "lock" }.to take_less_than(18) # seconds
+    bundle "lock", env: { "DEBUG_RESOLVER" => "1" }
+    expect(out).to include("Solution found after 1 attempts")
   end
 
   it "resolves quickly (case 2)" do
@@ -28,7 +29,8 @@ RSpec.describe "bundle install with complex dependencies", realworld: true do
       gem 'rspec-rails'
     G
 
-    expect { bundle "lock" }.to take_less_than(30) # seconds
+    bundle "lock", env: { "DEBUG_RESOLVER" => "1" }
+    expect(out).to include("Solution found after 1 attempts")
   end
 
   it "resolves big gemfile quickly" do
@@ -129,8 +131,14 @@ RSpec.describe "bundle install with complex dependencies", realworld: true do
       end
     G
 
-    expect do
-      bundle "lock", env: { "DEBUG_RESOLVER" => "1" }, raise_on_error: !Bundler.feature_flag.bundler_3_mode?
-    end.to take_less_than(30) # seconds
+    if Bundler.feature_flag.bundler_3_mode?
+      bundle "lock", env: { "DEBUG_RESOLVER" => "1" }, raise_on_error: false
+
+      expect(out).to include("backtracking").exactly(26).times
+    else
+      bundle "lock", env: { "DEBUG_RESOLVER" => "1" }
+
+      expect(out).to include("Solution found after 10 attempts")
+    end
   end
 end
