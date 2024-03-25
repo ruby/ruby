@@ -8691,11 +8691,12 @@ rb_gc_writebarrier_remember(VALUE obj)
 }
 
 void
-rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
+rb_gc_copy_attributes(VALUE dest, VALUE obj)
 {
     if (RVALUE_WB_UNPROTECTED(obj)) {
         rb_gc_writebarrier_unprotect(dest);
     }
+    rb_gc_copy_finalizer(dest, obj);
 }
 
 size_t

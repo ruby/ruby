@@ -197,7 +197,7 @@ void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(struct rb_objspace *);
 VALUE rb_objspace_gc_disable(struct rb_objspace *);
 void ruby_gc_set_params(void);
-void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
+void rb_gc_copy_attributes(VALUE dest, VALUE obj);
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 size_t rb_malloc_grow_capa(size_t current_capacity, size_t type_size);
