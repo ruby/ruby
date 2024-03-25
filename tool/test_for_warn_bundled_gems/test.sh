@@ -24,16 +24,16 @@ echo "* Show warning when bundle exec with shebang's script"
 bundle exec ./test_warn_bundle_exec_shebang.rb
 echo
 
+echo "* Show warning with bootsnap"
+ruby test_warn_bootsnap.rb
+echo
+
+echo "* Show warning with zeitwerk"
+ruby test_warn_zeitwerk.rb
+echo
+
 echo "* Don't show warning bundled gems on Gemfile"
 ruby test_no_warn_dependency.rb
-echo
-
-echo "* Don't show warning with bootsnap"
-ruby test_no_warn_bootsnap.rb
-echo
-
-echo "* Don't show warning with zeitwerk"
-ruby test_no_warn_zeitwerk.rb
 echo
 
 echo "* Don't show warning with net/smtp when net-smtp on Gemfile"
