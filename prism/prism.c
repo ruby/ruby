@@ -1238,7 +1238,7 @@ pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closin
 
         size_t unknown_flags_length = pm_buffer_length(&unknown_flags);
         if (unknown_flags_length != 0) {
-            char *word = unknown_flags_length >= 2 ? "options" : "option";
+            const char *word = unknown_flags_length >= 2 ? "options" : "option";
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_REGEXP_UNKNOWN_OPTIONS, word, unknown_flags_length, pm_buffer_value(&unknown_flags));
         }
         pm_buffer_free(&unknown_flags);
