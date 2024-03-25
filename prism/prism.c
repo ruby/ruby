@@ -340,10 +340,10 @@ lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed
     // These are the places where we need to split up the content of the
     // string. We'll use strpbrk to find the first of these characters.
     uint8_t *breakpoints = lex_mode.as.string.breakpoints;
-    memcpy(breakpoints, "\n\\\0\0\0", sizeof(lex_mode.as.string.breakpoints));
+    memcpy(breakpoints, "\r\n\\\0\0\0", sizeof(lex_mode.as.string.breakpoints));
 
     // Now add in the terminator.
-    size_t index = 2;
+    size_t index = 3;
     breakpoints[index++] = terminator;
 
     // If interpolation is allowed, then we're going to check for the #
@@ -11042,29 +11042,43 @@ parser_lex(pm_parser_t *parser) {
                     LEX(PM_TOKEN_STRING_END);
                 }
 
-                // When we hit a newline, we need to flush any potential heredocs. Note
-                // that this has to happen after we check for the terminator in case the
-                // terminator is a newline character.
-                if (*breakpoint == '\n') {
-                    if (parser->heredoc_end == NULL) {
-                        pm_newline_list_append(&parser->newline_list, breakpoint);
-                        parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
-                        continue;
-                    } else {
-                        parser->current.end = breakpoint + 1;
-                        parser_flush_heredoc_end(parser);
-                        pm_token_buffer_flush(parser, &token_buffer);
-                        LEX(PM_TOKEN_STRING_CONTENT);
-                    }
-                }
-
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
+                    case '\r':
+                        if (peek_at(parser, breakpoint + 1) != '\n') {
+                            parser->current.end = breakpoint + 1;
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            break;
+                        }
+
+                        // If we hit a \r\n sequence, then we need to treat it
+                        // as a newline.
+                        parser->current.end = breakpoint + 1;
+                        pm_token_buffer_escape(parser, &token_buffer);
+                        breakpoint++;
+                        token_buffer.cursor = breakpoint;
+
+                        /* fallthrough */
+                    case '\n':
+                        // When we hit a newline, we need to flush any potential
+                        // heredocs. Note that this has to happen after we check
+                        // for the terminator in case the terminator is a
+                        // newline character.
+                        if (parser->heredoc_end == NULL) {
+                            pm_newline_list_append(&parser->newline_list, breakpoint);
+                            parser->current.end = breakpoint + 1;
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            break;
+                        }
+
+                        parser->current.end = breakpoint + 1;
+                        parser_flush_heredoc_end(parser);
+                        pm_token_buffer_flush(parser, &token_buffer);
+                        LEX(PM_TOKEN_STRING_CONTENT);
                     case '\\': {
                         // Here we hit escapes.
                         parser->current.end = breakpoint + 1;
