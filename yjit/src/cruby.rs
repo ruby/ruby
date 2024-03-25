@@ -711,6 +711,7 @@ mod manual_defs {
     pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
 
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
+    pub const VM_CALL_ARGS_SIMPLE: u32 = 1 << VM_CALL_ARGS_SIMPLE_bit;
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;

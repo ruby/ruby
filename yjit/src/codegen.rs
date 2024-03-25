@@ -6754,11 +6754,16 @@ fn gen_send_bmethod(
 /// The kind of a value an ISEQ returns
 enum IseqReturn {
     Value(VALUE),
+    LocalVariable(u32),
     Receiver,
 }
 
-/// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
-fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>) -> Option<IseqReturn> {
+extern {
+    fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
+}
+
+/// Return the ISEQ's return value if it consists of one simple instruction and leave.
+fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, ci_flags: u32) -> Option<IseqReturn> {
     // Expect only two instructions and one possible operand
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     if !(2..=3).contains(&iseq_size) {
@@ -6774,6 +6779,17 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>) -> Option<I
         return None;
     }
     match first_insn {
+        YARVINSN_getlocal_WC_0  => {
+            // Only accept simple positional only cases for both the caller and the callee.
+            // Reject block ISEQs to avoid autosplat and other block parameter complications.
+            if captured_opnd.is_none() && unsafe { rb_simple_iseq_p(iseq) } && ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
+                let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+                Some(IseqReturn::LocalVariable(local_idx))
+            } else {
+                None
+            }
+        }
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
         YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
         YARVINSN_putobject_INT2FIX_0_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(0))),
@@ -7055,11 +7071,24 @@ fn gen_send_iseq(
     }
 
     // Inline simple ISEQs whose return value is known at compile time
-    if let (Some(value), None, false) = (iseq_get_return_value(iseq, captured_opnd), block_arg_type, opt_send_call) {
+    if let (Some(value), None, false) = (iseq_get_return_value(iseq, captured_opnd, flags), block_arg_type, opt_send_call) {
         asm_comment!(asm, "inlined simple ISEQ");
         gen_counter_incr(asm, Counter::num_send_iseq_inline);
 
         match value {
+            IseqReturn::LocalVariable(local_idx) => {
+                // Put the local variable at the return slot
+                let stack_local = asm.stack_opnd(argc - 1 - local_idx as i32);
+                let stack_return = asm.stack_opnd(argc);
+                asm.mov(stack_return, stack_local);
+
+                // Update the mapping for the return value
+                let mapping = asm.ctx.get_opnd_mapping(stack_local.into());
+                asm.ctx.set_opnd_mapping(stack_return.into(), mapping);
+
+                // Pop everything but the return value
+                asm.stack_pop(argc as usize);
+            }
             IseqReturn::Value(value) => {
                 // Pop receiver and arguments
                 asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });

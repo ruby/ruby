@@ -4753,3 +4753,19 @@ assert_equal 'foo', %q{
   entry(false)
   entry(true)
 }
+
+assert_equal '[:ok, :ok, :ok]', %q{
+  def identity(x) = x
+  def foo(x, _) = x
+  def bar(_, _, _, _, x) = x
+
+  def tests
+    [
+      identity(:ok),
+      foo(:ok, 2),
+      bar(1, 2, 3, 4, :ok),
+    ]
+  end
+
+  tests
+}
