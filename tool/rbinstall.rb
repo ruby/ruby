@@ -631,7 +631,7 @@ module RbInstall
         end
 
         def ext_features
-          loaded_gemspec = Gem::Specification.load("#{root}/#{gemspec}")
+          loaded_gemspec = load_gemspec("#{root}/#{gemspec}")
           extension = loaded_gemspec.extensions.first
           return [] unless extension
 
