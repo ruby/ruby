@@ -97,6 +97,9 @@ pub struct JITState {
     /// not been written to for the block to be valid.
     pub stable_constant_names_assumption: Option<*const ID>,
 
+    /// A list of classes that are not supposed to have a singleton class.
+    pub no_singleton_class_assumptions: Vec<VALUE>,
+
     /// When true, the block is valid only when there is a total of one ractor running
     pub block_assumes_single_ractor: bool,
 
@@ -125,6 +128,7 @@ impl JITState {
             method_lookup_assumptions: vec![],
             bop_assumptions: vec![],
             stable_constant_names_assumption: None,
+            no_singleton_class_assumptions: vec![],
             block_assumes_single_ractor: false,
             perf_map: Rc::default(),
             perf_stack: vec![],
@@ -229,6 +233,20 @@ impl JITState {
         self.method_lookup_assumptions.push(cme);
 
         Some(())
+    }
+
+    /// Assume that objects of a given class will have no singleton class.
+    /// Return true if there has been no such singleton class since boot
+    /// and we can safely invalidate it.
+    pub fn assume_no_singleton_class(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, klass: VALUE) -> bool {
+        if jit_ensure_block_entry_exit(self, asm, ocb).is_none() {
+            return false; // out of space, give up
+        }
+        if has_singleton_class_of(klass) {
+            return false; // we've seen a singleton class. disable the optimization to avoid an invalidation loop.
+        }
+        self.no_singleton_class_assumptions.push(klass);
+        true
     }
 
     fn get_cfp(&self) -> *mut rb_control_frame_struct {
@@ -1504,7 +1522,7 @@ fn gen_newarray(
     );
 
     asm.stack_pop(n.as_usize());
-    let stack_ret = asm.stack_push(Type::TArray);
+    let stack_ret = asm.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1527,7 +1545,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = asm.stack_push(Type::TArray);
+    let stack_ret = asm.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1547,7 +1565,7 @@ fn gen_duphash(
     // call rb_hash_resurrect(VALUE hash);
     let hash = asm.ccall(rb_hash_resurrect as *const u8, vec![hash.into()]);
 
-    let stack_ret = asm.stack_push(Type::THash);
+    let stack_ret = asm.stack_push(Type::CHash);
     asm.mov(stack_ret, hash);
 
     Some(KeepCompiling)
@@ -2303,12 +2321,12 @@ fn gen_newhash(
         asm.cpop_into(new_hash); // x86 alignment
 
         asm.stack_pop(num.try_into().unwrap());
-        let stack_ret = asm.stack_push(Type::THash);
+        let stack_ret = asm.stack_push(Type::CHash);
         asm.mov(stack_ret, new_hash);
     } else {
         // val = rb_hash_new();
         let new_hash = asm.ccall(rb_hash_new as *const u8, vec![]);
-        let stack_ret = asm.stack_push(Type::THash);
+        let stack_ret = asm.stack_push(Type::CHash);
         asm.mov(stack_ret, new_hash);
     }
 
@@ -2330,7 +2348,7 @@ fn gen_putstring(
         vec![EC, put_val.into(), 0.into()]
     );
 
-    let stack_top = asm.stack_push(Type::TString);
+    let stack_top = asm.stack_push(Type::CString);
     asm.mov(stack_top, str_opnd);
 
     Some(KeepCompiling)
@@ -2351,7 +2369,7 @@ fn gen_putchilledstring(
         vec![EC, put_val.into(), 1.into()]
     );
 
-    let stack_top = asm.stack_push(Type::TString);
+    let stack_top = asm.stack_push(Type::CString);
     asm.mov(stack_top, str_opnd);
 
     Some(KeepCompiling)
@@ -4493,8 +4511,18 @@ fn jit_guard_known_klass(
     let val_type = asm.ctx.get_opnd_type(insn_opnd);
 
     if val_type.known_class() == Some(known_klass) {
-        // We already know from type information that this is a match
-        return;
+        // Unless frozen, Array, Hash, and String objects may change their RBASIC_CLASS
+        // when they get a singleton class. Those types need invalidations.
+        if unsafe { [rb_cArray, rb_cHash, rb_cString].contains(&known_klass) } {
+            if jit.assume_no_singleton_class(asm, ocb, known_klass) {
+                // Speculate that this object will not have a singleton class,
+                // and invalidate the block in case it does.
+                return;
+            }
+        } else {
+            // We already know from type information that this is a match
+            return;
+        }
     }
 
     if unsafe { known_klass == rb_cNilClass } {
@@ -4613,14 +4641,11 @@ fn jit_guard_known_klass(
         jit_chain_guard(JCC_JNE, jit, asm, ocb, max_chain_depth, counter);
 
         if known_klass == unsafe { rb_cString } {
-            // Upgrading to Type::CString here is incorrect.
-            // The guard we put only checks RBASIC_CLASS(obj),
-            // which adding a singleton class can change. We
-            // additionally need to know the string is frozen
-            // to claim Type::CString.
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TString);
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CString);
         } else if known_klass == unsafe { rb_cArray } {
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TArray);
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
+        } else if known_klass == unsafe { rb_cHash } {
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CHash);
         }
     }
 }

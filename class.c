@@ -29,6 +29,7 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
+#include "yjit.h"
 
 /* Flags of T_CLASS
  *
@@ -805,6 +806,7 @@ make_singleton_class(VALUE obj)
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
+    rb_yjit_invalidate_no_singleton_class(orig_class);
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;
