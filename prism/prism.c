@@ -11267,11 +11267,11 @@ parser_lex(pm_parser_t *parser) {
             // Otherwise we'll be parsing string content. These are the places
             // where we need to split up the content of the heredoc. We'll use
             // strpbrk to find the first of these characters.
-            uint8_t breakpoints[] = "\n\\#";
+            uint8_t breakpoints[] = "\r\n\\#";
 
             pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
-                breakpoints[2] = '\0';
+                breakpoints[3] = '\0';
             }
 
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
@@ -11285,6 +11285,21 @@ parser_lex(pm_parser_t *parser) {
                         parser->current.end = breakpoint + 1;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
+                    case '\r':
+                        parser->current.end = breakpoint + 1;
+
+                        if (peek_at(parser, breakpoint + 1) != '\n') {
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            break;
+                        }
+
+                        // If we hit a \r\n sequence, then we want to replace it
+                        // with a single \n character in the final string.
+                        pm_token_buffer_escape(parser, &token_buffer);
+                        breakpoint++;
+                        token_buffer.cursor = breakpoint;
+
+                        /* fallthrough */
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
                             parser_flush_heredoc_end(parser);

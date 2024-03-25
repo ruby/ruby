@@ -48,7 +48,7 @@
         │   ├── opening_loc: (7,0)-(7,4) = "<<-E"
         │   ├── content_loc: (8,0)-(11,0) = "    1 \\\r\n    2\r\n    3\r\n"
         │   ├── closing_loc: (11,0)-(12,0) = "E\r\n"
-        │   └── unescaped: "    1     2\r\n    3\r\n"
+        │   └── unescaped: "    1     2\n    3\n"
         ├── @ LocalVariableWriteNode (location: (13,0)-(15,0))
         │   ├── name: :x
         │   ├── depth: 0
@@ -94,7 +94,7 @@
             │   │           │   │       ├── opening_loc: ∅
             │   │           │   │       ├── content_loc: (19,0)-(20,0) = "    baz\r\n"
             │   │           │   │       ├── closing_loc: ∅
-            │   │           │   │       └── unescaped: "baz\r\n"
+            │   │           │   │       └── unescaped: "baz\n"
             │   │           │   └── closing_loc: (20,0)-(21,0) = "  EOF\r\n"
             │   │           ├── call_operator_loc: (17,14)-(17,15) = "."
             │   │           ├── name: :chop
