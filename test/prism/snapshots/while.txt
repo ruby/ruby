@@ -13,7 +13,8 @@
         │       @ StatementsNode (location: (1,12)-(1,13))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (1,12)-(1,13))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ WhileNode (location: (3,0)-(3,12))
         │   ├── flags: ∅
         │   ├── keyword_loc: (3,2)-(3,7) = "while"
@@ -24,7 +25,8 @@
         │       @ StatementsNode (location: (3,0)-(3,1))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (3,0)-(3,1))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ WhileNode (location: (5,0)-(5,16))
         │   ├── flags: ∅
         │   ├── keyword_loc: (5,6)-(5,11) = "while"
@@ -136,7 +138,6 @@
         │   │   │   │           └── block:
         │   │   │   │               @ BlockNode (location: (13,27)-(13,33))
         │   │   │   │               ├── locals: []
-        │   │   │   │               ├── locals_body_index: 0
         │   │   │   │               ├── parameters: ∅
         │   │   │   │               ├── body: ∅
         │   │   │   │               ├── opening_loc: (13,27)-(13,29) = "do"
@@ -148,7 +149,6 @@
         │   │   │   └── block: ∅
         │   │   ├── body: ∅
         │   │   ├── locals: [:a]
-        │   │   ├── locals_body_index: 1
         │   │   ├── def_keyword_loc: (13,6)-(13,9) = "def"
         │   │   ├── operator_loc: (13,14)-(13,15) = "."
         │   │   ├── lparen_loc: ∅
@@ -194,7 +194,6 @@
         │   │   │           │   └── block:
         │   │   │           │       @ BlockNode (location: (15,24)-(15,30))
         │   │   │           │       ├── locals: []
-        │   │   │           │       ├── locals_body_index: 0
         │   │   │           │       ├── parameters: ∅
         │   │   │           │       ├── body: ∅
         │   │   │           │       ├── opening_loc: (15,24)-(15,26) = "do"
@@ -234,7 +233,6 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (17,25)-(17,31))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (17,25)-(17,27) = "do"
@@ -277,7 +275,6 @@
         │   │   │           │   └── block:
         │   │   │           │       @ BlockNode (location: (19,29)-(19,35))
         │   │   │           │       ├── locals: []
-        │   │   │           │       ├── locals_body_index: 0
         │   │   │           │       ├── parameters: ∅
         │   │   │           │       ├── body: ∅
         │   │   │           │       ├── opening_loc: (19,29)-(19,31) = "do"
@@ -315,13 +312,11 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (21,20)-(21,26))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (21,20)-(21,22) = "do"
         │   │   │               └── closing_loc: (21,23)-(21,26) = "end"
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── def_keyword_loc: (21,6)-(21,9) = "def"
         │   │   ├── operator_loc: ∅
         │   │   ├── lparen_loc: ∅

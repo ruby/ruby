@@ -195,7 +195,6 @@
             │           │           │           │   │           └── block:
             │           │           │           │   │               @ BlockNode (location: (15,40)-(21,3))
             │           │           │           │   │               ├── locals: []
-            │           │           │           │   │               ├── locals_body_index: 0
             │           │           │           │   │               ├── parameters: ∅
             │           │           │           │   │               ├── body:
             │           │           │           │   │               │   @ StatementsNode (location: (16,2)-(20,5))
@@ -230,7 +229,6 @@
             │           │           │           │   │               │           │   │           └── block:
             │           │           │           │   │               │           │   │               @ BlockNode (location: (18,22)-(19,7))
             │           │           │           │   │               │           │   │               ├── locals: []
-            │           │           │           │   │               │           │   │               ├── locals_body_index: 0
             │           │           │           │   │               │           │   │               ├── parameters: ∅
             │           │           │           │   │               │           │   │               ├── body: ∅
             │           │           │           │   │               │           │   │               ├── opening_loc: (18,22)-(18,24) = "do"

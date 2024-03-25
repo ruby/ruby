@@ -45,6 +45,7 @@ void rb_str_make_independent(VALUE str);
 int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
 int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
+VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
 
 #if USE_MMTK
 bool rb_mmtk_str_no_free(VALUE str);
@@ -61,6 +62,7 @@ static inline VALUE rb_str_eql_internal(const VALUE str1, const VALUE str2);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* string.c (export) */
 VALUE rb_str_tmp_frozen_acquire(VALUE str);
+VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);

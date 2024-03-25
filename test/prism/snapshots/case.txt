@@ -21,6 +21,7 @@
         │   │       │       ├── value_loc: (2,6)-(2,8) = "hi"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "hi"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
@@ -33,6 +34,7 @@
         │   │   │   ├── keyword_loc: (5,11)-(5,15) = "when"
         │   │   │   ├── conditions: (length: 1)
         │   │   │   │   └── @ TrueNode (location: (5,16)-(5,20))
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (5,22)-(5,30))
         │   │   │       └── body: (length: 1)
@@ -59,6 +61,7 @@
         │   │       ├── keyword_loc: (5,32)-(5,36) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ FalseNode (location: (5,37)-(5,42))
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,44)-(5,53))
         │   │           └── body: (length: 1)
@@ -103,6 +106,7 @@
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
@@ -125,6 +129,7 @@
         │   │       │       ├── value_loc: (10,6)-(10,8) = "hi"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "hi"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (11,0)-(13,3))
@@ -161,6 +166,7 @@
         │   │       │   │   └── name: :FooBar
         │   │       │   └── @ ConstantReadNode (location: (15,24)-(15,31))
         │   │       │       └── name: :BazBonk
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (15,0)-(15,4) = "case"
@@ -204,6 +210,7 @@
         │   │       │       │           └── block: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (17,0)-(17,4) = "case"
@@ -224,6 +231,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (23,0)-(25,3))
@@ -254,6 +262,7 @@
         │   │       │       ├── value_loc: (28,9)-(28,10) = "b"
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── unescaped: "b"
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (29,5)-(30,6))
@@ -269,7 +278,9 @@
         │   │       ├── keyword_loc: (32,14)-(32,18) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ IntegerNode (location: (32,19)-(32,20))
-        │   │       │       └── flags: decimal
+        │   │       │       ├── flags: decimal
+        │   │       │       └── value: 1
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
@@ -279,17 +290,21 @@
         │   │   @ MatchPredicateNode (location: (34,5)-(34,11))
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (34,5)-(34,6))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (34,10)-(34,11))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   └── operator_loc: (34,7)-(34,9) = "in"
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (35,0)-(35,6))
         │   │       ├── keyword_loc: (35,0)-(35,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ IntegerNode (location: (35,5)-(35,6))
-        │   │       │       └── flags: decimal
+        │   │       │       ├── flags: decimal
+        │   │       │       └── value: 3
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
@@ -299,17 +314,21 @@
         │   │   @ MatchPredicateNode (location: (38,5)-(38,11))
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (38,5)-(38,6))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (38,10)-(38,11))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   └── operator_loc: (38,7)-(38,9) = "in"
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (38,13)-(38,19))
         │   │       ├── keyword_loc: (38,13)-(38,17) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ IntegerNode (location: (38,18)-(38,19))
-        │   │       │       └── flags: decimal
+        │   │       │       ├── flags: decimal
+        │   │       │       └── value: 3
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (38,0)-(38,4) = "case"
@@ -319,16 +338,19 @@
         │   │   @ MatchPredicateNode (location: (40,5)-(40,11))
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (40,5)-(40,6))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (40,10)-(40,11))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   └── operator_loc: (40,7)-(40,9) = "in"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (41,0)-(41,4))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (41,3)-(41,4))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 3
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (41,0)-(41,2) = "in"
         │   │       └── then_loc: ∅
@@ -340,16 +362,19 @@
         │   │   @ MatchPredicateNode (location: (44,5)-(44,11))
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (44,5)-(44,6))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (44,10)-(44,11))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 2
         │   │   └── operator_loc: (44,7)-(44,9) = "in"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (44,13)-(44,17))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (44,16)-(44,17))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 3
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (44,13)-(44,15) = "in"
         │   │       └── then_loc: ∅
@@ -429,7 +454,8 @@
             ├── flags: ∅
             ├── receiver:
             │   @ IntegerNode (location: (51,0)-(51,1))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── call_operator_loc: (51,1)-(51,2) = "."
             ├── name: :then
             ├── message_loc: (51,2)-(51,6) = "then"
@@ -439,7 +465,6 @@
             └── block:
                 @ BlockNode (location: (51,7)-(55,3))
                 ├── locals: [:_1]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (51,7)-(55,3))
                 │   └── maximum: 1
@@ -449,7 +474,8 @@
                 │       └── @ CaseMatchNode (location: (52,2)-(54,5))
                 │           ├── predicate:
                 │           │   @ IntegerNode (location: (52,7)-(52,8))
-                │           │   └── flags: decimal
+                │           │   ├── flags: decimal
+                │           │   └── value: 1
                 │           ├── conditions: (length: 1)
                 │           │   └── @ InNode (location: (53,2)-(53,8))
                 │           │       ├── pattern:

@@ -35,6 +35,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,8)-(1,9))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: (1,9)-(1,10) = ")"
             └── block: ∅

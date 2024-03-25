@@ -55,7 +55,7 @@ module Prism
       verbose, $VERBOSE = $VERBOSE, nil
 
       begin
-        locals = []
+        locals = [] #: Array[Array[Symbol | Integer]]
         stack = [ISeq.new(RubyVM::InstructionSequence.compile(source).to_a)]
 
         while (iseq = stack.pop)
@@ -96,8 +96,8 @@ module Prism
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
     def self.prism_locals(source)
-      locals = []
-      stack = [Prism.parse(source).value]
+      locals = [] #: Array[Array[Symbol | Integer]]
+      stack = [Prism.parse(source).value] #: Array[Prism::node]
 
       while (node = stack.pop)
         case node
@@ -143,7 +143,7 @@ module Prism
             if params.keyword_rest.is_a?(ForwardingParameterNode)
               sorted.push(:*, :**, :&, :"...")
             elsif params.keyword_rest.is_a?(KeywordRestParameterNode)
-              sorted << params.keyword_rest.name if params.keyword_rest.name
+              sorted << (params.keyword_rest.name || :**)
             end
 
             # Recurse down the parameter tree to find any destructured
@@ -162,7 +162,9 @@ module Prism
               end
             end
 
-            sorted << params.block.name if params.block&.name
+            if params.block
+              sorted << (params.block.name || :&)
+            end
 
             names = sorted.concat(names - sorted)
           end
@@ -199,6 +201,49 @@ module Prism
     # the source.
     def self.newlines(source)
       Prism.parse(source).source.offsets
+    end
+
+    # A wrapping around prism's internal encoding data structures. This is used
+    # for reflection and debugging purposes.
+    class Encoding
+      # The name of the encoding, that can be passed to Encoding.find.
+      attr_reader :name
+
+      # Initialize a new encoding with the given name and whether or not it is
+      # a multibyte encoding.
+      def initialize(name, multibyte)
+        @name = name
+        @multibyte = multibyte
+      end
+
+      # Whether or not the encoding is a multibyte encoding.
+      def multibyte?
+        @multibyte
+      end
+
+      # Returns the number of bytes of the first character in the source string,
+      # if it is valid for the encoding. Otherwise, returns 0.
+      def width(source)
+        Encoding._width(name, source)
+      end
+
+      # Returns true if the first character in the source string is a valid
+      # alphanumeric character for the encoding.
+      def alnum?(source)
+        Encoding._alnum?(name, source)
+      end
+
+      # Returns true if the first character in the source string is a valid
+      # alphabetic character for the encoding.
+      def alpha?(source)
+        Encoding._alpha?(name, source)
+      end
+
+      # Returns true if the first character in the source string is a valid
+      # uppercase character for the encoding.
+      def upper?(source)
+        Encoding._upper?(name, source)
+      end
     end
   end
 end

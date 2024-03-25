@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.0.9"
+#define STRSCAN_VERSION "3.1.1"
 
 /* =======================================================================
                          Data Type Definitions
@@ -903,6 +903,57 @@ strscan_getch(VALUE self)
 }
 
 /*
+ * Scans one byte and returns it as an integer.
+ * This method is not multibyte character sensitive.
+ * See also: #getch.
+ *
+ *   s = StringScanner.new('ab')
+ *   s.scan_byte         # => 97
+ *   s.scan_byte         # => 98
+ *   s.scan_byte         # => nil
+ *
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.scan_byte         # => 0xA4
+ *   s.scan_byte         # => 0xA2
+ *   s.scan_byte         # => nil
+ */
+static VALUE
+strscan_scan_byte(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    CLEAR_MATCH_STATUS(p);
+    if (EOS_P(p))
+        return Qnil;
+
+    VALUE byte = INT2FIX((unsigned char)*CURPTR(p));
+    p->prev = p->curr;
+    p->curr++;
+    MATCHED(p);
+    adjust_registers_to_matched(p);
+    return byte;
+}
+
+/*
+ * Peeks at the current byte and returns it as an integer.
+ *
+ *   s = StringScanner.new('ab')
+ *   s.peek_byte         # => 97
+ */
+static VALUE
+strscan_peek_byte(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    if (EOS_P(p))
+        return Qnil;
+
+    return INT2FIX((unsigned char)*CURPTR(p));
+}
+
+/*
  * Scans one byte and returns it.
  * This method is not multibyte character sensitive.
  * See also: #getch.
@@ -1605,6 +1656,7 @@ strscan_named_captures(VALUE self)
  *
  * - #getch
  * - #get_byte
+ * - #scan_byte
  * - #scan
  * - #scan_until
  * - #skip
@@ -1617,6 +1669,7 @@ strscan_named_captures(VALUE self)
  * - #exist?
  * - #match?
  * - #peek
+ * - #peek_byte
  *
  * === Finding Where we Are
  *
@@ -1708,7 +1761,9 @@ Init_strscan(void)
     rb_define_method(StringScanner, "getch",       strscan_getch,       0);
     rb_define_method(StringScanner, "get_byte",    strscan_get_byte,    0);
     rb_define_method(StringScanner, "getbyte",     strscan_getbyte,     0);
+    rb_define_method(StringScanner, "scan_byte",   strscan_scan_byte,   0);
     rb_define_method(StringScanner, "peek",        strscan_peek,        1);
+    rb_define_method(StringScanner, "peek_byte",   strscan_peek_byte,   0);
     rb_define_method(StringScanner, "peep",        strscan_peep,        1);
 
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);

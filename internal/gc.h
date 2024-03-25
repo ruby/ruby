@@ -79,14 +79,6 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_MARK_MOVABLE_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
-} while (0)
-#define RUBY_MARK_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark(markobj);} \
-} while (0)
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
@@ -237,14 +229,11 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
-VALUE rb_class_allocate_instance(VALUE klass);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
-bool rb_gc_is_ptr_to_obj(void *ptr);
-VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
-VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
+bool rb_gc_is_ptr_to_obj(const void *ptr);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
@@ -272,19 +261,13 @@ VALUE rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payl
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
-size_t rb_objspace_data_type_memsize(VALUE obj);
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_markable_object_p(VALUE obj);
 int rb_objspace_internal_object_p(VALUE obj);
-int rb_objspace_marked_object_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
-    void *data);
-
-void rb_objspace_each_objects_without_setup(
-    int (*callback)(void *, void *, size_t, void *),
     void *data);
 
 size_t rb_gc_obj_slot_size(VALUE obj);

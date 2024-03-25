@@ -1,5 +1,5 @@
 use std::{ffi::{CStr, CString}, ptr::null, fs::File};
-use crate::backend::current::TEMP_REGS;
+use crate::{backend::current::TEMP_REGS, stats::Counter};
 use std::os::raw::{c_char, c_int, c_uint};
 
 // Call threshold for small deployments and command-line apps
@@ -48,7 +48,7 @@ pub struct Options {
     pub print_stats: bool,
 
     // Trace locations of exits
-    pub gen_trace_exits: bool,
+    pub trace_exits: Option<TraceExits>,
 
     // how often to sample exit trace data
     pub trace_exits_sample_rate: usize,
@@ -76,7 +76,7 @@ pub struct Options {
     pub code_gc: bool,
 
     /// Enable writing /tmp/perf-{pid}.map for Linux perf
-    pub perf_map: bool,
+    pub perf_map: Option<PerfMap>,
 }
 
 // Initialize the options to default values
@@ -86,7 +86,7 @@ pub static mut OPTIONS: Options = Options {
     max_versions: 4,
     num_temp_regs: 5,
     gen_stats: false,
-    gen_trace_exits: false,
+    trace_exits: None,
     print_stats: true,
     trace_exits_sample_rate: 0,
     disable: false,
@@ -96,7 +96,7 @@ pub static mut OPTIONS: Options = Options {
     dump_iseq_disasm: None,
     frame_pointer: false,
     code_gc: false,
-    perf_map: false,
+    perf_map: None,
 };
 
 /// YJIT option descriptions for `ruby --help`.
@@ -112,12 +112,29 @@ static YJIT_OPTIONS: [(&str, &str); 9] = [
     ("--yjit-trace-exits-sample-rate=num", "Trace exit locations only every Nth occurrence"),
 ];
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum TraceExits {
+    // Trace all exits
+    All,
+    // Trace a specific counted exit
+    CountedExit(Counter),
+}
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
     File(String),
+}
+
+/// Type of symbols to dump into /tmp/perf-{pid}.map
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PerfMap {
+    // Dump ISEQ symbols
+    ISEQ,
+    // Dump YJIT codegen symbols
+    Codegen,
 }
 
 /// Macro to get an option value by name
@@ -221,10 +238,12 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("perf", _) => match opt_val {
             "" => unsafe {
                 OPTIONS.frame_pointer = true;
-                OPTIONS.perf_map = true;
+                OPTIONS.perf_map = Some(PerfMap::ISEQ);
             },
             "fp" => unsafe { OPTIONS.frame_pointer = true },
-            "map" => unsafe { OPTIONS.perf_map = true },
+            "iseq" => unsafe { OPTIONS.perf_map = Some(PerfMap::ISEQ) },
+            // Accept --yjit-perf=map for backward compatibility
+            "codegen" | "map" => unsafe { OPTIONS.perf_map = Some(PerfMap::Codegen) },
             _ => return None,
          },
 
@@ -267,8 +286,23 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 return None;
             }
         },
-        ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true; OPTIONS.trace_exits_sample_rate = 0 },
-        ("trace-exits-sample-rate", sample_rate) => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true; OPTIONS.trace_exits_sample_rate = sample_rate.parse().unwrap(); },
+        ("trace-exits", _) => unsafe {
+            OPTIONS.gen_stats = true;
+            OPTIONS.trace_exits = match opt_val {
+                "" => Some(TraceExits::All),
+                name => match Counter::get(name) {
+                    Some(counter) => Some(TraceExits::CountedExit(counter)),
+                    None => return None,
+                },
+            };
+        },
+        ("trace-exits-sample-rate", sample_rate) => unsafe {
+            OPTIONS.gen_stats = true;
+            if OPTIONS.trace_exits.is_none() {
+                OPTIONS.trace_exits = Some(TraceExits::All);
+            }
+            OPTIONS.trace_exits_sample_rate = sample_rate.parse().unwrap();
+        },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
 

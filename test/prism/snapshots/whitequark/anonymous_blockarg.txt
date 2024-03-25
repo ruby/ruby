@@ -37,8 +37,7 @@
             │               @ BlockArgumentNode (location: (1,16)-(1,17))
             │               ├── expression: ∅
             │               └── operator_loc: (1,16)-(1,17) = "&"
-            ├── locals: [:&]
-            ├── locals_body_index: 1
+            ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,7)-(1,8) = "("

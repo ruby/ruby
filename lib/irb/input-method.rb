@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/input-method.rb - input methods used irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -20,7 +20,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      fail NotImplementedError, "gets"
+      fail NotImplementedError
     end
     public :gets
 
@@ -41,6 +41,10 @@ module IRB
     end
 
     def support_history_saving?
+      false
+    end
+
+    def prompting?
       false
     end
 
@@ -89,6 +93,10 @@ module IRB
     # See IO#eof for more information.
     def readable_after_eof?
       true
+    end
+
+    def prompting?
+      STDIN.tty?
     end
 
     # Returns the current line number for #io.
@@ -218,6 +226,10 @@ module IRB
     # See IO#eof? for more information.
     def eof?
       @eof
+    end
+
+    def prompting?
+      true
     end
 
     # For debug message
@@ -465,6 +477,10 @@ module IRB
     # See IO#eof? for more information.
     def eof?
       @eof
+    end
+
+    def prompting?
+      true
     end
 
     # For debug message

@@ -2,10 +2,12 @@
 
 module Prism
   # This module is responsible for converting the prism syntax tree into other
-  # syntax trees. At the moment it only supports converting to the
-  # whitequark/parser gem's syntax tree, but support is planned for the
-  # seattlerb/ruby_parser gem's syntax tree as well.
-  module Translation
+  # syntax trees.
+  module Translation # steep:ignore
     autoload :Parser, "prism/translation/parser"
+    autoload :Parser33, "prism/translation/parser33"
+    autoload :Parser34, "prism/translation/parser34"
+    autoload :Ripper, "prism/translation/ripper"
+    autoload :RubyParser, "prism/translation/ruby_parser"
   end
 end

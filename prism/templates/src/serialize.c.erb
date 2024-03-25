@@ -25,7 +25,7 @@ pm_serialize_location(const pm_parser_t *parser, const pm_location_t *location, 
 }
 
 static void
-pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffer) {
+pm_serialize_string(const pm_parser_t *parser, const pm_string_t *string, pm_buffer_t *buffer) {
     switch (string->type) {
         case PM_STRING_SHARED: {
             pm_buffer_append_byte(buffer, 1);
@@ -41,9 +41,25 @@ pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffe
             pm_buffer_append_bytes(buffer, pm_string_source(string), length);
             break;
         }
+#ifdef PRISM_HAS_MMAP
         case PM_STRING_MAPPED:
             assert(false && "Cannot serialize mapped strings.");
             break;
+#endif
+    }
+}
+
+static void
+pm_serialize_integer(const pm_integer_t *integer, pm_buffer_t *buffer) {
+    pm_buffer_append_byte(buffer, integer->negative ? 1 : 0);
+    if (integer->values == NULL) {
+        pm_buffer_append_varuint(buffer, pm_sizet_to_u32(1));
+        pm_buffer_append_varuint(buffer, integer->value);
+    } else {
+        pm_buffer_append_varuint(buffer, pm_sizet_to_u32(integer->length));
+        for (size_t i = 0; i < integer->length; i++) {
+            pm_buffer_append_varuint(buffer, integer->values[i]);
+        }
     }
 }
 
@@ -70,35 +86,35 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::NodeField -%>
+            <%- when Prism::Template::NodeField -%>
             pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Prism::OptionalNodeField -%>
+            <%- when Prism::Template::OptionalNodeField -%>
             if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
                 pm_buffer_append_byte(buffer, 0);
             } else {
                 pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
-            <%- when Prism::StringField -%>
+            <%- when Prism::Template::StringField -%>
             pm_serialize_string(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Prism::NodeListField -%>
+            <%- when Prism::Template::NodeListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 pm_serialize_node(parser, (pm_node_t *) ((pm_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
-            <%- when Prism::ConstantField, Prism::OptionalConstantField -%>
+            <%- when Prism::Template::ConstantField, Prism::Template::OptionalConstantField -%>
             pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
-            <%- when Prism::ConstantListField -%>
+            <%- when Prism::Template::ConstantListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
-            <%- when Prism::LocationField -%>
+            <%- when Prism::Template::LocationField -%>
             <%- if field.should_be_serialized? -%>
             pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- end -%>
-            <%- when Prism::OptionalLocationField -%>
+            <%- when Prism::Template::OptionalLocationField -%>
             <%- if field.should_be_serialized? -%>
             if (((pm_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
                 pm_buffer_append_byte(buffer, 0);
@@ -107,12 +123,16 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- end -%>
-            <%- when Prism::UInt8Field -%>
+            <%- when Prism::Template::UInt8Field -%>
             pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Prism::UInt32Field -%>
+            <%- when Prism::Template::UInt32Field -%>
             pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Prism::FlagsField -%>
+            <%- when Prism::Template::FlagsField -%>
             pm_buffer_append_varuint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
+            <%- when Prism::Template::IntegerField -%>
+            pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when Prism::Template::DoubleField -%>
+            pm_buffer_append_double(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -125,6 +145,17 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             break;
         }
         <%- end -%>
+    }
+}
+
+static void
+pm_serialize_newline_list(pm_newline_list_t *list, pm_buffer_t *buffer) {
+    uint32_t size = pm_sizet_to_u32(list->size);
+    pm_buffer_append_varuint(buffer, size);
+
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t offset = pm_sizet_to_u32(list->offsets[i]);
+        pm_buffer_append_varuint(buffer, offset);
     }
 }
 
@@ -183,6 +214,9 @@ pm_serialize_data_loc(const pm_parser_t *parser, pm_buffer_t *buffer) {
 
 static void
 pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
+    // serialize the type
+    pm_buffer_append_byte(buffer, (uint8_t) diagnostic->diag_id);
+
     // serialize message
     size_t message_length = strlen(diagnostic->message);
     pm_buffer_append_varuint(buffer, pm_sizet_to_u32(message_length));
@@ -214,21 +248,27 @@ pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer) {
     pm_buffer_append_string(buffer, encoding->name, encoding_length);
 }
 
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-/**
- * Serialize the encoding, metadata, nodes, and constant pool.
- */
-void
-pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+static void
+pm_serialize_metadata(pm_parser_t *parser, pm_buffer_t *buffer) {
     pm_serialize_encoding(parser->encoding, buffer);
     pm_buffer_append_varsint(buffer, parser->start_line);
-<%- unless Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
+    pm_serialize_newline_list(&parser->newline_list, buffer);
+<%- unless Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
 <%- end -%>
     pm_serialize_magic_comment_list(parser, &parser->magic_comment_list, buffer);
     pm_serialize_data_loc(parser, buffer);
     pm_serialize_diagnostic_list(parser, &parser->error_list, buffer);
     pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
+}
+
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+/**
+ * Serialize the metadata, nodes, and constant pool.
+ */
+void
+pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+    pm_serialize_metadata(parser, buffer);
 
     // Here we're going to leave space for the offset of the constant pool in
     // the buffer.
@@ -319,13 +359,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     // Append 0 to mark end of tokens.
     pm_buffer_append_byte(buffer, 0);
 
-    pm_serialize_encoding(parser.encoding, buffer);
-    pm_buffer_append_varsint(buffer, parser.start_line);
-    pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
-    pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);
-    pm_serialize_data_loc(&parser, buffer);
-    pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
-    pm_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
+    pm_serialize_metadata(&parser, buffer);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);

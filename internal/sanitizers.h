@@ -189,6 +189,23 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
     asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
 
+static inline void *
+asan_unpoison_object_temporary(VALUE obj)
+{
+    void *ptr = asan_poisoned_object_p(obj);
+    asan_unpoison_object(obj, false);
+    return ptr;
+}
+
+static inline void *
+asan_poison_object_restore(VALUE obj, void *ptr)
+{
+    if (ptr) {
+        asan_poison_object(obj);
+    }
+    return NULL;
+}
+
 
 /*!
  * Checks if the given pointer is on an ASAN fake stack. If so, it returns the

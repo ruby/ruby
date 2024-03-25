@@ -69,6 +69,13 @@ Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   end
 end
 deps.uniq!
+
+# NOTE: Only if extensions are configured as static and dynamic heterogeneously
+# (e.g. --with-static-linked-ext=foo or ext/Setup can mix static and dynamic
+# extensions), EXTOBJS may contain both extinit.o and dmyext.o. In such case,
+# prefer extinit.o, which does actual Init_${ext} function calls for statically
+# linked extensions, and drop dmyext.o, which does nothing but just to make the
+# linker happy.
 if objs = macros["EXTOBJS"] and objs.any? {|e|e.start_with?("ext/extinit.")}
   objs.delete_if {|e|e.start_with?("dmyext.")}
 end
@@ -155,7 +162,7 @@ ext/extinit.<%=objext%>:
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
 %     if /^(dist|real)clean$/ =~ tgt
 	$(Q)$(RM) <%=t[%r[\A(?:\.[^/]+/)?(?:[^/]+/){2}]]%>exts.mk
-	$(Q)$(RMDIRS) $(@D)
+	-$(Q)$(RMDIRS) $(@D)
 %     end
 %   end
 % end

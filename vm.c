@@ -228,7 +228,6 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 {
     VALUE refinements = Qnil;
     int omod_shared = FALSE;
-    rb_cref_t *cref;
 
     /* scope */
     union {
@@ -251,7 +250,10 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 
     VM_ASSERT(singleton || klass);
 
-    cref = (rb_cref_t *)rb_imemo_new(imemo_cref, klass, (VALUE)(use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref), scope_visi.value, refinements);
+    rb_cref_t *cref = IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
+    cref->klass_or_self = klass;
+    cref->next = use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref;
+    *((rb_scope_visibility_t *)&cref->scope_visi) = scope_visi.visi;
 
     if (pushed_by_eval) CREF_PUSHED_BY_EVAL_SET(cref);
     if (omod_shared) CREF_OMOD_SHARED_SET(cref);
@@ -514,6 +516,8 @@ jit_exec_exception(rb_execution_context_t *ec)
 # define jit_exec_exception(ec) Qundef
 #endif
 
+static void add_opt_method_entry(const rb_method_entry_t *me);
+
 #include "vm_insnhelper.c"
 
 #include "vm_exec.c"
@@ -615,7 +619,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     if (RB_TYPE_P(klass, T_ICLASS)) {
         klass = RBASIC(klass)->klass;
     }
-    else if (FL_TEST(klass, FL_SINGLETON)) {
+    else if (RCLASS_SINGLETON_P(klass)) {
         klass = RCLASS_ATTACHED_OBJECT(klass);
         if (NIL_P(klass)) return FALSE;
     }
@@ -977,7 +981,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     // Careful with order in the following sequence. Each allocation can move objects.
     env_body = ALLOC_N(VALUE, env_size);
-    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, 0, 0, 0, 0);
+    rb_env_t *env = IMEMO_NEW(rb_env_t, imemo_env, 0);
 
     // Set up env without WB since it's brand new (similar to newobj_init(), newobj_fill())
     MEMCPY(env_body, ep - (local_size - 1 /* specval */), VALUE, local_size);
@@ -1244,7 +1248,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                         VALUE msg = rb_sprintf("can not make shareable Proc because it can refer"
                                                " unshareable object %+" PRIsVALUE " from ", v);
                         if (name)
-                            rb_str_catf(msg, "variable `%" PRIsVALUE "'", name);
+                            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
                         else
                             rb_str_cat_cstr(msg, "a hidden variable");
                         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
@@ -1303,11 +1307,11 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
             rb_str_append(str, name);
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
-        rb_str_cat_cstr(str, data.yield ? " and uses `yield'." : ".");
+        rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
         rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
     }
     else if (data.yield) {
-        rb_raise(rb_eArgError, "can not %s because it uses `yield'.", message);
+        rb_raise(rb_eArgError, "can not %s because it uses 'yield'.", message);
     }
 
     return data.read_only;
@@ -2112,6 +2116,8 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
         return FALSE;
     }
 
+    if (METHOD_ENTRY_BASIC(me)) return TRUE;
+
     const rb_method_definition_t *def = me->def;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2162,16 +2168,36 @@ rb_vm_check_redefinition_by_prepend(VALUE klass)
 }
 
 static void
-add_opt_method(VALUE klass, ID mid, VALUE bop)
+add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_operators bop)
+{
+    st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
+    st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+}
+
+static void
+add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
-        st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
-        st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+        add_opt_method_entry_bop(me, mid, bop);
     }
     else {
         rb_bug("undefined optimized method: %s", rb_id2name(mid));
+    }
+}
+
+static enum ruby_basic_operators vm_redefinition_bop_for_id(ID mid);
+
+static void
+add_opt_method_entry(const rb_method_entry_t *me)
+{
+    if (me && vm_redefinition_check_method_type(me)) {
+        ID mid = me->called_id;
+        enum ruby_basic_operators bop = vm_redefinition_bop_for_id(mid);
+        if ((int)bop >= 0) {
+            add_opt_method_entry_bop(me, mid, bop);
+        }
     }
 }
 
@@ -2179,10 +2205,7 @@ static void
 vm_init_redefined_flag(void)
 {
     ID mid;
-    VALUE bop;
-
-    vm_opt_method_def_table = st_init_numtable();
-    vm_opt_mid_table = st_init_numtable();
+    enum ruby_basic_operators bop;
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
@@ -2219,6 +2242,46 @@ vm_init_redefined_flag(void)
     OP(Default, DEFAULT), (C(Hash));
 #undef C
 #undef OP
+}
+
+static enum ruby_basic_operators
+vm_redefinition_bop_for_id(ID mid)
+{
+    switch (mid) {
+#define OP(mid_, bop_) case id##mid_: return BOP_##bop_
+    OP(PLUS, PLUS);
+    OP(MINUS, MINUS);
+    OP(MULT, MULT);
+    OP(DIV, DIV);
+    OP(MOD, MOD);
+    OP(Eq, EQ);
+    OP(Eqq, EQQ);
+    OP(LT, LT);
+    OP(LE, LE);
+    OP(GT, GT);
+    OP(GE, GE);
+    OP(LTLT, LTLT);
+    OP(AREF, AREF);
+    OP(ASET, ASET);
+    OP(Length, LENGTH);
+    OP(Size, SIZE);
+    OP(EmptyP, EMPTY_P);
+    OP(Succ, SUCC);
+    OP(EqTilde, MATCH);
+    OP(Freeze, FREEZE);
+    OP(UMinus, UMINUS);
+    OP(Max, MAX);
+    OP(Min, MIN);
+    OP(Hash, HASH);
+    OP(Call, CALL);
+    OP(And, AND);
+    OP(Or, OR);
+    OP(NilP, NIL_P);
+    OP(Cmp, CMP);
+    OP(Default, DEFAULT);
+#undef OP
+    }
+    return -1;
 }
 
 /* for vm development */
@@ -2820,6 +2883,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
+        rb_gc_update_tbl_refs(vm->ci_table);
         rb_gc_update_tbl_refs(vm->frozen_strings);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->load_path = rb_gc_location(vm->load_path);
@@ -2866,7 +2930,7 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
                         VALUE *p = ec->vm_stack;
                         VALUE *sp = ec->cfp->sp;
                         while (p < sp) {
-                            if (!rb_special_const_p(*p)) {
+                            if (!RB_SPECIAL_CONST_P(*p)) {
                                 cb(*p, ctx);
                             }
                             p++;
@@ -2895,8 +2959,7 @@ rb_vm_mark(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
         rb_ractor_t *r = 0;
-        long i, len;
-        const VALUE *obj_ary;
+        long i;
 
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             // ractor.set only contains blocking or running ractors
@@ -2906,25 +2969,9 @@ rb_vm_mark(void *ptr)
         }
 
         rb_gc_mark_movable(vm->mark_object_ary);
-
-        len = RARRAY_LEN(vm->mark_object_ary);
-        obj_ary = RARRAY_CONST_PTR(vm->mark_object_ary);
-        for (i=0; i < len; i++) {
-            const VALUE *ptr;
-            long j, jlen;
-
-            rb_gc_mark(*obj_ary);
-            jlen = RARRAY_LEN(*obj_ary);
-            ptr = RARRAY_CONST_PTR(*obj_ary);
-            for (j=0; j < jlen; j++) {
-                rb_gc_mark(*ptr++);
-            }
-            obj_ary++;
-        }
-
         rb_gc_mark_movable(vm->load_path);
         rb_gc_mark_movable(vm->load_path_snapshot);
-        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->load_path_check_cache);
+        rb_gc_mark_movable(vm->load_path_check_cache);
         rb_gc_mark_movable(vm->expanded_load_path);
         rb_gc_mark_movable(vm->loaded_features);
         rb_gc_mark_movable(vm->loaded_features_snapshot);
@@ -2932,10 +2979,8 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->loaded_features_realpath_map);
         rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
-        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
-        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->me2counter);
-        /* Prevent classes from moving */
-        rb_mark_tbl(vm->defined_module_hash);
+        rb_gc_mark_movable(vm->coverages);
+        rb_gc_mark_movable(vm->me2counter);
 
         if (vm->loading_table) {
             rb_mark_tbl(vm->loading_table);
@@ -2973,17 +3018,7 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     VALUE exc = rb_exc_new3(cls, rb_obj_freeze(mesg));
     OBJ_FREEZE(exc);
     ((VALUE *)vm->special_exceptions)[sp] = exc;
-    rb_gc_register_mark_object(exc);
-}
-
-int
-rb_vm_add_root_module(VALUE module)
-{
-    rb_vm_t *vm = GET_VM();
-
-    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)module);
-
-    return TRUE;
+    rb_vm_register_global_object(exc);
 }
 
 static int
@@ -3037,7 +3072,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ensure_rollback_table);
 
             rb_vm_postponed_job_free();
-            st_free_table(vm->defined_module_hash);
 
             rb_id_table_free(vm->constant_cache);
 
@@ -3065,6 +3099,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_foreach(vm->loading_table, free_loading_table_entry, 0);
             st_free_table(vm->loading_table);
             vm->loading_table = 0;
+        }
+        if (vm->ci_table) {
+            st_free_table(vm->ci_table);
+            vm->ci_table = NULL;
         }
         if (vm->frozen_strings) {
             st_free_table(vm->frozen_strings);
@@ -3154,8 +3192,8 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->ensure_rollback_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
-        rb_st_memsize(vm->defined_module_hash) +
         vm_memsize_at_exit_list(vm->at_exit) +
+        rb_st_memsize(vm->ci_table) +
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
@@ -3376,16 +3414,16 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
                              sizeof(ec->machine.regs) / (sizeof(VALUE)));
     }
 
-    RUBY_MARK_UNLESS_NULL(ec->errinfo);
-    RUBY_MARK_UNLESS_NULL(ec->root_svar);
+    rb_gc_mark(ec->errinfo);
+    rb_gc_mark(ec->root_svar);
     if (ec->local_storage) {
         rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
     }
-    RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
-    RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
-    RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
+    rb_gc_mark(ec->local_storage_recursive_hash);
+    rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
+    rb_gc_mark(ec->private_const_reference);
 
-    RUBY_MARK_MOVABLE_UNLESS_NULL(ec->storage);
+    rb_gc_mark_movable(ec->storage);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -3416,8 +3454,8 @@ thread_mark(void *ptr)
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
       case thread_invoke_type_ractor_proc:
-        RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.proc);
-        RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.args);
+        rb_gc_mark(th->invoke_arg.proc.proc);
+        rb_gc_mark(th->invoke_arg.proc.args);
         break;
       case thread_invoke_type_func:
         rb_gc_mark_maybe((VALUE)th->invoke_arg.func.arg);
@@ -3427,21 +3465,21 @@ thread_mark(void *ptr)
     }
 
     rb_gc_mark(rb_ractor_self(th->ractor));
-    RUBY_MARK_UNLESS_NULL(th->thgroup);
-    RUBY_MARK_UNLESS_NULL(th->value);
-    RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
-    RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
-    RUBY_MARK_UNLESS_NULL(th->top_self);
-    RUBY_MARK_UNLESS_NULL(th->top_wrapper);
+    rb_gc_mark(th->thgroup);
+    rb_gc_mark(th->value);
+    rb_gc_mark(th->pending_interrupt_queue);
+    rb_gc_mark(th->pending_interrupt_mask_stack);
+    rb_gc_mark(th->top_self);
+    rb_gc_mark(th->top_wrapper);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
-    RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
-    RUBY_MARK_UNLESS_NULL(th->last_status);
-    RUBY_MARK_UNLESS_NULL(th->locking_mutex);
-    RUBY_MARK_UNLESS_NULL(th->name);
+    rb_gc_mark(th->stat_insn_usage);
+    rb_gc_mark(th->last_status);
+    rb_gc_mark(th->locking_mutex);
+    rb_gc_mark(th->name);
 
-    RUBY_MARK_UNLESS_NULL(th->scheduler);
+    rb_gc_mark(th->scheduler);
 
     RUBY_MARK_LEAVE("thread");
 }
@@ -3896,8 +3934,8 @@ Init_VM(void)
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
-    rb_gc_register_mark_object(fcore);
-    rb_gc_register_mark_object(rb_class_path_cached(fcore));
+    rb_vm_register_global_object(fcore);
+    rb_vm_register_global_object(rb_class_path_cached(fcore));
     rb_mRubyVMFrozenCore = fcore;
 
     /*
@@ -4155,7 +4193,7 @@ Init_VM(void)
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
 
-        rb_gc_register_mark_object((VALUE)iseq);
+        rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->iseq = iseq;
         th->ec->cfp->pc = ISEQ_BODY(iseq)->iseq_encoded;
         th->ec->cfp->self = th->top_self;
@@ -4182,7 +4220,7 @@ Init_VM(void)
     rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
                             OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_obj_freeze(rb_block_param_proxy);
-    rb_gc_register_mark_object(rb_block_param_proxy);
+    rb_vm_register_global_object(rb_block_param_proxy);
 
     /* vm_backtrace.c */
     Init_vm_backtrace();
@@ -4250,6 +4288,9 @@ Init_BareVM(void)
     }
 #endif
 
+    vm_opt_method_def_table = st_init_numtable();
+    vm_opt_mid_table = st_init_numtable();
+
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
 #endif
@@ -4266,16 +4307,123 @@ ruby_init_stack(void *addr)
 #include <sys/mman.h>
 #endif
 
+
+#ifndef MARK_OBJECT_ARY_BUCKET_SIZE
+#define MARK_OBJECT_ARY_BUCKET_SIZE 1024
+#endif
+
+struct pin_array_list {
+    VALUE next;
+    long len;
+    VALUE *array;
+};
+
+static void
+pin_array_list_mark(void *data)
+{
+    struct pin_array_list *array = (struct pin_array_list *)data;
+    rb_gc_mark_movable(array->next);
+
+    rb_gc_mark_vm_stack_values(array->len, array->array);
+}
+
+static void
+pin_array_list_free(void *data)
+{
+    struct pin_array_list *array = (struct pin_array_list *)data;
+    xfree(array->array);
+}
+
+static size_t
+pin_array_list_memsize(const void *data)
+{
+    return sizeof(struct pin_array_list) + (MARK_OBJECT_ARY_BUCKET_SIZE * sizeof(VALUE));
+}
+
+static void
+pin_array_list_update_references(void *data)
+{
+    struct pin_array_list *array = (struct pin_array_list *)data;
+    array->next = rb_gc_location(array->next);
+}
+
+static const rb_data_type_t pin_array_list_type = {
+    .wrap_struct_name = "VM/pin_array_list",
+    .function = {
+        .dmark = pin_array_list_mark,
+        .dfree = pin_array_list_free,
+        .dsize = pin_array_list_memsize,
+        .dcompact = pin_array_list_update_references,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+static VALUE
+pin_array_list_new(VALUE next)
+{
+    struct pin_array_list *array_list;
+    VALUE obj = TypedData_Make_Struct(0, struct pin_array_list, &pin_array_list_type, array_list);
+    RB_OBJ_WRITE(obj, &array_list->next, next);
+    array_list->array = ALLOC_N(VALUE, MARK_OBJECT_ARY_BUCKET_SIZE);
+    return obj;
+}
+
+static VALUE
+pin_array_list_append(VALUE obj, VALUE item)
+{
+    struct pin_array_list *array_list;
+    TypedData_Get_Struct(obj, struct pin_array_list, &pin_array_list_type, array_list);
+
+    if (array_list->len >= MARK_OBJECT_ARY_BUCKET_SIZE) {
+        obj = pin_array_list_new(obj);
+        TypedData_Get_Struct(obj, struct pin_array_list, &pin_array_list_type, array_list);
+    }
+
+    RB_OBJ_WRITE(obj, &array_list->array[array_list->len], item);
+    array_list->len++;
+    return obj;
+}
+
+void
+rb_vm_register_global_object(VALUE obj)
+{
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    if (RB_SPECIAL_CONST_P(obj)) {
+        return;
+    }
+
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        if (FL_TEST(obj, RCLASS_IS_ROOT)) {
+            return;
+        }
+        FL_SET(obj, RCLASS_IS_ROOT);
+        break;
+      default:
+        break;
+    }
+    RB_VM_LOCK_ENTER();
+    {
+        VALUE list = GET_VM()->mark_object_ary;
+        VALUE head = pin_array_list_append(list, obj);
+        if (head != list) {
+            GET_VM()->mark_object_ary = head;
+        }
+        RB_GC_GUARD(obj);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
 void
 Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
 
-    vm->defined_module_hash = st_init_numtable();
-
     /* initialize mark object array, hash */
-    vm->mark_object_ary = rb_ary_hidden_new(128);
+    vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->loading_table = st_init_strtable();
+    vm->ci_table = st_init_table(&vm_ci_hashtype);
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 

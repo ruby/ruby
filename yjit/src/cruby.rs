@@ -107,11 +107,17 @@ pub use autogened::*;
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 
-// These are functions we expose from vm_insnhelper.c, not in any header.
+// These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    pub fn rb_check_overloaded_cme(
+        me: *const rb_callable_method_entry_t,
+        ci: *const rb_callinfo,
+    ) -> *const rb_callable_method_entry_t;
+    pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -136,6 +142,8 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
+    pub fn rb_vm_stack_canary() -> VALUE;
+    pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
 }
 
 // Renames
@@ -255,6 +263,18 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
+/// Return a poison value to be set above the stack top to verify leafness.
+#[cfg(not(test))]
+pub fn vm_stack_canary() -> u64 {
+    unsafe { rb_vm_stack_canary() }.as_u64()
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn vm_stack_canary() -> u64 {
+    0
+}
+
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
 pub struct rb_execution_context_struct {
@@ -285,13 +305,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque call-info type from vm_callinfo.h
-#[repr(C)]
-pub struct rb_callinfo_kwarg {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -377,6 +390,11 @@ impl VALUE {
         } else {
             self.builtin_type() == RUBY_T_SYMBOL
         }
+    }
+
+    /// Returns true if the value is T_HASH
+    pub fn hash_p(self) -> bool {
+        !self.special_const_p() && self.builtin_type() == RUBY_T_HASH
     }
 
     /// Returns true or false depending on whether the value is nil
@@ -718,6 +736,9 @@ mod manual_defs {
 
     pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
+
+    pub const RUBY_OFFSET_RSTRING_AS_HEAP_PTR: i32 = 24; // struct RString, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RSTRING_AS_ARY: i32 = 24; // struct RString, subfield "as.embed.ary"
 
     // Constants from rb_control_frame_t vm_core.h
     pub const RUBY_OFFSET_CFP_PC: i32 = 0;

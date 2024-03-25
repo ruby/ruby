@@ -5,7 +5,6 @@
     └── body: (length: 1)
         └── @ LambdaNode (location: (1,0)-(1,13))
             ├── locals: [:k]
-            ├── locals_body_index: 1
             ├── operator_loc: (1,0)-(1,2) = "->"
             ├── opening_loc: (1,10)-(1,11) = "{"
             ├── closing_loc: (1,12)-(1,13) = "}"
@@ -24,7 +23,8 @@
             │   │   │       ├── name_loc: (1,4)-(1,6) = "k:"
             │   │   │       └── value:
             │   │   │           @ IntegerNode (location: (1,6)-(1,8))
-            │   │   │           └── flags: decimal
+            │   │   │           ├── flags: decimal
+            │   │   │           └── value: 42
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

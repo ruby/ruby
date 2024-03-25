@@ -110,6 +110,17 @@ with_feature :unix_socket do
             @socket = @server.accept
             @socket.recv(5).should == 'hello'
           end
+
+          it "is set to nonblocking" do
+            require 'io/nonblock'
+            @socket = @server.accept
+            @socket.should.nonblock?
+          end
+
+          it "is set to close on exec" do
+            @socket = @server.accept
+            @socket.should.close_on_exec?
+          end
         end
       end
     end

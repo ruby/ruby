@@ -115,7 +115,7 @@ ruby_options(int argc, char **argv)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
+        iseq = ruby_process_options(argc, argv);
     }
     else {
         rb_ec_clear_current_thread_trace_func(ec);
@@ -197,7 +197,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
+        RUBY_VM_CHECK_INTS(ec);
 
       step_0: step++;
         save_error = ec->errinfo;
@@ -205,7 +205,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
 
         /* exits with failure but silently when an exception raised
          * here */
-        SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
+        rb_ec_teardown(ec);
 
       step_1: step++;
         VALUE err = ec->errinfo;
@@ -223,7 +223,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
             mode1 = exiting_split(err, (mode0 & EXITING_WITH_STATUS) ? NULL : &sysex, &signaled);
             if (mode1 & EXITING_WITH_MESSAGE) {
                 buf = rb_str_new(NULL, 0);
-                SAVE_ROOT_JMPBUF(th, rb_ec_error_print_detailed(ec, err, buf, Qundef));
+                rb_ec_error_print_detailed(ec, err, buf, Qundef);
                 message = buf;
             }
         }
@@ -232,7 +232,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
         /* protect from Thread#raise */
         th->status = THREAD_KILLED;
 
-        SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
+        rb_ractor_terminate_all();
 
       step_3: step++;
         if (!NIL_P(buf = message)) {
@@ -279,10 +279,7 @@ rb_ec_exec_node(rb_execution_context_t *ec, void *n)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_thread_t *const th = rb_ec_thread_ptr(ec);
-        SAVE_ROOT_JMPBUF(th, {
-            rb_iseq_eval_main(iseq);
-        });
+        rb_iseq_eval_main(iseq);
     }
     EC_POP_TAG();
     return state;
@@ -431,7 +428,7 @@ rb_class_modify_check(VALUE klass)
     if (OBJ_FROZEN(klass)) {
         const char *desc;
 
-        if (FL_TEST(klass, FL_SINGLETON)) {
+        if (RCLASS_SINGLETON_P(klass)) {
             desc = "object";
             klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!SPECIAL_CONST_P(klass)) {
@@ -592,15 +589,15 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
             e = rb_obj_as_string(mesg);
             ec->errinfo = mesg;
             if (file && line) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, line, e);
             }
             else if (file) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, e);
             }
             else {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), e);
             }
             warn_print_str(e);
@@ -974,7 +971,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        SAVE_ROOT_JMPBUF(rb_ec_thread_ptr(ec), result = (*proc) (data));
+        result = (*proc)(data);
     }
     else {
         rb_vm_rewind_cfp(ec, cfp);
@@ -1279,12 +1276,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 
     RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
 
-    module = RCLASS_SUPER(module);
-    while (module && module != klass) {
-        c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
-        RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
-        module = RCLASS_SUPER(module);
-    }
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
 

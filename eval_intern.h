@@ -95,14 +95,6 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-
-#define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (true) { \
-      stmt; \
-  } \
-  else if (th) { /* suppress unused-variable warning */ \
-  } while (0)
-
 #define EC_PUSH_TAG(ec) do { \
   rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \

@@ -38,10 +38,9 @@ describe 'Kernel#caller' do
   it "returns an Array with the block given to #at_exit at the base of the stack" do
     path = fixture(__FILE__, "caller_at_exit.rb")
     lines = ruby_exe(path).lines
-    lines.should == [
-      "#{path}:6:in `foo'\n",
-      "#{path}:2:in `block in <main>'\n"
-    ]
+    lines.size.should == 2
+    lines[0].should =~ /\A#{path}:6:in [`'](?:Object#)?foo'\n\z/
+    lines[1].should =~ /\A#{path}:2:in [`']block in <main>'\n\z/
   end
 
   it "works with endless ranges" do
@@ -63,8 +62,7 @@ describe 'Kernel#caller' do
 
       loc = nil
       tap { loc = caller(1, 1)[0] }
-      loc.should.end_with? "in `tap'"
-      loc.should.start_with? "<internal:"
+      loc.should =~ /\A<internal:.*in [`'](?:Kernel#)?tap'\z/
     end
   end
 end

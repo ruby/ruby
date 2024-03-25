@@ -240,7 +240,7 @@ for one element in the input or output array.
     # => [4194304]
 
 - <tt>'w'</tt> - BER-encoded integer
-  (see {BER enocding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
+  (see {BER encoding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
 
     s = [1073741823].pack('w*')
     # => "\x83\xFF\xFF\xFF\x7F"
@@ -577,7 +577,7 @@ for one byte in the input or output string.
     [0, 1, 2].pack("CCX2C")   # => "\x02"
     "\x00\x02".unpack("CCXC") # => [0, 2, 2]
 
-== Null Byte Direcive
+== Null Byte Directive
 
 - <tt>'x'</tt> - Null byte:
 

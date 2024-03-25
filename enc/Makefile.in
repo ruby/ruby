@@ -40,6 +40,7 @@ BUILTRUBY = $(topdir)/miniruby$(EXEEXT)
 
 empty =
 AR = @AR@
+LD = @LD@
 CC = @CC@
 ARFLAGS = @ARFLAGS@$(empty)
 RANLIB = @RANLIB@
@@ -56,6 +57,7 @@ DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
 LDSHARED = @LDSHARED@
+POSTLINK = @POSTLINK@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
 extdldflags = @EXTDLDFLAGS@
@@ -70,6 +72,7 @@ WORKDIRS = @WORKDIRS@
 
 NULLCMD = @NULLCMD@
 RM = @RM@
+RMALL = @RMALL@
 RMDIR = @RMDIR@
 RMDIRS = @RMDIRS@
 MAKEDIRS = @MAKEDIRS@
@@ -80,6 +83,9 @@ all:
 
 make-workdir:
 	$(Q)$(MAKEDIRS) $(WORKDIRS)
+
+.PHONY: encs all modencs libencs enc libenc trans libtrans srcs
+.PHONY: clean distclean realclean clean-srcs
 
 clean:
 

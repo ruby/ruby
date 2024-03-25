@@ -157,12 +157,12 @@ class TestISeq < Test::Unit::TestCase
     y = nil.instance_eval do
       eval("proc {#{name} = []; proc {|x| #{name}}}").call
     end
-    assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
+    assert_raise_with_message(Ractor::IsolationError, /'#{name}'/) do
       Ractor.make_shareable(y)
     end
     obj = Object.new
     def obj.foo(*) nil.instance_eval{ ->{super} } end
-    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable `\*'/) do
+    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable '\*'/) do
       Ractor.make_shareable(obj.foo)
     end
   end
@@ -367,7 +367,7 @@ class TestISeq < Test::Unit::TestCase
       f.puts "end"
       f.close
       path = f.path
-      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected `end'/, [], success: true)
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected 'end'/, [], success: true)
       begin;
         path = ARGV[0]
         begin
@@ -564,6 +564,23 @@ class TestISeq < Test::Unit::TestCase
       assert_nil(iseq2.script_lines)
     end
     iseq2
+  end
+
+  def test_to_binary_with_hidden_local_variables
+    assert_iseq_to_binary("for foo in bar; end")
+
+    bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
+      Object.new.instance_eval do
+        a = []
+        def self.bar; [1] end
+        for foo in bar
+          a << (foo * 2)
+        end
+        a
+      end
+    RUBY
+    v = RubyVM::InstructionSequence.load_from_binary(bin).eval
+    assert_equal([2], v)
   end
 
   def test_to_binary_with_objects

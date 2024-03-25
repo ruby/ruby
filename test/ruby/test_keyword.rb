@@ -182,6 +182,13 @@ class TestKeywordArguments < Test::Unit::TestCase
                   [:keyrest, :kw], [:block, :b]], method(:f9).parameters)
   end
 
+  def test_keyword_with_anonymous_keyword_splat
+    def self.a(b: 1, **) [b, **] end
+    kw = {b: 2, c: 3}
+    assert_equal([2, {c: 3}], a(**kw))
+    assert_equal({b: 2, c: 3}, kw)
+  end
+
   def test_keyword_splat_nil
     # cfunc call
     assert_equal(nil, p(**nil))
@@ -189,6 +196,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def self.a0; end
     assert_equal(nil, a0(**nil))
     assert_equal(nil, :a0.to_proc.call(self, **nil))
+    assert_equal(nil, a0(**nil, &:block))
 
     def self.o(x=1); x end
     assert_equal(1, o(**nil))
@@ -2809,6 +2817,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(FrozenError) { c.send(:ruby2_keywords, :baz) }
   end
 
+  def test_anon_splat_ruby2_keywords
+    singleton_class.class_exec do
+      def bar(*a, **kw)
+        [a, kw]
+      end
+
+      ruby2_keywords def bar_anon(*)
+        bar(*)
+      end
+    end
+
+    a = [1, 2]
+    kw = {a: 1}
+    assert_equal([[1, 2], {a: 1}], bar_anon(*a, **kw))
+    assert_equal([1, 2], a)
+    assert_equal({a: 1}, kw)
+  end
+
   def test_top_ruby2_keywords
     assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
       def bar(*a, **kw)
@@ -3982,6 +4008,20 @@ class TestKeywordArguments < Test::Unit::TestCase
       GC.start
       tap { prc.call }
     }, bug8964
+  end
+
+  def test_large_kwsplat_to_method_taking_kw_and_kwsplat
+    assert_separately(['-'], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      n = 100000
+      x = Fiber.new do
+        h = {kw: 2}
+        n.times{|i| h[i.to_s.to_sym] = i}
+        def self.f(kw: 1, **kws) kws.size end
+        f(**h)
+      end.resume
+      assert_equal(n, x)
+    end;
   end
 
   def test_dynamic_symbol_keyword

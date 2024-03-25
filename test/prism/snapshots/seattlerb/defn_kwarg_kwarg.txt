@@ -23,19 +23,20 @@
             │   │   │   ├── name_loc: (1,9)-(1,11) = "b:"
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (1,12)-(1,13))
-            │   │   │       └── flags: decimal
+            │   │   │       ├── flags: decimal
+            │   │   │       └── value: 1
             │   │   └── @ OptionalKeywordParameterNode (location: (1,15)-(1,19))
             │   │       ├── flags: ∅
             │   │       ├── name: :c
             │   │       ├── name_loc: (1,15)-(1,17) = "c:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,18)-(1,19))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 2
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b, :c]
-            ├── locals_body_index: 3
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

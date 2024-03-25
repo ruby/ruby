@@ -1,0 +1,15 @@
+@ ProgramNode (location: (1,0)-(1,4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,4))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,4))
+            ├── flags: ignore_visibility
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── name: :foo!
+            ├── message_loc: (1,0)-(1,4) = "foo!"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            └── block: ∅

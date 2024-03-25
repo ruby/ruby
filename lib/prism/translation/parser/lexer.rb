@@ -177,12 +177,23 @@ module Prism
           WORDS_SEP: :tSPACE
         }
 
-        private_constant :TYPES
+        # These constants represent flags in our lex state. We really, really
+        # don't want to be using them and we really, really don't want to be
+        # exposing them as part of our public API. Unfortunately, we don't have
+        # another way of matching the exact tokens that the parser gem expects
+        # without them. We should find another way to do this, but in the
+        # meantime we'll hide them from the documentation and mark them as
+        # private constants.
+        EXPR_BEG = 0x1 # :nodoc:
+        EXPR_LABEL = 0x400 # :nodoc:
+
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
 
-        # An array of prism tokens that we lexed.
+        # An array of tuples that contain prism tokens and their associated lex
+        # state when they were lexed.
         attr_reader :lexed
 
         # A hash that maps offsets in bytes to offsets in characters.
@@ -202,12 +213,14 @@ module Prism
         # Convert the prism tokens into the expected format for the parser gem.
         def to_a
           tokens = []
-          index = 0
 
-          while index < lexed.length
-            token, = lexed[index]
+          index = 0
+          length = lexed.length
+
+          while index < length
+            token, state = lexed[index]
             index += 1
-            next if token.type == :IGNORED_NEWLINE || token.type == :EOF
+            next if %i[IGNORED_NEWLINE __END__ EOF].include?(token.type)
 
             type = TYPES.fetch(token.type)
             value = token.value
@@ -218,14 +231,18 @@ module Prism
               value.delete_prefix!("?")
             when :tCOMMENT
               if token.type == :EMBDOC_BEGIN
-                until (next_token = lexed[index]) && next_token.type == :EMBDOC_END
+                start_index = index
+
+                while !((next_token = lexed[index][0]) && next_token.type == :EMBDOC_END) && (index < length - 1)
                   value += next_token.value
                   index += 1
                 end
 
-                value += next_token.value
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[lexed[index].location.end_offset])
-                index += 1
+                if start_index != index
+                  value += next_token.value
+                  location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[lexed[index][0].location.end_offset])
+                  index += 1
+                end
               else
                 value.chomp!
                 location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset - 1])
@@ -247,6 +264,8 @@ module Prism
               value.chomp!(":")
             when :tLABEL_END
               value.chomp!(":")
+            when :tLCURLY
+              type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
             when :tNTH_REF
               value = Integer(value.delete_prefix("$"))
             when :tOP_ASGN
@@ -256,13 +275,13 @@ module Prism
             when :tSPACE
               value = nil
             when :tSTRING_BEG
-              if ["\"", "'"].include?(value) && (next_token = lexed[index]) && next_token.type == :STRING_END
+              if ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_END
                 next_location = token.location.join(next_token.location)
                 type = :tSTRING
                 value = ""
                 location = Range.new(source_buffer, offset_cache[next_location.start_offset], offset_cache[next_location.end_offset])
                 index += 1
-              elsif ["\"", "'"].include?(value) && (next_token = lexed[index]) && next_token.type == :STRING_CONTENT && (next_next_token = lexed[index + 1]) && next_next_token.type == :STRING_END
+              elsif ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_CONTENT && (next_next_token = lexed[index + 1][0]) && next_next_token.type == :STRING_END
                 next_location = token.location.join(next_next_token.location)
                 type = :tSTRING
                 value = next_token.value
@@ -272,15 +291,29 @@ module Prism
                 quote = value[2] == "-" || value[2] == "~" ? value[3] : value[2]
                 value = "<<#{quote == "'" || quote == "\"" ? quote : "\""}"
               end
+            when :tSTRING_CONTENT
+              unless (lines = token.value.lines).one?
+                start_offset = offset_cache[token.location.start_offset]
+                lines.map do |line|
+                  end_offset = start_offset + line.length
+                  tokens << [:tSTRING_CONTENT, [line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
+                  start_offset = end_offset
+                end
+                next
+              end
             when :tSTRING_DVAR
               value = nil
             when :tSTRING_END
-              if token.type == :REGEXP_END
+              if token.type == :HEREDOC_END && value.end_with?("\n")
+                newline_length = value.end_with?("\r\n") ? 2 : 1
+                value = value.sub(/\r?\n\z/, '')
+                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset - newline_length])
+              elsif token.type == :REGEXP_END
                 value = value[0]
                 location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.start_offset + 1])
               end
             when :tSYMBEG
-              if (next_token = lexed[index]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR
+              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR
                 next_location = token.location.join(next_token.location)
                 type = :tSYMBOL
                 value = next_token.value
@@ -289,7 +322,7 @@ module Prism
                 index += 1
               end
             when :tFID
-              if tokens[-1][0] == :kDEF
+              if !tokens.empty? && tokens.dig(-1, 0) == :kDEF
                 type = :tIDENTIFIER
               end
             end

@@ -73,6 +73,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_obj_id_tables)(void);
     void (*update_global_symbols_table)(void);
     void (*update_overloaded_cme_table)(void);
+    void (*update_ci_table)(void);
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
     void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
     size_t (*vm_live_bytes)(void);

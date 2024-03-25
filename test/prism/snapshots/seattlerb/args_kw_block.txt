@@ -20,7 +20,8 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,9)-(1,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (1,12)-(1,14))
@@ -30,7 +31,6 @@
             │       └── operator_loc: (1,12)-(1,13) = "&"
             ├── body: ∅
             ├── locals: [:a, :b]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

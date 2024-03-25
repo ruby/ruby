@@ -114,8 +114,8 @@ matrix:
   allow_failures:
     # Allow failures for the unstable jobs.
     # - name: arm64-linux
-    # - name: ppc64le-linux
-    # - name: s390x-linux
+    - name: ppc64le-linux
+    - name: s390x-linux
     # The 2nd arm64 pipeline may be unstable.
     # - name: arm32-linux
   fast_finish: true
@@ -135,7 +135,7 @@ before_script:
 script:
   - $SETARCH make -s test
   - ../tool/travis_wait.sh $SETARCH make -s test-all RUBYOPT="-w"
-  - $SETARCH make -s test-spec
+  - ../tool/travis_wait.sh $SETARCH make -s test-spec
 
 # We want to be notified when something happens.
 notifications:

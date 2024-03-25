@@ -28,8 +28,7 @@
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
-            ├── locals: [:interp, :*, :args]
-            ├── locals_body_index: 3
+            ├── locals: [:interp, :args]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,8)-(1,9) = "("

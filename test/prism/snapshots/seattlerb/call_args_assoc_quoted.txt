@@ -41,7 +41,8 @@
         │   │                   │   └── closing_loc: (1,7)-(1,9) = "\":"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (1,9)-(1,11))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 42
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -69,7 +70,8 @@
         │   │                   │   └── unescaped: "k"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (3,6)-(3,8))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 42
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -97,7 +99,8 @@
             │                   │   └── unescaped: "k"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (5,6)-(5,8))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 42
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block: ∅

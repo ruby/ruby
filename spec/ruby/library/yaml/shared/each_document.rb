@@ -1,7 +1,7 @@
 describe :yaml_each_document, shared: true do
   it "calls the block on each successive document" do
     documents = []
-    YAML.send(@method, $multidocument) do |doc|
+    YAML.send(@method, YAMLSpecs::MULTIDOCUMENT) do |doc|
       documents << doc
     end
     documents.should == [["Mark McGwire", "Sammy Sosa", "Ken Griffey"],

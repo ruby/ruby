@@ -57,7 +57,7 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
     it "raises a NoMethodError if object does not respond to #to_s" do
       -> {
         @file.pwrite(BasicObject.new, 0)
-      }.should raise_error(NoMethodError, /undefined method `to_s'/)
+      }.should raise_error(NoMethodError, /undefined method [`']to_s'/)
     end
 
     it "raises a TypeError if the offset cannot be converted to an Integer" do

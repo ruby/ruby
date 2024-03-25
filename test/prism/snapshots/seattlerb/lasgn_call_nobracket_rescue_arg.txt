@@ -22,11 +22,13 @@
             │   │   │   ├── flags: ∅
             │   │   │   └── arguments: (length: 1)
             │   │   │       └── @ IntegerNode (location: (1,6)-(1,7))
-            │   │   │           └── flags: decimal
+            │   │   │           ├── flags: decimal
+            │   │   │           └── value: 1
             │   │   ├── closing_loc: ∅
             │   │   └── block: ∅
             │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
             │   └── rescue_expression:
             │       @ IntegerNode (location: (1,15)-(1,16))
-            │       └── flags: decimal
+            │       ├── flags: decimal
+            │       └── value: 2
             └── operator_loc: (1,2)-(1,3) = "="

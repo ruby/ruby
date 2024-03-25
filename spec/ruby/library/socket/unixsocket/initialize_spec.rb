@@ -33,6 +33,16 @@ with_feature :unix_socket do
       it 'sets the socket to binmode' do
         @socket.binmode?.should be_true
       end
+
+      it 'sets the socket to nonblock' do
+        require 'io/nonblock'
+        @socket.should.nonblock?
+      end
+
+      it 'sets the socket to close on exec' do
+        @socket.should.close_on_exec?
+      end
+
     end
   end
 end

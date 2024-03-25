@@ -722,7 +722,9 @@ count_collision(const struct st_hash_type *type)
 #error "REBUILD_THRESHOLD should be >= 2"
 #endif
 
-static void rebuild_table_with(st_table *new_tab, st_table *tab);
+static void rebuild_table_with(st_table *const new_tab, st_table *const tab);
+static void rebuild_move_table(st_table *const new_tab, st_table *const tab);
+static void rebuild_cleanup(st_table *const tab);
 
 /* Rebuild table TAB.  Rebuilding removes all deleted bins and entries
    and can change size of the table entries and bins arrays.
@@ -748,11 +750,13 @@ rebuild_table(st_table *tab)
         new_tab = st_init_table_with_size(tab->type,
                                           2 * tab->num_entries - 1);
         rebuild_table_with(new_tab, tab);
+        rebuild_move_table(new_tab, tab);
     }
+    rebuild_cleanup(tab);
 }
 
 static void
-rebuild_table_with(st_table *new_tab, st_table *tab)
+rebuild_table_with(st_table *const new_tab, st_table *const tab)
 {
     st_index_t i, ni;
     unsigned int size_ind;
@@ -784,16 +788,24 @@ rebuild_table_with(st_table *new_tab, st_table *tab)
         new_tab->num_entries++;
         ni++;
     }
-    if (new_tab != tab) {
-        tab->entry_power = new_tab->entry_power;
-        tab->bin_power = new_tab->bin_power;
-        tab->size_ind = new_tab->size_ind;
-        free(tab->bins);
-        tab->bins = new_tab->bins;
-        free(tab->entries);
-        tab->entries = new_tab->entries;
-        free(new_tab);
-    }
+}
+
+static void
+rebuild_move_table(st_table *const new_tab, st_table *const tab)
+{
+    tab->entry_power = new_tab->entry_power;
+    tab->bin_power = new_tab->bin_power;
+    tab->size_ind = new_tab->size_ind;
+    free(tab->bins);
+    tab->bins = new_tab->bins;
+    free(tab->entries);
+    tab->entries = new_tab->entries;
+    free(new_tab);
+}
+
+static void
+rebuild_cleanup(st_table *const tab)
+{
     tab->entries_start = 0;
     tab->entries_bound = tab->num_entries;
     tab->rebuilds_num++;
@@ -2322,12 +2334,25 @@ rb_st_compact_table(st_table *tab)
         /* Compaction: */
         st_table *new_tab = st_init_table_with_size(tab->type, 2 * num);
         rebuild_table_with(new_tab, tab);
+        rebuild_move_table(new_tab, tab);
+        rebuild_cleanup(tab);
     }
 }
 
 #if USE_MMTK
+// Update a deduplication table.
+//
+// This function forwards reachable entries and removes dead entries of deduplication tables.
+// The frozen string table and the CI table are such tables.  We assume keys are always equal to
+// their respective values.
+//
+// This function is intended to be faster than existing updating functions based on st_foreach.
+// This function never attempts to compare elements by value or by hash (which is unsafe during GC
+// because some value-comparing or hash-computing operations may depend on weak tables or fields
+// which are not yet updated), and never touches entries that hold non-reference values
+// (SPECIAL_CONST_P).
 void
-rb_mmtk_st_update_fstring_table(st_table *tab)
+rb_mmtk_st_update_dedup_table(st_table *tab)
 {
     for (st_index_t ind = tab->entries_start; ind < tab->entries_bound; ind++) {
         if (DELETED_ENTRY_P(&tab->entries[ind])) {
@@ -2357,6 +2382,10 @@ rb_mmtk_st_update_fstring_table(st_table *tab)
                 tab->entries[ind].record = new_key;
             }
         }
+    }
+
+    if (tab->bins == NULL) {
+        return;
     }
 
     st_index_t num_bins = get_bins_num(tab);

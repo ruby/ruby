@@ -115,11 +115,12 @@ struct MEMO {
     } u3;
 };
 
+#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0)))
+
 /* ment is in method.h */
 
 #define THROW_DATA_P(err) imemo_throw_data_p((VALUE)err)
 #define MEMO_CAST(m) ((struct MEMO *)(m))
-#define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_hidden_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
@@ -128,7 +129,9 @@ struct MEMO {
    rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), \
    MEMO_FOR(type, value))
 
+#ifndef RUBY_RUBYPARSER_H
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
+#endif
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
@@ -142,15 +145,32 @@ static inline VALUE rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE 
 static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
+size_t rb_imemo_memsize(VALUE obj);
+void rb_cc_table_mark(VALUE klass);
+void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
+void rb_cc_table_free(VALUE klass);
+void rb_imemo_free(VALUE obj);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 #if IMEMO_DEBUG
-VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);
+VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line);
 #define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
 #else
-VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
+VALUE rb_imemo_new(enum imemo_type type, VALUE v0);
 #endif
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
+
+static inline struct MEMO *
+MEMO_NEW(VALUE a, VALUE b, VALUE c)
+{
+    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
+    *((VALUE *)&memo->v1) = a;
+    *((VALUE *)&memo->v2) = b;
+    *((VALUE *)&memo->u3.value) = c;
+
+    return memo;
+}
 
 static inline enum imemo_type
 imemo_type(VALUE imemo)
@@ -173,7 +193,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
-#define IMEMO_TYPE_P(v, t) imemo_type_p((VALUE)v, t)
+#define IMEMO_TYPE_P(v, t) imemo_type_p((VALUE)(v), t)
 
 static inline bool
 imemo_throw_data_p(VALUE imemo)
@@ -190,7 +210,7 @@ rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer(void)
 {
-    return rb_imemo_new(imemo_tmpbuf, 0, 0, 0, 0);
+    return rb_imemo_new(imemo_tmpbuf, 0);
 }
 
 static inline void *

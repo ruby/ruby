@@ -7,6 +7,7 @@
 #define PRISM_BUFFER_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_char.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -59,7 +60,7 @@ PRISM_EXPORTED_FUNCTION bool pm_buffer_init(pm_buffer_t *buffer);
  * @param buffer The buffer to get the value of.
  * @returns The value of the buffer.
  */
-PRISM_EXPORTED_FUNCTION char * pm_buffer_value(pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
 
 /**
  * Return the length of the buffer.
@@ -67,7 +68,7 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(pm_buffer_t *buffer);
  * @param buffer The buffer to get the length of.
  * @returns The length of the buffer.
  */
-PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer);
 
 /**
  * Append the given amount of space as zeroes to the buffer.
@@ -129,6 +130,33 @@ void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
 void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
 /**
+ * Append a double to the buffer.
+ *
+ * @param buffer The buffer to append to.
+ * @param value The double to append.
+ */
+void pm_buffer_append_double(pm_buffer_t *buffer, double value);
+
+/**
+ * The different types of escaping that can be performed by the buffer when
+ * appending a slice of Ruby source code.
+ */
+typedef enum {
+    PM_BUFFER_ESCAPING_RUBY,
+    PM_BUFFER_ESCAPING_JSON
+} pm_buffer_escaping_t;
+
+/**
+ * Append a slice of source code to the buffer.
+ *
+ * @param buffer The buffer to append to.
+ * @param source The source code to append.
+ * @param length The length of the source code to append.
+ * @param escaping The type of escaping to perform.
+ */
+void pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t length, pm_buffer_escaping_t escaping);
+
+/**
  * Prepend the given string to the buffer.
  *
  * @param buffer The buffer to prepend to.
@@ -144,6 +172,21 @@ void pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t len
  * @param source The buffer to concatenate.
  */
 void pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source);
+
+/**
+ * Clear the buffer by reducing its size to 0. This does not free the allocated
+ * memory, but it does allow the buffer to be reused.
+ *
+ * @param buffer The buffer to clear.
+ */
+void pm_buffer_clear(pm_buffer_t *buffer);
+
+/**
+ * Strip the whitespace from the end of the buffer.
+ *
+ * @param buffer The buffer to strip.
+ */
+void pm_buffer_rstrip(pm_buffer_t *buffer);
 
 /**
  * Free the memory associated with the buffer.

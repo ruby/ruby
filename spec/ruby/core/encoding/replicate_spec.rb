@@ -73,6 +73,11 @@ describe "Encoding#replicate" do
         Encoding::US_ASCII.replicate('MY-US-ASCII')
       }.should complain(/warning: Encoding#replicate is deprecated and will be removed in Ruby 3.3; use the original encoding instead/)
     end
+
+    it "raises EncodingError if too many encodings" do
+      code = '1_000.times {|i| Encoding::US_ASCII.replicate("R_#{i}") }'
+      ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
+    end
   end
 
   ruby_version_is "3.3" do

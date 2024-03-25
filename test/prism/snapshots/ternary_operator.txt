@@ -279,7 +279,8 @@
             │           ├── name_loc: (15,5)-(15,7) = "_a"
             │           ├── value:
             │           │   @ IntegerNode (location: (15,9)-(15,10))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 2
             │           └── operator_loc: (15,8)-(15,9) = "="
             ├── consequent:
             │   @ ElseNode (location: (15,10)-(15,12))
@@ -288,6 +289,7 @@
             │   │   @ StatementsNode (location: (15,11)-(15,12))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (15,11)-(15,12))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

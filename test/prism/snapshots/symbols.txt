@@ -44,7 +44,8 @@
         │   │       │   @ StatementsNode (location: (5,7)-(5,8))
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ IntegerNode (location: (5,7)-(5,8))
-        │   │       │           └── flags: decimal
+        │   │       │           ├── flags: decimal
+        │   │       │           └── value: 1
         │   │       └── closing_loc: (5,8)-(5,9) = "}"
         │   └── closing_loc: (5,9)-(5,10) = "\""
         ├── @ ArrayNode (location: (7,0)-(7,20))
@@ -140,16 +141,20 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 4)
         │   │   ├── @ IntegerNode (location: (29,1)-(29,2))
-        │   │   │   └── flags: decimal
+        │   │   │   ├── flags: decimal
+        │   │   │   └── value: 1
         │   │   ├── @ FloatNode (location: (29,4)-(29,7))
+        │   │   │   └── value: 1.0
         │   │   ├── @ RationalNode (location: (29,9)-(29,11))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (29,9)-(29,10))
-        │   │   │       └── flags: decimal
+        │   │   │       ├── flags: decimal
+        │   │   │       └── value: 1
         │   │   └── @ ImaginaryNode (location: (29,13)-(29,15))
         │   │       └── numeric:
         │   │           @ IntegerNode (location: (29,13)-(29,14))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── opening_loc: (29,0)-(29,1) = "["
         │   └── closing_loc: (29,15)-(29,16) = "]"
         ├── @ SymbolNode (location: (31,0)-(31,2))
@@ -240,7 +245,8 @@
         │   │   │   │       │   @ StatementsNode (location: (39,8)-(39,9))
         │   │   │   │       │   └── body: (length: 1)
         │   │   │   │       │       └── @ IntegerNode (location: (39,8)-(39,9))
-        │   │   │   │       │           └── flags: decimal
+        │   │   │   │       │           ├── flags: decimal
+        │   │   │   │       │           └── value: 1
         │   │   │   │       └── closing_loc: (39,9)-(39,10) = "}"
         │   │   │   └── closing_loc: ∅
         │   │   ├── @ InterpolatedSymbolNode (location: (39,11)-(39,16))
@@ -252,7 +258,8 @@
         │   │   │   │   │   │   @ StatementsNode (location: (39,13)-(39,14))
         │   │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │   │       └── @ IntegerNode (location: (39,13)-(39,14))
-        │   │   │   │   │   │           └── flags: decimal
+        │   │   │   │   │   │           ├── flags: decimal
+        │   │   │   │   │   │           └── value: 2
         │   │   │   │   │   └── closing_loc: (39,14)-(39,15) = "}"
         │   │   │   │   └── @ StringNode (location: (39,15)-(39,16))
         │   │   │   │       ├── flags: ∅
@@ -276,7 +283,8 @@
         │   │       │   │   │   @ StatementsNode (location: (39,20)-(39,21))
         │   │       │   │   │   └── body: (length: 1)
         │   │       │   │   │       └── @ IntegerNode (location: (39,20)-(39,21))
-        │   │       │   │   │           └── flags: decimal
+        │   │       │   │   │           ├── flags: decimal
+        │   │       │   │   │           └── value: 3
         │   │       │   │   └── closing_loc: (39,21)-(39,22) = "}"
         │   │       │   └── @ StringNode (location: (39,22)-(39,23))
         │   │       │       ├── flags: ∅

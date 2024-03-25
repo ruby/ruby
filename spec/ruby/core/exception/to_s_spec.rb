@@ -23,7 +23,7 @@ describe "NameError#to_s" do
     begin
       puts not_defined
     rescue => exception
-      exception.message.should =~ /undefined local variable or method `not_defined'/
+      exception.message.should =~ /undefined local variable or method [`']not_defined'/
     end
   end
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "rubygems/net/http"
+require "rubygems/vendored_net_http"
 require "rubygems/openssl"
 
 unless Gem::HAVE_OPENSSL

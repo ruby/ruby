@@ -395,7 +395,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_SINGLETON = RUBY_FL_USER0,
+    RUBY_FL_SINGLETON = RUBY_FL_USER1,
 };
 
 enum {

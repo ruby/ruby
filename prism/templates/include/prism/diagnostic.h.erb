@@ -1,0 +1,127 @@
+/**
+ * @file diagnostic.h
+ *
+ * A list of diagnostics generated during parsing.
+ */
+#ifndef PRISM_DIAGNOSTIC_H
+#define PRISM_DIAGNOSTIC_H
+
+#include "prism/ast.h"
+#include "prism/defines.h"
+#include "prism/util/pm_list.h"
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
+
+/**
+ * The diagnostic IDs of all of the diagnostics, used to communicate the types
+ * of errors between the parser and the user.
+ */
+typedef enum {
+    // These are the error diagnostics.
+    <%- errors.each do |error| -%>
+    PM_ERR_<%= error.name %>,
+    <%- end -%>
+
+    // These are the warning diagnostics.
+    <%- warnings.each do |warning| -%>
+    PM_WARN_<%= warning.name %>,
+    <%- end -%>
+} pm_diagnostic_id_t;
+
+/**
+ * This struct represents a diagnostic generated during parsing.
+ *
+ * @extends pm_list_node_t
+ */
+typedef struct {
+    /** The embedded base node. */
+    pm_list_node_t node;
+
+    /** The location of the diagnostic in the source. */
+    pm_location_t location;
+
+    /** The ID of the diagnostic. */
+    pm_diagnostic_id_t diag_id;
+
+    /** The message associated with the diagnostic. */
+    const char *message;
+
+    /**
+     * Whether or not the memory related to the message of this diagnostic is
+     * owned by this diagnostic. If it is, it needs to be freed when the
+     * diagnostic is freed.
+     */
+    bool owned;
+
+    /**
+     * The level of the diagnostic, see `pm_error_level_t` and
+     * `pm_warning_level_t` for possible values.
+     */
+    uint8_t level;
+} pm_diagnostic_t;
+
+/**
+ * The levels of errors generated during parsing.
+ */
+typedef enum {
+    /** For errors that cannot be recovered from. */
+    PM_ERROR_LEVEL_FATAL = 0,
+
+    /** For errors that should raise an argument error. */
+    PM_ERROR_LEVEL_ARGUMENT = 1
+} pm_error_level_t;
+
+/**
+ * The levels of warnings generated during parsing.
+ */
+typedef enum {
+    /** For warnings which should be emitted if $VERBOSE != nil. */
+    PM_WARNING_LEVEL_DEFAULT = 0,
+
+    /** For warnings which should be emitted if $VERBOSE == true. */
+    PM_WARNING_LEVEL_VERBOSE = 1
+} pm_warning_level_t;
+
+/**
+ * Get the human-readable name of the given diagnostic ID.
+ *
+ * @param diag_id The diagnostic ID.
+ * @return The human-readable name of the diagnostic ID.
+ */
+const char * pm_diagnostic_id_human(pm_diagnostic_id_t diag_id);
+
+/**
+ * Append a diagnostic to the given list of diagnostics that is using shared
+ * memory for its message.
+ *
+ * @param list The list to append to.
+ * @param start The start of the diagnostic.
+ * @param end The end of the diagnostic.
+ * @param diag_id The diagnostic ID.
+ * @return Whether the diagnostic was successfully appended.
+ */
+bool pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id);
+
+/**
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ *
+ * @param list The list to append to.
+ * @param start The start of the diagnostic.
+ * @param end The end of the diagnostic.
+ * @param diag_id The diagnostic ID.
+ * @param ... The arguments to the format string for the message.
+ * @return Whether the diagnostic was successfully appended.
+ */
+bool pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...);
+
+/**
+ * Deallocate the internal state of the given diagnostic list.
+ *
+ * @param list The list to deallocate.
+ */
+void pm_diagnostic_list_free(pm_list_t *list);
+
+#endif

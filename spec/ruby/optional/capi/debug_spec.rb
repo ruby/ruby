@@ -17,6 +17,7 @@ describe "C-API Debug function" do
   describe "rb_debug_inspector_frame_self_get" do
     it "returns self" do
       @o.rb_debug_inspector_frame_self_get(0).should == @o
+      @o.rb_debug_inspector_frame_self_get(1).should == self
     end
   end
 
@@ -35,10 +36,14 @@ describe "C-API Debug function" do
     end
 
     it "matches the locations in rb_debug_inspector_backtrace_locations" do
-      frames = @o.rb_debug_inspector_open(42);
+      frames = @o.rb_debug_inspector_open(42)
       frames.each do |_s, _klass, binding, _iseq, backtrace_location|
         if binding
-          "#{backtrace_location.path}:#{backtrace_location.lineno}".should == "#{binding.source_location[0]}:#{binding.source_location[1]}"
+          binding.source_location.should == [backtrace_location.path, backtrace_location.lineno]
+          method_name = binding.eval('__method__')
+          if method_name
+            method_name.should == backtrace_location.base_label.to_sym
+          end
         end
       end
     end

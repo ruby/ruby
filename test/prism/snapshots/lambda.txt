@@ -5,7 +5,6 @@
     └── body: (length: 5)
         ├── @ LambdaNode (location: (1,0)-(3,4))
         │   ├── locals: [:foo]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (3,2)-(3,3) = "{"
         │   ├── closing_loc: (3,3)-(3,4) = "}"
@@ -29,7 +28,6 @@
         │   └── body: ∅
         ├── @ LambdaNode (location: (5,0)-(5,18))
         │   ├── locals: [:x]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (5,0)-(5,2) = "->"
         │   ├── opening_loc: (5,15)-(5,16) = "{"
         │   ├── closing_loc: (5,17)-(5,18) = "}"
@@ -81,7 +79,6 @@
         │   └── body: ∅
         ├── @ LambdaNode (location: (7,0)-(7,15))
         │   ├── locals: [:a]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (7,0)-(7,2) = "->"
         │   ├── opening_loc: (7,13)-(7,14) = "{"
         │   ├── closing_loc: (7,14)-(7,15) = "}"
@@ -121,7 +118,8 @@
         │   │   │   │           │   ├── flags: ∅
         │   │   │   │           │   └── arguments: (length: 1)
         │   │   │   │           │       └── @ IntegerNode (location: (7,10)-(7,11))
-        │   │   │   │           │           └── flags: decimal
+        │   │   │   │           │           ├── flags: decimal
+        │   │   │   │           │           └── value: 3
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── block: ∅
         │   │   │   ├── keyword_rest: ∅
@@ -132,7 +130,6 @@
         │   └── body: ∅
         ├── @ LambdaNode (location: (9,0)-(9,19))
         │   ├── locals: [:foo]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (9,0)-(9,2) = "->"
         │   ├── opening_loc: (9,13)-(9,15) = "do"
         │   ├── closing_loc: (9,16)-(9,19) = "end"
@@ -169,7 +166,6 @@
         │   └── body: ∅
         └── @ LambdaNode (location: (11,0)-(11,18))
             ├── locals: [:foo]
-            ├── locals_body_index: 1
             ├── operator_loc: (11,0)-(11,2) = "->"
             ├── opening_loc: (11,12)-(11,14) = "do"
             ├── closing_loc: (11,15)-(11,18) = "end"

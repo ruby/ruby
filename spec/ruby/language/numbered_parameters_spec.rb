@@ -22,7 +22,7 @@ describe "Numbered parameters" do
   it "does not support more than 9 parameters" do
     -> {
       proc { [_10] }.call(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    }.should raise_error(NameError, /undefined local variable or method `_10'/)
+    }.should raise_error(NameError, /undefined local variable or method [`']_10'/)
   end
 
   it "can not be used in both outer and nested blocks at the same time" do

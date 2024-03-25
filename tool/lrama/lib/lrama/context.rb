@@ -265,9 +265,9 @@ module Lrama
 
         s = actions.each_with_index.map do |n, i|
           [i, n]
-        end.select do |i, n|
+        end.reject do |i, n|
           # Remove default_reduction_rule entries
-          n != 0
+          n == 0
         end
 
         if s.count != 0
@@ -462,7 +462,7 @@ module Lrama
       @yylast = high
 
       # replace_ninf
-      @yypact_ninf = (@base.select {|i| i != BaseMin } + [0]).min - 1
+      @yypact_ninf = (@base.reject {|i| i == BaseMin } + [0]).min - 1
       @base.map! do |i|
         case i
         when BaseMin
@@ -472,7 +472,7 @@ module Lrama
         end
       end
 
-      @yytable_ninf = (@table.compact.select {|i| i != ErrorActionNumber } + [0]).min - 1
+      @yytable_ninf = (@table.compact.reject {|i| i == ErrorActionNumber } + [0]).min - 1
       @table.map! do |i|
         case i
         when nil

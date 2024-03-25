@@ -800,29 +800,29 @@ uncallable_object(VALUE recv, ID mid)
 
     if (SPECIAL_CONST_P(recv)) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
+                 "method '%"PRIsVALUE"' called on unexpected immediate object (%p)",
                  mname, (void *)recv);
     }
     else if ((flags = RBASIC(recv)->flags) == 0) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on terminated object (%p)",
+                 "method '%"PRIsVALUE"' called on terminated object (%p)",
                  mname, (void *)recv);
     }
     else if (!(typestr = rb_type_str(type = BUILTIN_TYPE(recv)))) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on broken T_?""?""?(0x%02x) object"
+                 "method '%"PRIsVALUE"' called on broken T_?""?""?(0x%02x) object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, type, (void *)recv, flags);
     }
     else if (T_OBJECT <= type && type < T_NIL) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on hidden %s object"
+                 "method '%"PRIsVALUE"' called on hidden %s object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, typestr, (void *)recv, flags);
     }
     else {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on unexpected %s object"
+                 "method '%"PRIsVALUE"' called on unexpected %s object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, typestr, (void *)recv, flags);
     }
@@ -956,7 +956,7 @@ rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
     VALUE name = argv[0];
 
     if (!format) {
-        format = rb_fstring_lit("undefined method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("undefined method '%1$s' for %3$s%4$s");
     }
     if (exc == rb_eNoMethodError) {
         VALUE args = rb_ary_new4(argc - 1, argv + 1);
@@ -986,17 +986,17 @@ raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VA
     stack_check(ec);
 
     if (last_call_status & MISSING_PRIVATE) {
-        format = rb_fstring_lit("private method `%1$s' called for %3$s%4$s");
+        format = rb_fstring_lit("private method '%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_PROTECTED) {
-        format = rb_fstring_lit("protected method `%1$s' called for %3$s%4$s");
+        format = rb_fstring_lit("protected method '%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_VCALL) {
-        format = rb_fstring_lit("undefined local variable or method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("undefined local variable or method '%1$s' for %3$s%4$s");
         exc = rb_eNameError;
     }
     else if (last_call_status & MISSING_SUPER) {
-        format = rb_fstring_lit("super: no superclass method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("super: no superclass method '%1$s' for %3$s%4$s");
     }
 
     {
@@ -1637,15 +1637,125 @@ get_eval_default_path(void)
 
     if (!eval_default_path) {
         eval_default_path = rb_fstring_lit("(eval)");
-        rb_gc_register_mark_object(eval_default_path);
+        rb_vm_register_global_object(eval_default_path);
     }
     return eval_default_path;
 }
 
 static const rb_iseq_t *
-eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
+pm_eval_make_iseq(VALUE src, VALUE fname, int line,
+        const struct rb_block *base_block)
+{
+    const rb_iseq_t *const parent = vm_block_iseq(base_block);
+    const rb_iseq_t *iseq = parent;
+    VALUE name = rb_fstring_lit("<compiled>");
+    if (!fname) {
+        fname = rb_source_location(&line);
+    }
+
+    if (!UNDEF_P(fname)) {
+        if (!NIL_P(fname)) fname = rb_fstring(fname);
+    }
+    else {
+        fname = get_eval_default_path();
+    }
+
+    pm_parse_result_t result = { 0 };
+    pm_options_line_set(&result.options, line);
+
+    // Cout scopes, one for each parent iseq, plus one for our local scope
+    int scopes_count = 0;
+    do {
+        scopes_count++;
+    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq) && (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP));
+    pm_options_scopes_init(&result.options, scopes_count + 1);
+
+    // Walk over the scope tree, adding known locals at the correct depths. The
+    // scope array should be deepest -> shallowest. so lower indexes in the
+    // scopes array refer to root nodes on the tree, and higher indexes are the
+    // leaf nodes.
+    iseq = parent;
+    for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        pm_options_scope_init(options_scope, locals_count);
+
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            pm_string_t *scope_local = &options_scope->locals[local_index];
+            const char *name = rb_id2name(ISEQ_BODY(iseq)->local_table[local_index]);
+            if (name) pm_string_constant_init(scope_local, name, strlen(name));
+        }
+
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    // Add our empty local scope at the very end of the array for our eval
+    // scope's locals.
+    pm_options_scope_init(&result.options.scopes[scopes_count], 0);
+    VALUE error = pm_parse_string(&result, src, fname);
+
+    // If the parse failed, clean up and raise.
+    if (error != Qnil) {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    // Create one scope node for each scope passed in, initialize the local
+    // lookup table with all the local variable information attached to the
+    // scope used by the parser.
+    pm_scope_node_t *node = &result.node;
+    iseq = parent;
+
+    for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
+        RUBY_ASSERT(parent_scope != NULL);
+
+        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        parent_scope->parser = &result.parser;
+        parent_scope->index_lookup_table = st_init_numtable();
+
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        parent_scope->local_table_for_iseq_size = locals_count;
+        pm_constant_id_list_init(&parent_scope->locals);
+
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            const pm_string_t *scope_local = &options_scope->locals[local_index];
+
+            pm_constant_id_t constant_id = 0;
+            if (pm_string_length(scope_local) > 0) {
+                constant_id = pm_constant_pool_insert_constant(
+                        &result.parser.constant_pool, pm_string_source(scope_local),
+                        pm_string_length(scope_local));
+                st_insert(parent_scope->index_lookup_table, (st_data_t)constant_id, (st_data_t)local_index);
+            }
+            pm_constant_id_list_append(&parent_scope->locals, constant_id);
+        }
+
+        node->previous = parent_scope;
+        node = parent_scope;
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0);
+
+    pm_scope_node_t *prev = result.node.previous;
+    while (prev) {
+        pm_scope_node_t *next = prev->previous;
+        ruby_xfree(prev);
+        prev = next;
+    }
+    pm_parse_result_free(&result);
+
+    return iseq;
+}
+
+static const rb_iseq_t *
+eval_make_iseq(VALUE src, VALUE fname, int line,
                const struct rb_block *base_block)
 {
+    if (*rb_ruby_prism_ptr()) {
+        return pm_eval_make_iseq(src, fname, line, base_block);
+    }
     const VALUE parser = rb_parser_new();
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     rb_iseq_t *iseq = NULL;
@@ -1724,7 +1834,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     block.as.captured.code.iseq = cfp->iseq;
     block.type = block_type_iseq;
 
-    iseq = eval_make_iseq(src, file, line, NULL, &block);
+    iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
         rb_exc_raise(ec->errinfo);
     }
@@ -1745,7 +1855,7 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_binding_t *bind = Check_TypedStruct(scope, &ruby_binding_data_type);
-    const rb_iseq_t *iseq = eval_make_iseq(src, file, line, bind, &bind->block);
+    const rb_iseq_t *iseq = eval_make_iseq(src, file, line, &bind->block);
     if (!iseq) {
         rb_exc_raise(ec->errinfo);
     }

@@ -437,7 +437,7 @@ class PStore
     in_transaction
     unless @table.key? key
       if default == PStore::Error
-        raise PStore::Error, format("undefined key `%s'", key)
+        raise PStore::Error, format("undefined key '%s'", key)
       else
         return default
       end

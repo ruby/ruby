@@ -17,32 +17,67 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
 }
 
 /**
+ * Attempts to grow the node list to the next size. If there is already
+ * capacity in the list, this function does nothing. Otherwise it reallocates
+ * the list to be twice as large as it was before. If the reallocation fails,
+ * this function returns false, otherwise it returns true.
+ */
+bool
+pm_node_list_grow(pm_node_list_t *list) {
+    if (list->size == list->capacity) {
+        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+        return list->nodes != NULL;
+    }
+    return true;
+}
+
+/**
  * Append a new node onto the end of the node list.
  */
 void
 pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
-    if (list->size == list->capacity) {
-        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
-        list->nodes = (pm_node_t **) realloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+    if (pm_node_list_grow(list)) {
+        list->nodes[list->size++] = node;
     }
-    list->nodes[list->size++] = node;
+}
+
+/**
+ * Prepend a new node onto the beginning of the node list.
+ */
+void
+pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node) {
+    if (pm_node_list_grow(list)) {
+        memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
+        list->nodes[0] = node;
+        list->size++;
+    }
+}
+
+/**
+ * Free the internal memory associated with the given node list.
+ */
+void
+pm_node_list_free(pm_node_list_t *list) {
+    if (list->capacity > 0) {
+        xfree(list->nodes);
+        *list = (pm_node_list_t) { 0 };
+    }
 }
 
 PRISM_EXPORTED_FUNCTION void
 pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
 
 /**
- * Deallocate the inner memory of a list of nodes. The parser argument is not
- * used, but is here for the future possibility of pre-allocating memory pools.
+ * Destroy the nodes that are contained within the given node list.
  */
 static void
-pm_node_list_free(pm_parser_t *parser, pm_node_list_t *list) {
-    if (list->capacity > 0) {
-        for (size_t index = 0; index < list->size; index++) {
-            pm_node_destroy(parser, list->nodes[index]);
-        }
-        free(list->nodes);
+pm_node_list_destroy(pm_parser_t *parser, pm_node_list_t *list) {
+    for (size_t index = 0; index < list->size; index++) {
+        pm_node_destroy(parser, list->nodes[index]);
     }
+
+    pm_node_list_free(list);
 }
 
 /**
@@ -56,24 +91,26 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            <%- if node.fields.any? { |field| ![Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField].include?(field.class) } -%>
+            <%- if node.fields.any? { |field| ![Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField].include?(field.class) } -%>
             pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::LocationField, Prism::OptionalLocationField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField -%>
-            <%- when Prism::NodeField -%>
+            <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField -%>
+            <%- when Prism::Template::NodeField -%>
             pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
-            <%- when Prism::OptionalNodeField -%>
+            <%- when Prism::Template::OptionalNodeField -%>
             if (cast-><%= field.name %> != NULL) {
                 pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
             }
-            <%- when Prism::StringField -%>
+            <%- when Prism::Template::StringField -%>
             pm_string_free(&cast-><%= field.name %>);
-            <%- when Prism::NodeListField -%>
-            pm_node_list_free(parser, &cast-><%= field.name %>);
-            <%- when Prism::ConstantListField -%>
+            <%- when Prism::Template::NodeListField -%>
+            pm_node_list_destroy(parser, &cast-><%= field.name %>);
+            <%- when Prism::Template::ConstantListField -%>
             pm_constant_id_list_free(&cast-><%= field.name %>);
+            <%- when Prism::Template::IntegerField -%>
+            pm_integer_free(&cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -86,7 +123,7 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
             assert(false && "unreachable");
             break;
     }
-    free(node);
+    xfree(node);
 }
 
 static void
@@ -103,29 +140,23 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
         case <%= node.type %>: {
             pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
             memsize->memsize += sizeof(*cast);
-            <%- if node.fields.any? { |f| f.is_a?(Prism::NodeListField) } -%>
-            // Node lists will add in their own sizes below.
-            memsize->memsize -= sizeof(pm_node_list_t) * <%= node.fields.count { |f| f.is_a?(Prism::NodeListField) } %>;
-            <%- end -%>
-            <%- if node.fields.any? { |f| f.is_a?(Prism::ConstantListField) } -%>
-            // Constant id lists will add in their own sizes below.
-            memsize->memsize -= sizeof(pm_constant_id_list_t) * <%= node.fields.count { |f| f.is_a?(Prism::ConstantListField) } %>;
-            <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::FlagsField, Prism::LocationField, Prism::OptionalLocationField -%>
-            <%- when Prism::NodeField -%>
+            <%- when Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::DoubleField -%>
+            <%- when Prism::Template::NodeField -%>
             pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
-            <%- when Prism::OptionalNodeField -%>
+            <%- when Prism::Template::OptionalNodeField -%>
             if (cast-><%= field.name %> != NULL) {
                 pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
             }
-            <%- when Prism::StringField -%>
-            memsize->memsize += pm_string_memsize(&cast-><%= field.name %>);
-            <%- when Prism::NodeListField -%>
-            memsize->memsize += pm_node_list_memsize(&cast-><%= field.name %>, memsize);
-            <%- when Prism::ConstantListField -%>
-            memsize->memsize += pm_constant_id_list_memsize(&cast-><%= field.name %>);
+            <%- when Prism::Template::StringField -%>
+            memsize->memsize += (pm_string_memsize(&cast-><%= field.name %>) - sizeof(pm_string_t));
+            <%- when Prism::Template::NodeListField -%>
+            memsize->memsize += (pm_node_list_memsize(&cast-><%= field.name %>, memsize) - sizeof(pm_node_list_t));
+            <%- when Prism::Template::ConstantListField -%>
+            memsize->memsize += (pm_constant_id_list_memsize(&cast-><%= field.name %>) - sizeof(pm_constant_id_list_t));
+            <%- when Prism::Template::IntegerField -%>
+            memsize->memsize += (pm_integer_memsize(&cast-><%= field.name %>) - sizeof(pm_integer_t));
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -159,4 +190,173 @@ pm_node_type_to_str(pm_node_type_t node_type)
 <%- end -%>
     }
     return "";
+}
+
+/**
+ * Visit each of the nodes in this subtree using the given visitor callback. The
+ * callback function will be called for each node in the subtree. If it returns
+ * false, then that node's children will not be visited. If it returns true,
+ * then the children will be visited. The data parameter is treated as an opaque
+ * pointer and is passed to the visitor callback for consumers to use as they
+ * see fit.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+    if (visitor(node, data)) pm_visit_child_nodes(node, visitor, data);
+}
+
+/**
+ * Visit the children of the given node with the given callback. This is the
+ * default behavior for walking the tree that is called from pm_visit_node if
+ * the callback returns true.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        <%- if (fields = node.fields.select { |field| field.is_a?(Prism::Template::NodeField) || field.is_a?(Prism::Template::OptionalNodeField) || field.is_a?(Prism::Template::NodeListField) }).any? -%>
+        case <%= node.type %>: {
+            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+            <%- fields.each do |field| -%>
+
+            // Visit the <%= field.name %> field
+            <%- case field -%>
+            <%- when Prism::Template::NodeField -%>
+            pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            <%- when Prism::Template::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            }
+            <%- when Prism::Template::NodeListField -%>
+            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                pm_visit_node(<%= field.name %>->nodes[index], visitor, data);
+            }
+            <%- end -%>
+            <%- end -%>
+
+            break;
+        }
+        <%- else -%>
+        case <%= node.type %>:
+            break;
+        <%- end -%>
+        <%- end -%>
+        case PM_SCOPE_NODE:
+            break;
+    }
+}
+
+static void
+pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
+    const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
+    pm_buffer_append_byte(buffer, '"');
+    pm_buffer_append_source(buffer, constant->start, constant->length, PM_BUFFER_ESCAPING_JSON);
+    pm_buffer_append_byte(buffer, '"');
+}
+
+static void
+pm_dump_json_location(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_location_t *location) {
+    uint32_t start = (uint32_t) (location->start - parser->start);
+    uint32_t end = (uint32_t) (location->end - parser->start);
+    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"end\":%" PRIu32 "}", start, end);
+}
+
+/**
+ * Dump JSON to the given buffer.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        case <%= node.type %>: {
+            pm_buffer_append_string(buffer, "{\"type\":\"<%= node.name %>\",\"location\":", <%= node.name.bytesize + 22 %>);
+
+            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+            pm_dump_json_location(buffer, parser, &cast->base.location);
+            <%- node.fields.each_with_index do |field, index| -%>
+
+            // Dump the <%= field.name %> field
+            pm_buffer_append_byte(buffer, ',');
+            pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
+            <%- case field -%>
+            <%- when Prism::Template::NodeField -%>
+            pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
+            <%- when Prism::Template::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::Template::NodeListField -%>
+            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '[');
+
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                if (index != 0) pm_buffer_append_byte(buffer, ',');
+                pm_dump_json(buffer, parser, <%= field.name %>->nodes[index]);
+            }
+            pm_buffer_append_byte(buffer, ']');
+            <%- when Prism::Template::StringField -%>
+            const pm_string_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '"');
+            pm_buffer_append_source(buffer, pm_string_source(<%= field.name %>), pm_string_length(<%= field.name %>), PM_BUFFER_ESCAPING_JSON);
+            pm_buffer_append_byte(buffer, '"');
+            <%- when Prism::Template::ConstantField -%>
+            pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
+            <%- when Prism::Template::OptionalConstantField -%>
+            if (cast-><%= field.name %> != PM_CONSTANT_ID_UNSET) {
+                pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::Template::ConstantListField -%>
+            const pm_constant_id_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            pm_buffer_append_byte(buffer, '[');
+
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                if (index != 0) pm_buffer_append_byte(buffer, ',');
+                pm_dump_json_constant(buffer, parser, <%= field.name %>->ids[index]);
+            }
+            pm_buffer_append_byte(buffer, ']');
+            <%- when Prism::Template::LocationField -%>
+            pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            <%- when Prism::Template::OptionalLocationField -%>
+            if (cast-><%= field.name %>.start != NULL) {
+                pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            } else {
+                pm_buffer_append_string(buffer, "null", 4);
+            }
+            <%- when Prism::Template::UInt8Field -%>
+            pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
+            <%- when Prism::Template::UInt32Field -%>
+            pm_buffer_append_format(buffer, "%" PRIu32, cast-><%= field.name %>);
+            <%- when Prism::Template::FlagsField -%>
+            size_t flags = 0;
+            pm_buffer_append_byte(buffer, '[');
+            <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
+            <%- found.values.each_with_index do |value, index| -%>
+            if (PM_NODE_FLAG_P(cast, PM_<%= found.human.upcase %>_<%= value.name %>)) {
+                if (flags != 0) pm_buffer_append_byte(buffer, ',');
+                pm_buffer_append_string(buffer, "\"<%= value.name %>\"", <%= value.name.bytesize + 2 %>);
+                flags++;
+            }
+            <%- end -%>
+            pm_buffer_append_byte(buffer, ']');
+            <%- when Prism::Template::IntegerField -%>
+            pm_integer_string(buffer, &cast-><%= field.name %>);
+            <%- when Prism::Template::DoubleField -%>
+            pm_buffer_append_format(buffer, "%f", cast-><%= field.name %>);
+            <%- else -%>
+            <%- raise %>
+            <%- end -%>
+            <%- end -%>
+
+            pm_buffer_append_byte(buffer, '}');
+            break;
+        }
+        <%- end -%>
+        case PM_SCOPE_NODE:
+            break;
+    }
 }

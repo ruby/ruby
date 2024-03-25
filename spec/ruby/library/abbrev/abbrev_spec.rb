@@ -1,34 +1,31 @@
 require_relative '../../spec_helper'
+require 'abbrev'
 
-ruby_version_is ""..."3.4" do
-  require 'abbrev'
+#test both Abbrev.abbrev and Array#abbrev in
+#the same manner, as they're more or less aliases
+#of one another
 
-  #test both Abbrev.abbrev and Array#abbrev in
-  #the same manner, as they're more or less aliases
-  #of one another
+[["Abbrev.abbrev", -> a { Abbrev.abbrev(a)}],
+ ["Array#abbrev", -> a { a.abbrev}]
+].each do |(name, func)|
 
-  [["Abbrev.abbrev", -> a { Abbrev.abbrev(a)}],
-   ["Array#abbrev", -> a { a.abbrev}]
-  ].each do |(name, func)|
+  describe name do
+    it "returns a hash of all unambiguous abbreviations of the array of strings passed in" do
+      func.call(['ruby', 'rules']).should == {"rub" => "ruby",
+                                       "ruby" => "ruby",
+                                       "rul" => "rules",
+                                       "rule" => "rules",
+                                       "rules" => "rules"}
 
-    describe name do
-      it "returns a hash of all unambiguous abbreviations of the array of strings passed in" do
-        func.call(['ruby', 'rules']).should == {"rub" => "ruby",
-                                         "ruby" => "ruby",
-                                         "rul" => "rules",
-                                         "rule" => "rules",
-                                         "rules" => "rules"}
+      func.call(["car", "cone"]).should == {"ca" => "car",
+                                       "car" => "car",
+                                       "co" => "cone",
+                                       "con" => "cone",
+                                       "cone" => "cone"}
+    end
 
-        func.call(["car", "cone"]).should == {"ca" => "car",
-                                         "car" => "car",
-                                         "co" => "cone",
-                                         "con" => "cone",
-                                         "cone" => "cone"}
-      end
-
-      it "returns an empty hash when called on an empty array" do
-        func.call([]).should == {}
-      end
+    it "returns an empty hash when called on an empty array" do
+      func.call([]).should == {}
     end
   end
 end

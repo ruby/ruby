@@ -6,7 +6,8 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ IntegerNode (location: (1,5)-(1,6))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 0
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,6))
             │       ├── pattern:
@@ -14,10 +15,12 @@
             │       │   ├── flags: ∅
             │       │   ├── left:
             │       │   │   @ IntegerNode (location: (2,3)-(2,5))
-            │       │   │   └── flags: decimal
+            │       │   │   ├── flags: decimal
+            │       │   │   └── value: -1
             │       │   ├── right:
             │       │   │   @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │   └── flags: decimal
+            │       │   │   ├── flags: decimal
+            │       │   │   └── value: 1
             │       │   └── operator_loc: (2,5)-(2,7) = ".."
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,6))

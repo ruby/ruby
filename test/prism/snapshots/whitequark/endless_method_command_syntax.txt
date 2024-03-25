@@ -31,7 +31,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -66,7 +65,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (3,7)-(3,8) = "("
@@ -109,7 +107,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: [:x]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (5,0)-(5,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (5,7)-(5,8) = "("
@@ -154,7 +151,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: (7,7)-(7,8) = "."
         │   ├── lparen_loc: ∅
@@ -199,7 +195,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (9,0)-(9,3) = "def"
         │   ├── operator_loc: (9,7)-(9,8) = "."
         │   ├── lparen_loc: (9,11)-(9,12) = "("
@@ -252,7 +247,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: [:x]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (11,0)-(11,3) = "def"
         │   ├── operator_loc: (11,7)-(11,8) = "."
         │   ├── lparen_loc: (11,11)-(11,12) = "("
@@ -321,7 +315,6 @@
         │   │               │       └── closing_loc: (13,58)-(13,59) = "}"
         │   │               └── closing_loc: (13,59)-(13,60) = "\""
         │   ├── locals: [:x]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (13,0)-(13,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (13,11)-(13,12) = "("
@@ -391,7 +384,6 @@
             │               │       └── closing_loc: (15,60)-(15,61) = "}"
             │               └── closing_loc: (15,61)-(15,62) = "\""
             ├── locals: [:x]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (15,0)-(15,3) = "def"
             ├── operator_loc: (15,8)-(15,9) = "."
             ├── lparen_loc: (15,16)-(15,17) = "("

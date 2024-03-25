@@ -188,7 +188,7 @@ CONSTFUNC(st_index_t rb_st_hash_start(st_index_t h));
 void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
 
 #if USE_MMTK
-void rb_mmtk_st_update_fstring_table(st_table *tab);
+void rb_mmtk_st_update_dedup_table(st_table *tab);
 #endif
 
 RUBY_SYMBOL_EXPORT_END

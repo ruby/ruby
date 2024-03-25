@@ -15,10 +15,9 @@
             └── block:
                 @ BlockNode (location: (1,5)-(4,3))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
-                │   @ BeginNode (location: (2,0)-(4,3))
+                │   @ BeginNode (location: (1,5)-(4,3))
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements: ∅
                 │   ├── rescue_clause:

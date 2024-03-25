@@ -27,11 +27,7 @@ vpath = out.vpath
 output, vpath = output, vpath
 
 result = templates.map do |template|
-  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-    erb = ERB.new(File.read(template), trim_mode: '%-')
-  else
-    erb = ERB.new(File.read(template), nil, '%-')
-  end
+  erb = ERB.new(File.read(template), trim_mode: '%-')
   erb.filename = template
   source ? erb.src : proc{erb.result(binding)}.call
 end

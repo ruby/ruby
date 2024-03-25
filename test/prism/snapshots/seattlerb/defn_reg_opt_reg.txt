@@ -36,7 +36,6 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b, :d]
-            ├── locals_body_index: 3
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

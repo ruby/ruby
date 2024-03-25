@@ -11,7 +11,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (1,6)-(1,7))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ KeywordHashNode (location: (1,9)-(1,16))
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
@@ -25,7 +26,8 @@
         │   │                   │   └── unescaped: "z"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (1,15)-(1,16))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 1
         │   │                   └── operator_loc: (1,12)-(1,14) = "=>"
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (3,0)-(3,25))
@@ -36,7 +38,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (3,6)-(3,7))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 1
         │   │       └── @ KeywordHashNode (location: (3,9)-(3,25))
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
@@ -50,7 +53,8 @@
         │   │               │   │   └── unescaped: "z"
         │   │               │   ├── value:
         │   │               │   │   @ IntegerNode (location: (3,15)-(3,16))
-        │   │               │   │   └── flags: decimal
+        │   │               │   │   ├── flags: decimal
+        │   │               │   │   └── value: 1
         │   │               │   └── operator_loc: (3,12)-(3,14) = "=>"
         │   │               └── @ AssocNode (location: (3,18)-(3,25))
         │   │                   ├── key:
@@ -62,7 +66,8 @@
         │   │                   │   └── unescaped: "w"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (3,24)-(3,25))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 2
         │   │                   └── operator_loc: (3,21)-(3,23) = "=>"
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (5,0)-(5,13))
@@ -96,7 +101,8 @@
         │   │           │                   │   └── unescaped: "z"
         │   │           │                   ├── value:
         │   │           │                   │   @ IntegerNode (location: (5,12)-(5,13))
-        │   │           │                   │   └── flags: decimal
+        │   │           │                   │   ├── flags: decimal
+        │   │           │                   │   └── value: 1
         │   │           │                   └── operator_loc: (5,10)-(5,12) = "=>"
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
@@ -132,7 +138,8 @@
         │   │           │                   │   └── unescaped: "z"
         │   │           │                   ├── value:
         │   │           │                   │   @ IntegerNode (location: (7,10)-(7,11))
-        │   │           │                   │   └── flags: decimal
+        │   │           │                   │   ├── flags: decimal
+        │   │           │                   │   └── value: 1
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
@@ -168,7 +175,8 @@
         │   │           │                   │   └── unescaped: "z"
         │   │           │                   ├── value:
         │   │           │                   │   @ IntegerNode (location: (9,10)-(9,11))
-        │   │           │                   │   └── flags: decimal
+        │   │           │                   │   ├── flags: decimal
+        │   │           │                   │   └── value: 1
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: (9,11)-(9,12) = ")"
         │   │           └── block: ∅
@@ -208,7 +216,8 @@
             │           │                   │   └── block: ∅
             │           │                   ├── value:
             │           │                   │   @ IntegerNode (location: (11,11)-(11,12))
-            │           │                   │   └── flags: decimal
+            │           │                   │   ├── flags: decimal
+            │           │                   │   └── value: 1
             │           │                   └── operator_loc: (11,9)-(11,11) = "=>"
             │           ├── closing_loc: (11,12)-(11,13) = ")"
             │           └── block: ∅

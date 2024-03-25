@@ -609,6 +609,8 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_continuation
     EnvUtil.suppress_warning {require "continuation"}
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)

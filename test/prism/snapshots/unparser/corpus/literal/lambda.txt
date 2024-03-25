@@ -15,7 +15,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,7)-(2,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,7)-(1,8) = "{"
@@ -32,7 +31,6 @@
         │   └── block:
         │       @ BlockNode (location: (3,7)-(5,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (3,9)-(3,15))
         │       │   ├── parameters:
@@ -63,7 +61,6 @@
         │       └── closing_loc: (5,0)-(5,1) = "}"
         ├── @ LambdaNode (location: (6,0)-(7,1))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (6,0)-(6,2) = "->"
         │   ├── opening_loc: (6,5)-(6,6) = "{"
         │   ├── closing_loc: (7,0)-(7,1) = "}"
@@ -76,7 +73,6 @@
         │   └── body: ∅
         ├── @ LambdaNode (location: (8,0)-(9,1))
         │   ├── locals: [:a]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (8,0)-(8,2) = "->"
         │   ├── opening_loc: (8,6)-(8,7) = "{"
         │   ├── closing_loc: (9,0)-(9,1) = "}"
@@ -100,7 +96,6 @@
         │   └── body: ∅
         ├── @ LambdaNode (location: (10,0)-(11,1))
         │   ├── locals: [:a, :b]
-        │   ├── locals_body_index: 2
         │   ├── operator_loc: (10,0)-(10,2) = "->"
         │   ├── opening_loc: (10,9)-(10,10) = "{"
         │   ├── closing_loc: (11,0)-(11,1) = "}"
@@ -127,7 +122,6 @@
         │   └── body: ∅
         └── @ LambdaNode (location: (12,0)-(13,1))
             ├── locals: [:a, :b, :c]
-            ├── locals_body_index: 3
             ├── operator_loc: (12,0)-(12,2) = "->"
             ├── opening_loc: (12,12)-(12,13) = "{"
             ├── closing_loc: (13,0)-(13,1) = "}"

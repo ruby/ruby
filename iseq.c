@@ -902,12 +902,38 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
 }
 
+/**
+ * The main entry-point into the prism compiler when a file is required.
+ */
+rb_iseq_t *
+pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+{
+    // iseq_new_setup_coverage(path, ast, 0);
+
+    return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
+                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
+}
+
 rb_iseq_t *
 rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt)
 {
     iseq_new_setup_coverage(path, ast, 0);
 
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
+                                path, realpath, 0,
+                                parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE);
+}
+
+/**
+ * The main entry-point into the prism compiler when a file is executed as the
+ * main file in the program.
+ */
+rb_iseq_t *
+pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt)
+{
+    // iseq_new_setup_coverage(path, ast, 0);
+
+    return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
                                 parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE);
 }
@@ -924,6 +950,14 @@ rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpat
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,
                                 parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+}
+
+rb_iseq_t *
+pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth)
+{
+        return pm_iseq_new_with_opt(node, name, path, realpath, first_lineno,
+                                    parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
 }
 
 static inline rb_iseq_t *
@@ -974,41 +1008,43 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     return iseq_translate(iseq);
 }
 
-VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser);
-
 /**
- * Initialize an rb_code_location_t with a prism location.
+ * This is a step in the prism compiler that is called once all of the various
+ * options have been established. It is called from one of the pm_iseq_new_*
+ * functions or from the RubyVM::InstructionSequence APIs. It is responsible for
+ * allocating the instruction sequence, calling into the compiler, and returning
+ * the built instruction sequence.
+ *
+ * Importantly, this is also the function where the compiler is re-entered to
+ * compile child instruction sequences. A child instruction sequence is always
+ * compiled using a scope node, which is why we cast it explicitly to that here
+ * in the parameters (as opposed to accepting a generic pm_node_t *).
  */
-static void
-pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location)
-{
-    pm_line_column_t start = pm_newline_list_line_column(newline_list, location->start);
-    pm_line_column_t end = pm_newline_list_line_column(newline_list, location->end);
-
-    *code_location = (rb_code_location_t) {
-        .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
-        .end_pos = { .lineno = (int) end.line, .column = (int) end.column }
-    };
-}
-
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
-    VALUE script_lines = Qnil;
+    ISEQ_BODY(iseq)->prism = true;
+
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
-    rb_code_location_t code_location;
-    pm_code_location(&code_location, &parser->newline_list, &scope_node->base.location);
+    pm_location_t *location = &node->base.location;
+    int32_t start_line = node->parser->start_line;
 
-    // TODO: node_id
-    int node_id = -1;
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node_id,
-            parent, isolated_depth, type, script_lines, option);
+    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
 
-    rb_iseq_compile_prism_node(iseq, scope_node, parser);
+    rb_code_location_t code_location = (rb_code_location_t) {
+        .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
+        .end_pos = { .lineno = (int) end.line, .column = (int) end.column }
+    };
+
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, -1,
+                       parent, isolated_depth, type, Qnil, option);
+
+    pm_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);
@@ -1135,6 +1171,10 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
         tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
     }
 
+    if (RTEST(rb_hash_aref(misc, ID2SYM(rb_intern("prism"))))) {
+        ISEQ_BODY(iseq)->prism = true;
+    }
+
     make_compile_option(&option, opt);
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, NUM2INT(node_id),
@@ -1208,6 +1248,45 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         iseq = rb_iseq_new_with_opt(&ast->body, name, file, realpath, ln,
                                     NULL, 0, ISEQ_TYPE_TOP, &option);
         rb_ast_dispose(ast);
+    }
+
+    return iseq;
+}
+
+static rb_iseq_t *
+pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, VALUE opt)
+{
+    rb_iseq_t *iseq = NULL;
+    rb_compile_option_t option;
+    int ln;
+    VALUE name = rb_fstring_lit("<compiled>");
+
+    /* safe results first */
+    make_compile_option(&option, opt);
+    ln = NUM2INT(line);
+    StringValueCStr(file);
+
+    pm_parse_result_t result = { 0 };
+    pm_options_line_set(&result.options, NUM2INT(line));
+
+    VALUE error;
+    if (RB_TYPE_P(src, T_FILE)) {
+        VALUE filepath = rb_io_path(src);
+        error = pm_load_parse_file(&result, filepath);
+        RB_GC_GUARD(filepath);
+    }
+    else {
+        src = StringValue(src);
+        error = pm_parse_string(&result, src, file);
+    }
+
+    if (error == Qnil) {
+        iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option);
+        pm_parse_result_free(&result);
+    }
+    else {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
     }
 
     return iseq;
@@ -1425,53 +1504,42 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
-static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
-{
-    pm_node_t *node = pm_parse(parser);
-
-    if (parser->error_list.size > 0) {
-        pm_buffer_t buffer = { 0 };
-        pm_parser_errors_format(parser, &buffer, rb_stderr_tty_p());
-
-        pm_buffer_prepend_string(&buffer, "syntax errors found\n", 20);
-        VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-
-        pm_buffer_free(&buffer);
-        pm_node_destroy(parser, node);
-
-        // TODO: We need to set the backtrace based on the ISEQ.
-        // VALUE path = pathobj_path(ISEQ_BODY(iseq)->location.pathobj);
-        // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
-        rb_exc_raise(error);
-    } else {
-        rb_code_location_t code_location;
-        pm_code_location(&code_location, &parser->newline_list, &node->location);
-
-        rb_compile_option_t option;
-        make_compile_option(&option, optimize);
-        prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
-
-        pm_scope_node_t scope_node;
-        pm_scope_node_init(node, &scope_node, NULL, parser);
-
-        ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
-        rb_encoding *encoding = rb_enc_find(parser->encoding->name);
-        for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
-            pm_constant_t *constant = &parser->constant_pool.constants[index];
-            constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
-        }
-        scope_node.constants = constants;
-
-        rb_iseq_compile_prism_node(iseq, &scope_node, parser);
-
-        finish_iseq_build(iseq);
-        pm_scope_node_destroy(&scope_node);
-        pm_node_destroy(parser, node);
-        free(constants);
-    }
-}
-
+/*
+ *  call-seq:
+ *     InstructionSequence.compile_prism(source[, file[, path[, line[, options]]]]) -> iseq
+ *
+ *  Takes +source+, which can be a string of Ruby code, or an open +File+ object.
+ *  that contains Ruby source code. It parses and compiles using prism.
+ *
+ *  Optionally takes +file+, +path+, and +line+ which describe the file path,
+ *  real path and first line number of the ruby code in +source+ which are
+ *  metadata attached to the returned +iseq+.
+ *
+ *  +file+ is used for `__FILE__` and exception backtrace. +path+ is used for
+ *  +require_relative+ base. It is recommended these should be the same full
+ *  path.
+ *
+ *  +options+, which can be +true+, +false+ or a +Hash+, is used to
+ *  modify the default behavior of the Ruby iseq compiler.
+ *
+ *  For details regarding valid compile options see ::compile_option=.
+ *
+ *     RubyVM::InstructionSequence.compile("a = 1 + 2")
+ *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *
+ *     path = "test.rb"
+ *     RubyVM::InstructionSequence.compile(File.read(path), path, File.expand_path(path))
+ *     #=> <RubyVM::InstructionSequence:<compiled>@test.rb:1>
+ *
+ *     file = File.open("test.rb")
+ *     RubyVM::InstructionSequence.compile(file)
+ *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>:1>
+ *
+ *     path = File.expand_path("test.rb")
+ *     RubyVM::InstructionSequence.compile(File.read(path), path, path)
+ *     #=> <RubyVM::InstructionSequence:<compiled>@/absolute/path/to/test.rb:1>
+ *
+ */
 static VALUE
 iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
@@ -1494,87 +1562,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     Check_Type(path, T_STRING);
     Check_Type(file, T_STRING);
 
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, RSTRING_PTR(file));
-
-    int start_line = NUM2INT(line);
-    pm_options_line_set(&options, start_line);
-
-    pm_parser_t parser;
-
-    VALUE file_path = Qnil;
-    pm_string_t input;
-    if (RB_TYPE_P(src, T_FILE)) {
-        file_path = rb_io_path(src); /* rb_io_t->pathv gets frozen anyways */
-
-        pm_string_mapped_init(&input, RSTRING_PTR(file_path));
-    }
-    else {
-        Check_Type(src, T_STRING);
-        input.source = (const uint8_t *)RSTRING_PTR(src);
-        input.length = RSTRING_LEN(src);
-        input.type = PM_STRING_SHARED;
-    }
-
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
-
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
-    RB_GC_GUARD(file_path);
-    pm_parser_free(&parser);
-    pm_options_free(&options);
-    pm_string_free(&input);
-
-    return iseqw_new(iseq);
-}
-
-static VALUE
-iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
-{
-    VALUE file = Qnil, opt = Qnil;
-    int i;
-
-    i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
-    if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 5);
-    switch (i) {
-      case 2: opt = argv[--i];
-    }
-    FilePathValue(file);
-    file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
-
-    pm_string_t input;
-    pm_string_mapped_init(&input, RSTRING_PTR(file));
-
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, RSTRING_PTR(file));
-
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
-
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, rb_realpath_internal(Qnil, file, 1), 1);
-    pm_parser_free(&parser);
-    pm_string_free(&input);
-    pm_options_free(&options);
-
-    return iseqw_new(iseq);
-}
-
-rb_iseq_t *
-rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_name, VALUE path, VALUE optimize)
-{
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
-
-    if (NIL_P(path)) path = rb_fstring_lit("<compiled>");
-    int start_line = 0;
-    pm_options_line_set(options, start_line);
-
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, optimize, iseq, script_name, path, start_line);
-
-    pm_parser_free(&parser);
-    return iseq;
+    return iseqw_new(pm_iseq_compile_with_option(src, file, path, line, opt));
 }
 
 /*
@@ -1641,6 +1629,69 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     rb_vm_pop_frame(ec);
     RB_GC_GUARD(v);
     return ret;
+}
+
+/*
+ *  call-seq:
+ *      InstructionSequence.compile_file_prism(file[, options]) -> iseq
+ *
+ *  Takes +file+, a String with the location of a Ruby source file, reads,
+ *  parses and compiles the file, and returns +iseq+, the compiled
+ *  InstructionSequence with source location metadata set. It parses and
+ *  compiles using prism.
+ *
+ *  Optionally takes +options+, which can be +true+, +false+ or a +Hash+, to
+ *  modify the default behavior of the Ruby iseq compiler.
+ *
+ *  For details regarding valid compile options see ::compile_option=.
+ *
+ *      # /tmp/hello.rb
+ *      puts "Hello, world!"
+ *
+ *      # elsewhere
+ *      RubyVM::InstructionSequence.compile_file_prism("/tmp/hello.rb")
+ *      #=> <RubyVM::InstructionSequence:<main>@/tmp/hello.rb>
+ */
+static VALUE
+iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
+{
+    VALUE file, opt = Qnil, ret;
+    rb_compile_option_t option;
+    int i;
+
+    i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
+    if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 2);
+    switch (i) {
+      case 2: opt = argv[--i];
+    }
+    FilePathValue(file);
+    file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
+
+    rb_execution_context_t *ec = GET_EC();
+    VALUE v = rb_vm_push_frame_fname(ec, file);
+
+    pm_parse_result_t result = { 0 };
+    result.options.line = 1;
+
+    VALUE error = pm_load_parse_file(&result, file);
+
+    if (error == Qnil) {
+        make_compile_option(&option, opt);
+
+        ret = iseqw_new(pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
+                                            file,
+                                            rb_realpath_internal(Qnil, file, 1),
+                                            1, NULL, 0, ISEQ_TYPE_TOP, &option));
+        pm_parse_result_free(&result);
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
+        return ret;
+    } else {
+        pm_parse_result_free(&result);
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
+        rb_exc_raise(error);
+    }
 }
 
 /*
@@ -3356,6 +3407,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
+    rb_hash_aset(misc, ID2SYM(rb_intern("parser")), iseq_body->prism ? ID2SYM(rb_intern("prism")) : ID2SYM(rb_intern("parse.y")));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

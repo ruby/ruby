@@ -8875,7 +8875,7 @@ proc_warmup(VALUE _)
  *
  * Argument +exe_path+ is one of the following:
  *
- * - The string path to an executable to be called:
+ * - The string path to an executable file to be called:
  *
  *   Example:
  *
@@ -8890,6 +8890,19 @@ proc_warmup(VALUE _)
  *   be distinguished from +command_line+ above, so you must quote or
  *   escape the entire command name using a shell in platform
  *   dependent manner, or use the array form below.
+ *
+ *   If +exe_path+ does not contain any path separator, an executable
+ *   file is searched from directories specified with the +PATH+
+ *   environment variable.  What the word "executable" means here is
+ *   depending on platforms.
+ *
+ *   Even if the file considered "executable", its content may not be
+ *   in proper executable format.  In that case, Ruby tries to run it
+ *   by using <tt>/bin/sh</tt> on a Unix-like system, like system(3)
+ *   does.
+ *
+ *     File.write('shell_command', 'echo $SHELL', perm: 0o755)
+ *     system('./shell_command')        # prints "/bin/sh" or something.
  *
  * - A 2-element array containing the path to an executable
  *   and the string to be used as the name of the executing process:

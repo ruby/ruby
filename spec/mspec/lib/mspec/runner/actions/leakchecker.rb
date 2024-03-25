@@ -345,10 +345,13 @@ class LeakCheckerAction
 
     begin
       libc = Fiddle.dlopen(nil)
+      # Older versions of fiddle don't have Fiddle::Type (and instead rely on Fiddle::TYPE_)
+      # Even older versions of fiddle don't have CONST_STRING,
+      string_type = defined?(Fiddle::TYPE_CONST_STRING) ? Fiddle::TYPE_CONST_STRING : Fiddle::TYPE_VOIDP
       nss_configure_lookup = Fiddle::Function.new(
         libc['__nss_configure_lookup'],
-        [Fiddle::Types::CONST_STRING, Fiddle::Types::CONST_STRING],
-        Fiddle::Types::INT
+        [string_type, string_type],
+        Fiddle::TYPE_INT
       )
     rescue Fiddle::DLError
       # We're not running with glibc - no need to do this.

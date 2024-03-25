@@ -1,41 +1,38 @@
 require_relative '../../spec_helper'
+require 'getoptlong'
 
-ruby_version_is ""..."3.4" do
-  require 'getoptlong'
-
-  describe "GetoptLong#ordering=" do
-    it "raises an ArgumentError if called after processing has started" do
-      argv [ "--size", "10k", "--verbose" ] do
-        opts = GetoptLong.new([ '--size', GetoptLong::REQUIRED_ARGUMENT ],
-          [ '--verbose', GetoptLong::NO_ARGUMENT ])
-        opts.quiet = true
-        opts.get
-
-        -> {
-          opts.ordering = GetoptLong::PERMUTE
-        }.should raise_error(ArgumentError)
-      end
-    end
-
-    it "raises an ArgumentError if given an invalid value" do
-      opts = GetoptLong.new
+describe "GetoptLong#ordering=" do
+  it "raises an ArgumentError if called after processing has started" do
+    argv [ "--size", "10k", "--verbose" ] do
+      opts = GetoptLong.new([ '--size', GetoptLong::REQUIRED_ARGUMENT ],
+        [ '--verbose', GetoptLong::NO_ARGUMENT ])
+      opts.quiet = true
+      opts.get
 
       -> {
-        opts.ordering = 12345
+        opts.ordering = GetoptLong::PERMUTE
       }.should raise_error(ArgumentError)
     end
+  end
 
-    it "does not allow changing ordering to PERMUTE if ENV['POSIXLY_CORRECT'] is set" do
-      begin
-        old_env_value = ENV['POSIXLY_CORRECT']
-        ENV['POSIXLY_CORRECT'] = ""
+  it "raises an ArgumentError if given an invalid value" do
+    opts = GetoptLong.new
 
-        opts = GetoptLong.new
-        opts.ordering = GetoptLong::PERMUTE
-        opts.ordering.should == GetoptLong::REQUIRE_ORDER
-      ensure
-        ENV['POSIXLY_CORRECT'] = old_env_value
-      end
+    -> {
+      opts.ordering = 12345
+    }.should raise_error(ArgumentError)
+  end
+
+  it "does not allow changing ordering to PERMUTE if ENV['POSIXLY_CORRECT'] is set" do
+    begin
+      old_env_value = ENV['POSIXLY_CORRECT']
+      ENV['POSIXLY_CORRECT'] = ""
+
+      opts = GetoptLong.new
+      opts.ordering = GetoptLong::PERMUTE
+      opts.ordering.should == GetoptLong::REQUIRE_ORDER
+    ensure
+      ENV['POSIXLY_CORRECT'] = old_env_value
     end
   end
 end

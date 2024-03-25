@@ -251,7 +251,7 @@ module Gem
   # Install extensions into lib as well as into the extension directory.
 
   def self.install_extension_in_lib # :nodoc:
-    true
+    Gem.configuration.install_extension_in_lib
   end
 
   ##

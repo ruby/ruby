@@ -660,6 +660,12 @@ rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 }
 
 bool
+rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.anon_kwrest;
+}
+
+bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
@@ -733,15 +739,17 @@ rb_yjit_iseq_builtin_attrs(const rb_iseq_t *iseq)
     return iseq->body->builtin_attrs;
 }
 
-// If true, the iseq has only opt_invokebuiltin_delegate_leave and leave insns.
+// If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
-    unsigned int leave_len = insn_len(BIN(leave));
-    return iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave);
+    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
+    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+        return false;
+    }
+    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
+            insn2 == BIN(leave);
 }
 
 // Return an rb_builtin_function if the iseq contains only that builtin function.
@@ -884,6 +892,49 @@ rb_yjit_ruby2_keywords_splat_p(VALUE obj)
     return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
+// Checks to establish preconditions for rb_yjit_splat_varg_cfunc()
+VALUE
+rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
+{
+    // We inserted a T_ARRAY guard before this call
+    long len = RARRAY_LEN(splat_array);
+
+    // Large splat arrays need a separate allocation
+    if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
+
+    // Would we overflow if we put the contents of the array onto the stack?
+    if (sp + len > (VALUE *)(cfp - 2)) return Qfalse;
+
+    // Reject keywords hash since that requires duping it sometimes
+    if (len > 0) {
+        VALUE last_hash = RARRAY_AREF(splat_array, len - 1);
+        if (RB_TYPE_P(last_hash, T_HASH) &&
+                FL_TEST_RAW(last_hash, RHASH_PASS_AS_KEYWORDS)) {
+            return Qfalse;
+        }
+    }
+
+    return Qtrue;
+}
+
+// Push array elements to the stack for a C method that has a variable number
+// of parameters. Returns the number of arguments the splat array contributes.
+int
+rb_yjit_splat_varg_cfunc(VALUE *stack_splat_array)
+{
+    VALUE splat_array = *stack_splat_array;
+    int len;
+
+    // We already checked that length fits in `int`
+    RUBY_ASSERT(RB_TYPE_P(splat_array, T_ARRAY));
+    len = (int)RARRAY_LEN(splat_array);
+
+    // Push the contents of the array onto the stack
+    MEMCPY(stack_splat_array, RARRAY_CONST_PTR(splat_array), VALUE, len);
+
+    return len;
+}
+
 // Print the Ruby source location of some ISEQ for debugging purposes
 void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
@@ -893,6 +944,30 @@ rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));
+}
+
+// Get the number of digits required to print an integer
+static int
+num_digits(int integer)
+{
+    int num = 1;
+    while (integer /= 10) {
+        num++;
+    }
+    return num;
+}
+
+// Allocate a C string that formats an ISEQ label like iseq_inspect()
+char *
+rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
+{
+    const char *label = RSTRING_PTR(iseq->body->location.label);
+    const char *path = RSTRING_PTR(rb_iseq_path(iseq));
+    int lineno = iseq->body->location.code_location.beg_pos.lineno;
+
+    char *buf = ZALLOC_N(char, strlen(label) + strlen(path) + num_digits(lineno) + 3);
+    sprintf(buf, "%s@%s:%d", label, path, lineno);
+    return buf;
 }
 
 // The FL_TEST() macro
@@ -1189,5 +1264,5 @@ rb_yjit_init_gc_hooks(void)
 {
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
-    rb_gc_register_mark_object(yjit_root);
+    rb_vm_register_global_object(yjit_root);
 }

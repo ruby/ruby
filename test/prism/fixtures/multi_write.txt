@@ -1,0 +1,4 @@
+foo = 1 rescue nil
+foo, bar = 1 rescue nil
+foo = 1, 2 rescue nil
+foo, bar = 1, 2 rescue nil

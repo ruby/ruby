@@ -26,10 +26,10 @@ module GC
   # then marking will always be immediate, regardless of the value of
   # +immediate_mark+.
   #
-  # The +immedate_sweep+ keyword argument determines whether or not to defer
-  # sweeping (using lazy sweep). When set to +true+, sweeping is performed in
+  # The +immediate_sweep+ keyword argument determines whether or not to defer
+  # sweeping (using lazy sweep). When set to +false+, sweeping is performed in
   # steps that is interleaved with future Ruby code execution, so sweeping might
-  # not be completed during this method call. When set to +false+, sweeping is
+  # not be completed during this method call. When set to +true+, sweeping is
   # completed during the call to this method.
   #
   # Note: These keyword arguments are implementation and version dependent. They

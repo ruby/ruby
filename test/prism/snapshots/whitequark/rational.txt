@@ -6,7 +6,9 @@
         ├── @ RationalNode (location: (1,0)-(1,5))
         │   └── numeric:
         │       @ FloatNode (location: (1,0)-(1,4))
+        │       └── value: 42.1
         └── @ RationalNode (location: (3,0)-(3,3))
             └── numeric:
                 @ IntegerNode (location: (3,0)-(3,2))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 42

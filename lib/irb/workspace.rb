@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/workspace-binding.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -90,11 +90,11 @@ EOF
         IRB.conf[:__MAIN__] = @main
         @main.singleton_class.class_eval do
           private
-          define_method(:exit) do |*a, &b|
-            # Do nothing, will be overridden
-          end
           define_method(:binding, Kernel.instance_method(:binding))
           define_method(:local_variables, Kernel.instance_method(:local_variables))
+          # Define empty method to avoid delegator warning, will be overridden.
+          define_method(:exit) {|*a, &b| }
+          define_method(:exit!) {|*a, &b| }
         end
         @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, *@binding.source_location)
       end

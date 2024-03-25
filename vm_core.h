@@ -56,12 +56,12 @@
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
 #if VM_CHECK_MODE > 0
-#define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
+#define VM_ASSERT(/*expr, */...) RUBY_ASSERT_WHEN(VM_CHECK_MODE > 0, __VA_ARGS__)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 #define RUBY_ASSERT_CRITICAL_SECTION
 #define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
 #else
-#define VM_ASSERT(expr) ((void)0)
+#define VM_ASSERT(/*expr, */...) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
 #define RUBY_DEBUG_THREAD_SCHEDULE()
 #endif
@@ -500,6 +500,8 @@ struct rb_iseq_constant_body {
 
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
+    bool prism; // ISEQ was generated from prism compiler
+
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
@@ -746,8 +748,6 @@ typedef struct rb_vm_struct {
     VALUE coverages, me2counter;
     int coverage_mode;
 
-    st_table * defined_module_hash;
-
     struct rb_objspace *objspace;
 
     rb_at_exit_list *at_exit;
@@ -756,6 +756,7 @@ typedef struct rb_vm_struct {
 
     const struct rb_builtin_function *builtin_function_table;
 
+    st_table *ci_table;
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
 
@@ -1217,8 +1218,12 @@ static inline struct rb_iseq_new_with_callback_callback_func *
 rb_iseq_new_with_callback_new_callback(
     void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *), const void *ptr)
 {
-    VALUE memo = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)ptr, Qundef, Qfalse);
-    return (struct rb_iseq_new_with_callback_callback_func *)memo;
+    struct rb_iseq_new_with_callback_callback_func *memo =
+        IMEMO_NEW(struct rb_iseq_new_with_callback_callback_func, imemo_ifunc, Qfalse);
+    memo->func = func;
+    memo->data = ptr;
+
+    return memo;
 }
 rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_callback_func * ifunc,
     VALUE name, VALUE path, VALUE realpath, int first_lineno,
@@ -1535,7 +1540,9 @@ VM_ENV_ENVVAL_PTR(const VALUE *ep)
 static inline const rb_env_t *
 vm_env_new(VALUE *env_ep, VALUE *env_body, unsigned int env_size, const rb_iseq_t *iseq)
 {
-    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, (VALUE)env_ep, (VALUE)env_body, 0, (VALUE)iseq);
+    rb_env_t *env = IMEMO_NEW(rb_env_t, imemo_env, (VALUE)iseq);
+    env->ep = env_ep;
+    env->env = env_body;
     env->env_size = env_size;
     env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
     return env;

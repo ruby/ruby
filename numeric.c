@@ -836,7 +836,7 @@ int_zero_p(VALUE num)
     if (FIXNUM_P(num)) {
         return FIXNUM_ZERO_P(num);
     }
-    assert(RB_BIGNUM_TYPE_P(num));
+    RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
     return rb_bigzero_p(num);
 }
 
@@ -3213,7 +3213,7 @@ rb_num2ulong(VALUE val)
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `int'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'int'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3232,12 +3232,12 @@ check_uint(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)INT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned int'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned int'", (long)num);
     }
     else {
         /* plus */
         if (UINT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned int'", num);
     }
 }
 
@@ -3312,7 +3312,7 @@ NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
 static void
 rb_out_of_short(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `short'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'short'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3330,12 +3330,12 @@ check_ushort(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)SHRT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned short'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned short'", (long)num);
     }
     else {
         /* plus */
         if (USHRT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned short'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned short'", num);
     }
 }
 
@@ -3574,7 +3574,7 @@ rb_int_odd_p(VALUE num)
         return RBOOL(num & 2);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_odd_p(num);
     }
 }
@@ -3586,7 +3586,7 @@ int_even_p(VALUE num)
         return RBOOL((num & 2) == 0);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_even_p(num);
     }
 }
@@ -3843,7 +3843,7 @@ rb_int_uminus(VALUE num)
         return fix_uminus(num);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_uminus(num);
     }
 }
@@ -4359,7 +4359,7 @@ int_remainder(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
         if (FIXNUM_P(y)) {
             VALUE z = fix_mod(x, y);
-            assert(FIXNUM_P(z));
+            RUBY_ASSERT(FIXNUM_P(z));
             if (z != INT2FIX(0) && (SIGNED_VALUE)(x ^ y) < 0)
                 z = fix_minus(z, y);
             return z;
@@ -4709,7 +4709,7 @@ rb_int_cmp(VALUE x, VALUE y)
         return rb_big_cmp(x, y);
     }
     else {
-        rb_raise(rb_eNotImpError, "need to define `<=>' in %s", rb_obj_classname(x));
+        rb_raise(rb_eNotImpError, "need to define '<=>' in %s", rb_obj_classname(x));
     }
 }
 
@@ -5444,7 +5444,7 @@ rb_fix_digits(VALUE fix, long base)
     VALUE digits;
     long x = FIX2LONG(fix);
 
-    assert(x >= 0);
+    RUBY_ASSERT(x >= 0);
 
     if (base < 2)
         rb_raise(rb_eArgError, "invalid radix %ld", base);
@@ -5467,7 +5467,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 {
     VALUE digits, bases;
 
-    assert(!rb_num_negative_p(num));
+    RUBY_ASSERT(!rb_num_negative_p(num));
 
     if (RB_BIGNUM_TYPE_P(base))
         base = rb_big_norm(base);
@@ -5662,6 +5662,12 @@ int_downto(VALUE from, VALUE to)
         if (NIL_P(c)) rb_cmperr(i, to);
     }
     return from;
+}
+
+static VALUE
+int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
+{
+    return int_neg_p(num) ? INT2FIX(0) : num;
 }
 
 /*
@@ -6256,7 +6262,7 @@ Init_Numeric(void)
     rb_fix_to_s_static[8] = rb_fstring_literal("8");
     rb_fix_to_s_static[9] = rb_fstring_literal("9");
     for(int i = 0; i < 10; i++) {
-        rb_gc_register_mark_object(rb_fix_to_s_static[i]);
+        rb_vm_register_global_object(rb_fix_to_s_static[i]);
     }
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);

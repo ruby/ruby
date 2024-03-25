@@ -27,7 +27,6 @@
             │   │   │   └── block:
             │   │   │       @ BlockNode (location: (2,18)-(2,33))
             │   │   │       ├── locals: []
-            │   │   │       ├── locals_body_index: 0
             │   │   │       ├── parameters: ∅
             │   │   │       ├── body:
             │   │   │       │   @ StatementsNode (location: (2,20)-(2,31))

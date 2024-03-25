@@ -355,6 +355,15 @@ static VALUE kernel_spec_rb_funcall_many_args(VALUE self, VALUE obj, VALUE metho
                     INT2FIX(5), INT2FIX(4), INT2FIX(3), INT2FIX(2), INT2FIX(1));
 }
 
+static VALUE kernel_spec_rb_check_funcall(VALUE self, VALUE receiver, VALUE method, VALUE args) {
+  VALUE ret = rb_check_funcall(receiver, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args));
+  if (ret == Qundef) {
+    return ID2SYM(rb_intern("Qundef"));
+  } else {
+    return ret;
+  }
+}
+
 void Init_kernel_spec(void) {
   VALUE cls = rb_define_class("CApiKernelSpecs", rb_cObject);
   rb_define_method(cls, "rb_block_given_p", kernel_spec_rb_block_given_p, 0);
@@ -403,6 +412,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 4);
   rb_define_method(cls, "rb_funcall_with_block_kw", kernel_spec_rb_funcall_with_block_kw, 4);
+  rb_define_method(cls, "rb_check_funcall", kernel_spec_rb_check_funcall, 3);
 }
 
 #ifdef __cplusplus

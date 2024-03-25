@@ -20,12 +20,12 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,9)-(1,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

@@ -18,7 +18,8 @@
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (1,9)-(1,10))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 1
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (1,10)-(1,11) = "}"
             ├── conditions: (length: 1)
@@ -37,7 +38,8 @@
             │       │   │       │   └── unescaped: "a"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │       │   └── flags: decimal
+            │       │   │       │   ├── flags: decimal
+            │       │   │       │   └── value: 1
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest:
             │       │   │   @ NoKeywordsParameterNode (location: (2,10)-(2,15))

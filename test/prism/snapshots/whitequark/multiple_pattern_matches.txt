@@ -18,7 +18,8 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (1,4)-(1,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (1,5)-(1,6) = "}"
         │   ├── pattern:
@@ -59,7 +60,8 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (2,4)-(2,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (2,5)-(2,6) = "}"
         │   ├── pattern:
@@ -100,7 +102,8 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (4,4)-(4,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (4,5)-(4,6) = "}"
         │   ├── pattern:
@@ -141,7 +144,8 @@
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (5,4)-(5,5))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 0
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (5,5)-(5,6) = "}"
             ├── pattern:

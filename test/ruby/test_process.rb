@@ -23,12 +23,6 @@ class TestProcess < Test::Unit::TestCase
     return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
-  def write_file(filename, content)
-    File.open(filename, "w") {|f|
-      f << content
-    }
-  end
-
   def with_tmpchdir
     Dir.mktmpdir {|d|
       d = File.realpath(d)
@@ -39,7 +33,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def run_in_child(str) # should be called in a temporary directory
-    write_file("test-script", str)
+    File.write("test-script", str)
     Process.wait spawn(RUBY, "test-script")
     $?
   end
@@ -65,7 +59,7 @@ class TestProcess < Test::Unit::TestCase
   def test_rlimit_nofile
     return unless rlimit_exist?
     with_tmpchdir {
-      write_file 's', <<-"End"
+      File.write 's', <<-"End"
         # Too small RLIMIT_NOFILE, such as zero, causes problems.
         # [OpenBSD] Setting to zero freezes this test.
         # [GNU/Linux] EINVAL on poll().  EINVAL on ruby's internal poll() ruby with "[ASYNC BUG] thread_timer: select".
@@ -361,7 +355,7 @@ class TestProcess < Test::Unit::TestCase
   def test_execopt_env_path
     bug8004 = '[ruby-core:53103] [Bug #8004]'
     Dir.mktmpdir do |d|
-      open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      File.write("#{d}/tmp_script.cmd", ": ;\n", perm: 0o755)
       assert_not_nil(pid = Process.spawn({"PATH" => d}, "tmp_script.cmd"), bug8004)
       wpid, st = Process.waitpid2(pid)
       assert_equal([pid, true], [wpid, st.success?], bug8004)
@@ -399,7 +393,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_env_popen_string
     with_tmpchdir do |d|
-      open('test-script', 'w') do |f|
+      File.open('test-script', 'w') do |f|
         ENVCOMMAND.each_with_index do |cmd, i|
           next if i.zero? or cmd == "-e"
           f.puts cmd
@@ -411,16 +405,14 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_preserve_env_on_exec_failure
     with_tmpchdir {|d|
-      write_file 's', <<-"End"
+      File.write 's', <<-"End"
         ENV["mgg"] = nil
         prog = "./nonexistent"
         begin
           Process.exec({"mgg" => "mggoo"}, [prog, prog])
         rescue Errno::ENOENT
         end
-        open('out', 'w') {|f|
-          f.print ENV["mgg"].inspect
-        }
+        File.write('out', ENV["mgg"].inspect)
       End
       system(RUBY, 's')
       assert_equal(nil.inspect, File.read('out'),
@@ -430,9 +422,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_env_single_word
     with_tmpchdir {|d|
-      open("test_execopts_env_single_word.rb", "w") {|f|
-        f.puts "print ENV['hgga']"
-      }
+      File.write("test_execopts_env_single_word.rb", "print ENV['hgga']\n")
       system({"hgga"=>"ugu"}, RUBY,
              :in => 'test_execopts_env_single_word.rb',
              :out => 'test_execopts_env_single_word.out')
@@ -554,7 +544,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("a", File.read("out").chomp)
       if windows?
         # currently telling to child the file modes is not supported.
-        open("out", "a") {|f| f.write "0\n"}
+        File.write("out", "0\n", mode: "a")
       else
         Process.wait Process.spawn(*ECHO["0"], STDOUT=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
         assert_equal("a\n0\n", File.read("out"))
@@ -876,7 +866,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_exec
     with_tmpchdir {|d|
-      write_file("s", 'exec "echo aaa", STDOUT=>"foo"')
+      File.write("s", 'exec "echo aaa", STDOUT=>"foo"')
       pid = spawn RUBY, 's'
       Process.wait pid
       assert_equal("aaa\n", File.read("foo"))
@@ -950,7 +940,7 @@ class TestProcess < Test::Unit::TestCase
     }
     with_pipe {|r, w|
       with_tmpchdir {|d|
-	write_file("s", <<-"End")
+	File.write("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
 	       'IO.new(ARGV[0].to_i, "w").puts("bu") rescue nil',
 	       #{w.fileno.to_s.dump}, :close_others=>false)
@@ -1004,7 +994,7 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
-	write_file("s", <<-"End")
+	File.write("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
 	       'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("mu")',
 	       #{w.fileno.to_s.dump},
@@ -1130,7 +1120,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_noshell
     with_tmpchdir {|d|
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	  str = "echo non existing command name which contains spaces"
 	  STDERR.reopen(STDOUT)
 	  begin
@@ -1146,7 +1136,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_system_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t| t << "haha pid=#{$$} ppid=#{Process.ppid}" }
         exit 5
       End
@@ -1162,7 +1152,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t| t << "hihi pid=#{$$} ppid=#{Process.ppid}" }
         exit 6
       End
@@ -1179,7 +1169,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         print "fufu pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
@@ -1198,7 +1188,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_wordsplit_beginning_and_trailing_spaces
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         print "fufumm pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
@@ -1217,7 +1207,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t|
           if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
@@ -1227,7 +1217,7 @@ class TestProcess < Test::Unit::TestCase
         }
         exit 6
       End
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	ruby = #{RUBY.dump}
 	exec "\#{ruby} script"
       End
@@ -1248,11 +1238,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_system_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "taka pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "taki pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
@@ -1268,7 +1258,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        File.write(bat = path + "/bat test.bat", "@echo %1>out")
         system(bat, "foo 'bar'")
         assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
         system(%[#{bat.dump} "foo 'bar'"])
@@ -1279,11 +1269,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "taku pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "take pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
@@ -1300,7 +1290,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        File.write(bat = path + "/bat test.bat", "@echo %1>out")
         pid = spawn(bat, "foo 'bar'")
         Process.wait pid
         status = $?
@@ -1319,11 +1309,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         puts "tako pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         puts "tika pid=#{$$} ppid=#{Process.ppid}"
         exit 8
       End
@@ -1338,7 +1328,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1")
+        File.write(bat = path + "/bat test.bat", "@echo %1")
         r = IO.popen([bat, "foo 'bar'"]) {|f| f.read}
         assert_equal(%["foo 'bar'"\n], r, '[ruby-core:22960]')
         r = IO.popen(%[#{bat.dump} "foo 'bar'"]) {|f| f.read}
@@ -1349,15 +1339,15 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "tiki pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "tiku pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	ruby = #{RUBY.dump}
 	exec("\#{ruby} script1 || \#{ruby} script2")
       End
@@ -1384,7 +1374,7 @@ class TestProcess < Test::Unit::TestCase
 
       assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]) {|f| f.read })
 
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
         exec([#{RUBY.dump}, "lkjh"], "-e", "exit 5")
       End
       pid = spawn RUBY, "s"
@@ -1394,7 +1384,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def with_stdin(filename)
-    open(filename) {|f|
+    File.open(filename) {|f|
       begin
         old = STDIN.dup
         begin
@@ -1411,8 +1401,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_argv0_noarg
     with_tmpchdir {|d|
-      open("t", "w") {|f| f.print "exit true" }
-      open("f", "w") {|f| f.print "exit false" }
+      File.write("t", "exit true")
+      File.write("f",  "exit false")
 
       with_stdin("t") { assert_equal(true, system([RUBY, "qaz"])) }
       with_stdin("f") { assert_equal(false, system([RUBY, "wsx"])) }
@@ -1479,7 +1469,7 @@ class TestProcess < Test::Unit::TestCase
     expected = Signal.list.include?("QUIT") ? [false, true, false, nil] : [true, false, false, true]
 
     with_tmpchdir do
-      write_file("foo", "Process.kill(:KILL, $$); exit(42)")
+      File.write("foo", "Process.kill(:KILL, $$); exit(42)")
       system(RUBY, "foo")
       s = $?
       assert_equal(expected,
@@ -1527,7 +1517,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_wait_without_arg
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
       assert_equal(pid, Process.wait)
     end
@@ -1535,7 +1525,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_wait2
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
       assert_equal([pid, 0], Process.wait2)
     end
@@ -1543,7 +1533,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_waitall
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       ps = (0...3).map { spawn(RUBY, "foo") }.sort
       ss = Process.waitall.sort
       ps.zip(ss) do |p1, (p2, s)|
@@ -1585,7 +1575,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir do
       s = run_in_child("abort")
       assert_not_predicate(s, :success?)
-      write_file("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
+      File.write("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         STDERR.reopen(STDOUT)
         begin
@@ -1778,16 +1768,16 @@ class TestProcess < Test::Unit::TestCase
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
     with_tmpchdir do |d|
-      open("tmp_script.#{$$}", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", ": ;\n", perm: 0o755)
       assert_not_nil(pid = Process.spawn("./tmp_script.#{$$}"), feature)
       wpid, st = Process.waitpid2(pid)
       assert_equal([pid, true], [wpid, st.success?], feature)
 
-      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $#: $@"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", "echo $#: $@", perm: 0o755)
       result = IO.popen(["./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("2: a b c\n", result, feature)
 
-      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $hghg"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", "echo $hghg", perm: 0o755)
       result = IO.popen([{"hghg" => "mogomogo"}, "./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("mogomogo\n", result, feature)
 
@@ -2839,15 +2829,4 @@ EOS
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
   end if defined?(fork)
-
-  def test_low_memory_startup
-    omit "JIT enabled" if %w[YJIT RJIT].any? {|n| RubyVM.const_defined?(n) and RubyVM.const_get(n).enabled?}
-    omit "flaky on Travis arm32" if /armv8l-linux-eabihf/ =~ RUBY_PLATFORM
-    as = 1<<25
-    _, _, status = EnvUtil.invoke_ruby(%W'-W0', "", true, :merge_to_stdout, rlimit_as: as)
-    omit sprintf("Crashed with AS: %#x: %s", as, status) if status.signaled?
-    (26..27).each {|i| as = 1<<i; assert_normal_exit("", "AS: %#x" % as, rlimit_as: as)}
-  rescue ArgumentError, Errno::EINVAL => e
-    omit e.message
-  end
 end

@@ -18,13 +18,6 @@ on:
       - '**/.document'
       - '.*.yml'
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -110,7 +103,7 @@ jobs:
             shared: disable
             # check: true
 
-          - { name: ext/Setup }
+          - { name: ext/Setup, static-exts: 'etc,json/*,*/escape' }
 
 #         - { name: aarch64-linux-gnu,     crosshost: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { name: arm-linux-gnueabi,     crosshost: arm-linux-gnueabi }
@@ -226,7 +219,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -247,6 +242,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
 
       - name: Run configure
         run: >
@@ -258,9 +254,23 @@ jobs:
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
 
-      - name: Add to ext/Setup # statically link just the etc extension
-        run: mkdir ext && echo etc >> ext/Setup
-        if: ${{ matrix.entry.name == 'ext/Setup' }}
+      - name: Add to ext/Setup
+        id: ext-setup
+        run: |
+          mkdir ext
+          cd ext
+          for ext in {${{ matrix.entry.static-exts }}}; do
+            echo "${ext}"
+          done >> Setup
+        if: ${{ (matrix.entry.static-exts || '') != '' }}
+
+      - name: Clean up ext/Setup
+        uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+        with:
+          shell: bash
+          working-directory: build
+          post: rm ext/Setup
+        if: ${{ steps.ext-setup.outcome == 'success' }}
 
       - run: make showflags
 
@@ -278,10 +288,9 @@ jobs:
         if: ${{ matrix.entry.check }}
 
       - run: make test-spec
+        env:
+          CHECK_LEAKS: true
         if: ${{ matrix.entry.check }}
-
-      - run: make test-annocheck
-        if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
       - uses: ./.github/actions/slack
         with:

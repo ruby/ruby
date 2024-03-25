@@ -25,7 +25,6 @@
             └── block:
                 @ BlockNode (location: (1,4)-(1,14))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,7)-(1,10))
                 │   ├── parameters: ∅

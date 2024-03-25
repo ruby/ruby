@@ -145,11 +145,19 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
 
     case type
     when :NOTE, :LABEL then
-      bullets = Array(list_item.label).map do |label|
+      stripped_labels = Array(list_item.label).map do |label|
         attributes(label).strip
-      end.join "\n"
+      end
 
-      bullets << ":\n" unless bullets.empty?
+      bullets = case type
+      when :NOTE
+        stripped_labels.map { |b| "#{b}::" }
+      when :LABEL
+        stripped_labels.map { |b| "[#{b}]" }
+      end
+
+      bullets = bullets.join("\n")
+      bullets << "\n" unless stripped_labels.empty?
 
       @prefix = ' ' * @indent
       @indent += 2

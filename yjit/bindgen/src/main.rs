@@ -38,6 +38,7 @@ fn main() {
         .clang_args(filtered_clang_args)
         .header("encindex.h")
         .header("internal.h")
+        .header("internal/object.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
         .header("shape.h")
@@ -196,8 +197,6 @@ fn main() {
         .allowlist_type("rb_call_data")
         .blocklist_type("rb_callcache.*")      // Not used yet - opaque to make it easy to import rb_call_data
         .opaque_type("rb_callcache.*")
-        .blocklist_type("rb_callinfo_kwarg") // Contains a VALUE[] array of undefined size, so we don't import
-        .opaque_type("rb_callinfo_kwarg")
         .allowlist_type("rb_callinfo")
 
         // From vm_insnhelper.h
@@ -217,11 +216,16 @@ fn main() {
 
         // From internal/numeric.h
         .allowlist_function("rb_fix_aref")
+        .allowlist_function("rb_float_plus")
+        .allowlist_function("rb_float_minus")
+        .allowlist_function("rb_float_mul")
+        .allowlist_function("rb_float_div")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
         .allowlist_function("rb_obj_as_string_result")
+        .allowlist_function("rb_str_byte_substr")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")
@@ -263,6 +267,7 @@ fn main() {
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
         .allowlist_type("vm_frame_env_flags")
         .allowlist_type("rb_seq_param_keyword_struct")
+        .allowlist_type("rb_callinfo_kwarg")
         .allowlist_type("ruby_basic_operators")
         .allowlist_var(".*_REDEFINED_OP_FLAG")
         .allowlist_type("rb_num_t")
@@ -304,6 +309,7 @@ fn main() {
         .allowlist_function("rb_yjit_mark_unused")
         .allowlist_function("rb_yjit_get_page_size")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_yjit_iseq_inspect")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -370,9 +376,12 @@ fn main() {
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")
 
-        // From gc.h and internal/gc.h
+        // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
+
+        // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")
+        .allowlist_function("ruby_xfree")
 
         // From include/ruby/debug.h
         .allowlist_function("rb_profile_frames")
@@ -412,6 +421,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_has_rest")
         .allowlist_function("rb_get_iseq_flags_has_post")
         .allowlist_function("rb_get_iseq_flags_has_kwrest")
+        .allowlist_function("rb_get_iseq_flags_anon_kwrest")
         .allowlist_function("rb_get_iseq_flags_has_block")
         .allowlist_function("rb_get_iseq_flags_ambiguous_param0")
         .allowlist_function("rb_get_iseq_flags_accepts_no_kwarg")
@@ -450,6 +460,8 @@ fn main() {
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
+        .allowlist_function("rb_yjit_splat_varg_checks")
+        .allowlist_function("rb_yjit_splat_varg_cfunc")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

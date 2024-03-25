@@ -182,8 +182,11 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 static inline struct vm_throw_data *
 THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    struct vm_throw_data *obj = IMEMO_NEW(struct vm_throw_data, imemo_throw_data, 0);
+    *((VALUE *)&obj->throw_obj) = val;
+    *((struct rb_control_frame_struct **)&obj->catch_frame) = (struct rb_control_frame_struct *)cf;
     obj->throw_state = st;
+
     return obj;
 }
 

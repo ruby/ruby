@@ -24,7 +24,7 @@ ruby_version_is "3.3" do
 
     it "requires the keys to implement #hash" do
       map = ObjectSpace::WeakKeyMap.new
-      -> { map[BasicObject.new] = 1 }.should raise_error(NoMethodError, "undefined method `hash' for an instance of BasicObject")
+      -> { map[BasicObject.new] = 1 }.should raise_error(NoMethodError, /undefined method [`']hash' for an instance of BasicObject/)
     end
 
     it "accepts frozen keys or values" do

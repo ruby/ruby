@@ -34,8 +34,10 @@
                 ├── flags: ∅
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (1,10)-(1,11))
-                │   │   └── flags: decimal
+                │   │   ├── flags: decimal
+                │   │   └── value: 1
                 │   └── @ IntegerNode (location: (1,13)-(1,14))
-                │       └── flags: decimal
+                │       ├── flags: decimal
+                │       └── value: 2
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

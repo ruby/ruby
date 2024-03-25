@@ -54,13 +54,15 @@
         │   ├── operator_loc: (7,5)-(7,6) = "="
         │   └── value:
         │       @ IntegerNode (location: (7,7)-(7,8))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ ConstantWriteNode (location: (9,0)-(9,5))
         │   ├── name: :A
         │   ├── name_loc: (9,0)-(9,1) = "A"
         │   ├── value:
         │   │   @ IntegerNode (location: (9,4)-(9,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (9,2)-(9,3) = "="
         ├── @ ConstantReadNode (location: (11,0)-(11,3))
         │   └── name: :ABC
@@ -76,7 +78,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (13,4)-(13,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (15,0)-(15,8))
@@ -268,7 +271,8 @@
         │   ├── operator_loc: (29,4)-(29,5) = "="
         │   └── value:
         │       @ IntegerNode (location: (29,6)-(29,7))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ ConstantPathWriteNode (location: (31,0)-(31,10))
         │   ├── target:
         │   │   @ ConstantPathNode (location: (31,0)-(31,6))
@@ -286,7 +290,8 @@
         │   ├── operator_loc: (31,7)-(31,8) = "="
         │   └── value:
         │       @ IntegerNode (location: (31,9)-(31,10))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         ├── @ ConstantPathNode (location: (33,0)-(33,6))
         │   ├── parent:
         │   │   @ ConstantPathNode (location: (33,0)-(33,3))

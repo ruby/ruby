@@ -379,6 +379,8 @@ class RbInspector(LLDBInterface):
                     self._append_expression("*(struct RNode_DXSTR *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_EVSTR"]:
                     self._append_expression("*(struct RNode_EVSTR *) %0#x" % val.GetValueAsUnsigned())
+                elif nd_type == self.ruby_globals["NODE_REGX"]:
+                    self._append_expression("*(struct RNode_REGX *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_DREGX"]:
                     self._append_expression("*(struct RNode_DREGX *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_ONCE"]:
@@ -459,10 +461,6 @@ class RbInspector(LLDBInterface):
                     self._append_expression("*(struct RNode_LINE *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_FILE"]:
                     self._append_expression("*(struct RNode_FILE *) %0#x" % val.GetValueAsUnsigned())
-                elif nd_type == self.ruby_globals["NODE_RIPPER"]:
-                    self._append_expression("*(struct RNode_RIPPER *) %0#x" % val.GetValueAsUnsigned())
-                elif nd_type == self.ruby_globals["NODE_RIPPER_VALUES"]:
-                    self._append_expression("*(struct RNode_RIPPER_VALUES *) %0#x" % val.GetValueAsUnsigned())
                 else:
                     self._append_expression("*(struct RNode *) %0#x" % val.GetValueAsUnsigned())
 

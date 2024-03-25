@@ -52,8 +52,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (1,32)-(1,35))
             │           ├── closing_loc: (1,35)-(1,36) = ")"
             │           └── block: ∅
-            ├── locals: [:x, :y, :z, :"..."]
-            ├── locals_body_index: 4
+            ├── locals: [:x, :y, :z]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

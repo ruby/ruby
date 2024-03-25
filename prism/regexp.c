@@ -565,21 +565,36 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser) {
  */
 static bool
 pm_regexp_parse_item(pm_regexp_parser_t *parser) {
-    switch (*parser->cursor++) {
+    switch (*parser->cursor) {
         case '^':
         case '$':
+            parser->cursor++;
             return true;
         case '\\':
+            parser->cursor++;
             if (!pm_regexp_char_is_eof(parser)) {
                 parser->cursor++;
             }
             return pm_regexp_parse_quantifier(parser);
         case '(':
+            parser->cursor++;
             return pm_regexp_parse_group(parser) && pm_regexp_parse_quantifier(parser);
         case '[':
+            parser->cursor++;
             return pm_regexp_parse_lbracket(parser) && pm_regexp_parse_quantifier(parser);
-        default:
+        default: {
+            size_t width;
+            if (!parser->encoding_changed) {
+                width = pm_encoding_utf_8_char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+            } else {
+                width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+            }
+
+            if (width == 0) return false; // TODO: add appropriate error
+            parser->cursor += width;
+
             return pm_regexp_parse_quantifier(parser);
+        }
     }
 }
 

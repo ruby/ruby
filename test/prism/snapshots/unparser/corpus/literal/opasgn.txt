@@ -8,7 +8,8 @@
         │   ├── operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (1,5)-(1,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   ├── operator: :+
         │   └── depth: 0
@@ -17,7 +18,8 @@
         │   ├── operator_loc: (2,2)-(2,4) = "-="
         │   ├── value:
         │   │   @ IntegerNode (location: (2,5)-(2,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   ├── operator: :-
         │   └── depth: 0
@@ -26,7 +28,8 @@
         │   ├── operator_loc: (3,2)-(3,5) = "**="
         │   ├── value:
         │   │   @ IntegerNode (location: (3,6)-(3,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   ├── operator: :**
         │   └── depth: 0
@@ -35,7 +38,8 @@
         │   ├── operator_loc: (4,2)-(4,4) = "*="
         │   ├── value:
         │   │   @ IntegerNode (location: (4,5)-(4,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   ├── operator: :*
         │   └── depth: 0
@@ -44,7 +48,8 @@
         │   ├── operator_loc: (5,2)-(5,4) = "/="
         │   ├── value:
         │   │   @ IntegerNode (location: (5,5)-(5,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   ├── operator: :/
         │   └── depth: 0
@@ -69,7 +74,8 @@
         │   ├── operator_loc: (7,2)-(7,5) = "||="
         │   ├── value:
         │   │   @ IntegerNode (location: (7,6)-(7,7))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 2
         │   ├── name: :a
         │   └── depth: 0
         ├── @ CallNode (location: (8,0)-(8,13))
@@ -84,7 +90,8 @@
         │   │   │           ├── operator_loc: (8,3)-(8,6) = "||="
         │   │   │           ├── value:
         │   │   │           │   @ IntegerNode (location: (8,7)-(8,8))
-        │   │   │           │   └── flags: decimal
+        │   │   │           │   ├── flags: decimal
+        │   │   │           │   └── value: 2
         │   │   │           ├── name: :a
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (8,0)-(8,1) = "("
@@ -159,7 +166,8 @@
         │   ├── operator_loc: (10,4)-(10,6) = "+="
         │   └── value:
         │       @ IntegerNode (location: (10,7)-(10,8))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ CallOperatorWriteNode (location: (11,0)-(11,8))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -174,7 +182,8 @@
         │   ├── operator_loc: (11,4)-(11,6) = "-="
         │   └── value:
         │       @ IntegerNode (location: (11,7)-(11,8))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ CallOperatorWriteNode (location: (12,0)-(12,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -189,7 +198,8 @@
         │   ├── operator_loc: (12,4)-(12,7) = "**="
         │   └── value:
         │       @ IntegerNode (location: (12,8)-(12,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ CallOperatorWriteNode (location: (13,0)-(13,8))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -204,7 +214,8 @@
         │   ├── operator_loc: (13,4)-(13,6) = "*="
         │   └── value:
         │       @ IntegerNode (location: (13,7)-(13,8))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ CallOperatorWriteNode (location: (14,0)-(14,8))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -219,7 +230,8 @@
         │   ├── operator_loc: (14,4)-(14,6) = "/="
         │   └── value:
         │       @ IntegerNode (location: (14,7)-(14,8))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ CallAndWriteNode (location: (15,0)-(15,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -255,7 +267,8 @@
         │   ├── operator_loc: (16,4)-(16,7) = "||="
         │   └── value:
         │       @ IntegerNode (location: (16,8)-(16,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexOperatorWriteNode (location: (17,0)-(17,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -284,7 +297,8 @@
         │   ├── operator_loc: (17,5)-(17,7) = "+="
         │   └── value:
         │       @ IntegerNode (location: (17,8)-(17,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexOperatorWriteNode (location: (18,0)-(18,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -313,7 +327,8 @@
         │   ├── operator_loc: (18,5)-(18,7) = "-="
         │   └── value:
         │       @ IntegerNode (location: (18,8)-(18,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexOperatorWriteNode (location: (19,0)-(19,10))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -342,7 +357,8 @@
         │   ├── operator_loc: (19,5)-(19,8) = "**="
         │   └── value:
         │       @ IntegerNode (location: (19,9)-(19,10))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexOperatorWriteNode (location: (20,0)-(20,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -371,7 +387,8 @@
         │   ├── operator_loc: (20,5)-(20,7) = "*="
         │   └── value:
         │       @ IntegerNode (location: (20,8)-(20,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexOperatorWriteNode (location: (21,0)-(21,9))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -400,7 +417,8 @@
         │   ├── operator_loc: (21,5)-(21,7) = "/="
         │   └── value:
         │       @ IntegerNode (location: (21,8)-(21,9))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         ├── @ IndexAndWriteNode (location: (22,0)-(22,10))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -464,7 +482,8 @@
         │   ├── operator_loc: (23,5)-(23,8) = "||="
         │   └── value:
         │       @ IntegerNode (location: (23,9)-(23,10))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 2
         └── @ CallOperatorWriteNode (location: (24,0)-(24,10))
             ├── flags: ∅
             ├── receiver:
@@ -486,4 +505,5 @@
             ├── operator_loc: (24,6)-(24,8) = "+="
             └── value:
                 @ IntegerNode (location: (24,9)-(24,10))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 1

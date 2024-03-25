@@ -1,4 +1,5 @@
 require "strscan"
+
 require "lrama/lexer/grammar_file"
 require "lrama/lexer/location"
 require "lrama/lexer/token"
@@ -26,6 +27,11 @@ module Lrama
       %precedence
       %prec
       %error-token
+      %before-reduce
+      %after-reduce
+      %after-shift-error-token
+      %after-shift
+      %after-pop-stack
       %empty
       %code
       %rule

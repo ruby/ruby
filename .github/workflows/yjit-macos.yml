@@ -12,13 +12,6 @@ on:
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -31,13 +24,14 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
     if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
+      ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -72,13 +66,14 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
 
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
     if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
+      ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -110,26 +105,31 @@ jobs:
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
 
+      - name: Set test options for skipped tests
+        run: |
+          set -x
+          TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
+          echo "TESTS=${TESTS}" >> $GITHUB_ENV
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: make skipped tests
         run: |
-          make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
-          TESTS: ${{ matrix.skipped_tests }}
           PRECHECK_BUNDLED_GEMS: 'no'
-        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
       - uses: ./.github/actions/slack
@@ -139,12 +139,13 @@ jobs:
         if: ${{ failure() }}
 
   result:
-    if: ${{ always() && github.repository == 'ruby/ruby' }}
+    if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-arm-oss
+    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
     needs: [make]
     steps:
       - run: exit 1
+        working-directory:
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:

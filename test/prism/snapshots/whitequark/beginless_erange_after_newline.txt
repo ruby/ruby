@@ -18,5 +18,6 @@
             ├── left: ∅
             ├── right:
             │   @ IntegerNode (location: (2,3)-(2,6))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 100
             └── operator_loc: (2,0)-(2,3) = "..."

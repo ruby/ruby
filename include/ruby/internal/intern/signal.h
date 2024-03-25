@@ -97,7 +97,7 @@ RBIMPL_ATTR_NONNULL(())
  *   - Case #11: When  signo and PID  are both negative, the  behaviour of this
  *     function  depends on  how `killpg(3)`  works.  On  Linux, it  seems such
  *     attempt is  strictly prohibited and  `Errno::EINVAL` is raised.   But on
- *     macOS, it seems it  tries to to send the signal  actually to the process
+ *     macOS, it seems it  tries to send the signal  actually to the process
  *     group.
  *
  * @note       Above description is in fact different from how `kill(2)` works.

@@ -21,7 +21,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (2,2)-(5,3))
+        │   │   @ BeginNode (location: (1,0)-(5,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (2,2)-(2,13))
@@ -57,7 +57,6 @@
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         │   ├── locals: [:cmd]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: (1,8)-(1,9) = "."
         │   ├── lparen_loc: (1,13)-(1,14) = "("
@@ -106,7 +105,6 @@
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (9,21)-(9,24))
         │   ├── locals: [:cmd]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (8,0)-(8,3) = "def"
         │   ├── operator_loc: (8,8)-(8,9) = "."
         │   ├── lparen_loc: (8,13)-(8,14) = "("
@@ -155,7 +153,6 @@
             │           └── rescue_expression:
             │               @ NilNode (location: (13,40)-(13,43))
             ├── locals: [:cmd]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (13,0)-(13,3) = "def"
             ├── operator_loc: (13,8)-(13,9) = "."
             ├── lparen_loc: (13,13)-(13,14) = "("

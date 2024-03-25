@@ -45,13 +45,11 @@
             │           │           └── block:
             │           │               @ BlockNode (location: (1,18)-(1,25))
             │           │               ├── locals: []
-            │           │               ├── locals_body_index: 0
             │           │               ├── parameters: ∅
             │           │               ├── body: ∅
             │           │               ├── opening_loc: (1,18)-(1,20) = "do"
             │           │               └── closing_loc: (1,22)-(1,25) = "end"
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── def_keyword_loc: (1,2)-(1,5) = "def"
             │           ├── operator_loc: (1,10)-(1,11) = "."
             │           ├── lparen_loc: ∅

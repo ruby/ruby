@@ -136,8 +136,9 @@ typedef struct rb_method_iseq_struct {
     rb_cref_t * cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
+typedef VALUE (*rb_cfunc_t)(ANYARGS);
 typedef struct rb_method_cfunc_struct {
-    VALUE (*func)(ANYARGS);
+    rb_cfunc_t func;
     VALUE (*invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
     int argc;
 } rb_method_cfunc_t;

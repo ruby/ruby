@@ -129,7 +129,7 @@ module Kernel
   #
   def then
     Primitive.attr! :inline_block
-    unless block_given?
+    unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -145,7 +145,7 @@ module Kernel
   #
   def yield_self
     Primitive.attr! :inline_block
-    unless block_given?
+    unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -182,8 +182,8 @@ module Kernel
   #    } #=> :ok
   def loop
     Primitive.attr! :inline_block
-    unless block_given?
-      return enum_for(:loop) { Float::INFINITY }
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size)'
     end
 
     begin

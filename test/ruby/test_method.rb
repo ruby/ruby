@@ -451,6 +451,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_clone_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       o = Object.new
       def o.foo; :foo; end
@@ -1453,12 +1454,12 @@ class TestMethod < Test::Unit::TestCase
         begin
           $f.call(1)
         rescue ArgumentError => e
-          assert_equal "main.rb:#{$line_lambda}:in `block in <main>'", e.backtrace.first
+          assert_equal "main.rb:#{$line_lambda}:in 'block in <main>'", e.backtrace.first
         end
         begin
           foo(1)
         rescue ArgumentError => e
-          assert_equal "main.rb:#{$line_method}:in `foo'", e.backtrace.first
+          assert_equal "main.rb:#{$line_method}:in 'foo'", e.backtrace.first
         end
       EOS
     END_OF_BODY
@@ -1613,5 +1614,13 @@ class TestMethod < Test::Unit::TestCase
 
   def test_invalidating_CC_ASAN
     assert_ruby_status(['-e', 'using Module.new'])
+  end
+
+  def test_kwarg_eval_memory_leak
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+      100_000.times do
+        eval("Hash.new(foo: 123)")
+      end
+    RUBY
   end
 end

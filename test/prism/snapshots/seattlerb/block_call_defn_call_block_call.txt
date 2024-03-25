@@ -44,7 +44,6 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
         │   │           ├── locals: [:c]
-        │   │           ├── locals_body_index: 1
         │   │           ├── def_keyword_loc: (1,2)-(1,5) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: (1,7)-(1,8) = "("
@@ -75,7 +74,6 @@
             └── block:
                 @ BlockNode (location: (4,5)-(4,11))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body: ∅
                 ├── opening_loc: (4,5)-(4,7) = "do"

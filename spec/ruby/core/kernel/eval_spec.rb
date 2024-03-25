@@ -261,6 +261,19 @@ describe "Kernel#eval" do
     end
   end
 
+  it "makes flip-flop operator work correctly" do
+    ScratchPad.record []
+
+    eval "10.times { |i| ScratchPad << i if (i == 4)...(i == 4) }"
+    ScratchPad.recorded.should == [4, 5, 6, 7, 8, 9]
+
+    ScratchPad.clear
+  end
+
+  it "returns nil if given an empty string" do
+    eval("").should == nil
+  end
+
   # See language/magic_comment_spec.rb for more magic comments specs
   describe "with a magic encoding comment" do
     it "uses the magic comment encoding for the encoding of literal strings" do
@@ -397,7 +410,7 @@ class EvalSpecs
   Vπstring_not_frozen = "not frozen"
 end
 CODE
-      -> { eval(code) }.should complain(/warning: `frozen_string_literal' is ignored after any tokens/, verbose: true)
+      -> { eval(code) }.should complain(/warning: [`']frozen_string_literal' is ignored after any tokens/, verbose: true)
       EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
 

@@ -10,9 +10,6 @@ on:
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
-    paths:
-      - 'spec/**'
-      - '!spec/*.md'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -30,7 +27,9 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Documentation')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Documentation')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
@@ -48,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - uses: ruby/setup-ruby@5daca165445f0ae10478593083f72ca2625e241d # v1.169.0
+      - uses: ruby/setup-ruby@d4526a55538b775af234ba4af27118ed6f8f6677 # v1.172.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
@@ -57,6 +56,8 @@ jobs:
 
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
+        env:
+          CHECK_LEAKS: true
 
       - uses: ./.github/actions/slack
         with:

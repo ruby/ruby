@@ -88,7 +88,7 @@ class TestRipper::Ripper < Test::Unit::TestCase
     ripper.yydebug = true
     ripper.debug_output = out
     ripper.parse
-    assert_include out.string[/.*"literal content".*/], 'woot'
+    assert_include out.string[/.*"literal content".*/], '1.1-1.5'
   end
 
   def test_regexp_with_option

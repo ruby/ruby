@@ -1,20 +1,21 @@
 require 'spec_helper'
 
 RSpec.describe "Running mspec" do
+  q = BACKTRACE_QUOTE
   a_spec_output = <<EOS
 
 1)
 Foo#bar errors FAILED
 Expected 1 == 2
 to be truthy but was false
-CWD/spec/fixtures/a_spec.rb:8:in `block (2 levels) in <top (required)>'
-CWD/spec/fixtures/a_spec.rb:2:in `<top (required)>'
+CWD/spec/fixtures/a_spec.rb:8:in #{q}block (2 levels) in <top (required)>'
+CWD/spec/fixtures/a_spec.rb:2:in #{q}<top (required)>'
 
 2)
 Foo#bar fails ERROR
 RuntimeError: failure
-CWD/spec/fixtures/a_spec.rb:12:in `block (2 levels) in <top (required)>'
-CWD/spec/fixtures/a_spec.rb:2:in `<top (required)>'
+CWD/spec/fixtures/a_spec.rb:12:in #{q}block (2 levels) in <top (required)>'
+CWD/spec/fixtures/a_spec.rb:2:in #{q}<top (required)>'
 
 Finished in D.DDDDDD seconds
 EOS

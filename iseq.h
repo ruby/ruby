@@ -160,7 +160,7 @@ ISEQ_COMPILE_DATA_CLEAR(rb_iseq_t *iseq)
 static inline rb_iseq_t *
 iseq_imemo_alloc(void)
 {
-    return (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
+    return IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
 }
 
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
@@ -172,7 +172,6 @@ void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod);
 int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
-rb_iseq_t * rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_name, VALUE path, VALUE optimize);
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);

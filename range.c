@@ -78,7 +78,7 @@ range_modify(VALUE range)
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
-        rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
+        rb_name_err_raise("'initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
 
@@ -1266,11 +1266,11 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     int x;
     long n;
 
-    assert(argc > 0);
+    RUBY_ASSERT(argc > 0);
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    assert(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
 
     x = EXCL(range);
 
@@ -2373,8 +2373,16 @@ range_overlap(VALUE range, VALUE other)
     if (empty_region_p(self_beg, other_end, other_excl)) return Qfalse;
     if (empty_region_p(other_beg, self_end, self_excl)) return Qfalse;
 
-    /* if both begin values are equal, no more comparisons needed */
-    if (rb_equal(self_beg, other_beg)) return Qtrue;
+    if (!NIL_P(self_beg) && !NIL_P(other_beg)) {
+        VALUE cmp = rb_funcall(self_beg, id_cmp, 1, other_beg);
+        if (NIL_P(cmp)) return Qfalse;
+        /* if both begin values are equal, no more comparisons needed */
+        if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
+    }
+    else if (NIL_P(self_beg) && NIL_P(other_beg)) {
+        VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
+        return RBOOL(!NIL_P(cmp));
+    }
 
     if (empty_region_p(self_beg, self_end, self_excl)) return Qfalse;
     if (empty_region_p(other_beg, other_end, other_excl)) return Qfalse;

@@ -5,31 +5,31 @@
 # - repository-url: URL from where clone for test
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
-minitest        5.21.2  https://github.com/minitest/minitest
+minitest        5.22.2  https://github.com/minitest/minitest 00affdbf08f42b9b12df043e9fe28e56ad33b622
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.1.0  https://github.com/ruby/rake
-test-unit       3.6.1   https://github.com/test-unit/test-unit
+test-unit       3.6.2   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
 net-ftp         0.3.4   https://github.com/ruby/net-ftp
-net-imap        0.4.9.1 https://github.com/ruby/net-imap
+net-imap        0.4.10  https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.4.0.1 https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
-rbs             3.4.3   https://github.com/ruby/rbs
-typeprof        0.21.9  https://github.com/ruby/typeprof
-debug           1.9.1   https://github.com/ruby/debug 91fe870eeceb9ffbbc7f1bb4673f9e2f6a2c1f60
+rbs             3.4.4   https://github.com/ruby/rbs 0637ef60e13d5ded71d69d5238dbffcaae3d3740
+typeprof        0.21.11 https://github.com/ruby/typeprof
+debug           1.9.1   https://github.com/ruby/debug 2d602636d99114d55a32fedd652c9c704446a749
 racc            1.7.3   https://github.com/ruby/racc
 mutex_m         0.2.0   https://github.com/ruby/mutex_m
 getoptlong      0.2.1   https://github.com/ruby/getoptlong
 base64          0.2.0   https://github.com/ruby/base64
-bigdecimal      3.1.6   https://github.com/ruby/bigdecimal
+bigdecimal      3.1.6   https://github.com/ruby/bigdecimal 741fb93b566959663269ecd988e278a974528a1d
 observer        0.1.2   https://github.com/ruby/observer
 abbrev          0.1.2   https://github.com/ruby/abbrev
 resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
 rinda           0.2.0   https://github.com/ruby/rinda
-drb             2.2.0   https://github.com/ruby/drb
+drb             2.2.1   https://github.com/ruby/drb
 nkf             0.2.0   https://github.com/ruby/nkf
 syslog          0.1.2   https://github.com/ruby/syslog
 csv             3.2.8   https://github.com/ruby/csv

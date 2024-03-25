@@ -72,6 +72,19 @@ describe 'TCPSocket#initialize' do
         @client.remote_address.ip_port.should    == @server.local_address.ip_port
       end
 
+      platform_is_not :windows do
+        it "creates a socket which is set to nonblocking" do
+          require 'io/nonblock'
+          @client = TCPSocket.new(ip_address, @port)
+          @client.should.nonblock?
+        end
+      end
+
+      it "creates a socket which is set to close on exec" do
+        @client = TCPSocket.new(ip_address, @port)
+        @client.should.close_on_exec?
+      end
+
       describe 'using a local address and service' do
         it 'binds the client socket to the local address and service' do
           @client = TCPSocket.new(ip_address, @port, ip_address, 0)

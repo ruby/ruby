@@ -21,4 +21,5 @@
         │   ├── opening_loc: (1,0)-(1,1) = "["
         │   └── closing_loc: (3,3)-(3,4) = "]"
         └── @ IntegerNode (location: (4,0)-(4,1))
-            └── flags: decimal
+            ├── flags: decimal
+            └── value: 1

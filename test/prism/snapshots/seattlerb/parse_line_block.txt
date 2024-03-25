@@ -9,7 +9,8 @@
         │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (1,4)-(1,6))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 42
         │   └── operator_loc: (1,2)-(1,3) = "="
         └── @ CallNode (location: (2,0)-(2,3))
             ├── flags: ignore_visibility

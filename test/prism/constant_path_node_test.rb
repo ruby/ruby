@@ -63,5 +63,29 @@ module Prism
       node = Prism.parse(source).value.statements.body.first
       assert_equal("::Foo::Bar::Baz::Qux", node.lefts.first.full_name)
     end
+
+    def test_full_name_for_constant_path_target_with_non_constant_parent
+      source = <<~RUBY
+        self::Foo, Bar = [1, 2]
+      RUBY
+
+      constant_target = Prism.parse(source).value.statements.body.first
+      dynamic, static = constant_target.lefts
+
+      assert_raise(ConstantPathNode::DynamicPartsInConstantPathError) do
+        dynamic.full_name
+      end
+
+      assert_equal("Bar", static.full_name)
+    end
+
+    def test_full_name_for_constant_read_node
+      source = <<~RUBY
+        Bar
+      RUBY
+
+      constant = Prism.parse(source).value.statements.body.first
+      assert_equal("Bar", constant.full_name)
+    end
   end
 end

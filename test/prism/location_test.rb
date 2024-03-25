@@ -43,6 +43,7 @@ module Prism
     end
 
     def test_AssocNode
+      assert_location(AssocNode, "{ '': 1 }", 2...7) { |node| node.elements.first }
       assert_location(AssocNode, "{ foo: :bar }", 2...11) { |node| node.elements.first }
       assert_location(AssocNode, "{ :foo => :bar }", 2...14) { |node| node.elements.first }
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }
@@ -63,8 +64,8 @@ module Prism
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz end")
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz\nensure qux end")
 
-      assert_location(BeginNode, "class Foo\nrescue then end", 10..25, &:body)
-      assert_location(BeginNode, "module Foo\nrescue then end", 11..26, &:body)
+      assert_location(BeginNode, "class Foo\nrescue then end", 0..25, &:body)
+      assert_location(BeginNode, "module Foo\nrescue then end", 0..26, &:body)
     end
 
     def test_BlockArgumentNode
@@ -176,6 +177,10 @@ module Prism
       assert_location(CallNode, "foo bar('baz')")
 
       assert_location(CallNode, "-> { it }", 5...7, version: "3.3.0") do |node|
+        node.body.body.first
+      end
+
+      assert_location(LocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
         node.body.body.first
       end
     end
@@ -536,6 +541,10 @@ module Prism
 
     def test_InterpolatedXStringNode
       assert_location(InterpolatedXStringNode, '`foo #{bar} baz`')
+    end
+
+    def test_ItParametersNode
+      assert_location(ItParametersNode, "-> { it }", &:parameters)
     end
 
     def test_KeywordHashNode

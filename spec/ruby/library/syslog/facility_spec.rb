@@ -1,50 +1,47 @@
 require_relative '../../spec_helper'
 
-ruby_version_is ""..."3.4" do
+platform_is_not :windows do
+  require 'syslog'
 
-  platform_is_not :windows do
-    require 'syslog'
+  describe "Syslog.facility" do
+    platform_is_not :windows do
 
-    describe "Syslog.facility" do
-      platform_is_not :windows do
+      before :each do
+        Syslog.opened?.should be_false
+      end
 
-        before :each do
-          Syslog.opened?.should be_false
-        end
+      after :each do
+        Syslog.opened?.should be_false
+      end
 
-        after :each do
-          Syslog.opened?.should be_false
-        end
+      it "returns the logging facility" do
+        Syslog.open("rubyspec", 3, Syslog::LOG_MAIL)
+        Syslog.facility.should == Syslog::LOG_MAIL
+        Syslog.close
+      end
 
-        it "returns the logging facility" do
-          Syslog.open("rubyspec", 3, Syslog::LOG_MAIL)
-          Syslog.facility.should == Syslog::LOG_MAIL
-          Syslog.close
-        end
+      it "returns nil if the log is closed" do
+        Syslog.opened?.should be_false
+        Syslog.facility.should == nil
+      end
 
-        it "returns nil if the log is closed" do
-          Syslog.opened?.should be_false
-          Syslog.facility.should == nil
-        end
+      it "defaults to LOG_USER" do
+        Syslog.open
+        Syslog.facility.should == Syslog::LOG_USER
+        Syslog.close
+      end
 
-        it "defaults to LOG_USER" do
-          Syslog.open
-          Syslog.facility.should == Syslog::LOG_USER
-          Syslog.close
-        end
+      it "resets after each open call" do
+        Syslog.open
+        Syslog.facility.should == Syslog::LOG_USER
 
-        it "resets after each open call" do
-          Syslog.open
-          Syslog.facility.should == Syslog::LOG_USER
+        Syslog.open!("rubyspec", 3, Syslog::LOG_MAIL)
+        Syslog.facility.should == Syslog::LOG_MAIL
+        Syslog.close
 
-          Syslog.open!("rubyspec", 3, Syslog::LOG_MAIL)
-          Syslog.facility.should == Syslog::LOG_MAIL
-          Syslog.close
-
-          Syslog.open
-          Syslog.facility.should == Syslog::LOG_USER
-          Syslog.close
-        end
+        Syslog.open
+        Syslog.facility.should == Syslog::LOG_USER
+        Syslog.close
       end
     end
   end

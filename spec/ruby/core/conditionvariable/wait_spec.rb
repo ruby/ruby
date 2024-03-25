@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require 'thread'
 
 describe "ConditionVariable#wait" do
   it "calls #sleep on the given object" do

@@ -20,6 +20,29 @@ module IRB
       raise NotImplementedError
     end
 
+    class EmptyInput < Statement
+      def is_assignment?
+        false
+      end
+
+      def suppresses_echo?
+        true
+      end
+
+      # Debugger takes empty input to repeat the last command
+      def should_be_handled_by_debugger?
+        true
+      end
+
+      def code
+        ""
+      end
+
+      def evaluable_code
+        code
+      end
+    end
+
     class Expression < Statement
       def initialize(code, is_assignment)
         @code = code
@@ -60,9 +83,8 @@ module IRB
       end
 
       def should_be_handled_by_debugger?
-        require_relative 'cmd/help'
-        require_relative 'cmd/debug'
-        IRB::ExtendCommand::DebugCommand > @command_class || IRB::ExtendCommand::Help == @command_class
+        require_relative 'command/debug'
+        IRB::Command::DebugCommand > @command_class
       end
 
       def evaluable_code

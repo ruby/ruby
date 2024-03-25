@@ -44,7 +44,7 @@ class Array
   def each
     Primitive.attr! :inline_block
     unless defined?(yield)
-      return to_enum(:each) { self.length }
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
     _i = 0
     value = nil
@@ -94,7 +94,7 @@ class Array
   #    a.sample # => 8
   # If +self+ is empty, returns +nil+.
   #
-  # When argument +n+ is given, returns a new \Array containing +n+ random
+  # When argument +n+ is given, returns a new +Array+ containing +n+ random
   # elements from +self+:
   #    a.sample(3) # => [8, 9, 2]
   #    a.sample(6) # => [9, 6, 10, 3, 1, 4]
@@ -106,7 +106,7 @@ class Array
   #    a.sample(a.size * 2) # => [1, 1, 3, 2, 1, 2]
   # The argument +n+ must be a non-negative numeric value.
   # The order of the result array is unrelated to the order of +self+.
-  # Returns a new empty \Array if +self+ is empty.
+  # Returns a new empty +Array+ if +self+ is empty.
   #
   # The optional +random+ argument will be used as the random number generator:
   #    a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -137,7 +137,7 @@ class Array
   # If +self+ is empty, returns +nil+.
   #
   # When non-negative Integer argument +n+ is given,
-  # returns the first +n+ elements in a new \Array:
+  # returns the first +n+ elements in a new +Array+:
   #
   #   a = [:foo, 'bar', 2]
   #   a.first(2) # => [:foo, "bar"]
@@ -147,7 +147,7 @@ class Array
   #   a = [:foo, 'bar', 2]
   #   a.first(50) # => [:foo, "bar", 2]
   #
-  # If <tt>n == 0</tt> returns an new empty \Array:
+  # If <tt>n == 0</tt> returns an new empty +Array+:
   #
   #   a = [:foo, 'bar', 2]
   #   a.first(0) # []
@@ -181,7 +181,7 @@ class Array
   # If +self+ is empty, returns +nil+.
   #
   # When non-negative Integer argument +n+ is given,
-  # returns the last +n+ elements in a new \Array:
+  # returns the last +n+ elements in a new +Array+:
   #
   #   a = [:foo, 'bar', 2]
   #   a.last(2) # => ["bar", 2]
@@ -191,7 +191,7 @@ class Array
   #   a = [:foo, 'bar', 2]
   #   a.last(50) # => [:foo, "bar", 2]
   #
-  # If <tt>n == 0</tt>, returns an new empty \Array:
+  # If <tt>n == 0</tt>, returns an new empty +Array+:
   #
   #   a = [:foo, 'bar', 2]
   #   a.last(0) # []

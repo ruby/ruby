@@ -36,7 +36,8 @@
         │   │       │   ├── name_loc: (3,2)-(3,3) = "b"
         │   │       │   ├── value:
         │   │       │   │   @ IntegerNode (location: (3,6)-(3,7))
-        │   │       │   │   └── flags: decimal
+        │   │       │   │   ├── flags: decimal
+        │   │       │   │   └── value: 1
         │   │       │   └── operator_loc: (3,4)-(3,5) = "="
         │   │       ├── @ CallNode (location: (4,2)-(4,5))
         │   │       │   ├── flags: ignore_visibility
@@ -60,7 +61,8 @@
         │   │           ├── name_loc: (5,2)-(5,3) = "c"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (5,5)-(5,6))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           └── operator_loc: (5,4)-(5,5) = "="
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"

@@ -76,11 +76,11 @@ Init_var_tables(void)
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
-    rb_gc_register_mark_object(autoload_mutex);
+    rb_vm_register_global_object(autoload_mutex);
 
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
-    rb_gc_register_mark_object(autoload_features);
+    rb_vm_register_global_object(autoload_features);
 }
 
 static inline bool
@@ -113,6 +113,12 @@ classname(VALUE klass, bool *permanent)
     *permanent = RCLASS_EXT(klass)->permanent_classpath;
 
     return classpath;
+}
+
+VALUE
+rb_mod_name0(VALUE klass, bool *permanent)
+{
+    return classname(klass, permanent);
 }
 
 /*
@@ -536,7 +542,7 @@ rb_global_entry(ID id)
 VALUE
 rb_gvar_undef_getter(ID id, VALUE *_)
 {
-    rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
+    rb_warning("global variable '%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
     return Qnil;
 }
@@ -910,7 +916,7 @@ rb_gv_get(const char *name)
     ID id = find_global_id(name);
 
     if (!id) {
-        rb_warning("global variable `%s' not initialized", name);
+        rb_warning("global variable '%s' not initialized", name);
         return Qnil;
     }
 
@@ -1225,7 +1231,7 @@ rb_free_generic_ivar(VALUE obj)
     }
 }
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_generic_ivar_memsize(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
@@ -1501,7 +1507,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
             if (old_ivtbl) {
                 /* We need to modify old_ivtbl to have the too complex shape
                  * and hold the table because the xmalloc could trigger a GC
-                 * compaction. We want the table to be updated rather than than
+                 * compaction. We want the table to be updated rather than
                  * the original ivptr. */
 #if SHAPE_IN_BASIC_FLAGS
                 rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
@@ -1885,7 +1891,7 @@ void rb_obj_freeze_inline(VALUE x)
         }
         rb_shape_set_shape(x, next_shape);
 
-        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+        if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
         }
     }
@@ -2263,7 +2269,7 @@ rb_obj_instance_variables(VALUE obj)
 #define rb_is_constant_id rb_is_const_id
 #define rb_is_constant_name rb_is_const_name
 #define id_for_var(obj, name, part, type) \
-    id_for_var_message(obj, name, type, "`%1$s' is not allowed as "#part" "#type" variable name")
+    id_for_var_message(obj, name, type, "'%1$s' is not allowed as "#part" "#type" variable name")
 #define id_for_var_message(obj, name, type, message) \
     check_id_type(obj, &(name), rb_is_##type##_id, rb_is_##type##_name, message, strlen(message))
 static ID
@@ -2317,7 +2323,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     if (id) {
         VALUE val = rb_ivar_delete(obj, id, Qundef);
 
-        if (val != Qundef) return val;
+        if (!UNDEF_P(val)) return val;
     }
 
     rb_name_err_raise("instance variable %1$s not defined",
@@ -2605,7 +2611,7 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-RUBY_FUNC_EXPORTED void
+void
 rb_autoload(VALUE module, ID name, const char *feature)
 {
     if (!feature || !*feature) {
@@ -3758,9 +3764,11 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     ID id = rb_intern(name);
 
     if (!rb_is_const_id(id)) {
-        rb_warn("rb_define_const: invalid name `%s' for constant", name);
+        rb_warn("rb_define_const: invalid name '%s' for constant", name);
     }
-    rb_gc_register_mark_object(val);
+    if (!RB_SPECIAL_CONST_P(val)) {
+        rb_vm_register_global_object(val);
+    }
     rb_const_set(klass, id, val);
 }
 
@@ -3914,7 +3922,7 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 static VALUE
 cvar_front_klass(VALUE klass)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
         if (rb_namespace_p(obj)) {
             return obj;
@@ -4123,7 +4131,7 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
-    if (FL_TEST(mod, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(mod)) {
         if (rb_namespace_p(RCLASS_ATTACHED_OBJECT(mod))) {
             data = mod_cvar_at(tmp, data);
             tmp = cvar_front_klass(tmp);

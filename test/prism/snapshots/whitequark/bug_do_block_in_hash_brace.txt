@@ -44,7 +44,6 @@
         │   │           │   │   │   └── block:
         │   │           │   │   │       @ BlockNode (location: (1,19)-(1,25))
         │   │           │   │   │       ├── locals: []
-        │   │           │   │   │       ├── locals_body_index: 0
         │   │           │   │   │       ├── parameters: ∅
         │   │           │   │   │       ├── body: ∅
         │   │           │   │   │       ├── opening_loc: (1,19)-(1,21) = "do"
@@ -71,7 +70,6 @@
         │   │           │       │   └── block:
         │   │           │       │       @ BlockNode (location: (1,35)-(1,41))
         │   │           │       │       ├── locals: []
-        │   │           │       │       ├── locals_body_index: 0
         │   │           │       │       ├── parameters: ∅
         │   │           │       │       ├── body: ∅
         │   │           │       │       ├── opening_loc: (1,35)-(1,37) = "do"
@@ -114,7 +112,6 @@
         │   │           │   │   │   └── block:
         │   │           │   │   │       @ BlockNode (location: (3,17)-(3,23))
         │   │           │   │   │       ├── locals: []
-        │   │           │   │   │       ├── locals_body_index: 0
         │   │           │   │   │       ├── parameters: ∅
         │   │           │   │   │       ├── body: ∅
         │   │           │   │   │       ├── opening_loc: (3,17)-(3,19) = "do"
@@ -141,7 +138,6 @@
         │   │           │       │   └── block:
         │   │           │       │       @ BlockNode (location: (3,33)-(3,39))
         │   │           │       │       ├── locals: []
-        │   │           │       │       ├── locals_body_index: 0
         │   │           │       │       ├── parameters: ∅
         │   │           │       │       ├── body: ∅
         │   │           │       │       ├── opening_loc: (3,33)-(3,35) = "do"
@@ -191,7 +187,6 @@
         │   │           │   │   │   └── block:
         │   │           │   │   │       @ BlockNode (location: (5,20)-(5,26))
         │   │           │   │   │       ├── locals: []
-        │   │           │   │   │       ├── locals_body_index: 0
         │   │           │   │   │       ├── parameters: ∅
         │   │           │   │   │       ├── body: ∅
         │   │           │   │   │       ├── opening_loc: (5,20)-(5,22) = "do"
@@ -218,7 +213,6 @@
         │   │           │       │   └── block:
         │   │           │       │       @ BlockNode (location: (5,36)-(5,42))
         │   │           │       │       ├── locals: []
-        │   │           │       │       ├── locals_body_index: 0
         │   │           │       │       ├── parameters: ∅
         │   │           │       │       ├── body: ∅
         │   │           │       │       ├── opening_loc: (5,36)-(5,38) = "do"
@@ -268,7 +262,6 @@
         │   │           │   │   │   └── block:
         │   │           │   │   │       @ BlockNode (location: (7,17)-(7,23))
         │   │           │   │   │       ├── locals: []
-        │   │           │   │   │       ├── locals_body_index: 0
         │   │           │   │   │       ├── parameters: ∅
         │   │           │   │   │       ├── body: ∅
         │   │           │   │   │       ├── opening_loc: (7,17)-(7,19) = "do"
@@ -295,7 +288,6 @@
         │   │           │       │   └── block:
         │   │           │       │       @ BlockNode (location: (7,33)-(7,39))
         │   │           │       │       ├── locals: []
-        │   │           │       │       ├── locals_body_index: 0
         │   │           │       │       ├── parameters: ∅
         │   │           │       │       ├── body: ∅
         │   │           │       │       ├── opening_loc: (7,33)-(7,35) = "do"
@@ -338,7 +330,6 @@
             │           │   │   │   └── block:
             │           │   │   │       @ BlockNode (location: (9,14)-(9,20))
             │           │   │   │       ├── locals: []
-            │           │   │   │       ├── locals_body_index: 0
             │           │   │   │       ├── parameters: ∅
             │           │   │   │       ├── body: ∅
             │           │   │   │       ├── opening_loc: (9,14)-(9,16) = "do"
@@ -356,7 +347,6 @@
             │           │   │   │   └── block:
             │           │   │   │       @ BlockNode (location: (9,29)-(9,35))
             │           │   │   │       ├── locals: []
-            │           │   │   │       ├── locals_body_index: 0
             │           │   │   │       ├── parameters: ∅
             │           │   │   │       ├── body: ∅
             │           │   │   │       ├── opening_loc: (9,29)-(9,31) = "do"
@@ -383,7 +373,6 @@
             │           │       │   └── block:
             │           │       │       @ BlockNode (location: (9,45)-(9,51))
             │           │       │       ├── locals: []
-            │           │       │       ├── locals_body_index: 0
             │           │       │       ├── parameters: ∅
             │           │       │       ├── body: ∅
             │           │       │       ├── opening_loc: (9,45)-(9,47) = "do"

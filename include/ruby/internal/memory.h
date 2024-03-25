@@ -38,7 +38,7 @@
 # include <alloca.h>
 #endif
 
-#if defined(_MSC_VER) && defined(_WIN64)
+#if defined(_MSC_VER) && defined(_M_AMD64)
 # include <intrin.h>
 # pragma intrinsic(_umul128)
 #endif

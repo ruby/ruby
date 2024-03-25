@@ -30,7 +30,8 @@
             │   │   │       │           ├── flags: ∅
             │   │   │       │           ├── receiver:
             │   │   │       │           │   @ IntegerNode (location: (1,8)-(1,9))
-            │   │   │       │           │   └── flags: decimal
+            │   │   │       │           │   ├── flags: decimal
+            │   │   │       │           │   └── value: 1
             │   │   │       │           ├── call_operator_loc: ∅
             │   │   │       │           ├── name: :+
             │   │   │       │           ├── message_loc: (1,9)-(1,10) = "+"
@@ -40,7 +41,8 @@
             │   │   │       │           │   ├── flags: ∅
             │   │   │       │           │   └── arguments: (length: 1)
             │   │   │       │           │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │   │   │       │           │           └── flags: decimal
+            │   │   │       │           │           ├── flags: decimal
+            │   │   │       │           │           └── value: 1
             │   │   │       │           ├── closing_loc: ∅
             │   │   │       │           └── block: ∅
             │   │   │       └── closing_loc: (1,11)-(1,12) = "}"

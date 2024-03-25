@@ -70,7 +70,7 @@
         │   ├── opening_loc: (26,0)-(26,3) = "%i["
         │   └── closing_loc: (29,0)-(29,1) = "]"
         ├── @ RegularExpressionNode (location: (31,0)-(34,1))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (31,0)-(31,3) = "%r["
         │   ├── content_loc: (31,3)-(34,0) = "\n\n\n"
         │   ├── closing_loc: (34,0)-(34,1) = "]"
@@ -168,7 +168,6 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
-        │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
         │   │           ├── operator_loc: (52,10)-(52,11) = "."
         │   │           ├── lparen_loc: (52,12)-(52,13) = "("
@@ -204,7 +203,8 @@
         │   │           │           ├── name_loc: (61,4)-(61,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (61,8)-(61,10))
-        │   │           │           │   └── flags: decimal
+        │   │           │           │   ├── flags: decimal
+        │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (61,6)-(61,7) = "="
         │   │           ├── end_keyword_loc: (62,2)-(62,5) = "end"
         │   │           └── name: :Y
@@ -263,7 +263,6 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
-        │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: (67,7)-(67,8) = "("
@@ -328,7 +327,8 @@
         │   │           │           ├── name_loc: (84,4)-(84,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (84,8)-(84,10))
-        │   │           │           │   └── flags: decimal
+        │   │           │           │   ├── flags: decimal
+        │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (84,6)-(84,7) = "="
         │   │           ├── end_keyword_loc: (85,2)-(85,5) = "end"
         │   │           └── name: :Y

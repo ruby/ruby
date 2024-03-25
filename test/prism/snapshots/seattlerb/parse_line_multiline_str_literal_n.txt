@@ -10,4 +10,5 @@
         │   ├── closing_loc: (1,5)-(1,6) = "\""
         │   └── unescaped: "a\nb"
         └── @ IntegerNode (location: (2,0)-(2,1))
-            └── flags: decimal
+            ├── flags: decimal
+            └── value: 1

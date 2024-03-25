@@ -61,7 +61,7 @@ def prelude(f, out)
       return
     when /\A%token/, /\A%type/, /\A} <node(?>_\w+)?>/
       # types in %union which have corresponding set_yylval_* macro.
-      out << line.sub(/<(?:node(?>_\w+)?|num|id)>/, '<val>')
+      out << line
     when /^enum lex_state_(?:bits|e) \{/
       lex_state_def = true
       out << line

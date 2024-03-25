@@ -37,8 +37,7 @@
         │   │               @ BlockArgumentNode (location: (2,6)-(2,7))
         │   │               ├── expression: ∅
         │   │               └── operator_loc: (2,6)-(2,7) = "&"
-        │   ├── locals: [:&]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -82,8 +81,7 @@
             │               @ BlockArgumentNode (location: (6,6)-(6,7))
             │               ├── expression: ∅
             │               └── operator_loc: (6,6)-(6,7) = "&"
-            ├── locals: [:a, :&]
-            ├── locals_body_index: 2
+            ├── locals: [:a]
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (5,7)-(5,8) = "("

@@ -413,6 +413,11 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 static COROUTINE
 co_start(struct coroutine_context *from, struct coroutine_context *self)
 {
+#ifdef RUBY_ASAN_ENABLED
+    __sanitizer_finish_switch_fiber(self->fake_stack,
+                                    (const void**)&from->stack_base, &from->stack_size);
+#endif
+
     rb_thread_t *th = (rb_thread_t *)self->argument;
     struct rb_thread_sched *sched = TH_SCHED(th);
     VM_ASSERT(th->nt != NULL);
@@ -434,27 +439,35 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
 
     // Thread is terminated
 
-    VM_ASSERT(!th_has_dedicated_nt(th));
-
-    rb_vm_t *vm = th->vm;
-    bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
-
-    rb_thread_t *next_th = sched->running;
     struct rb_native_thread *nt = th->nt;
+    bool is_dnt = th_has_dedicated_nt(th);
     native_thread_assign(NULL, th);
     rb_ractor_set_current_ec(th->ractor, NULL);
 
-    if (!has_ready_ractor && next_th && !next_th->nt) {
-        // switch to the next thread
-        thread_sched_set_lock_owner(sched, NULL);
-        thread_sched_switch0(th->sched.context, next_th, nt);
+    if (is_dnt) {
+        // SNT became DNT while running. Just return to the nt_context
+
         th->sched.finished = true;
+        coroutine_transfer0(self, nt->nt_context, true);
     }
     else {
-        // switch to the next Ractor
-        th->sched.finished = true;
-        coroutine_transfer(self, nt->nt_context);
+        rb_vm_t *vm = th->vm;
+        bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
+        rb_thread_t *next_th = sched->running;
+
+        if (!has_ready_ractor && next_th && !next_th->nt) {
+            // switch to the next thread
+            thread_sched_set_lock_owner(sched, NULL);
+            thread_sched_switch0(th->sched.context, next_th, nt, true);
+            th->sched.finished = true;
+        }
+        else {
+            // switch to the next Ractor
+            th->sched.finished = true;
+            coroutine_transfer0(self, nt->nt_context, true);
+        }
     }
+
     rb_bug("unreachable");
 }
 
@@ -741,7 +754,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                   case EPERM:
                     // the fd doesn't support epoll
                   case EEXIST:
-                    // the fd is already registerred by another thread
+                    // the fd is already registered by another thread
                     rb_native_mutex_unlock(&timer_th.waiting_lock);
                     return false;
                   default:
@@ -769,7 +782,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 ccan_list_add_tail(&timer_th.waiting, &th->sched.waiting_reason.node);
             }
             else {
-                RUBY_DEBUG_LOG("abs:%lu", abs);
+                RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
                 VM_ASSERT(flags & thread_sched_waiting_timeout);
 
                 // insert th to sorted list (TODO: O(n))

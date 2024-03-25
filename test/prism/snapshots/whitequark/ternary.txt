@@ -21,7 +21,8 @@
             │   @ StatementsNode (location: (1,6)-(1,7))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (1,6)-(1,7))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── consequent:
             │   @ ElseNode (location: (1,8)-(1,11))
             │   ├── else_keyword_loc: (1,8)-(1,9) = ":"
@@ -29,6 +30,7 @@
             │   │   @ StatementsNode (location: (1,10)-(1,11))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 2
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

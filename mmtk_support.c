@@ -1542,6 +1542,7 @@ void rb_mmtk_update_finalizer_table(void); // Defined in gc.c
 void rb_mmtk_update_obj_id_tables(void); // Defined in gc.c
 void rb_mmtk_update_global_symbols_table(void); // Defined in gc.c
 void rb_mmtk_update_overloaded_cme_table(void); // Defined in gc.c
+void rb_mmtk_update_ci_table(void); // Defined in gc.c
 
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -1563,6 +1564,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_obj_id_tables,
     rb_mmtk_update_global_symbols_table,
     rb_mmtk_update_overloaded_cme_table,
+    rb_mmtk_update_ci_table,
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
     rb_mmtk_vm_live_bytes,

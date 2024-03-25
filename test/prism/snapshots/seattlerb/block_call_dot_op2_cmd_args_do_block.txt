@@ -41,7 +41,6 @@
             │   └── block:
             │       @ BlockNode (location: (1,8)-(1,16))
             │       ├── locals: []
-            │       ├── locals_body_index: 0
             │       ├── parameters: ∅
             │       ├── body:
             │       │   @ StatementsNode (location: (1,11)-(1,12))
@@ -80,7 +79,6 @@
             └── block:
                 @ BlockNode (location: (1,21)-(1,33))
                 ├── locals: [:g]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,24)-(1,27))
                 │   ├── parameters:

@@ -46,7 +46,7 @@ typedef struct {
 
     /**
      * The line within the file that the parse starts on. This value is
-     * 0-indexed.
+     * 1-indexed.
      */
     int32_t line;
 
@@ -76,16 +76,49 @@ typedef struct {
      */
     pm_options_version_t version;
 
+    /** A bitset of the various options that were set on the command line. */
+    uint8_t command_line;
+
     /** Whether or not the frozen string literal option has been set. */
     bool frozen_string_literal;
-
-    /**
-     * Whether or not we should suppress warnings. This is purposefully negated
-     * so that the default is to not suppress warnings, which allows us to still
-     * create an options struct with zeroed memory.
-     */
-    bool suppress_warnings;
 } pm_options_t;
+
+/**
+ * A bit representing whether or not the command line -a option was set. -a
+ * splits the input line $_ into $F.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_A = 0x1;
+
+/**
+ * A bit representing whether or not the command line -e option was set. -e
+ * allow the user to specify a script to be executed. This is necessary for
+ * prism to know because certain warnings are not generated when -e is used.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_E = 0x2;
+
+/**
+ * A bit representing whether or not the command line -l option was set. -l
+ * chomps the input line by default.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_L = 0x4;
+
+/**
+ * A bit representing whether or not the command line -n option was set. -n
+ * wraps the script in a while gets loop.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_N = 0x8;
+
+/**
+ * A bit representing whether or not the command line -p option was set. -p
+ * prints the value of $_ at the end of each loop.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_P = 0x10;
+
+/**
+ * A bit representing whether or not the command line -x option was set. -x
+ * searches the input file for a shebang that matches the current Ruby engine.
+ */
+static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
 
 /**
  * Set the filepath option on the given options struct.
@@ -120,12 +153,12 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
 PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
 
 /**
- * Set the suppress warnings option on the given options struct.
+ * Sets the command line option on the given options struct.
  *
- * @param options The options struct to set the suppress warnings value on.
- * @param suppress_warnings The suppress warnings value to set.
+ * @param options The options struct to set the command line option on.
+ * @param command_line The command_line value to set.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, uint8_t command_line);
 
 /**
  * Set the version option on the given options struct by parsing the given
@@ -144,8 +177,9 @@ PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const
  *
  * @param options The options struct to initialize the scopes array on.
  * @param scopes_count The number of scopes to allocate.
+ * @return Whether or not the scopes array was initialized successfully.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
+PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
 
 /**
  * Return a pointer to the scope at the given index within the given options.
@@ -162,8 +196,9 @@ PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm
  *
  * @param scope The scope struct to initialize.
  * @param locals_count The number of locals to allocate.
+ * @return Whether or not the scope was initialized successfully.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
+PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
 
 /**
  * Return a pointer to the local at the given index within the given scope.
@@ -199,7 +234,10 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `4`     | the length the encoding    |
  * | ...     | the encoding bytes         |
  * | `1`     | frozen string literal      |
- * | `1`     | suppress warnings          |
+ * | `1`     | -p command line option     |
+ * | `1`     | -n command line option     |
+ * | `1`     | -l command line option     |
+ * | `1`     | -a command line option     |
  * | `1`     | the version                |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb.rb - irb main module
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -9,7 +9,7 @@ require "reline"
 
 require_relative "irb/init"
 require_relative "irb/context"
-require_relative "irb/extend-command"
+require_relative "irb/command"
 
 require_relative "irb/ruby-lex"
 require_relative "irb/statement"
@@ -811,7 +811,7 @@ require_relative "irb/pager"
 #
 # === Commands
 #
-# Please use the `show_cmds` command to see the list of available commands.
+# Please use the `help` command to see the list of available commands.
 #
 # === IRB Sessions
 #
@@ -886,7 +886,7 @@ module IRB
 
   # Quits irb
   def IRB.irb_exit(*)
-    throw :IRB_EXIT
+    throw :IRB_EXIT, false
   end
 
   # Aborts then interrupts irb.
@@ -903,8 +903,8 @@ module IRB
     # parsed as a :method_add_arg and the output won't be suppressed
 
     PROMPT_MAIN_TRUNCATE_LENGTH = 32
-    PROMPT_MAIN_TRUNCATE_OMISSION = '...'.freeze
-    CONTROL_CHARACTERS_PATTERN = "\x00-\x1F".freeze
+    PROMPT_MAIN_TRUNCATE_OMISSION = '...'
+    CONTROL_CHARACTERS_PATTERN = "\x00-\x1F"
 
     # Returns the current context of this irb session
     attr_reader :context
@@ -933,7 +933,7 @@ module IRB
 
     def debug_readline(binding)
       workspace = IRB::WorkSpace.new(binding)
-      context.workspace = workspace
+      context.replace_workspace(workspace)
       context.workspace.load_commands_to_main
       @line_no += 1
 
@@ -979,13 +979,21 @@ module IRB
       end
 
       begin
-        catch(:IRB_EXIT) do
+        if defined?(RubyVM.keep_script_lines)
+          keep_script_lines_backup = RubyVM.keep_script_lines
+          RubyVM.keep_script_lines = true
+        end
+
+        forced_exit = catch(:IRB_EXIT) do
           eval_input
         end
       ensure
+        RubyVM.keep_script_lines = keep_script_lines_backup if defined?(RubyVM.keep_script_lines)
         trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
+
         context.io.save_history if save_history
+        Kernel.exit if forced_exit
       end
     end
 
@@ -1048,7 +1056,7 @@ module IRB
       return read_input(prompt) if @context.io.respond_to?(:check_termination)
 
       # nomultiline
-      code = ''
+      code = +''
       line_offset = 0
       loop do
         line = read_input(prompt)
@@ -1074,16 +1082,17 @@ module IRB
       loop do
         code = readmultiline
         break unless code
-
-        if code != "\n"
-          yield build_statement(code), @line_no
-        end
+        yield build_statement(code), @line_no
         @line_no += code.count("\n")
       rescue RubyLex::TerminateLineInput
       end
     end
 
     def build_statement(code)
+      if code.match?(/\A\n*\z/)
+        return Statement::EmptyInput.new
+      end
+
       code.force_encoding(@context.io.encoding)
       command_or_alias, arg = code.split(/\s/, 2)
       # Transform a non-identifier alias (@, $) or keywords (next, break)
@@ -1129,7 +1138,6 @@ module IRB
       end
       if @context.io.respond_to?(:dynamic_prompt)
         @context.io.dynamic_prompt do |lines|
-          lines << '' if lines.empty?
           tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
           line_results = IRB::NestingParser.parse_by_line(tokens)
           tokens_until_line = []
@@ -1227,7 +1235,7 @@ module IRB
         lines.map{ |l| l + "\n" }.join
       }
       # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
-      message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in `<main>'" }
+      message = message.gsub(/\(irb\):(?<num>\d+):in (?<open_quote>[`'])<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in #{$~[:open_quote]}<main>'" }
       puts message
       puts 'Maybe IRB bug!' if irb_bug
     rescue Exception => handler_exc
@@ -1261,12 +1269,11 @@ module IRB
     # Used by the irb command +irb_load+, see IRB@IRB+Sessions for more
     # information.
     def suspend_workspace(workspace)
-      @context.workspace, back_workspace = workspace, @context.workspace
-      begin
-        yield back_workspace
-      ensure
-        @context.workspace = back_workspace
-      end
+      current_workspace = @context.workspace
+      @context.replace_workspace(workspace)
+      yield
+    ensure
+      @context.replace_workspace current_workspace
     end
 
     # Evaluates the given block using the given +input_method+ as the
@@ -1514,7 +1521,7 @@ class Binding
   # See IRB for more information.
   def irb(show_code: true)
     # Setup IRB with the current file's path and no command line arguments
-    IRB.setup(source_location[0], argv: [])
+    IRB.setup(source_location[0], argv: []) unless IRB.initialized?
     # Create a new workspace using the current binding
     workspace = IRB::WorkSpace.new(self)
     # Print the code around the binding if show_code is true
@@ -1526,7 +1533,7 @@ class Binding
 
     if debugger_irb
       # If we're already in a debugger session, set the workspace and irb_path for the original IRB instance
-      debugger_irb.context.workspace = workspace
+      debugger_irb.context.replace_workspace(workspace)
       debugger_irb.context.irb_path = irb_path
       # If we've started a debugger session and hit another binding.irb, we don't want to start an IRB session
       # instead, we want to resume the irb:rdbg session.

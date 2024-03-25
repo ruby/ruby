@@ -265,7 +265,8 @@
         │   ├── name_loc: (22,0)-(22,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (22,4)-(22,5))
-        │   │   └── flags: decimal
+        │   │   ├── flags: decimal
+        │   │   └── value: 1
         │   └── operator_loc: (22,2)-(22,3) = "="
         ├── @ CallNode (location: (23,0)-(26,3))
         │   ├── flags: ignore_visibility
@@ -279,7 +280,6 @@
         │   └── block:
         │       @ BlockNode (location: (23,4)-(26,3))
         │       ├── locals: [:b]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (24,2)-(25,20))
@@ -290,7 +290,8 @@
         │       │       │   ├── name_loc: (24,2)-(24,3) = "b"
         │       │       │   ├── value:
         │       │       │   │   @ IntegerNode (location: (24,6)-(24,7))
-        │       │       │   │   └── flags: decimal
+        │       │       │   │   ├── flags: decimal
+        │       │       │   │   └── value: 1
         │       │       │   └── operator_loc: (24,4)-(24,5) = "="
         │       │       └── @ HashNode (location: (25,2)-(25,20))
         │       │           ├── opening_loc: (25,2)-(25,3) = "{"
@@ -377,6 +378,7 @@
             │       │   └── unescaped: "a"
             │       ├── value:
             │       │   @ IntegerNode (location: (28,5)-(28,7))
-            │       │   └── flags: decimal
+            │       │   ├── flags: decimal
+            │       │   └── value: -1
             │       └── operator_loc: ∅
             └── closing_loc: (28,8)-(28,9) = "}"

@@ -330,8 +330,7 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
-COROUTINE_OBJ = coroutine/copy/Context.obj
-COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
+!error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 
@@ -681,7 +680,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define _INTEGRAL_MAX_BITS 64
 #endif
 #define SIZEOF_OFF_T 8
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define SIZEOF_VOIDP 8
 !else
 #define SIZEOF_VOIDP 4
@@ -703,7 +702,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define SIZEOF_SIZE_T 8
 #define SIZEOF_PTRDIFF_T 8
 #define SIZEOF_INTPTR_T 8
@@ -760,6 +759,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STRUCT_TIMESPEC
 !endif
 !if $(MSC_VER) >= 1600
+#define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
 !else
 #define int8_t signed char
@@ -802,7 +802,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
 #define HAVE_SSIZE_T 1
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define ssize_t __int64
 #define PRI_PTR_PREFIX "I64"
 !else

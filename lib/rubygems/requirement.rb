@@ -284,6 +284,11 @@ class Gem::Requirement
   def _tilde_requirements
     @_tilde_requirements ||= _sorted_requirements.select {|r| r.first == "~>" }
   end
+
+  def initialize_copy(other) # :nodoc:
+    @requirements = other.requirements.dup
+    super
+  end
 end
 
 class Gem::Version

@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'irb/color_printer'
-require 'rubygems'
 require 'stringio'
 
 require_relative "helper"

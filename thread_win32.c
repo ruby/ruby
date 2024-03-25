@@ -1003,4 +1003,10 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
         vm->ractor.sync.lock_owner = NULL;
 }
 
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

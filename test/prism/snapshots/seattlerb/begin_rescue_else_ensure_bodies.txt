@@ -9,7 +9,8 @@
             │   @ StatementsNode (location: (2,2)-(2,3))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (2,2)-(2,3))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── rescue_clause:
             │   @ RescueNode (location: (3,0)-(4,3))
             │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -20,7 +21,8 @@
             │   │   @ StatementsNode (location: (4,2)-(4,3))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (4,2)-(4,3))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 2
             │   └── consequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (5,0)-(7,6))
@@ -29,7 +31,8 @@
             │   │   @ StatementsNode (location: (6,2)-(6,3))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (6,2)-(6,3))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 3
             │   └── end_keyword_loc: (7,0)-(7,6) = "ensure"
             ├── ensure_clause:
             │   @ EnsureNode (location: (7,0)-(9,3))
@@ -38,6 +41,7 @@
             │   │   @ StatementsNode (location: (8,2)-(8,3))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (8,2)-(8,3))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 4
             │   └── end_keyword_loc: (9,0)-(9,3) = "end"
             └── end_keyword_loc: (9,0)-(9,3) = "end"

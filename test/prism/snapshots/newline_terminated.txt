@@ -100,7 +100,7 @@
         │   ├── closing_loc: (37,3)-(38,0) = "\n"
         │   └── unescaped: "foo"
         └── @ RegularExpressionNode (location: (39,0)-(41,0))
-            ├── flags: ∅
+            ├── flags: forced_us_ascii_encoding
             ├── opening_loc: (39,0)-(40,0) = "%r\n"
             ├── content_loc: (40,0)-(40,3) = "foo"
             ├── closing_loc: (40,3)-(41,0) = "\n"

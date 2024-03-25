@@ -1,12 +1,13 @@
 #!/usr/bin/ruby
 require_relative 'lib/colorize'
+require 'shellwords'
 
 until ARGV.empty?
   case ARGV[0]
   when /\A SYMBOL_PREFIX=(.*)/x
     SYMBOL_PREFIX = $1
   when /\A NM=(.*)/x            # may be multiple words
-    NM = $1
+    NM = $1.shellsplit
   when /\A PLATFORM=(.+)?/x
     platform = $1
   when /\A SOEXT=(.+)?/x
@@ -47,7 +48,9 @@ if platform and !platform.empty?
 end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
-  unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
+  base = File.basename(n, ".*")
+  next true if REPLACE.include?(base)
+  unless (src = Dir.glob(missing + base + ".[cS]")).empty?
     puts "Ignore #{col.skip(n)} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
     true
   end
@@ -67,7 +70,13 @@ if soext
     so = soext =~ ARGV.first
   end
 end
-IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
+
+Pipe = Struct.new(:command) do
+  def open(&block) IO.popen(command, &block) end
+  def each(&block) open {|f| f.each(&block)} end
+end
+
+Pipe.new(NM + ARGV).each do |line|
   line.chomp!
   next so = nil if line.empty?
   if so.nil? and line.chomp!(":")
@@ -79,6 +88,7 @@ IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
   next if !so and n.start_with?("___asan_")
+  next if !so and n.start_with?("__odr_asan_")
   case n
   when /\A(?:Init_|InitVM_|pm_|[Oo]nig|dln_|coroutine_)/
     next

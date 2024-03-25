@@ -77,6 +77,36 @@ describe "Hash#rehash" do
     h.keys.should_not.include? [1]
   end
 
+  it "iterates keys in insertion order" do
+    key = Class.new do
+      attr_reader :name
+
+      def initialize(name)
+        @name = name
+      end
+
+      def hash
+        123
+      end
+    end
+
+    a, b, c, d = key.new('a'), key.new('b'), key.new('c'), key.new('d')
+    h = { a => 1, b => 2, c => 3, d => 4 }
+    h.size.should == 4
+
+    key.class_exec do
+      def eql?(other)
+        true
+      end
+    end
+
+    h.rehash
+    h.size.should == 1
+    k, v = h.first
+    k.name.should == 'a'
+    v.should == 4
+  end
+
   it "raises a FrozenError if called on a frozen instance" do
     -> { HashSpecs.frozen_hash.rehash  }.should raise_error(FrozenError)
     -> { HashSpecs.empty_frozen_hash.rehash }.should raise_error(FrozenError)

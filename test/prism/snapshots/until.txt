@@ -13,7 +13,8 @@
         │       @ StatementsNode (location: (1,12)-(1,13))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (1,12)-(1,13))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ UntilNode (location: (3,0)-(3,12))
         │   ├── flags: ∅
         │   ├── keyword_loc: (3,2)-(3,7) = "until"
@@ -24,7 +25,8 @@
         │       @ StatementsNode (location: (3,0)-(3,1))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (3,0)-(3,1))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ UntilNode (location: (5,0)-(5,16))
         │   ├── flags: ∅
         │   ├── keyword_loc: (5,6)-(5,11) = "until"
