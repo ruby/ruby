@@ -15,10 +15,11 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (1,2)-(1,8))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (1,2)-(1,8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (2,0)-(3,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (2,0)-(3,0) = "    x\n"
         │   │           │   │   ├── closing_loc: ∅
@@ -36,7 +37,7 @@
         │   │           │   │   │           └── unescaped: "  y"
         │   │           │   │   └── closing_loc: (3,9)-(3,10) = "}"
         │   │           │   └── @ StringNode (location: (3,10)-(4,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (3,10)-(4,0) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -56,10 +57,11 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (6,2)-(6,8))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (6,2)-(6,8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (7,0)-(8,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (7,0)-(8,0) = "    x\n"
         │   │           │   │   ├── closing_loc: ∅
@@ -81,7 +83,7 @@
         │   │           │   │   │           └── block: ∅
         │   │           │   │   └── closing_loc: (8,7)-(8,8) = "}"
         │   │           │   └── @ StringNode (location: (8,8)-(9,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (8,8)-(9,0) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -101,16 +103,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (11,2)-(11,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (11,2)-(11,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (12,0)-(13,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (12,0)-(13,0) = "\tx\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "x\n"
         │   │           │   └── @ StringNode (location: (13,0)-(14,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (13,0)-(14,0) = "        y\n"
         │   │           │       ├── closing_loc: ∅
@@ -130,16 +133,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (16,2)-(16,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (16,2)-(16,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (17,0)-(18,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (17,0)-(18,0) = "\tx\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "\tx\n"
         │   │           │   └── @ StringNode (location: (18,0)-(19,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (18,0)-(19,0) = "    y\n"
         │   │           │       ├── closing_loc: ∅
@@ -159,16 +163,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (21,2)-(21,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (21,2)-(21,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (22,0)-(23,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (22,0)-(23,0) = "    \tx\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "x\n"
         │   │           │   └── @ StringNode (location: (23,0)-(24,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (23,0)-(24,0) = "        y\n"
         │   │           │       ├── closing_loc: ∅
@@ -188,16 +193,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (26,2)-(26,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (26,2)-(26,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (27,0)-(28,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (27,0)-(28,0) = "        \tx\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "\tx\n"
         │   │           │   └── @ StringNode (location: (28,0)-(29,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (28,0)-(29,0) = "\ty\n"
         │   │           │       ├── closing_loc: ∅
@@ -217,16 +223,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (31,2)-(31,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (31,2)-(31,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (32,0)-(33,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (32,0)-(33,0) = "    x\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  x\n"
         │   │           │   └── @ StringNode (location: (33,0)-(34,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (33,0)-(34,0) = "  \\\ty\n"
         │   │           │       ├── closing_loc: ∅
@@ -246,16 +253,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (36,2)-(36,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (36,2)-(36,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (37,0)-(38,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (37,0)-(38,0) = "    x\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  x\n"
         │   │           │   └── @ StringNode (location: (38,0)-(39,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (38,0)-(39,0) = "  \\  y\n"
         │   │           │       ├── closing_loc: ∅
@@ -294,22 +302,23 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (44,2)-(44,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (44,2)-(44,6) = "<<~E"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (45,0)-(46,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (45,0)-(46,0) = "  x\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  x\n"
         │   │           │   ├── @ StringNode (location: (46,0)-(47,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (46,0)-(47,0) = "\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "\n"
         │   │           │   └── @ StringNode (location: (47,0)-(48,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (47,0)-(48,0) = "y\n"
         │   │           │       ├── closing_loc: ∅
@@ -329,22 +338,23 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (50,2)-(50,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (50,2)-(50,6) = "<<~E"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (51,0)-(52,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (51,0)-(52,0) = "  x\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "x\n"
         │   │           │   ├── @ StringNode (location: (52,0)-(53,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (52,0)-(53,0) = "    \n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  \n"
         │   │           │   └── @ StringNode (location: (53,0)-(54,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (53,0)-(54,0) = "  y\n"
         │   │           │       ├── closing_loc: ∅
@@ -364,16 +374,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (56,2)-(56,6))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (56,2)-(56,6) = "<<~E"
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (57,0)-(58,0))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (57,0)-(58,0) = "  x\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "x\n"
         │   │           │   └── @ StringNode (location: (58,0)-(59,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (58,0)-(59,0) = "    y\n"
         │   │           │       ├── closing_loc: ∅

@@ -13,6 +13,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   └── @ InterpolatedStringNode (location: (1,7)-(1,13))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── parts: (length: 1)
         │   │       │   └── @ EmbeddedStatementsNode (location: (1,7)-(1,13))
@@ -44,6 +45,7 @@
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   └── @ InterpolatedStringNode (location: (3,7)-(3,21))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── parts: (length: 3)
             │       │   ├── @ EmbeddedStatementsNode (location: (3,7)-(3,13))
@@ -63,7 +65,7 @@
             │       │   │   │           └── block: ∅
             │       │   │   └── closing_loc: (3,12)-(3,13) = "}"
             │       │   ├── @ StringNode (location: (3,13)-(3,16))
-            │       │   │   ├── flags: ∅
+            │       │   │   ├── flags: frozen
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (3,13)-(3,16) = "foo"
             │       │   │   ├── closing_loc: ∅

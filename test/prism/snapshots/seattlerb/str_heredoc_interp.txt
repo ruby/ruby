@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,4))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,4))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,4) = "<<\"\""
             ├── parts: (length: 2)
             │   ├── @ EmbeddedStatementsNode (location: (2,0)-(2,4))
@@ -23,7 +24,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (2,3)-(2,4) = "}"
             │   └── @ StringNode (location: (2,4)-(4,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (2,4)-(4,0) = "\nblah2\n"
             │       ├── closing_loc: ∅

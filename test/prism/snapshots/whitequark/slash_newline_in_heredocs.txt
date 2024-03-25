@@ -10,22 +10,23 @@
         │   ├── closing_loc: (5,0)-(6,0) = "E\n"
         │   └── unescaped: "    1     2\n    3\n"
         └── @ InterpolatedStringNode (location: (8,0)-(8,4))
+            ├── flags: ∅
             ├── opening_loc: (8,0)-(8,4) = "<<~E"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (9,0)-(10,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (9,0)-(10,0) = "    1 \\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "1 "
             │   ├── @ StringNode (location: (10,0)-(11,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (10,0)-(11,0) = "    2\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "2\n"
             │   └── @ StringNode (location: (11,0)-(12,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (11,0)-(12,0) = "    3\n"
             │       ├── closing_loc: ∅

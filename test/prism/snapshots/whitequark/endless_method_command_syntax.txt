@@ -296,10 +296,11 @@
         │   │           ├── keyword_loc: (13,38)-(13,44) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ InterpolatedStringNode (location: (13,45)-(13,60))
+        │   │               ├── flags: ∅
         │   │               ├── opening_loc: (13,45)-(13,46) = "\""
         │   │               ├── parts: (length: 2)
         │   │               │   ├── @ StringNode (location: (13,46)-(13,55))
-        │   │               │   │   ├── flags: ∅
+        │   │               │   │   ├── flags: frozen
         │   │               │   │   ├── opening_loc: ∅
         │   │               │   │   ├── content_loc: (13,46)-(13,55) = "instance "
         │   │               │   │   ├── closing_loc: ∅
@@ -365,10 +366,11 @@
             │           ├── keyword_loc: (15,43)-(15,49) = "rescue"
             │           └── rescue_expression:
             │               @ InterpolatedStringNode (location: (15,50)-(15,62))
+            │               ├── flags: ∅
             │               ├── opening_loc: (15,50)-(15,51) = "\""
             │               ├── parts: (length: 2)
             │               │   ├── @ StringNode (location: (15,51)-(15,57))
-            │               │   │   ├── flags: ∅
+            │               │   │   ├── flags: frozen
             │               │   │   ├── opening_loc: ∅
             │               │   │   ├── content_loc: (15,51)-(15,57) = "class "
             │               │   │   ├── closing_loc: ∅

@@ -4,16 +4,17 @@
     @ StatementsNode (location: (1,0)-(1,6))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,6))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,6) = "<<~FOO"
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2,0)-(3,0) = "  baz\\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "baz"
             │   └── @ StringNode (location: (3,0)-(4,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (3,0)-(4,0) = "  qux\n"
             │       ├── closing_loc: ∅

@@ -28,32 +28,34 @@
         │   ├── closing_loc: (19,0)-(20,0) = "  FOO\n"
         │   └── unescaped: "a\nb\n"
         ├── @ InterpolatedStringNode (location: (21,0)-(21,10))
+        │   ├── flags: ∅
         │   ├── opening_loc: (21,0)-(21,10) = "<<~'  FOO'"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (22,0)-(23,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (22,0)-(23,0) = "a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (23,0)-(24,0))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (23,0)-(24,0) = "b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (24,0)-(25,0) = "     FOO\n"
         └── @ InterpolatedStringNode (location: (26,0)-(26,10))
+            ├── flags: ∅
             ├── opening_loc: (26,0)-(26,10) = "<<~'  FOO'"
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (27,0)-(28,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (27,0)-(28,0) = "a\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a\n"
             │   └── @ StringNode (location: (28,0)-(29,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (28,0)-(29,0) = "b\n"
             │       ├── closing_loc: ∅

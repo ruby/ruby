@@ -79,10 +79,11 @@
         │   ├── closing_loc: (23,0)-(24,0) = "  EOF\n"
         │   └── unescaped: "  a\n  b\n"
         ├── @ InterpolatedStringNode (location: (25,0)-(25,8))
+        │   ├── flags: ∅
         │   ├── opening_loc: (25,0)-(25,8) = "<<-\"EOF\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (26,0)-(27,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (26,0)-(27,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
@@ -104,17 +105,18 @@
         │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (27,3)-(27,4) = "}"
         │   │   └── @ StringNode (location: (27,4)-(28,0))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (27,4)-(28,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (28,0)-(29,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (30,0)-(30,6))
+        │   ├── flags: ∅
         │   ├── opening_loc: (30,0)-(30,6) = "<<-EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (31,0)-(32,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (31,0)-(32,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
@@ -136,7 +138,7 @@
         │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (32,3)-(32,4) = "}"
         │   │   └── @ StringNode (location: (32,4)-(33,0))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (32,4)-(33,0) = "\n"
         │   │       ├── closing_loc: ∅
@@ -184,10 +186,11 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (49,7)-(49,11))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (49,7)-(49,11) = "<<-B"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (52,0)-(53,2))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (52,0)-(53,2) = "  b\n  "
         │   │           │   │   ├── closing_loc: ∅
@@ -202,7 +205,7 @@
         │   │           │   │   │           └── value: 2
         │   │           │   │   └── closing_loc: (54,2)-(54,3) = "}"
         │   │           │   └── @ StringNode (location: (54,3)-(55,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (54,3)-(55,0) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -228,10 +231,11 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ InterpolatedStringNode (location: (57,7)-(57,11))
+            │           ├── flags: ∅
             │           ├── opening_loc: (57,7)-(57,11) = "<<-B"
             │           ├── parts: (length: 3)
             │           │   ├── @ StringNode (location: (60,0)-(61,2))
-            │           │   │   ├── flags: ∅
+            │           │   │   ├── flags: frozen
             │           │   │   ├── opening_loc: ∅
             │           │   │   ├── content_loc: (60,0)-(61,2) = "  b\n  "
             │           │   │   ├── closing_loc: ∅
@@ -246,7 +250,7 @@
             │           │   │   │           └── value: 2
             │           │   │   └── closing_loc: (62,3)-(62,4) = "}"
             │           │   └── @ StringNode (location: (62,4)-(63,0))
-            │           │       ├── flags: ∅
+            │           │       ├── flags: frozen
             │           │       ├── opening_loc: ∅
             │           │       ├── content_loc: (62,4)-(63,0) = "\n"
             │           │       ├── closing_loc: ∅

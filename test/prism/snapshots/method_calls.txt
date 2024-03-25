@@ -1669,6 +1669,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (109,4)-(109,29))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (109,4)-(109,5) = "\""
         │   │           ├── parts: (length: 1)
         │   │           │   └── @ EmbeddedStatementsNode (location: (109,5)-(109,28))
@@ -2237,6 +2238,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ InterpolatedStringNode (location: (145,0)-(145,17))
+        │   ├── flags: ∅
         │   ├── opening_loc: (145,0)-(145,1) = "\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (145,1)-(145,16))
@@ -2272,6 +2274,7 @@
         │   │       └── closing_loc: (145,15)-(145,16) = "}"
         │   └── closing_loc: (145,16)-(145,17) = "\""
         ├── @ InterpolatedStringNode (location: (147,0)-(147,8))
+        │   ├── flags: ∅
         │   ├── opening_loc: (147,0)-(147,1) = "\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (147,1)-(147,7))
@@ -2425,7 +2428,7 @@
             │                   │   ├── opening_loc: (156,5)-(156,6) = "\""
             │                   │   ├── parts: (length: 2)
             │                   │   │   ├── @ StringNode (location: (156,6)-(156,7))
-            │                   │   │   │   ├── flags: ∅
+            │                   │   │   │   ├── flags: frozen
             │                   │   │   │   ├── opening_loc: ∅
             │                   │   │   │   ├── content_loc: (156,6)-(156,7) = "c"
             │                   │   │   │   ├── closing_loc: ∅

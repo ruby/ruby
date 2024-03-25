@@ -57,7 +57,7 @@
         │   │   ├── opening_loc: (7,6)-(7,8) = ":\""
         │   │   ├── parts: (length: 2)
         │   │   │   ├── @ StringNode (location: (7,8)-(7,11))
-        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── flags: frozen
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── content_loc: (7,8)-(7,11) = "abc"
         │   │   │   │   ├── closing_loc: ∅
