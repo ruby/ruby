@@ -1867,7 +1867,7 @@ iseq_calc_param_size(rb_iseq_t *iseq)
         body->param.flags.has_kw ||
         body->param.flags.has_kwrest) {
 
-        if (body->param.flags.has_block) {
+        if (body->param.flags.has_block && body->param.block_start != -1) {
             body->param.size = body->param.block_start + 1;
         }
         else if (body->param.flags.has_kwrest) {
@@ -2009,7 +2009,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
+        const struct rb_args_info *const args = &RNODE_ARGS(node_args)->nd_ainfo;
         ID rest_id = 0;
         int last_comma = 0;
         ID block_id = 0;
@@ -2100,7 +2100,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.flags.accepts_no_kwarg = TRUE;
         }
 
-        if (block_id) {
+        if (args->no_blockarg) {
+            body->param.block_start = -1;
+            body->param.flags.has_block = TRUE;
+        }
+        else if (block_id) {
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
         }

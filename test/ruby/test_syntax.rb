@@ -192,6 +192,49 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error("def f(...); g(x: 1, **); end", /no anonymous keyword rest parameter/)
   end
 
+  def test_no_block_argument_in_method
+    assert_valid_syntax("def f(&nil) end")
+    assert_valid_syntax("def f(a, &nil) end")
+    assert_valid_syntax("def f(*rest, &nil) end")
+    assert_valid_syntax("def f(*rest, p, &nil) end")
+    assert_valid_syntax("def f(a, *rest, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, &nil) end")
+    assert_valid_syntax("def f(a, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, k: nil, **kw, &nil) end")
+    assert_valid_syntax("def f(a, *rest, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, *rest, k: nil, **kw, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, k: nil, **kw, &nil) end")
+
+    obj = Object.new
+    obj.instance_eval "def f(&nil) end"
+    assert_raise_with_message(ArgumentError, /block accepted/) {obj.f {}}
+    assert_raise_with_message(ArgumentError, /block accepted/) {obj.f(&proc {})}
+  end
+
+  def test_no_block_argument_in_block
+    assert_valid_syntax("proc do |&nil| end")
+    assert_valid_syntax("proc do |a, &nil| end")
+    assert_valid_syntax("proc do |*rest, &nil| end")
+    assert_valid_syntax("proc do |*rest, p, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, &nil| end")
+    assert_valid_syntax("proc do |a, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, k: nil, **kw, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, k: nil, **kw, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, k: nil, **kw, &nil| end")
+
+    pr = eval "proc {|&nil|}"
+    assert_nil(pr.call)
+    assert_raise_with_message(ArgumentError, /block accepted/) {pr.call {}}
+    pr = eval "proc {|a, &nil| a}"
+    assert_nil(pr.call)
+    assert_equal(1, pr.call(1))
+    assert_raise_with_message(ArgumentError, /block accepted/) {pr.call {}}
+  end
+
   def test_newline_in_block_parameters
     bug = '[ruby-dev:45292]'
     ["", "a", "a, b"].product(["", ";x", [";", "x"]]) do |params|
