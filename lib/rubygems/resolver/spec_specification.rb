@@ -66,4 +66,11 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   def version
     spec.version
   end
+
+  ##
+  # The hash value for this specification.
+
+  def hash
+    spec.hash
+  end
 end
