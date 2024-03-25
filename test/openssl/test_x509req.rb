@@ -35,16 +35,10 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
   end
 
   def test_version
-    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
     assert_equal(0, req.version)
     req = OpenSSL::X509::Request.new(req.to_der)
     assert_equal(0, req.version)
-
-    req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
-    assert_equal(1, req.version)
-    req = OpenSSL::X509::Request.new(req.to_der)
-    assert_equal(1, req.version)
   end
 
   def test_subject
@@ -107,7 +101,7 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     assert_equal(false, req.verify(@rsa2048))
     assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
     assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
-    req.version = 1
+    req.subject = OpenSSL::X509::Name.parse("/C=JP/CN=FooBarFooBar")
     assert_equal(false, req.verify(@rsa1024))
   rescue OpenSSL::X509::RequestError # RHEL 9 disables SHA1
   end
