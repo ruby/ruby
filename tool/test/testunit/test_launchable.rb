@@ -15,7 +15,10 @@ class TestLaunchable < Test::Unit::TestCase
           status: "TEST_FAILED",
           stdout: nil,
           stderr: nil,
-          createdAt: "2021-10-05T12:34:00"
+          createdAt: "2021-10-05T12:34:00",
+          data: {
+            lineNumber: 1
+          }
         }
       )
       json_stream_writer.write_object(
@@ -25,7 +28,10 @@ class TestLaunchable < Test::Unit::TestCase
           status: "TEST_PASSED",
           stdout: "This is stdout",
           stderr: "This is stderr",
-          createdAt: "2021-10-05T12:36:00"
+          createdAt: "2021-10-05T12:36:00",
+          data: {
+            lineNumber: 10
+          }
         }
       )
       json_stream_writer.close()
@@ -38,7 +44,10 @@ class TestLaunchable < Test::Unit::TestCase
       "status": "TEST_FAILED",
       "stdout": null,
       "stderr": null,
-      "createdAt": "2021-10-05T12:34:00"
+      "createdAt": "2021-10-05T12:34:00",
+      "data": {
+        "lineNumber": 1
+      }
     },
     {
       "testPath": "file=test/test_a.rb#class=class1#testcase=testcase899",
@@ -46,7 +55,10 @@ class TestLaunchable < Test::Unit::TestCase
       "status": "TEST_PASSED",
       "stdout": "This is stdout",
       "stderr": "This is stderr",
-      "createdAt": "2021-10-05T12:36:00"
+      "createdAt": "2021-10-05T12:36:00",
+      "data": {
+        "lineNumber": 10
+      }
     }
   ]
 }

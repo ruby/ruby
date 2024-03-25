@@ -1374,7 +1374,8 @@ module Test
 
       def record(suite, method, assertions, time, error, source_location = nil)
         if writer = @options[:launchable_test_reports]
-          if path = (source_location || suite.instance_method(method).source_location).first
+          if loc = (source_location || suite.instance_method(method).source_location)
+            path, lineno = loc
             # Launchable JSON schema is defined at
             # https://github.com/search?q=repo%3Alaunchableinc%2Fcli+https%3A%2F%2Flaunchableinc.com%2Fschema%2FRecordTestInput&type=code.
             e = case error
@@ -1416,7 +1417,10 @@ module Test
               duration: time,
               createdAt: Time.now.to_s,
               stderr: e,
-              stdout: nil
+              stdout: nil,
+              data: {
+                lineNumber: lineno
+              }
             }
           )
         end
