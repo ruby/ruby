@@ -5,6 +5,7 @@ require '-test-/thread_fd'
 class TestThreadFdClose < Test::Unit::TestCase
 
   def test_thread_fd_close
+    omit "Windows has a different closing behaviour with nonblock=true" if RUBY_PLATFORM=~/mswin|mingw/
     IO.pipe do |r, w|
       th = Thread.new do
         begin
