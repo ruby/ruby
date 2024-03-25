@@ -39,13 +39,13 @@
         │   ├── opening_loc: ∅
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (7,0)-(8,2))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: (7,0)-(7,1) = "\""
         │   │   │   ├── content_loc: (7,1)-(8,1) = "fo\no"
         │   │   │   ├── closing_loc: (8,1)-(8,2) = "\""
         │   │   │   └── unescaped: "fo\no"
         │   │   └── @ StringNode (location: (8,3)-(9,2))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: (8,3)-(8,4) = "\""
         │   │       ├── content_loc: (8,4)-(9,1) = "ba\nr"
         │   │       ├── closing_loc: (9,1)-(9,2) = "\""

@@ -8,7 +8,7 @@
             ├── opening_loc: (1,0)-(1,1) = "/"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (1,1)-(1,4))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,1)-(1,4) = "foo"
             │   │   ├── closing_loc: ∅
@@ -30,7 +30,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (1,9)-(1,10) = "}"
             │   └── @ StringNode (location: (1,10)-(1,13))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,10)-(1,13) = "baz"
             │       ├── closing_loc: ∅

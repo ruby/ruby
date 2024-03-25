@@ -18,13 +18,13 @@
             │           ├── opening_loc: ∅
             │           ├── parts: (length: 2)
             │           │   ├── @ StringNode (location: (1,2)-(1,6))
-            │           │   │   ├── flags: ∅
+            │           │   │   ├── flags: frozen
             │           │   │   ├── opening_loc: (1,2)-(1,6) = "<<~E"
             │           │   │   ├── content_loc: (2,0)-(3,0) = "  x\n"
             │           │   │   ├── closing_loc: (3,0)-(4,0) = "E\n"
             │           │   │   └── unescaped: "x\n"
             │           │   └── @ StringNode (location: (1,7)-(1,12))
-            │           │       ├── flags: ∅
+            │           │       ├── flags: frozen
             │           │       ├── opening_loc: (1,7)-(1,8) = "\""
             │           │       ├── content_loc: (1,8)-(1,11) = "  y"
             │           │       ├── closing_loc: (1,11)-(1,12) = "\""

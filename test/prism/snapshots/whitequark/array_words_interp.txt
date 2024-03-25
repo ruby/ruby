@@ -63,7 +63,7 @@
             │       │   │   │           └── block: ∅
             │       │   │   └── closing_loc: (3,12)-(3,13) = "}"
             │       │   ├── @ StringNode (location: (3,13)-(3,16))
-            │       │   │   ├── flags: ∅
+            │       │   │   ├── flags: frozen
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (3,13)-(3,16) = "foo"
             │       │   │   ├── closing_loc: ∅

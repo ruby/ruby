@@ -358,13 +358,13 @@
         │   ├── opening_loc: ∅
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (28,0)-(28,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: (28,0)-(28,1) = "\""
         │   │   │   ├── content_loc: (28,1)-(28,4) = "foo"
         │   │   │   ├── closing_loc: (28,4)-(28,5) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   └── @ StringNode (location: (28,6)-(28,11))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: (28,6)-(28,7) = "\""
         │   │       ├── content_loc: (28,7)-(28,10) = "bar"
         │   │       ├── closing_loc: (28,10)-(28,11) = "\""
@@ -497,7 +497,7 @@
         │   ├── opening_loc: (39,0)-(39,1) = "`"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (39,1)-(39,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (39,1)-(39,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -582,7 +582,7 @@
         │   ├── opening_loc: (51,0)-(51,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (51,1)-(51,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (51,1)-(51,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -601,7 +601,7 @@
         │   ├── opening_loc: (52,0)-(52,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (52,1)-(52,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (52,1)-(52,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -1156,7 +1156,7 @@
             ├── opening_loc: (89,0)-(89,1) = "`"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (89,1)-(90,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (89,1)-(90,0) = "  x\n"
             │   │   ├── closing_loc: ∅
@@ -1178,7 +1178,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (90,5)-(90,6) = "}"
             │   └── @ StringNode (location: (90,6)-(91,1))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (90,6)-(91,1) = "\n#"
             │       ├── closing_loc: ∅

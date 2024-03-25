@@ -55,7 +55,7 @@
         │   │   │   │           └── name: :@bar
         │   │   │   └── closing_loc: (11,9)-(11,10) = "}"
         │   │   └── @ StringNode (location: (11,10)-(11,13))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (11,10)-(11,13) = "baz"
         │   │       ├── closing_loc: ∅

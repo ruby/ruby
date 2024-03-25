@@ -7,13 +7,13 @@
             ├── opening_loc: ∅
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (1,0)-(1,62))
-            │   │   ├── flags: forced_utf8_encoding
+            │   │   ├── flags: forced_utf8_encoding, frozen
             │   │   ├── opening_loc: (1,0)-(1,1) = "\""
             │   │   ├── content_loc: (1,1)-(1,61) = "\\xE3\\xD3\\x8B\\xE3\\x83\\xBC\\x83\\xE3\\x83\\xE3\\x82\\xB3\\xA3\\x82\\x99"
             │   │   ├── closing_loc: (1,61)-(1,62) = "\""
             │   │   └── unescaped: "\xE3Ӌー\x83\xE3\x83コ\xA3\x82\x99"
             │   └── @ StringNode (location: (2,8)-(2,66))
-            │       ├── flags: forced_utf8_encoding
+            │       ├── flags: forced_utf8_encoding, frozen
             │       ├── opening_loc: (2,8)-(2,9) = "\""
             │       ├── content_loc: (2,9)-(2,65) = "\\xE3\\x83\\xB3\\xE3\\x83\\x8F\\xE3\\x82\\x9A\\xC3\\xBD;foo@bar.com"
             │       ├── closing_loc: (2,65)-(2,66) = "\""

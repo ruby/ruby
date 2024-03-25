@@ -234,7 +234,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── parts: (length: 2)
         │   │   │   │   ├── @ StringNode (location: (39,5)-(39,6))
-        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── flags: frozen
         │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   ├── content_loc: (39,5)-(39,6) = "b"
         │   │   │   │   │   ├── closing_loc: ∅
@@ -262,7 +262,7 @@
         │   │   │   │   │   │           └── value: 2
         │   │   │   │   │   └── closing_loc: (39,14)-(39,15) = "}"
         │   │   │   │   └── @ StringNode (location: (39,15)-(39,16))
-        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── flags: frozen
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (39,15)-(39,16) = "c"
         │   │   │   │       ├── closing_loc: ∅
@@ -272,7 +272,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── parts: (length: 3)
         │   │       │   ├── @ StringNode (location: (39,17)-(39,18))
-        │   │       │   │   ├── flags: ∅
+        │   │       │   │   ├── flags: frozen
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── content_loc: (39,17)-(39,18) = "d"
         │   │       │   │   ├── closing_loc: ∅
@@ -287,7 +287,7 @@
         │   │       │   │   │           └── value: 3
         │   │       │   │   └── closing_loc: (39,21)-(39,22) = "}"
         │   │       │   └── @ StringNode (location: (39,22)-(39,23))
-        │   │       │       ├── flags: ∅
+        │   │       │       ├── flags: frozen
         │   │       │       ├── opening_loc: ∅
         │   │       │       ├── content_loc: (39,22)-(39,23) = "f"
         │   │       │       ├── closing_loc: ∅
