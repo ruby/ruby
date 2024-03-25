@@ -34,7 +34,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   def test_clear_sources_option
     @cmd.add_local_remote_options
 
-    s = URI.parse "http://only-gems.example.com/"
+    s = Gem::URI.parse "http://only-gems.example.com/"
 
     @cmd.handle_options %W[--clear-sources --source #{s}]
     assert_equal [s.to_s], Gem.sources
@@ -76,10 +76,10 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   def test_source_option
     @cmd.add_source_option
 
-    s1 = URI.parse "http://more-gems.example.com/"
-    s2 = URI.parse "http://even-more-gems.example.com/"
-    s3 = URI.parse "http://other-gems.example.com/some_subdir"
-    s4 = URI.parse "http://more-gems.example.com/" # Intentional duplicate
+    s1 = Gem::URI.parse "http://more-gems.example.com/"
+    s2 = Gem::URI.parse "http://even-more-gems.example.com/"
+    s3 = Gem::URI.parse "http://other-gems.example.com/some_subdir"
+    s4 = Gem::URI.parse "http://more-gems.example.com/" # Intentional duplicate
 
     original_sources = Gem.sources.dup
 
@@ -97,7 +97,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
 
     original_sources = Gem.sources.dup
 
-    source = URI.parse "http://more-gems.example.com/"
+    source = Gem::URI.parse "http://more-gems.example.com/"
     @cmd.handle_options %W[-s #{source}]
 
     original_sources << source

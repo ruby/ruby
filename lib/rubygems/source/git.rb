@@ -221,14 +221,14 @@ class Gem::Source::Git < Gem::Source
   end
 
   ##
-  # A hash for the git gem based on the git repository URI.
+  # A hash for the git gem based on the git repository Gem::URI.
 
   def uri_hash # :nodoc:
     require_relative "../openssl"
 
     normalized =
       if @repository.match?(%r{^\w+://(\w+@)?})
-        uri = URI(@repository).normalize.to_s.sub %r{/$},""
+        uri = Gem::URI(@repository).normalize.to_s.sub %r{/$},""
         uri.sub(/\A(\w+)/) { $1.downcase }
       else
         @repository

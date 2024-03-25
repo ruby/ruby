@@ -8,7 +8,7 @@ RSpec.describe "real world edgecases", realworld: true do
       require "bundler/source/rubygems/remote"
       require "bundler/fetcher"
       rubygem = Bundler.ui.silence do
-        remote = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
+        remote = Bundler::Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
         source = Bundler::Source::Rubygems.new
         fetcher = Bundler::Fetcher.new(remote)
         index = fetcher.specs([#{name.dump}], source)

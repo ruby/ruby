@@ -10,7 +10,8 @@ require_relative "gemcutter_utilities/webauthn_poller"
 
 module Gem::GemcutterUtilities
   ERROR_CODE = 1
-  API_SCOPES = [:index_rubygems, :push_rubygem, :yank_rubygem, :add_owner, :remove_owner, :access_webhooks, :show_dashboard].freeze
+  API_SCOPES = [:index_rubygems, :push_rubygem, :yank_rubygem, :add_owner, :remove_owner, :access_webhooks].freeze
+  EXCLUSIVELY_API_SCOPES = [:show_dashboard].freeze
 
   include Gem::Text
 
@@ -93,8 +94,8 @@ module Gem::GemcutterUtilities
     end
 
     if allowed_push_host
-      allowed_host_uri = URI.parse(allowed_push_host)
-      host_uri         = URI.parse(self.host)
+      allowed_host_uri = Gem::URI.parse(allowed_push_host)
+      host_uri         = Gem::URI.parse(self.host)
 
       unless (host_uri.scheme == allowed_host_uri.scheme) && (host_uri.host == allowed_host_uri.host)
         alert_error "#{self.host.inspect} is not allowed by the gemspec, which only allows #{allowed_push_host.inspect}"
@@ -102,7 +103,7 @@ module Gem::GemcutterUtilities
       end
     end
 
-    uri = URI.parse "#{self.host}/#{path}"
+    uri = Gem::URI.parse "#{self.host}/#{path}"
     response = request_with_otp(method, uri, &block)
 
     if mfa_unauthorized?(response)
@@ -129,14 +130,14 @@ module Gem::GemcutterUtilities
 
     say "The existing key doesn't have access of #{scope} on #{pretty_host}. Please sign in to update access."
 
-    email    = ask "   Email: "
-    password = ask_for_password "Password: "
+    identifier = ask "Username/email: "
+    password   = ask_for_password "      Password: "
 
     response = rubygems_api_request(:put, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
-      request.basic_auth email, password
+      request.basic_auth identifier, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
+      request.body = Gem::URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
     end
 
     with_response response do |_resp|
@@ -158,25 +159,25 @@ module Gem::GemcutterUtilities
     say "Don't have an account yet? " \
         "Create one at #{sign_in_host}/sign_up"
 
-    email = ask "   Email: "
-    password = ask_for_password "Password: "
+    identifier = ask "Username/email: "
+    password   = ask_for_password "      Password: "
     say "\n"
 
     key_name     = get_key_name(scope)
     scope_params = get_scope_params(scope)
-    profile      = get_user_profile(email, password)
+    profile      = get_user_profile(identifier, password)
     mfa_params   = get_mfa_params(profile)
     all_params   = scope_params.merge(mfa_params)
     warning      = profile["warning"]
-    credentials  = { email: email, password: password }
+    credentials  = { identifier: identifier, password: password }
 
     say "#{warning}\n" if warning
 
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, credentials: credentials, scope: scope) do |request|
-      request.basic_auth email, password
+      request.basic_auth identifier, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ name: key_name }.merge(all_params))
+      request.body = Gem::URI.encode_www_form({ name: key_name }.merge(all_params))
     end
 
     with_response response do |resp|
@@ -294,7 +295,7 @@ module Gem::GemcutterUtilities
       if credentials.empty?
         request.add_field "Authorization", api_key
       else
-        request.basic_auth credentials[:email], credentials[:password]
+        request.basic_auth credentials[:identifier], credentials[:password]
       end
     end
     response.is_a?(Gem::Net::HTTPSuccess) ? response.body : nil
@@ -309,15 +310,31 @@ module Gem::GemcutterUtilities
   end
 
   def get_scope_params(scope)
-    scope_params = {}
+    scope_params = { index_rubygems: true }
 
     if scope
       scope_params = { scope => true }
     else
-      say "Please select scopes you want to enable for the API key (y/n)"
-      API_SCOPES.each do |s|
-        selected = ask_yes_no(s.to_s, false)
-        scope_params[s] = true if selected
+      say "The default access scope is:"
+      scope_params.each do |k, _v|
+        say "  #{k}: y"
+      end
+      say "\n"
+      customise = ask_yes_no("Do you want to customise scopes?", false)
+      if customise
+        EXCLUSIVELY_API_SCOPES.each do |excl_scope|
+          selected = ask_yes_no("#{excl_scope} (exclusive scope, answering yes will not prompt for other scopes)", false)
+          next unless selected
+
+          return { excl_scope => true }
+        end
+
+        scope_params = {}
+
+        API_SCOPES.each do |s|
+          selected = ask_yes_no(s.to_s, false)
+          scope_params[s] = true if selected
+        end
       end
       say "\n"
     end
@@ -329,11 +346,11 @@ module Gem::GemcutterUtilities
     host == Gem::DEFAULT_HOST
   end
 
-  def get_user_profile(email, password)
+  def get_user_profile(identifier, password)
     return {} unless default_host?
 
     response = rubygems_api_request(:get, "api/v1/profile/me.yaml") do |request|
-      request.basic_auth email, password
+      request.basic_auth identifier, password
     end
 
     with_response response do |resp|

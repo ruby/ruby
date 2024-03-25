@@ -1,3 +1,3 @@
 # frozen_string_literal: true
 
-require_relative "timeout/lib/timeout"
+require_relative "vendor/timeout/lib/timeout"

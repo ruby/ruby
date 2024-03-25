@@ -50,7 +50,7 @@ module Bundler
         append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @deps.any?
 
         # since we resolved successfully, write out the lockfile
-        @definition.lock(Bundler.default_lockfile)
+        @definition.lock
 
         # invalidate the cached Bundler.definition
         Bundler.reset_paths!

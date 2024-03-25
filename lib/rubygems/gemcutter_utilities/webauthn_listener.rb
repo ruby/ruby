@@ -51,7 +51,7 @@ module Gem::GemcutterUtilities
         request_line = socket.gets
 
         method, req_uri, _protocol = request_line.split(" ")
-        req_uri = URI.parse(req_uri)
+        req_uri = Gem::URI.parse(req_uri)
 
         responder = SocketResponder.new(socket)
 

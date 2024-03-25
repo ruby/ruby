@@ -48,7 +48,7 @@ module Bundler
           end
 
           uri
-        rescue Bundler::URI::InvalidComponentError
+        rescue Gem::URI::InvalidComponentError
           error_message = "Please CGI escape your usernames and passwords before " \
                           "setting them for authentication."
           raise HTTPError.new(error_message)

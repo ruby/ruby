@@ -174,6 +174,21 @@ RSpec.describe Bundler::YAMLSerializer do
 
       expect(serializer.load(yaml)).to eq(hash)
     end
+
+    it "skip commented out words" do
+      yaml = <<~YAML
+        ---
+        foo: bar
+        buzz: foo # bar
+      YAML
+
+      hash = {
+        "foo" => "bar",
+        "buzz" => "foo",
+      }
+
+      expect(serializer.load(yaml)).to eq(hash)
+    end
   end
 
   describe "against yaml lib" do

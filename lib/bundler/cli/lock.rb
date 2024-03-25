@@ -33,8 +33,11 @@ module Bundler
         update = { bundler: bundler }
       end
 
+      file = options[:lockfile]
+      file = file ? Pathname.new(file).expand_path : Bundler.default_lockfile
+
       Bundler.settings.temporary(frozen: false) do
-        definition = Bundler.definition(update)
+        definition = Bundler.definition(update, file)
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
@@ -60,10 +63,8 @@ module Bundler
         if print
           puts definition.to_lock
         else
-          file = options[:lockfile]
-          file = file ? File.expand_path(file) : Bundler.default_lockfile
           puts "Writing lockfile to #{file}"
-          definition.lock(file)
+          definition.lock
         end
       end
 

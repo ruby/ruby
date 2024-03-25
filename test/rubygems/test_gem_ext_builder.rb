@@ -83,6 +83,8 @@ install:
   end
 
   def test_custom_make_with_options
+    pend "native windows platform only provides nmake" if vc_windows?
+
     ENV["make"] = "make V=1"
     results = []
     File.open File.join(@ext, "Makefile"), "w" do |io|

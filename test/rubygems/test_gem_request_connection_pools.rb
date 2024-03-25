@@ -18,7 +18,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
     @old_client = Gem::Request::ConnectionPools.client
     Gem::Request::ConnectionPools.client = FakeHttp
 
-    @proxy = URI "http://proxy.example"
+    @proxy = Gem::URI "http://proxy.example"
   end
 
   def teardown
@@ -49,7 +49,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
   end
 
   def test_checkout_same_connection
-    uri = URI.parse("http://example/some_endpoint")
+    uri = Gem::URI.parse("http://example/some_endpoint")
 
     pools = Gem::Request::ConnectionPools.new nil, []
     pool = pools.pool_for uri
@@ -99,7 +99,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
   def test_net_http_args
     pools = Gem::Request::ConnectionPools.new nil, []
 
-    net_http_args = pools.send :net_http_args, URI("http://example"), nil
+    net_http_args = pools.send :net_http_args, Gem::URI("http://example"), nil
 
     assert_equal ["example", 80], net_http_args
   end
@@ -107,7 +107,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
   def test_net_http_args_ipv6
     pools = Gem::Request::ConnectionPools.new nil, []
 
-    net_http_args = pools.send :net_http_args, URI("http://[::1]"), nil
+    net_http_args = pools.send :net_http_args, Gem::URI("http://[::1]"), nil
 
     assert_equal ["::1", 80], net_http_args
   end
@@ -115,7 +115,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
   def test_net_http_args_proxy
     pools = Gem::Request::ConnectionPools.new nil, []
 
-    net_http_args = pools.send :net_http_args, URI("http://example"), @proxy
+    net_http_args = pools.send :net_http_args, Gem::URI("http://example"), @proxy
 
     assert_equal ["example", 80, "proxy.example", 80, nil, nil], net_http_args
   end
@@ -126,7 +126,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
 
     pools = Gem::Request::ConnectionPools.new nil, []
 
-    net_http_args = pools.send :net_http_args, URI("http://example"), @proxy
+    net_http_args = pools.send :net_http_args, Gem::URI("http://example"), @proxy
 
     assert_equal ["example", 80, nil, nil], net_http_args
   ensure
@@ -134,7 +134,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
   end
 
   def test_thread_waits_for_connection
-    uri = URI.parse("http://example/some_endpoint")
+    uri = Gem::URI.parse("http://example/some_endpoint")
     pools = Gem::Request::ConnectionPools.new nil, []
     pool  = pools.pool_for uri
 

@@ -437,7 +437,7 @@ module Bundler
     end
 
     def required_ruby_version
-      "2.6.0"
+      "3.0.0"
     end
 
     def rubocop_version

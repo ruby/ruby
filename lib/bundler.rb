@@ -200,12 +200,13 @@ module Bundler
     #
     # @param unlock [Hash, Boolean, nil] Gems that have been requested
     #   to be updated or true if all gems should be updated
+    # @param lockfile [Pathname] Path to Gemfile.lock
     # @return [Bundler::Definition]
-    def definition(unlock = nil)
+    def definition(unlock = nil, lockfile = default_lockfile)
       @definition = nil if unlock
       @definition ||= begin
         configure
-        Definition.build(default_gemfile, default_lockfile, unlock)
+        Definition.build(default_gemfile, lockfile, unlock)
       end
     end
 

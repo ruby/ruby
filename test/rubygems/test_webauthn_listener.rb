@@ -19,7 +19,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_listener_thread_retreives_otp_code
     thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
-    Gem::MockBrowser.get URI("http://localhost:#{@port}?code=xyz")
+    Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}?code=xyz")
 
     thread.join
     assert_equal "xyz", thread[:otp]
@@ -27,7 +27,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_listener_thread_sets_error
     thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
-    Gem::MockBrowser.post URI("http://localhost:#{@port}?code=xyz")
+    Gem::MockBrowser.post Gem::URI("http://localhost:#{@port}?code=xyz")
 
     thread.join
     assert_equal "Security device verification failed: Invalid HTTP method POST received.", thread[:error].message
@@ -35,13 +35,13 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_get_follows_options
     wait_for_otp_code
-    assert Gem::MockBrowser.options(URI("http://localhost:#{@port}?code=xyz")).is_a? Gem::Net::HTTPNoContent
-    assert Gem::MockBrowser.get(URI("http://localhost:#{@port}?code=xyz")).is_a? Gem::Net::HTTPOK
+    assert Gem::MockBrowser.options(Gem::URI("http://localhost:#{@port}?code=xyz")).is_a? Gem::Net::HTTPNoContent
+    assert Gem::MockBrowser.get(Gem::URI("http://localhost:#{@port}?code=xyz")).is_a? Gem::Net::HTTPOK
   end
 
   def test_wait_for_otp_code_options_request
     wait_for_otp_code
-    response = Gem::MockBrowser.options URI("http://localhost:#{@port}?code=xyz")
+    response = Gem::MockBrowser.options Gem::URI("http://localhost:#{@port}?code=xyz")
 
     assert response.is_a? Gem::Net::HTTPNoContent
     assert_equal Gem.host, response["access-control-allow-origin"]
@@ -52,7 +52,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_get_request
     wait_for_otp_code
-    response = Gem::MockBrowser.get URI("http://localhost:#{@port}?code=xyz")
+    response = Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}?code=xyz")
 
     assert response.is_a? Gem::Net::HTTPOK
     assert_equal "text/plain; charset=utf-8", response["Content-Type"]
@@ -69,7 +69,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_invalid_post_req_method
     wait_for_otp_code_expect_error_with_message("Security device verification failed: Invalid HTTP method POST received.")
-    response = Gem::MockBrowser.post URI("http://localhost:#{@port}?code=xyz")
+    response = Gem::MockBrowser.post Gem::URI("http://localhost:#{@port}?code=xyz")
 
     assert response
     assert response.is_a? Gem::Net::HTTPMethodNotAllowed
@@ -82,7 +82,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_incorrect_path
     wait_for_otp_code_expect_error_with_message("Security device verification failed: Page at /path not found.")
-    response = Gem::MockBrowser.post URI("http://localhost:#{@port}/path?code=xyz")
+    response = Gem::MockBrowser.post Gem::URI("http://localhost:#{@port}/path?code=xyz")
 
     assert response.is_a? Gem::Net::HTTPNotFound
     assert_equal "close", response["Connection"]
@@ -93,7 +93,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_no_params_response
     wait_for_otp_code_expect_error_with_message("Security device verification failed: Did not receive OTP from https://rubygems.org.")
-    response = Gem::MockBrowser.get URI("http://localhost:#{@port}")
+    response = Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}")
 
     assert response.is_a? Gem::Net::HTTPBadRequest
     assert_equal "text/plain; charset=utf-8", response["Content-Type"]
@@ -107,7 +107,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def test_wait_for_otp_code_incorrect_params
     wait_for_otp_code_expect_error_with_message("Security device verification failed: Did not receive OTP from https://rubygems.org.")
-    response = Gem::MockBrowser.get URI("http://localhost:#{@port}?param=xyz")
+    response = Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}?param=xyz")
 
     assert response.is_a? Gem::Net::HTTPBadRequest
     assert_equal "text/plain; charset=utf-8", response["Content-Type"]
