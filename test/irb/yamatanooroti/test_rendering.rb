@@ -256,9 +256,9 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     start_terminal(3, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
     write("{}.__id_")
     write("\C-i")
+    sleep 0.2
     close
     screen = result.join("\n").sub(/\n*\z/, "\n")
-    # This assertion passes whether showdoc dialog completed or not.
     assert_match(/start\ IRB\nirb\(main\):001> {}\.__id__\n                }\.__id__(?:Press )?/, screen)
   end
 
@@ -278,6 +278,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     start_terminal(4, 19, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
     write("IR")
     write("\C-i")
+    sleep 0.2
     close
 
     # This is because on macOS we display different shortcut for displaying the full doc
@@ -315,6 +316,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     start_terminal(4, 12, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
     write("IR")
     write("\C-i")
+    sleep 0.2
     close
     assert_screen(<<~EOC)
       start IRB
