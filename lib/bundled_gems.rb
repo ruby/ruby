@@ -95,10 +95,8 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name, specs: nil)
-    # name can be a feature name or a file path with String or Pathname
-    feature = File.path(name)
-    # bootsnap expand `require "csv"` to `require "#{LIBDIR}/csv.rb"`
-    name = feature.delete_prefix(LIBDIR).chomp(".rb").tr("/", "-")
+    feature = File.path(name) # name can be a feature name or a file path with String or Pathname
+    name = feature.tr("/", "-")
     name.sub!(LIBEXT, "")
     return if specs.include?(name)
     _t, path = $:.resolve_feature_path(feature)
@@ -111,7 +109,12 @@ module Gem::BUNDLED_GEMS
     else
       return
     end
-
+    # Warning feature is not working correctly with Bootsnap.
+    # caller_locations returns:
+    #   lib/ruby/3.3.0+0/bundled_gems.rb:65:in `block (2 levels) in replace_require'
+    #   $GEM_HOME/gems/bootsnap-1.17.0/lib/bootsnap/load_path_cache/core_ext/kernel_require.rb:32:in `require'"
+    #   ...
+    return if caller_locations(2).find {|c| c&.path.match?(/bootsnap/) }
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
@@ -131,29 +134,11 @@ module Gem::BUNDLED_GEMS
 
     if defined?(Bundler)
       msg += " Add #{gem} to your Gemfile or gemspec."
-
       # We detect the gem name from caller_locations. We need to skip 2 frames like:
       # lib/ruby/3.3.0+0/bundled_gems.rb:90:in `warning?'",
       # lib/ruby/3.3.0+0/bundler/rubygems_integration.rb:247:in `block (2 levels) in replace_require'",
-      #
-      # Additionally, we need to skip Bootsnap and Zeitwerk if present, these
-      # gems decorate Kernel#require, so they are not really the ones issuing
-      # the require call users should be warned about. Those are upwards.
-      frames_to_skip = 2
-      location = nil
-      Thread.each_caller_location do |cl|
-        if frames_to_skip >= 1
-          frames_to_skip -= 1
-          next
-        end
-
-        unless cl.path.match?(/bootsnap|zeitwerk/)
-          location = cl.path
-          break
-        end
-      end
-
-      if location && File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
+      location = caller_locations(3,1)[0]&.path
+      if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
         Gem.path.each do |path|
           if location =~ %r{#{path}/gems/([\w\-\.]+)}
