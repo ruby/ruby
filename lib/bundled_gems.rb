@@ -147,7 +147,7 @@ module Gem::BUNDLED_GEMS
           next
         end
 
-        unless cl.path.match?(/bootsnap|zeitwerk/)
+        if cl.base_label != "require"
           location = cl.path
           break
         end
