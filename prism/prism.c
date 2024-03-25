@@ -4281,6 +4281,7 @@ pm_interpolated_regular_expression_node_create(pm_parser_t *parser, const pm_tok
     *node = (pm_interpolated_regular_expression_node_t) {
         {
             .type = PM_INTERPOLATED_REGULAR_EXPRESSION_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = opening->start,
                 .end = NULL,
@@ -4307,6 +4308,10 @@ pm_interpolated_regular_expression_node_append(pm_interpolated_regular_expressio
         pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
     }
 
+    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
+    }
+
     pm_node_list_append(&node->parts, part);
 }
 
@@ -4327,6 +4332,7 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
     *node = (pm_interpolated_string_node_t) {
         {
             .type = PM_INTERPOLATED_STRING_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = opening->start,
                 .end = closing->end,
@@ -4357,6 +4363,10 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
         pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
     }
 
+    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
+    }
+
     pm_node_list_append(&node->parts, part);
     node->base.location.end = part->location.end;
 }
@@ -4380,6 +4390,7 @@ pm_interpolated_symbol_node_create(pm_parser_t *parser, const pm_token_t *openin
     *node = (pm_interpolated_symbol_node_t) {
         {
             .type = PM_INTERPOLATED_SYMBOL_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = opening->start,
                 .end = closing->end,
@@ -4407,6 +4418,10 @@ pm_interpolated_symbol_node_append(pm_interpolated_symbol_node_t *node, pm_node_
         pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
     }
 
+    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
+    }
+
     pm_node_list_append(&node->parts, part);
     node->base.location.end = part->location.end;
 }
@@ -4421,6 +4436,7 @@ pm_interpolated_xstring_node_create(pm_parser_t *parser, const pm_token_t *openi
     *node = (pm_interpolated_x_string_node_t) {
         {
             .type = PM_INTERPOLATED_X_STRING_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = opening->start,
                 .end = closing->end
@@ -4438,6 +4454,10 @@ static inline void
 pm_interpolated_xstring_node_append(pm_interpolated_x_string_node_t *node, pm_node_t *part) {
     if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
         pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+    }
+
+    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
     }
 
     pm_node_list_append(&node->parts, part);
