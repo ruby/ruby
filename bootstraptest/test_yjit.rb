@@ -11,6 +11,13 @@ assert_normal_exit %q{
   call_foo
 }
 
+# regression test for keyword splat with yield
+assert_equal 'nil', %q{
+  def splat_kw(kwargs) = yield(**kwargs)
+
+  splat_kw({}) { _1 }.inspect
+}
+
 # regression test for arity check with splat
 assert_equal '[:ae, :ae]', %q{
   def req_one(a_, b_ = 1) = raise

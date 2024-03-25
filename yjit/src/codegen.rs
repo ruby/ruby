@@ -6009,6 +6009,7 @@ fn gen_send_iseq(
     exit_if_tail_call(asm, ci)?;
     exit_if_has_post(asm, iseq)?;
     exit_if_has_kwrest(asm, iseq)?;
+    exit_if_kw_splat(asm, flags)?;
     exit_if_splat_and_ruby2_keywords(asm, jit, flags)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
@@ -6139,6 +6140,9 @@ fn gen_send_iseq(
         let array = jit.peek_at_stack(&asm.ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
             0
+        } else if unsafe { !RB_TYPE_P(array, RUBY_T_ARRAY) } {
+            gen_counter_incr(asm, Counter::send_iseq_splat_not_array);
+            return None;
         } else {
             unsafe { rb_yjit_array_len(array) as u32}
         };
@@ -6818,6 +6822,11 @@ fn exit_if_has_post(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
 #[must_use]
 fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
     exit_if(asm, unsafe { get_iseq_flags_has_kwrest(iseq) }, Counter::send_iseq_has_kwrest)
+}
+
+#[must_use]
+fn exit_if_kw_splat(asm: &mut Assembler, flags: u32) -> Option<()> {
+    exit_if(asm, flags & VM_CALL_KW_SPLAT != 0, Counter::send_iseq_kw_splat)
 }
 
 #[must_use]
