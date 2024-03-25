@@ -59,7 +59,7 @@ class Gem::Package
 
     def initialize(message, source = nil)
       if source
-        @path = source.path
+        @path = source.is_a?(String) ? source : source.path
 
         message += " in #{path}" if path
       end
