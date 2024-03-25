@@ -1340,7 +1340,7 @@ rb_str_new_shared(VALUE str)
 VALUE
 rb_str_new_frozen(VALUE orig)
 {
-    if (OBJ_FROZEN(orig)) return orig;
+    if (RB_FL_TEST_RAW(orig, FL_FREEZE | STR_CHILLED) == FL_FREEZE) return orig;
     return str_new_frozen(rb_obj_class(orig), orig);
 }
 

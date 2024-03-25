@@ -3648,6 +3648,18 @@ CODE
     Warning[:deprecated] = deprecated
   end
 
+  def test_chilled_string_substring
+    deprecated = Warning[:deprecated]
+    Warning[:deprecated] = false
+    chilled_string = eval('"a chilled string."')
+    substring = chilled_string[0..-1]
+    assert_equal("a chilled string.", substring)
+    chilled_string[0..-1] = "This string is defrosted."
+    assert_equal("a chilled string.", substring)
+  ensure
+    Warning[:deprecated] = deprecated
+  end
+
   private
 
   def assert_bytesplice_result(expected, s, *args)
