@@ -308,14 +308,14 @@ lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminato
     // regular expression. We'll use strpbrk to find the first of these
     // characters.
     uint8_t *breakpoints = lex_mode.as.regexp.breakpoints;
-    memcpy(breakpoints, "\n\\#\0\0", sizeof(lex_mode.as.regexp.breakpoints));
+    memcpy(breakpoints, "\r\n\\#\0\0", sizeof(lex_mode.as.regexp.breakpoints));
 
     // First we'll add the terminator.
-    breakpoints[3] = terminator;
+    breakpoints[4] = terminator;
 
     // Next, if there is an incrementor, then we'll check for that as well.
     if (incrementor != '\0') {
-        breakpoints[4] = incrementor;
+        breakpoints[5] = incrementor;
     }
 
     return lex_mode_push(parser, lex_mode);
@@ -10835,6 +10835,19 @@ parser_lex(pm_parser_t *parser) {
                         parser->current.end = breakpoint + 1;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                         break;
+                    case '\r':
+                        if (peek_at(parser, breakpoint + 1) != '\n') {
+                            parser->current.end = breakpoint + 1;
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                            break;
+                        }
+
+                        parser->current.end = breakpoint + 1;
+                        pm_regexp_token_buffer_escape(parser, &token_buffer);
+                        breakpoint++;
+                        token_buffer.base.cursor = breakpoint;
+
+                        /* fallthrough */
                     case '\n':
                         // If we've hit a newline, then we need to track that in
                         // the list of newlines.

@@ -173,7 +173,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the regular expression.
              */
-            uint8_t breakpoints[6];
+            uint8_t breakpoints[7];
         } regexp;
 
         struct {
@@ -206,7 +206,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the string.
              */
-            uint8_t breakpoints[6];
+            uint8_t breakpoints[7];
         } string;
 
         struct {
