@@ -558,7 +558,7 @@ module RbInstall
         makefile = File.read(makefile_path)
 
         name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
-        return [] if name.empty?
+        return [] if name.nil? || name.empty?
 
         feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
         feature = feature.sub("$(TARGET)", name)
