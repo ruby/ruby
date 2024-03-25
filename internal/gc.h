@@ -213,7 +213,6 @@ void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 bool rb_gc_size_allocatable_p(size_t size);
 size_t *rb_gc_size_pool_sizes(void);
 size_t rb_gc_size_pool_id_for_size(size_t size);
-int rb_objspace_garbage_object_p(VALUE obj);
 bool rb_gc_is_ptr_to_obj(const void *ptr);
 
 void rb_gc_mark_and_move(VALUE *ptr);
@@ -235,7 +234,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
-int rb_objspace_markable_object_p(VALUE obj);
+int rb_objspace_garbage_object_p(VALUE obj);
 int rb_objspace_internal_object_p(VALUE obj);
 
 void rb_objspace_each_objects(
