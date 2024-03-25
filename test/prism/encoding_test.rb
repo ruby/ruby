@@ -344,7 +344,7 @@ module Prism
           next if ["/", "{"].include?(character)
 
           source = "# encoding: #{name}\n/(?##{character})/\n"
-          assert Prism.parse(source).success?
+          assert Prism.parse(source).success?, "Expected #{source.inspect} to parse successfully."
         end
       rescue RangeError
         source = "# encoding: #{name}\n\\x#{codepoint.to_s(16)}"
