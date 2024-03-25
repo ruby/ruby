@@ -764,22 +764,6 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line_around_cursor('', 'bar')
   end
 
-  def test_pasting
-    start_pasting
-    input_keys('ab')
-    finish_pasting
-    input_keys('c')
-    assert_line_around_cursor('abc', '')
-  end
-
-  def test_pasting_fullwidth
-    start_pasting
-    input_keys('あ')
-    finish_pasting
-    input_keys('い')
-    assert_line_around_cursor('あい', '')
-  end
-
   def test_ed_delete_next_char_at_eol
     input_keys('"あ"')
     assert_line_around_cursor('"あ"', '')

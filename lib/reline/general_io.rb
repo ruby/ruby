@@ -102,14 +102,6 @@ class Reline::GeneralIO
     @@pasting
   end
 
-  def self.start_pasting
-    @@pasting = true
-  end
-
-  def self.finish_pasting
-    @@pasting = false
-  end
-
   def self.prep
   end
 

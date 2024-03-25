@@ -78,14 +78,6 @@ module Reline
   end
 end
 
-def start_pasting
-  Reline::GeneralIO.start_pasting
-end
-
-def finish_pasting
-  Reline::GeneralIO.finish_pasting
-end
-
 class Reline::TestCase < Test::Unit::TestCase
   private def convert_str(input, options = {}, normalized = nil)
     return nil if input.nil?
