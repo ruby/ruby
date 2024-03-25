@@ -317,7 +317,7 @@ location_base_label(rb_backtrace_location_t *loc)
 /*
  * Returns the label of this frame without decoration.
  *
- * For example, if the label is `foo`, this method returns `foo`, same, but if
+ * For example, if the label is `foo`, this method returns `foo` as well, but if
  * the label is +rescue in foo+, this method returns just +foo+.
  */
 static VALUE
