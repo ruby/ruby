@@ -1833,6 +1833,12 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     return new_str;
 }
 
+bool
+rb_str_chilled_p(VALUE str)
+{
+    return CHILLED_STRING_P(str);
+}
+
 /*
  *
  *  call-seq:
