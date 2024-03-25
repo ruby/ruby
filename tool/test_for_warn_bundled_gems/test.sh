@@ -24,6 +24,9 @@ ruby test_no_warn_dependency.rb
 echo "* Don't show warning with bootsnap"
 ruby test_no_warn_bootsnap.rb
 
+echo "* Don't show warning with zeitwerk"
+ruby test_no_warn_zeitwerk.rb
+
 echo "* Don't show warning with net/smtp when net-smtp on Gemfile"
 ruby test_no_warn_dash_gem.rb
 
