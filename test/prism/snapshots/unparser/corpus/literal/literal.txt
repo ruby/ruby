@@ -16,10 +16,11 @@
         │   │   │   │   └── unescaped: "foo"
         │   │   │   ├── value:
         │   │   │   │   @ InterpolatedStringNode (location: (1,11)-(1,21))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (1,11)-(1,21) = "<<-HEREDOC"
         │   │   │   │   ├── parts: (length: 3)
         │   │   │   │   │   ├── @ StringNode (location: (2,0)-(2,2))
-        │   │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   │   ├── flags: frozen
         │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   ├── content_loc: (2,0)-(2,2) = "  "
         │   │   │   │   │   │   ├── closing_loc: ∅
@@ -29,7 +30,7 @@
         │   │   │   │   │   │   ├── statements: ∅
         │   │   │   │   │   │   └── closing_loc: (2,4)-(2,5) = "}"
         │   │   │   │   │   └── @ StringNode (location: (2,5)-(3,0))
-        │   │   │   │   │       ├── flags: ∅
+        │   │   │   │   │       ├── flags: frozen
         │   │   │   │   │       ├── opening_loc: ∅
         │   │   │   │   │       ├── content_loc: (2,5)-(3,0) = "\n"
         │   │   │   │   │       ├── closing_loc: ∅
@@ -121,10 +122,11 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ InterpolatedStringNode (location: (6,2)-(6,12))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── opening_loc: (6,2)-(6,12) = "<<-HEREDOC"
         │   │   │           ├── parts: (length: 3)
         │   │   │           │   ├── @ StringNode (location: (7,0)-(7,2))
-        │   │   │           │   │   ├── flags: ∅
+        │   │   │           │   │   ├── flags: frozen
         │   │   │           │   │   ├── opening_loc: ∅
         │   │   │           │   │   ├── content_loc: (7,0)-(7,2) = "  "
         │   │   │           │   │   ├── closing_loc: ∅
@@ -134,7 +136,7 @@
         │   │   │           │   │   ├── statements: ∅
         │   │   │           │   │   └── closing_loc: (7,4)-(7,5) = "}"
         │   │   │           │   └── @ StringNode (location: (7,5)-(8,0))
-        │   │   │           │       ├── flags: ∅
+        │   │   │           │       ├── flags: frozen
         │   │   │           │       ├── opening_loc: ∅
         │   │   │           │       ├── content_loc: (7,5)-(8,0) = "\n"
         │   │   │           │       ├── closing_loc: ∅
@@ -191,10 +193,11 @@
         │   │   │   │   └── unescaped: "foo"
         │   │   │   ├── value:
         │   │   │   │   @ InterpolatedStringNode (location: (10,11)-(10,21))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (10,11)-(10,21) = "<<-HEREDOC"
         │   │   │   │   ├── parts: (length: 3)
         │   │   │   │   │   ├── @ StringNode (location: (11,0)-(11,2))
-        │   │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   │   ├── flags: frozen
         │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   ├── content_loc: (11,0)-(11,2) = "  "
         │   │   │   │   │   │   ├── closing_loc: ∅
@@ -204,7 +207,7 @@
         │   │   │   │   │   │   ├── statements: ∅
         │   │   │   │   │   │   └── closing_loc: (11,4)-(11,5) = "}"
         │   │   │   │   │   └── @ StringNode (location: (11,5)-(12,0))
-        │   │   │   │   │       ├── flags: ∅
+        │   │   │   │   │       ├── flags: frozen
         │   │   │   │   │       ├── opening_loc: ∅
         │   │   │   │   │       ├── content_loc: (11,5)-(12,0) = "\n"
         │   │   │   │   │       ├── closing_loc: ∅
@@ -259,6 +262,7 @@
         │   │       └── operator_loc: (13,16)-(13,18) = "**"
         │   └── closing_loc: (13,22)-(13,23) = "}"
         ├── @ InterpolatedStringNode (location: (14,0)-(14,14))
+        │   ├── flags: ∅
         │   ├── opening_loc: (14,0)-(14,1) = "\""
         │   ├── parts: (length: 5)
         │   │   ├── @ EmbeddedVariableNode (location: (14,1)-(14,4))
@@ -267,7 +271,7 @@
         │   │   │       @ InstanceVariableReadNode (location: (14,2)-(14,4))
         │   │   │       └── name: :@a
         │   │   ├── @ StringNode (location: (14,4)-(14,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (14,4)-(14,5) = " "
         │   │   │   ├── closing_loc: ∅
@@ -278,7 +282,7 @@
         │   │   │       @ ClassVariableReadNode (location: (14,6)-(14,9))
         │   │   │       └── name: :@@a
         │   │   ├── @ StringNode (location: (14,9)-(14,10))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (14,9)-(14,10) = " "
         │   │   │   ├── closing_loc: ∅
@@ -355,26 +359,28 @@
         │           ├── flags: decimal
         │           └── value: 1
         ├── @ InterpolatedStringNode (location: (28,0)-(28,11))
+        │   ├── flags: ∅
         │   ├── opening_loc: ∅
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (28,0)-(28,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: (28,0)-(28,1) = "\""
         │   │   │   ├── content_loc: (28,1)-(28,4) = "foo"
         │   │   │   ├── closing_loc: (28,4)-(28,5) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   └── @ StringNode (location: (28,6)-(28,11))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: (28,6)-(28,7) = "\""
         │   │       ├── content_loc: (28,7)-(28,10) = "bar"
         │   │       ├── closing_loc: (28,10)-(28,11) = "\""
         │   │       └── unescaped: "bar"
         │   └── closing_loc: ∅
         ├── @ InterpolatedStringNode (location: (29,0)-(29,15))
+        │   ├── flags: ∅
         │   ├── opening_loc: (29,0)-(29,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (29,1)-(29,8))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (29,1)-(29,8) = "foobar "
         │   │   │   ├── closing_loc: ∅
@@ -397,10 +403,11 @@
         │   │       └── closing_loc: (29,13)-(29,14) = "}"
         │   └── closing_loc: (29,14)-(29,15) = "\""
         ├── @ InterpolatedStringNode (location: (30,0)-(30,12))
+        │   ├── flags: ∅
         │   ├── opening_loc: (30,0)-(30,1) = "\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (30,1)-(30,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (30,1)-(30,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -415,17 +422,18 @@
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (30,7)-(30,8) = "}"
         │   │   └── @ StringNode (location: (30,8)-(30,11))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (30,8)-(30,11) = "bar"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "bar"
         │   └── closing_loc: (30,11)-(30,12) = "\""
         ├── @ InterpolatedStringNode (location: (31,0)-(31,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (31,0)-(31,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (31,1)-(31,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (31,1)-(31,5) = "\\\\\\\\"
         │   │   │   ├── closing_loc: ∅
@@ -436,6 +444,7 @@
         │   │       └── closing_loc: (31,7)-(31,8) = "}"
         │   └── closing_loc: (31,8)-(31,9) = "\""
         ├── @ InterpolatedStringNode (location: (32,0)-(32,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (32,0)-(32,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ EmbeddedStatementsNode (location: (32,1)-(32,4))
@@ -443,17 +452,18 @@
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (32,3)-(32,4) = "}"
         │   │   └── @ StringNode (location: (32,4)-(32,8))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (32,4)-(32,8) = "\\\#{}"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#{}"
         │   └── closing_loc: (32,8)-(32,9) = "\""
         ├── @ InterpolatedStringNode (location: (33,0)-(33,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (33,0)-(33,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (33,1)-(33,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (33,1)-(33,5) = "\\\#{}"
         │   │   │   ├── closing_loc: ∅
@@ -497,7 +507,7 @@
         │   ├── opening_loc: (39,0)-(39,1) = "`"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (39,1)-(39,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (39,1)-(39,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -582,7 +592,7 @@
         │   ├── opening_loc: (51,0)-(51,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (51,1)-(51,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (51,1)-(51,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -601,7 +611,7 @@
         │   ├── opening_loc: (52,0)-(52,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (52,1)-(52,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (52,1)-(52,4) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -660,7 +670,7 @@
         │   ├── opening_loc: (58,0)-(58,2) = ":\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (58,2)-(58,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (58,2)-(58,5) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -682,7 +692,7 @@
         │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (58,10)-(58,11) = "}"
         │   │   └── @ StringNode (location: (58,11)-(58,14))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (58,11)-(58,14) = "baz"
         │   │       ├── closing_loc: ∅
@@ -1081,6 +1091,7 @@
         │   │       └── operator_loc: (80,6)-(80,8) = "=>"
         │   └── closing_loc: (80,11)-(80,12) = "}"
         ├── @ InterpolatedStringNode (location: (81,0)-(82,7))
+        │   ├── flags: ∅
         │   ├── opening_loc: (81,0)-(81,1) = "\""
         │   ├── parts: (length: 4)
         │   │   ├── @ EmbeddedStatementsNode (location: (81,1)-(81,4))
@@ -1088,7 +1099,7 @@
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (81,3)-(81,4) = "}"
         │   │   ├── @ StringNode (location: (81,4)-(82,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (81,4)-(82,0) = "\n"
         │   │   │   ├── closing_loc: ∅
@@ -1098,7 +1109,7 @@
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (82,2)-(82,3) = "}"
         │   │   └── @ StringNode (location: (82,3)-(82,6))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (82,3)-(82,6) = "\\na"
         │   │       ├── closing_loc: ∅
@@ -1121,6 +1132,7 @@
         │       │   @ StatementsNode (location: (84,2)-(85,7))
         │       │   └── body: (length: 1)
         │       │       └── @ InterpolatedStringNode (location: (84,2)-(85,7))
+        │       │           ├── flags: ∅
         │       │           ├── opening_loc: (84,2)-(84,3) = "\""
         │       │           ├── parts: (length: 4)
         │       │           │   ├── @ EmbeddedStatementsNode (location: (84,3)-(84,6))
@@ -1128,7 +1140,7 @@
         │       │           │   │   ├── statements: ∅
         │       │           │   │   └── closing_loc: (84,5)-(84,6) = "}"
         │       │           │   ├── @ StringNode (location: (84,6)-(85,0))
-        │       │           │   │   ├── flags: ∅
+        │       │           │   │   ├── flags: frozen
         │       │           │   │   ├── opening_loc: ∅
         │       │           │   │   ├── content_loc: (84,6)-(85,0) = "\n"
         │       │           │   │   ├── closing_loc: ∅
@@ -1138,7 +1150,7 @@
         │       │           │   │   ├── statements: ∅
         │       │           │   │   └── closing_loc: (85,2)-(85,3) = "}"
         │       │           │   └── @ StringNode (location: (85,3)-(85,6))
-        │       │           │       ├── flags: ∅
+        │       │           │       ├── flags: frozen
         │       │           │       ├── opening_loc: ∅
         │       │           │       ├── content_loc: (85,3)-(85,6) = "\\na"
         │       │           │       ├── closing_loc: ∅
@@ -1156,7 +1168,7 @@
             ├── opening_loc: (89,0)-(89,1) = "`"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (89,1)-(90,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (89,1)-(90,0) = "  x\n"
             │   │   ├── closing_loc: ∅
@@ -1178,7 +1190,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (90,5)-(90,6) = "}"
             │   └── @ StringNode (location: (90,6)-(91,1))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (90,6)-(91,1) = "\n#"
             │       ├── closing_loc: ∅

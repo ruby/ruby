@@ -15,6 +15,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ InterpolatedStringNode (location: (1,2)-(1,9))
+            │           ├── flags: ∅
             │           ├── opening_loc: (1,2)-(1,3) = "\""
             │           ├── parts: (length: 1)
             │           │   └── @ EmbeddedStatementsNode (location: (1,3)-(1,8))

@@ -35,16 +35,17 @@
             │           │   │   ├── flags: ∅
             │           │   │   └── arguments: (length: 1)
             │           │   │       └── @ InterpolatedStringNode (location: (1,9)-(4,4))
+            │           │   │           ├── flags: ∅
             │           │   │           ├── opening_loc: (1,9)-(1,10) = "'"
             │           │   │           ├── parts: (length: 2)
             │           │   │           │   ├── @ StringNode (location: (1,10)-(2,0))
-            │           │   │           │   │   ├── flags: ∅
+            │           │   │           │   │   ├── flags: frozen
             │           │   │           │   │   ├── opening_loc: ∅
             │           │   │           │   │   ├── content_loc: (1,10)-(2,0) = "b\n"
             │           │   │           │   │   ├── closing_loc: ∅
             │           │   │           │   │   └── unescaped: "b\n"
             │           │   │           │   └── @ StringNode (location: (4,0)-(4,3))
-            │           │   │           │       ├── flags: ∅
+            │           │   │           │       ├── flags: frozen
             │           │   │           │       ├── opening_loc: ∅
             │           │   │           │       ├── content_loc: (4,0)-(4,3) = "  c"
             │           │   │           │       ├── closing_loc: ∅

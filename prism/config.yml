@@ -626,6 +626,13 @@ flags:
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: InterpolatedStringNodeFlags
+    values:
+      - name: FROZEN
+        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`"
+      - name: MUTABLE
+        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`"
+    comment: Flags for interpolated string nodes that indicated mutability if they are also marked as literals.
   - name: KeywordHashNodeFlags
     values:
       - name: SYMBOL_KEYS
@@ -2260,6 +2267,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: InterpolatedStringNode
     fields:
+      - name: flags
+        type: flags
+        kind: InterpolatedStringNodeFlags
       - name: opening_loc
         type: location?
       - name: parts

@@ -4,10 +4,11 @@
     @ StatementsNode (location: (1,0)-(1,16))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,16))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (1,1)-(1,3))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,1)-(1,3) = "a "
             │   │   ├── closing_loc: ∅
@@ -29,7 +30,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (1,6)-(1,7) = "}"
             │   └── @ StringNode (location: (1,7)-(1,15))
-            │       ├── flags: forced_utf8_encoding
+            │       ├── flags: forced_utf8_encoding, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,7)-(1,15) = "\\302\\275"
             │       ├── closing_loc: ∅

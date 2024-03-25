@@ -21,7 +21,7 @@
             │       ├── opening_loc: (1,17)-(1,19) = ":\""
             │       ├── parts: (length: 2)
             │       │   ├── @ StringNode (location: (1,19)-(1,22))
-            │       │   │   ├── flags: ∅
+            │       │   │   ├── flags: frozen
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (1,19)-(1,22) = "foo"
             │       │   │   ├── closing_loc: ∅

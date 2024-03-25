@@ -4,10 +4,11 @@
     @ StatementsNode (location: (1,0)-(12,4))
     └── body: (length: 2)
         ├── @ InterpolatedStringNode (location: (1,0)-(1,7))
+        │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,7) = "<<~RUBY"
         │   ├── parts: (length: 4)
         │   │   ├── @ StringNode (location: (2,0)-(3,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (2,0)-(3,0) = "pre\n"
         │   │   │   ├── closing_loc: ∅
@@ -25,19 +26,20 @@
         │   │   │   │           └── unescaped: "  hello\n"
         │   │   │   └── closing_loc: (7,0)-(7,1) = "}"
         │   │   ├── @ StringNode (location: (7,1)-(8,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (7,1)-(8,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   └── @ StringNode (location: (8,0)-(9,0))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (8,0)-(9,0) = "post\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "post\n"
         │   └── closing_loc: (9,0)-(10,0) = "RUBY\n"
         └── @ InterpolatedStringNode (location: (12,0)-(12,4))
+            ├── flags: ∅
             ├── opening_loc: (12,0)-(12,4) = "<<-A"
             ├── parts: (length: 2)
             │   ├── @ EmbeddedStatementsNode (location: (13,0)-(21,1))
@@ -46,6 +48,7 @@
             │   │   │   @ StatementsNode (location: (14,0)-(14,4))
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ InterpolatedStringNode (location: (14,0)-(14,4))
+            │   │   │           ├── flags: ∅
             │   │   │           ├── opening_loc: (14,0)-(14,4) = "<<-B"
             │   │   │           ├── parts: (length: 2)
             │   │   │           │   ├── @ EmbeddedStatementsNode (location: (15,0)-(19,1))
@@ -54,6 +57,7 @@
             │   │   │           │   │   │   @ StatementsNode (location: (16,0)-(16,4))
             │   │   │           │   │   │   └── body: (length: 1)
             │   │   │           │   │   │       └── @ InterpolatedStringNode (location: (16,0)-(16,4))
+            │   │   │           │   │   │           ├── flags: ∅
             │   │   │           │   │   │           ├── opening_loc: (16,0)-(16,4) = "<<-C"
             │   │   │           │   │   │           ├── parts: (length: 2)
             │   │   │           │   │   │           │   ├── @ EmbeddedStatementsNode (location: (17,0)-(17,4))
@@ -66,7 +70,7 @@
             │   │   │           │   │   │           │   │   │           └── value: 3
             │   │   │           │   │   │           │   │   └── closing_loc: (17,3)-(17,4) = "}"
             │   │   │           │   │   │           │   └── @ StringNode (location: (17,4)-(18,0))
-            │   │   │           │   │   │           │       ├── flags: ∅
+            │   │   │           │   │   │           │       ├── flags: frozen
             │   │   │           │   │   │           │       ├── opening_loc: ∅
             │   │   │           │   │   │           │       ├── content_loc: (17,4)-(18,0) = "\n"
             │   │   │           │   │   │           │       ├── closing_loc: ∅
@@ -74,7 +78,7 @@
             │   │   │           │   │   │           └── closing_loc: (18,0)-(19,0) = "C\n"
             │   │   │           │   │   └── closing_loc: (19,0)-(19,1) = "}"
             │   │   │           │   └── @ StringNode (location: (19,1)-(20,0))
-            │   │   │           │       ├── flags: ∅
+            │   │   │           │       ├── flags: frozen
             │   │   │           │       ├── opening_loc: ∅
             │   │   │           │       ├── content_loc: (19,1)-(20,0) = "\n"
             │   │   │           │       ├── closing_loc: ∅
@@ -82,7 +86,7 @@
             │   │   │           └── closing_loc: (20,0)-(21,0) = "B\n"
             │   │   └── closing_loc: (21,0)-(21,1) = "}"
             │   └── @ StringNode (location: (21,1)-(22,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (21,1)-(22,0) = "\n"
             │       ├── closing_loc: ∅

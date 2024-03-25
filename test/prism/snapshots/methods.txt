@@ -1237,10 +1237,11 @@
         │   │   @ StatementsNode (location: (136,12)-(136,26))
         │   │   └── body: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (136,12)-(136,26))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (136,12)-(136,13) = "\""
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (136,13)-(136,16))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (136,13)-(136,16) = "foo"
         │   │           │   │   ├── closing_loc: ∅

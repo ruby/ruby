@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,14))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,14))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 5)
             │   ├── @ EmbeddedVariableNode (location: (1,1)-(1,4))
@@ -12,7 +13,7 @@
             │   │       @ InstanceVariableReadNode (location: (1,2)-(1,4))
             │   │       └── name: :@a
             │   ├── @ StringNode (location: (1,4)-(1,5))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,4)-(1,5) = " "
             │   │   ├── closing_loc: ∅
@@ -23,7 +24,7 @@
             │   │       @ ClassVariableReadNode (location: (1,6)-(1,9))
             │   │       └── name: :@@a
             │   ├── @ StringNode (location: (1,9)-(1,10))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,9)-(1,10) = " "
             │   │   ├── closing_loc: ∅

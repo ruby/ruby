@@ -46,10 +46,11 @@
         │   │   │   │       ├── name_loc: (5,3)-(5,5) = "x:"
         │   │   │   │       └── value:
         │   │   │   │           @ InterpolatedStringNode (location: (5,6)-(5,13))
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── opening_loc: (5,6)-(5,7) = "\""
         │   │   │   │           ├── parts: (length: 2)
         │   │   │   │           │   ├── @ StringNode (location: (5,7)-(5,8))
-        │   │   │   │           │   │   ├── flags: ∅
+        │   │   │   │           │   │   ├── flags: frozen
         │   │   │   │           │   │   ├── opening_loc: ∅
         │   │   │   │           │   │   ├── content_loc: (5,7)-(5,8) = "b"
         │   │   │   │           │   │   ├── closing_loc: ∅
