@@ -6,13 +6,13 @@
 #ifndef PRISM_PRETTYPRINT_H
 #define PRISM_PRETTYPRINT_H
 
+#include "prism/defines.h"
+
 #ifdef PRISM_EXCLUDE_PRETTYPRINT
 
 void pm_prettyprint(void);
 
 #else
-
-#include "prism/defines.h"
 
 #include <stdio.h>
 

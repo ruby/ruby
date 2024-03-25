@@ -10842,9 +10842,9 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         }
 
-                        parser->current.end = breakpoint + 1;
-                        pm_regexp_token_buffer_escape(parser, &token_buffer);
                         breakpoint++;
+                        parser->current.end = breakpoint;
+                        pm_regexp_token_buffer_escape(parser, &token_buffer);
                         token_buffer.base.cursor = breakpoint;
 
                         /* fallthrough */
@@ -11069,9 +11069,9 @@ parser_lex(pm_parser_t *parser) {
 
                         // If we hit a \r\n sequence, then we need to treat it
                         // as a newline.
-                        parser->current.end = breakpoint + 1;
-                        pm_token_buffer_escape(parser, &token_buffer);
                         breakpoint++;
+                        parser->current.end = breakpoint;
+                        pm_token_buffer_escape(parser, &token_buffer);
                         token_buffer.cursor = breakpoint;
 
                         /* fallthrough */
@@ -11321,8 +11321,8 @@ parser_lex(pm_parser_t *parser) {
 
                         // If we hit a \r\n sequence, then we want to replace it
                         // with a single \n character in the final string.
-                        pm_token_buffer_escape(parser, &token_buffer);
                         breakpoint++;
+                        pm_token_buffer_escape(parser, &token_buffer);
                         token_buffer.cursor = breakpoint;
 
                         /* fallthrough */

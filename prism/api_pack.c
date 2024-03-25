@@ -1,5 +1,12 @@
 #include "prism/extension.h"
 
+#ifdef PRISM_EXCLUDE_PACK
+
+void
+Init_prism_pack(void) {}
+
+#else
+
 static VALUE rb_cPrism;
 static VALUE rb_cPrismPack;
 static VALUE rb_cPrismPackDirective;
@@ -265,3 +272,5 @@ Init_prism_pack(void) {
     pack_symbol = ID2SYM(rb_intern("pack"));
     unpack_symbol = ID2SYM(rb_intern("unpack"));
 }
+
+#endif

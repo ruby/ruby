@@ -68,6 +68,9 @@ module Prism
       seattlerb/heredoc_bad_hex_escape.txt
       seattlerb/heredoc_bad_oct_escape.txt
       seattlerb/heredoc_with_extra_carriage_horrible_mix.txt
+      seattlerb/heredoc_with_extra_carriage_returns_windows.txt
+      seattlerb/heredoc_with_only_carriage_returns_windows.txt
+      seattlerb/heredoc_with_only_carriage_returns.txt
       spanning_heredoc_newlines.txt
       spanning_heredoc.txt
       tilde_heredocs.txt

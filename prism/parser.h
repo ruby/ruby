@@ -6,8 +6,8 @@
 #ifndef PRISM_PARSER_H
 #define PRISM_PARSER_H
 
-#include "prism/ast.h"
 #include "prism/defines.h"
+#include "prism/ast.h"
 #include "prism/encoding.h"
 #include "prism/options.h"
 #include "prism/util/pm_constant_pool.h"
