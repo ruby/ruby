@@ -784,7 +784,12 @@ module RbInstall
         end
 
         def makefile_path
-          "#{makefile_dir}/Makefile"
+          if File.exist?("#{makefile_dir}/Makefile")
+            "#{makefile_dir}/Makefile"
+          else
+            # for out-of-place build
+            "#{$ext_build_dir}/#{relative_base}/Makefile"
+          end
         end
 
         def makefile_dir
