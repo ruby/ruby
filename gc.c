@@ -9559,19 +9559,23 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
         DURING_GC_COULD_MALLOC_REGION_END();
     }
 
-    st_data_t srcid = (st_data_t)src, id;
-
-    /* If the source object's object_id has been seen, we need to update
-     * the object to object id mapping. */
-    if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
-        gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        /* Resizing the st table could cause a malloc */
-        DURING_GC_COULD_MALLOC_REGION_START();
-        {
-            st_delete(objspace->obj_to_id_tbl, &srcid, 0);
-            st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+    if (FL_TEST((VALUE)src, FL_SEEN_OBJ_ID)) {
+        st_data_t srcid = (st_data_t)src, id;
+        /* If the source object's object_id has been seen, we need to update
+         * the object to object id mapping. */
+        if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
+            gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
+            /* Resizing the st table could cause a malloc */
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                st_delete(objspace->obj_to_id_tbl, &srcid, 0);
+                st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
         }
-        DURING_GC_COULD_MALLOC_REGION_END();
+    }
+    else {
+        GC_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)src, NULL));
     }
 
     /* Move the object */
