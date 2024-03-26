@@ -8611,9 +8611,12 @@ pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
 VALUE
 pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
 {
-    pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
-
     rb_encoding *encoding = rb_enc_get(source);
+    if (!rb_enc_asciicompat(encoding)) {
+        return rb_exc_new_cstr(rb_eArgError, "invalid source encoding");
+    }
+
+    pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
     pm_options_encoding_set(&result->options, rb_enc_name(encoding));
 
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
