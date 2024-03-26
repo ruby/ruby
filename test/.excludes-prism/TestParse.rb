@@ -1,5 +1,4 @@
 exclude(:test_assign_in_conditional, "missing warning")
-exclude(:test_here_document, "incorrect heredoc")
 exclude(:test_magic_comment, "incorrect encoding")
 exclude(:test_shareable_constant_value_nested, "ractor support")
 exclude(:test_shareable_constant_value_nonliteral, "ractor support")
