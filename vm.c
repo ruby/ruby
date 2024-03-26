@@ -3908,6 +3908,7 @@ Init_VM(void)
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
     rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
+    rb_vm_register_global_object(rb_class_path_cached(fcore));
     RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
@@ -3927,7 +3928,6 @@ Init_VM(void)
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_vm_register_global_object(fcore);
-    rb_vm_register_global_object(rb_class_path_cached(fcore));
     rb_mRubyVMFrozenCore = fcore;
 
     /*
