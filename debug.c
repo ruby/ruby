@@ -226,7 +226,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     }
 
     if (NAME_MATCH("gc_stress")) {
-        rb_gc_stress_set(Qtrue);
+        rb_gc_initial_stress_set(Qtrue);
         return 1;
     }
     SET_WHEN("core", ruby_enable_coredump, 1);
