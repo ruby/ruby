@@ -1876,10 +1876,22 @@ calloc1(size_t n)
     return calloc(1, n);
 }
 
+static VALUE initial_stress = Qfalse;
+
+void
+rb_gc_initial_stress_set(VALUE flag)
+{
+    initial_stress = flag;
+}
+
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
+
+    objspace->flags.gc_stressful = RTEST(initial_stress);
+    objspace->gc_stress_mode = initial_stress;
+
     objspace->flags.measure_gc = 1;
     malloc_limit = gc_params.malloc_limit_min;
     objspace->finalize_deferred_pjob = rb_postponed_job_preregister(0, gc_finalize_deferred, objspace);
@@ -1897,8 +1909,6 @@ rb_objspace_alloc(void)
     }
 
     rb_darray_make_without_gc(&objspace->weak_references, 0);
-
-    dont_gc_on();
 
     return objspace;
 }
@@ -8951,7 +8961,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
-    if (!heap_allocated_pages) return FALSE; /* heap is not ready */
+    if (!heap_allocated_pages) return TRUE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     GC_ASSERT(gc_mode(objspace) == gc_mode_none);
@@ -11147,20 +11157,14 @@ gc_stress_get(rb_execution_context_t *ec, VALUE self)
     return ruby_gc_stress_mode;
 }
 
-void
-rb_gc_stress_set(VALUE flag)
+static VALUE
+gc_stress_set_m(rb_execution_context_t *ec, VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
     objspace->flags.gc_stressful = RTEST(flag);
     objspace->gc_stress_mode = flag;
-}
 
-static VALUE
-gc_stress_set_m(rb_execution_context_t *ec, VALUE self, VALUE flag)
-{
-
-    rb_gc_stress_set(flag);
     return flag;
 }
 

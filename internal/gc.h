@@ -223,7 +223,7 @@ void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
-void rb_gc_stress_set(VALUE flag);
+void rb_gc_initial_stress_set(VALUE flag);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
