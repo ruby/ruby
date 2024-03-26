@@ -745,46 +745,107 @@ module RbInstall
       end
 
       def collect
-        ruby_libraries.sort
+        requirable_features.sort
+      end
+
+      private
+
+      def features_from_makefile(makefile_path)
+        makefile = File.read(makefile_path)
+
+        name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        return [] if name.nil? || name.empty?
+
+        feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        feature = feature.sub("$(TARGET)", name)
+
+        target_prefix = makefile[/^target_prefix[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+        feature = File.join(target_prefix.delete_prefix("/"), feature) unless target_prefix.empty?
+
+        Array(feature)
       end
 
       class Ext < self
-        def skip_install?(files)
+        def requirable_features
           # install ext only when it's configured
-          !File.exist?("#{$ext_build_dir}/#{relative_base}/Makefile")
+          return [] unless File.exist?(makefile_path)
+
+          ruby_features + ext_features
         end
 
-        def ruby_libraries
-          Dir.glob("lib/**/*.rb", base: "#{srcdir}/ext/#{relative_base}")
+        private
+
+        def ruby_features
+          Dir.glob("**/*.rb", base: "#{makefile_dir}/lib")
+        end
+
+        def ext_features
+          features_from_makefile(makefile_path)
+        end
+
+        def makefile_path
+          if File.exist?("#{makefile_dir}/Makefile")
+            "#{makefile_dir}/Makefile"
+          else
+            # for out-of-place build
+            "#{$ext_build_dir}/#{relative_base}/Makefile"
+          end
+        end
+
+        def makefile_dir
+          "#{root}/#{relative_base}"
+        end
+
+        def root
+          File.expand_path($ext_build_dir, srcdir)
         end
       end
 
       class Lib < self
-        def skip_install?(files)
-          files.empty?
+        def requirable_features
+          ruby_features + ext_features
         end
 
-        def ruby_libraries
+        private
+
+        def ruby_features
           gemname = File.basename(gemspec, ".gemspec")
           base = relative_base || gemname
           # for lib/net/net-smtp.gemspec
           if m = /.*(?=-(.*)\z)/.match(gemname)
             base = File.join(base, *m.to_a.select {|n| !base.include?(n)})
           end
-          files = Dir.glob("lib/#{base}{.rb,/**/*.rb}", base: srcdir)
+          files = Dir.glob("#{base}{.rb,/**/*.rb}", base: root)
           if !relative_base and files.empty? # no files at the toplevel
             # pseudo gem like ruby2_keywords
-            files << "lib/#{gemname}.rb"
+            files << "#{gemname}.rb"
           end
 
           case gemname
           when "net-http"
-            files << "lib/net/https.rb"
+            files << "net/https.rb"
           when "optparse"
-            files << "lib/optionparser.rb"
+            files << "optionparser.rb"
           end
 
           files
+        end
+
+        def ext_features
+          loaded_gemspec = load_gemspec("#{root}/#{gemspec}")
+          extension = loaded_gemspec.extensions.first
+          return [] unless extension
+
+          extconf = File.expand_path(extension, srcdir)
+          ext_build_dir = File.dirname(extconf)
+          makefile_path = "#{ext_build_dir}/Makefile"
+          return [] unless File.exist?(makefile_path)
+
+          features_from_makefile(makefile_path)
+        end
+
+        def root
+          "#{srcdir}/lib"
         end
       end
     end
@@ -967,7 +1028,7 @@ def install_default_gem(dir, srcdir, bindir)
     spec = load_gemspec("#{base}/#{src}")
     file_collector = RbInstall::Specs::FileCollector.for(srcdir, dir, src)
     files = file_collector.collect
-    if file_collector.skip_install?(files)
+    if files.empty?
       next
     end
     spec.files = files
