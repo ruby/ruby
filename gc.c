@@ -1910,6 +1910,11 @@ rb_objspace_alloc(void)
 
     rb_darray_make_without_gc(&objspace->weak_references, 0);
 
+    // TODO: debug why on Windows Ruby crashes on boot when GC is on.
+#ifdef _WIN32
+    dont_gc_on();
+#endif
+
     return objspace;
 }
 
