@@ -2191,6 +2191,24 @@ eom
     RUBY
   end
 
+  def test_method_dispatch_by_pattern_matching
+    feature = eval("#{<<~"begin;"}\n#{<<~'end;'}", nil, __FILE__, __LINE__+1)
+    begin;
+      def greet(...)
+      in [name]
+        name
+      in [first_name, last_name]
+        "Hi there #{first_name} #{last_name}"
+      in {greeting:}
+        "Hello, #{greeting}"
+      end
+    end;
+
+    assert_equal "Howdy", greet("Howdy")
+    assert_equal "Hi there Ruby world", greet("Ruby", "world")
+    assert_equal "Hello, World", greet(greeting: "World")
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

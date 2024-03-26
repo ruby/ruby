@@ -3723,6 +3723,24 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
+m_core_forwarding_arguments(VALUE recv, VALUE rest, VALUE kwds, VALUE block)
+{
+    if (NIL_P(block) && (NIL_P(rest) || !RARRAY_LEN(rest))) {
+        return kwds;
+    }
+    VALUE args = 0;
+    if (!NIL_P(kwds) && !RHASH_EMPTY_P(kwds)) {
+        args = NIL_P(rest) ? rb_ary_new() : rb_ary_dup(rest);
+        rb_ary_push(args, kwds);
+    }
+    if (!NIL_P(block)) {
+        if (!args) args = NIL_P(rest) ? rb_ary_new() : rb_ary_dup(rest);
+        rb_ary_push(args, block);
+    }
+    return args ? args : rest;
+}
+
+static VALUE
 m_core_make_shareable(VALUE recv, VALUE obj)
 {
     return rb_ractor_make_shareable(obj);
@@ -3918,6 +3936,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, id_core_sprintf, f_sprintf, -1);
+    rb_define_method_id(klass, id_core_forwarding_arguments, m_core_forwarding_arguments, 3);
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);

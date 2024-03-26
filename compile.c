@@ -7646,7 +7646,25 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     }
     ADD_INSN(head, line_node, putnil); /* allocate stack for cached #deconstruct value */
 
-    CHECK(COMPILE(head, "case base", RNODE_CASE3(orig_node)->nd_head));
+    NODE *head_node = RNODE_CASE3(orig_node)->nd_head;
+    if (head_node && nd_type_p(head_node, NODE_BLOCK_PASS)) {
+        /* method arguments */
+        ADD_INSN1(head, head_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        NODE *args = RNODE_BLOCK_PASS(head_node)->nd_head;
+        if (nd_type_p(args, NODE_ARGSPUSH)) {
+            COMPILE(head, "rest", RNODE_ARGSPUSH(args)->nd_head);
+            args = RNODE_ARGSPUSH(args)->nd_body;
+        }
+        else {
+            ADD_INSN(head, head_node, putnil);
+        }
+        COMPILE(head, "keywords", args);
+        COMPILE(head, "block", RNODE_BLOCK_PASS(head_node)->nd_body);
+        ADD_SEND_R(head, head_node, id_core_forwarding_arguments, INT2FIX(3), 0, INT2FIX(0), 0);
+    }
+    else {
+        CHECK(COMPILE(head, "case base", RNODE_CASE3(orig_node)->nd_head));
+    }
 
     ADD_SEQ(ret, head);	/* case VAL */
 

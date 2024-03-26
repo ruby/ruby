@@ -1581,6 +1581,7 @@ static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*,
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
 static void forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var);
+static NODE *new_method_case_args(struct parser_params *p, const YYLTYPE*);
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -2801,7 +2802,7 @@ rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
-%type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
+%type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command method_body
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
@@ -3038,6 +3039,14 @@ bodystmt	: compstmt[body]
                     {
                         $$ = new_bodystmt(p, $body, $opt_rescue, 0, $opt_ensure, &@$);
                     /*% ripper: bodystmt!($:body, $:opt_rescue, Qnil, $:opt_ensure) %*/
+                    }
+                ;
+
+method_body	: bodystmt
+                | p_case_body[body]
+                    {
+                        $$ = NEW_CASE3(new_method_case_args(p, &@body), $body, &@body);
+                    /*% ripper: case!(Qnil, $:body) %*/
                     }
                 ;
 
@@ -4665,7 +4674,7 @@ primary		: literal
                     {
                         push_end_expect_token_locations(p, &@head.beg_pos);
                     }
-                  bodystmt
+                  method_body[bodystmt]
                   k_end
                     {
                         restore_defun(p, $head);
@@ -4680,7 +4689,7 @@ primary		: literal
                     {
                         push_end_expect_token_locations(p, &@head.beg_pos);
                     }
-                  bodystmt
+                  method_body[bodystmt]
                   k_end
                     {
                         restore_defun(p, $head);
@@ -15698,6 +15707,21 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
 #endif
     return arg_blk_pass(args, block);
+}
+
+static NODE *
+new_method_case_args(struct parser_params *p, const YYLTYPE *body_loc)
+{
+    if (!local_id(p, idFWD_ALL)) {
+        compile_error(p, "not defined with ...");
+        return Qnone;
+    }
+
+    const YYLTYPE loc = {
+        {body_loc->beg_pos.lineno, body_loc->beg_pos.column},
+        {body_loc->beg_pos.lineno, body_loc->beg_pos.column},
+    };
+    return new_args_forward_call(p, 0, &loc, &loc);
 }
 
 static NODE *
