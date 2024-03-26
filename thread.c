@@ -5206,7 +5206,7 @@ exec_recursive_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, data))
  * Calls func(obj, arg, recursive), where recursive is non-zero if the
  * current method is called recursively on obj, or on the pair <obj, pairid>
  * If outer is 0, then the innermost func will be called with recursive set
- * to Qtrue, otherwise the outermost func will be called. In the latter case,
+ * to true, otherwise the outermost func will be called. In the latter case,
  * all inner func are short-circuited by throw.
  * Implementation details: the value thrown is the recursive list which is
  * proper to the current method and unlikely to be caught anywhere else.
@@ -5315,7 +5315,7 @@ rb_exec_recursive_outer_mid(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE 
 
 /*
  * If recursion is detected on the current method, obj and paired_obj,
- * the outermost func will be called with (obj, arg, Qtrue). All inner
+ * the outermost func will be called with (obj, arg, true). All inner
  * func will be short-circuited using throw.
  */
 
