@@ -264,18 +264,6 @@ enc_from_encoding(void *enc)
 }
 
 static int
-encoding_get(VALUE obj)
-{
-    return ENCODING_GET(obj);
-}
-
-static void
-encoding_set(VALUE obj, int encindex)
-{
-    ENCODING_SET(obj, encindex);
-}
-
-static int
 encoding_is_ascii8bit(VALUE obj)
 {
     return ENCODING_IS_ASCII8BIT(obj);
@@ -603,8 +591,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
-    .char_to_option_kcode = rb_char_to_option_kcode,
-    .ascii8bit_encindex = rb_ascii8bit_encindex,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
     .enc_associate_index = rb_enc_associate_index,
@@ -613,8 +599,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
     .enc_compatible = enc_compatible,
     .enc_from_encoding = enc_from_encoding,
-    .encoding_get = encoding_get,
-    .encoding_set = encoding_set,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
     .enc_coderange_broken = ENC_CODERANGE_BROKEN,
