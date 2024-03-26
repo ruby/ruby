@@ -5098,12 +5098,12 @@ recursive_list_access(VALUE sym)
 }
 
 /*
- * Returns Qtrue if and only if obj (or the pair <obj, paired_obj>) is already
+ * Returns true if and only if obj (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
 
-static VALUE
+static bool
 recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -5115,18 +5115,18 @@ recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 
     VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
     if (UNDEF_P(pair_list))
-        return Qfalse;
+        return false;
     if (paired_obj_id) {
         if (!RB_TYPE_P(pair_list, T_HASH)) {
             if (!OBJ_ID_EQL(paired_obj_id, pair_list))
-                return Qfalse;
+                return false;
         }
         else {
             if (NIL_P(rb_hash_lookup(pair_list, paired_obj_id)))
-                return Qfalse;
+                return false;
         }
     }
-    return Qtrue;
+    return true;
 }
 
 /*
