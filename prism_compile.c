@@ -8480,6 +8480,30 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
 }
 
 /**
+ * Set the frozen_string_literal option based on the default value used by the
+ * CRuby compiler.
+ */
+static void
+pm_options_frozen_string_literal_init(pm_options_t *options)
+{
+    int frozen_string_literal = rb_iseq_opt_frozen_string_literal();
+
+    switch (frozen_string_literal) {
+      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+        pm_options_frozen_string_literal_set(options, false);
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+        pm_options_frozen_string_literal_set(options, true);
+        break;
+      default:
+        rb_bug("pm_options_frozen_string_literal_init: invalid frozen_string_literal=%d", frozen_string_literal);
+        break;
+    }
+}
+
+/**
  * Returns an array of ruby String objects that represent the lines of the
  * source file that the given parser parsed.
  */
@@ -8514,24 +8538,6 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     return lines;
 }
 
-void
-pm_options_frozen_string_literal_init(pm_parse_result_t *result, int frozen_string_literal)
-{
-    switch (frozen_string_literal) {
-      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
-        break;
-      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-        pm_options_frozen_string_literal_set(&result->options, false);
-        break;
-      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
-        pm_options_frozen_string_literal_set(&result->options, true);
-        break;
-      default:
-        rb_bug("pm_options_frozen_string_literal_init: invalid frozen_string_literal=%d", frozen_string_literal);
-        break;
-    }
-}
-
 /**
  * Attempt to load the file into memory. Return a Ruby error if the file cannot
  * be read.
@@ -8551,6 +8557,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath)
         return err;
     }
 
+    pm_options_frozen_string_literal_init(&result->options);
     return Qnil;
 }
 
@@ -8616,6 +8623,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
         return rb_exc_new_cstr(rb_eArgError, "invalid source encoding");
     }
 
+    pm_options_frozen_string_literal_init(&result->options);
     pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
     pm_options_encoding_set(&result->options, rb_enc_name(encoding));
 
@@ -8658,6 +8666,8 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 VALUE
 pm_parse_stdin(pm_parse_result_t *result)
 {
+    pm_options_frozen_string_literal_init(&result->options);
+
     pm_buffer_t buffer;
     pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) rb_stdin, pm_parse_stdin_fgets, &result->options);
 

@@ -5,7 +5,6 @@ MSpec.register(:exclude, "The -S command line option runs launcher found in PATH
 MSpec.register(:exclude, "The -x command line option runs code after the first /#!.*ruby.*/-ish line in target file")
 MSpec.register(:exclude, "The -x command line option fails when /#!.*ruby.*/-ish line in target file is not found")
 MSpec.register(:exclude, "The -x command line option behaves as -x was set when non-ruby shebang is encountered on first line")
-MSpec.register(:exclude, "The --enable-frozen-string-literal flag causes string literals to produce the same object for literals with the same content in different files")
 MSpec.register(:exclude, "The --debug flag produces debugging info on attempted frozen string modification")
 
 ## Language

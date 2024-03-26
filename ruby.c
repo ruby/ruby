@@ -2116,8 +2116,6 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     pm_options_t *options = &result->options;
     pm_options_line_set(options, 1);
 
-    pm_options_frozen_string_literal_init(result, rb_iseq_opt_frozen_string_literal());
-
     if (opt->ext.enc.name != 0) {
         pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
     }
