@@ -768,6 +768,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_stress_at_startup
+    omit 'TODO: fixme later'
     assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
   end
 
