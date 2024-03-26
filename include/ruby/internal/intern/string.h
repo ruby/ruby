@@ -454,7 +454,7 @@ VALUE rb_interned_str(const char *ptr, long len);
 RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to  rb_interned_str(), except it  assumes the passed pointer  is a
- * pointer to a C's  string.  It can also be seen as a  routine identical to to
+ * pointer to a C's  string.  It can also be seen as a  routine identical to
  * rb_str_to_interned_str(), except  it takes a  C's string instead  of Ruby's.
  * Or it can  also be seen as a routine  identical to rb_str_new_cstr(), except
  * it returns an infamous "f"string.

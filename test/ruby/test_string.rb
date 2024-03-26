@@ -3623,7 +3623,7 @@ CODE
     assert_not_predicate +chilled_string, :frozen?
     assert_not_same chilled_string, +chilled_string
 
-    # @- the the original string as mutable
+    # @- the original string as mutable
     assert_predicate -chilled_string, :frozen?
     assert_not_same chilled_string, -chilled_string
   end
