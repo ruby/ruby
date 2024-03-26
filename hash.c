@@ -139,10 +139,15 @@ rb_any_cmp(VALUE a, VALUE b)
     return !rb_eql(a, b);
 }
 
+extern VALUE rb_ary_hash(VALUE ary);
+
 static VALUE
 hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
     if (recurse) return INT2FIX(0);
+    if (RBASIC_CLASS(obj) == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_hash(obj);
+    }
     return rb_funcallv(obj, id_hash, 0, 0);
 }
 

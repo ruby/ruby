@@ -5211,7 +5211,7 @@ rb_ary_hash_values(long len, const VALUE *elements)
  *
  */
 
-static VALUE
+VALUE
 rb_ary_hash(VALUE ary)
 {
     return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
