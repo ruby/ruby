@@ -1132,20 +1132,6 @@ rb_mmtk_assert_is_pinned(VALUE obj)
     }
 }
 
-// Temporarily pin the buffer of an array so that it can be passed to native functions which are
-// not aware of object movement.
-void
-rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot)
-{
-    // We store the reference into the given stack slot so that the conservative stack scanner can
-    // pick it up.
-    if (ARY_EMBED_P(array)) {
-        *stack_slot = array;
-    } else {
-        *stack_slot = RARRAY_EXT(array)->objbuf;
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Forking support
 ////////////////////////////////////////////////////////////////////////////////

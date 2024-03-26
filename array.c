@@ -37,6 +37,9 @@
 #endif
 #include "ruby_assert.h"
 
+// Conditional compilation macros for MMTk.
+#include "internal/mmtk_macros.h"
+
 VALUE rb_cArray;
 
 /* Flags of RArray
@@ -230,6 +233,11 @@ rb_ary_size_as_embedded(VALUE ary)
 
 #if USE_MMTK
 void
+rb_mmtk_remember_array_content_holder(VALUE ary)
+{
+    rb_gc_writebarrier_remember(rb_mmtk_array_content_holder(ary));
+}
+void
 rb_mmtk_ary_set_objbuf(VALUE ary, VALUE objbuf)
 {
     RUBY_ASSERT(rb_mmtk_enabled_p());
@@ -381,6 +389,14 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 static void
 ary_memfill(VALUE ary, long beg, long size, VALUE val)
 {
+    WHEN_USING_MMTK({
+        rb_mmtk_remember_array_content_holder(ary);
+        RARRAY_PTR_USE(ary, ptr, {
+            memfill(ptr + beg, size, val);
+        });
+        return;
+    })
+
     RARRAY_PTR_USE(ary, ptr, {
         memfill(ptr + beg, size, val);
         RB_OBJ_WRITTEN(ary, Qundef, val);
@@ -391,6 +407,14 @@ static void
 ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_ary)
 {
     RUBY_ASSERT(!ARY_SHARED_P(buff_owner_ary));
+
+    WHEN_USING_MMTK({
+        rb_mmtk_remember_array_content_holder(buff_owner_ary);
+        RARRAY_PTR_USE(ary, ptr, {
+            MEMCPY(ptr+beg, argv, VALUE, argc);
+        });
+        return;
+    })
 
     if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
         rb_gc_writebarrier_remember(buff_owner_ary);
@@ -689,7 +713,11 @@ rb_ary_cancel_sharing(VALUE ary)
             ARY_SET_CAPA(ary, len);
         }
 
+        WHEN_USING_MMTK2({
+            rb_mmtk_remember_array_content_holder(ary);
+        }, { // when not using MMTk
         rb_gc_writebarrier_remember(ary);
+        })
     }
     ary_verify(ary);
 }
@@ -1475,6 +1503,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
         const VALUE *values = RARRAY_CONST_PTR(ary);
 
+        // MMTk note: Since `result` is embedded, the content holder must be `result` itself.
         RB_OBJ_WRITE(result, ptr, values[offset]);
         ARY_SET_EMBED_LEN(result, 1);
         return result;
@@ -1495,6 +1524,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
         const VALUE *values = RARRAY_CONST_PTR(ary);
 
         for (i = 0; i < len; ++i) {
+            // MMTk note: Since `result` is embedded, the content holder must be `result` itself.
             RB_OBJ_WRITE(result, ptr+i, values[j]);
             j += step;
         }
@@ -1503,12 +1533,22 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     else {
         const VALUE *values = RARRAY_CONST_PTR(ary);
 
+        WHEN_USING_MMTK2({
+            VALUE holder = rb_mmtk_array_content_holder(ary);
+            RARRAY_PTR_USE(result, ptr, {
+                for (i = 0; i < len; ++i) {
+                    RB_OBJ_WRITE(holder, ptr+i, values[j]);
+                    j += step;
+                }
+            });
+        }, { // When not using MMTk
         RARRAY_PTR_USE(result, ptr, {
             for (i = 0; i < len; ++i) {
                 RB_OBJ_WRITE(result, ptr+i, values[j]);
                 j += step;
             }
         });
+        })
         ARY_SET_LEN(result, len);
     }
 
@@ -1578,6 +1618,9 @@ rb_ary_push(VALUE ary, VALUE item)
 {
     long idx = RARRAY_LEN((ary_verify(ary), ary));
     VALUE target_ary = ary_ensure_room_for_push(ary, 1);
+    WHEN_USING_MMTK(
+        target_ary = rb_mmtk_array_content_holder(target_ary);
+    )
     RARRAY_PTR_USE(ary, ptr, {
         RB_OBJ_WRITE(target_ary, &ptr[idx], item);
     });
@@ -2446,7 +2489,15 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         }
         if (rlen > 0) {
             if (rofs == -1) {
+                WHEN_USING_MMTK2({
+                    // MMTk note: If rofs == -1, it means it is copying contents from a different
+                    // array, and this will introduce new edges from `ary`'s content holder to
+                    // other objects;  If rofs >= 0, it's copying within the array, and the object
+                    // graph doesn't change (ignoring the differences between slots).
+                    rb_mmtk_remember_array_content_holder(ary);
+                }, { // when not using MMTk
                 rb_gc_writebarrier_remember(ary);
+                })
             }
             else {
                 /* In this case, we're copying from a region in this array, so

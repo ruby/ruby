@@ -153,6 +153,9 @@
 #include "builtin.h"
 #include "shape.h"
 
+// Conditional compilation macros for MMTk.
+#include "internal/mmtk_macros.h"
+
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 #undef rb_data_object_wrap
@@ -1775,6 +1778,10 @@ RVALUE_PINNED(VALUE obj)
 static inline int
 RVALUE_WB_UNPROTECTED(VALUE obj)
 {
+    WHEN_USING_MMTK({
+        return mmtk_is_object_wb_unprotected((MMTk_ObjectReference)obj);
+    })
+
     check_rvalue_consistency(obj);
     return RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
 }
@@ -2717,16 +2724,18 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     RB_VM_LOCK_LEAVE_NO_BARRIER();
 #endif
 
-#if USE_MMTK
-    if (!rb_mmtk_enabled_p()) {
-#endif
     if (UNLIKELY(wb_protected == FALSE)) {
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            mmtk_register_wb_unprotected_object((MMTk_ObjectReference)obj);
+        } else {
+#endif
         ASSERT_vm_locking();
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
-    }
 #if USE_MMTK
-    }
+        }
 #endif
+    }
 
 #if RGENGC_PROFILE
     if (wb_protected) {
@@ -3523,6 +3532,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 #endif
 
 #if USE_MMTK
+    // Note: MMTk removes dead objects from the set of WB-unprotected objects after each GC.
     if (!rb_mmtk_enabled_p()) {
 #endif
     if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
@@ -9184,6 +9194,13 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 void
 rb_gc_writebarrier(VALUE a, VALUE b)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)a);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = &rb_objspace;
 
     if (RGENGC_CHECK_MODE) {
@@ -9224,6 +9241,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 {
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
+        mmtk_register_wb_unprotected_object((MMTk_ObjectReference)obj);
         return;
     }
 #endif
@@ -9268,6 +9286,13 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 void
 rb_gc_writebarrier_remember(VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)obj);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = &rb_objspace;
 
     gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", obj_info(obj));
@@ -9287,15 +9312,9 @@ rb_gc_writebarrier_remember(VALUE obj)
 void
 rb_gc_copy_attributes(VALUE dest, VALUE obj)
 {
-#if USE_MMTK
-    if (!rb_mmtk_enabled_p()) {
-#endif
     if (RVALUE_WB_UNPROTECTED(obj)) {
         rb_gc_writebarrier_unprotect(dest);
     }
-#if USE_MMTK
-    }
-#endif
     rb_gc_copy_finalizer(dest, obj);
 }
 
@@ -10146,6 +10165,12 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("gc_move should not be reached when using MMTk");
+    }
+#endif
+
     int marked;
     int wb_unprotected;
     int uncollectible;

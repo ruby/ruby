@@ -100,7 +100,6 @@ VALUE* rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf);
 // Object pinning
 void rb_mmtk_pin_object(VALUE obj);
 void rb_mmtk_assert_is_pinned(VALUE obj);
-void rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot);
 
 // Forking support
 void rb_mmtk_shutdown_gc_threads(void);

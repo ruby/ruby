@@ -207,4 +207,10 @@ bool mmtk_unpin_object(MMTk_ObjectReference object);
 
 bool mmtk_is_pinned(MMTk_ObjectReference object);
 
+void mmtk_register_wb_unprotected_object(MMTk_ObjectReference object);
+
+bool mmtk_is_object_wb_unprotected(MMTk_ObjectReference object);
+
+void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);
+
 #endif /* MMTK_H */

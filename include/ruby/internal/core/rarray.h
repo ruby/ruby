@@ -35,6 +35,10 @@
 #include "ruby/internal/value_type.h"
 #include "ruby/assert.h"
 
+#if USE_MMTK
+#include "ruby/internal/memory.h" // for RB_GC_GUARD
+#endif
+
 /**
  * Convenient casting macro.
  *
@@ -338,29 +342,33 @@ rb_mmtk_array_content_holder(VALUE a)
         return RARRAY_EXT(a)->objbuf;
     }
 }
+
+void rb_mmtk_remember_array_content_holder(VALUE ary);
 #endif
 
 #if USE_MMTK
 // Defined in mmtk_support.c
 bool rb_mmtk_enabled_p(void);
-void rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot);
 
-// When using MMTk, we need to pin the underlying buffer if the array is not embedded becuase the
-// buffer is in the GC heap.  Otherwise, if C calls back to Ruby, and Ruby triggers GCm and GC
-// moves the array buffer, the C function will be operating on the old address of the buffer.
-#define RBIMPL_RARRAY_STMT(ary, var, expr) do {                 \
+// When using MMTk, we need to
+// 1.  Apply RB_GC_GUARD to the underlying buffer if the array is not embedded
+//     becuase the buffer is in the GC heap.  Otherwise, if C calls back to
+//     Ruby, and Ruby triggers GC, and GC moves the array buffer, the C
+//     function will be operating on the old address of the buffer.
+// 2.  Apply write barrier to the actual array content holder if the caller
+//     writes to the array.  Currently this is done by the caller.  It's better
+//     to find a way to encapsulate the write barrier access in this macro.
+#define RBIMPL_RARRAY_STMT(ary, var, expr) do {         \
     RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                    \
     const VALUE rbimpl_ary = (ary);                             \
-    volatile VALUE rb_mmtk_impl_pinned;                         \
+    volatile VALUE rb_mmtk_actual_array_content_holder = 0;     \
     if (rb_mmtk_enabled_p()) {                                  \
-        rb_mmtk_pin_array_buffer(ary, &rb_mmtk_impl_pinned);    \
-    } else {                                                    \
-        rb_mmtk_impl_pinned = 0;                                \
+        rb_mmtk_actual_array_content_holder = rb_mmtk_array_content_holder(ary); \
     }                                                           \
     VALUE *var = rb_ary_ptr_use_start(rbimpl_ary);              \
     expr;                                                       \
     rb_ary_ptr_use_end(rbimpl_ary);                             \
-    rb_mmtk_impl_pinned = 0;                                    \
+    RB_GC_GUARD(rb_mmtk_actual_array_content_holder);           \
 } while (0)
 #else
 /**
@@ -443,8 +451,28 @@ RARRAY_PTR(VALUE ary)
 static inline void
 RARRAY_ASET(VALUE ary, long i, VALUE v)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, a non-embedded array consists of two heap objects: the array itself and
+        // and underlying buffer (imemo:mmtk_objbuf).  The GC considers them as two separate
+        // objects.  So when writing to a non-embedded array, we should apply write barrier to the
+        // underlying buffer (imemo:mmtk_objbuf) instead of the array itself.
+        // We also don't need to use RARRAY_PTR_USE.  It is for keeping a pointer to the ary on the
+        // stack so that it will be treated as a pinning root if GC is triggered inside the
+        // operation which RARRAY_PTR_USE wraps.  But when using MMTk, write barriers never trigger
+        // GC.
+
+        // Determine the source object. Select the objbuf if it is not embedded.
+        VALUE src_obj = FL_TEST_RAW(ary, RARRAY_EMBED_FLAG) ? ary : RARRAY_EXT(ary)->objbuf;
+        // Apply the (subsuming) write barrier.
+        RB_OBJ_WRITE(src_obj, &RARRAY_CONST_PTR(ary)[i], v);
+    } else {
+#endif
     RARRAY_PTR_USE(ary, ptr,
         RB_OBJ_WRITE(ary, &ptr[i], v));
+#if USE_MMTK
+    }
+#endif
 }
 
 /**

@@ -49,6 +49,9 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 
+// Conditional compilation macros for MMTk.
+#include "internal/mmtk_macros.h"
+
 #if USE_MMTK
 #include "internal/mmtk.h" // For mmtk_register_ppp
 #endif
@@ -3603,7 +3606,11 @@ rb_hash_keys(VALUE hash)
                 size = st_keys(table, ptr, size);
             }
         });
+        WHEN_USING_MMTK2({
+            rb_mmtk_remember_array_content_holder(keys);
+        }, { // When not using MMTk
         rb_gc_writebarrier_remember(keys);
+        })
         rb_ary_set_len(keys, size);
     }
     else {
@@ -3640,14 +3647,22 @@ rb_hash_values(VALUE hash)
 
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
         if (RHASH_AR_TABLE_P(hash)) {
+            WHEN_USING_MMTK2({
+                rb_mmtk_remember_array_content_holder(values);
+            }, { // When not using MMTk
             rb_gc_writebarrier_remember(values);
+            })
             RARRAY_PTR_USE(values, ptr, {
                 size = ar_values(hash, ptr, size);
             });
         }
         else if (RHASH_ST_TABLE_P(hash)) {
             st_table *table = RHASH_ST_TABLE(hash);
+            WHEN_USING_MMTK2({
+                rb_mmtk_remember_array_content_holder(values);
+            }, { // When not using MMTk
             rb_gc_writebarrier_remember(values);
+            })
             RARRAY_PTR_USE(values, ptr, {
                 size = st_values(table, ptr, size);
             });
