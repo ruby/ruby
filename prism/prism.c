@@ -4345,10 +4345,10 @@ pm_interpolated_string_node_append(pm_parser_t *parser, pm_interpolated_string_n
     if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
         switch (parser->frozen_string_literal) {
             case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
-                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
+                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE);
                 break;
             case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
-                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE);
+                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
                 break;
         }
     }
@@ -10900,11 +10900,15 @@ parser_lex(pm_parser_t *parser) {
                         // the list of newlines.
                         if (parser->heredoc_end == NULL) {
                             pm_newline_list_append(&parser->newline_list, breakpoint);
+                            parser->current.end = breakpoint + 1;
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                            break;
                         }
 
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
-                        break;
+                        parser_flush_heredoc_end(parser);
+                        pm_regexp_token_buffer_flush(parser, &token_buffer);
+                        LEX(PM_TOKEN_STRING_CONTENT);
                     case '\\': {
                         // If we hit escapes, then we need to treat the next
                         // token literally. In this case we'll skip past the
