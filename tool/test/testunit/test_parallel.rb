@@ -119,7 +119,7 @@ module TestParallel
 
         result = Marshal.load($1.chomp.unpack1("m"))
         assert_equal(5, result[0])
-        pend "TODO: result[1] returns 17. We should investigate it" do
+        pend "TODO: result[1] returns 17. We should investigate it" do # TODO: misusage of pend (pend doens't use given block)
           assert_equal(12, result[1])
         end
         assert_kind_of(Array,result[2])

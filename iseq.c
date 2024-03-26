@@ -538,6 +538,11 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, int
     RB_OBJ_WRITE(iseq, &loc->label, name);
     RB_OBJ_WRITE(iseq, &loc->base_label, name);
     loc->first_lineno = first_lineno;
+
+    if (ISEQ_BODY(iseq)->local_iseq == iseq && strcmp(RSTRING_PTR(name), "initialize") == 0) {
+        ISEQ_BODY(iseq)->param.flags.use_block = 1;
+    }
+
     if (code_location) {
         loc->node_id = node_id;
         loc->code_location = *code_location;
@@ -1011,6 +1016,7 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
+    ISEQ_BODY(iseq)->param.flags.use_block = true; // unused block warning is not supported yet
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 

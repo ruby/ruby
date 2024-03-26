@@ -2098,6 +2098,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         if (block_id) {
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
+            body->param.flags.use_block = 1;
         }
 
         iseq_calc_param_size(iseq);
@@ -5918,6 +5919,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_YIELD), 0,
                   PUSH_VAL(DEFINED_YIELD));
+        ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
         return;
 
       case NODE_BACK_REF:
@@ -8628,6 +8630,9 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
         }
+        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
+            ISEQ_BODY(iseq)->param.flags.use_block = 1;
+        }
         else {
             goto unknown_arg;
         }
@@ -9377,6 +9382,8 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
     else {
         /* NODE_ZSUPER */
+        ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
+
         int i;
         const rb_iseq_t *liseq = body->local_iseq;
         const struct rb_iseq_constant_body *const local_body = ISEQ_BODY(liseq);
@@ -9510,6 +9517,7 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
     ADD_SEQ(ret, args);
     ADD_INSN1(ret, node, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
+    ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
 
     if (popped) {
         ADD_INSN(ret, node, pop);
@@ -12935,7 +12943,10 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.has_block        << 6) |
         (body->param.flags.ambiguous_param0 << 7) |
         (body->param.flags.accepts_no_kwarg << 8) |
-        (body->param.flags.ruby2_keywords   << 9);
+        (body->param.flags.ruby2_keywords   << 9) |
+        (body->param.flags.anon_rest        << 10) |
+        (body->param.flags.anon_kwrest      << 11) |
+        (body->param.flags.use_block        << 12);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -13151,6 +13162,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.ruby2_keywords = (param_flags >> 9) & 1;
     load_body->param.flags.anon_rest = (param_flags >> 10) & 1;
     load_body->param.flags.anon_kwrest = (param_flags >> 11) & 1;
+    load_body->param.flags.use_block = (param_flags >> 12) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;

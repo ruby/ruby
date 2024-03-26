@@ -2966,6 +2966,57 @@ vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t
     return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
 }
 
+VALUE rb_gen_method_name(VALUE owner, VALUE name); // in vm_backtrace.c
+
+static void
+warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, void *pc)
+{
+    static st_table *dup_check_table = NULL;
+
+    st_data_t key = 0;
+    union {
+        VALUE v;
+        unsigned char b[SIZEOF_VALUE];
+    } k1 = {
+        .v = (VALUE)pc,
+    }, k2 = {
+        .v = (VALUE)cme->def,
+    };
+
+    // make unique key from pc and me->def pointer
+    for (int i=0; i<SIZEOF_VALUE; i++) {
+        // fprintf(stderr, "k1:%3d k2:%3d\n", k1.b[i], k2.b[SIZEOF_VALUE-1-i]);
+        key |= (st_data_t)(k1.b[i] ^ k2.b[SIZEOF_VALUE-1-i]) << (8 * i);
+    }
+
+    if (0) {
+        fprintf(stderr, "SIZEOF_VALUE:%d\n", SIZEOF_VALUE);
+        fprintf(stderr, "pc:%p def:%p\n", pc, cme->def);
+        fprintf(stderr, "key:%p\n", (void *)key);
+    }
+
+    if (!dup_check_table) {
+        dup_check_table = st_init_numtable();
+    }
+
+    // duplication check
+    if (st_insert(dup_check_table, key, 1)) {
+        // already shown
+    }
+    else {
+        VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
+        VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
+
+        if (!NIL_P(m_loc)) {
+            rb_warning("the passed block for '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
+                       name, RARRAY_AREF(m_loc, 0), RARRAY_AREF(m_loc, 1));
+        }
+        else {
+            rb_warning("the block may be ignored because '%"PRIsVALUE"' does not use a block", name);
+        }
+    }
+}
+
 static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
@@ -2973,6 +3024,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
     bool cacheable_ci = vm_ci_markable(ci);
+
+    if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
+                 calling->block_handler != VM_BLOCK_HANDLER_NONE &&
+                 !(vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER))) {
+        warn_unused_block(vm_cc_cme(cc), iseq, (void *)ec->cfp->pc);
+    }
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_KW_SPLAT))) {
         if (LIKELY(rb_simple_iseq_p(iseq))) {

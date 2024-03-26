@@ -1623,4 +1623,63 @@ class TestMethod < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_warn_unused_block
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      foo{}          # warn
+      send(:foo){}   # warn
+      b = Proc.new{}
+      foo(&b)        # warn
+    RUBY
+      assert_equal 3, err.size
+      err = err.join
+      assert_match(/-:2: warning/, err)
+      assert_match(/-:3: warning/, err)
+      assert_match(/-:5: warning/, err)
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      10.times{foo{}} # warn once
+    RUBY
+      assert_equal 1, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil; b = nil
+      foo(&b)       # no warning
+      1.object_id{} # no warning because it is written in C
+
+      class C
+        def initialize
+        end
+      end
+      C.new{} # no warning
+
+    RUBY
+      assert_equal 0, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def foo = nil
+        def bar = nil
+        def baz = nil
+      end
+
+      class C1 < C0
+        def foo = super
+        def bar = super()
+        def baz(&_) = super(&_)
+      end
+
+      C1.new.foo{} # no warning
+      C1.new.bar{} # warning
+      C1.new.baz{} # no warning
+    RUBY
+      assert_equal 1, err.size
+      assert_match(/-:14: warning.+bar/, err.join)
+    end
+  end
 end

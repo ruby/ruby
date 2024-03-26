@@ -43,6 +43,8 @@ class Array
   # Related: #each_index, #reverse_each.
   def each
     Primitive.attr! :inline_block
+    Primitive.attr! :use_block
+
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end

@@ -111,7 +111,14 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## JIT
 
+## Miscellaneous changes
+
+* Passing a block to a method which doesn't use the passed block will show
+  a warning on verbose mode (`-w`).
+  [[Feature #15554]]
+
 [Feature #13557]: https://bugs.ruby-lang.org/issues/13557
+[Feature #15554]: https://bugs.ruby-lang.org/issues/15554
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980

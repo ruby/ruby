@@ -94,6 +94,7 @@ class TracePoint
   # Access from other threads is also forbidden.
   #
   def self.new(*events)
+    Primitive.attr! :use_block
     Primitive.tracepoint_new_s(events)
   end
 
@@ -131,6 +132,7 @@ class TracePoint
   #	    trace.enabled? #=> true
   #
   def self.trace(*events)
+    Primitive.attr! :use_block
     Primitive.tracepoint_trace_s(events)
   end
 
@@ -196,6 +198,7 @@ class TracePoint
   # out calls by itself from :line handler, otherwise it will call itself infinitely).
   #
   def self.allow_reentry
+    Primitive.attr! :use_block
     Primitive.tracepoint_allow_reentry
   end
 
@@ -258,6 +261,7 @@ class TracePoint
   #    #=> RuntimeError: access from outside
   #
   def enable(target: nil, target_line: nil, target_thread: :default)
+    Primitive.attr! :use_block
     Primitive.tracepoint_enable_m(target, target_line, target_thread)
   end
 
@@ -294,6 +298,7 @@ class TracePoint
   #	trace.disable { p tp.lineno }
   #	#=> RuntimeError: access from outside
   def disable
+    Primitive.attr! :use_block
     Primitive.tracepoint_disable_m
   end
 
