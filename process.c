@@ -1682,7 +1682,6 @@ before_fork_ruby(void)
 static void
 after_fork_ruby(rb_pid_t pid)
 {
-    rb_threadptr_pending_interrupt_clear(GET_THREAD());
     if (pid == 0) {
         // child
         clear_pid_cache();
