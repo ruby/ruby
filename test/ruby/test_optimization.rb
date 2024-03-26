@@ -577,7 +577,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     begin;
       class String
         undef freeze
-        def freeze
+        def freeze(&)
           block_given?
         end
       end

@@ -201,8 +201,8 @@ location_lineno_m(VALUE self)
 
 VALUE rb_mod_name0(VALUE klass, bool *permanent);
 
-static VALUE
-gen_method_name(VALUE owner, VALUE name)
+VALUE
+rb_gen_method_name(VALUE owner, VALUE name)
 {
     bool permanent;
     if (RB_TYPE_P(owner, T_CLASS) || RB_TYPE_P(owner, T_MODULE)) {
@@ -235,7 +235,7 @@ retry:
       case ISEQ_TYPE_MAIN:
         return ISEQ_BODY(iseq)->location.label;
       case ISEQ_TYPE_METHOD:
-        return gen_method_name(owner, ISEQ_BODY(iseq)->location.label);
+        return rb_gen_method_name(owner, ISEQ_BODY(iseq)->location.label);
       case ISEQ_TYPE_BLOCK:
       case ISEQ_TYPE_PLAIN: {
         int level = 0;
@@ -269,7 +269,7 @@ static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
-        return gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
         VALUE owner = Qnil;
@@ -457,7 +457,7 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        name = rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
         file = rb_iseq_path(loc->iseq);

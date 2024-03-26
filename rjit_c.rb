@@ -1093,6 +1093,7 @@ module RubyVM::RJIT # :nodoc: all
           ruby2_keywords: [CType::BitField.new(1, 1), 9],
           anon_rest: [CType::BitField.new(1, 2), 10],
           anon_kwrest: [CType::BitField.new(1, 3), 11],
+          use_block: [CType::BitField.new(1, 4), 12],
         ), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, flags)")],
         size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, size)")],
         lead_num: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, lead_num)")],

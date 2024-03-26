@@ -17,6 +17,7 @@ class String
   #  returns that array.
   #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
   def unpack(fmt, offset: 0)
+    Primitive.attr! :use_block
     Primitive.pack_unpack(fmt, offset)
   end
 

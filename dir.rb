@@ -408,6 +408,7 @@ class Dir
   #   specifies that patterns may match short names if they exist; Windows only.
   #
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
+    Primitive.attr! :use_block
     Primitive.dir_s_glob(pattern, flags, base, sort)
   end
 end

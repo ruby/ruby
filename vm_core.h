@@ -418,6 +418,7 @@ struct rb_iseq_constant_body {
             unsigned int ruby2_keywords: 1;
             unsigned int anon_rest: 1;
             unsigned int anon_kwrest: 1;
+            unsigned int use_block: 1;
         } flags;
 
         unsigned int size;
