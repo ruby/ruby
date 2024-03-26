@@ -2154,6 +2154,13 @@ eom
     assert_equal 0...1, exp.call(a: 0)
   end
 
+  def test_argument_forwarding_with_super
+    assert_valid_syntax('def foo(...) super {}; end')
+    assert_valid_syntax('def foo(...) super() {}; end')
+    assert_syntax_error('def foo(...) super(...) {}; end', /both block arg and actual block/)
+    assert_syntax_error('def foo(...) super(1, ...) {}; end', /both block arg and actual block/)
+  end
+
   def test_class_module_Object_ancestors
     assert_separately([], <<-RUBY)
       m = Module.new
