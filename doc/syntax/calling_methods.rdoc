@@ -210,7 +210,7 @@ definition.  If a keyword argument is given that the method did not list,
 and the method definition does not accept arbitrary keyword arguments, an
 ArgumentError will be raised.
 
-Keyword argument value can be omitted, meaning the value will be be fetched
+Keyword argument value can be omitted, meaning the value will be fetched
 from the context by the name of the key
 
   keyword1 = 'some value'
