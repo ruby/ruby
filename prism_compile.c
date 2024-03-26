@@ -289,99 +289,76 @@ pm_optimizable_range_item_p(pm_node_t *node)
     return (!node || PM_NODE_TYPE_P(node, PM_INTEGER_NODE) || PM_NODE_TYPE_P(node, PM_NIL_NODE));
 }
 
-#define RE_OPTION_ENCODING_SHIFT 8
+static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
-/**
- * Check the prism flags of a regular expression-like node and return the flags
- * that are expected by the CRuby VM.
- */
 static int
-pm_reg_flags(const pm_node_t *node) {
-    int flags = 0;
-    int dummy = 0;
-
-    // Check "no encoding" first so that flags don't get clobbered
-    // We're calling `rb_char_to_option_kcode` in this case so that
-    // we don't need to have access to `ARG_ENCODING_NONE`
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        rb_char_to_option_kcode('n', &flags, &dummy);
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
-        rb_char_to_option_kcode('e', &flags, &dummy);
-        flags |= ('e' << RE_OPTION_ENCODING_SHIFT);
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
-        rb_char_to_option_kcode('s', &flags, &dummy);
-        flags |= ('s' << RE_OPTION_ENCODING_SHIFT);
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
-        rb_char_to_option_kcode('u', &flags, &dummy);
-        flags |= ('u' << RE_OPTION_ENCODING_SHIFT);
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
-        flags |= ONIG_OPTION_IGNORECASE;
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
-        flags |= ONIG_OPTION_MULTILINE;
-    }
-
-    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
-        flags |= ONIG_OPTION_EXTEND;
-    }
-
-    return flags;
-}
-
-static rb_encoding *
-pm_reg_enc(const pm_scope_node_t *scope_node, const pm_node_t *node)
+pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_line_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) {
-        return rb_ascii8bit_encoding();
+    int number_of_items_pushed = 0;
+    size_t parts_size = parts->size;
+
+    if (parts_size > 0) {
+        VALUE current_string = Qnil;
+
+        for (size_t index = 0; index < parts_size; index++) {
+            const pm_node_t *part = parts->nodes[index];
+
+            if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
+                const pm_string_node_t *string_node = (const pm_string_node_t *)part;
+                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
+
+                if (RTEST(current_string)) {
+                    current_string = rb_str_concat(current_string, string_value);
+                }
+                else {
+                    current_string = string_value;
+                }
+            }
+            else if (PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
+                    ((const pm_embedded_statements_node_t *) part)->statements != NULL &&
+                    ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
+                    PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)) {
+                const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
+                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
+
+                if (RTEST(current_string)) {
+                    current_string = rb_str_concat(current_string, string_value);
+                }
+                else {
+                    current_string = string_value;
+                }
+            }
+            else {
+                if (!RTEST(current_string)) {
+                    current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
+                }
+
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(current_string));
+
+                current_string = Qnil;
+                number_of_items_pushed++;
+
+                PM_COMPILE_NOT_POPPED(part);
+                PM_DUP;
+                ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
+                ADD_INSN(ret, &dummy_line_node, anytostring);
+
+                number_of_items_pushed++;
+            }
+        }
+
+        if (RTEST(current_string)) {
+            current_string = rb_fstring(current_string);
+            ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
+            current_string = Qnil;
+            number_of_items_pushed++;
+        }
+    }
+    else {
+        PM_PUTNIL;
     }
 
-    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EUC_JP)) {
-        return rb_enc_get_from_index(ENCINDEX_EUC_JP);
-    }
-
-    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
-        return rb_enc_get_from_index(ENCINDEX_Windows_31J);
-    }
-
-    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_UTF_8)) {
-        return rb_utf8_encoding();
-    }
-
-    return scope_node->encoding;
-}
-
-/**
- * Certain nodes can be compiled literally, which can lead to further
- * optimizations. These nodes will all have the PM_NODE_FLAG_STATIC_LITERAL flag
- * set.
- */
-static inline bool
-pm_static_literal_p(const pm_node_t *node)
-{
-    return node->flags & PM_NODE_FLAG_STATIC_LITERAL;
-}
-
-static VALUE
-pm_new_regex(const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped)
-{
-    VALUE regex_str = parse_string(scope_node, unescaped);
-    rb_encoding *enc = pm_reg_enc(scope_node, node);
-
-    VALUE regex = rb_enc_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), enc, pm_reg_flags(node));
-    RB_GC_GUARD(regex_str);
-
-    rb_obj_freeze(regex);
-
-    return regex;
+    return number_of_items_pushed;
 }
 
 static VALUE
@@ -416,17 +393,152 @@ pm_static_literal_concat(const pm_node_list_t *nodes, const pm_scope_node_t *sco
     return top ? rb_fstring(current) : current;
 }
 
+#define RE_OPTION_ENCODING_SHIFT 8
+#define RE_OPTION_ENCODING(encoding) (((encoding) & 0xFF) << RE_OPTION_ENCODING_SHIFT)
+#define ARG_ENCODING_NONE    32
+#define ARG_ENCODING_FIXED   16
+#define ENC_ASCII8BIT        1
+#define ENC_EUC_JP           2
+#define ENC_Windows_31J      3
+#define ENC_UTF8             4
+
+/**
+ * Check the prism flags of a regular expression-like node and return the flags
+ * that are expected by the CRuby VM.
+ */
+static int
+parse_regexp_flags(const pm_node_t *node)
+{
+    int flags = 0;
+
+    // Check "no encoding" first so that flags don't get clobbered
+    // We're calling `rb_char_to_option_kcode` in this case so that
+    // we don't need to have access to `ARG_ENCODING_NONE`
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) {
+        flags |= ARG_ENCODING_NONE;
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EUC_JP)) {
+        flags |= (ARG_ENCODING_FIXED | RE_OPTION_ENCODING(ENC_EUC_JP));
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
+        flags |= (ARG_ENCODING_FIXED | RE_OPTION_ENCODING(ENC_Windows_31J));
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_UTF_8)) {
+        flags |= (ARG_ENCODING_FIXED | RE_OPTION_ENCODING(ENC_UTF8));
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE)) {
+        flags |= ONIG_OPTION_IGNORECASE;
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE)) {
+        flags |= ONIG_OPTION_MULTILINE;
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED)) {
+        flags |= ONIG_OPTION_EXTEND;
+    }
+
+    return flags;
+}
+
+#undef RE_OPTION_ENCODING_SHIFT
+#undef RE_OPTION_ENCODING
+#undef ARG_ENCODING_FIXED
+#undef ARG_ENCODING_NONE
+#undef ENC_ASCII8BIT
+#undef ENC_EUC_JP
+#undef ENC_Windows_31J
+#undef ENC_UTF8
+
+static rb_encoding *
+parse_regexp_encoding(const pm_scope_node_t *scope_node, const pm_node_t *node)
+{
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) {
+        return rb_ascii8bit_encoding();
+    }
+    else if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_UTF_8)) {
+        return rb_utf8_encoding();
+    }
+    else if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EUC_JP)) {
+        return rb_enc_get_from_index(ENCINDEX_EUC_JP);
+    }
+    else if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
+        return rb_enc_get_from_index(ENCINDEX_Windows_31J);
+    }
+    else {
+        return scope_node->encoding;
+    }
+}
+
+/** Raise an error corresponding to the invalid regular expression. */
+static VALUE
+parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE error = rb_syntax_error_append(Qnil, rb_iseq_path(iseq), line_number, -1, NULL, "%" PRIsVALUE, args);
+    va_end(args);
+    rb_exc_raise(error);
+}
+
+static VALUE
+parse_regexp(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, VALUE string)
+{
+    VALUE errinfo = rb_errinfo();
+
+    int32_t line_number = pm_node_line_number(scope_node->parser, node);
+    VALUE regexp = rb_reg_compile(string, parse_regexp_flags(node), (const char *) pm_string_source(&scope_node->parser->filepath), line_number);
+
+    if (NIL_P(regexp)) {
+        VALUE message = rb_attr_get(rb_errinfo(), idMesg);
+        rb_set_errinfo(errinfo);
+
+        parse_regexp_error(iseq, line_number, "%" PRIsVALUE, message);
+        return Qnil;
+    }
+
+    rb_obj_freeze(regexp);
+    return regexp;
+}
+
+static inline VALUE
+parse_regexp_literal(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped)
+{
+    VALUE string = rb_enc_str_new((const char *) pm_string_source(unescaped), pm_string_length(unescaped), parse_regexp_encoding(scope_node, node));
+    return parse_regexp(iseq, scope_node, node, string);
+}
+
+static inline VALUE
+parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_node_list_t *parts)
+{
+    VALUE string = pm_static_literal_concat(parts, scope_node, false);
+    rb_enc_associate(string, parse_regexp_encoding(scope_node, node));
+    return parse_regexp(iseq, scope_node, node, string);
+}
+
+static void
+pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    NODE dummy_line_node = generate_dummy_line_node(node_location->line, node_location->column);
+    int length = pm_interpolated_node_compile(parts, iseq, dummy_line_node, ret, popped, scope_node);
+    PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
+}
+
 /**
  * Certain nodes can be compiled literally. This function returns the literal
  * value described by the given node. For example, an array node with all static
  * literal values can be compiled into a literal array.
  */
 static VALUE
-pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node)
+pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_node_t *scope_node)
 {
     // Every node that comes into this function should already be marked as
     // static literal. If it's not, then we have a bug somewhere.
-    RUBY_ASSERT(pm_static_literal_p(node));
+    RUBY_ASSERT(PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL));
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ARRAY_NODE: {
@@ -435,7 +547,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
 
         VALUE value = rb_ary_hidden_new(elements->size);
         for (size_t index = 0; index < elements->size; index++) {
-            rb_ary_push(value, pm_static_literal_value(elements->nodes[index], scope_node));
+            rb_ary_push(value, pm_static_literal_value(iseq, elements->nodes[index], scope_node));
         }
 
         OBJ_FREEZE(value);
@@ -453,7 +565,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         for (size_t index = 0; index < elements->size; index++) {
             RUBY_ASSERT(PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_NODE));
             pm_assoc_node_t *cast = (pm_assoc_node_t *) elements->nodes[index];
-            VALUE pair[2] = { pm_static_literal_value(cast->key, scope_node), pm_static_literal_value(cast->value, scope_node) };
+            VALUE pair[2] = { pm_static_literal_value(iseq, cast->key, scope_node), pm_static_literal_value(iseq, cast->value, scope_node) };
             rb_ary_cat(array, pair, 2);
         }
 
@@ -470,17 +582,11 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return parse_integer((const pm_integer_node_t *) node);
       case PM_INTERPOLATED_MATCH_LAST_LINE_NODE: {
         const pm_interpolated_match_last_line_node_t *cast = (const pm_interpolated_match_last_line_node_t *) node;
-        VALUE string = pm_static_literal_concat(&cast->parts, scope_node, true);
-
-        rb_encoding *encoding = pm_reg_enc(scope_node, (const pm_node_t *) cast);
-        return rb_obj_freeze(rb_enc_reg_new(RSTRING_PTR(string), RSTRING_LEN(string), encoding, pm_reg_flags((const pm_node_t *) cast)));
+        return parse_regexp_concat(iseq, scope_node, (const pm_node_t *) cast, &cast->parts);
       }
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
         const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) node;
-        VALUE string = pm_static_literal_concat(&cast->parts, scope_node, true);
-
-        rb_encoding *encoding = pm_reg_enc(scope_node, (const pm_node_t *) cast);
-        return rb_obj_freeze(rb_enc_reg_new(RSTRING_PTR(string), RSTRING_LEN(string), encoding, pm_reg_flags((const pm_node_t *) cast)));
+        return parse_regexp_concat(iseq, scope_node, (const pm_node_t *) cast, &cast->parts);
       }
       case PM_INTERPOLATED_STRING_NODE:
         return pm_static_literal_concat(&((const pm_interpolated_string_node_t *) node)->parts, scope_node, true);
@@ -492,7 +598,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       }
       case PM_MATCH_LAST_LINE_NODE: {
         const pm_match_last_line_node_t *cast = (const pm_match_last_line_node_t *) node;
-        return pm_new_regex(scope_node, (const pm_node_t *) cast, &cast->unescaped);
+        return parse_regexp_literal(iseq, scope_node, (const pm_node_t *) cast, &cast->unescaped);
       }
       case PM_NIL_NODE:
         return Qnil;
@@ -500,13 +606,20 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return parse_rational((const pm_rational_node_t *) node);
       case PM_REGULAR_EXPRESSION_NODE: {
         const pm_regular_expression_node_t *cast = (const pm_regular_expression_node_t *) node;
-        return pm_new_regex(scope_node, (const pm_node_t *) cast, &cast->unescaped);
+        return parse_regexp_literal(iseq, scope_node, (const pm_node_t *) cast, &cast->unescaped);
       }
       case PM_SOURCE_ENCODING_NODE:
         return rb_enc_from_encoding(scope_node->encoding);
       case PM_SOURCE_FILE_NODE: {
-        pm_source_file_node_t *cast = (pm_source_file_node_t *)node;
-        return cast->filepath.length ? parse_string(scope_node, &cast->filepath) : rb_fstring_lit("<compiled>");
+        const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
+        size_t length = pm_string_length(&cast->filepath);
+
+        if (length > 0) {
+            return rb_enc_str_new((const char *) pm_string_source(&cast->filepath), length, scope_node->encoding);
+        }
+        else {
+            return rb_fstring_lit("<compiled>");
+        }
       }
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number(scope_node->parser, node));
@@ -600,8 +713,6 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
     ADD_SEQ(ret, seq);
     return;
 }
-
-static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static void
 pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
@@ -840,76 +951,6 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_node_fl
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
     return;
-}
-
-static int
-pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_line_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
-{
-    int number_of_items_pushed = 0;
-    size_t parts_size = parts->size;
-
-    if (parts_size > 0) {
-        VALUE current_string = Qnil;
-
-        for (size_t index = 0; index < parts_size; index++) {
-            const pm_node_t *part = parts->nodes[index];
-
-            if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-                const pm_string_node_t *string_node = (const pm_string_node_t *)part;
-                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
-
-                if (RTEST(current_string)) {
-                    current_string = rb_str_concat(current_string, string_value);
-                }
-                else {
-                    current_string = string_value;
-                }
-            }
-            else if (PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
-                    ((const pm_embedded_statements_node_t *) part)->statements != NULL &&
-                    ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
-                    PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)) {
-                const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
-                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
-
-                if (RTEST(current_string)) {
-                    current_string = rb_str_concat(current_string, string_value);
-                }
-                else {
-                    current_string = string_value;
-                }
-            }
-            else {
-                if (!RTEST(current_string)) {
-                    current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
-                }
-
-                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(current_string));
-
-                current_string = Qnil;
-                number_of_items_pushed++;
-
-                PM_COMPILE_NOT_POPPED(part);
-                PM_DUP;
-                ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                ADD_INSN(ret, &dummy_line_node, anytostring);
-
-                number_of_items_pushed++;
-            }
-        }
-
-        if (RTEST(current_string)) {
-            current_string = rb_fstring(current_string);
-            ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
-            current_string = Qnil;
-            number_of_items_pushed++;
-        }
-    }
-    else {
-        PM_PUTNIL;
-    }
-
-    return number_of_items_pushed;
 }
 
 // This recurses through scopes and finds the local index at any scope level
@@ -1201,7 +1242,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
 
                             // Retrieve the stored index from the hash for this
                             // keyword.
-                            VALUE keyword = pm_static_literal_value(assoc->key, scope_node);
+                            VALUE keyword = pm_static_literal_value(iseq, assoc->key, scope_node);
                             VALUE stored_index = rb_hash_aref(stored_indices, keyword);
 
                             // If this keyword was already seen in the hash,
@@ -1233,7 +1274,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             bool popped = true;
 
                             if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
-                                keywords[keyword_index++] = pm_static_literal_value(assoc->key, scope_node);
+                                keywords[keyword_index++] = pm_static_literal_value(iseq, assoc->key, scope_node);
                                 popped = false;
                             }
 
@@ -4232,13 +4273,13 @@ pm_compile_constant_path(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
  * optimization entirely.
  */
 static VALUE
-pm_compile_case_node_dispatch(VALUE dispatch, const pm_node_t *node, LABEL *label, const pm_scope_node_t *scope_node)
+pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *node, LABEL *label, const pm_scope_node_t *scope_node)
 {
     VALUE key = Qundef;
 
     switch (PM_NODE_TYPE(node)) {
       case PM_FLOAT_NODE: {
-        key = pm_static_literal_value(node, scope_node);
+        key = pm_static_literal_value(iseq, node, scope_node);
         double intptr;
 
         if (modf(RFLOAT_VALUE(key), &intptr) == 0.0) {
@@ -4254,7 +4295,7 @@ pm_compile_case_node_dispatch(VALUE dispatch, const pm_node_t *node, LABEL *labe
       case PM_SOURCE_LINE_NODE:
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
-        key = pm_static_literal_value(node, scope_node);
+        key = pm_static_literal_value(iseq, node, scope_node);
         break;
       case PM_STRING_NODE: {
         const pm_string_node_t *cast = (const pm_string_node_t *) node;
@@ -4379,13 +4420,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // If every node in the array is static, then we can compile the entire
         // array now instead of later.
-        if (pm_static_literal_p(node)) {
+        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             // We're only going to compile this node if it's not popped. If it
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
                 if (elements->size) {
-                    VALUE value = pm_static_literal_value(node, scope_node);
+                    VALUE value = pm_static_literal_value(iseq, node, scope_node);
                     PUSH_INSN1(ret, location, duparray, value);
                 }
                 else {
@@ -4868,7 +4909,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     // we're going to try to compile the condition into the
                     // dispatch hash.
                     if (dispatch != Qundef) {
-                        dispatch = pm_compile_case_node_dispatch(dispatch, condition, label, scope_node);
+                        dispatch = pm_compile_case_node_dispatch(iseq, dispatch, condition, label, scope_node);
                     }
 
                     if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
@@ -5886,12 +5927,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_HASH_NODE: {
         // If every node in the hash is static, then we can compile the entire
         // hash now instead of later.
-        if (pm_static_literal_p(node)) {
+        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             // We're only going to compile this node if it's not popped. If it
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
-                VALUE value = pm_static_literal_value(node, scope_node);
+                VALUE value = pm_static_literal_value(iseq, node, scope_node);
                 ADD_INSN1(ret, &dummy_line_node, duphash, value);
                 RB_OBJ_WRITTEN(iseq, Qundef, value);
             }
@@ -6072,14 +6113,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         //    ^^^^^^^^^^^^
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             if (!popped) {
-                VALUE regexp = pm_static_literal_value(node, scope_node);
+                VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
                 PUSH_INSN1(ret, location, putobject, regexp);
             }
         }
         else {
-            const pm_interpolated_match_last_line_node_t *cast = (const pm_interpolated_match_last_line_node_t *) node;
-            int length = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node);
-            PUSH_INSN2(ret, location, toregexp, INT2FIX(pm_reg_flags((const pm_node_t *) cast)), INT2FIX(length));
+            pm_compile_regexp_dynamic(iseq, node, &((const pm_interpolated_match_last_line_node_t *) node)->parts, &location, ret, popped, scope_node);
         }
 
         PUSH_INSN1(ret, location, getglobal, rb_id2sym(idLASTLINE));
@@ -6106,20 +6145,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN2(ret, location, once, block_iseq, INT2FIX(ise_index));
             ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
 
+            if (popped) PUSH_INSN(ret, location, pop);
             return;
         }
 
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             if (!popped) {
-                VALUE regexp = pm_static_literal_value(node, scope_node);
+                VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
                 PUSH_INSN1(ret, location, putobject, regexp);
             }
         }
         else {
-            const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) node;
-            int length = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node);
-
-            PUSH_INSN2(ret, location, toregexp, INT2FIX(pm_reg_flags((const pm_node_t *) cast)), INT2FIX(length));
+            pm_compile_regexp_dynamic(iseq, node, &((const pm_interpolated_regular_expression_node_t *) node)->parts, &location, ret, popped, scope_node);
             if (popped) PUSH_INSN(ret, location, pop);
         }
 
@@ -6130,7 +6167,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^^^^^
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             if (!popped) {
-                VALUE string = pm_static_literal_value(node, scope_node);
+                VALUE string = pm_static_literal_value(iseq, node, scope_node);
 
                 if (PM_NODE_FLAG_P(node, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN)) {
                     PUSH_INSN1(ret, location, putobject, string);
@@ -6161,7 +6198,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
             if (!popped) {
-                VALUE symbol = pm_static_literal_value(node, scope_node);
+                VALUE symbol = pm_static_literal_value(iseq, node, scope_node);
                 PUSH_INSN1(ret, location, putobject, symbol);
             }
         }
@@ -6323,7 +6360,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_MATCH_LAST_LINE_NODE: {
         // if /foo/ then end
         //    ^^^^^
-        VALUE regexp = pm_static_literal_value(node, scope_node);
+        VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
 
         PUSH_INSN1(ret, location, putobject, regexp);
         PUSH_INSN2(ret, location, getspecial, INT2FIX(0), INT2FIX(0));
@@ -6895,8 +6932,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // /foo/
         // ^^^^^
         if (!popped) {
-            VALUE regex = pm_static_literal_value(node, scope_node);
-            PUSH_INSN1(ret, location, putobject, regex);
+            VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
+            PUSH_INSN1(ret, location, putobject, regexp);
         }
         return;
       }
@@ -7500,12 +7537,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    if (pm_static_literal_p(value) &&
-                            !(PM_NODE_TYPE_P(value, PM_ARRAY_NODE) ||
-                                PM_NODE_TYPE_P(value, PM_HASH_NODE) ||
-                                PM_NODE_TYPE_P(value, PM_RANGE_NODE))) {
-
-                       rb_ary_push(default_values, pm_static_literal_value(value, scope_node));
+                    if (PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) && !(PM_NODE_TYPE_P(value, PM_ARRAY_NODE) || PM_NODE_TYPE_P(value, PM_HASH_NODE) || PM_NODE_TYPE_P(value, PM_RANGE_NODE))) {
+                       rb_ary_push(default_values, pm_static_literal_value(iseq, value, scope_node));
                     }
                     else {
                         rb_ary_push(default_values, complex_mark);
@@ -7814,10 +7847,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    if (!(pm_static_literal_p(value)) ||
-                            PM_NODE_TYPE_P(value, PM_ARRAY_NODE) ||
-                            PM_NODE_TYPE_P(value, PM_HASH_NODE) ||
-                            PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
+                    if (!PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) || PM_NODE_TYPE_P(value, PM_ARRAY_NODE) || PM_NODE_TYPE_P(value, PM_HASH_NODE) || PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
                         LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
 
                         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, name, 0);
@@ -7910,11 +7940,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                   }
                   case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
-                    pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
-
-                    int parts_size = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node);
-
-                    ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags((pm_node_t *)cast)), INT2FIX(parts_size));
+                    const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
+                    pm_compile_regexp_dynamic(iseq, (const pm_node_t *) cast, &cast->parts, &location, ret, popped, scope_node);
                     break;
                   }
                   default:
@@ -8037,7 +8064,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // __ENCODING__
         // ^^^^^^^^^^^^
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node);
+            VALUE value = pm_static_literal_value(iseq, node, scope_node);
             PUSH_INSN1(ret, location, putobject, value);
         }
         return;
@@ -8065,7 +8092,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // __LINE__
         // ^^^^^^^^
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node);
+            VALUE value = pm_static_literal_value(iseq, node, scope_node);
             PUSH_INSN1(ret, location, putobject, value);
         }
         return;
@@ -8156,7 +8183,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // :foo
         // ^^^^
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node);
+            VALUE value = pm_static_literal_value(iseq, node, scope_node);
             PUSH_INSN1(ret, location, putobject, value);
         }
         return;
