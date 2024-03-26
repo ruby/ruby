@@ -144,7 +144,11 @@ static VALUE
 hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
     if (recurse) return INT2FIX(0);
-    return rb_funcallv(obj, id_hash, 0, 0);
+    VALUE ret;
+    WITH_YJIT_LAZY_FRAME({
+        ret = rb_funcallv(obj, id_hash, 0, 0);
+    });
+    return ret;
 }
 
 static long rb_objid_hash(st_index_t index);
@@ -235,9 +239,7 @@ obj_any_hash(VALUE obj)
     }
 
     if (UNDEF_P(hval)) {
-        WITH_YJIT_LAZY_FRAME({
-            hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
-        });
+        hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
     }
 
     while (!FIXNUM_P(hval)) {
