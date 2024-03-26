@@ -2063,8 +2063,9 @@ get_nd_args(struct parser_params *p, NODE *node)
         return RNODE_FCALL(node)->nd_args;
       case NODE_QCALL:
         return RNODE_QCALL(node)->nd_args;
-      case NODE_VCALL:
       case NODE_SUPER:
+        return RNODE_SUPER(node)->nd_args;
+      case NODE_VCALL:
       case NODE_ZSUPER:
       case NODE_YIELD:
       case NODE_RETURN:
