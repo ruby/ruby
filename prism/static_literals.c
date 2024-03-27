@@ -95,13 +95,17 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
             // Strings hash their value and mix in their flags so that different
             // encodings are not considered equal.
             const pm_string_t *value = &((const pm_string_node_t *) node)->unescaped;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+
+            pm_node_flags_t flags = node->flags;
+            flags &= (PM_STRING_FLAGS_FORCED_BINARY_ENCODING | PM_STRING_FLAGS_FORCED_UTF8_ENCODING);
+
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) flags);
         }
         case PM_SOURCE_FILE_NODE: {
             // Source files hash their value and mix in their flags so that
             // different encodings are not considered equal.
             const pm_string_t *value = &((const pm_source_file_node_t *) node)->filepath;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t));
         }
         case PM_REGULAR_EXPRESSION_NODE: {
             // Regular expressions hash their value and mix in their flags so
@@ -316,8 +320,6 @@ pm_compare_regular_expression_nodes(PRISM_ATTRIBUTE_UNUSED const pm_parser_t *pa
  */
 pm_node_t *
 pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    if (!PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return NULL;
-
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
@@ -435,8 +437,6 @@ pm_rational_inspect(pm_buffer_t *buffer, pm_rational_node_t *node) {
  */
 PRISM_EXPORTED_FUNCTION void
 pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
-    assert(PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL));
-
     switch (PM_NODE_TYPE(node)) {
         case PM_FALSE_NODE:
             pm_buffer_append_string(buffer, "false", 5);
