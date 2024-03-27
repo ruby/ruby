@@ -19686,7 +19686,15 @@ pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, 
     // blank lines based on the maximum number of digits in the line numbers
     // that are going to be displaid.
     pm_error_format_t error_format;
-    int32_t max_line_number = errors[error_list->size - 1].line - start_line;
+    int32_t first_line_number = errors[0].line;
+    int32_t last_line_number = errors[error_list->size - 1].line;
+
+    // If we have a maximum line number that is negative, then we're going to
+    // use the absolute value for comparison but multiple by 10 to additionally
+    // have a column for the negative sign.
+    if (first_line_number < 0) first_line_number = (-first_line_number) * 10;
+    if (last_line_number < 0) last_line_number = (-last_line_number) * 10;
+    int32_t max_line_number = first_line_number > last_line_number ? first_line_number : last_line_number;
 
     if (max_line_number < 10) {
         if (colorize) {
@@ -19841,7 +19849,7 @@ pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, 
         // Here we determine how many lines of padding to display after the
         // error, depending on where the next error is in source.
         last_line = error->line;
-        int32_t next_line = (index == error_list->size - 1) ? ((int32_t) newline_list->size) : errors[index + 1].line;
+        int32_t next_line = (index == error_list->size - 1) ? (((int32_t) newline_list->size) + parser->start_line) : errors[index + 1].line;
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);

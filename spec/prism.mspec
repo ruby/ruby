@@ -33,8 +33,6 @@ MSpec.register(:exclude, "A Symbol literal raises an SyntaxError at parse time w
 ## Core
 MSpec.register(:exclude, "IO.popen with a leading Array argument accepts a trailing Hash of Process.exec options")
 MSpec.register(:exclude, "IO.popen with a leading Array argument accepts an IO mode argument following the Array")
-MSpec.register(:exclude, "Kernel#eval includes file and line information in syntax error")
-MSpec.register(:exclude, "Kernel#eval evaluates string with given filename and negative linenumber")
 MSpec.register(:exclude, "Kernel#eval with a magic encoding comment allows spaces before the magic encoding comment")
 MSpec.register(:exclude, "Kernel#eval with a magic encoding comment allows a shebang line and some spaces before the magic encoding comment")
 MSpec.register(:exclude, "TracePoint#eval_script is the evald source code")
@@ -60,6 +58,4 @@ MSpec.register(:exclude, "Coverage.result does not clear counters when stop: fal
 MSpec.register(:exclude, "Coverage.result clears counters (sets 0 values) when stop: false and clear: true specified")
 MSpec.register(:exclude, "Coverage.result does not clear counters when stop: false and clear: false specified")
 MSpec.register(:exclude, "Coverage.start measures coverage within eval")
-MSpec.register(:exclude, "ERB#filename raises an exception if there are errors processing content")
-MSpec.register(:exclude, "ERB#filename uses '(erb)' as filename when filename is not set")
 MSpec.register(:exclude, "Socket.gethostbyaddr using an IPv6 address with an explicit address family raises SocketError when the address is not supported by the family")

@@ -8373,8 +8373,12 @@ pm_parse_process_error_utf8_p(const pm_parser_t *parser, const pm_location_t *lo
 static VALUE
 pm_parse_process_error(const pm_parse_result_t *result)
 {
-    const pm_diagnostic_t *head = (const pm_diagnostic_t *) result->parser.error_list.head;
+    const pm_parser_t *parser = &result->parser;
+    const pm_diagnostic_t *head = (const pm_diagnostic_t *) parser->error_list.head;
     bool valid_utf8 = true;
+
+    pm_buffer_t buffer = { 0 };
+    const pm_string_t *filepath = &parser->filepath;
 
     for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
         // Any errors with the level PM_ERROR_LEVEL_ARGUMENT effectively take
@@ -8389,20 +8393,24 @@ pm_parse_process_error(const pm_parse_result_t *result)
         // contain invalid byte sequences. So if any source examples include
         // invalid UTF-8 byte sequences, we will skip showing source examples
         // entirely.
-        if (valid_utf8 && !pm_parse_process_error_utf8_p(&result->parser, &error->location)) {
+        if (valid_utf8 && !pm_parse_process_error_utf8_p(parser, &error->location)) {
             valid_utf8 = false;
         }
     }
 
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
+    pm_buffer_append_format(
+        &buffer,
+        "%.*s:%" PRIi32 ": syntax error%s found\n",
+        (int) pm_string_length(filepath),
+        pm_string_source(filepath),
+        (int32_t) pm_location_line_number(parser, &head->location),
+        (parser->error_list.size > 1) ? "s" : ""
+    );
 
     if (valid_utf8) {
         pm_parser_errors_format(&result->parser, &result->parser.error_list, &buffer, rb_stderr_tty_p(), true);
     }
     else {
-        const pm_string_t *filepath = &result->parser.filepath;
-
         for (const pm_diagnostic_t *error = head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
             if (error != head) pm_buffer_append_byte(&buffer, '\n');
             pm_buffer_append_format(&buffer, "%.*s:%" PRIi32 ": %s", (int) pm_string_length(filepath), pm_string_source(filepath), (int32_t) pm_location_line_number(&result->parser, &error->location), error->message);
