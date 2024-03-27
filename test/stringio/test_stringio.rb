@@ -978,6 +978,27 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(s.string, :ascii_only?)
   end
 
+  if eval(%{ "test".frozen? && !"test".equal?("test") }) # Ruby 3.4+ chilled strings
+    def test_chilled_string
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+
+    def test_chilled_string_string_set
+      io = StringIO.new
+      chilled_string = eval(%{""})
+      io.string = chilled_string
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+  end
+
+  private
+
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)
   end

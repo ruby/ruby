@@ -15,6 +15,8 @@
 static const char *const
 STRINGIO_VERSION = "3.1.1";
 
+#include <stdbool.h>
+
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
@@ -49,6 +51,13 @@ static long strio_write(VALUE self, VALUE str);
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (rb_syserr_fail(EINVAL, msg))
 #define get_enc(ptr) ((ptr)->enc ? (ptr)->enc : !NIL_P((ptr)->string) ? rb_enc_get((ptr)->string) : NULL)
+#ifndef HAVE_RB_STR_CHILLED_P
+static bool
+rb_str_chilled_p(VALUE str)
+{
+    return false;
+}
+#endif
 
 static struct StringIO *
 strio_alloc(void)
@@ -166,8 +175,14 @@ writable(VALUE strio)
 static void
 check_modifiable(struct StringIO *ptr)
 {
-    if (OBJ_FROZEN(ptr->string)) {
-	rb_raise(rb_eIOError, "not modifiable string");
+    if (NIL_P(ptr->string)) {
+        /* Null device StringIO */
+    }
+    else if (rb_str_chilled_p(ptr->string)) {
+        rb_str_modify(ptr->string);
+    }
+    else if (OBJ_FROZEN_RAW(ptr->string)) {
+        rb_raise(rb_eIOError, "not modifiable string");
     }
 }
 
@@ -287,7 +302,8 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     else if (!argc) {
 	string = rb_enc_str_new("", 0, rb_default_external_encoding());
     }
-    if (!NIL_P(string) && OBJ_FROZEN_RAW(string)) {
+
+    if (!NIL_P(string) && OBJ_FROZEN_RAW(string) && !rb_str_chilled_p(string)) {
 	if (ptr->flags & FMODE_WRITABLE) {
 	    rb_syserr_fail(EACCES, 0);
 	}
@@ -481,7 +497,7 @@ strio_set_string(VALUE self, VALUE string)
     rb_io_taint_check(self);
     ptr->flags &= ~FMODE_READWRITE;
     StringValue(string);
-    ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
+    ptr->flags = OBJ_FROZEN(string) && !rb_str_chilled_p(string) ? FMODE_READABLE : FMODE_READWRITE;
     ptr->pos = 0;
     ptr->lineno = 0;
     RB_OBJ_WRITE(self, &ptr->string, string);
