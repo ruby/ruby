@@ -19251,6 +19251,11 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     if (size >= 3 && source[0] == 0xef && source[1] == 0xbb && source[2] == 0xbf) {
         parser->current.end += 3;
         parser->encoding_comment_start += 3;
+
+        if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
+            parser->encoding = PM_ENCODING_UTF_8_ENTRY;
+            if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
+        }
     }
 
     // If the first two bytes of the source are a shebang, then we'll indicate
