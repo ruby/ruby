@@ -57,7 +57,7 @@ The following bundled gems are updated.
 * test-unit 3.6.2
 * net-ftp 0.3.4
 * net-imap 0.4.10
-* net-smtp 0.4.0.1
+* net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11
 * debug 1.9.1

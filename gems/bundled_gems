@@ -15,7 +15,7 @@ rss             0.3.0   https://github.com/ruby/rss
 net-ftp         0.3.4   https://github.com/ruby/net-ftp
 net-imap        0.4.10  https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
-net-smtp        0.4.0.1 https://github.com/ruby/net-smtp
+net-smtp        0.5.0   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
 rbs             3.4.4   https://github.com/ruby/rbs ba7872795d5de04adb8ff500c0e6afdc81a041dd
