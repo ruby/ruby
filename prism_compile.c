@@ -528,6 +528,21 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
+static VALUE
+pm_source_file_value(const pm_source_file_node_t *node, const pm_scope_node_t *scope_node)
+{
+    const pm_string_t *filepath = &node->filepath;
+    size_t length = pm_string_length(filepath);
+
+    if (length > 0) {
+        rb_encoding *filepath_encoding = scope_node->filepath_encoding != NULL ? scope_node->filepath_encoding : rb_utf8_encoding();
+        return rb_fstring(rb_enc_str_new((const char *) pm_string_source(filepath), length, filepath_encoding));
+    }
+    else {
+        return rb_fstring_lit("<compiled>");
+    }
+}
+
 /**
  * Certain nodes can be compiled literally. This function returns the literal
  * value described by the given node. For example, an array node with all static
@@ -612,14 +627,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
         return rb_enc_from_encoding(scope_node->encoding);
       case PM_SOURCE_FILE_NODE: {
         const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-        size_t length = pm_string_length(&cast->filepath);
-
-        if (length > 0) {
-            return rb_enc_str_new((const char *) pm_string_source(&cast->filepath), length, scope_node->encoding);
-        }
-        else {
-            return rb_fstring_lit("<compiled>");
-        }
+        return pm_source_file_value(cast, scope_node);
       }
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number(scope_node->parser, node));
@@ -2669,6 +2677,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     if (previous) {
         scope->parser = previous->parser;
         scope->encoding = previous->encoding;
+        scope->filepath_encoding = previous->filepath_encoding;
         scope->constants = previous->constants;
     }
 
@@ -8074,7 +8083,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^
         if (!popped) {
             const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-            VALUE string = rb_fstring(parse_string(scope_node, &cast->filepath));
+            VALUE string = pm_source_file_value(cast, scope_node);
 
             if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
                 PUSH_INSN1(ret, location, putobject, string);
@@ -8441,6 +8450,11 @@ pm_parse_process_error(const pm_parse_result_t *result)
     }
 
     VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+
+    rb_encoding *filepath_encoding = result->node.filepath_encoding != NULL ? result->node.filepath_encoding : rb_utf8_encoding();
+    VALUE path = rb_enc_str_new((const char *) pm_string_source(filepath), pm_string_length(filepath), filepath_encoding);
+
+    rb_ivar_set(error, rb_intern_const("@path"), path);
     pm_buffer_free(&buffer);
 
     return error;
@@ -8459,7 +8473,10 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     // First, set up the scope node so that the AST node is attached and can be
     // freed regardless of whether or we return an error.
     pm_scope_node_t *scope_node = &result->node;
+    rb_encoding *filepath_encoding = scope_node->filepath_encoding;
+
     pm_scope_node_init(node, scope_node, NULL);
+    scope_node->filepath_encoding = filepath_encoding;
 
     // If there are errors, raise an appropriate error and free the result.
     if (parser->error_list.size > 0) {
@@ -8658,6 +8675,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
     pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
     pm_options_encoding_set(&result->options, rb_enc_name(encoding));
 
+    result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 

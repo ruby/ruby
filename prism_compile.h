@@ -26,6 +26,13 @@ typedef struct pm_scope_node {
     const pm_parser_t *parser;
     rb_encoding *encoding;
 
+    /**
+     * This is the encoding of the actual filepath object that will be used when
+     * a __FILE__ node is compiled or when the path has to be set on a syntax
+     * error.
+     */
+    rb_encoding *filepath_encoding;
+
     // The size of the local table
     // on the iseq which includes
     // locals and hidden variables
@@ -40,10 +47,19 @@ void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 bool *rb_ruby_prism_ptr(void);
 
 typedef struct {
+    /** The parser that will do the actual parsing. */
     pm_parser_t parser;
+
+    /** The options that will be passed to the parser. */
     pm_options_t options;
+
+    /** The input that represents the source to be parsed. */
     pm_string_t input;
+
+    /** The resulting scope node that will hold the generated AST. */
     pm_scope_node_t node;
+
+    /** Whether or not this parse result has performed its parsing yet. */
     bool parsed;
 } pm_parse_result_t;
 
