@@ -79,6 +79,9 @@ class Downloader
       require 'rubygems'
       options = options.dup
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
+      if Gem::Version.new(name[/-\K[^-]*(?=\.gem\z)/]).prerelease?
+        options[:ignore_http_client_errors] = true
+      end
       super("https://rubygems.org/downloads/#{name}", name, dir, since, options)
     end
   end
@@ -237,6 +240,7 @@ class Downloader
       $stdout.flush
     end
     mtime = nil
+    ignore_http_client_errors = options.delete(:ignore_http_client_errors)
     options = options.merge(http_options(file, since.nil? ? true : since))
     begin
       data = with_retry(10) do
@@ -247,12 +251,18 @@ class Downloader
         data
       end
     rescue OpenURI::HTTPError => http_error
-      if http_error.message =~ /^304 / # 304 Not Modified
+      case http_error.message
+      when /^304 / # 304 Not Modified
         if $VERBOSE
           $stdout.puts "#{name} not modified"
           $stdout.flush
         end
         return file.to_path
+      when /^40/ # Net::HTTPClientError: 403 Forbidden, 404 Not Found
+        if ignore_http_client_errors
+          puts "Ignore #{url}: #{http_error.message}"
+          return file.to_path
+        end
       end
       raise
     rescue Timeout::Error
