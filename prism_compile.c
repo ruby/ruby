@@ -8385,7 +8385,30 @@ pm_parse_process_error(const pm_parse_result_t *result)
         // over as the only argument that gets raised. This is to allow priority
         // messages that should be handled before anything else.
         if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
-            return rb_exc_new(rb_eArgError, error->message, strlen(error->message));
+            int32_t line_number = (int32_t) pm_location_line_number(parser, &error->location);
+
+            pm_buffer_append_format(
+                &buffer,
+                "%.*s:%" PRIi32 ": %s",
+                (int) pm_string_length(filepath),
+                pm_string_source(filepath),
+                line_number,
+                error->message
+            );
+
+            if (pm_parse_process_error_utf8_p(parser, &error->location)) {
+                pm_buffer_append_byte(&buffer, '\n');
+
+                pm_list_node_t *list_node = (pm_list_node_t *) error;
+                pm_list_t error_list = { .size = 1, .head = list_node, .tail = list_node };
+
+                pm_parser_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
+            }
+
+            VALUE arg_error = rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+            pm_buffer_free(&buffer);
+
+            return arg_error;
         }
 
         // It is implicitly assumed that the error messages will be encodeable
