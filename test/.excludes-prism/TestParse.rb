@@ -1,4 +1,3 @@
-exclude(:test_assign_in_conditional, "missing warning")
 exclude(:test_shareable_constant_value_nested, "ractor support")
 exclude(:test_shareable_constant_value_nonliteral, "ractor support")
 exclude(:test_shareable_constant_value_simple, "ractor support")
