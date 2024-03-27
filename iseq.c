@@ -1417,6 +1417,10 @@ static VALUE
 iseqw_new(const rb_iseq_t *iseq)
 {
     if (iseq->wrapper) {
+        if (rb_check_typeddata(iseq->wrapper, &iseqw_data_type) != iseq) {
+            rb_raise(rb_eTypeError, "wrong iseq wrapper: %" PRIsVALUE " for %p",
+                     iseq->wrapper, (void *)iseq);
+        }
         return iseq->wrapper;
     }
     else {
