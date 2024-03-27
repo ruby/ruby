@@ -19671,8 +19671,7 @@ pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t 
  * Format the errors on the parser into the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize) {
-    const pm_list_t *error_list = &parser->error_list;
+pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, bool colorize, bool inline_messages) {
     assert(error_list->size != 0);
 
     // First, we're going to sort all of the errors by line number using an
@@ -19831,10 +19830,12 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
             column += (char_width == 0 ? 1 : char_width);
         }
 
-        pm_buffer_append_byte(buffer, ' ');
+        if (inline_messages) {
+            pm_buffer_append_byte(buffer, ' ');
+            const char *message = error->error->message;
+            pm_buffer_append_string(buffer, message, strlen(message));
+        }
 
-        const char *message = error->error->message;
-        pm_buffer_append_string(buffer, message, strlen(message));
         pm_buffer_append_byte(buffer, '\n');
 
         // Here we determine how many lines of padding to display after the
