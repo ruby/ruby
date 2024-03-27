@@ -176,13 +176,13 @@ static void
 check_modifiable(struct StringIO *ptr)
 {
     if (NIL_P(ptr->string)) {
-        /* Null device StringIO */
+	/* Null device StringIO */
     }
     else if (rb_str_chilled_p(ptr->string)) {
-        rb_str_modify(ptr->string);
+	rb_str_modify(ptr->string);
     }
     else if (OBJ_FROZEN_RAW(ptr->string)) {
-        rb_raise(rb_eIOError, "not modifiable string");
+	rb_raise(rb_eIOError, "not modifiable string");
     }
 }
 
@@ -989,10 +989,10 @@ strio_ungetbyte(VALUE self, VALUE c)
     if (NIL_P(ptr->string)) return Qnil;
     if (NIL_P(c)) return Qnil;
     if (RB_INTEGER_TYPE_P(c)) {
-        /* rb_int_and() not visible from exts */
-        VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
-        const char cc = NUM2INT(v) & 0xFF;
-        strio_unget_bytes(ptr, &cc, 1);
+	/* rb_int_and() not visible from exts */
+	VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
+	const char cc = NUM2INT(v) & 0xFF;
+	strio_unget_bytes(ptr, &cc, 1);
     }
     else {
 	long cl;
@@ -1173,41 +1173,41 @@ prepare_getline_args(struct StringIO *ptr, struct getline_arg *arg, int argc, VA
 	break;
 
       case 1:
-        if (!NIL_P(rs) && !RB_TYPE_P(rs, T_STRING)) {
-            VALUE tmp = rb_check_string_type(rs);
+	if (!NIL_P(rs) && !RB_TYPE_P(rs, T_STRING)) {
+	    VALUE tmp = rb_check_string_type(rs);
 	    if (NIL_P(tmp)) {
-                limit = NUM2LONG(rs);
-                rs = rb_rs;
+		limit = NUM2LONG(rs);
+		rs = rb_rs;
 	    }
 	    else {
-                rs = tmp;
+		rs = tmp;
 	    }
 	}
 	break;
 
       case 2:
-        if (!NIL_P(rs)) StringValue(rs);
+	if (!NIL_P(rs)) StringValue(rs);
 	if (!NIL_P(lim)) limit = NUM2LONG(lim);
 	break;
     }
     if (!NIL_P(ptr->string) && !NIL_P(rs)) {
-        rb_encoding *enc_rs, *enc_io;
-        enc_rs = rb_enc_get(rs);
-        enc_io = get_enc(ptr);
-        if (enc_rs != enc_io &&
-            (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
-             (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
-            if (rs == rb_rs) {
-                rs = rb_enc_str_new(0, 0, enc_io);
-                rb_str_buf_cat_ascii(rs, "\n");
-                rs = rs;
-            }
-            else {
-                rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
-                         rb_enc_name(enc_io),
-                         rb_enc_name(enc_rs));
-            }
-        }
+	rb_encoding *enc_rs, *enc_io;
+	enc_rs = rb_enc_get(rs);
+	enc_io = get_enc(ptr);
+	if (enc_rs != enc_io &&
+	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
+	     (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
+	    if (rs == rb_rs) {
+		rs = rb_enc_str_new(0, 0, enc_io);
+		rb_str_buf_cat_ascii(rs, "\n");
+		rs = rs;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
+			 rb_enc_name(enc_io),
+			 rb_enc_name(enc_rs));
+	    }
+	}
     }
     arg->rs = rs;
     arg->limit = limit;
@@ -1219,9 +1219,9 @@ prepare_getline_args(struct StringIO *ptr, struct getline_arg *arg, int argc, VA
 	    keywords[0] = rb_intern_const("chomp");
 	}
 	rb_get_kwargs(opts, keywords, 0, 1, &vchomp);
-        if (respect_chomp) {
+	if (respect_chomp) {
 	    arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
-        }
+	}
     }
     return arg;
 }
@@ -1261,7 +1261,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
-        const char *paragraph_end = NULL;
+	const char *paragraph_end = NULL;
 	p = s;
 	while (p[(p + 1 < e) && (*p == '\r') && 0] == '\n') {
 	    p += *p == '\r';
@@ -1271,18 +1271,18 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	}
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
-            p++;
-            if (!((p < e && *p == '\n') ||
-                  (p + 1 < e && *p == '\r' && *(p+1) == '\n'))) {
-                continue;
-            }
-            paragraph_end = p - ((*(p-2) == '\r') ? 2 : 1);
-            while ((p < e && *p == '\n') ||
-                   (p + 1 < e && *p == '\r' && *(p+1) == '\n')) {
-                p += (*p == '\r') ? 2 : 1;
-            }
-            e = p;
-            break;
+	    p++;
+	    if (!((p < e && *p == '\n') ||
+		  (p + 1 < e && *p == '\r' && *(p+1) == '\n'))) {
+		continue;
+	    }
+	    paragraph_end = p - ((*(p-2) == '\r') ? 2 : 1);
+	    while ((p < e && *p == '\n') ||
+		   (p + 1 < e && *p == '\r' && *(p+1) == '\n')) {
+		p += (*p == '\r') ? 2 : 1;
+	    }
+	    e = p;
+	    break;
 	}
 	if (arg->chomp && paragraph_end) {
 	    w = e - paragraph_end;
@@ -1606,7 +1606,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	}
 	break;
       default:
-        rb_error_arity(argc, 0, 2);
+	rb_error_arity(argc, 0, 2);
     }
     if (NIL_P(str)) {
 	rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);
@@ -1642,28 +1642,28 @@ strio_pread(int argc, VALUE *argv, VALUE self)
     long offset = NUM2LONG(rb_offset);
 
     if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
+	rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
     }
 
     if (len == 0) {
-        if (NIL_P(rb_buf)) {
-            return rb_str_new("", 0);
-        }
-        return rb_buf;
+	if (NIL_P(rb_buf)) {
+	    return rb_str_new("", 0);
+	}
+	return rb_buf;
     }
 
     if (offset < 0) {
-        rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
+	rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
     }
 
     struct StringIO *ptr = readable(self);
 
     if (offset >= RSTRING_LEN(ptr->string)) {
-        rb_eof_error();
+	rb_eof_error();
     }
 
     if (NIL_P(rb_buf)) {
-        return strio_substr(ptr, offset, len, rb_ascii8bit_encoding());
+	return strio_substr(ptr, offset, len, rb_ascii8bit_encoding());
     }
 
     long rest = RSTRING_LEN(ptr->string) - offset;
