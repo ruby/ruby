@@ -812,12 +812,21 @@ pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *nod
 }
 
 /**
- * Add a warning to the parser if the value that is being written inside of a
- * predicate to a conditional is a literal.
+ * Return true if the value being written within the predicate of a conditional
+ * is a literal value.
  */
-static void
-pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, pm_node_t *node) {
+static bool
+pm_conditional_predicate_warn_write_literal_p(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
+        case PM_ARRAY_NODE: {
+            const pm_array_node_t *cast = (const pm_array_node_t *) node;
+            for (size_t index = 0; index < cast->elements.size; index++) {
+                if (!pm_conditional_predicate_warn_write_literal_p(cast->elements.nodes[index])) {
+                    return false;
+                }
+            }
+            return true;
+        }
         case PM_FALSE_NODE:
         case PM_FLOAT_NODE:
         case PM_IMAGINARY_NODE:
@@ -831,10 +840,20 @@ pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, pm_node_t *node
         case PM_STRING_NODE:
         case PM_SYMBOL_NODE:
         case PM_TRUE_NODE:
-            pm_parser_warn_node(parser, node, parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3_0 : PM_WARN_EQUAL_IN_CONDITIONAL);
-            break;
+            return true;
         default:
-            break;
+            return false;
+    }
+}
+
+/**
+ * Add a warning to the parser if the value that is being written inside of a
+ * predicate to a conditional is a literal.
+ */
+static inline void
+pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, const pm_node_t *node) {
+    if (pm_conditional_predicate_warn_write_literal_p(node)) {
+        pm_parser_warn_node(parser, node, parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3_0 : PM_WARN_EQUAL_IN_CONDITIONAL);
     }
 }
 
