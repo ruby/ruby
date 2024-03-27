@@ -59,6 +59,12 @@ rb_str_chilled_p(VALUE str)
 }
 #endif
 
+static bool
+readonly_string_p(VALUE string)
+{
+    return OBJ_FROZEN_RAW(string) && !rb_str_chilled_p(string);
+}
+
 static struct StringIO *
 strio_alloc(void)
 {
@@ -303,7 +309,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 	string = rb_enc_str_new("", 0, rb_default_external_encoding());
     }
 
-    if (!NIL_P(string) && OBJ_FROZEN_RAW(string) && !rb_str_chilled_p(string)) {
+    if (!NIL_P(string) && readonly_string_p(string)) {
 	if (ptr->flags & FMODE_WRITABLE) {
 	    rb_syserr_fail(EACCES, 0);
 	}
@@ -497,7 +503,7 @@ strio_set_string(VALUE self, VALUE string)
     rb_io_taint_check(self);
     ptr->flags &= ~FMODE_READWRITE;
     StringValue(string);
-    ptr->flags = OBJ_FROZEN(string) && !rb_str_chilled_p(string) ? FMODE_READABLE : FMODE_READWRITE;
+    ptr->flags = readonly_string_p(string) ? FMODE_READABLE : FMODE_READWRITE;
     ptr->pos = 0;
     ptr->lineno = 0;
     RB_OBJ_WRITE(self, &ptr->string, string);
