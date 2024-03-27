@@ -479,6 +479,36 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_no_string_value
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        SECRET = "super-s3cr37"
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: :stdout, full: true)
+        end
+
+        p dump_my_heap_please
+      end;
+      assert_equal 'nil', output.pop
+      heap = output.find_all { |l| JSON.parse(l)['value'] == "super-s3cr37" }
+      assert_operator heap.length, :>, 0
+    end
+
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        SECRET = "super-s3cr37"
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: :stdout, full: true, string_value: false)
+        end
+
+        p dump_my_heap_please
+      end;
+      assert_equal 'nil', output.pop
+      heap = output.find_all { |l| JSON.parse(l)['value'] == "super-s3cr37" }
+      assert_equal 0, heap.length
+    end
+  end
+
   def test_dump_all_single_generation
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
