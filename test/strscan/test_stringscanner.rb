@@ -9,6 +9,7 @@ require 'test/unit'
 
 module StringScannerTests
   def test_peek_byte
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
     assert_equal 97, s.peek_byte
     assert_equal 97, s.scan_byte
@@ -19,6 +20,7 @@ module StringScannerTests
   end
 
   def test_scan_byte
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
     assert_equal 97, s.scan_byte
     assert_equal 98, s.scan_byte
