@@ -10179,9 +10179,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_SYMBOL:
-        if (DYNAMIC_SYM_P((VALUE)any)) {
-            UPDATE_IF_MOVED(objspace, RSYMBOL(any)->fstr);
-        }
+        UPDATE_IF_MOVED(objspace, RSYMBOL(any)->fstr);
         break;
 
       case T_FLOAT:
