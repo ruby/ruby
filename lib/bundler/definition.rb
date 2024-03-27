@@ -570,7 +570,9 @@ module Bundler
         last_resolve = converge_locked_specs
         remove_invalid_platforms!(current_dependencies)
         packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?)
-        additional_base_requirements_for_resolve(packages, last_resolve)
+        packages = additional_base_requirements_to_prevent_downgrades(packages, last_resolve)
+        packages = additional_base_requirements_to_force_updates(packages)
+        packages
       end
     end
 
@@ -1015,13 +1017,35 @@ module Bundler
       current == proposed
     end
 
-    def additional_base_requirements_for_resolve(resolution_packages, last_resolve)
+    def additional_base_requirements_to_prevent_downgrades(resolution_packages, last_resolve)
       return resolution_packages unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       converge_specs(@originally_locked_specs - last_resolve).each do |locked_spec|
         next if locked_spec.source.is_a?(Source::Path)
         resolution_packages.base_requirements[locked_spec.name] = Gem::Requirement.new(">= #{locked_spec.version}")
       end
       resolution_packages
+    end
+
+    def additional_base_requirements_to_force_updates(resolution_packages)
+      return resolution_packages if @explicit_unlocks.empty?
+      full_update = dup_for_full_unlock.resolve
+      @explicit_unlocks.each do |name|
+        version = full_update[name].first&.version
+        resolution_packages.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
+      end
+      resolution_packages
+    end
+
+    def dup_for_full_unlock
+      unlocked_definition = self.class.new(@lockfile, @dependencies, @sources, true, @ruby_version, @optional_groups, @gemfiles)
+      unlocked_definition.resolution_mode = { "local" => !@remote }
+      unlocked_definition.setup_sources_for_resolve
+      unlocked_definition.gem_version_promoter.tap do |gvp|
+        gvp.level = gem_version_promoter.level
+        gvp.strict = gem_version_promoter.strict
+        gvp.pre = gem_version_promoter.pre
+      end
+      unlocked_definition
     end
 
     def remove_invalid_platforms!(dependencies)
