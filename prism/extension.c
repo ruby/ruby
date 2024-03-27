@@ -1184,7 +1184,7 @@ format_errors(VALUE self, VALUE source, VALUE colorize) {
     pm_node_t *node = pm_parse(&parser);
     pm_buffer_t buffer = { 0 };
 
-    pm_parser_errors_format(&parser, &buffer, RTEST(colorize));
+    pm_parser_errors_format(&parser, &parser.error_list, &buffer, RTEST(colorize), true);
 
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);

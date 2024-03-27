@@ -222,10 +222,12 @@ const char * pm_token_type_human(pm_token_type_t token_type);
  * Format the errors on the parser into the given buffer.
  *
  * @param parser The parser to format the errors for.
+ * @param error_list The list of errors to format.
  * @param buffer The buffer to format the errors into.
  * @param colorize Whether or not to colorize the errors with ANSI escape sequences.
+ * @param inline_messages Whether or not to inline the messages with the source.
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize);
+PRISM_EXPORTED_FUNCTION void pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, bool colorize, bool inline_messages);
 
 // We optionally support dumping to JSON. For systems that don't want or need
 // this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
