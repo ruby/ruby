@@ -8398,7 +8398,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
 
     if (valid_utf8) {
-        pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
+        pm_parser_errors_format(&result->parser, &result->parser.error_list, &buffer, rb_stderr_tty_p(), true);
     }
     else {
         const pm_string_t *filepath = &result->parser.filepath;
