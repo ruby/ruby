@@ -1356,16 +1356,12 @@ typedef struct rb_parser_config_struct {
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
-    int (*char_to_option_kcode)(int c, int *option, int *kcode);
-    int (*ascii8bit_encindex)(void);
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
     VALUE (*enc_associate_index)(VALUE obj, int encindex);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
-    int (*encoding_get)(VALUE obj);
-    void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
     int enc_coderange_broken;

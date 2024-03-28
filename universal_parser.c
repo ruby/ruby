@@ -211,8 +211,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
-#define rb_char_to_option_kcode p->config->char_to_option_kcode
-#define rb_ascii8bit_encindex   p->config->ascii8bit_encindex
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
 #define rb_enc_associate_index  p->config->enc_associate_index
@@ -221,8 +219,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
 #define rb_enc_compatible       p->config->enc_compatible
 #define rb_enc_from_encoding    p->config->enc_from_encoding
-#define ENCODING_GET            p->config->encoding_get
-#define ENCODING_SET            p->config->encoding_set
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
 
