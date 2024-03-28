@@ -19359,6 +19359,11 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
             pm_newline_list_clear(&parser->newline_list);
         }
     }
+
+    // The encoding comment can start after any amount of inline whitespace, so
+    // here we'll advance it to the first non-inline-whitespace character so
+    // that it is ready for future comparisons.
+    parser->encoding_comment_start += pm_strspn_inline_whitespace(parser->encoding_comment_start, parser->end - parser->encoding_comment_start);
 }
 
 /**
