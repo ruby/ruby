@@ -622,12 +622,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_set_script_lines(VALUE vparser, VALUE lines)
+rb_parser_set_script_lines(VALUE vparser)
 {
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    rb_ruby_parser_set_script_lines(parser->parser_params, lines);
+    rb_ruby_parser_set_script_lines(parser->parser_params);
 }
 
 void
@@ -727,7 +727,38 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
     rb_ruby_parser_set_yydebug(parser->parser_params, RTEST(flag));
     return flag;
 }
+
+void
+rb_set_script_lines_for(VALUE vparser, VALUE path)
+{
+    struct ruby_parser *parser;
+    VALUE hash;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (RB_TYPE_P(hash, T_HASH)) {
+        rb_hash_aset(hash, path, Qtrue);
+        TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+        rb_ruby_parser_set_script_lines(parser->parser_params);
+    }
+}
 #endif
+
+VALUE
+rb_parser_build_script_lines_from(rb_parser_ary_t *lines)
+{
+    int i;
+    if (lines->data_type != PARSER_ARY_DATA_SCRIPT_LINE) {
+        rb_bug("unexpected rb_parser_ary_data_type (%d) for script lines", lines->data_type);
+    }
+    VALUE script_lines = rb_ary_new_capa(lines->len);
+    for (i = 0; i < lines->len; i++) {
+        rb_parser_string_t *str = (rb_parser_string_t *)lines->data[i];
+        rb_ary_push(script_lines, rb_enc_str_new(str->ptr, str->len, str->enc));
+    }
+    return script_lines;
+}
 
 VALUE
 rb_str_new_parser_string(rb_parser_string_t *str)
@@ -935,15 +966,17 @@ rb_node_encoding_val(const NODE *node)
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
 }
 
-VALUE
-rb_script_lines_for(VALUE path)
+void
+rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 {
-    VALUE hash, lines;
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
-    hash = rb_const_get_at(rb_cObject, script_lines);
-    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
-    rb_hash_aset(hash, path, lines = rb_ary_new());
-    return lines;
+    VALUE hash, script_lines;
+    ID script_lines_id;
+    if (NIL_P(path) || !lines || FIXNUM_P((VALUE)lines)) return;
+    CONST_ID(script_lines_id, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines_id)) return;
+    hash = rb_const_get_at(rb_cObject, script_lines_id);
+    if (!RB_TYPE_P(hash, T_HASH)) return;
+    if (rb_hash_lookup(hash, path) == Qnil) return;
+    script_lines = rb_parser_build_script_lines_from(lines);
+    rb_hash_aset(hash, path, script_lines);
 }

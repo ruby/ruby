@@ -39,9 +39,11 @@ RUBY_SYMBOL_EXPORT_END
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
+VALUE rb_parser_build_script_lines_from(rb_parser_ary_t *script_lines);
+void rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *script_lines);
 void rb_parser_set_options(VALUE, int, int, int, int);
 void *rb_parser_load_file(VALUE parser, VALUE name);
-void rb_parser_set_script_lines(VALUE vparser, VALUE lines_array);
+void rb_parser_set_script_lines(VALUE vparser);
 void rb_parser_error_tolerant(VALUE vparser);
 void rb_parser_keep_tokens(VALUE vparser);
 

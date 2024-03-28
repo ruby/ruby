@@ -20,11 +20,12 @@
 
 #include "internal.h"
 #include "internal/hash.h"
-#include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
 #endif
+
+#include "internal/variable.h"
 
 #define NODE_BUF_DEFAULT_SIZE (sizeof(struct RNode) * 16)
 
@@ -344,18 +345,24 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
     }
 }
 
-void
-rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating)
+static void
+script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 {
-    if (ast->node_buffer) {
-        if (ast->body.script_lines) rb_gc_mark_and_move(&ast->body.script_lines);
+    for (long i = 0; i < script_lines->len; i++) {
+        parser_string_free(ast, (rb_parser_string_t *)script_lines->data[i]);
     }
+    xfree(script_lines->data);
+    xfree(script_lines);
 }
 
 void
 rb_ast_free(rb_ast_t *ast)
 {
     if (ast->node_buffer) {
+        if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
+            script_lines_free(ast, ast->body.script_lines);
+            ast->body.script_lines = NULL;
+        }
         rb_node_buffer_free(ast, ast->node_buffer);
         ast->node_buffer = 0;
     }

@@ -839,20 +839,21 @@ rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
             const rb_iseq_t *parent, enum rb_iseq_type type)
 {
     return rb_iseq_new_with_opt(ast, name, path, realpath, 0, parent,
-                                0, type, &COMPILE_OPTION_DEFAULT);
+                                0, type, &COMPILE_OPTION_DEFAULT,
+                                Qnil);
 }
 
 static int
 ast_line_count(const rb_ast_body_t *ast)
 {
-    if (ast->script_lines == Qfalse) {
+    if (ast->script_lines == NULL) {
         // this occurs when failed to parse the source code with a syntax error
         return 0;
     }
-    if (RB_TYPE_P(ast->script_lines, T_ARRAY)){
-        return (int)RARRAY_LEN(ast->script_lines);
+    if (!FIXNUM_P((VALUE)ast->script_lines)) {
+        return (int)ast->script_lines->len;
     }
-    return FIX2INT(ast->script_lines);
+    return FIX2INT((VALUE)ast->script_lines);
 }
 
 static VALUE
@@ -888,7 +889,8 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
     iseq_new_setup_coverage(path, ast, 0);
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, 0, parent, 0,
-                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
+                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT,
+                                Qnil);
 }
 
 /**
@@ -910,7 +912,8 @@ rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_
 
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
-                                parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE);
+                                parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE,
+                                Qnil);
 }
 
 /**
@@ -938,7 +941,8 @@ rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpat
     }
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,
-                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT,
+                                Qnil);
 }
 
 rb_iseq_t *
@@ -966,7 +970,8 @@ iseq_translate(rb_iseq_t *iseq)
 rb_iseq_t *
 rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum rb_iseq_type type, const rb_compile_option_t *option)
+                     enum rb_iseq_type type, const rb_compile_option_t *option,
+                     VALUE script_lines)
 {
     const NODE *node = ast ? ast->root : 0;
     /* TODO: argument check */
@@ -979,10 +984,11 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
         option = set_compile_option_from_ast(&new_opt, ast);
     }
 
-    VALUE script_lines = Qnil;
-
-    if (ast && !FIXNUM_P(ast->script_lines) && ast->script_lines) {
-        script_lines = ast->script_lines;
+    if (!NIL_P(script_lines)) {
+        // noop
+    }
+    else if (ast && !FIXNUM_P((VALUE)ast->script_lines) && ast->script_lines) {
+        script_lines = rb_parser_build_script_lines_from(ast->script_lines);
     }
     else if (parent) {
         script_lines = ISEQ_BODY(parent)->variable.script_lines;
@@ -1225,7 +1231,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
-        rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
+        if (ruby_vm_keep_script_lines) rb_parser_set_script_lines(parser);
         RB_GC_GUARD(outer_scope_v);
         ast = (*parse)(parser, file, src, ln);
     }
@@ -1236,7 +1242,8 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     }
     else {
         iseq = rb_iseq_new_with_opt(&ast->body, name, file, realpath, ln,
-                                    NULL, 0, ISEQ_TYPE_TOP, &option);
+                                    NULL, 0, ISEQ_TYPE_TOP, &option,
+                                    Qnil);
         rb_ast_dispose(ast);
     }
 
@@ -1627,7 +1634,8 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     ret = iseqw_new(rb_iseq_new_with_opt(&ast->body, rb_fstring_lit("<main>"),
                                          file,
                                          rb_realpath_internal(Qnil, file, 1),
-                                         1, NULL, 0, ISEQ_TYPE_TOP, &option));
+                                         1, NULL, 0, ISEQ_TYPE_TOP, &option,
+                                         Qnil));
     rb_ast_dispose(ast);
 
     rb_vm_pop_frame(ec);
