@@ -27,6 +27,12 @@ void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
 
+// These symbols need to be exported because they're accessed from the objspace extension.
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_vm_lock_enter_ext(unsigned int *lev, const char *file, int line);
+void rb_vm_lock_leave_ext(unsigned int *lev, const char *file, int line);
+RUBY_SYMBOL_EXPORT_END
+
 #if RUBY_DEBUG
 // GET_VM()
 #include "vm_core.h"
