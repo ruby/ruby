@@ -315,7 +315,11 @@ impl Assembler
             match opnd {
                 Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
-                Opnd::Imm(_) => asm.load(opnd),
+                Opnd::Imm(imm) => if ShiftedImmediate::try_from(imm as u64).is_ok() {
+                    opnd
+                } else {
+                    asm.load(opnd)
+                }
                 Opnd::UImm(uimm) => {
                     if ShiftedImmediate::try_from(uimm).is_ok() {
                         opnd
@@ -1702,6 +1706,22 @@ mod tests {
             0x0: mov x11, #0x14
             0x4: mov x12, #0
             0x8: csel x1, x11, x12, lt
+        "});
+    }
+
+    #[test]
+    fn test_add_with_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.add(Opnd::Reg(TEMP_REGS[1]), 1.into());
+        let out = asm.add(out, 1_usize.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "2b0500b16b0500b1e1030baa", {"
+            0x0: adds x11, x9, #1
+            0x4: adds x11, x11, #1
+            0x8: mov x1, x11
         "});
     }
 }
