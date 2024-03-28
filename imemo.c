@@ -215,7 +215,7 @@ rb_cc_table_mark(VALUE klass)
 static bool
 moved_or_living_object_strictly_p(VALUE obj)
 {
-    return obj && (rb_objspace_markable_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
+    return obj && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
 }
 
 static void
@@ -455,7 +455,7 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
             if (!alive) {
                 void *ptr = asan_unpoison_object_temporary((VALUE)cc);
                 // ccs can be free'ed.
-                if (rb_objspace_markable_object_p((VALUE)cc) &&
+                if (!rb_objspace_garbage_object_p((VALUE)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
                     cc->klass == klass) {
                     // OK. maybe target cc.
