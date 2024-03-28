@@ -629,9 +629,9 @@ flags:
   - name: InterpolatedStringNodeFlags
     values:
       - name: FROZEN
-        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`"
+        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`; only for adjacent string literals like `'a' 'b'`"
       - name: MUTABLE
-        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`"
+        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`; only for adjacent string literals like `'a' 'b'`"
     comment: Flags for interpolated string nodes that indicated mutability if they are also marked as literals.
   - name: KeywordHashNodeFlags
     values:
