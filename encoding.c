@@ -1015,13 +1015,22 @@ rb_enc_get(VALUE obj)
     return rb_enc_from_index(rb_enc_get_index(obj));
 }
 
+const char *
+rb_enc_inspect_name(rb_encoding *enc)
+{
+    if (enc == global_enc_ascii) {
+        return "BINARY (ASCII-8BIT)";
+    }
+    return enc->name;
+}
+
 static rb_encoding*
 rb_encoding_check(rb_encoding* enc, VALUE str1, VALUE str2)
 {
     if (!enc)
         rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-                 rb_enc_name(rb_enc_get(str1)),
-                 rb_enc_name(rb_enc_get(str2)));
+                 rb_enc_inspect_name(rb_enc_get(str1)),
+                 rb_enc_inspect_name(rb_enc_get(str2)));
     return enc;
 }
 
@@ -1263,9 +1272,10 @@ enc_inspect(VALUE self)
     if (!(enc = DATA_PTR(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
         rb_raise(rb_eTypeError, "broken Encoding");
     }
+
     return rb_enc_sprintf(rb_usascii_encoding(),
                           "#<%"PRIsVALUE":%s%s%s>", rb_obj_class(self),
-                          rb_enc_name(enc),
+                          rb_enc_inspect_name(enc),
                           (ENC_DUMMY_P(enc) ? " (dummy)" : ""),
                           rb_enc_autoload_p(enc) ? " (autoload)" : "");
 }

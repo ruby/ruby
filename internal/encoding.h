@@ -18,6 +18,7 @@
 
 /* encoding.c */
 ID rb_id_encoding(void);
+const char * rb_enc_inspect_name(rb_encoding *enc);
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
