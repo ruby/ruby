@@ -31,7 +31,6 @@ def compile_extension(name)
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   rubyhdrdir = RbConfig::CONFIG['rubyhdrdir']
   ruby_header = "#{rubyhdrdir}/ruby.h"
-  abi_header = "#{rubyhdrdir}/ruby/internal/abi.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
     # below is defined since 2.1, except for mswin, and maybe other platforms
@@ -48,7 +47,6 @@ def compile_extension(name)
     when mtime <= File.mtime("#{core_ext_dir}/rubyspec.h")
     when mtime <= File.mtime("#{spec_ext_dir}/#{ext}.c")
     when mtime <= File.mtime(ruby_header)
-    when (mtime <= File.mtime(abi_header) rescue nil)
     when libruby && mtime <= File.mtime(libruby)
     else
       return lib # up-to-date

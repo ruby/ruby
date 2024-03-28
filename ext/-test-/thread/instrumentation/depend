@@ -14,7 +14,6 @@ instrumentation.o: $(hdrdir)/ruby/backward/2/stdalign.h
 instrumentation.o: $(hdrdir)/ruby/backward/2/stdarg.h
 instrumentation.o: $(hdrdir)/ruby/defines.h
 instrumentation.o: $(hdrdir)/ruby/intern.h
-instrumentation.o: $(hdrdir)/ruby/internal/abi.h
 instrumentation.o: $(hdrdir)/ruby/internal/anyargs.h
 instrumentation.o: $(hdrdir)/ruby/internal/arithmetic.h
 instrumentation.o: $(hdrdir)/ruby/internal/arithmetic/char.h

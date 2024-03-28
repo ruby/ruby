@@ -14,7 +14,6 @@ enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdalign.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdarg.h
 enumerator_kw.o: $(hdrdir)/ruby/defines.h
 enumerator_kw.o: $(hdrdir)/ruby/intern.h
-enumerator_kw.o: $(hdrdir)/ruby/internal/abi.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/anyargs.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/arithmetic.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -15,7 +15,6 @@ stringio.o: $(hdrdir)/ruby/backward/2/stdarg.h
 stringio.o: $(hdrdir)/ruby/defines.h
 stringio.o: $(hdrdir)/ruby/encoding.h
 stringio.o: $(hdrdir)/ruby/intern.h
-stringio.o: $(hdrdir)/ruby/internal/abi.h
 stringio.o: $(hdrdir)/ruby/internal/anyargs.h
 stringio.o: $(hdrdir)/ruby/internal/arithmetic.h
 stringio.o: $(hdrdir)/ruby/internal/arithmetic/char.h

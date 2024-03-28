@@ -14,7 +14,6 @@ funcall.o: $(hdrdir)/ruby/backward/2/stdalign.h
 funcall.o: $(hdrdir)/ruby/backward/2/stdarg.h
 funcall.o: $(hdrdir)/ruby/defines.h
 funcall.o: $(hdrdir)/ruby/intern.h
-funcall.o: $(hdrdir)/ruby/internal/abi.h
 funcall.o: $(hdrdir)/ruby/internal/anyargs.h
 funcall.o: $(hdrdir)/ruby/internal/arithmetic.h
 funcall.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -14,7 +14,6 @@ empty.o: $(hdrdir)/ruby/backward/2/stdalign.h
 empty.o: $(hdrdir)/ruby/backward/2/stdarg.h
 empty.o: $(hdrdir)/ruby/defines.h
 empty.o: $(hdrdir)/ruby/intern.h
-empty.o: $(hdrdir)/ruby/internal/abi.h
 empty.o: $(hdrdir)/ruby/internal/anyargs.h
 empty.o: $(hdrdir)/ruby/internal/arithmetic.h
 empty.o: $(hdrdir)/ruby/internal/arithmetic/char.h

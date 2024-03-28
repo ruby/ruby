@@ -14,7 +14,6 @@ dot.dot.o: $(hdrdir)/ruby/backward/2/stdalign.h
 dot.dot.o: $(hdrdir)/ruby/backward/2/stdarg.h
 dot.dot.o: $(hdrdir)/ruby/defines.h
 dot.dot.o: $(hdrdir)/ruby/intern.h
-dot.dot.o: $(hdrdir)/ruby/internal/abi.h
 dot.dot.o: $(hdrdir)/ruby/internal/anyargs.h
 dot.dot.o: $(hdrdir)/ruby/internal/arithmetic.h
 dot.dot.o: $(hdrdir)/ruby/internal/arithmetic/char.h

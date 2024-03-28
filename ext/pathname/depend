@@ -15,7 +15,6 @@ pathname.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pathname.o: $(hdrdir)/ruby/defines.h
 pathname.o: $(hdrdir)/ruby/encoding.h
 pathname.o: $(hdrdir)/ruby/intern.h
-pathname.o: $(hdrdir)/ruby/internal/abi.h
 pathname.o: $(hdrdir)/ruby/internal/anyargs.h
 pathname.o: $(hdrdir)/ruby/internal/arithmetic.h
 pathname.o: $(hdrdir)/ruby/internal/arithmetic/char.h
