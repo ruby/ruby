@@ -928,7 +928,7 @@ rb_sym2id(VALUE sym)
                 if (rb_mmtk_enabled_p()) {
                     // Symbols with associated ID are implicitly pinned (see gc_is_moveable_obj).
                     // When using MMTk, we need to inform MMTk not to move the object.
-                    mmtk_pin_object((MMTk_ObjectReference)sym);
+                    rb_mmtk_pin_object(sym);
                 }
 #endif
 
@@ -940,7 +940,7 @@ rb_sym2id(VALUE sym)
 #if USE_MMTK && RUBY_DEBUG
         if (rb_mmtk_enabled_p()) {
             // Assert that all dynamic symbols returned from this function are pinned.
-            RUBY_ASSERT(mmtk_is_pinned((MMTk_ObjectReference)sym));
+            rb_mmtk_assert_is_pinned(sym);
         }
 #endif
     }
