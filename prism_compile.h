@@ -13,6 +13,9 @@ typedef struct pm_local_index_struct {
     int index, level;
 } pm_local_index_t;
 
+// A declaration for the struct that lives in compile.c.
+struct iseq_link_anchor;
+
 // ScopeNodes are helper nodes, and will never be part of the AST. We manually
 // declare them here to avoid generating them.
 typedef struct pm_scope_node {
@@ -40,6 +43,12 @@ typedef struct pm_scope_node {
 
     ID *constants;
     st_table *index_lookup_table;
+
+    /**
+     * This will only be set on the top-level scope node. It will contain all of
+     * the instructions pertaining to BEGIN{} nodes.
+     */
+    struct iseq_link_anchor *pre_execution_anchor;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);

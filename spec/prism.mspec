@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 ## Language
-MSpec.register(:exclude, "The BEGIN keyword runs multiple begins in FIFO order")
 MSpec.register(:exclude, "Executing break from within a block works when passing through a super call")
 MSpec.register(:exclude, "The defined? keyword when called with a method name in a void context warns about the void context when parsing it")
 MSpec.register(:exclude, "Hash literal expands an '**{}' or '**obj' element with the last key/value pair taking precedence")
