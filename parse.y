@@ -10164,6 +10164,7 @@ parse_numeric(struct parser_params *p, int c)
             /* prefixed octal */
             c = nextc(p);
             if (c == -1 || c == '_' || !ISDIGIT(c)) {
+                tokfix(p);
                 return no_digits(p);
             }
         }
