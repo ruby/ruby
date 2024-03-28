@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-## Command line
-MSpec.register(:exclude, "The --debug flag produces debugging info on attempted frozen string modification")
-
 ## Language
 MSpec.register(:exclude, "The BEGIN keyword runs multiple begins in FIFO order")
 MSpec.register(:exclude, "Executing break from within a block works when passing through a super call")
