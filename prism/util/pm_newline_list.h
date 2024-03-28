@@ -63,6 +63,8 @@ bool pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t 
 
 /**
  * Clear out the newlines that have been appended to the list.
+ *
+ * @param list The list to clear.
  */
 void
 pm_newline_list_clear(pm_newline_list_t *list);
