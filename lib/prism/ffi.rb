@@ -383,9 +383,6 @@ module Prism
       values << options.fetch(:line, 1)
 
       template << "L"
-      values << options.fetch(:offset, 0)
-
-      template << "L"
       if (encoding = options[:encoding])
         name = encoding.name
         values.push(name.bytesize, name.b)
