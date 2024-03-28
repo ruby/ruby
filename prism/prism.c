@@ -18107,9 +18107,6 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const uint8_t *sourc
         cursor += width;
     }
 
-    // Finally, validate that the identifier is not a keywor.
-    if (pm_local_is_keyword((const char *) source, length)) return false;
-
     return cursor == source + length;
 }
 
@@ -18170,15 +18167,18 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 if (pm_constant_id_list_includes(&names, name)) continue;
                 pm_constant_id_list_append(&names, name);
 
+                int depth;
+                if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
+                    // If the identifier is not already a local, then we'll add
+                    // it to the local table unless it's a keyword.
+                    if (pm_local_is_keyword((const char *) source, length)) continue;
+
+                    pm_parser_local_add(parser, name);
+                }
+
                 // Here we lazily create the MatchWriteNode since we know we're
                 // about to add a target.
                 if (match == NULL) match = pm_match_write_node_create(parser, call);
-
-                // First, find the depth of the local that is being assigned.
-                int depth;
-                if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
-                    pm_parser_local_add(parser, name);
-                }
 
                 // Next, create the local variable target and add it to the
                 // list of targets for the match.
