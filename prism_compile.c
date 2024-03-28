@@ -544,6 +544,23 @@ pm_source_file_value(const pm_source_file_node_t *node, const pm_scope_node_t *s
 }
 
 /**
+ * Return a static literal string, optionally with attached debugging
+ * information.
+ */
+static VALUE
+pm_static_literal_string(rb_iseq_t *iseq, VALUE string, int line_number)
+{
+    if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
+        VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line_number));
+        rb_ivar_set(string, id_debug_created_info, rb_obj_freeze(debug_info));
+        return rb_str_freeze(string);
+    }
+    else {
+        return rb_fstring(string);
+    }
+}
+
+/**
  * Certain nodes can be compiled literally. This function returns the literal
  * value described by the given node. For example, an array node with all static
  * literal values can be compiled into a literal array.
@@ -603,8 +620,11 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
         const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) node;
         return parse_regexp_concat(iseq, scope_node, (const pm_node_t *) cast, &cast->parts);
       }
-      case PM_INTERPOLATED_STRING_NODE:
-        return pm_static_literal_concat(&((const pm_interpolated_string_node_t *) node)->parts, scope_node, true);
+      case PM_INTERPOLATED_STRING_NODE: {
+        VALUE string = pm_static_literal_concat(&((const pm_interpolated_string_node_t *) node)->parts, scope_node, false);
+        int line_number = pm_node_line_number(scope_node->parser, node);
+        return pm_static_literal_string(iseq, string, line_number);
+      }
       case PM_INTERPOLATED_SYMBOL_NODE: {
         const pm_interpolated_symbol_node_t *cast = (const pm_interpolated_symbol_node_t *) node;
         VALUE string = pm_static_literal_concat(&cast->parts, scope_node, true);
@@ -631,8 +651,11 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
       }
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number(scope_node->parser, node));
-      case PM_STRING_NODE:
-        return rb_fstring(parse_string_encoded(scope_node, node, &((pm_string_node_t *)node)->unescaped));
+      case PM_STRING_NODE: {
+        VALUE string = parse_string_encoded(scope_node, node, &((const pm_string_node_t *) node)->unescaped);
+        int line_number = pm_node_line_number(scope_node->parser, node);
+        return pm_static_literal_string(iseq, string, line_number);
+      }
       case PM_SYMBOL_NODE:
         return ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) node));
       case PM_TRUE_NODE:
@@ -4308,7 +4331,10 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
         break;
       case PM_STRING_NODE: {
         const pm_string_node_t *cast = (const pm_string_node_t *) node;
-        key = rb_fstring(parse_string_encoded(scope_node, node, &cast->unescaped));
+        VALUE string = parse_string_encoded(scope_node, node, &cast->unescaped);
+
+        int line_number = pm_node_line_number(scope_node->parser, node);
+        key = pm_static_literal_string(iseq, string, line_number);
         break;
       }
       default:
@@ -8140,7 +8166,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^
         if (!popped) {
             const pm_string_node_t *cast = (const pm_string_node_t *) node;
-            VALUE value = rb_fstring(parse_string_encoded(scope_node, node, &cast->unescaped));
+            VALUE value = parse_string_encoded(scope_node, node, &cast->unescaped);
+            value = pm_static_literal_string(iseq, value, location.line);
 
             if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FROZEN)) {
                 PUSH_INSN1(ret, location, putobject, value);
