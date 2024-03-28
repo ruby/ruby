@@ -19319,7 +19319,9 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     // Here we're going to find the first shebang that includes "ruby" and start
     // parsing from there.
     if (search_shebang) {
-        bool found = false;
+        // If a shebang that includes "ruby" is not found, then we're going to a
+        // a load error to the list of errors on the parser.
+        bool found_shebang = false;
 
         // This is going to point to the start of each line as we check it.
         // We'll maintain a moving window looking at each line at they come.
@@ -19342,14 +19344,14 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
                 }
 
                 if (pm_strnstr((const char *) cursor, "ruby", length) != NULL) {
-                    found = true;
+                    found_shebang = true;
                     parser->encoding_comment_start = newline + 1;
                     break;
                 }
             }
         }
 
-        if (found) {
+        if (found_shebang) {
             parser->previous = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
             parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
         } else {
