@@ -274,7 +274,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 {
     switch (imemo_type(obj)) {
       case imemo_ast:
-        rb_ast_mark_and_move((rb_ast_t *)obj, reference_updating);
+        // TODO: Make AST decoupled from IMEMO
 
         break;
       case imemo_callcache: {

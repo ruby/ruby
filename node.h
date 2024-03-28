@@ -56,7 +56,6 @@ void rb_ast_dispose(rb_ast_t*);
 const char *ruby_node_name(int node);
 void rb_node_init(NODE *n, enum node_type type);
 
-void rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating);
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);

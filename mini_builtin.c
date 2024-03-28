@@ -39,7 +39,7 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         .coverage_enabled = FALSE,
         .debug_level = 0,
     };
-    const rb_iseq_t *iseq = rb_iseq_new_with_opt(&ast->body, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(&ast->body, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, Qnil);
     GET_VM()->builtin_function_table = NULL;
 
     rb_ast_dispose(ast);

@@ -198,7 +198,8 @@ prelude_eval(VALUE code, VALUE name, int line)
 
     rb_ast_t *ast = prelude_ast(name, code, line);
     rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, line,
-                                      NULL, 0, ISEQ_TYPE_TOP, &optimization));
+                                      NULL, 0, ISEQ_TYPE_TOP, &optimization,
+                                      Qnil));
     rb_ast_dispose(ast);
 }
 COMPILER_WARNING_POP

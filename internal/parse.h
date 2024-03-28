@@ -51,7 +51,7 @@ size_t rb_ruby_parser_memsize(const void *ptr);
 
 void rb_ruby_parser_set_options(rb_parser_t *p, int print, int loop, int chomp, int split);
 rb_parser_t *rb_ruby_parser_set_context(rb_parser_t *p, const struct rb_iseq_struct *base, int main);
-void rb_ruby_parser_set_script_lines(rb_parser_t *p, VALUE lines_array);
+void rb_ruby_parser_set_script_lines(rb_parser_t *p);
 void rb_ruby_parser_error_tolerant(rb_parser_t *p);
 rb_ast_t* rb_ruby_parser_compile_file_path(rb_parser_t *p, VALUE fname, VALUE file, int start);
 void rb_ruby_parser_keep_tokens(rb_parser_t *p);

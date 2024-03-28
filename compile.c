@@ -1483,7 +1483,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     ast.root = node;
     ast.frozen_string_literal = -1;
     ast.coverage_enabled = -1;
-    ast.script_lines = ISEQ_BODY(iseq)->variable.script_lines;
+    ast.script_lines = NULL;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
@@ -1491,7 +1491,8 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                                     rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                                     line_no, parent,
                                     isolated_depth ? isolated_depth + 1 : 0,
-                                    type, ISEQ_COMPILE_DATA(iseq)->option);
+                                    type, ISEQ_COMPILE_DATA(iseq)->option,
+                                    ISEQ_BODY(iseq)->variable.script_lines);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -8735,14 +8736,15 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
         .root = RNODE(&scope_node),
         .frozen_string_literal = -1,
         .coverage_enabled = -1,
-        .script_lines = ISEQ_BODY(iseq)->variable.script_lines,
+        .script_lines = NULL
     };
 
     ISEQ_BODY(iseq)->mandatory_only_iseq =
       rb_iseq_new_with_opt(&ast, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
-                           ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
+                           ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
+                           ISEQ_BODY(iseq)->variable.script_lines);
 
     ALLOCV_END(idtmp);
     return COMPILE_OK;

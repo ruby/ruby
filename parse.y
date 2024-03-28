@@ -86,6 +86,10 @@ VALUE rb_io_gets_internal(VALUE io);
 
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
 
+#ifndef RIPPER
+static rb_parser_string_t *rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *original);
+#endif
+
 static int
 node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
 {
@@ -582,7 +586,7 @@ struct parser_params {
     unsigned int keep_tokens: 1;
 
     VALUE error_buffer;
-    VALUE debug_lines;
+    rb_parser_ary_t *debug_lines;
     /*
      * Store specific keyword locations to generate dummy end token.
      * Refer to the tail of list element.
@@ -2559,15 +2563,19 @@ rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
     long i;
     if (ary->capa < len) {
         ary->capa = len;
-        ary->data = xrealloc(ary->data, sizeof(void *) * len);
+        ary->data = (rb_parser_ary_data *)xrealloc(ary->data, sizeof(rb_parser_ary_data) * len);
         for (i = ary->len; i < len; i++) {
             ary->data[i] = 0;
         }
     }
 }
 
+/*
+ * Do not call this directly.
+ * Use rb_parser_ary_new_capa_for_script_line() or rb_parser_ary_new_capa_for_ast_token() instead.
+ */
 static rb_parser_ary_t *
-rb_parser_ary_new_capa(rb_parser_t *p, long len)
+parser_ary_new_capa(rb_parser_t *p, long len)
 {
     if (len < 0) {
         rb_bug("negative array size (or size too big): %ld", len);
@@ -2576,23 +2584,60 @@ rb_parser_ary_new_capa(rb_parser_t *p, long len)
     ary->len = 0;
     ary->capa = len;
     if (0 < len) {
-        ary->data = (rb_parser_ast_token_t **)xcalloc(len, sizeof(rb_parser_ast_token_t *));
+        ary->data = (rb_parser_ary_data *)xcalloc(len, sizeof(rb_parser_ary_data));
     }
     else {
         ary->data = NULL;
     }
     return ary;
 }
-#define rb_parser_ary_new2 rb_parser_ary_new_capa
 
 static rb_parser_ary_t *
-rb_parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
+rb_parser_ary_new_capa_for_script_line(rb_parser_t *p, long len)
+{
+    rb_parser_ary_t *ary = parser_ary_new_capa(p, len);
+    ary->data_type = PARSER_ARY_DATA_SCRIPT_LINE;
+    return ary;
+}
+
+static rb_parser_ary_t *
+rb_parser_ary_new_capa_for_ast_token(rb_parser_t *p, long len)
+{
+    rb_parser_ary_t *ary = parser_ary_new_capa(p, len);
+    ary->data_type = PARSER_ARY_DATA_AST_TOKEN;
+    return ary;
+}
+
+/*
+ * Do not call this directly.
+ * Use rb_parser_ary_push_script_line() or rb_parser_ary_push_ast_token() instead.
+ */
+static rb_parser_ary_t *
+parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ary_data val)
 {
     if (ary->len == ary->capa) {
         rb_parser_ary_extend(p, ary, ary->len == 0 ? 1 : ary->len * 2);
     }
     ary->data[ary->len++] = val;
     return ary;
+}
+
+static rb_parser_ary_t *
+rb_parser_ary_push_ast_token(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
+{
+    if (ary->data_type != PARSER_ARY_DATA_AST_TOKEN) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+    }
+    return parser_ary_push(p, ary, val);
+}
+
+static rb_parser_ary_t *
+rb_parser_ary_push_script_line(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_string_t *val)
+{
+    if (ary->data_type != PARSER_ARY_DATA_SCRIPT_LINE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+    }
+    return parser_ary_push(p, ary, val);
 }
 
 static void
@@ -2604,12 +2649,24 @@ rb_parser_ast_token_free(rb_parser_t *p, rb_parser_ast_token_t *token)
 }
 
 static void
-rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
+rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 {
-    for (long i = 0; i < tokens->len; i++) {
-        rb_parser_ast_token_free(p, tokens->data[i]);
+    void (*free_func)(rb_parser_t *, rb_parser_ary_data) = NULL;
+    switch (ary->data_type) {
+      case PARSER_ARY_DATA_AST_TOKEN:
+        free_func = (void (*)(rb_parser_t *, rb_parser_ary_data))rb_parser_ast_token_free;
+        break;
+      case PARSER_ARY_DATA_SCRIPT_LINE:
+        free_func = (void (*)(rb_parser_t *, rb_parser_ary_data))rb_parser_string_free;
+        break;
+      default:
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+        break;
     }
-    xfree(tokens);
+    for (long i = 0; i < ary->len; i++) {
+        free_func(p, ary->data[i]);
+    }
+    xfree(ary);
 }
 
 #endif /* !RIPPER */
@@ -7144,7 +7201,7 @@ parser_append_tokens(struct parser_params *p, rb_parser_string_t *str, enum yyto
     token->str = str;
     token->loc.beg_pos = p->yylloc->beg_pos;
     token->loc.end_pos = p->yylloc->end_pos;
-    rb_parser_ary_push(p, p->tokens, token);
+    rb_parser_ary_push_ast_token(p, p->tokens, token);
     p->token_id++;
 
     if (p->debug) {
@@ -7656,22 +7713,12 @@ yycompile0(VALUE arg)
     struct parser_params *p = (struct parser_params *)arg;
     int cov = FALSE;
 
-    if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
-        if (p->debug_lines && p->ruby_sourceline > 0) {
-            VALUE str = rb_default_rs;
-            n = p->ruby_sourceline;
-            do {
-                rb_ary_push(p->debug_lines, str);
-            } while (--n);
-        }
-
-        if (!e_option_supplied(p)) {
-            cov = TRUE;
-        }
+    if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string) && !e_option_supplied(p)) {
+        cov = TRUE;
     }
 
     if (p->debug_lines) {
-        RB_OBJ_WRITE(p->ast, &p->ast->body.script_lines, p->debug_lines);
+        p->ast->body.script_lines = p->debug_lines;
     }
 
     parser_prepare(p);
@@ -7682,6 +7729,8 @@ yycompile0(VALUE arg)
     RUBY_DTRACE_PARSE_HOOK(BEGIN);
     n = yyparse(p);
     RUBY_DTRACE_PARSE_HOOK(END);
+
+    rb_parser_aset_script_lines_for(p->ruby_sourcefile_string, p->debug_lines);
     p->debug_lines = 0;
 
     xfree(p->lex.strterm);
@@ -7715,7 +7764,7 @@ yycompile0(VALUE arg)
         }
     }
     p->ast->body.root = tree;
-    if (!p->ast->body.script_lines) p->ast->body.script_lines = INT2FIX(p->line_count);
+    if (!p->ast->body.script_lines) p->ast->body.script_lines = (rb_parser_ary_t *)INT2FIX(p->line_count);
     return TRUE;
 }
 
@@ -7975,9 +8024,9 @@ nextline(struct parser_params *p, int set_encoding)
         }
 #ifndef RIPPER
         if (p->debug_lines) {
-            VALUE v = rb_str_new_mutable_parser_string(str);
-            if (set_encoding) rb_enc_associate(v, p->enc);
-            rb_ary_push(p->debug_lines, v);
+            if (set_encoding) rb_parser_enc_associate(p, str, p->enc);
+            rb_parser_string_t *copy = rb_parser_string_deep_copy(p, str);
+            rb_parser_ary_push_script_line(p, p->debug_lines, copy);
         }
 #endif
         p->cr_seen = FALSE;
@@ -9653,10 +9702,9 @@ parser_set_encode(struct parser_params *p, const char *name)
     p->enc = enc;
 #ifndef RIPPER
     if (p->debug_lines) {
-        VALUE lines = p->debug_lines;
-        long i, n = RARRAY_LEN(lines);
-        for (i = 0; i < n; ++i) {
-            rb_enc_associate_index(RARRAY_AREF(lines, i), idx);
+        long i;
+        for (i = 0; i < p->debug_lines->len; i++) {
+            rb_parser_enc_associate(p, p->debug_lines->data[i], enc);
         }
     }
 #endif
@@ -12870,6 +12918,19 @@ string_literal_head(struct parser_params *p, enum node_type htype, NODE *head)
     return lit;
 }
 
+#ifndef RIPPER
+static rb_parser_string_t *
+rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *orig)
+{
+    rb_parser_string_t *copy;
+    if (!orig) return NULL;
+    copy = rb_parser_string_new(p, PARSER_STRING_PTR(orig), PARSER_STRING_LEN(orig));
+    copy->coderange = orig->coderange;
+    copy->enc = orig->enc;
+    return copy;
+}
+#endif
+
 /* concat two string literals */
 static NODE *
 literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *loc)
@@ -15826,7 +15887,6 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->ruby_sourcefile_string);
     rb_gc_mark((VALUE)p->ast);
 #ifndef RIPPER
-    rb_gc_mark(p->debug_lines);
     rb_gc_mark(p->error_buffer);
 #else
     rb_gc_mark(p->value);
@@ -15848,7 +15908,7 @@ rb_ruby_parser_free(void *ptr)
 
 #ifndef RIPPER
     if (p->tokens) {
-        rb_parser_tokens_free(p, p->tokens);
+        rb_parser_ary_free(p, p->tokens);
     }
 #endif
 
@@ -15948,19 +16008,9 @@ rb_ruby_parser_set_context(rb_parser_t *p, const struct rb_iseq_struct *base, in
 }
 
 void
-rb_ruby_parser_set_script_lines(rb_parser_t *p, VALUE lines)
+rb_ruby_parser_set_script_lines(rb_parser_t *p)
 {
-    if (!RTEST(lines)) {
-        lines = Qfalse;
-    }
-    else if (lines == Qtrue) {
-        lines = rb_ary_new();
-    }
-    else {
-        Check_Type(lines, T_ARRAY);
-        rb_ary_modify(lines);
-    }
-    p->debug_lines = lines;
+    p->debug_lines = rb_parser_ary_new_capa_for_script_line(p, 10);
 }
 
 void
@@ -15973,7 +16023,7 @@ void
 rb_ruby_parser_keep_tokens(rb_parser_t *p)
 {
     p->keep_tokens = 1;
-    p->tokens = rb_parser_ary_new_capa(p, 10);
+    p->tokens = rb_parser_ary_new_capa_for_ast_token(p, 10);
 }
 
 #ifndef UNIVERSAL_PARSER
@@ -16045,12 +16095,12 @@ rb_parser_error_tolerant(VALUE vparser)
 }
 
 void
-rb_parser_set_script_lines(VALUE vparser, VALUE lines)
+rb_parser_set_script_lines(VALUE vparser)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    rb_ruby_parser_set_script_lines(p, lines);
+    rb_ruby_parser_set_script_lines(p);
 }
 
 void
@@ -16099,6 +16149,22 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
     rb_ruby_parser_set_yydebug(p, RTEST(flag));
     return flag;
+}
+
+void
+rb_set_script_lines_for(VALUE self, VALUE path)
+{
+    struct parser_params *p;
+    VALUE hash;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (RB_TYPE_P(hash, T_HASH)) {
+        rb_hash_aset(hash, path, Qtrue);
+        TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
+        rb_ruby_parser_set_script_lines(p);
+    }
 }
 #endif /* !UNIVERSAL_PARSER */
 

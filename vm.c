@@ -1479,7 +1479,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     ast.root = RNODE(&tmp_node);
     ast.frozen_string_literal = -1;
     ast.coverage_enabled = -1;
-    ast.script_lines = INT2FIX(-1);
+    ast.script_lines = (rb_parser_ary_t *)INT2FIX(-1);
 
     if (base_iseq) {
         iseq = rb_iseq_new(&ast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
