@@ -1883,7 +1883,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             }
             type = r_byte(arg);
             if ((c == rb_cHash) &&
-                /* Hack for compare_by_identify */
+                /* Hack for compare_by_identity */
                 (type == TYPE_HASH || type == TYPE_HASH_DEF)) {
                 hash_new_with_size = rb_ident_hash_new_with_size;
                 goto type_hash;
