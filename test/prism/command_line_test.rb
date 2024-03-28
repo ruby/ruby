@@ -88,5 +88,24 @@ module Prism
 
       assert_kind_of IntegerNode, result.value.statements.body.first
     end
+
+    def test_command_line_x_implicit_fail
+      result = Prism.parse(<<~RUBY)
+        #!/bin/bash
+        exit 1
+      RUBY
+
+      assert_equal 1, result.errors.length
+      assert_equal :load, result.errors.first.level
+    end
+
+    def test_command_line_x_explicit_fail
+      result = Prism.parse(<<~RUBY, command_line: "x")
+        exit 1
+      RUBY
+
+      assert_equal 1, result.errors.length
+      assert_equal :load, result.errors.first.level
+    end
   end
 end
