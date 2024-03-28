@@ -163,7 +163,7 @@ This example defines and uses two custom write converters to strip and upcase ge
 === RFC 4180 Compliance
 
 By default, \CSV generates data that is compliant with
-{RFC 4180}[https://tools.ietf.org/html/rfc4180]
+{RFC 4180}[https://www.rfc-editor.org/rfc/rfc4180]
 with respect to:
 - Column separator.
 - Quote character.

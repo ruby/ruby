@@ -356,7 +356,7 @@ each based on an external standard.
 == HTTP Format
 
 The HTTP date format is based on
-{RFC 2616}[https://datatracker.ietf.org/doc/html/rfc2616],
+{RFC 2616}[https://www.rfc-editor.org/rfc/rfc2616],
 and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
@@ -371,7 +371,7 @@ and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
 == RFC 3339 Format
 
 The RFC 3339 date format is based on
-{RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339]:
+{RFC 3339}[https://www.rfc-editor.org/rfc/rfc3339]:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
   # Return 3339-formatted string.
@@ -385,7 +385,7 @@ The RFC 3339 date format is based on
 == RFC 2822 Format
 
 The RFC 2822 date format is based on
-{RFC 2822}[https://datatracker.ietf.org/doc/html/rfc2822],
+{RFC 2822}[https://www.rfc-editor.org/rfc/rfc2822],
 and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>]:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>

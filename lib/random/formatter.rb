@@ -165,7 +165,7 @@ module Random::Formatter
   #
   # The result contains 122 random bits (15.25 random bytes).
   #
-  # See RFC4122[https://datatracker.ietf.org/doc/html/rfc4122] for details of UUID.
+  # See RFC4122[https://www.rfc-editor.org/rfc/rfc4122] for details of UUID.
   #
   def uuid
     ary = random_bytes(16)
