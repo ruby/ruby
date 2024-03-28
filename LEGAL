@@ -952,7 +952,7 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
-[lib/rubygems/resolver/molinillo]
+[lib/rubygems/vendor/molinillo]
 
   molinillo is under the following license.
 
