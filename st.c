@@ -1159,6 +1159,13 @@ st_add_direct_with_hash(st_table *tab,
     }
 }
 
+void
+rb_st_add_direct_with_hash(st_table *tab,
+                           st_data_t key, st_data_t value, st_hash_t hash)
+{
+    st_add_direct_with_hash(tab, key, value, hash);
+}
+
 /* Insert (KEY, VALUE) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
 void

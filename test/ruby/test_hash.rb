@@ -2246,4 +2246,24 @@ class TestHash < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_ar_hash_to_st_hash
+    assert_normal_exit("#{<<~"begin;"}\n#{<<~'end;'}", 'https://bugs.ruby-lang.org/issues/20050#note-5')
+    begin;
+      srand(0)
+      class Foo
+        def to_a
+          []
+        end
+        def hash
+          $h.delete($h.keys.sample) if rand < 0.1
+          to_a.hash
+        end
+      end
+      1000.times do
+        $h = {}
+        (0..10).each {|i| $h[Foo.new] ||= {} }
+      end
+    end;
+  end
 end
