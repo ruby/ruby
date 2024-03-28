@@ -1184,6 +1184,77 @@ token_is_setter_name(pm_token_t *token) {
     );
 }
 
+/**
+ * Returns true if the given local variable is a keyword.
+ */
+static bool
+pm_local_is_keyword(const char *source, size_t length) {
+#define KEYWORD(name) if (memcmp(source, name, length) == 0) return true
+
+    switch (length) {
+        case 2:
+            switch (source[0]) {
+                case 'd': KEYWORD("do"); return false;
+                case 'i': KEYWORD("if"); KEYWORD("in"); return false;
+                case 'o': KEYWORD("or"); return false;
+                default: return false;
+            }
+        case 3:
+            switch (source[0]) {
+                case 'a': KEYWORD("and"); return false;
+                case 'd': KEYWORD("def"); return false;
+                case 'e': KEYWORD("end"); return false;
+                case 'f': KEYWORD("for"); return false;
+                case 'n': KEYWORD("nil"); KEYWORD("not"); return false;
+                default: return false;
+            }
+        case 4:
+            switch (source[0]) {
+                case 'c': KEYWORD("case"); return false;
+                case 'e': KEYWORD("else"); return false;
+                case 'n': KEYWORD("next"); return false;
+                case 'r': KEYWORD("redo"); return false;
+                case 's': KEYWORD("self"); return false;
+                case 't': KEYWORD("then");  KEYWORD("true"); return false;
+                case 'w': KEYWORD("when"); return false;
+                default: return false;
+            }
+        case 5:
+            switch (source[0]) {
+                case 'a': KEYWORD("alias"); return false;
+                case 'b': KEYWORD("begin"); KEYWORD("break"); return false;
+                case 'c': KEYWORD("class"); return false;
+                case 'e': KEYWORD("elsif"); return false;
+                case 'f': KEYWORD("false"); return false;
+                case 'r': KEYWORD("retry"); return false;
+                case 's': KEYWORD("super"); return false;
+                case 'u': KEYWORD("undef"); KEYWORD("until"); return false;
+                case 'w': KEYWORD("while"); return false;
+                case 'y': KEYWORD("yield"); return false;
+                default: return false;
+            }
+        case 6:
+            switch (source[0]) {
+                case 'e': KEYWORD("ensure"); return false;
+                case 'm': KEYWORD("module"); return false;
+                case 'r': KEYWORD("rescue"); KEYWORD("return"); return false;
+                case 'u': KEYWORD("unless"); return false;
+                default: return false;
+            }
+        case 8:
+            KEYWORD("__LINE__");
+            KEYWORD("__FILE__");
+            return false;
+        case 12:
+            KEYWORD("__ENCODING__");
+            return false;
+        default:
+            return false;
+    }
+
+#undef KEYWORD
+}
+
 /******************************************************************************/
 /* Node flag handling functions                                               */
 /******************************************************************************/
@@ -10576,19 +10647,19 @@ parser_lex(pm_parser_t *parser) {
 
                     pm_token_type_t type = lex_identifier(parser, previous_command_start);
 
-                    // If we've hit a __END__ and it was at the start of the line or the
-                    // start of the file and it is followed by either a \n or a \r\n, then
-                    // this is the last token of the file.
+                    // If we've hit a __END__ and it was at the start of the
+                    // line or the start of the file and it is followed by
+                    // either a \n or a \r\n, then this is the last token of the
+                    // file.
                     if (
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
                         (memcmp(parser->current.start, "__END__", 7) == 0) &&
                         (parser->current.end == parser->end || match_eol(parser))
-                        )
-                    {
-                        // Since we know we're about to add an __END__ comment, we know we
-                        // need to add all of the newlines to get the correct column
-                        // information for it.
+                    ) {
+                        // Since we know we're about to add an __END__ comment,
+                        // we know we need to add all of the newlines to get the
+                        // correct column information for it.
                         const uint8_t *cursor = parser->current.end;
                         while ((cursor = next_newline(cursor, parser->end - cursor)) != NULL) {
                             pm_newline_list_append(&parser->newline_list, cursor++);
@@ -18006,21 +18077,38 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
     }
 }
 
+/**
+ * Returns true if the name of the capture group is a valid local variable that
+ * can be written to.
+ */
 static bool
-name_is_identifier(pm_parser_t *parser, const uint8_t *source, size_t length) {
+parse_regular_expression_named_capture(pm_parser_t *parser, const uint8_t *source, size_t length) {
     if (length == 0) {
         return false;
     }
 
+    // First ensure that it starts with a valid identifier starting character.
     size_t width = char_is_identifier_start(parser, source);
     if (!width) {
         return false;
     }
 
-    uint8_t *cursor = ((uint8_t *)source) + width;
+    // Next, ensure that it's not an uppercase character.
+    if (parser->encoding_changed) {
+        if (parser->encoding->isupper_char(source, (ptrdiff_t) length)) return false;
+    } else {
+        if (pm_encoding_utf_8_isupper_char(source, (ptrdiff_t) length)) return false;
+    }
+
+    // Next, iterate through all of the bytes of the string to ensure that they
+    // are all valid identifier characters.
+    const uint8_t *cursor = source + width;
     while (cursor < source + length && (width = char_is_identifier(parser, cursor))) {
         cursor += width;
     }
+
+    // Finally, validate that the identifier is not a keywor.
+    if (pm_local_is_keyword((const char *) source, length)) return false;
 
     return cursor == source + length;
 }
@@ -18051,7 +18139,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
             // If the name of the capture group isn't a valid identifier, we do
             // not add it to the local table.
-            if (!name_is_identifier(parser, source, length)) continue;
+            if (!parse_regular_expression_named_capture(parser, source, length)) continue;
 
             if (content->type == PM_STRING_SHARED) {
                 // If the unescaped string is a slice of the source, then we can
