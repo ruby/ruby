@@ -8390,10 +8390,11 @@ pm_parse_process_error(const pm_parse_result_t *result)
     const pm_string_t *filepath = &parser->filepath;
 
     for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
-        // Any errors with the level PM_ERROR_LEVEL_ARGUMENT effectively take
-        // over as the only argument that gets raised. This is to allow priority
-        // messages that should be handled before anything else.
-        if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
+        // Any errors with the level that is not PM_ERROR_LEVEL_SYNTAX
+        // effectively take over as the only argument that gets raised. This is
+        // to allow priority messages that should be handled before anything
+        // else.
+        if (error->level != PM_ERROR_LEVEL_SYNTAX) {
             int32_t line_number = (int32_t) pm_location_line_number(parser, &error->location);
 
             pm_buffer_append_format(
@@ -8414,10 +8415,24 @@ pm_parse_process_error(const pm_parse_result_t *result)
                 pm_parser_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
             }
 
-            VALUE arg_error = rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+            VALUE class;
+            switch (error->level) {
+              case PM_ERROR_LEVEL_ARGUMENT:
+                class = rb_eArgError;
+                break;
+              case PM_ERROR_LEVEL_LOAD:
+                class = rb_eLoadError;
+                break;
+              default:
+                class = rb_eSyntaxError;
+                RUBY_ASSERT(false && "unexpected error level");
+                break;
+            }
+
+            VALUE value = rb_exc_new(class, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
             pm_buffer_free(&buffer);
 
-            return arg_error;
+            return value;
         }
 
         // It is implicitly assumed that the error messages will be encodeable
