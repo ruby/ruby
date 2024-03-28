@@ -29,8 +29,6 @@ MSpec.register(:exclude, "A Symbol literal raises an SyntaxError at parse time w
 ## Core
 MSpec.register(:exclude, "IO.popen with a leading Array argument accepts a trailing Hash of Process.exec options")
 MSpec.register(:exclude, "IO.popen with a leading Array argument accepts an IO mode argument following the Array")
-MSpec.register(:exclude, "Kernel#eval with a magic encoding comment allows spaces before the magic encoding comment")
-MSpec.register(:exclude, "Kernel#eval with a magic encoding comment allows a shebang line and some spaces before the magic encoding comment")
 MSpec.register(:exclude, "TracePoint#eval_script is the evald source code")
 MSpec.register(:exclude, "TracePoint#event returns the type of event")
 MSpec.register(:exclude, "TracePoint#inspect returns a String showing the event, method, path and line for a :return event")
