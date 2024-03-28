@@ -500,6 +500,9 @@ debug_lex_state_set(pm_parser_t *parser, pm_lex_state_t state, char const * call
 /** True if the -p command line option was given. */
 #define PM_PARSER_COMMAND_LINE_OPTION_P(parser) PM_PARSER_COMMAND_LINE_OPTION(parser, PM_OPTIONS_COMMAND_LINE_P)
 
+/** True if the -x command line option was given. */
+#define PM_PARSER_COMMAND_LINE_OPTION_X(parser) PM_PARSER_COMMAND_LINE_OPTION(parser, PM_OPTIONS_COMMAND_LINE_X)
+
 /******************************************************************************/
 /* Diagnostic-related functions                                               */
 /******************************************************************************/
@@ -19123,6 +19126,38 @@ parse_program(pm_parser_t *parser) {
 /******************************************************************************/
 
 /**
+ * A vendored version of strnstr that is used to find a substring within a
+ * string with a given length. This function is used to search for the Ruby
+ * engine name within a shebang when the -x option is passed to Ruby.
+ *
+ * The only modification that we made here is that we don't do NULL byte checks
+ * because we know the little parameter will not have a NULL byte and we allow
+ * the big parameter to have them.
+ */
+static const char *
+pm_strnstr(const char *big, const char *little, size_t big_length) {
+    size_t little_length = strlen(little);
+
+    for (const char *big_end = big + big_length; big < big_end; big++) {
+        if (*big == *little && memcmp(big, little, little_length) == 0) return big;
+    }
+
+    return NULL;
+}
+
+/**
+ * Potentially warn the user if the shebang that has been found to include
+ * "ruby" has a carriage return at the end, as that can cause problems on some
+ * platforms.
+ */
+static void
+pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start, size_t length) {
+    if (length > 2 && start[length - 1] == '\n' && start[length - 2] == '\r') {
+        pm_parser_warn(parser, start, start + length, PM_WARN_SHEBANG_CARRIAGE_RETURN);
+    }
+}
+
+/**
  * Initialize a parser with the given start and end pointers.
  */
 PRISM_EXPORTED_FUNCTION void
@@ -19208,22 +19243,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         // line option
         parser->start_line = options->line;
 
-        // offset option
-        if (options->offset != 0) {
-            const uint8_t *cursor = parser->start;
-            const uint8_t *offset = cursor + options->offset;
-
-            const uint8_t *newline = NULL;
-            while ((newline = next_newline(cursor, parser->end - cursor)) != NULL) {
-                if (newline > offset) break;
-                pm_newline_list_append(&parser->newline_list, newline);
-                cursor = newline + 1;
-            }
-
-            parser->previous = (pm_token_t) { .type = PM_TOKEN_EOF, .start = offset, .end = offset };
-            parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = offset, .end = offset };
-        }
-
         // encoding option
         size_t encoding_length = pm_string_length(&options->encoding);
         if (encoding_length > 0) {
@@ -19277,12 +19296,65 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         }
     }
 
+    // If the -x command line flag is set, or the first shebang of the file does
+    // not include "ruby", then we'll search for a shebang that does include
+    // "ruby" and start parsing from there.
+    bool search_shebang = PM_PARSER_COMMAND_LINE_OPTION_X(parser);
+
     // If the first two bytes of the source are a shebang, then we'll indicate
     // that the encoding comment is at the end of the shebang.
     if (peek(parser) == '#' && peek_offset(parser, 1) == '!') {
-        const uint8_t *encoding_comment_start = next_newline(source, (ptrdiff_t) size);
-        if (encoding_comment_start) {
-            parser->encoding_comment_start = encoding_comment_start + 1;
+        const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
+        size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
+
+        if (pm_strnstr((const char *) parser->start, "ruby", length) != NULL) {
+            pm_parser_warn_shebang_carriage_return(parser, parser->start, length);
+            if (newline != NULL) parser->encoding_comment_start = newline + 1;
+            search_shebang = false;
+        } else {
+            search_shebang = true;
+        }
+    }
+
+    // Here we're going to find the first shebang that includes "ruby" and start
+    // parsing from there.
+    if (search_shebang) {
+        bool found = false;
+
+        // This is going to point to the start of each line as we check it.
+        // We'll maintain a moving window looking at each line at they come.
+        const uint8_t *cursor = parser->start;
+
+        // The newline pointer points to the end of the current line that we're
+        // considering. If it is NULL, then we're at the end of the file.
+        const uint8_t *newline = next_newline(cursor, parser->end - cursor);
+
+        while (newline != NULL) {
+            pm_newline_list_append(&parser->newline_list, newline);
+
+            cursor = newline + 1;
+            newline = next_newline(cursor, parser->end - cursor);
+
+            size_t length = (size_t) ((newline != NULL ? newline : parser->end) - cursor);
+            if (length > 2 && cursor[0] == '#' && cursor[1] == '!') {
+                if (parser->newline_list.size == 1) {
+                    pm_parser_warn_shebang_carriage_return(parser, cursor, length);
+                }
+
+                if (pm_strnstr((const char *) cursor, "ruby", length) != NULL) {
+                    found = true;
+                    parser->encoding_comment_start = newline + 1;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            parser->previous = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
+            parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
+        } else {
+            pm_parser_err(parser, parser->start, parser->start, PM_ERR_SCRIPT_NOT_FOUND);
+            pm_newline_list_clear(&parser->newline_list);
         }
     }
 }

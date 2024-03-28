@@ -66,11 +66,14 @@ typedef struct {
  * The levels of errors generated during parsing.
  */
 typedef enum {
-    /** For errors that cannot be recovered from. */
-    PM_ERROR_LEVEL_FATAL = 0,
+    /** For errors that should raise a syntax error. */
+    PM_ERROR_LEVEL_SYNTAX = 0,
 
     /** For errors that should raise an argument error. */
-    PM_ERROR_LEVEL_ARGUMENT = 1
+    PM_ERROR_LEVEL_ARGUMENT = 1,
+
+    /** For errors that should raise a load error. */
+    PM_ERROR_LEVEL_LOAD = 2
 } pm_error_level_t;
 
 /**

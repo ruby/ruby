@@ -65,5 +65,28 @@ module Prism
       result = Prism.parse("1 if 2..3", command_line: "e")
       assert_equal 0, result.warnings.length
     end
+
+    def test_command_line_x_implicit
+      result = Prism.parse(<<~RUBY)
+        #!/bin/bash
+        exit 1
+
+        #!/usr/bin/env ruby
+        1
+      RUBY
+
+      assert_kind_of IntegerNode, result.value.statements.body.first
+    end
+
+    def test_command_line_x_explicit
+      result = Prism.parse(<<~RUBY, command_line: "x")
+        exit 1
+
+        #!/usr/bin/env ruby
+        1
+      RUBY
+
+      assert_kind_of IntegerNode, result.value.statements.body.first
+    end
   end
 end

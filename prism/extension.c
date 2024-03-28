@@ -28,7 +28,6 @@ ID rb_option_id_encoding;
 ID rb_option_id_filepath;
 ID rb_option_id_frozen_string_literal;
 ID rb_option_id_line;
-ID rb_option_id_offset;
 ID rb_option_id_scopes;
 ID rb_option_id_version;
 
@@ -139,8 +138,6 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
     } else if (key_id == rb_option_id_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
-    } else if (key_id == rb_option_id_offset) {
-        if (!NIL_P(value)) pm_options_offset_set(options, NUM2UINT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, RTEST(value));
     } else if (key_id == rb_option_id_version) {
@@ -448,8 +445,8 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE level = Qnil;
         switch (error->level) {
-            case PM_ERROR_LEVEL_FATAL:
-                level = ID2SYM(rb_intern("fatal"));
+            case PM_ERROR_LEVEL_SYNTAX:
+                level = ID2SYM(rb_intern("syntax"));
                 break;
             case PM_ERROR_LEVEL_ARGUMENT:
                 level = ID2SYM(rb_intern("argument"));
@@ -1347,7 +1344,6 @@ Init_prism(void) {
     rb_option_id_filepath = rb_intern_const("filepath");
     rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_option_id_line = rb_intern_const("line");
-    rb_option_id_offset = rb_intern_const("offset");
     rb_option_id_scopes = rb_intern_const("scopes");
     rb_option_id_version = rb_intern_const("version");
 

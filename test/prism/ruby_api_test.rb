@@ -233,21 +233,6 @@ module Prism
       assert_equal 16, base[parse_expression("0x1")]
     end
 
-    def test_offset
-      source = <<~RUBY
-        #!/bin/sh
-
-        echo "foo"
-        exit 0
-
-        #!/usr/bin/env ruby
-
-        puts "bar"
-      RUBY
-
-      assert Prism.parse_success?(source, offset: 30)
-    end
-
     private
 
     def parse_expression(source)
