@@ -659,7 +659,7 @@ impl Assembler
                 },
                 Insn::Mul { left, right, .. } => {
                     let opnd0 = split_load_operand(asm, *left);
-                    let opnd1 = split_shifted_immediate(asm, *right);
+                    let opnd1 = split_load_operand(asm, *right);
                     asm.mul(opnd0, opnd1);
                 },
                 Insn::Test { left, right } => {
@@ -1721,6 +1721,21 @@ mod tests {
         assert_disasm!(cb, "2b0500b16b0500b1e1030baa", {"
             0x0: adds x11, x9, #1
             0x4: adds x11, x11, #1
+            0x8: mov x1, x11
+        "});
+    }
+
+    #[test]
+    fn test_mul_with_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.mul(Opnd::Reg(TEMP_REGS[1]), 3.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "6b0080d22b7d0b9be1030baa", {"
+            0x0: mov x11, #3
+            0x4: mul x11, x9, x11
             0x8: mov x1, x11
         "});
     }
