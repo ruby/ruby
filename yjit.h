@@ -28,6 +28,7 @@
 extern uint64_t rb_yjit_call_threshold;
 extern uint64_t rb_yjit_cold_threshold;
 extern uint64_t rb_yjit_live_iseq_count;
+extern uint64_t rb_yjit_iseq_alloc_count;
 extern bool rb_yjit_enabled_p;
 void rb_yjit_incr_counter(const char *counter_name);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
