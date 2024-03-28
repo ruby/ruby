@@ -210,6 +210,10 @@ RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
 #endif
 
+#ifndef HAVE_STRNDUP
+RUBY_EXTERN char *strndup(const char *, size_t);
+#endif
+
 #ifndef HAVE_FFS
 RUBY_EXTERN int ffs(int);
 #endif
