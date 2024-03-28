@@ -3003,6 +3003,24 @@ rb_fiber_alive_p(VALUE fiber_value)
 }
 
 /*
+ *  call-seq: fiber.resuming? -> true or false
+ *
+ *  Whether the fiber is currently resuming another.
+ *
+ *  If true, Fiber#raise and Fiber#kill will raise a FiberError as the only
+ *  valid way to go back to the fiber is via Fiber.yield.
+ */
+VALUE
+rb_fiber_resuming_p(VALUE fiber_value)
+{
+    struct rb_fiber_struct *fiber = fiber_ptr(fiber_value);
+
+    if (FIBER_TERMINATED_P(fiber)) return RUBY_Qfalse;
+
+    return RBOOL(fiber->resuming_fiber);
+}
+
+/*
  *  call-seq:
  *     fiber.resume(args, ...) -> obj
  *
@@ -3504,7 +3522,9 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
+
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
+    rb_define_method(rb_cFiber, "resuming?", rb_fiber_resuming_p, 0);
 
     rb_define_singleton_method(rb_cFiber, "blocking?", rb_fiber_s_blocking_p, 0);
     rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_s_scheduler, 0);
