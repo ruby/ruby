@@ -999,6 +999,8 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 
 #if USE_YJIT
     rb_yjit_live_iseq_count++;
+    rb_yjit_iseq_alloc_count++;
+
 #endif
 
     return COMPILE_OK;
