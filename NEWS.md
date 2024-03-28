@@ -101,7 +101,8 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## C API updates
 
-* `rb_newobj` and `rb_newobj_of` (and corresponding macros `RB_NEWOBJ`, `RB_NEWOBJ_OF`, `NEWOBJ`, `NEWOBJ_OF`) have been removed [[Feature #20265]].
+* `rb_newobj` and `rb_newobj_of` (and corresponding macros `RB_NEWOBJ`, `RB_NEWOBJ_OF`, `NEWOBJ`, `NEWOBJ_OF`) have been removed. [[Feature #20265]]
+* Removed deprecated function `rb_gc_force_recycle`. [[Feature #18290]]
 
 ## Implementation improvements
 
@@ -111,6 +112,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 [Feature #13557]: https://bugs.ruby-lang.org/issues/13557
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
+[Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
 [Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
