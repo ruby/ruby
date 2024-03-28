@@ -4472,15 +4472,24 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
 static VALUE
 io_readlines(const struct getline_arg *arg, VALUE io)
 {
-    VALUE line, ary;
+    VALUE line;
 
     if (arg->limit == 0)
         rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
-    ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, io))) {
-        rb_ary_push(ary, line);
+
+    // If a block is provided, yield lines.
+    if (rb_block_given_p()) {
+        while (!NIL_P(line = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, io))) {
+            rb_yield(line);
+        }
+        return Qnil;
+    } else {
+        VALUE ary = rb_ary_new();
+        while (!NIL_P(line = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, io))) {
+            rb_ary_push(ary, line);
+        }
+        return ary;
     }
-    return ary;
 }
 
 /*
