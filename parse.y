@@ -9315,16 +9315,16 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
 
     switch (type) {
       case tINTEGER:
-        set_yylval_node(NEW_INTEGER(strdup(tok(p)), base, &_cur_loc));
+        set_yylval_node(NEW_INTEGER(strndup(tok(p), toklen(p)), base, &_cur_loc));
         break;
       case tFLOAT:
-        set_yylval_node(NEW_FLOAT(strdup(tok(p)), &_cur_loc));
+        set_yylval_node(NEW_FLOAT(strndup(tok(p), toklen(p)), &_cur_loc));
         break;
       case tRATIONAL:
-        set_yylval_node(NEW_RATIONAL(strdup(tok(p)), base, seen_point, &_cur_loc));
+        set_yylval_node(NEW_RATIONAL(strndup(tok(p), toklen(p)), base, seen_point, &_cur_loc));
         break;
       case tIMAGINARY:
-        set_yylval_node(NEW_IMAGINARY(strdup(tok(p)), base, seen_point, numeric_type, &_cur_loc));
+        set_yylval_node(NEW_IMAGINARY(strndup(tok(p), toklen(p)), base, seen_point, numeric_type, &_cur_loc));
         (void)numeric_type;     /* for ripper */
         break;
       default:

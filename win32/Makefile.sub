@@ -315,7 +315,7 @@ LIBS = $(LIBS) gmp.lib
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj strndup.obj win32/win32.obj win32/file.obj setproctitle.obj
 !if $(RT_VER) < 120
 MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
 !endif
