@@ -1,0 +1,10 @@
+prelude: |
+  r_1 = 1..1
+  r_1k = 1..1000
+  r_1m = 1..1000000
+  r_str = 'a'..'z'
+benchmark:
+  'int 1': r_1.size
+  'int 1K': r_1k.size
+  'int 1M': r_1m.size
+  string: r_str.size
