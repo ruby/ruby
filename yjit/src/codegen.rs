@@ -30,6 +30,7 @@ pub use crate::virtualmem::CodePtr;
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
 enum CodegenStatus {
+    SkipNextInsn,
     KeepCompiling,
     EndBlock,
 }
@@ -1197,6 +1198,13 @@ pub fn gen_single_block(
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode) as u16;
 
+        // Move past next instruction when instructed
+        if status == Some(SkipNextInsn) {
+            let next_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+            let next_opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, next_pc) }.try_into().unwrap();
+            insn_idx += insn_len(next_opcode) as u16;
+        }
+
         // If the instruction terminates this block
         if status == Some(EndBlock) {
             break;
@@ -1343,7 +1351,7 @@ fn jit_putobject(asm: &mut Assembler, arg: VALUE) {
 fn gen_putobject_int2fix(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let opcode = jit.opcode;
     let cst_val: usize = if opcode == YARVINSN_putobject_INT2FIX_0_.as_usize() {
@@ -1351,20 +1359,84 @@ fn gen_putobject_int2fix(
     } else {
         1
     };
+    let cst_val = VALUE::fixnum_from_usize(cst_val);
 
-    jit_putobject(asm, VALUE::fixnum_from_usize(cst_val));
+    if let Some(result) = fuse_putobject_opt_ltlt(jit, asm, cst_val, ocb) {
+        return Some(result);
+    }
+
+    jit_putobject(asm, cst_val);
     Some(KeepCompiling)
 }
 
 fn gen_putobject(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let arg: VALUE = jit.get_arg(0);
 
+    if let Some(result) = fuse_putobject_opt_ltlt(jit, asm, arg, ocb) {
+        return Some(result);
+    }
+
     jit_putobject(asm, arg);
     Some(KeepCompiling)
+}
+
+/// Combine `putobject` and and `opt_ltlt` together if profitable, for example when
+/// left shifting an integer by a constant amount.
+fn fuse_putobject_opt_ltlt(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    constant_object: VALUE,
+    ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    let next_opcode = unsafe { rb_vm_insn_addr2opcode(jit.pc.add(insn_len(jit.opcode).as_usize()).read().as_ptr()) };
+    if next_opcode == YARVINSN_opt_ltlt as i32 && constant_object.fixnum_p() {
+        // Untag the fixnum shift amount
+        let shift_amt = constant_object.as_isize() >> 1;
+        if shift_amt > 63 || shift_amt < 0 {
+            return None;
+        }
+        if !jit.at_current_insn() {
+            defer_compilation(jit, asm, ocb);
+            return Some(EndBlock);
+        }
+
+        let lhs = jit.peek_at_stack(&asm.ctx, 0);
+        if !lhs.fixnum_p() {
+            return None;
+        }
+
+        if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_LTLT) {
+            return None;
+        }
+
+        asm_comment!(asm, "integer left shift with rhs={shift_amt}");
+        let lhs = asm.stack_opnd(0);
+
+        // Guard that lhs is a fixnum if necessary
+        let lhs_type = asm.ctx.get_opnd_type(lhs.into());
+        if lhs_type != Type::Fixnum {
+            asm_comment!(asm, "guard arg0 fixnum");
+            asm.test(lhs, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+            jit_chain_guard(
+                JCC_JZ,
+                jit,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                Counter::guard_send_not_fixnums,
+            );
+        }
+
+        asm.stack_pop(1);
+        fixnum_left_shift_body(asm, lhs, shift_amt as u64);
+        return Some(SkipNextInsn);
+    }
+    return None;
 }
 
 fn gen_putself(
@@ -5073,8 +5145,13 @@ fn jit_rb_int_lshift(
         Counter::lshift_amount_changed,
     );
 
+    fixnum_left_shift_body(asm, lhs, shift_amt as u64);
+    true
+}
+
+fn fixnum_left_shift_body(asm: &mut Assembler, lhs: Opnd, shift_amt: u64) {
     let in_val = asm.sub(lhs, 1.into());
-    let shift_opnd = Opnd::UImm(shift_amt as u64);
+    let shift_opnd = Opnd::UImm(shift_amt);
     let out_val = asm.lshift(in_val, shift_opnd);
     let unshifted = asm.rshift(out_val, shift_opnd);
 
@@ -5087,7 +5164,6 @@ fn jit_rb_int_lshift(
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
-    true
 }
 
 fn jit_rb_int_rshift(
@@ -10384,57 +10460,6 @@ mod tests {
         assert!(cb.get_write_pos() > 0);
     }
 
-    #[test]
-    fn test_putobject_qtrue() {
-        // Test gen_putobject with Qtrue
-        let (mut jit, _context, mut asm, mut cb, mut ocb) = setup_codegen();
-
-        let mut value_array: [u64; 2] = [0, Qtrue.into()];
-        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.pc = pc;
-
-        let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
-
-        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
-
-        assert_eq!(status, Some(KeepCompiling));
-        assert_eq!(tmp_type_top, Type::True);
-        asm.compile(&mut cb, None).unwrap();
-        assert!(cb.get_write_pos() > 0);
-    }
-
-    #[test]
-    fn test_putobject_fixnum() {
-        // Test gen_putobject with a Fixnum to test another conditional branch
-        let (mut jit, _context, mut asm, mut cb, mut ocb) = setup_codegen();
-
-        // The Fixnum 7 is encoded as 7 * 2 + 1, or 15
-        let mut value_array: [u64; 2] = [0, 15];
-        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.pc = pc;
-
-        let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
-
-        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
-
-        assert_eq!(status, Some(KeepCompiling));
-        assert_eq!(tmp_type_top, Type::Fixnum);
-        asm.compile(&mut cb, None).unwrap();
-        assert!(cb.get_write_pos() > 0);
-    }
-
-    #[test]
-    fn test_int2fix() {
-        let (mut jit, _context, mut asm, _cb, mut ocb) = setup_codegen();
-        jit.opcode = YARVINSN_putobject_INT2FIX_0_.as_usize();
-        let status = gen_putobject_int2fix(&mut jit, &mut asm, &mut ocb);
-
-        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
-
-        // Right now we're not testing the generated machine code to make sure a literal 1 or 0 was pushed. I've checked locally.
-        assert_eq!(status, Some(KeepCompiling));
-        assert_eq!(tmp_type_top, Type::Fixnum);
-    }
 
     #[test]
     fn test_putself() {

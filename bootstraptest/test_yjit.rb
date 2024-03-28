@@ -4769,3 +4769,20 @@ assert_equal '[:ok, :ok, :ok]', %q{
 
   tests
 }
+
+# test integer left shift with constant rhs
+assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
+  def shift(val) = val << 43
+
+  def tests
+    int = shift(1)
+    str = shift("a")
+
+    Integer.define_method(:<<) { |_| :ok }
+    redef = shift(1)
+
+    [int, str, redef]
+  end
+
+  tests
+}
