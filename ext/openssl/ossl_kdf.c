@@ -18,7 +18,7 @@ static VALUE mKDF, eKDF;
  * of _length_ bytes.
  *
  * For more information about PBKDF2, see RFC 2898 Section 5.2
- * (https://tools.ietf.org/html/rfc2898#section-5.2).
+ * (https://www.rfc-editor.org/rfc/rfc2898#section-5.2).
  *
  * === Parameters
  * pass       :: The password.
@@ -81,10 +81,10 @@ kdf_pbkdf2_hmac(int argc, VALUE *argv, VALUE self)
  * bcrypt.
  *
  * The keyword arguments _N_, _r_ and _p_ can be used to tune scrypt. RFC 7914
- * (published on 2016-08, https://tools.ietf.org/html/rfc7914#section-2) states
+ * (published on 2016-08, https://www.rfc-editor.org/rfc/rfc7914#section-2) states
  * that using values r=8 and p=1 appears to yield good results.
  *
- * See RFC 7914 (https://tools.ietf.org/html/rfc7914) for more information.
+ * See RFC 7914 (https://www.rfc-editor.org/rfc/rfc7914) for more information.
  *
  * === Parameters
  * pass   :: Passphrase.
@@ -147,7 +147,7 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
  *    KDF.hkdf(ikm, salt:, info:, length:, hash:) -> String
  *
  * HMAC-based Extract-and-Expand Key Derivation Function (HKDF) as specified in
- * {RFC 5869}[https://tools.ietf.org/html/rfc5869].
+ * {RFC 5869}[https://www.rfc-editor.org/rfc/rfc5869].
  *
  * New in OpenSSL 1.1.0.
  *
@@ -165,7 +165,7 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
  *   The hash function.
  *
  * === Example
- *   # The values from https://datatracker.ietf.org/doc/html/rfc5869#appendix-A.1
+ *   # The values from https://www.rfc-editor.org/rfc/rfc5869#appendix-A.1
  *   ikm = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
  *   salt = ["000102030405060708090a0b0c"].pack("H*")
  *   info = ["f0f1f2f3f4f5f6f7f8f9"].pack("H*")
