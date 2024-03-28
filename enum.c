@@ -4849,6 +4849,49 @@ enum_uniq(VALUE obj)
 }
 
 static VALUE
+uniq_map_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    long val;
+
+    val = rb_yield_values2(argc, argv);
+    rb_hash_add_new_element(hash, val, val);
+
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   uniq_map {|element| ... } -> array
+ *   uniq_map                  -> enumerator
+ *
+ * Returns an array containing only unique elements returned by the block.
+ *
+ * With a block given, calls the block with successive elements;
+ * returns an array which has no two elements +e0+ and +e1+ returned by
+ * the block such that <tt>e0.eql?(e1)</tt>:
+ *
+ *   [0, 1, 1].uniq_map {|i| i }                                  # => [0, 1]
+ *   (0..5).uniq_map {|i| i.odd? ? i * 2 : i }                    # => [0, 2, 6, 4, 10]
+ *   {foo: 0, bar: 1, baz: 1}.uniq_map {|_key, value| value * 2 } # => [0, 2]
+ *
+ * When no block is given, returns an \Enumerator.
+ *
+ */
+
+static VALUE
+enum_uniq_map(VALUE obj)
+{
+    VALUE hash;
+
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+
+    hash = rb_obj_hide(rb_hash_new());
+    rb_block_call(obj, id_each, 0, 0, uniq_map_iter, hash);
+
+    return rb_hash_values(hash);
+}
+
+static VALUE
 compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
@@ -4977,6 +5020,7 @@ enum_compact(VALUE obj)
  * - #map, #collect: Returns objects returned by the block.
  * - #filter_map: Returns truthy objects returned by the block.
  * - #flat_map, #collect_concat: Returns flattened objects returned by the block.
+ * - #uniq_map: Returns unique objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
  * - #grep_v: Returns elements selected by a given object
@@ -5118,6 +5162,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
+    rb_define_method(rb_mEnumerable, "uniq_map", enum_uniq_map, 0);
     rb_define_method(rb_mEnumerable, "compact", enum_compact, 0);
 
     id__alone = rb_intern_const("_alone");

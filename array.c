@@ -6206,6 +6206,92 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
+ *    array.uniq_map {|element| ... } -> new_array
+ *    array.uniq_map -> new_enumerator
+ *
+ *  Calls the block, if given, with each element of +self+;
+ *  returns a new \Array whose elements are the return values from
+ *  the block, omitting duplicates while retaining the first occurrence.
+ *
+ *  With a block given, calls the block for each element;
+ *  identifies (using method <tt>eql?</tt>) and removes
+ *  duplicate elements returned by the block as a new array:
+ *
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq_map {|i| i * 2 } # => [0, 2, 4]
+ *
+ *  When no block given, returns a new \Enumerator:
+ *
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq_map #<Enumerator: [0, 0, 1, 1, 2, 2]:uniq_map>
+ */
+
+static VALUE
+rb_ary_uniq_map(VALUE ary)
+{
+    long i, val;
+    VALUE hash;
+
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+
+    hash = rb_obj_hide(rb_hash_new_capa(RARRAY_LEN(ary)));
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        val = rb_yield(RARRAY_AREF(ary, i));
+        rb_hash_add_new_element(hash, val, val);
+    }
+
+    return rb_hash_values(hash);
+}
+
+/*
+ *  call-seq:
+ *    array.uniq_map! {|element| ... } -> self
+ *    array.uniq_map! -> Enumerator
+ *
+ *  Removes from +self+ duplicate elements returned by the block,
+ *  the first occurrence always being retained.
+ *
+ *  With a block given, calls the block for each element;
+ *  identifies (using method <tt>eql?</tt>) and removes
+ *  duplicate elements returned by the block:
+ *
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq_map! {|i| i * 2 } # => [0, 2, 4]
+ *
+ *  When no block given, returns a new \Enumerator:
+ *
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq_map! #<Enumerator: [0, 0, 1, 1, 2, 2]:uniq_map!>
+ */
+
+static VALUE
+rb_ary_uniq_map_bang(VALUE ary)
+{
+    long i1, i2, val;
+    VALUE hash;
+    long hash_size;
+
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+
+    rb_ary_modify(ary);
+    hash = rb_obj_hide(rb_hash_new_capa(RARRAY_LEN(ary)));
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+        val = rb_yield(RARRAY_AREF(ary, i1));
+        if (!rb_hash_add_new_element(hash, val, val)) {
+            rb_ary_store(ary, i2, val);
+            i2++;
+        }
+    }
+
+    hash_size = RHASH_SIZE(hash);
+    ARY_SET_LEN(ary, hash_size);
+    ary_resize_capa(ary, hash_size);
+
+    return ary;
+}
+
+/*
+ *  call-seq:
  *    array.compact! -> self or nil
  *
  *  Removes all +nil+ elements from +self+.
@@ -8584,6 +8670,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - #map, #collect: Returns an array containing the block return-value for each element.
  *  - #map!, #collect!: Replaces each element with a block return-value.
+ *  - #uniq_map: Returns an array containing the block return-value for each element without duplicates.
+ *  - #uniq_map!: Replaces each element with a block return-value, removing duplicates.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
  *  - #inspect, #to_s: Returns a new String containing the elements.
@@ -8707,6 +8795,8 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
+    rb_define_method(rb_cArray, "uniq_map", rb_ary_uniq_map, 0);
+    rb_define_method(rb_cArray, "uniq_map!", rb_ary_uniq_map_bang, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
