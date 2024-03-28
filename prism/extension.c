@@ -451,6 +451,9 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
             case PM_ERROR_LEVEL_ARGUMENT:
                 level = ID2SYM(rb_intern("argument"));
                 break;
+            case PM_ERROR_LEVEL_LOAD:
+                level = ID2SYM(rb_intern("load"));
+                break;
             default:
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
         }
