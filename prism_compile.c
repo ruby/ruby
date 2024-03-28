@@ -8390,11 +8390,21 @@ pm_parse_process_error(const pm_parse_result_t *result)
     const pm_string_t *filepath = &parser->filepath;
 
     for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
-        // Any errors with the level that is not PM_ERROR_LEVEL_SYNTAX
-        // effectively take over as the only argument that gets raised. This is
-        // to allow priority messages that should be handled before anything
-        // else.
-        if (error->level != PM_ERROR_LEVEL_SYNTAX) {
+        switch (error->level) {
+          case PM_ERROR_LEVEL_SYNTAX:
+            // It is implicitly assumed that the error messages will be
+            // encodeable as UTF-8. Because of this, we can't include source
+            // examples that contain invalid byte sequences. So if any source
+            // examples include invalid UTF-8 byte sequences, we will skip
+            // showing source examples entirely.
+            if (valid_utf8 && !pm_parse_process_error_utf8_p(parser, &error->location)) {
+                valid_utf8 = false;
+            }
+            break;
+          case PM_ERROR_LEVEL_ARGUMENT: {
+            // Any errors with the level PM_ERROR_LEVEL_ARGUMENT take over as
+            // the only argument that gets raised. This is to allow priority
+            // messages that should be handled before anything else.
             int32_t line_number = (int32_t) pm_location_line_number(parser, &error->location);
 
             pm_buffer_append_format(
@@ -8415,33 +8425,20 @@ pm_parse_process_error(const pm_parse_result_t *result)
                 pm_parser_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
             }
 
-            VALUE class;
-            switch (error->level) {
-              case PM_ERROR_LEVEL_ARGUMENT:
-                class = rb_eArgError;
-                break;
-              case PM_ERROR_LEVEL_LOAD:
-                class = rb_eLoadError;
-                break;
-              default:
-                class = rb_eSyntaxError;
-                RUBY_ASSERT(false && "unexpected error level");
-                break;
-            }
-
-            VALUE value = rb_exc_new(class, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+            VALUE value = rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
             pm_buffer_free(&buffer);
 
             return value;
-        }
-
-        // It is implicitly assumed that the error messages will be encodeable
-        // as UTF-8. Because of this, we can't include source examples that
-        // contain invalid byte sequences. So if any source examples include
-        // invalid UTF-8 byte sequences, we will skip showing source examples
-        // entirely.
-        if (valid_utf8 && !pm_parse_process_error_utf8_p(parser, &error->location)) {
-            valid_utf8 = false;
+          }
+          case PM_ERROR_LEVEL_LOAD: {
+            // Load errors are much simpler, because they don't include any of
+            // the source in them. We create the error directly from the
+            // message.
+            VALUE message = rb_enc_str_new_cstr(error->message, rb_locale_encoding());
+            VALUE value = rb_exc_new3(rb_eLoadError, message);
+            rb_ivar_set(value, rb_intern_const("@path"), Qnil);
+            return value;
+          }
         }
     }
 
