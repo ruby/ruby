@@ -210,6 +210,17 @@ class Gem::ConfigFile
       @hash = @hash.merge environment_config
     end
 
+    @hash.transform_keys! do |k|
+      # gemhome and gempath are not working with symbol keys
+      if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
+            install_extension_in_lib ipv4_fallback_enabled sources disable_default_gem_server
+            ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
+        k.to_sym
+      else
+        k
+      end
+    end
+
     # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
