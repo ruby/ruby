@@ -7176,7 +7176,7 @@ pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
     if (pm_constant_id_list_includes(&parser->current_scope->locals, constant_id)) {
         // Add an error if the parameter doesn't start with _ and has been seen before
         if ((name->start < name->end) && (*name->start != '_')) {
-            pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NAME_REPEAT);
+            pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NAME_DUPLICATED);
         }
         return true;
     }

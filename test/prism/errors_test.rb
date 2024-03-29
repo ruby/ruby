@@ -1149,7 +1149,7 @@ module Prism
         )
 
         assert_errors expected, "def foo(a,b,a);end", [
-          ["repeated parameter name", 12..13]
+          ["duplicated argument name", 12..13]
         ]
       end
 
@@ -1169,7 +1169,7 @@ module Prism
       )
 
       assert_errors expected, "def foo(a,b,*a);end", [
-        ["repeated parameter name", 13..14]
+        ["duplicated argument name", 13..14]
       ]
 
       expected = DefNode(
@@ -1188,7 +1188,7 @@ module Prism
       )
 
       assert_errors expected, "def foo(a,b,**a);end", [
-        ["repeated parameter name", 14..15]
+        ["duplicated argument name", 14..15]
       ]
 
       expected = DefNode(
@@ -1207,7 +1207,7 @@ module Prism
       )
 
       assert_errors expected, "def foo(a,b,&a);end", [
-        ["repeated parameter name", 13..14]
+        ["duplicated argument name", 13..14]
       ]
 
       expected = DefNode(
@@ -1482,7 +1482,7 @@ module Prism
     def test_shadow_args_in_block
       source = "tap{|a;a|}"
       assert_errors expression(source), source, [
-        ["repeated parameter name", 7..8],
+        ["duplicated argument name", 7..8],
       ]
     end
 
@@ -1491,7 +1491,7 @@ module Prism
       # In Ruby 3.0.x, `Ripper.sexp_raw` does not return `nil` for this case.
       compare_ripper = RUBY_ENGINE == "ruby" && (RUBY_VERSION.split('.').map { |x| x.to_i } <=> [3, 1]) >= 1
       assert_errors expression(source), source, [
-        ["repeated parameter name", 14..15],
+        ["duplicated argument name", 14..15],
       ], compare_ripper: compare_ripper
     end
 
