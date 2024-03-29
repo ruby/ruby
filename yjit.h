@@ -48,6 +48,7 @@ void rb_yjit_tracing_invalidate_all(void);
 void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 void rb_yjit_lazy_push_frame(const VALUE *pc);
 void rb_yjit_invalidate_no_singleton_class(VALUE klass);
+void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
 
 #else
 // !USE_YJIT
@@ -71,6 +72,7 @@ static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic
 static inline void rb_yjit_tracing_invalidate_all(void) {}
 static inline void rb_yjit_lazy_push_frame(const VALUE *pc) {}
 static inline void rb_yjit_invalidate_no_singleton_class(VALUE klass) {}
+static inline void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq) {}
 
 #endif // #if USE_YJIT
 
