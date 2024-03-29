@@ -10391,7 +10391,7 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         if (!ARY_EMBED_P(v)) {
-            // If the array is not embedded, it has a hidde `objbuf` field that needs to be traced.
+            // If the array is not embedded, it has a hidden `objbuf` field that needs to be traced.
             // We also update the `ptr` to point to the new location.
             VALUE old_objbuf = RARRAY_EXT(v)->objbuf;
             UPDATE_IF_MOVED(objspace, RARRAY_EXT(v)->objbuf);

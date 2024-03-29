@@ -237,7 +237,7 @@ rb_mmtk_ary_set_objbuf(VALUE ary, VALUE objbuf)
 }
 
 void
-rb_mmtk_ary_copy_objbuf(VALUE dst_ary, VALUE src_ary)
+rb_mmtk_ary_copy_objbuf_ref(VALUE dst_ary, VALUE src_ary)
 {
     RUBY_ASSERT(rb_mmtk_enabled_p());
     RUBY_ASSERT(!ARY_EMBED_P(src_ary));
@@ -247,7 +247,7 @@ rb_mmtk_ary_copy_objbuf(VALUE dst_ary, VALUE src_ary)
 }
 
 // Attach a heap array `ary` with a newly allocated imemo:mmtk_objbuf of the given capacity `capa`.
-// The frst `copy_len` elements of the new objbuf is copied from `src`, and `copy_len` must not
+// The first `copy_len` elements of the new objbuf are copied from `src`, and `copy_len` must not
 // exceed `capa`.
 //
 // `src` may point to an element of another heap object, in which case `src_obj` must point to the
@@ -1130,7 +1130,7 @@ ary_make_shared(VALUE ary)
                                             len);
                 FL_UNSET_EMBED(ary);
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(shared));
-                rb_mmtk_ary_copy_objbuf(ary, shared);
+                rb_mmtk_ary_copy_objbuf_ref(ary, shared);
             }
 #endif
             ARY_SET_HEAP_LEN(ary, len);
@@ -1140,7 +1140,7 @@ ary_make_shared(VALUE ary)
 #if USE_MMTK
             if (rb_mmtk_enabled_p()) {
                 // `shared` will reference the same objbuf as `ary`, too.
-                rb_mmtk_ary_copy_objbuf(shared, ary);
+                rb_mmtk_ary_copy_objbuf_ref(shared, ary);
             }
 #endif
         }
@@ -1430,7 +1430,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         if (rb_mmtk_enabled_p()) {
             // Note: `ary` may be embedded.  Only copy the objbuf reference if `ary` is not embedded.
             if (!ARY_EMBED_P(ary)) {
-                rb_mmtk_ary_copy_objbuf(result, ary);
+                rb_mmtk_ary_copy_objbuf_ref(result, ary);
             }
         }
 #endif
@@ -3638,7 +3638,7 @@ rb_ary_sort_bang(VALUE ary)
 #if USE_MMTK
                 if (rb_mmtk_enabled_p()) {
                     // Take over its objbuf, too.
-                    rb_mmtk_ary_copy_objbuf(ary, tmp);
+                    rb_mmtk_ary_copy_objbuf_ref(ary, tmp);
                 }
 #endif
                 ARY_SET_HEAP_LEN(ary, len);
@@ -4822,7 +4822,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
 #if USE_MMTK
         if (rb_mmtk_enabled_p()) {
-            rb_mmtk_ary_copy_objbuf(copy, orig);
+            rb_mmtk_ary_copy_objbuf_ref(copy, orig);
         }
 #endif
         rb_ary_set_shared(copy, shared_root);
