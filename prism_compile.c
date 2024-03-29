@@ -292,9 +292,11 @@ pm_optimizable_range_item_p(pm_node_t *node)
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static int
-pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_line_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    int number_of_items_pushed = 0;
+    pm_line_column_t location = *node_location;
+
+    int stack_size = 0;
     size_t parts_size = parts->size;
 
     if (parts_size > 0) {
@@ -305,7 +307,7 @@ pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE 
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
                 const pm_string_node_t *string_node = (const pm_string_node_t *)part;
-                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
+                VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
 
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
@@ -319,7 +321,7 @@ pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE 
                     ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
                     PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)) {
                 const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
-                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
+                VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
 
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
@@ -333,32 +335,29 @@ pm_interpolated_node_compile(const pm_node_list_t *parts, rb_iseq_t *iseq, NODE 
                     current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
                 }
 
-                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(current_string));
-
-                current_string = Qnil;
-                number_of_items_pushed++;
-
+                PUSH_INSN1(ret, location, putobject, rb_fstring(current_string));
                 PM_COMPILE_NOT_POPPED(part);
-                PM_DUP;
-                ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                ADD_INSN(ret, &dummy_line_node, anytostring);
+                PUSH_INSN(ret, location, dup);
+                PUSH_INSN1(ret, location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
+                PUSH_INSN(ret, location, anytostring);
 
-                number_of_items_pushed++;
+                stack_size += 2;
+                current_string = Qnil;
             }
         }
 
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
-            ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
+            PUSH_INSN1(ret, location, putobject, current_string);
             current_string = Qnil;
-            number_of_items_pushed++;
+            stack_size++;
         }
     }
     else {
-        PM_PUTNIL;
+        PUSH_INSN(ret, location, putnil);
     }
 
-    return number_of_items_pushed;
+    return stack_size;
 }
 
 static VALUE
@@ -523,8 +522,7 @@ parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm
 static void
 pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    NODE dummy_line_node = generate_dummy_line_node(node_location->line, node_location->column);
-    int length = pm_interpolated_node_compile(parts, iseq, dummy_line_node, ret, popped, scope_node);
+    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
@@ -6217,7 +6215,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else {
             const pm_interpolated_string_node_t *cast = (const pm_interpolated_string_node_t *) node;
-            int length = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node);
+            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node);
 
             if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             if (popped) PUSH_INSN(ret, location, pop);
@@ -6238,7 +6236,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
         else {
-            if ((length = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node)) > 1) {
+            if ((length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node)) > 1) {
                 PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             }
 
@@ -6253,16 +6251,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_INTERPOLATED_X_STRING_NODE: {
-        pm_interpolated_x_string_node_t *interp_x_string_node = (pm_interpolated_x_string_node_t *) node;
-        PM_PUTSELF;
-        int number_of_items_pushed = pm_interpolated_node_compile(&interp_x_string_node->parts, iseq, dummy_line_node, ret, false, scope_node);
+        // `foo #{bar}`
+        // ^^^^^^^^^^^^
+        const pm_interpolated_x_string_node_t *cast = (const pm_interpolated_x_string_node_t *) node;
 
-        if (number_of_items_pushed > 1) {
-            ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX(number_of_items_pushed));
-        }
+        PUSH_INSN(ret, location, putself);
 
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
-        PM_POP_IF_POPPED;
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node);
+        if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
+
+        PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+        if (popped) PUSH_INSN(ret, location, pop);
+
         return;
       }
       case PM_KEYWORD_HASH_NODE: {
