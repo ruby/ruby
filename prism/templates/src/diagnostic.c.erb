@@ -383,7 +383,7 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  */
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
@@ -415,7 +415,7 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) {
         return false;
     }
