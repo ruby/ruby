@@ -12,15 +12,6 @@ MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when S
 MSpec.register(:exclude, "The next statement in a method is invalid and raises a SyntaxError")
 MSpec.register(:exclude, "Pattern matching variable pattern does not support using variable name (except _) several times")
 MSpec.register(:exclude, "Pattern matching Hash pattern raise SyntaxError when keys duplicate in pattern")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves EUC-JP as /e encoding through interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /s (Windows_31J encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /s (Windows_31J encoding) with interpolation and /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves Windows-31J as /s encoding through interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /u (UTF8 encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /u (UTF8 encoding) with interpolation and /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves UTF-8 as /u encoding through interpolation")
 MSpec.register(:exclude, "A Symbol literal raises an SyntaxError at parse time when Symbol with invalid bytes")
 
 ## Core

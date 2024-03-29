@@ -289,10 +289,36 @@ pm_optimizable_range_item_p(pm_node_t *node)
     return (!node || PM_NODE_TYPE_P(node, PM_INTEGER_NODE) || PM_NODE_TYPE_P(node, PM_NIL_NODE));
 }
 
+/** Raise an error corresponding to the invalid regular expression. */
+static VALUE
+parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE error = rb_syntax_error_append(Qnil, rb_iseq_path(iseq), line_number, -1, NULL, "%" PRIsVALUE, args);
+    va_end(args);
+    rb_exc_raise(error);
+}
+
+static VALUE
+pm_regexp_fragment(rb_iseq_t *iseq, const pm_string_node_t *node, rb_encoding *encoding, const pm_scope_node_t *scope_node)
+{
+    const pm_string_t *string = &node->unescaped;
+    VALUE value = rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding);
+    VALUE error = rb_reg_check_preprocess(value);
+
+    if (error != Qnil) {
+        const int line = pm_node_line_number(scope_node->parser, (const pm_node_t *) node);
+        parse_regexp_error(iseq, line, "%" PRIsVALUE, rb_obj_as_string(error));
+    }
+
+    return value;
+}
+
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static int
-pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *regexp_encoding)
 {
     pm_line_column_t location = *node_location;
 
@@ -306,8 +332,15 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
             const pm_node_t *part = parts->nodes[index];
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-                const pm_string_node_t *string_node = (const pm_string_node_t *)part;
-                VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+                const pm_string_node_t *string_node = (const pm_string_node_t *) part;
+
+                VALUE string_value;
+                if (regexp_encoding == NULL) {
+                    string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+                }
+                else {
+                    string_value = pm_regexp_fragment(iseq, string_node, regexp_encoding, scope_node);
+                }
 
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
@@ -321,7 +354,14 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                     ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
                     PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)) {
                 const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
-                VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+
+                VALUE string_value;
+                if (regexp_encoding == NULL) {
+                    string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+                }
+                else {
+                    string_value = pm_regexp_fragment(iseq, string_node, regexp_encoding, scope_node);
+                }
 
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
@@ -332,7 +372,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
             }
             else {
                 if (!RTEST(current_string)) {
-                    current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
+                    current_string = rb_enc_str_new(NULL, 0, regexp_encoding == NULL ? scope_node->encoding : regexp_encoding);
                 }
 
                 PUSH_INSN1(ret, location, putobject, rb_fstring(current_string));
@@ -473,17 +513,6 @@ parse_regexp_encoding(const pm_scope_node_t *scope_node, const pm_node_t *node)
     }
 }
 
-/** Raise an error corresponding to the invalid regular expression. */
-static VALUE
-parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    VALUE error = rb_syntax_error_append(Qnil, rb_iseq_path(iseq), line_number, -1, NULL, "%" PRIsVALUE, args);
-    va_end(args);
-    rb_exc_raise(error);
-}
-
 static VALUE
 parse_regexp(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, VALUE string)
 {
@@ -522,7 +551,8 @@ parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm
 static void
 pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *parts, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node);
+    rb_encoding *regexp_encoding = parse_regexp_encoding(scope_node, node);
+    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, regexp_encoding);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
@@ -6215,7 +6245,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else {
             const pm_interpolated_string_node_t *cast = (const pm_interpolated_string_node_t *) node;
-            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node);
+            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL);
 
             if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             if (popped) PUSH_INSN(ret, location, pop);
@@ -6236,7 +6266,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
         else {
-            if ((length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node)) > 1) {
+            if ((length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL)) > 1) {
                 PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             }
 
@@ -6257,7 +6287,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PUSH_INSN(ret, location, putself);
 
-        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node);
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node, NULL);
         if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
 
         PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
