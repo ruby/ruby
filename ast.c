@@ -183,29 +183,6 @@ node_find(VALUE self, const int node_id)
 
 extern VALUE rb_e_script;
 
-VALUE
-rb_script_lines_for(VALUE path, bool add)
-{
-    VALUE hash, lines;
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
-    hash = rb_const_get_at(rb_cObject, script_lines);
-    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
-    if (add) {
-        rb_hash_aset(hash, path, lines = rb_ary_new());
-    }
-    else if (!RB_TYPE_P((lines = rb_hash_lookup(hash, path)), T_ARRAY)) {
-        return Qnil;
-    }
-    return lines;
-}
-static VALUE
-script_lines(VALUE path)
-{
-    return rb_script_lines_for(path, false);
-}
-
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
 {
@@ -267,7 +244,7 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
         rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
     }
 
-    if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
+    if (!NIL_P(lines)) {
         node = rb_ast_parse_array(lines, keep_script_lines, error_tolerant, keep_tokens);
     }
     else if (e_option) {

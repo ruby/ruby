@@ -994,3 +994,16 @@ rb_node_encoding_val(const NODE *node)
 {
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
 }
+
+VALUE
+rb_script_lines_for(VALUE path)
+{
+    VALUE hash, lines;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
+    rb_hash_aset(hash, path, lines = rb_ary_new());
+    return lines;
+}
