@@ -75,10 +75,8 @@ AC_ARG_WITH(baseruby,
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
-required_baseruby_version=`${tooldir}/missing-baseruby.bat 2>&1 | sed '/.* BASERUBY must be /!d;s///;s/^Ruby *//;s/ .*//'`
-required_baseruby_version=${required_baseruby_version%.0} # Note that `"x.y.0" > "x.y"` is true.
 AS_IF([test "$HAVE_BASERUBY" != no], [
-    HAVE_BASERUBY="`RUBYOPT=- $BASERUBY --disable=gems -e 'print :yes if RUBY_VERSION > "'$required_baseruby_version'"' 2>/dev/null`"
+    RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
