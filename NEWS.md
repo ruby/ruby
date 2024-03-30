@@ -60,7 +60,7 @@ The following bundled gems are updated.
 * net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11
-* debug 1.9.1
+* debug 1.9.2
 
 The following bundled gems are promoted from default gems.
 
