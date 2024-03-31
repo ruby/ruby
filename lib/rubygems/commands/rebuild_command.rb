@@ -10,8 +10,6 @@ require_relative "../package"
 class Gem::Commands::RebuildCommand < Gem::Command
   include Gem::GemspecHelpers
 
-  DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%N Z"
-
   def initialize
     super "rebuild", "Attempt to reproduce a build of a gem."
 
