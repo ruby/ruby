@@ -863,7 +863,13 @@ rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
     RUBY_ASSERT(rb_shape_id(shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
 
     if (!shape_cache_get_iv_index(shape, id, value)) {
-        return shape_get_iv_index(shape, id, value);
+        // If it wasn't in the ancestor cache, then don't do a linear search
+        if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+            return false;
+        }
+        else {
+            return shape_get_iv_index(shape, id, value);
+        }
     }
 
     return true;
