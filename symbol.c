@@ -24,7 +24,11 @@
 #include "vm_sync.h"
 #include "builtin.h"
 
-#ifndef USE_SYMBOL_GC
+#if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
+# undef USE_SYMBOL_GC
+# define USE_SYMBOL_GC 0
+#else
+# undef USE_SYMBOL_GC
 # define USE_SYMBOL_GC 1
 #endif
 #ifndef SYMBOL_DEBUG
@@ -567,11 +571,14 @@ register_static_symid_str(ID id, VALUE str)
 }
 
 static int
-sym_check_asciionly(VALUE str)
+sym_check_asciionly(VALUE str, bool fake_str)
 {
     if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
     switch (rb_enc_str_coderange(str)) {
       case ENC_CODERANGE_BROKEN:
+        if (fake_str) {
+            str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+        }
         rb_raise(rb_eEncodingError, "invalid symbol in encoding %s :%+"PRIsVALUE,
                  rb_enc_name(rb_enc_get(str)), str);
       case ENC_CODERANGE_7BIT:
@@ -764,7 +771,7 @@ intern_str(VALUE str, int mutable)
 
     id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
     if (id == (ID)-1) id = ID_JUNK;
-    if (sym_check_asciionly(str)) {
+    if (sym_check_asciionly(str, false)) {
         if (!mutable) str = rb_str_dup(str);
         rb_enc_associate(str, rb_usascii_encoding());
     }
@@ -844,12 +851,7 @@ VALUE
 rb_str_intern(VALUE str)
 {
     VALUE sym;
-#if USE_SYMBOL_GC
-    rb_encoding *enc, *ascii;
-    int type;
-#else
-    ID id;
-#endif
+
     GLOBAL_SYMBOLS_ENTER(symbols);
     {
         sym = lookup_str_sym_with_lock(symbols, str);
@@ -857,11 +859,10 @@ rb_str_intern(VALUE str)
         if (sym) {
             // ok
         }
-        else {
-#if USE_SYMBOL_GC
-            enc = rb_enc_get(str);
-            ascii = rb_usascii_encoding();
-            if (enc != ascii && sym_check_asciionly(str)) {
+        else if (USE_SYMBOL_GC) {
+            rb_encoding *enc = rb_enc_get(str);
+            rb_encoding *ascii = rb_usascii_encoding();
+            if (enc != ascii && sym_check_asciionly(str, false)) {
                 str = rb_str_dup(str);
                 rb_enc_associate(str, ascii);
                 OBJ_FREEZE(str);
@@ -872,13 +873,13 @@ rb_str_intern(VALUE str)
                 OBJ_FREEZE(str);
             }
             str = rb_fstring(str);
-            type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+            int type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
             if (type < 0) type = ID_JUNK;
             sym = dsymbol_alloc(symbols, rb_cSymbol, str, enc, type);
-#else
-            id = intern_str(str, 0);
+        }
+        else {
+            ID id = intern_str(str, 0);
             sym = ID2SYM(id);
-#endif
         }
     }
     GLOBAL_SYMBOLS_LEAVE();
@@ -1108,7 +1109,7 @@ rb_check_id(volatile VALUE *namep)
         *namep = name;
     }
 
-    sym_check_asciionly(name);
+    sym_check_asciionly(name, false);
 
     return lookup_str_id(name);
 }
@@ -1167,7 +1168,7 @@ rb_check_symbol(volatile VALUE *namep)
         *namep = name;
     }
 
-    sym_check_asciionly(name);
+    sym_check_asciionly(name, false);
 
     if ((sym = lookup_str_sym(name)) != 0) {
         return sym;
@@ -1182,7 +1183,7 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
     struct RString fake_str;
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
-    sym_check_asciionly(name);
+    sym_check_asciionly(name, true);
 
     return lookup_str_id(name);
 }
@@ -1194,7 +1195,7 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     struct RString fake_str;
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
-    sym_check_asciionly(name);
+    sym_check_asciionly(name, true);
 
     if ((sym = lookup_str_sym(name)) != 0) {
         return sym;
