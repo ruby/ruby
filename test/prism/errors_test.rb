@@ -2157,6 +2157,22 @@ module Prism
       ] * source.lines.count
     end
 
+    def test_duplicate_pattern_capture
+      source = <<~RUBY
+        () => [a, a]
+        () => [a, *a]
+        () => {a:, a:}
+        () => {a: a, a: a}
+        () => {a: a, **a}
+        () => [a, {a:}]
+        () => [a, {a: {a: {a: [a]}}}]
+        () => a => a
+        () => [A => a, {a: b => a}]
+      RUBY
+
+      assert_error_messages source, Array.new(source.lines.length, "duplicated variable name"), compare_ripper: false
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
