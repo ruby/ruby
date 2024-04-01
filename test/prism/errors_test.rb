@@ -26,7 +26,7 @@ module Prism
       )
 
       assert_errors expected, "module Parent module end", [
-        ["expected a constant name after `module`", 14..20],
+        ["unexpected constant path after `module`; class/module name must be CONSTANT", 14..20],
         ["unexpected 'end', assuming it is closing the parent module definition", 21..24]
       ]
     end
@@ -177,7 +177,7 @@ module Prism
 
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
-        ["'@#' is not allowed as an instance variable name", 4..5],
+        ["'@' without identifiers is not allowed as an instance variable name", 4..5],
         ["unexpected instance variable, expecting end-of-input", 4..5]
       ]
     end
@@ -325,7 +325,7 @@ module Prism
 
     def test_aliasing_global_variable_with_global_number_variable
       assert_errors expression("alias $a $1"), "alias $a $1", [
-        ["invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", 9..11]
+        ["invalid argument being passed to `alias`; can't make alias for the number variables", 9..11]
       ]
     end
 
@@ -452,7 +452,7 @@ module Prism
       )
 
       assert_errors expected, "def foo;module A;end;end", [
-        ["unexpected module definition in a method definition", 8..14]
+        ["unexpected module definition in method body", 8..14]
       ]
     end
 
@@ -490,7 +490,7 @@ module Prism
         Location()
       )
 
-      assert_errors expected, <<~RUBY, [["unexpected module definition in a method definition", 21..27]]
+      assert_errors expected, <<~RUBY, [["unexpected module definition in method body", 21..27]]
         def foo
           bar do
             module Foo;end
@@ -505,7 +505,7 @@ module Prism
         def foo;rescue;module A;end;end
         def foo;ensure;module A;end;end
       RUBY
-      message = "unexpected module definition in a method definition"
+      message = "unexpected module definition in method body"
       assert_errors expression(source), source, [
         [message, 14..20],
         [message, 47..53],
@@ -541,7 +541,7 @@ module Prism
       )
 
       assert_errors expected, "def foo;class A;end;end", [
-        ["unexpected class definition in a method definition", 8..13]
+        ["unexpected class definition in method body", 8..13]
       ]
     end
 
@@ -551,7 +551,7 @@ module Prism
         def foo;rescue;class A;end;end
         def foo;ensure;class A;end;end
       RUBY
-      message = "unexpected class definition in a method definition"
+      message = "unexpected class definition in method body"
       assert_errors expression(source), source, [
         [message, 14..19],
         [message, 46..51],
@@ -1254,7 +1254,7 @@ module Prism
 
     def test_unterminated_global_variable
       assert_errors expression("$"), "$", [
-        ["'$' is not allowed as a global variable name", 0..1]
+        ["'$' without identifiers is not allowed as a global variable name", 0..1]
       ]
     end
 
@@ -1438,7 +1438,7 @@ module Prism
     def test_class_name
       source = "class 0.X end"
       assert_errors expression(source), source, [
-        ["expected a constant name after `class`", 6..9],
+        ["unexpected constant path after `class`; class/module name must be CONSTANT", 6..9],
       ]
     end
 
@@ -2060,7 +2060,7 @@ module Prism
     def test_block_arg_and_block
       source = 'foo(&1) { }'
       assert_errors expression(source), source, [
-        ['multiple block arguments; only one block is allowed', 8..11]
+        ["both block arg and actual block given; only one block is allowed", 8..11]
       ]
     end
 
