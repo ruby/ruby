@@ -18,8 +18,6 @@
 
 struct rb_iseq_struct;          /* in vm_core.h */
 
-#define STRTERM_HEREDOC IMEMO_FL_USER0
-
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
     long nest;
@@ -40,7 +38,7 @@ typedef struct rb_strterm_heredoc_struct {
 #define HERETERM_LENGTH_MAX UINT_MAX
 
 typedef struct rb_strterm_struct {
-    VALUE flags;
+    bool heredoc;
     union {
         rb_strterm_literal_t literal;
         rb_strterm_heredoc_t heredoc;
