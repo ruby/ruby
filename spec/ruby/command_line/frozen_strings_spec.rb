@@ -28,6 +28,15 @@ describe "The --disable-frozen-string-literal flag causes string literals to" do
 end
 
 describe "With neither --enable-frozen-string-literal nor --disable-frozen-string-literal flag set" do
+  before do
+    # disable --enable-frozen-string-literal and --disable-frozen-string-literal passed in $RUBYOPT
+    @rubyopt = ENV["RUBYOPT"]
+    ENV["RUBYOPT"] = ""
+  end
+
+  after do
+    ENV["RUBYOPT"] = @rubyopt
+  end
 
   it "produce a different object each time" do
     ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb")).chomp.should == "false"

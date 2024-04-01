@@ -415,6 +415,19 @@ describe "The 'case'-construct" do
     self.test("bar").should == false
     self.test(true).should == true
   end
+
+  it "warns if there are identical when clauses" do
+    -> {
+      eval <<~RUBY
+        case 1
+        when 2
+          :foo
+        when 2
+          :bar
+        end
+      RUBY
+    }.should complain(/warning: duplicated .when' clause with line \d+ is ignored/, verbose: true)
+  end
 end
 
 describe "The 'case'-construct with no target expression" do

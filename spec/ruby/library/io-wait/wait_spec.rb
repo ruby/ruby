@@ -48,25 +48,18 @@ describe "IO#wait" do
     end
 
     it "waits for the READABLE event to be ready" do
-      queue = Queue.new
-      thread = Thread.new { queue.pop; sleep 1; @w.write('data to read') };
+      @r.wait(IO::READABLE, 0).should == nil
 
-      queue.push('signal');
-      @r.wait(IO::READABLE, 2).should_not == nil
-
-      thread.join
+      @w.write('data to read')
+      @r.wait(IO::READABLE, 0).should_not == nil
     end
 
     it "waits for the WRITABLE event to be ready" do
       written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
+      @w.wait(IO::WRITABLE, 0).should == nil
 
-      queue = Queue.new
-      thread = Thread.new { queue.pop; sleep 1; @r.read(written_bytes) };
-
-      queue.push('signal');
-      @w.wait(IO::WRITABLE, 2).should_not == nil
-
-      thread.join
+      @r.read(written_bytes)
+      @w.wait(IO::WRITABLE, 0).should_not == nil
     end
 
     it "returns nil when the READABLE event is not ready during the timeout" do
@@ -88,6 +81,24 @@ describe "IO#wait" do
         -> { @w.wait(0, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
         -> { @w.wait(-1, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
       end
+    end
+
+    it "changes thread status to 'sleep' when waits for READABLE event" do
+      t = Thread.new { @r.wait(IO::READABLE, 10) }
+      sleep 1
+      t.status.should == 'sleep'
+      t.kill
+      t.join # Thread#kill doesn't wait for the thread to end
+    end
+
+    it "changes thread status to 'sleep' when waits for WRITABLE event" do
+      written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
+
+      t = Thread.new { @w.wait(IO::WRITABLE, 10) }
+      sleep 1
+      t.status.should == 'sleep'
+      t.kill
+      t.join # Thread#kill doesn't wait for the thread to end
     end
   end
 
