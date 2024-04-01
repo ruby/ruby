@@ -7923,7 +7923,7 @@ parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *
 static int
 strterm_is_heredoc(rb_strterm_t *strterm)
 {
-    return strterm->flags & STRTERM_HEREDOC;
+    return strterm->heredoc;
 }
 
 static rb_strterm_t *
@@ -7940,7 +7940,7 @@ static rb_strterm_t *
 new_heredoc(struct parser_params *p)
 {
     rb_strterm_t *strterm = ZALLOC(rb_strterm_t);
-    strterm->flags |= STRTERM_HEREDOC;
+    strterm->heredoc = true;
     return strterm;
 }
 
