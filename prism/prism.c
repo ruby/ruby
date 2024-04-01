@@ -3424,6 +3424,15 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     char *buffer = xmalloc(sizeof(char) * (length + 1));
     memcpy((void *) buffer, token->start, length);
 
+    // Next, determine if we need to replace the decimal point because of
+    // locale-specific options, and then normalize them if we have to.
+    char decimal_point = *localeconv()->decimal_point;
+    if (decimal_point != '.') {
+        for (size_t index = 0; index < length; index++) {
+            if (buffer[index] == '.') buffer[index] = decimal_point;
+        }
+    }
+
     // Next, handle underscores by removing them from the buffer.
     for (size_t index = 0; index < length; index++) {
         if (buffer[index] == '_') {
