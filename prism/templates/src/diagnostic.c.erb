@@ -86,6 +86,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 
     // Errors that should raise syntax errors
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE]  = { "invalid argument being passed to `alias`; can't make alias for the number variables", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = { "unexpected `&&=` in a multiple assignment", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_AFTER_BLOCK]               = { "unexpected argument after a block argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES] = { "unexpected argument after `...`", PM_ERROR_LEVEL_SYNTAX },

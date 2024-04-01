@@ -16300,7 +16300,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     if (PM_NODE_TYPE_P(old_name, PM_BACK_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_GLOBAL_VARIABLE_READ_NODE)) {
                         if (PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE)) {
-                            pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
+                            pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE);
                         }
                     } else {
                         pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
