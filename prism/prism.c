@@ -4841,7 +4841,7 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
 static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth) {
     if (parser->current_param_name == name_id) {
-        pm_parser_err_token(parser, name, PM_ERR_PARAMETER_CIRCULAR);
+        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *name, PM_ERR_PARAMETER_CIRCULAR);
     }
 
     pm_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_read_node_t);
