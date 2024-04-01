@@ -2161,8 +2161,7 @@ module Prism
       source = <<~RUBY
         () => [a, a]
         () => [a, *a]
-        () => {a:, a:}
-        () => {a: a, a: a}
+        () => {a: a, b: a}
         () => {a: a, **a}
         () => [a, {a:}]
         () => [a, {a: {a: {a: [a]}}}]
@@ -2171,6 +2170,12 @@ module Prism
       RUBY
 
       assert_error_messages source, Array.new(source.lines.length, "duplicated variable name"), compare_ripper: false
+    end
+
+    def test_duplicate_pattern_hash_key
+      assert_error_messages "() => {a:, a:}", ["duplicated key name", "duplicated variable name"]
+      assert_error_messages "() => {a:1, a:2}", ["duplicated key name"]
+      refute_error_messages "() => [{a:1}, {a:2}]"
     end
 
     private
@@ -2190,6 +2195,11 @@ module Prism
       assert_nil Ripper.sexp_raw(source) if compare_ripper
       result = Prism.parse(source)
       assert_equal(errors, result.errors.map(&:message))
+    end
+
+    def refute_error_messages(source, compare_ripper: RUBY_ENGINE == "ruby")
+      refute_nil Ripper.sexp_raw(source) if compare_ripper
+      assert Prism.parse_success?(source)
     end
 
     def assert_warning_messages(source, warnings)

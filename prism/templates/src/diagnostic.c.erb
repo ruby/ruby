@@ -270,6 +270,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PATTERN_EXPRESSION_AFTER_RANGE]     = { "expected a pattern expression after the range operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_EXPRESSION_AFTER_REST]      = { "unexpected pattern expression after the `**` expression", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY]                   = { "expected a key in the hash pattern", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_PATTERN_HASH_KEY_DUPLICATE]         = { "duplicated key name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY_LABEL]             = { "expected a label as the key in the hash pattern", PM_ERROR_LEVEL_SYNTAX }, // TODO // THIS // AND // ABOVE // IS WEIRD
     [PM_ERR_PATTERN_IDENT_AFTER_HROCKET]        = { "expected an identifier after the `=>` operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_LABEL_AFTER_COMMA]          = { "expected a label after the `,` in the hash pattern", PM_ERROR_LEVEL_SYNTAX },

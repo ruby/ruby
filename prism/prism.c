@@ -14828,12 +14828,20 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
     return (pm_node_t *) pm_implicit_node_create(parser, (pm_node_t *) target);
 }
 
+static void
+parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
+    if (pm_static_literals_add(parser, keys, node) != NULL) {
+        pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_KEY_DUPLICATE);
+    }
+}
+
 /**
  * Parse a hash pattern.
  */
 static pm_hash_pattern_node_t *
 parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node) {
     pm_node_list_t assocs = { 0 };
+    pm_static_literals_t keys = { 0 };
     pm_node_t *rest = NULL;
 
     switch (PM_NODE_TYPE(first_node)) {
@@ -14843,6 +14851,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             break;
         case PM_SYMBOL_NODE: {
             if (pm_symbol_node_label_p(first_node)) {
+                parse_pattern_hash_key(parser, &keys, first_node);
                 pm_node_t *value;
 
                 if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
@@ -14897,6 +14906,8 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
         } else {
             expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
             pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
+
+            parse_pattern_hash_key(parser, &keys, key);
             pm_node_t *value = NULL;
 
             if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
@@ -14919,6 +14930,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
     pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
     xfree(assocs.nodes);
 
+    pm_static_literals_free(&keys);
     return node;
 }
 
