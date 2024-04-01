@@ -1908,7 +1908,7 @@ rb_objspace_alloc(void)
         ccan_list_head_init(&SIZE_POOL_TOMB_HEAP(size_pool)->pages);
     }
 
-    rb_darray_make_without_gc(&objspace->weak_references, 0);
+    rb_darray_make(&objspace->weak_references, 0);
 
     // TODO: debug why on Windows Ruby crashes on boot when GC is on.
 #ifdef _WIN32
@@ -1955,7 +1955,7 @@ rb_objspace_free(rb_objspace_t *objspace)
     free_stack_chunks(&objspace->mark_stack);
     mark_stack_free_cache(&objspace->mark_stack);
 
-    rb_darray_free_without_gc(objspace->weak_references);
+    rb_darray_free(objspace->weak_references);
 
     free(objspace);
 }
@@ -6777,7 +6777,11 @@ rb_gc_mark_weak(VALUE *ptr)
 
     rgengc_check_relation(objspace, obj);
 
-    rb_darray_append_without_gc(&objspace->weak_references, ptr);
+    DURING_GC_COULD_MALLOC_REGION_START();
+    {
+        rb_darray_append(&objspace->weak_references, ptr);
+    }
+    DURING_GC_COULD_MALLOC_REGION_END();
 
     objspace->profile.weak_references_count++;
 }
@@ -7942,7 +7946,12 @@ gc_update_weak_references(rb_objspace_t *objspace)
     objspace->profile.retained_weak_references_count = retained_weak_references_count;
 
     rb_darray_clear(objspace->weak_references);
-    rb_darray_resize_capa_without_gc(&objspace->weak_references, retained_weak_references_count);
+
+    DURING_GC_COULD_MALLOC_REGION_START();
+    {
+        rb_darray_resize_capa(&objspace->weak_references, retained_weak_references_count);
+    }
+    DURING_GC_COULD_MALLOC_REGION_END();
 }
 
 static void
