@@ -54,9 +54,9 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_dependency_resolver_set_file_uri
-    empty_gzip = Gem::Util.gzip("\x04\x08[\x05".b)
-    File.binwrite(File.join(@tempdir, "prerelease_specs.4.8.gz"), empty_gzip)
-    File.binwrite(File.join(@tempdir, "specs.4.8.gz"), empty_gzip)
+    empty_dump = Gem::Util.gzip("\x04\x08[\x05".b)
+    File.binwrite(File.join(@tempdir, "prerelease_specs.4.8.gz"), empty_dump)
+    File.binwrite(File.join(@tempdir, "specs.4.8.gz"), empty_dump)
 
     source = Gem::Source.new "file://#{@tempdir}/"
 
