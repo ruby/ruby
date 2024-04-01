@@ -1988,7 +1988,6 @@ pm_block_parameters_node_closing_set(pm_block_parameters_node_t *node, const pm_
  */
 static pm_block_local_variable_node_t *
 pm_block_local_variable_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    assert(name->type == PM_TOKEN_IDENTIFIER || name->type == PM_TOKEN_MISSING);
     pm_block_local_variable_node_t *node = PM_ALLOC_NODE(parser, pm_block_local_variable_node_t);
 
     *node = (pm_block_local_variable_node_t) {
@@ -13587,7 +13586,28 @@ parse_block_parameters(
 
         if (accept1(parser, PM_TOKEN_SEMICOLON)) {
             do {
-                expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
+                switch (parser->current.type) {
+                    case PM_TOKEN_CONSTANT:
+                        pm_parser_err_current(parser, PM_ERR_ARGUMENT_FORMAL_CONSTANT);
+                        parser_lex(parser);
+                        break;
+                    case PM_TOKEN_INSTANCE_VARIABLE:
+                        pm_parser_err_current(parser, PM_ERR_ARGUMENT_FORMAL_IVAR);
+                        parser_lex(parser);
+                        break;
+                    case PM_TOKEN_GLOBAL_VARIABLE:
+                        pm_parser_err_current(parser, PM_ERR_ARGUMENT_FORMAL_GLOBAL);
+                        parser_lex(parser);
+                        break;
+                    case PM_TOKEN_CLASS_VARIABLE:
+                        pm_parser_err_current(parser, PM_ERR_ARGUMENT_FORMAL_CLASS);
+                        parser_lex(parser);
+                        break;
+                    default:
+                        expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
+                        break;
+                }
+
                 bool repeated = pm_parser_parameter_name_check(parser, &parser->previous);
                 pm_parser_local_add_token(parser, &parser->previous);
 
