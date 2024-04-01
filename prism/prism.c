@@ -9022,7 +9022,7 @@ lex_at_variable(pm_parser_t *parser) {
         while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0) {
             parser->current.end += width;
         }
-    } else {
+    } else if (parser->current.end < parser->end && pm_char_is_decimal_digit(*parser->current.end)) {
         pm_diagnostic_id_t diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE;
         if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0) {
             diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3_0 : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0;
@@ -9030,6 +9030,9 @@ lex_at_variable(pm_parser_t *parser) {
 
         size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
         PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, (int) ((parser->current.end + width) - parser->current.start), (const char *) parser->current.start);
+    } else {
+        pm_diagnostic_id_t diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_CLASS_VARIABLE_BARE : PM_ERR_INSTANCE_VARIABLE_BARE;
+        pm_parser_err_token(parser, &parser->current, diag_id);
     }
 
     // If we're lexing an embedded variable, then we need to pop back into the
