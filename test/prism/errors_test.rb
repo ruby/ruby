@@ -1943,12 +1943,11 @@ module Prism
         proc { |foo: foo| }
       RUBY
 
-      message = 'parameter default value references itself'
       assert_errors expression(source), source, [
-        [message, 14..17],
-        [message, 37..40],
-        [message, 61..64],
-        [message, 81..84],
+        ["circular argument reference - bar", 14..17],
+        ["circular argument reference - bar", 37..40],
+        ["circular argument reference - foo", 61..64],
+        ["circular argument reference - foo", 81..84],
       ]
     end
 
