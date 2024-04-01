@@ -193,6 +193,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_FOR_INDEX]                          = { "expected an index after `for`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_FOR_IN]                             = { "expected an `in` after the index in a `for` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_FOR_TERM]                           = { "expected an `end` to close the `for` loop", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_GLOBAL_VARIABLE_BARE]               = { "'$' without identifiers is not allowed as a global variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_EXPRESSION_AFTER_LABEL]        = { "expected an expression after the label in a hash", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_KEY]                           = { "unexpected %s, expecting '}' or a key in the hash literal", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_ROCKET]                        = { "expected a `=>` between the hash key and value", PM_ERROR_LEVEL_SYNTAX },
