@@ -49,7 +49,29 @@ class Reline::LineEditor
   RenderedScreen = Struct.new(:base_y, :lines, :cursor_y, keyword_init: true)
 
   CompletionJourneyData = Struct.new(:preposing, :postposing, :list, :pointer)
-  MenuInfo = Struct.new(:target, :list)
+
+  class MenuInfo
+    attr_reader :list
+
+    def initialize(list)
+      @list = list
+    end
+
+    def lines(screen_width)
+      return [] if @list.empty?
+
+      list = @list.sort
+      sizes = list.map { |item| Reline::Unicode.calculate_width(item) }
+      item_width = sizes.max + 2
+      num_cols = [screen_width / item_width, 1].max
+      num_rows = list.size.fdiv(num_cols).ceil
+      list_with_padding = list.zip(sizes).map { |item, size| item + ' ' * (item_width - size) }
+      aligned = (list_with_padding + [nil] * (num_rows * num_cols - list_with_padding.size)).each_slice(num_rows).to_a.transpose
+      aligned.map do |row|
+        row.join.rstrip
+      end
+    end
+  end
 
   MINIMUM_SCROLLBAR_HEIGHT = 1
 
@@ -458,7 +480,7 @@ class Reline::LineEditor
       [[0, Reline::Unicode.calculate_width(l, true), l]]
     end
     if @menu_info
-      @menu_info.list.sort!.each do |item|
+      @menu_info.lines(screen_width).each do |item|
         new_lines << [[0, Reline::Unicode.calculate_width(item), item]]
       end
       @menu_info = nil # TODO: do not change state here
@@ -779,8 +801,8 @@ class Reline::LineEditor
     @config.editing_mode
   end
 
-  private def menu(target, list)
-    @menu_info = MenuInfo.new(target, list)
+  private def menu(_target, list)
+    @menu_info = MenuInfo.new(list)
   end
 
   private def complete_internal_proc(list, is_menu)

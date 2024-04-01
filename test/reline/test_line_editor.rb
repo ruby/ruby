@@ -127,4 +127,29 @@ class Reline::LineEditor
       end
     end
   end
+
+  def test_menu_info_format
+    list = %w[aa b c d e f g hhh i j k]
+    col3 = [
+      'aa   e    i',
+      'b    f    j',
+      'c    g    k',
+      'd    hhh'
+    ]
+    col2 = [
+      'aa   g',
+      'b    hhh',
+      'c    i',
+      'd    j',
+      'e    k',
+      'f'
+    ]
+    assert_equal(col3, Reline::LineEditor::MenuInfo.new(list).lines(19))
+    assert_equal(col3, Reline::LineEditor::MenuInfo.new(list).lines(15))
+    assert_equal(col2, Reline::LineEditor::MenuInfo.new(list).lines(14))
+    assert_equal(col2, Reline::LineEditor::MenuInfo.new(list).lines(10))
+    assert_equal(list, Reline::LineEditor::MenuInfo.new(list).lines(9))
+    assert_equal(list, Reline::LineEditor::MenuInfo.new(list).lines(0))
+    assert_equal([], Reline::LineEditor::MenuInfo.new([]).lines(10))
+  end
 end
