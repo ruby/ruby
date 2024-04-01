@@ -2,6 +2,8 @@
 
 require_relative "test_helper"
 
+return if RUBY_ENGINE != "ruby"
+
 module Prism
   class MagicCommentTest < TestCase
     examples = [
@@ -22,16 +24,10 @@ module Prism
 
     examples.each.with_index(1) do |example, index|
       define_method(:"test_magic_comment_#{index}") do
-        assert_magic_comment(example)
+        expected = RubyVM::InstructionSequence.compile(%Q{#{example}\n""}).eval.encoding
+        actual = Prism.parse(example).encoding
+        assert_equal expected, actual
       end
-    end
-
-    private
-
-    def assert_magic_comment(example)
-      expected = Ripper.new(example).tap(&:parse).encoding
-      actual = Prism.parse(example).encoding
-      assert_equal expected, actual
     end
   end
 end
