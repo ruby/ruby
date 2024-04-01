@@ -33,7 +33,7 @@ end
 describe "StringIO#read_nonblock" do
 
   it "accepts an exception option" do
-    stringio = StringIO.new(+'foo')
+    stringio = StringIO.new('foo')
     stringio.read_nonblock(3, exception: false).should == 'foo'
   end
 

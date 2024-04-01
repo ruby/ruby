@@ -8,7 +8,12 @@ extern "C" {
 VALUE registered_tagged_value;
 VALUE registered_reference_value;
 VALUE registered_before_rb_gc_register_address;
-VALUE registered_before_rb_global_variable;
+VALUE registered_before_rb_global_variable_string;
+VALUE registered_before_rb_global_variable_bignum;
+VALUE registered_before_rb_global_variable_float;
+VALUE registered_after_rb_global_variable_string;
+VALUE registered_after_rb_global_variable_bignum;
+VALUE registered_after_rb_global_variable_float;
 VALUE rb_gc_register_address_outside_init;
 
 static VALUE registered_tagged_address(VALUE self) {
@@ -23,8 +28,28 @@ static VALUE get_registered_before_rb_gc_register_address(VALUE self) {
   return registered_before_rb_gc_register_address;
 }
 
-static VALUE get_registered_before_rb_global_variable(VALUE self) {
-  return registered_before_rb_global_variable;
+static VALUE get_registered_before_rb_global_variable_string(VALUE self) {
+  return registered_before_rb_global_variable_string;
+}
+
+static VALUE get_registered_before_rb_global_variable_bignum(VALUE self) {
+  return registered_before_rb_global_variable_bignum;
+}
+
+static VALUE get_registered_before_rb_global_variable_float(VALUE self) {
+  return registered_before_rb_global_variable_float;
+}
+
+static VALUE get_registered_after_rb_global_variable_string(VALUE self) {
+  return registered_after_rb_global_variable_string;
+}
+
+static VALUE get_registered_after_rb_global_variable_bignum(VALUE self) {
+  return registered_after_rb_global_variable_bignum;
+}
+
+static VALUE get_registered_after_rb_global_variable_float(VALUE self) {
+  return registered_after_rb_global_variable_float;
 }
 
 static VALUE gc_spec_rb_gc_register_address(VALUE self) {
@@ -71,17 +96,34 @@ void Init_gc_spec(void) {
   rb_gc_register_address(&registered_tagged_value);
   rb_gc_register_address(&registered_reference_value);
   rb_gc_register_address(&registered_before_rb_gc_register_address);
-  rb_global_variable(&registered_before_rb_global_variable);
+  rb_global_variable(&registered_before_rb_global_variable_string);
+  rb_global_variable(&registered_before_rb_global_variable_bignum);
+  rb_global_variable(&registered_before_rb_global_variable_float);
 
   registered_tagged_value    = INT2NUM(10);
   registered_reference_value = rb_str_new2("Globally registered data");
   registered_before_rb_gc_register_address = rb_str_new_cstr("registered before rb_gc_register_address()");
-  registered_before_rb_global_variable = rb_str_new_cstr("registered before rb_global_variable()");
+
+  registered_before_rb_global_variable_string = rb_str_new_cstr("registered before rb_global_variable()");
+  registered_before_rb_global_variable_bignum = LL2NUM(INT64_MAX);
+  registered_before_rb_global_variable_float = DBL2NUM(3.14);
+
+  registered_after_rb_global_variable_string = rb_str_new_cstr("registered after rb_global_variable()");
+  rb_global_variable(&registered_after_rb_global_variable_string);
+  registered_after_rb_global_variable_bignum = LL2NUM(INT64_MAX);
+  rb_global_variable(&registered_after_rb_global_variable_bignum);
+  registered_after_rb_global_variable_float = DBL2NUM(6.28);
+  rb_global_variable(&registered_after_rb_global_variable_float);
 
   rb_define_method(cls, "registered_tagged_address", registered_tagged_address, 0);
   rb_define_method(cls, "registered_reference_address", registered_reference_address, 0);
   rb_define_method(cls, "registered_before_rb_gc_register_address", get_registered_before_rb_gc_register_address, 0);
-  rb_define_method(cls, "registered_before_rb_global_variable", get_registered_before_rb_global_variable, 0);
+  rb_define_method(cls, "registered_before_rb_global_variable_string", get_registered_before_rb_global_variable_string, 0);
+  rb_define_method(cls, "registered_before_rb_global_variable_bignum", get_registered_before_rb_global_variable_bignum, 0);
+  rb_define_method(cls, "registered_before_rb_global_variable_float", get_registered_before_rb_global_variable_float, 0);
+  rb_define_method(cls, "registered_after_rb_global_variable_string", get_registered_after_rb_global_variable_string, 0);
+  rb_define_method(cls, "registered_after_rb_global_variable_bignum", get_registered_after_rb_global_variable_bignum, 0);
+  rb_define_method(cls, "registered_after_rb_global_variable_float", get_registered_after_rb_global_variable_float, 0);
   rb_define_method(cls, "rb_gc_register_address", gc_spec_rb_gc_register_address, 0);
   rb_define_method(cls, "rb_gc_unregister_address", gc_spec_rb_gc_unregister_address, 0);
   rb_define_method(cls, "rb_gc_enable", gc_spec_rb_gc_enable, 0);

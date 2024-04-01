@@ -3,11 +3,11 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#reopen when passed [Object, Integer]" do
   before :each do
-    @io = StringIO.new(+"example")
+    @io = StringIO.new("example")
   end
 
   it "reopens self with the passed Object in the passed mode" do
-    @io.reopen(+"reopened", IO::RDONLY)
+    @io.reopen("reopened", IO::RDONLY)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
@@ -51,11 +51,11 @@ end
 
 describe "StringIO#reopen when passed [Object, Object]" do
   before :each do
-    @io = StringIO.new(+"example")
+    @io = StringIO.new("example")
   end
 
   it "reopens self with the passed Object in the passed mode" do
-    @io.reopen(+"reopened", "r")
+    @io.reopen("reopened", "r")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
@@ -83,7 +83,7 @@ describe "StringIO#reopen when passed [Object, Object]" do
 
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
-    obj.should_receive(:to_str).and_return(+"to_str")
+    obj.should_receive(:to_str).and_return("to_str")
     @io.reopen(obj, "r")
     @io.string.should == "to_str"
   end
@@ -107,7 +107,7 @@ describe "StringIO#reopen when passed [Object, Object]" do
   it "tries to convert the passed mode Object to an Integer using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("r")
-    @io.reopen(+"reopened", obj)
+    @io.reopen("reopened", obj)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
     @io.string.should == "reopened"
@@ -128,7 +128,7 @@ end
 
 describe "StringIO#reopen when passed [String]" do
   before :each do
-    @io = StringIO.new(+"example")
+    @io = StringIO.new("example")
   end
 
   it "reopens self with the passed String in read-write mode" do
@@ -157,7 +157,7 @@ end
 
 describe "StringIO#reopen when passed [Object]" do
   before :each do
-    @io = StringIO.new(+"example")
+    @io = StringIO.new("example")
   end
 
   it "raises a TypeError when passed an Object that can't be converted to a StringIO" do
@@ -180,7 +180,7 @@ end
 
 describe "StringIO#reopen when passed no arguments" do
   before :each do
-    @io = StringIO.new(+"example\nsecond line")
+    @io = StringIO.new("example\nsecond line")
   end
 
   it "resets self's mode to read-write" do
@@ -208,7 +208,7 @@ end
 # for details.
 describe "StringIO#reopen" do
   before :each do
-    @io = StringIO.new(+'hello','a')
+    @io = StringIO.new(+'hello', 'a')
   end
 
   # TODO: find out if this is really a bug

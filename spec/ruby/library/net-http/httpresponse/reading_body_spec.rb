@@ -5,7 +5,7 @@ require "stringio"
 describe "Net::HTTPResponse#reading_body" do
   before :each do
     @res = Net::HTTPUnknownResponse.new("1.0", "???", "test response")
-    @socket = Net::BufferedIO.new(StringIO.new(+"test body"))
+    @socket = Net::BufferedIO.new(StringIO.new("test body"))
   end
 
   describe "when body_allowed is true" do

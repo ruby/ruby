@@ -7,11 +7,38 @@ ruby_version_is '3.1' do
       assert_subclasses(ModuleSpecs::Parent, [ModuleSpecs::Child, ModuleSpecs::Child2])
     end
 
-    it "does not return included modules" do
+    it "does not return included modules from the parent" do
       parent = Class.new
       child = Class.new(parent)
       mod = Module.new
       parent.include(mod)
+
+      assert_subclasses(parent, [child])
+    end
+
+    it "does not return included modules from the child" do
+      parent = Class.new
+      child = Class.new(parent)
+      mod = Module.new
+      parent.include(mod)
+
+      assert_subclasses(parent, [child])
+    end
+
+    it "does not return prepended modules from the parent" do
+      parent = Class.new
+      child = Class.new(parent)
+      mod = Module.new
+      parent.prepend(mod)
+
+      assert_subclasses(parent, [child])
+    end
+
+    it "does not return prepended modules from the child" do
+      parent = Class.new
+      child = Class.new(parent)
+      mod = Module.new
+      child.prepend(mod)
 
       assert_subclasses(parent, [child])
     end
