@@ -7650,6 +7650,19 @@ parser_cr(struct parser_params *p, int c)
     return c;
 }
 
+static int
+parser_eof_char(struct parser_params *p, int c)
+{
+    switch (c) {
+      case '\0':		/* NUL */
+      case '\004':		/* ^D */
+      case '\032':		/* ^Z */
+        p->eofp = 1;
+        return -1;
+    }
+    return c;
+}
+
 static inline int
 nextc0(struct parser_params *p, int set_encoding)
 {
@@ -10424,6 +10437,57 @@ warn_cr(struct parser_params *p)
     }
 }
 
+static void
+parser_file_encoding(struct parser_params *p, const char *pend, int token_seen)
+{
+    p->token_seen = token_seen;
+    const char *const pcur = p->lex.pcur, *const ptok = p->lex.ptok;
+    if (!parser_magic_comment(p, p->lex.pcur, pend - p->lex.pcur)) {
+        /* no magic_comment in shebang line */
+        if (comment_at_top(p)) {
+            set_file_encoding(p, p->lex.pcur, pend);
+        }
+    }
+    p->lex.pcur = pcur, p->lex.ptok = ptok;
+}
+
+static void
+parser_inline_comment(struct parser_params *p, int token_seen)
+{
+    int nest = 1;
+    while (nest > 0) {
+        const char *pcur = p->lex.pcur, *pend = p->lex.pend;
+        while (pcur < pend) {
+            int c = (unsigned char)*pcur;
+            switch (c) {
+              case '(':
+                if (++pcur < pend && *pcur == '|') {
+                    ++pcur;
+                    if (nest >= INT_MAX) compile_error(p, "too nested comments");
+                    else ++nest;
+                }
+                continue;
+              case '|':
+                if (++pcur < pend && *pcur == ')') {
+                    ++pcur;
+                    if (!--nest) pend = pcur - 2;
+                }
+                continue;
+            }
+            if (UNLIKELY(parser_eof_char(p, c) == -1)) break;
+            int len = parser_precise_mbclen(p, pcur);
+            if (len > 0) pcur += len;
+        }
+        parser_file_encoding(p, pend, token_seen);
+        p->lex.pcur = pcur;
+        dispatch_scan_event(p, tCOMMENT);
+        if (nextc(p) == -1) break;
+    }
+    if (nest > 0) {
+        compile_error(p, "unterminated comment meets end of file");
+    }
+}
+
 static enum yytokentype
 parser_yylex(struct parser_params *p)
 {
@@ -10453,12 +10517,8 @@ parser_yylex(struct parser_params *p)
 #endif
   retry:
     last_state = p->lex.state;
-    switch (c = nextc(p)) {
-      case '\0':		/* NUL */
-      case '\004':		/* ^D */
-      case '\032':		/* ^Z */
+    switch (parser_eof_char(p, c = nextc(p))) {
       case -1:			/* end of script. */
-        p->eofp = 1;
 #ifndef RIPPER
         if (p->end_expect_token_locations) {
             pop_end_expect_token_locations(p);
@@ -10498,15 +10558,7 @@ parser_yylex(struct parser_params *p)
         goto retry;
 
       case '#':		/* it's a comment */
-        p->token_seen = token_seen;
-        const char *const pcur = p->lex.pcur, *const ptok = p->lex.ptok;
-        /* no magic_comment in shebang line */
-        if (!parser_magic_comment(p, p->lex.pcur, p->lex.pend - p->lex.pcur)) {
-            if (comment_at_top(p)) {
-                set_file_encoding(p, p->lex.pcur, p->lex.pend);
-            }
-        }
-        p->lex.pcur = pcur, p->lex.ptok = ptok;
+        parser_file_encoding(p, p->lex.pend, token_seen);
         lex_goto_eol(p);
         dispatch_scan_event(p, tCOMMENT);
         fallthru = TRUE;
@@ -11029,6 +11081,12 @@ parser_yylex(struct parser_params *p)
         return '~';
 
       case '(':
+        if (peek(p, '|')) {
+            nextc(p);
+            parser_inline_comment(p, token_seen);
+            space_seen = TRUE;
+            goto retry;
+        }
         if (IS_BEG()) {
             c = tLPAREN;
         }

@@ -134,6 +134,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_CLASS_TERM]                         = { "expected an `end` to close the `class` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CLASS_UNEXPECTED_END]               = { "unexpected `end`, expecting ';' or '\\n'", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CLASS_VARIABLE_BARE]                = { "'@@' without identifiers is not allowed as a class variable name", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_COMMENT_TERM]                       = { "unterminated comment meets end of file", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_ELSIF_PREDICATE]        = { "expected a predicate expression for the `elsif` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_IF_PREDICATE]           = { "expected a predicate expression for the `if` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_PREDICATE_TERM]         = { "expected `then` or `;` or '\\n'", PM_ERROR_LEVEL_SYNTAX },
