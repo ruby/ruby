@@ -1241,7 +1241,6 @@ typedef struct rb_parser_config_struct {
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
     /* imemo */
-    rb_imemo_tmpbuf_t *(*tmpbuf_parser_heap)(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
     rb_ast_t *(*ast_new)(VALUE nb);
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);

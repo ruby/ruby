@@ -387,12 +387,6 @@ gc_guard(VALUE obj)
     RB_GC_GUARD(obj);
 }
 
-static rb_imemo_tmpbuf_t *
-tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    return rb_imemo_tmpbuf_parser_heap(buf, old_heap, cnt);
-}
-
 static VALUE
 arg_error(void)
 {
@@ -462,7 +456,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
 
-    .tmpbuf_parser_heap = tmpbuf_parser_heap,
     .ast_new = ast_new,
 
     .compile_callback = rb_suppress_tracing,
