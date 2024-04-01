@@ -14605,6 +14605,9 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, bool top_pat
  */
 static void
 parse_pattern_capture(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_constant_id_t capture, const pm_location_t *location) {
+    // Skip this capture if it starts with an underscore.
+    if (*location->start == '_') return;
+
     if (pm_constant_id_list_includes(captures, capture)) {
         pm_parser_err(parser, location->start, location->end, PM_ERR_PATTERN_CAPTURE_DUPLICATE);
     } else {
@@ -14828,6 +14831,10 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
     return (pm_node_t *) pm_implicit_node_create(parser, (pm_node_t *) target);
 }
 
+/**
+ * Add a node to the list of keys for a hash pattern, and if it is a duplicate
+ * then add an error to the parser.
+ */
 static void
 parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
     if (pm_static_literals_add(parser, keys, node) != NULL) {

@@ -2075,7 +2075,7 @@ module Prism
       source = "proc { || it }"
       errors = [["`it` is not allowed when an ordinary parameter is defined", 10..12]]
 
-      assert_errors expression(source), source, errors
+      assert_errors expression(source), source, errors, check_valid_syntax: RUBY_VERSION >= "3.4.0"
     end
 
     def test_regular_expression_with_unknown_regexp_options
@@ -2170,47 +2170,56 @@ module Prism
 
     def test_duplicate_pattern_capture
       source = <<~RUBY
-        () => [a, a]
-        () => [a, *a]
-        () => {a: a, b: a}
-        () => {a: a, **a}
-        () => [a, {a:}]
-        () => [a, {a: {a: {a: [a]}}}]
-        () => a => a
-        () => [A => a, {a: b => a}]
+        case (); in [a, a]; end
+        case (); in [a, *a]; end
+        case (); in {a: a, b: a}; end
+        case (); in {a: a, **a}; end
+        case (); in [a, {a:}]; end
+        case (); in [a, {a: {a: {a: [a]}}}]; end
+        case (); in a => a; end
+        case (); in [A => a, {a: b => a}]; end
       RUBY
 
       assert_error_messages source, Array.new(source.lines.length, "duplicated variable name")
+      refute_error_messages "case (); in [_a, _a]; end"
     end
 
     def test_duplicate_pattern_hash_key
-      assert_error_messages "() => {a:, a:}", ["duplicated key name", "duplicated variable name"]
-      assert_error_messages "() => {a:1, a:2}", ["duplicated key name"]
+      assert_error_messages "case (); in {a:, a:}; end", ["duplicated key name", "duplicated variable name"]
+      assert_error_messages "case (); in {a:1, a:2}; end", ["duplicated key name"]
       refute_error_messages "case (); in [{a:1}, {a:2}]; end"
     end
 
     private
 
-    def check_syntax(source)
-      $VERBOSE, previous = nil, $VERBOSE
+    if RUBY_ENGINE == "ruby"
+      def check_syntax(source)
+        $VERBOSE, previous = nil, $VERBOSE
 
-      begin
-        RubyVM::InstructionSequence.compile(source)
-      ensure
-        $VERBOSE = previous
+        begin
+          RubyVM::InstructionSequence.compile(source)
+        ensure
+          $VERBOSE = previous
+        end
+      end
+
+      def assert_valid_syntax(source)
+        check_syntax(source)
+      end
+
+      def refute_valid_syntax(source)
+        assert_raise(SyntaxError) { check_syntax(source) }
+      end
+    else
+      def assert_valid_syntax(source)
+      end
+
+      def refute_valid_syntax(source)
       end
     end
 
-    def assert_valid_syntax(source)
-      check_syntax(source)
-    end
-
-    def refute_valid_syntax(source)
-      assert_raise(SyntaxError) { check_syntax(source) }
-    end
-
-    def assert_errors(expected, source, errors)
-      refute_valid_syntax(source) if RUBY_ENGINE == "ruby"
+    def assert_errors(expected, source, errors, check_valid_syntax: true)
+      refute_valid_syntax(source) if check_valid_syntax
 
       result = Prism.parse(source)
       node = result.value.statements.body.last
@@ -2220,13 +2229,13 @@ module Prism
     end
 
     def assert_error_messages(source, errors)
-      refute_valid_syntax(source) if RUBY_ENGINE == "ruby"
+      refute_valid_syntax(source)
       result = Prism.parse(source)
       assert_equal(errors, result.errors.map(&:message))
     end
 
     def refute_error_messages(source)
-      assert_valid_syntax(source) if RUBY_ENGINE == "ruby"
+      assert_valid_syntax(source)
       assert Prism.parse_success?(source)
     end
 
