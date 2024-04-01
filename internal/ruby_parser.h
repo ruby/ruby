@@ -5,7 +5,6 @@
 #include "internal/bignum.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
-#include "internal/imemo.h"
 #include "internal/rational.h"
 #include "rubyparser.h"
 #include "vm.h"
