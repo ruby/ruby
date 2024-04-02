@@ -1155,7 +1155,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
         tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
     }
 
-    if (RTEST(rb_hash_aref(misc, ID2SYM(rb_intern("prism"))))) {
+    if (SYM2ID(rb_hash_aref(misc, ID2SYM(rb_intern("parser")))) == rb_intern("prism")) {
         ISEQ_BODY(iseq)->prism = true;
     }
 
