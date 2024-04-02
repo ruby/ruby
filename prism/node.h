@@ -11,6 +11,13 @@
 #include "prism/util/pm_buffer.h"
 
 /**
+ * Loop through each node in the node list, writing each node to the given
+ * pm_node_t pointer.
+ */
+#define PM_NODE_LIST_FOREACH(list, index, node) \
+    for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
+
+/**
  * Attempts to grow the node list to the next size. If there is already
  * capacity in the list, this function does nothing. Otherwise it reallocates
  * the list to be twice as large as it was before. If the reallocation fails,
