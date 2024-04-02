@@ -3,9 +3,9 @@ foo rescue nil
 foo rescue
 nil
 
-break rescue nil
+tap { break rescue nil }
 
-next rescue nil
+tap { next rescue nil }
 
 return rescue nil
 

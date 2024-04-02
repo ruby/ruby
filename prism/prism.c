@@ -15705,7 +15705,7 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
  * context. If it isn't, add an error to the parser.
  */
 static void
-parse_block_exit(pm_parser_t *parser, pm_token_t *token) {
+parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
@@ -15721,9 +15721,12 @@ parse_block_exit(pm_parser_t *parser, pm_token_t *token) {
             case PM_CONTEXT_CLASS:
             case PM_CONTEXT_DEF:
             case PM_CONTEXT_DEF_PARAMS:
+            case PM_CONTEXT_ENSURE_DEF:
             case PM_CONTEXT_MAIN:
             case PM_CONTEXT_MODULE:
             case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_DEF:
+            case PM_CONTEXT_RESCUE_ELSE_DEF:
             case PM_CONTEXT_SCLASS:
                 // These are the bad cases. We're not allowed to have a block
                 // exit in these contexts.
@@ -15741,16 +15744,13 @@ parse_block_exit(pm_parser_t *parser, pm_token_t *token) {
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
             case PM_CONTEXT_ENSURE:
-            case PM_CONTEXT_ENSURE_DEF:
             case PM_CONTEXT_FOR:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_IF:
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_RESCUE_ELSE:
-            case PM_CONTEXT_RESCUE_ELSE_DEF:
             case PM_CONTEXT_RESCUE:
-            case PM_CONTEXT_RESCUE_DEF:
             case PM_CONTEXT_UNLESS:
             case PM_CONTEXT_UNTIL:
             case PM_CONTEXT_WHILE:
@@ -15767,7 +15767,7 @@ parse_block_exit(pm_parser_t *parser, pm_token_t *token) {
  * Ensures that the current retry token is valid in the current context.
  */
 static void
-parse_retry(pm_parser_t *parser, pm_token_t *token) {
+parse_retry(pm_parser_t *parser, const pm_token_t *token) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
@@ -15787,8 +15787,8 @@ parse_retry(pm_parser_t *parser, pm_token_t *token) {
                 // these contexts.
                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
                 return;
-            case PM_CONTEXT_RESCUE_ELSE_DEF:
             case PM_CONTEXT_RESCUE_ELSE:
+            case PM_CONTEXT_RESCUE_ELSE_DEF:
                 // These are also bad cases, but with a more specific error
                 // message indicating the else.
                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_RETRY_AFTER_ELSE);
@@ -15820,6 +15820,68 @@ parse_retry(pm_parser_t *parser, pm_token_t *token) {
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_UNLESS:
+            case PM_CONTEXT_UNTIL:
+            case PM_CONTEXT_WHILE:
+                // In these contexts we should continue walking up the list of
+                // contexts.
+                break;
+        }
+
+        context_node = context_node->prev;
+    }
+}
+
+/**
+ * Ensures that the current yield token is valid in the current context.
+ */
+static void
+parse_yield(pm_parser_t *parser, const pm_token_t *token) {
+    pm_context_node_t *context_node = parser->current_context;
+
+    while (context_node != NULL) {
+        switch (context_node->context) {
+            case PM_CONTEXT_DEF:
+            case PM_CONTEXT_ENSURE_DEF:
+            case PM_CONTEXT_RESCUE_DEF:
+            case PM_CONTEXT_RESCUE_ELSE_DEF:
+                // These are the good cases. We're allowed to have a block exit
+                // in these contexts.
+                return;
+            case PM_CONTEXT_CLASS:
+            case PM_CONTEXT_MAIN:
+            case PM_CONTEXT_MODULE:
+                // These are the bad cases. We're not allowed to have a retry in
+                // these contexts.
+                pm_parser_err_token(parser, token, PM_ERR_INVALID_YIELD);
+                return;
+            case PM_CONTEXT_NONE:
+                // This case should never happen.
+                assert(false && "unreachable");
+                break;
+            case PM_CONTEXT_BEGIN:
+            case PM_CONTEXT_BLOCK_BRACES:
+            case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_CASE_IN:
+            case PM_CONTEXT_CASE_WHEN:
+            case PM_CONTEXT_DEF_PARAMS:
+            case PM_CONTEXT_DEFAULT_PARAMS:
+            case PM_CONTEXT_ELSE:
+            case PM_CONTEXT_ELSIF:
+            case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_ENSURE:
+            case PM_CONTEXT_FOR_INDEX:
+            case PM_CONTEXT_FOR:
+            case PM_CONTEXT_IF:
+            case PM_CONTEXT_LAMBDA_BRACES:
+            case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_PARENS:
+            case PM_CONTEXT_POSTEXE:
+            case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_ELSE:
+            case PM_CONTEXT_RESCUE:
+            case PM_CONTEXT_SCLASS:
             case PM_CONTEXT_UNLESS:
             case PM_CONTEXT_UNTIL:
             case PM_CONTEXT_WHILE:
@@ -16786,6 +16848,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_super_node_create(parser, &keyword, &arguments);
         }
         case PM_TOKEN_KEYWORD_YIELD: {
+            parse_yield(parser, &parser->current);
             parser_lex(parser);
 
             pm_token_t keyword = parser->previous;
