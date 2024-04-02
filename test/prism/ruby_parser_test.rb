@@ -84,6 +84,7 @@ module Prism
       whitequark/if_while_after_class__since_32.txt
       whitequark/lvar_injecting_match.txt
       whitequark/not.txt
+      whitequark/numparam_ruby_bug_19025.txt
       whitequark/op_asgn_cmd.txt
       whitequark/parser_bug_640.txt
       whitequark/parser_slash_slash_n_escaping_in_literals.txt
