@@ -15701,6 +15701,69 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
 }
 
 /**
+ * Check that the block exit (next, break, redo) is allowed in the current
+ * context. If it isn't, add an error to the parser.
+ */
+static void
+parse_block_exit(pm_parser_t *parser, pm_token_t *token) {
+    pm_context_node_t *context_node = parser->current_context;
+
+    while (context_node != NULL) {
+        switch (context_node->context) {
+            case PM_CONTEXT_BLOCK_BRACES:
+            case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_LAMBDA_BRACES:
+            case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_POSTEXE:
+                // These are the good cases. We're allowed to have a block exit
+                // in these contexts.
+                return;
+            case PM_CONTEXT_CLASS:
+            case PM_CONTEXT_DEF:
+            case PM_CONTEXT_DEF_PARAMS:
+            case PM_CONTEXT_MAIN:
+            case PM_CONTEXT_MODULE:
+            case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_SCLASS:
+                // These are the bad cases. We're not allowed to have a block
+                // exit in these contexts.
+                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_BLOCK_EXIT);
+                return;
+            case PM_CONTEXT_NONE:
+                // This case should never happen.
+                assert(false && "unreachable");
+                break;
+            case PM_CONTEXT_BEGIN:
+            case PM_CONTEXT_CASE_WHEN:
+            case PM_CONTEXT_CASE_IN:
+            case PM_CONTEXT_DEFAULT_PARAMS:
+            case PM_CONTEXT_ELSE:
+            case PM_CONTEXT_ELSIF:
+            case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_ENSURE:
+            case PM_CONTEXT_ENSURE_DEF:
+            case PM_CONTEXT_FOR:
+            case PM_CONTEXT_FOR_INDEX:
+            case PM_CONTEXT_IF:
+            case PM_CONTEXT_PARENS:
+            case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_RESCUE_ELSE:
+            case PM_CONTEXT_RESCUE_ELSE_DEF:
+            case PM_CONTEXT_RESCUE:
+            case PM_CONTEXT_RESCUE_DEF:
+            case PM_CONTEXT_UNLESS:
+            case PM_CONTEXT_UNTIL:
+            case PM_CONTEXT_WHILE:
+                // In these contexts we should continue walking up the list of
+                // contexts.
+                break;
+        }
+
+        context_node = context_node->prev;
+    }
+}
+
+/**
  * Parse an expression that begins with the previous node that we just lexed.
  */
 static inline pm_node_t *
@@ -16617,8 +16680,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             switch (keyword.type) {
                 case PM_TOKEN_KEYWORD_BREAK:
+                    parse_block_exit(parser, &keyword);
                     return (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
                 case PM_TOKEN_KEYWORD_NEXT:
+                    parse_block_exit(parser, &keyword);
                     return (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
                 case PM_TOKEN_KEYWORD_RETURN: {
                     if (
@@ -17286,6 +17351,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
             return (pm_node_t *) pm_nil_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_REDO:
+            parse_block_exit(parser, &parser->current);
             parser_lex(parser);
             return (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_RETRY:
