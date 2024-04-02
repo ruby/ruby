@@ -65,15 +65,15 @@ You can also use Ruby19Parser, Ruby18Parser, or RubyParser.for_current_ruby:
 
 To add a new version:
 
-* New parser should be generated from lib/ruby[3]_parser.yy.
-* Extend lib/ruby[3]_parser.yy with new class name.
+* New parser should be generated from lib/ruby_parser[23].yy.
+* Extend lib/ruby_parser[23].yy with new class name.
 * Add new version number to V2/V3 in Rakefile for rule creation.
 * Add new `ruby_parse "x.y.z"` line to Rakefile for rake compare (line ~300).
 * Require generated parser in lib/ruby_parser.rb.
 * Add new V## = ::Ruby##Parser; end to ruby_parser.rb (bottom of file).
 * Add empty TestRubyParserShared##Plus module and TestRubyParserV## to test/test_ruby_parser.rb.
 * Extend Manifest.txt with generated file names.
-* Add new version number to sexp_processor's pt_testcase.rb in all_versions
+* Add new version number to sexp_processor's pt_testcase.rb in all_versions.
 
 Until all of these are done, you won't have a clean test run.
 
