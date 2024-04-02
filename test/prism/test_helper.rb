@@ -19,6 +19,38 @@ module Prism
   class TestCase < ::Test::Unit::TestCase
     private
 
+    if RUBY_ENGINE == "ruby"
+      # Check that the given source is valid syntax by compiling it with RubyVM.
+      def check_syntax(source)
+        $VERBOSE, previous = nil, $VERBOSE
+
+        begin
+          RubyVM::InstructionSequence.compile(source)
+        ensure
+          $VERBOSE = previous
+        end
+      end
+
+      # Assert that the given source is valid Ruby syntax by attempting to
+      # compile it, and then implicitly checking that it does not raise an
+      # syntax errors.
+      def assert_valid_syntax(source)
+        check_syntax(source)
+      end
+
+      # Refute that the given source is invalid Ruby syntax by attempting to
+      # compile it and asserting that it raises a SyntaxError.
+      def refute_valid_syntax(source)
+        assert_raise(SyntaxError) { check_syntax(source) }
+      end
+    else
+      def assert_valid_syntax(source)
+      end
+
+      def refute_valid_syntax(source)
+      end
+    end
+
     def assert_raises(*args, &block)
       raise "Use assert_raise instead"
     end

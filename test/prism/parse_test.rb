@@ -188,39 +188,43 @@ module Prism
       directory = File.dirname(snapshot)
       FileUtils.mkdir_p(directory) unless File.directory?(directory)
 
-      ripper_should_parse = ripper_should_match = ripper_enabled
+      ripper_should_match = ripper_enabled
+      check_valid_syntax = true
 
-      # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if
-      # we're on an earlier version.
-      ripper_should_match = false if relative == "seattlerb/pct_w_heredoc_interp_nested.txt" && RUBY_VERSION < "3.3.0"
-
-      # It seems like there are some oddities with nested heredocs and ripper.
-      # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
-      ripper_should_match = false if relative == "seattlerb/heredoc_nested.txt"
-      ripper_should_match = false if relative == "whitequark/dedenting_heredoc.txt"
-
-      # Ripper seems to have a bug that the regex portions before and after the heredoc are combined
-      # into a single token. See https://bugs.ruby-lang.org/issues/19838.
-      #
-      # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
-      ripper_should_parse = false if relative == "spanning_heredoc.txt"
-      ripper_should_match = false if relative == "spanning_heredoc_newlines.txt"
-
-      # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace characters in the heredoc start.
-      # Example: <<~'   EOF' or <<-'  EOF'
-      # https://bugs.ruby-lang.org/issues/19539
-      ripper_should_parse = false if relative == "heredocs_leading_whitespace.txt" && RUBY_VERSION < "3.3.0"
+      case relative
+      when "seattlerb/pct_w_heredoc_interp_nested.txt"
+        # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if
+        # we're on an earlier version.
+        ripper_should_match = false if RUBY_VERSION < "3.3.0"
+      when "seattlerb/heredoc_nested.txt", "whitequark/dedenting_heredoc.txt"
+        # It seems like there are some oddities with nested heredocs and ripper.
+        # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
+        ripper_should_match = false
+      when "spanning_heredoc.txt", "spanning_heredoc_newlines.txt"
+        # Ripper seems to have a bug that the regex portions before and after
+        # the heredoc are combined into a single token. See
+        # https://bugs.ruby-lang.org/issues/19838.
+        ripper_should_match = false
+      when "heredocs_leading_whitespace.txt"
+        # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace
+        # characters in the heredoc start.
+        # Example: <<~'   EOF' or <<-'  EOF'
+        # https://bugs.ruby-lang.org/issues/19539
+        if RUBY_VERSION < "3.3.0"
+          ripper_should_match = false
+          check_valid_syntax = false
+        end
+      end
 
       define_method "test_filepath_#{relative}" do
-        # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
-        # and explicitly set the external encoding to UTF-8 to override the binmode default.
+        # First, read the source from the filepath. Use binmode to avoid
+        # converting CRLF on Windows, and explicitly set the external encoding
+        # to UTF-8 to override the binmode default.
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
-        if ripper_should_parse
-          # Make sure that it can be correctly parsed by Ripper. If it can't,
-          # then we have a fixture that is invalid Ruby.
-          refute_nil(Ripper.sexp_raw(source), "Ripper failed to parse")
-        end
+        # Make sure that the given source is valid syntax, otherwise we have an
+        # invalid fixture.
+        assert_valid_syntax(source) if check_valid_syntax
 
         # Next, assert that there were no errors during parsing.
         result = Prism.parse(source, filepath: relative)
@@ -263,7 +267,7 @@ module Prism
         source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
         assert_equal expected_newlines, Debug.newlines(source)
 
-        if ripper_should_parse && ripper_should_match
+        if ripper_should_match
           # Finally, assert that we can lex the source and get the same tokens as
           # Ripper.
           lex_result = Prism.lex_compat(source)

@@ -2199,32 +2199,6 @@ module Prism
 
     private
 
-    if RUBY_ENGINE == "ruby"
-      def check_syntax(source)
-        $VERBOSE, previous = nil, $VERBOSE
-
-        begin
-          RubyVM::InstructionSequence.compile(source)
-        ensure
-          $VERBOSE = previous
-        end
-      end
-
-      def assert_valid_syntax(source)
-        check_syntax(source)
-      end
-
-      def refute_valid_syntax(source)
-        assert_raise(SyntaxError) { check_syntax(source) }
-      end
-    else
-      def assert_valid_syntax(source)
-      end
-
-      def refute_valid_syntax(source)
-      end
-    end
-
     def assert_errors(expected, source, errors, check_valid_syntax: true)
       refute_valid_syntax(source) if check_valid_syntax
 
