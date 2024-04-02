@@ -947,8 +947,35 @@ module Prism
         def visit_interpolated_string_node(node)
           if node.heredoc?
             children, closing = visit_heredoc(node)
+            opening = token(node.opening_loc)
 
-            return builder.string_compose(token(node.opening_loc), children, closing)
+            start_offset = node.opening_loc.end_offset + 1
+            end_offset = node.parts.first.location.start_offset
+
+            # In the below case, the offsets should be the same:
+            #
+            # <<~HEREDOC
+            #   a #{b}
+            # HEREDOC
+            #
+            # But in this case, the end_offset would be greater than the start_offset:
+            #
+            # <<~HEREDOC
+            #   #{b}
+            # HEREDOC
+            #
+            # So we need to make sure the result node's heredoc range is correct, without updating the children
+            result = if start_offset < end_offset
+              # We need to add a padding string to ensure that the heredoc has correct range for its body
+              padding_string_node = builder.string_internal(["", srange_offsets(start_offset, end_offset)])
+              node_with_correct_location = builder.string_compose(opening, [padding_string_node, *children], closing)
+              # But the padding string should not be included in the final AST, so we need to update the result's children
+              node_with_correct_location.updated(:dstr, children)
+            else
+              builder.string_compose(opening, children, closing)
+            end
+
+            return result
           end
 
           parts = if node.parts.one? { |part| part.type == :string_node }
