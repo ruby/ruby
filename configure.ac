@@ -1432,7 +1432,7 @@ AC_SYS_LARGEFILE
 # which is not added by AC_SYS_LARGEFILE.
 AS_IF([test x"$enable_largefile" != xno], [
   AS_CASE(["$target_os"], [solaris*], [
-    AC_MSG_CHECKING([wheather _LARGEFILE_SOURCE should be defined])
+    AC_MSG_CHECKING([whether _LARGEFILE_SOURCE should be defined])
     AS_CASE(["${ac_cv_sys_file_offset_bits}:${ac_cv_sys_large_files}"],
       ["64:"|"64:no"|"64:unknown"], [
 	# insert _LARGEFILE_SOURCE before _FILE_OFFSET_BITS line
@@ -2973,7 +2973,7 @@ AS_IF([test "x$ac_cv_func_ioctl" = xyes], [
 }
 
 [begin]_group "runtime section" && {
-dnl wheather use dln_a_out or not
+dnl whether use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
 	AS_HELP_STRING([--with-dln-a-out], [dln_a_out is deprecated]),
 	[
