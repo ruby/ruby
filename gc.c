@@ -1884,6 +1884,55 @@ rb_gc_initial_stress_set(VALUE flag)
     initial_stress = flag;
 }
 
+static void * Alloc_GC_impl(void);
+
+#if USE_SHARED_GC
+# include "dln.h"
+# define Alloc_GC rb_gc_functions->init
+
+void
+ruby_external_gc_init()
+{
+    rb_gc_function_map_t *map = malloc(sizeof(rb_gc_function_map_t));
+    rb_gc_functions = map;
+
+    char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
+    if (!gc_so_path) {
+        map->init = Alloc_GC_impl;
+        return;
+    }
+
+    void *h = dln_open(gc_so_path);
+    if (!h) {
+        rb_bug(
+            "ruby_external_gc_init: Shared library %s cannot be opened.",
+            gc_so_path
+        );
+    }
+
+    void *gc_init_func = dln_symbol(h, "Init_GC");
+    if (!gc_init_func) {
+        rb_bug(
+            "ruby_external_gc_init: Init_GC func not exported by library %s",
+            gc_so_path
+        );
+    }
+
+    map->init = gc_init_func;
+}
+#else
+# define Alloc_GC Alloc_GC_impl
+#endif
+
+rb_objspace_t *
+rb_objspace_alloc(void)
+{
+#if USE_SHARED_GC
+    ruby_external_gc_init();
+#endif
+    return (rb_objspace_t *)Alloc_GC();
+}
+
 static void free_stack_chunks(mark_stack_t *);
 static void mark_stack_free_cache(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
@@ -3489,8 +3538,8 @@ static const struct st_hash_type object_id_hash_type = {
     object_id_hash,
 };
 
-rb_objspace_t *
-rb_objspace_alloc(void)
+static void *
+Alloc_GC_impl(void)
 {
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     ruby_current_vm_ptr->objspace = objspace;

@@ -106,6 +106,14 @@ extern int ruby_assert_critical_section_entered;
 
 #include "ruby/thread_native.h"
 
+#if USE_SHARED_GC
+typedef struct gc_function_map {
+    void *(*init)(void);
+} rb_gc_function_map_t;
+
+#define rb_gc_functions (GET_VM()->gc_functions_map)
+#endif
+
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
@@ -752,6 +760,9 @@ typedef struct rb_vm_struct {
     int coverage_mode;
 
     struct rb_objspace *objspace;
+#if USE_SHARED_GC
+    rb_gc_function_map_t *gc_functions_map;
+#endif
 
     rb_at_exit_list *at_exit;
 
