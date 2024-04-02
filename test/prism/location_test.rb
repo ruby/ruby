@@ -98,10 +98,10 @@ module Prism
     end
 
     def test_BreakNode
-      assert_location(BreakNode, "break")
-      assert_location(BreakNode, "break foo")
-      assert_location(BreakNode, "break foo, bar")
-      assert_location(BreakNode, "break(foo)")
+      assert_location(BreakNode, "tap { break }", 6...11) { |node| node.block.body.body.first }
+      assert_location(BreakNode, "tap { break foo }", 6...15) { |node| node.block.body.body.first }
+      assert_location(BreakNode, "tap { break foo, bar }", 6...20) { |node| node.block.body.body.first }
+      assert_location(BreakNode, "tap { break(foo) }", 6...16) { |node| node.block.body.body.first }
     end
 
     def test_CallNode
@@ -637,10 +637,10 @@ module Prism
     end
 
     def test_NextNode
-      assert_location(NextNode, "next")
-      assert_location(NextNode, "next foo")
-      assert_location(NextNode, "next foo, bar")
-      assert_location(NextNode, "next(foo)")
+      assert_location(NextNode, "tap { next }", 6...10) { |node| node.block.body.body.first }
+      assert_location(NextNode, "tap { next foo }", 6...14) { |node| node.block.body.body.first }
+      assert_location(NextNode, "tap { next foo, bar }", 6...19) { |node| node.block.body.body.first }
+      assert_location(NextNode, "tap { next(foo) }", 6...15) { |node| node.block.body.body.first }
     end
 
     def test_NilNode
@@ -726,7 +726,7 @@ module Prism
     end
 
     def test_RedoNode
-      assert_location(RedoNode, "redo")
+      assert_location(RedoNode, "tap { redo }", 6...10) { |node| node.block.body.body.first }
     end
 
     def test_RegularExpressionNode
@@ -769,7 +769,7 @@ module Prism
     end
 
     def test_RetryNode
-      assert_location(RetryNode, "retry")
+      assert_location(RetryNode, "begin; rescue; retry; end", 15...20) { |node| node.rescue_clause.statements.body.first }
     end
 
     def test_ReturnNode
@@ -910,10 +910,10 @@ module Prism
     end
 
     def test_YieldNode
-      assert_location(YieldNode, "yield")
-      assert_location(YieldNode, "yield foo")
-      assert_location(YieldNode, "yield foo, bar")
-      assert_location(YieldNode, "yield(foo)")
+      assert_location(YieldNode, "def test; yield; end", 10...15) { |node| node.body.body.first }
+      assert_location(YieldNode, "def test; yield foo; end", 10...19) { |node| node.body.body.first }
+      assert_location(YieldNode, "def test; yield foo, bar; end", 10...24) { |node| node.body.body.first }
+      assert_location(YieldNode, "def test; yield(foo); end", 10...20) { |node| node.body.body.first }
     end
 
     def test_all_tested
