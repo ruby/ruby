@@ -9,11 +9,9 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
  */
 static size_t
 pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
-    size_t size = sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
-    for (size_t index = 0; index < node_list->size; index++) {
-        pm_node_memsize_node(node_list->nodes[index], memsize);
-    }
-    return size;
+    pm_node_t *node;
+    PM_NODE_LIST_FOREACH(node_list, index, node) pm_node_memsize_node(node, memsize);
+    return sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
 }
 
 /**
@@ -73,10 +71,8 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
  */
 static void
 pm_node_list_destroy(pm_parser_t *parser, pm_node_list_t *list) {
-    for (size_t index = 0; index < list->size; index++) {
-        pm_node_destroy(parser, list->nodes[index]);
-    }
-
+    pm_node_t *node;
+    PM_NODE_LIST_FOREACH(list, index, node) pm_node_destroy(parser, node);
     pm_node_list_free(list);
 }
 

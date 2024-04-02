@@ -833,11 +833,14 @@ pm_conditional_predicate_warn_write_literal_p(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_ARRAY_NODE: {
             const pm_array_node_t *cast = (const pm_array_node_t *) node;
-            for (size_t index = 0; index < cast->elements.size; index++) {
-                if (!pm_conditional_predicate_warn_write_literal_p(cast->elements.nodes[index])) {
+            const pm_node_t *element;
+
+            PM_NODE_LIST_FOREACH(&cast->elements, index, element) {
+                if (!pm_conditional_predicate_warn_write_literal_p(element)) {
                     return false;
                 }
             }
+
             return true;
         }
         case PM_FALSE_NODE:
@@ -1611,9 +1614,9 @@ pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *node
     // For now we're going to just copy over each pointer manually. This could be
     // much more efficient, as we could instead resize the node list.
     bool found_rest = false;
-    for (size_t index = 0; index < nodes->size; index++) {
-        pm_node_t *child = nodes->nodes[index];
+    pm_node_t *child;
 
+    PM_NODE_LIST_FOREACH(nodes, index, child) {
         if (!found_rest && (PM_NODE_TYPE_P(child, PM_SPLAT_NODE) || PM_NODE_TYPE_P(child, PM_IMPLICIT_REST_NODE))) {
             node->rest = child;
             found_rest = true;
@@ -3728,8 +3731,8 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
-    for (size_t index = 0; index < elements->size; index++) {
-        pm_node_t *element = elements->nodes[index];
+    pm_node_t *element;
+    PM_NODE_LIST_FOREACH(elements, index, element) {
         pm_node_list_append(&node->elements, element);
     }
 
@@ -4487,8 +4490,9 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
     };
 
     if (parts != NULL) {
-        for (size_t index = 0; index < parts->size; index++) {
-            pm_interpolated_string_node_append(parser, node, parts->nodes[index]);
+        pm_node_t *part;
+        PM_NODE_LIST_FOREACH(parts, index, part) {
+            pm_interpolated_string_node_append(parser, node, part);
         }
     }
 
@@ -4550,8 +4554,9 @@ pm_interpolated_symbol_node_create(pm_parser_t *parser, const pm_token_t *openin
     };
 
     if (parts != NULL) {
-        for (size_t index = 0; index < parts->size; index++) {
-            pm_interpolated_symbol_node_append(node, parts->nodes[index]);
+        pm_node_t *part;
+        PM_NODE_LIST_FOREACH(parts, index, part) {
+            pm_interpolated_symbol_node_append(node, part);
         }
     }
 
@@ -14600,9 +14605,8 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_w
     // the whitespace from a node, then we'll drop it from the list entirely.
     size_t write_index = 0;
 
-    for (size_t read_index = 0; read_index < nodes->size; read_index++) {
-        pm_node_t *node = nodes->nodes[read_index];
-
+    pm_node_t *node;
+    PM_NODE_LIST_FOREACH(nodes, read_index, node) {
         // We're not manipulating child nodes that aren't strings. In this case
         // we'll skip past it and indicate that the subsequent node should not
         // be dedented.
@@ -16801,8 +16805,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (!match2(parser, PM_TOKEN_KEYWORD_WHILE_MODIFIER, PM_TOKEN_KEYWORD_UNTIL_MODIFIER)) {
                 // If we didn't find a while or until modifier, then we need to
                 // go back in and mark all of the block exits as invalid.
-                for (size_t block_exit_index = 0; block_exit_index < current_block_exits.size; block_exit_index++) {
-                    pm_node_t *block_exit = current_block_exits.nodes[block_exit_index];
+                pm_node_t *block_exit;
+                PM_NODE_LIST_FOREACH(&current_block_exits, block_exit_index, block_exit) {
                     const char *type;
 
                     switch (PM_NODE_TYPE(block_exit)) {
@@ -18981,9 +18985,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 bool interpolated = false;
                 size_t total_length = 0;
 
-                for (size_t index = 0; index < parts->size; index++) {
-                    pm_node_t *part = parts->nodes[index];
-
+                pm_node_t *part;
+                PM_NODE_LIST_FOREACH(parts, index, part) {
                     if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
                         total_length += pm_string_length(&((pm_string_node_t *) part)->unescaped);
                     } else {
@@ -18997,8 +19000,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     if (!memory) abort();
 
                     uint8_t *cursor = memory;
-                    for (size_t index = 0; index < parts->size; index++) {
-                        pm_string_t *unescaped = &((pm_string_node_t *) parts->nodes[index])->unescaped;
+                    PM_NODE_LIST_FOREACH(parts, index, part) {
+                        pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
                         size_t length = pm_string_length(unescaped);
 
                         memcpy(cursor, pm_string_source(unescaped), length);
