@@ -20105,10 +20105,16 @@ pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, 
         while (column < error->column_end) {
             if (column < error->column_start) {
                 pm_buffer_append_byte(buffer, ' ');
-            } else if (colorize) {
-                pm_buffer_append_string(buffer, PM_COLOR_RED "^" PM_COLOR_RESET, 11);
             } else {
-                pm_buffer_append_byte(buffer, '^');
+                const uint8_t caret = column == error->column_start ? '^' : '~';
+
+                if (colorize) {
+                    pm_buffer_append_string(buffer, PM_COLOR_RED, 7);
+                    pm_buffer_append_byte(buffer, caret);
+                    pm_buffer_append_string(buffer, PM_COLOR_RESET, 3);
+                } else {
+                    pm_buffer_append_byte(buffer, caret);
+                }
             }
 
             size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
