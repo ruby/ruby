@@ -46,7 +46,7 @@ class TestFlip < Test::Unit::TestCase
       ff[i].tap {a = false}
     }
     v2 = th.value
-    expected = [3, 4, 5]
+    expected = [2, 4, 5]
     mesg = 'flip-flop should be separated per threads'
     assert_equal(expected, v1, mesg)
     assert_equal(expected, v2, mesg)

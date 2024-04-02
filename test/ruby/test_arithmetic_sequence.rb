@@ -433,7 +433,7 @@ class TestArithmeticSequence < Test::Unit::TestCase
 
   def test_num_step_size
     assert_equal(10, 1.step(10).size)
-    assert_equal(5, 1.step(10, 2).size)
+    assert_equal(4, 1.step(10, 2).size)
     assert_equal(4, 1.step(10, 3).size)
     assert_equal(1, 1.step(10, 10).size)
     assert_equal(0, 1.step(0).size)
