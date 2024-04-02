@@ -257,6 +257,7 @@ module Prism
         ["unexpected ',', expecting end-of-input", 6..7],
         ["unexpected ',', ignoring it", 6..7],
         ["expected a matching `)`", 6..6],
+        ["Invalid next", 0..4],
         ["unexpected ')', expecting end-of-input", 12..13],
         ["unexpected ')', ignoring it", 12..13]
       ]
@@ -264,7 +265,8 @@ module Prism
 
     def test_next_1
       assert_errors expression("next 1,;"), "next 1,;", [
-        ["expected an argument", 6..7]
+        ["expected an argument", 6..7],
+        ["Invalid next", 0..4]
       ]
     end
 
@@ -273,6 +275,7 @@ module Prism
         ["unexpected ',', expecting end-of-input", 7..8],
         ["unexpected ',', ignoring it", 7..8],
         ["expected a matching `)`", 7..7],
+        ["Invalid break", 0..5],
         ["unexpected ')', expecting end-of-input", 13..14],
         ["unexpected ')', ignoring it", 13..14]
       ]
@@ -280,7 +283,8 @@ module Prism
 
     def test_break_1
       assert_errors expression("break 1,;"), "break 1,;", [
-        ["expected an argument", 7..8]
+        ["expected an argument", 7..8],
+        ["Invalid break", 0..5]
       ]
     end
 
@@ -1570,12 +1574,16 @@ module Prism
         1 => ^(unless 1; (return) else (return) end)
       RUBY
 
-      message = 'unexpected void value expression'
+      message = "unexpected void value expression"
       assert_errors expression(source), source, [
         [message, 7..13],
+        ["Invalid break", 35..40],
         [message, 35..40],
+        ["Invalid next", 51..55],
         [message, 51..55],
+        ["Invalid redo", 66..70],
         [message, 66..70],
+        ["Invalid retry without rescue", 81..86],
         [message, 81..86],
         [message, 97..103],
         [message, 123..129],
