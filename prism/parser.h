@@ -289,6 +289,9 @@ typedef enum {
     /** a method definition's parameters */
     PM_CONTEXT_DEF_PARAMS,
 
+    /** a defined? expression */
+    PM_CONTEXT_DEFINED,
+
     /** a method definition's default parameter */
     PM_CONTEXT_DEFAULT_PARAMS,
 
@@ -715,6 +718,19 @@ struct pm_parser {
 
     /** The current parameter name id on parsing its default value. */
     pm_constant_id_t current_param_name;
+
+    /**
+     * When parsing block exits (e.g., break, next, redo), we need to validate
+     * that they are in correct contexts. For the most part we can do this by
+     * looking at our parent contexts. However, modifier while and until
+     * expressions can change that context to make block exits valid. In these
+     * cases, we need to keep track of the block exits and then validate them
+     * after the expression has been parsed.
+     *
+     * We use a pointer here because we don't want to keep a whole list attached
+     * since this will only be used in the context of begin/end expressions.
+     */
+    pm_node_list_t *current_block_exits;
 
     /** The version of prism that we should use to parse. */
     pm_options_version_t version;
