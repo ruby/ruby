@@ -27,7 +27,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-17
+  default_cc: clang-18
   append_cc: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
@@ -81,6 +81,7 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
+          - { name: clang-19,  env: { default_cc: clang-19 } }
           - { name: clang-18,  env: { default_cc: clang-18 } }
           - { name: clang-17,  env: { default_cc: clang-17 } }
           - { name: clang-16,  env: { default_cc: clang-16 } }
@@ -213,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-17' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-18' }}
       options: --user root
 
     if: >-

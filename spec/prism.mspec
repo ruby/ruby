@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 ## Language
-MSpec.register(:exclude, "The BEGIN keyword runs multiple begins in FIFO order")
 MSpec.register(:exclude, "Executing break from within a block works when passing through a super call")
 MSpec.register(:exclude, "The defined? keyword when called with a method name in a void context warns about the void context when parsing it")
 MSpec.register(:exclude, "Hash literal expands an '**{}' or '**obj' element with the last key/value pair taking precedence")
@@ -10,8 +9,6 @@ MSpec.register(:exclude, "Hash literal merges multiple nested '**obj' in Hash li
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used")
 MSpec.register(:exclude, "The next statement in a method is invalid and raises a SyntaxError")
-MSpec.register(:exclude, "Pattern matching variable pattern does not support using variable name (except _) several times")
-MSpec.register(:exclude, "Pattern matching Hash pattern raise SyntaxError when keys duplicate in pattern")
 MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation")
 MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation /o")
 MSpec.register(:exclude, "Regexps with encoding modifiers preserves EUC-JP as /e encoding through interpolation")

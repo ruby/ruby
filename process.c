@@ -1452,7 +1452,7 @@ proc_wait(int argc, VALUE *argv)
  *  or as the logical OR of both:
  *
  *  - Process::WNOHANG: Does not block if no child process is available.
- *  - Process:WUNTRACED: May return a stopped child process, even if not yet reported.
+ *  - Process::WUNTRACED: May return a stopped child process, even if not yet reported.
  *
  *  Not all flags are available on all platforms.
  *

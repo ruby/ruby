@@ -44,6 +44,23 @@ end
 # correctly compile and link the C extension to Ruby and a third-party
 # library.
 module MakeMakefile
+
+  target_rbconfig = nil
+  ARGV.delete_if do |arg|
+    opt = arg.delete_prefix("--target-rbconfig=")
+    unless opt == arg
+      target_rbconfig = opt
+    end
+  end
+  if target_rbconfig
+    # Load the RbConfig for the target platform into this module.
+    # Cross-compiling needs the same version of Ruby.
+    Kernel.load target_rbconfig, self
+  else
+    # The RbConfig for the target platform where the built extension runs.
+    RbConfig = ::RbConfig
+  end
+
   #### defer until this module become global-state free.
   # def self.extended(obj)
   #   obj.init_mkmf

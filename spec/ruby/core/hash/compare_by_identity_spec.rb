@@ -110,6 +110,10 @@ describe "Hash#compare_by_identity" do
     @idh.keys.first.should equal foo
   end
 
+  # Check `#[]=` call with a String literal.
+  # Don't use `#+` because with `#+` it's no longer a String literal.
+  #
+  # See https://bugs.ruby-lang.org/issues/12855
   it "gives different identity for string literals" do
     eval <<~RUBY
     # frozen_string_literal: false

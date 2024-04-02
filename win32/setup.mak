@@ -66,6 +66,7 @@ RJIT_SUPPORT = $(RJIT_SUPPORT)
 # TOOLS
 <<
 !if defined(BASERUBY)
+	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
 	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
 !endif
 !if "$(RUBY_DEVEL)" == "yes"

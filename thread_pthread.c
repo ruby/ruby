@@ -305,7 +305,7 @@ event_name(rb_event_flag_t event)
 
 static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
-#if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
+#if defined(SIGVTALRM) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
 

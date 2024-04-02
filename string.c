@@ -1148,6 +1148,7 @@ str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
         rb_str_resize(newstr, olen);
     }
     DATA_PTR(econv_wrapper) = 0;
+    RB_GC_GUARD(econv_wrapper);
     rb_econv_close(ec);
     switch (ret) {
       case econv_finished:

@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <locale.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>

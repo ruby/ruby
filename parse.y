@@ -19,8 +19,6 @@
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
 #define YYSTACK_USE_ALLOCA 0
-#define YYLTYPE rb_code_location_t
-#define YYLTYPE_IS_DECLARED 1
 
 /* For Ripper */
 #ifdef RUBY_EXTCONF_H
@@ -51,7 +49,6 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
-#include "internal/imemo.h"
 #include "internal/io.h"
 #include "internal/numeric.h"
 #include "internal/parse.h"
@@ -72,6 +69,22 @@
 #include "ruby/util.h"
 #include "ruby/ractor.h"
 #include "symbol.h"
+
+#ifndef RIPPER
+static VALUE
+syntax_error_new(void)
+{
+    return rb_class_new_instance(0, 0, rb_eSyntaxError);
+}
+#endif
+
+static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
+
+#define compile_callback rb_suppress_tracing
+VALUE rb_io_gets_internal(VALUE io);
+
+VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
+#endif /* !UNIVERSAL_PARSER */
 
 #ifndef RIPPER
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
@@ -117,15 +130,8 @@ rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
             rb_parser_string_hash_cmp(n1->string, n2->string));
 }
 
-static int
-node_integer_line_cmp(const NODE *node_i, const NODE *line)
-{
-    VALUE num = rb_node_integer_literal_val(node_i);
-
-    return !(FIXNUM_P(num) && line->nd_loc.beg_pos.lineno == FIX2INT(num));
-}
-
 static st_index_t rb_parser_str_hash(rb_parser_string_t *str);
+static st_index_t rb_char_p_hash(const char *c);
 
 static int
 literal_cmp(st_data_t val, st_data_t lit)
@@ -136,22 +142,6 @@ literal_cmp(st_data_t val, st_data_t lit)
     NODE *node_lit = RNODE(lit);
     enum node_type type_val = nd_type(node_val);
     enum node_type type_lit = nd_type(node_lit);
-
-    /* Special case for Integer and __LINE__ */
-    if (type_val == NODE_INTEGER && type_lit == NODE_LINE) {
-        return node_integer_line_cmp(node_val, node_lit);
-    }
-    if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
-        return node_integer_line_cmp(node_lit, node_val);
-    }
-
-    /* Special case for String and __FILE__ */
-    if (type_val == NODE_STR && type_lit == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
-    }
-    if (type_lit == NODE_STR && type_val == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
-    }
 
     if (type_val != type_lit) {
         return -1;
@@ -179,7 +169,11 @@ literal_cmp(st_data_t val, st_data_t lit)
       case NODE_ENCODING:
         return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
       default:
+#ifdef UNIVERSAL_PARSER
+        abort();
+#else
         rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
+#endif
     }
 }
 
@@ -187,23 +181,17 @@ static st_index_t
 literal_hash(st_data_t a)
 {
     NODE *node = (NODE *)a;
-    VALUE val;
     enum node_type type = nd_type(node);
 
     switch (type) {
       case NODE_INTEGER:
-        val = rb_node_integer_literal_val(node);
-        if (!FIXNUM_P(val)) val = rb_big_hash(val);
-        return FIX2LONG(val);
+        return rb_char_p_hash(RNODE_INTEGER(node)->val);
       case NODE_FLOAT:
-        val = rb_node_float_literal_val(node);
-        return rb_dbl_long_hash(RFLOAT_VALUE(val));
+        return rb_char_p_hash(RNODE_FLOAT(node)->val);
       case NODE_RATIONAL:
-        val = rb_node_rational_literal_val(node);
-        return rb_rational_hash(val);
+        return rb_char_p_hash(RNODE_RATIONAL(node)->val);
       case NODE_IMAGINARY:
-        val = rb_node_imaginary_literal_val(node);
-        return rb_complex_hash(val);
+        return rb_char_p_hash(RNODE_IMAGINARY(node)->val);
       case NODE_STR:
         return rb_parser_str_hash(RNODE_STR(node)->string);
       case NODE_SYM:
@@ -211,32 +199,20 @@ literal_hash(st_data_t a)
       case NODE_REGX:
         return rb_parser_str_hash(RNODE_REGX(node)->string);
       case NODE_LINE:
-        /* Same with NODE_INTEGER FIXNUM case */
         return (st_index_t)node->nd_loc.beg_pos.lineno;
       case NODE_FILE:
-        /* Same with NODE_STR */
         return rb_parser_str_hash(RNODE_FILE(node)->path);
       case NODE_ENCODING:
         return (st_index_t)RNODE_ENCODING(node)->enc;
       default:
+#ifdef UNIVERSAL_PARSER
+        abort();
+#else
         rb_bug("unexpected node: %s", ruby_node_name(type));
+#endif
     }
 }
-
-static VALUE
-syntax_error_new(void)
-{
-    return rb_class_new_instance(0, 0, rb_eSyntaxError);
-}
-#endif
-
-static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
-
-#define compile_callback rb_suppress_tracing
-VALUE rb_io_gets_internal(VALUE io);
-
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
-#endif /* !UNIVERSAL_PARSER */
+#endif /* !RIPPER */
 
 static inline int
 parse_isascii(int c)
@@ -377,10 +353,6 @@ RBIMPL_WARNING_POP()
 
 #define yydebug (p->debug)	/* disable the global variable definition */
 
-#define YYMALLOC(size)		rb_parser_malloc(p, (size))
-#define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
-#define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
-#define YYFREE(ptr)		rb_parser_free(p, (ptr))
 #define YYFPRINTF(out, ...)	rb_parser_printf(p, __VA_ARGS__)
 #define YY_LOCATION_PRINT(File, loc, p) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
@@ -522,8 +494,6 @@ typedef struct parser_string_buffer {
                      token
 */
 struct parser_params {
-    rb_imemo_tmpbuf_t *heap;
-
     YYSTYPE *lval;
     YYLTYPE *yylloc;
 
@@ -567,7 +537,7 @@ struct parser_params {
     VALUE ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
-    VALUE case_labels;
+    st_table *case_labels;
     rb_node_exits_t *exits;
 
     VALUE debug_buffer;
@@ -1532,8 +1502,6 @@ int reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 static int literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_string_t *tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
-static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
-
 #ifdef RIPPER
 static VALUE var_field(struct parser_params *p, VALUE a);
 #define get_value(idx) (rb_ary_entry(p->s_value_stack, idx))
@@ -1614,6 +1582,9 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define RE_OPTION_ENCODING_NONE(o) ((o)&RE_OPTION_ARG_ENCODING_NONE)
 #define RE_OPTION_MASK  0xff
 #define RE_OPTION_ARG_ENCODING_NONE 32
+
+#define CHECK_LITERAL_WHEN (st_table *)1
+#define CASE_LABELS_ENABLED_P(case_labels) (case_labels && case_labels != CHECK_LITERAL_WHEN)
 
 #define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(p, yyres, yystr)
 size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
@@ -2079,7 +2050,6 @@ get_nd_args(struct parser_params *p, NODE *node)
 }
 
 #ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
 static st_index_t
 djb2(const uint8_t *str, size_t len)
 {
@@ -2097,7 +2067,6 @@ parser_memhash(const void *ptr, long len)
 {
     return djb2(ptr, len);
 }
-#endif
 #endif
 
 #define PARSER_STRING_PTR(str) (str->ptr)
@@ -2163,13 +2132,17 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 }
 
 #ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)
 {
     return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
 }
-#endif
+
+static st_index_t
+rb_char_p_hash(const char *c)
+{
+    return parser_memhash((const void *)c, strlen(c));
+}
 #endif
 
 static size_t
@@ -2567,7 +2540,6 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
 }
 
 #ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
 # define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len,                            \
@@ -2587,7 +2559,6 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
             enc1 != enc2 ||
             memcmp(ptr1, ptr2, len1) != 0);
 }
-#endif
 
 static void
 rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
@@ -2694,6 +2665,10 @@ rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
     rb_parser_printf(p, "$%c", (int)RNODE_BACK_REF($$)->nd_nth);
 } tBACK_REF
 
+%destructor {
+    if (CASE_LABELS_ENABLED_P($$)) st_free_table($$);
+} <labels>
+
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
@@ -2707,7 +2682,6 @@ rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
 %after-pop-stack after_pop_stack
 
 %union {
-    VALUE val;
     NODE *node;
     rb_node_fcall_t *node_fcall;
     rb_node_args_t *node_args;
@@ -2721,6 +2695,7 @@ rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
     ID id;
     int num;
     st_table *tbl;
+    st_table *labels;
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
     struct lex_context ctxt;
@@ -4536,28 +4511,28 @@ primary		: literal
                     }
                 | k_case expr_value terms?
                     {
-                        $<val>$ = p->case_labels;
-                        p->case_labels = Qnil;
-                    }
+                        $$ = p->case_labels;
+                        p->case_labels = CHECK_LITERAL_WHEN;
+                    }<labels>
                   case_body
                   k_end
                     {
-                        if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
-                        p->case_labels = $<val>4;
+                        if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
+                        p->case_labels = $<labels>4;
                         $$ = NEW_CASE($2, $5, &@$);
                         fixpos($$, $2);
                     /*% ripper: case!($:2, $:5) %*/
                     }
                 | k_case terms?
                     {
-                        $<val>$ = p->case_labels;
+                        $$ = p->case_labels;
                         p->case_labels = 0;
-                    }
+                    }<labels>
                   case_body
                   k_end
                     {
-                        if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
-                        p->case_labels = $<val>3;
+                        if (p->case_labels) st_free_table(p->case_labels);
+                        p->case_labels = $<labels>3;
                         $$ = NEW_CASE2($4, &@$);
                     /*% ripper: case!(Qnil, $:4) %*/
                     }
@@ -5415,7 +5390,7 @@ do_body 	:   {
 
 case_args	: arg_value
                     {
-                        check_literal_when(p, $1, &@1);
+                        rb_parser_check_literal_when(p, $1, &@1);
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
@@ -5426,7 +5401,7 @@ case_args	: arg_value
                     }
                 | case_args ',' arg_value
                     {
-                        check_literal_when(p, $3, &@3);
+                        rb_parser_check_literal_when(p, $3, &@3);
                         $$ = last_arg_append(p, $1, $3, &@$);
                     /*% ripper: args_add!($:1, $:3) %*/
                     }
@@ -7923,7 +7898,7 @@ parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *
 static int
 strterm_is_heredoc(rb_strterm_t *strterm)
 {
-    return strterm->flags & STRTERM_HEREDOC;
+    return strterm->heredoc;
 }
 
 static rb_strterm_t *
@@ -7940,7 +7915,7 @@ static rb_strterm_t *
 new_heredoc(struct parser_params *p)
 {
     rb_strterm_t *strterm = ZALLOC(rb_strterm_t);
-    strterm->flags |= STRTERM_HEREDOC;
+    strterm->heredoc = true;
     return strterm;
 }
 
@@ -11568,7 +11543,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
     enum yytokentype t;
 
     p->lval = lval;
-    lval->val = Qundef;
+    lval->node = 0;
     p->yylloc = yylloc;
 
     t = parser_yylex(p);
@@ -13487,36 +13462,35 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 }
 
 #ifndef RIPPER
-VALUE
-rb_parser_node_case_when_optimizable_literal(struct parser_params *p, const NODE *const node)
-{
-    return rb_node_case_when_optimizable_literal(node);
-}
-#endif
+static const
+struct st_hash_type literal_type = {
+    literal_cmp,
+    literal_hash,
+};
 
-static void
-check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
-{
-    VALUE lit;
+static int nd_type_st_key_enable_p(NODE *node);
 
+void
+rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
+{
+    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     if (!arg || !p->case_labels) return;
+    if (!nd_type_st_key_enable_p(arg)) return;
 
-    lit = rb_parser_node_case_when_optimizable_literal(p, arg);
-    if (UNDEF_P(lit)) return;
-
-    if (NIL_P(p->case_labels)) {
-        p->case_labels = rb_obj_hide(rb_hash_new());
+    if (p->case_labels == CHECK_LITERAL_WHEN) {
+        p->case_labels = st_init_table(&literal_type);
     }
     else {
-        VALUE line = rb_hash_lookup(p->case_labels, lit);
-        if (!NIL_P(line)) {
+        st_data_t line;
+        if (st_lookup(p->case_labels, (st_data_t)arg, &line)) {
             rb_warning1("duplicated 'when' clause with line %d is ignored",
-                        WARN_IVAL(line));
+                        WARN_IVAL(INT2NUM((int)line)));
             return;
         }
     }
-    rb_hash_aset(p->case_labels, lit, INT2NUM(p->ruby_sourceline));
+    st_insert(p->case_labels, (st_data_t)arg, (st_data_t)p->ruby_sourceline);
 }
+#endif
 
 #ifdef RIPPER
 static int
@@ -15229,14 +15203,7 @@ nd_value(struct parser_params *p, NODE *node)
 void
 rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
-#ifndef UNIVERSAL_PARSER
-    static const
-#endif
-    struct st_hash_type literal_type = {
-        literal_cmp,
-        literal_hash,
-    };
-
+    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     st_table *literal_keys = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
     while (hash && RNODE_LIST(hash)->nd_next) {
         NODE *head = RNODE_LIST(hash)->nd_head;
@@ -16159,7 +16126,6 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->lex.input);
     rb_gc_mark(p->ruby_sourcefile_string);
     rb_gc_mark((VALUE)p->ast);
-    rb_gc_mark(p->case_labels);
     rb_gc_mark(p->delayed.token);
 #ifndef RIPPER
     rb_gc_mark(p->debug_lines);
@@ -16174,9 +16140,6 @@ rb_ruby_parser_mark(void *ptr)
 #endif
     rb_gc_mark(p->debug_buffer);
     rb_gc_mark(p->debug_output);
-#ifdef YYMALLOC
-    rb_gc_mark((VALUE)p->heap);
-#endif
 }
 
 void
@@ -16211,6 +16174,10 @@ rb_ruby_parser_free(void *ptr)
 
     if (p->pvtbl) {
         st_free_table(p->pvtbl);
+    }
+
+    if (CASE_LABELS_ENABLED_P(p->case_labels)) {
+        st_free_table(p->case_labels);
     }
 
     xfree(ptr);
@@ -16633,69 +16600,6 @@ rb_ruby_ripper_parser_allocate(void)
 #endif /* RIPPER */
 
 #ifndef RIPPER
-#ifdef YYMALLOC
-#define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-/* Keep the order; NEWHEAP then xmalloc and ADD2HEAP to get rid of
- * potential memory leak */
-#define NEWHEAP() rb_imemo_tmpbuf_parser_heap(0, p->heap, 0)
-#define ADD2HEAP(new, cnt, ptr) ((p->heap = (new))->ptr = (ptr), \
-                           (new)->cnt = (cnt), (ptr))
-
-void *
-rb_parser_malloc(struct parser_params *p, size_t size)
-{
-    size_t cnt = HEAPCNT(1, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xmalloc(size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
-{
-    size_t cnt = HEAPCNT(nelem, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xcalloc(nelem, size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
-{
-    rb_imemo_tmpbuf_t *n;
-    size_t cnt = HEAPCNT(1, size);
-
-    if (ptr && (n = p->heap) != NULL) {
-        do {
-            if (n->ptr == ptr) {
-                n->ptr = ptr = xrealloc(ptr, size);
-                if (n->cnt) n->cnt = cnt;
-                return ptr;
-            }
-        } while ((n = n->next) != NULL);
-    }
-    n = NEWHEAP();
-    ptr = xrealloc(ptr, size);
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void
-rb_parser_free(struct parser_params *p, void *ptr)
-{
-    rb_imemo_tmpbuf_t **prev = &p->heap, *n;
-
-    while ((n = *prev) != NULL) {
-        if (n->ptr == ptr) {
-            *prev = n->next;
-            break;
-        }
-        prev = &n->next;
-    }
-}
-#endif
-
 void
 rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 {

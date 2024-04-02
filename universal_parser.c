@@ -54,18 +54,12 @@
 #define st_delete rb_parser_st_delete
 #undef st_is_member
 #define st_is_member parser_st_is_member
+#undef st_init_table
+#define st_init_table rb_parser_st_init_table
+#undef st_lookup
+#define st_lookup rb_parser_st_lookup
 
 #define rb_encoding void
-
-#ifndef INTERNAL_IMEMO_H
-struct rb_imemo_tmpbuf_struct {
-    VALUE flags;
-    VALUE reserved;
-    VALUE *ptr; /* malloc'ed buffer */
-    struct rb_imemo_tmpbuf_struct *next; /* next imemo */
-    size_t cnt; /* buffer size in VALUE */
-};
-#endif
 
 #undef xmalloc
 #define xmalloc p->config->malloc
@@ -90,8 +84,6 @@ struct rb_imemo_tmpbuf_struct {
 #define MEMMOVE(p1,p2,type,n) (p->config->rb_memmove((p1), (p2), sizeof(type), (n)))
 #undef MEMCPY
 #define MEMCPY(p1,p2,type,n) (p->config->nonempty_memcpy((p1), (p2), sizeof(type), (n)))
-
-#define rb_imemo_tmpbuf_parser_heap p->config->tmpbuf_parser_heap
 
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
@@ -211,8 +203,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
-#define rb_char_to_option_kcode p->config->char_to_option_kcode
-#define rb_ascii8bit_encindex   p->config->ascii8bit_encindex
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
 #define rb_enc_associate_index  p->config->enc_associate_index
@@ -221,8 +211,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
 #define rb_enc_compatible       p->config->enc_compatible
 #define rb_enc_from_encoding    p->config->enc_from_encoding
-#define ENCODING_GET            p->config->encoding_get
-#define ENCODING_SET            p->config->encoding_set
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
 
@@ -230,9 +218,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
-
-#define literal_cmp  p->config->literal_cmp
-#define literal_hash p->config->literal_hash
 
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise

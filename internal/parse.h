@@ -18,8 +18,6 @@
 
 struct rb_iseq_struct;          /* in vm_core.h */
 
-#define STRTERM_HEREDOC IMEMO_FL_USER0
-
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
     long nest;
@@ -40,7 +38,7 @@ typedef struct rb_strterm_heredoc_struct {
 #define HERETERM_LENGTH_MAX UINT_MAX
 
 typedef struct rb_strterm_struct {
-    VALUE flags;
+    bool heredoc;
     union {
         rb_strterm_literal_t literal;
         rb_strterm_heredoc_t heredoc;
@@ -67,6 +65,7 @@ int rb_ruby_parser_end_seen_p(rb_parser_t *p);
 int rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag);
 rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
 
+void rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc);
 void rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash);
 int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);

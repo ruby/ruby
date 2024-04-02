@@ -864,6 +864,90 @@ RSpec.describe "bundle update" do
     expect(exitstatus).to eq(22)
   end
 
+  context "with multiple sources and caching enabled" do
+    before do
+      build_repo2 do
+        build_gem "rack", "1.0.0"
+
+        build_gem "request_store", "1.0.0" do |s|
+          s.add_dependency "rack", "1.0.0"
+        end
+      end
+
+      build_repo4 do
+        # set up repo with no gems
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gem "request_store"
+
+        source "#{file_uri_for(gem_repo4)}" do
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            rack (1.0.0)
+            request_store (1.0.0)
+              rack (= 1.0.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+
+        PLATFORMS
+          #{local_platform}
+
+        DEPENDENCIES
+          request_store
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "works" do
+      bundle :install
+      bundle :cache
+
+      update_repo2 do
+        build_gem "request_store", "1.1.0" do |s|
+          s.add_dependency "rack", "1.0.0"
+        end
+      end
+
+      bundle "update request_store"
+
+      expect(out).to include("Bundle updated!")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            rack (1.0.0)
+            request_store (1.1.0)
+              rack (= 1.0.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+
+        PLATFORMS
+          #{local_platform}
+
+        DEPENDENCIES
+          request_store
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   context "with multiple, duplicated sources, with lockfile in old format", bundler: "< 3" do
     before do
       build_repo2 do

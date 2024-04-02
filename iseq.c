@@ -1430,6 +1430,44 @@ rb_iseqw_new(const rb_iseq_t *iseq)
     return iseqw_new(iseq);
 }
 
+/**
+ * Accept the options given to InstructionSequence.compile and
+ * InstructionSequence.compile_prism and share the logic for creating the
+ * instruction sequence.
+ */
+static VALUE
+iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
+{
+    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
+    int i;
+
+    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
+    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
+    switch (i) {
+      case 5: opt = argv[--i];
+      case 4: line = argv[--i];
+      case 3: path = argv[--i];
+      case 2: file = argv[--i];
+    }
+
+    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
+    if (NIL_P(path)) path = file;
+    if (NIL_P(line)) line = INT2FIX(1);
+
+    Check_Type(path, T_STRING);
+    Check_Type(file, T_STRING);
+
+    rb_iseq_t *iseq;
+    if (prism) {
+        iseq = pm_iseq_compile_with_option(src, file, path, line, opt);
+    }
+    else {
+        iseq = rb_iseq_compile_with_option(src, file, path, line, opt);
+    }
+
+    return iseqw_new(iseq);
+}
+
 /*
  *  call-seq:
  *     InstructionSequence.compile(source[, file[, path[, line[, options]]]]) -> iseq
@@ -1470,26 +1508,7 @@ rb_iseqw_new(const rb_iseq_t *iseq)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
-    int i;
-
-    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
-    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
-    switch (i) {
-      case 5: opt = argv[--i];
-      case 4: line = argv[--i];
-      case 3: path = argv[--i];
-      case 2: file = argv[--i];
-    }
-
-    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
-    if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = INT2FIX(1);
-
-    Check_Type(path, T_STRING);
-    Check_Type(file, T_STRING);
-
-    return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
+    return iseqw_s_compile_parser(argc, argv, self, *rb_ruby_prism_ptr());
 }
 
 /*
@@ -1531,26 +1550,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
-    int i;
-
-    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
-    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
-    switch (i) {
-      case 5: opt = argv[--i];
-      case 4: line = argv[--i];
-      case 3: path = argv[--i];
-      case 2: file = argv[--i];
-    }
-
-    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
-    if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = INT2FIX(1);
-
-    Check_Type(path, T_STRING);
-    Check_Type(file, T_STRING);
-
-    return iseqw_new(pm_iseq_compile_with_option(src, file, path, line, opt));
+    return iseqw_s_compile_parser(argc, argv, self, true);
 }
 
 /*

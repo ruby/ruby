@@ -93,32 +93,6 @@ dvar_defined(ID id, const void *p)
     return rb_dvar_defined(id, (const rb_iseq_t *)p);
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
-static int
-literal_cmp(VALUE val, VALUE lit)
-{
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
 static int
 is_usascii_enc(void *enc)
 {
@@ -261,18 +235,6 @@ static VALUE
 enc_from_encoding(void *enc)
 {
     return rb_enc_from_encoding((rb_encoding *)enc);
-}
-
-static int
-encoding_get(VALUE obj)
-{
-    return ENCODING_GET(obj);
-}
-
-static void
-encoding_set(VALUE obj, int encindex)
-{
-    ENCODING_SET(obj, encindex);
 }
 
 static int
@@ -425,12 +387,6 @@ gc_guard(VALUE obj)
     RB_GC_GUARD(obj);
 }
 
-static rb_imemo_tmpbuf_t *
-tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    return rb_imemo_tmpbuf_parser_heap(buf, old_heap, cnt);
-}
-
 static VALUE
 arg_error(void)
 {
@@ -500,7 +456,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
 
-    .tmpbuf_parser_heap = tmpbuf_parser_heap,
     .ast_new = ast_new,
 
     .compile_callback = rb_suppress_tracing,
@@ -603,8 +558,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
-    .char_to_option_kcode = rb_char_to_option_kcode,
-    .ascii8bit_encindex = rb_ascii8bit_encindex,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
     .enc_associate_index = rb_enc_associate_index,
@@ -613,8 +566,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
     .enc_compatible = enc_compatible,
     .enc_from_encoding = enc_from_encoding,
-    .encoding_get = encoding_get,
-    .encoding_set = encoding_set,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
     .enc_coderange_broken = ENC_CODERANGE_BROKEN,
@@ -626,9 +577,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .local_defined = local_defined,
     .dvar_defined = dvar_defined,
-
-    .literal_cmp = literal_cmp,
-    .literal_hash = literal_hash,
 
     .syntax_error_append = syntax_error_append,
     .raise = rb_raise,

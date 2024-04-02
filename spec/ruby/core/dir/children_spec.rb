@@ -131,4 +131,17 @@ describe "Dir#children" do
     children = @dir.children.sort
     children.first.encoding.should equal(Encoding::EUC_KR)
   end
+
+  it "returns the same result when called repeatedly" do
+    @dir = Dir.open DirSpecs.mock_dir
+
+    a = []
+    @dir.each {|dir| a << dir}
+
+    b = []
+    @dir.each {|dir| b << dir}
+
+    a.sort.should == b.sort
+    a.sort.should == DirSpecs.expected_paths
+  end
 end

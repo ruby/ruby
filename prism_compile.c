@@ -6808,27 +6808,38 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^
         const pm_pre_execution_node_t *cast = (const pm_pre_execution_node_t *) node;
 
-        DECL_ANCHOR(pre_ex);
-        INIT_ANCHOR(pre_ex);
+        LINK_ANCHOR *outer_pre = scope_node->pre_execution_anchor;
+        RUBY_ASSERT(outer_pre != NULL);
+
+        // BEGIN{} nodes can be nested, so here we're going to do the same thing
+        // that we did for the top-level compilation where we create two
+        // anchors and then join them in the correct order into the resulting
+        // anchor.
+        DECL_ANCHOR(inner_pre);
+        INIT_ANCHOR(inner_pre);
+        scope_node->pre_execution_anchor = inner_pre;
+
+        DECL_ANCHOR(inner_body);
+        INIT_ANCHOR(inner_body);
 
         if (cast->statements != NULL) {
             const pm_node_list_t *body = &cast->statements->body;
+
             for (size_t index = 0; index < body->size; index++) {
-                pm_compile_node(iseq, body->nodes[index], pre_ex, true, scope_node);
+                pm_compile_node(iseq, body->nodes[index], inner_body, true, scope_node);
             }
         }
 
         if (!popped) {
-            PUSH_INSN(pre_ex, location, putnil);
+            PUSH_INSN(inner_body, location, putnil);
         }
 
-        pre_ex->last->next = ret->anchor.next;
-        ret->anchor.next = pre_ex->anchor.next;
-        ret->anchor.next->prev = pre_ex->anchor.next;
-
-        if (ret->last == (LINK_ELEMENT *)ret) {
-            ret->last = pre_ex->last;
-        }
+        // Now that everything has been compiled, join both anchors together
+        // into the correct outer pre execution anchor, and reset the value so
+        // that subsequent BEGIN{} nodes can be compiled correctly.
+        ADD_SEQ(outer_pre, inner_pre);
+        ADD_SEQ(outer_pre, inner_body);
+        scope_node->pre_execution_anchor = outer_pre;
 
         return;
       }
@@ -8342,6 +8353,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     }
 }
 
+/** True if the given iseq can have pre execution blocks. */
+static inline bool
+pm_iseq_pre_execution_p(rb_iseq_t *iseq)
+{
+    switch (ISEQ_BODY(iseq)->type) {
+      case ISEQ_TYPE_TOP:
+      case ISEQ_TYPE_EVAL:
+      case ISEQ_TYPE_MAIN:
+        return true;
+      default:
+        return false;
+    }
+}
+
 /**
  * This is the main entry-point into the prism compiler. It accepts the iseq
  * that it should be compiling instruction into and a pointer to the scope node
@@ -8355,7 +8380,32 @@ pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node)
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
-    pm_compile_node(iseq, (const pm_node_t *) node, ret, false, node);
+    if (pm_iseq_pre_execution_p(iseq)) {
+        // Because these ISEQs can have BEGIN{}, we're going to create two
+        // anchors to compile them, a "pre" and a "body". We'll mark the "pre"
+        // on the scope node so that when BEGIN{} is found, its contents will be
+        // added to the "pre" anchor.
+        DECL_ANCHOR(pre);
+        INIT_ANCHOR(pre);
+        node->pre_execution_anchor = pre;
+
+        // Now we'll compile the body as normal. We won't compile directly into
+        // the "ret" anchor yet because we want to add the "pre" anchor to the
+        // beginning of the "ret" anchor first.
+        DECL_ANCHOR(body);
+        INIT_ANCHOR(body);
+        pm_compile_node(iseq, (const pm_node_t *) node, body, false, node);
+
+        // Now we'll join both anchors together so that the content is in the
+        // correct order.
+        ADD_SEQ(ret, pre);
+        ADD_SEQ(ret, body);
+    }
+    else {
+        // In other circumstances, we can just compile the node directly into
+        // the "ret" anchor.
+        pm_compile_node(iseq, (const pm_node_t *) node, ret, false, node);
+    }
 
     CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);

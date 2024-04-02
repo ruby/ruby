@@ -135,7 +135,7 @@ describe "Kernel#eval" do
   it "includes file and line information in syntax error" do
     expected = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected)
+      eval('if true', TOPLEVEL_BINDING, expected)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected}:1:.+/
     }
@@ -144,7 +144,7 @@ describe "Kernel#eval" do
   it "evaluates string with given filename and negative linenumber" do
     expected_file = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected_file, -100)
+      eval('if true', TOPLEVEL_BINDING, expected_file, -100)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected_file}:-100:.+/
     }

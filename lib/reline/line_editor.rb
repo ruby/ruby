@@ -41,15 +41,36 @@ class Reline::LineEditor
     NORMAL = :normal
     COMPLETION = :completion
     MENU = :menu
-    JOURNEY = :journey
     MENU_WITH_PERFECT_MATCH = :menu_with_perfect_match
     PERFECT_MATCH = :perfect_match
   end
 
   RenderedScreen = Struct.new(:base_y, :lines, :cursor_y, keyword_init: true)
 
-  CompletionJourneyData = Struct.new(:preposing, :postposing, :list, :pointer)
-  MenuInfo = Struct.new(:target, :list)
+  CompletionJourneyState = Struct.new(:line_index, :pre, :target, :post, :list, :pointer)
+
+  class MenuInfo
+    attr_reader :list
+
+    def initialize(list)
+      @list = list
+    end
+
+    def lines(screen_width)
+      return [] if @list.empty?
+
+      list = @list.sort
+      sizes = list.map { |item| Reline::Unicode.calculate_width(item) }
+      item_width = sizes.max + 2
+      num_cols = [screen_width / item_width, 1].max
+      num_rows = list.size.fdiv(num_cols).ceil
+      list_with_padding = list.zip(sizes).map { |item, size| item + ' ' * (item_width - size) }
+      aligned = (list_with_padding + [nil] * (num_rows * num_cols - list_with_padding.size)).each_slice(num_rows).to_a.transpose
+      aligned.map do |row|
+        row.join.rstrip
+      end
+    end
+  end
 
   MINIMUM_SCROLLBAR_HEIGHT = 1
 
@@ -199,7 +220,7 @@ class Reline::LineEditor
     @waiting_proc = nil
     @waiting_operator_proc = nil
     @waiting_operator_vi_arg = nil
-    @completion_journey_data = nil
+    @completion_journey_state = nil
     @completion_state = CompletionState::NORMAL
     @perfect_matched = nil
     @menu_info = nil
@@ -458,7 +479,7 @@ class Reline::LineEditor
       [[0, Reline::Unicode.calculate_width(l, true), l]]
     end
     if @menu_info
-      @menu_info.list.sort!.each do |item|
+      @menu_info.lines(screen_width).each do |item|
         new_lines << [[0, Reline::Unicode.calculate_width(item), item]]
       end
       @menu_info = nil # TODO: do not change state here
@@ -537,6 +558,8 @@ class Reline::LineEditor
   end
 
   class DialogProcScope
+    CompletionJourneyData = Struct.new(:preposing, :postposing, :list, :pointer)
+
     def initialize(line_editor, config, proc_to_exec, context)
       @line_editor = line_editor
       @config = config
@@ -600,7 +623,7 @@ class Reline::LineEditor
     end
 
     def completion_journey_data
-      @line_editor.instance_variable_get(:@completion_journey_data)
+      @line_editor.dialog_proc_scope_completion_journey_data
     end
 
     def config
@@ -779,8 +802,8 @@ class Reline::LineEditor
     @config.editing_mode
   end
 
-  private def menu(target, list)
-    @menu_info = MenuInfo.new(target, list)
+  private def menu(_target, list)
+    @menu_info = MenuInfo.new(list)
   end
 
   private def complete_internal_proc(list, is_menu)
@@ -829,9 +852,9 @@ class Reline::LineEditor
     [target, preposing, completed, postposing]
   end
 
-  private def complete(list, just_show_list = false)
+  private def complete(list, just_show_list)
     case @completion_state
-    when CompletionState::NORMAL, CompletionState::JOURNEY
+    when CompletionState::NORMAL
       @completion_state = CompletionState::COMPLETION
     when CompletionState::PERFECT_MATCH
       @dig_perfect_match_proc&.(@perfect_matched)
@@ -871,46 +894,44 @@ class Reline::LineEditor
     end
   end
 
-  private def move_completed_list(list, direction)
-    case @completion_state
-    when CompletionState::NORMAL, CompletionState::COMPLETION,
-         CompletionState::MENU, CompletionState::MENU_WITH_PERFECT_MATCH
-      @completion_state = CompletionState::JOURNEY
-      result = retrieve_completion_block
-      return if result.nil?
-      preposing, target, postposing = result
-      @completion_journey_data = CompletionJourneyData.new(
-        preposing, postposing,
-        [target] + list.select{ |item| item.start_with?(target) }, 0)
-      if @completion_journey_data.list.size == 1
-        @completion_journey_data.pointer = 0
-      else
-        case direction
-        when :up
-          @completion_journey_data.pointer = @completion_journey_data.list.size - 1
-        when :down
-          @completion_journey_data.pointer = 1
-        end
-      end
-      @completion_state = CompletionState::JOURNEY
-    else
-      case direction
-      when :up
-        @completion_journey_data.pointer -= 1
-        if @completion_journey_data.pointer < 0
-          @completion_journey_data.pointer = @completion_journey_data.list.size - 1
-        end
-      when :down
-        @completion_journey_data.pointer += 1
-        if @completion_journey_data.pointer >= @completion_journey_data.list.size
-          @completion_journey_data.pointer = 0
-        end
-      end
+  def dialog_proc_scope_completion_journey_data
+    return nil unless @completion_journey_state
+    line_index = @completion_journey_state.line_index
+    pre_lines = @buffer_of_lines[0...line_index].map { |line| line + "\n" }
+    post_lines = @buffer_of_lines[(line_index + 1)..-1].map { |line| line + "\n" }
+    DialogProcScope::CompletionJourneyData.new(
+      pre_lines.join + @completion_journey_state.pre,
+      @completion_journey_state.post + post_lines.join,
+      @completion_journey_state.list,
+      @completion_journey_state.pointer
+    )
+  end
+
+  private def move_completed_list(direction)
+    @completion_journey_state ||= retrieve_completion_journey_state
+    return false unless @completion_journey_state
+
+    if (delta = { up: -1, down: +1 }[direction])
+      @completion_journey_state.pointer = (@completion_journey_state.pointer + delta) % @completion_journey_state.list.size
     end
-    completed = @completion_journey_data.list[@completion_journey_data.pointer]
-    line_to_pointer = (@completion_journey_data.preposing + completed).split("\n")[@line_index] || String.new(encoding: @encoding)
-    new_line = line_to_pointer + (@completion_journey_data.postposing.split("\n").first || '')
-    set_current_line(new_line, line_to_pointer.bytesize)
+    completed = @completion_journey_state.list[@completion_journey_state.pointer]
+    set_current_line(@completion_journey_state.pre + completed + @completion_journey_state.post, @completion_journey_state.pre.bytesize + completed.bytesize)
+    true
+  end
+
+  private def retrieve_completion_journey_state
+    preposing, target, postposing = retrieve_completion_block
+    list = call_completion_proc
+    return unless list.is_a?(Array)
+
+    candidates = list.select{ |item| item.start_with?(target) }
+    return if candidates.empty?
+
+    pre = preposing.split("\n", -1).last || ''
+    post = postposing.split("\n", -1).first || ''
+    CompletionJourneyState.new(
+      @line_index, pre, target, post, [target] + candidates, 0
+    )
   end
 
   private def run_for_operators(key, method_symbol, &block)
@@ -1099,50 +1120,56 @@ class Reline::LineEditor
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
-      unless @config.disable_completion
-        result = call_completion_proc
-        if result.is_a?(Array)
-          completion_occurs = true
-          process_insert
-          if @config.autocompletion
-            move_completed_list(result, :down)
-          else
-            complete(result)
+      if !@config.disable_completion
+        process_insert(force: true)
+        if @config.autocompletion
+          @completion_state = CompletionState::NORMAL
+          completion_occurs = move_completed_list(:down)
+        else
+          @completion_journey_state = nil
+          result = call_completion_proc
+          if result.is_a?(Array)
+            completion_occurs = true
+            complete(result, false)
           end
         end
       end
     elsif @config.editing_mode_is?(:emacs, :vi_insert) and key.char == :completion_journey_up
       if not @config.disable_completion and @config.autocompletion
-        result = call_completion_proc
-        if result.is_a?(Array)
-          completion_occurs = true
-          process_insert
-          move_completed_list(result, :up)
-        end
+        process_insert(force: true)
+        @completion_state = CompletionState::NORMAL
+        completion_occurs = move_completed_list(:up)
       end
-    elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
-      unless @config.disable_completion
-        result = call_completion_proc
-        if result.is_a?(Array)
-          completion_occurs = true
-          process_insert
-          move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
-        end
+    elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
+      # In vi mode, move completed list even if autocompletion is off
+      if not @config.disable_completion
+        process_insert(force: true)
+        @completion_state = CompletionState::NORMAL
+        completion_occurs = move_completed_list("\C-p".ord == key.char ? :up : :down)
       end
     elsif Symbol === key.char and respond_to?(key.char, true)
       process_key(key.char, key.char)
     else
       normal_char(key)
     end
+
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
-      @completion_journey_data = nil
+      @completion_journey_state = nil
     end
+
     if @in_pasting
       clear_dialogs
-    else
-      return old_lines != @buffer_of_lines
+      return
     end
+
+    modified = old_lines != @buffer_of_lines
+    if !completion_occurs && modified && !@config.disable_completion && @config.autocompletion
+      # Auto complete starts only when edited
+      process_insert(force: true)
+      @completion_journey_state = retrieve_completion_journey_state
+    end
+    modified
   end
 
   def scroll_into_view
@@ -2020,7 +2047,7 @@ class Reline::LineEditor
   private def em_delete_or_list(key)
     if current_line.empty? or @byte_pointer < current_line.bytesize
       em_delete(key)
-    else # show completed list
+    elsif !@config.autocompletion # show completed list
       result = call_completion_proc
       if result.is_a?(Array)
         complete(result, true)

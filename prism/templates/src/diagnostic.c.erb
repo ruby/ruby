@@ -86,12 +86,13 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 
     // Errors that should raise syntax errors
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE]  = { "invalid argument being passed to `alias`; can't make alias for the number variables", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = { "unexpected `&&=` in a multiple assignment", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_AFTER_BLOCK]               = { "unexpected argument after a block argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES] = { "unexpected argument after `...`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_BARE_HASH]                 = { "unexpected bare hash argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_BLOCK_FORWARDING]          = { "both a block argument and a forwarding argument; only one block is allowed", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_ARGUMENT_BLOCK_MULTI]               = { "multiple block arguments; only one block is allowed", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ARGUMENT_BLOCK_MULTI]               = { "both block arg and actual block given; only one block is allowed", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_FORMAL_CLASS]              = { "invalid formal argument; formal argument cannot be a class variable", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_FORMAL_CONSTANT]           = { "invalid formal argument; formal argument cannot be a constant", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_FORMAL_GLOBAL]             = { "invalid formal argument; formal argument cannot be a global variable", PM_ERROR_LEVEL_SYNTAX },
@@ -126,11 +127,12 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_CASE_MATCH_MISSING_PREDICATE]       = { "expected a predicate for a case matching statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CASE_MISSING_CONDITIONS]            = { "expected a `when` or `in` clause after `case`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CASE_TERM]                          = { "expected an `end` to close the `case` statement", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_CLASS_IN_METHOD]                    = { "unexpected class definition in a method definition", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_CLASS_NAME]                         = { "expected a constant name after `class`", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_CLASS_IN_METHOD]                    = { "unexpected class definition in method body", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_CLASS_NAME]                         = { "unexpected constant path after `class`; class/module name must be CONSTANT", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CLASS_SUPERCLASS]                   = { "expected a superclass after `<`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CLASS_TERM]                         = { "expected an `end` to close the `class` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CLASS_UNEXPECTED_END]               = { "unexpected `end`, expecting ';' or '\\n'", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_CLASS_VARIABLE_BARE]                = { "'@@' without identifiers is not allowed as a class variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_ELSIF_PREDICATE]        = { "expected a predicate expression for the `elsif` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_IF_PREDICATE]           = { "expected a predicate expression for the `if` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONDITIONAL_PREDICATE_TERM]         = { "expected `then` or `;` or '\\n'", PM_ERROR_LEVEL_SYNTAX },
@@ -191,6 +193,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_FOR_INDEX]                          = { "expected an index after `for`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_FOR_IN]                             = { "expected an `in` after the index in a `for` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_FOR_TERM]                           = { "expected an `end` to close the `for` loop", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_GLOBAL_VARIABLE_BARE]               = { "'$' without identifiers is not allowed as a global variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_EXPRESSION_AFTER_LABEL]        = { "expected an expression after the label in a hash", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_KEY]                           = { "unexpected %s, expecting '}' or a key in the hash literal", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_ROCKET]                        = { "expected a `=>` between the hash key and value", PM_ERROR_LEVEL_SYNTAX },
@@ -202,6 +205,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "'%.*s' is not allowed as a class variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0] = { "`%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "'%.*s' is not allowed as an instance variable name", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_INSTANCE_VARIABLE_BARE]             = { "'@' without identifiers is not allowed as an instance variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_NUMBER_DECIMAL]             = { "invalid decimal number", PM_ERROR_LEVEL_SYNTAX },
@@ -231,8 +235,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_LIST_W_UPPER_TERM]                  = { "expected a closing delimiter for the `%W` list", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_MALLOC_FAILED]                      = { "failed to allocate memory", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_MIXED_ENCODING]                     = { "UTF-8 mixed within %s source", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_MODULE_IN_METHOD]                   = { "unexpected module definition in a method definition", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_MODULE_NAME]                        = { "expected a constant name after `module`", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_MODULE_IN_METHOD]                   = { "unexpected module definition in method body", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_MODULE_NAME]                        = { "unexpected constant path after `module`; class/module name must be CONSTANT", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_MODULE_TERM]                        = { "expected an `end` to close the `module` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_MULTI_ASSIGN_MULTI_SPLATS]          = { "multiple splats in multiple assignment", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_MULTI_ASSIGN_UNEXPECTED_REST]       = { "unexpected '%.*s' resulting in multiple splats in multiple assignment", PM_ERROR_LEVEL_SYNTAX },
@@ -249,7 +253,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PARAMETER_BLOCK_MULTI]              = { "multiple block parameters; only one block is allowed", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_CIRCULAR]                 = { "parameter default value references itself", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_METHOD_NAME]              = { "unexpected name for a parameter", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_PARAMETER_NAME_REPEAT]              = { "repeated parameter name", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_PARAMETER_NAME_DUPLICATED]          = { "duplicated argument name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_NO_DEFAULT]               = { "expected a default value for the parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_NO_DEFAULT_KW]            = { "expected a default value for the keyword parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_NUMBERED_RESERVED]        = { "%.2s is reserved for numbered parameters", PM_ERROR_LEVEL_SYNTAX },
@@ -258,6 +262,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PARAMETER_STAR]                     = { "unexpected parameter `*`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_UNEXPECTED_FWD]           = { "unexpected `...` in parameters", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PARAMETER_WILD_LOOSE_COMMA]         = { "unexpected `,` in parameters", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_PATTERN_CAPTURE_DUPLICATE]          = { "duplicated variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET]   = { "expected a pattern expression after the `[` operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA]     = { "expected a pattern expression after `,`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_EXPRESSION_AFTER_HROCKET]   = { "expected a pattern expression after `=>`", PM_ERROR_LEVEL_SYNTAX },
@@ -269,6 +274,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PATTERN_EXPRESSION_AFTER_RANGE]     = { "expected a pattern expression after the range operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_EXPRESSION_AFTER_REST]      = { "unexpected pattern expression after the `**` expression", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY]                   = { "expected a key in the hash pattern", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_PATTERN_HASH_KEY_DUPLICATE]         = { "duplicated key name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY_LABEL]             = { "expected a label as the key in the hash pattern", PM_ERROR_LEVEL_SYNTAX }, // TODO // THIS // AND // ABOVE // IS WEIRD
     [PM_ERR_PATTERN_IDENT_AFTER_HROCKET]        = { "expected an identifier after the `=>` operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_LABEL_AFTER_COMMA]          = { "expected a label after the `,` in the hash pattern", PM_ERROR_LEVEL_SYNTAX },
@@ -383,7 +389,7 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  */
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
@@ -415,7 +421,7 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(sizeof(pm_diagnostic_t), 1);
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) {
         return false;
     }

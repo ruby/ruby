@@ -8,7 +8,7 @@
 
 minitest        5.22.3  https://github.com/minitest/minitest 287b35d60c8e19c11ba090efc6eeb225325a8520
 power_assert    2.0.3   https://github.com/ruby/power_assert 84e85124c5014a139af39161d484156cfe87a9ed
-rake            13.1.0  https://github.com/ruby/rake
+rake            13.2.0  https://github.com/ruby/rake
 test-unit       3.6.2   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
@@ -20,7 +20,7 @@ matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
 rbs             3.4.4   https://github.com/ruby/rbs ba7872795d5de04adb8ff500c0e6afdc81a041dd
 typeprof        0.21.11 https://github.com/ruby/typeprof b19a6416da3a05d57fadd6ffdadb382b6d236ca5
-debug           1.9.1   https://github.com/ruby/debug 2d602636d99114d55a32fedd652c9c704446a749
+debug           1.9.2   https://github.com/ruby/debug
 racc            1.7.3   https://github.com/ruby/racc
 mutex_m         0.2.0   https://github.com/ruby/mutex_m
 getoptlong      0.2.1   https://github.com/ruby/getoptlong

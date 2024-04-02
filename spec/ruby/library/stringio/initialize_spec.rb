@@ -172,7 +172,7 @@ end
 # NOTE: Synchronise with core/io/new_spec.rb (core/io/shared/new.rb)
 describe "StringIO#initialize when passed keyword arguments" do
   it "sets the mode based on the passed :mode option" do
-    io = StringIO.new(+"example", "r")
+    io = StringIO.new("example", "r")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
   end

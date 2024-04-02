@@ -647,7 +647,7 @@ describe :marshal_load, shared: true do
     end
 
     it "sets binmode if it is loading through StringIO stream" do
-      io = StringIO.new(+"\004\b:\vsymbol")
+      io = StringIO.new("\004\b:\vsymbol")
       def io.binmode; raise "binmode"; end
       -> { Marshal.load(io) }.should raise_error(RuntimeError, "binmode")
     end

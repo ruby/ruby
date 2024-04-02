@@ -6643,6 +6643,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
         });
         DATA_PTR(vmemo) = 0;
         st_free_table(memo);
+        RB_GC_GUARD(vmemo);
     }
     else {
         result = rb_ary_dup(ary);

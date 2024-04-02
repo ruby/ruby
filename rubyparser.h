@@ -200,6 +200,8 @@ typedef struct rb_code_location_struct {
     rb_code_position_t beg_pos;
     rb_code_position_t end_pos;
 } rb_code_location_t;
+#define YYLTYPE rb_code_location_t
+#define YYLTYPE_IS_DECLARED 1
 
 typedef struct rb_parser_ast_token {
     int id;
@@ -673,7 +675,7 @@ typedef struct RNode_LIT {
 typedef struct RNode_INTEGER {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
 } rb_node_integer_t;
@@ -681,14 +683,14 @@ typedef struct RNode_INTEGER {
 typedef struct RNode_FLOAT {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -703,7 +705,7 @@ enum rb_numeric_type {
 typedef struct RNode_IMAGINARY {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -1239,7 +1241,6 @@ typedef struct rb_parser_config_struct {
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
     /* imemo */
-    rb_imemo_tmpbuf_t *(*tmpbuf_parser_heap)(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
     rb_ast_t *(*ast_new)(VALUE nb);
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
@@ -1356,16 +1357,12 @@ typedef struct rb_parser_config_struct {
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
-    int (*char_to_option_kcode)(int c, int *option, int *kcode);
-    int (*ascii8bit_encindex)(void);
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
     VALUE (*enc_associate_index)(VALUE obj, int encindex);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
-    int (*encoding_get)(VALUE obj);
-    void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
     int enc_coderange_broken;
@@ -1381,10 +1378,6 @@ typedef struct rb_parser_config_struct {
     int (*local_defined)(ID, const void*);
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
     int (*dvar_defined)(ID, const void*);
-
-    /* Compile (parse.y) */
-    int (*literal_cmp)(VALUE val, VALUE lit);
-    parser_st_index_t (*literal_hash)(VALUE a);
 
     /* Error (Exception) */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)

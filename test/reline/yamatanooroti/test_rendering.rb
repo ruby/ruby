@@ -1108,6 +1108,19 @@ begin
       EOC
     end
 
+    def test_force_insert_before_autocomplete
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('Sy')
+      write(";St\t\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Sy;Struct
+                   String
+                   Struct
+      EOC
+    end
+
     def test_simple_dialog_with_scroll_key
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
       write('a')

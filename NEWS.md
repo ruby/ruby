@@ -54,13 +54,14 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.22.3
+* rake 13.2.0
 * test-unit 3.6.2
 * net-ftp 0.3.4
 * net-imap 0.4.10
 * net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11
-* debug 1.9.1
+* debug 1.9.2
 
 The following bundled gems are promoted from default gems.
 

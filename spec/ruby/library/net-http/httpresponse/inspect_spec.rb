@@ -8,7 +8,7 @@ describe "Net::HTTPResponse#inspect" do
     res.inspect.should == "#<Net::HTTPUnknownResponse ??? test response readbody=false>"
 
     res = Net::HTTPUnknownResponse.new("1.0", "???", "test response")
-    socket = Net::BufferedIO.new(StringIO.new(+"test body"))
+    socket = Net::BufferedIO.new(StringIO.new("test body"))
     res.reading_body(socket, true) {}
     res.inspect.should == "#<Net::HTTPUnknownResponse ??? test response readbody=true>"
   end
