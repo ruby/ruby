@@ -1,24 +1,24 @@
-next
+tap { next }
 
-next (1), (2), (3)
+tap { next (1), (2), (3) }
 
-next 1
+tap { next 1 }
 
-next 1, 2,
-3
+tap { next 1, 2,
+3 }
 
-next 1, 2, 3
+tap { next 1, 2, 3 }
 
-next [1, 2, 3]
+tap { next [1, 2, 3] }
 
-next(
+tap { next(
   1
   2
-)
+) }
 
-next
-1
+tap { next
+1 }
 
-next()
+tap { next() }
 
-next(1)
+tap { next(1) }

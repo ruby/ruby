@@ -33,22 +33,58 @@
         │   ├── keyword_loc: (3,4)-(3,10) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (4,0)-(4,3))
-        ├── @ RescueModifierNode (location: (6,0)-(6,16))
-        │   ├── expression:
-        │   │   @ BreakNode (location: (6,0)-(6,5))
-        │   │   ├── arguments: ∅
-        │   │   └── keyword_loc: (6,0)-(6,5) = "break"
-        │   ├── keyword_loc: (6,6)-(6,12) = "rescue"
-        │   └── rescue_expression:
-        │       @ NilNode (location: (6,13)-(6,16))
-        ├── @ RescueModifierNode (location: (8,0)-(8,15))
-        │   ├── expression:
-        │   │   @ NextNode (location: (8,0)-(8,4))
-        │   │   ├── arguments: ∅
-        │   │   └── keyword_loc: (8,0)-(8,4) = "next"
-        │   ├── keyword_loc: (8,5)-(8,11) = "rescue"
-        │   └── rescue_expression:
-        │       @ NilNode (location: (8,12)-(8,15))
+        ├── @ CallNode (location: (6,0)-(6,24))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (6,0)-(6,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (6,4)-(6,24))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (6,6)-(6,22))
+        │       │   └── body: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (6,6)-(6,22))
+        │       │           ├── expression:
+        │       │           │   @ BreakNode (location: (6,6)-(6,11))
+        │       │           │   ├── arguments: ∅
+        │       │           │   └── keyword_loc: (6,6)-(6,11) = "break"
+        │       │           ├── keyword_loc: (6,12)-(6,18) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (6,19)-(6,22))
+        │       ├── opening_loc: (6,4)-(6,5) = "{"
+        │       └── closing_loc: (6,23)-(6,24) = "}"
+        ├── @ CallNode (location: (8,0)-(8,23))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (8,0)-(8,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (8,4)-(8,23))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (8,6)-(8,21))
+        │       │   └── body: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (8,6)-(8,21))
+        │       │           ├── expression:
+        │       │           │   @ NextNode (location: (8,6)-(8,10))
+        │       │           │   ├── arguments: ∅
+        │       │           │   └── keyword_loc: (8,6)-(8,10) = "next"
+        │       │           ├── keyword_loc: (8,11)-(8,17) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (8,18)-(8,21))
+        │       ├── opening_loc: (8,4)-(8,5) = "{"
+        │       └── closing_loc: (8,22)-(8,23) = "}"
         ├── @ RescueModifierNode (location: (10,0)-(10,17))
         │   ├── expression:
         │   │   @ ReturnNode (location: (10,0)-(10,6))

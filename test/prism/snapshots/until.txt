@@ -27,30 +27,66 @@
         │           └── @ IntegerNode (location: (3,0)-(3,1))
         │               ├── flags: decimal
         │               └── value: 1
-        ├── @ UntilNode (location: (5,0)-(5,16))
-        │   ├── flags: ∅
-        │   ├── keyword_loc: (5,6)-(5,11) = "until"
+        ├── @ CallNode (location: (5,0)-(5,24))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (5,0)-(5,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── predicate:
-        │   │   @ TrueNode (location: (5,12)-(5,16))
-        │   └── statements:
-        │       @ StatementsNode (location: (5,0)-(5,5))
-        │       └── body: (length: 1)
-        │           └── @ BreakNode (location: (5,0)-(5,5))
-        │               ├── arguments: ∅
-        │               └── keyword_loc: (5,0)-(5,5) = "break"
-        ├── @ UntilNode (location: (7,0)-(7,15))
-        │   ├── flags: ∅
-        │   ├── keyword_loc: (7,5)-(7,10) = "until"
+        │   └── block:
+        │       @ BlockNode (location: (5,4)-(5,24))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (5,6)-(5,22))
+        │       │   └── body: (length: 1)
+        │       │       └── @ UntilNode (location: (5,6)-(5,22))
+        │       │           ├── flags: ∅
+        │       │           ├── keyword_loc: (5,12)-(5,17) = "until"
+        │       │           ├── closing_loc: ∅
+        │       │           ├── predicate:
+        │       │           │   @ TrueNode (location: (5,18)-(5,22))
+        │       │           └── statements:
+        │       │               @ StatementsNode (location: (5,6)-(5,11))
+        │       │               └── body: (length: 1)
+        │       │                   └── @ BreakNode (location: (5,6)-(5,11))
+        │       │                       ├── arguments: ∅
+        │       │                       └── keyword_loc: (5,6)-(5,11) = "break"
+        │       ├── opening_loc: (5,4)-(5,5) = "{"
+        │       └── closing_loc: (5,23)-(5,24) = "}"
+        ├── @ CallNode (location: (7,0)-(7,23))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (7,0)-(7,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── predicate:
-        │   │   @ TrueNode (location: (7,11)-(7,15))
-        │   └── statements:
-        │       @ StatementsNode (location: (7,0)-(7,4))
-        │       └── body: (length: 1)
-        │           └── @ NextNode (location: (7,0)-(7,4))
-        │               ├── arguments: ∅
-        │               └── keyword_loc: (7,0)-(7,4) = "next"
+        │   └── block:
+        │       @ BlockNode (location: (7,4)-(7,23))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (7,6)-(7,21))
+        │       │   └── body: (length: 1)
+        │       │       └── @ UntilNode (location: (7,6)-(7,21))
+        │       │           ├── flags: ∅
+        │       │           ├── keyword_loc: (7,11)-(7,16) = "until"
+        │       │           ├── closing_loc: ∅
+        │       │           ├── predicate:
+        │       │           │   @ TrueNode (location: (7,17)-(7,21))
+        │       │           └── statements:
+        │       │               @ StatementsNode (location: (7,6)-(7,10))
+        │       │               └── body: (length: 1)
+        │       │                   └── @ NextNode (location: (7,6)-(7,10))
+        │       │                       ├── arguments: ∅
+        │       │                       └── keyword_loc: (7,6)-(7,10) = "next"
+        │       ├── opening_loc: (7,4)-(7,5) = "{"
+        │       └── closing_loc: (7,22)-(7,23) = "}"
         ├── @ UntilNode (location: (9,0)-(9,17))
         │   ├── flags: ∅
         │   ├── keyword_loc: (9,7)-(9,12) = "until"

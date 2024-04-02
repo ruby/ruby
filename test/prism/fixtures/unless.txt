@@ -5,9 +5,9 @@ unless true
 
 1 unless true
 
-break unless true
+tap { break unless true }
 
-next unless true
+tap { next unless true }
 
 return unless true
 

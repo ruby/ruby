@@ -197,12 +197,14 @@ module Prism
       # It seems like there are some oddities with nested heredocs and ripper.
       # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
       ripper_should_match = false if relative == "seattlerb/heredoc_nested.txt"
+      ripper_should_match = false if relative == "whitequark/dedenting_heredoc.txt"
 
       # Ripper seems to have a bug that the regex portions before and after the heredoc are combined
       # into a single token. See https://bugs.ruby-lang.org/issues/19838.
       #
       # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
       ripper_should_parse = false if relative == "spanning_heredoc.txt"
+      ripper_should_match = false if relative == "spanning_heredoc_newlines.txt"
 
       # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace characters in the heredoc start.
       # Example: <<~'   EOF' or <<-'  EOF'
@@ -215,24 +217,9 @@ module Prism
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
         if ripper_should_parse
-          src = source
-
-          case relative
-          when /break|next|redo|if|unless|rescue|control|keywords|retry/
-            # Uncaught syntax errors: Invalid break, Invalid next
-            src = "->do\nrescue\n#{src}\nend"
-            ripper_should_match = false
-          end
-          case src
-          when /^ *yield/
-            # Uncaught syntax errors: Invalid yield
-            src = "def __invalid_yield__\n#{src}\nend"
-            ripper_should_match = false
-          end
-
-          # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
-          # that is invalid Ruby.
-          refute_nil(Ripper.sexp_raw(src), "Ripper failed to parse")
+          # Make sure that it can be correctly parsed by Ripper. If it can't,
+          # then we have a fixture that is invalid Ruby.
+          refute_nil(Ripper.sexp_raw(source), "Ripper failed to parse")
         end
 
         # Next, assert that there were no errors during parsing.

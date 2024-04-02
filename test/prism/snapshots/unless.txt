@@ -51,32 +51,68 @@
         │   │           └── value: 1
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
-        ├── @ UnlessNode (location: (8,0)-(8,17))
-        │   ├── keyword_loc: (8,6)-(8,12) = "unless"
-        │   ├── predicate:
-        │   │   @ TrueNode (location: (8,13)-(8,17))
-        │   ├── then_keyword_loc: ∅
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (8,0)-(8,5))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (8,0)-(8,5))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (8,0)-(8,5) = "break"
-        │   ├── consequent: ∅
-        │   └── end_keyword_loc: ∅
-        ├── @ UnlessNode (location: (10,0)-(10,16))
-        │   ├── keyword_loc: (10,5)-(10,11) = "unless"
-        │   ├── predicate:
-        │   │   @ TrueNode (location: (10,12)-(10,16))
-        │   ├── then_keyword_loc: ∅
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (10,0)-(10,4))
-        │   │   └── body: (length: 1)
-        │   │       └── @ NextNode (location: (10,0)-(10,4))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (10,0)-(10,4) = "next"
-        │   ├── consequent: ∅
-        │   └── end_keyword_loc: ∅
+        ├── @ CallNode (location: (8,0)-(8,25))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (8,0)-(8,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (8,4)-(8,25))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (8,6)-(8,23))
+        │       │   └── body: (length: 1)
+        │       │       └── @ UnlessNode (location: (8,6)-(8,23))
+        │       │           ├── keyword_loc: (8,12)-(8,18) = "unless"
+        │       │           ├── predicate:
+        │       │           │   @ TrueNode (location: (8,19)-(8,23))
+        │       │           ├── then_keyword_loc: ∅
+        │       │           ├── statements:
+        │       │           │   @ StatementsNode (location: (8,6)-(8,11))
+        │       │           │   └── body: (length: 1)
+        │       │           │       └── @ BreakNode (location: (8,6)-(8,11))
+        │       │           │           ├── arguments: ∅
+        │       │           │           └── keyword_loc: (8,6)-(8,11) = "break"
+        │       │           ├── consequent: ∅
+        │       │           └── end_keyword_loc: ∅
+        │       ├── opening_loc: (8,4)-(8,5) = "{"
+        │       └── closing_loc: (8,24)-(8,25) = "}"
+        ├── @ CallNode (location: (10,0)-(10,24))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (10,0)-(10,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (10,4)-(10,24))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (10,6)-(10,22))
+        │       │   └── body: (length: 1)
+        │       │       └── @ UnlessNode (location: (10,6)-(10,22))
+        │       │           ├── keyword_loc: (10,11)-(10,17) = "unless"
+        │       │           ├── predicate:
+        │       │           │   @ TrueNode (location: (10,18)-(10,22))
+        │       │           ├── then_keyword_loc: ∅
+        │       │           ├── statements:
+        │       │           │   @ StatementsNode (location: (10,6)-(10,10))
+        │       │           │   └── body: (length: 1)
+        │       │           │       └── @ NextNode (location: (10,6)-(10,10))
+        │       │           │           ├── arguments: ∅
+        │       │           │           └── keyword_loc: (10,6)-(10,10) = "next"
+        │       │           ├── consequent: ∅
+        │       │           └── end_keyword_loc: ∅
+        │       ├── opening_loc: (10,4)-(10,5) = "{"
+        │       └── closing_loc: (10,23)-(10,24) = "}"
         ├── @ UnlessNode (location: (12,0)-(12,18))
         │   ├── keyword_loc: (12,7)-(12,13) = "unless"
         │   ├── predicate:
