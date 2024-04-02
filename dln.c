@@ -339,7 +339,7 @@ dln_disable_dlclose(void)
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-static void *
+void *
 dln_open(const char *file)
 {
     static const char incompatible[] = "incompatible library version";
@@ -427,7 +427,7 @@ dln_open(const char *file)
     dln_loaderror("%s - %s", error, file);
 }
 
-static void *
+void *
 dln_sym(void *handle, const char *symbol)
 {
 #if defined(_WIN32)
