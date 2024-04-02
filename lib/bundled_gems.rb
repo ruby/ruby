@@ -26,6 +26,7 @@ module Gem::BUNDLED_GEMS
     "resolv-replace" => "3.4.0",
     "rinda" => "3.4.0",
     "syslog" => "3.4.0",
+    "ostruct" => "3.5.0",
   }.freeze
 
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
@@ -43,6 +44,7 @@ module Gem::BUNDLED_GEMS
     "resolv-replace" => true,
     "rinda" => true,
     "syslog" => true,
+    "ostruct" => true,
   }.freeze
 
   PREFIXED = {
