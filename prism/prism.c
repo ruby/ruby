@@ -15712,9 +15712,12 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
         switch (context_node->context) {
             case PM_CONTEXT_BLOCK_BRACES:
             case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_FOR:
             case PM_CONTEXT_LAMBDA_BRACES:
             case PM_CONTEXT_LAMBDA_DO_END:
             case PM_CONTEXT_POSTEXE:
+            case PM_CONTEXT_UNTIL:
+            case PM_CONTEXT_WHILE:
                 // These are the good cases. We're allowed to have a block exit
                 // in these contexts.
                 return;
@@ -15744,7 +15747,6 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
             case PM_CONTEXT_ENSURE:
-            case PM_CONTEXT_FOR:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_IF:
             case PM_CONTEXT_PARENS:
@@ -15752,8 +15754,6 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_RESCUE_ELSE:
             case PM_CONTEXT_RESCUE:
             case PM_CONTEXT_UNLESS:
-            case PM_CONTEXT_UNTIL:
-            case PM_CONTEXT_WHILE:
                 // In these contexts we should continue walking up the list of
                 // contexts.
                 break;
