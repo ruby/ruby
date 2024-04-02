@@ -189,7 +189,7 @@ module Prism
       FileUtils.mkdir_p(directory) unless File.directory?(directory)
 
       ripper_should_match = ripper_enabled
-      check_valid_syntax = true
+      check_valid_syntax = RUBY_VERSION >= "3.2.0"
 
       case relative
       when "seattlerb/pct_w_heredoc_interp_nested.txt"

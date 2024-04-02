@@ -38,6 +38,7 @@ debug_context(pm_context_t context) {
         case PM_CONTEXT_CASE_WHEN: return "CASE_WHEN";
         case PM_CONTEXT_DEF: return "DEF";
         case PM_CONTEXT_DEF_PARAMS: return "DEF_PARAMS";
+        case PM_CONTEXT_DEFINED: return "DEFINED";
         case PM_CONTEXT_DEFAULT_PARAMS: return "DEFAULT_PARAMS";
         case PM_CONTEXT_ENSURE: return "ENSURE";
         case PM_CONTEXT_ENSURE_DEF: return "ENSURE_DEF";
@@ -7591,6 +7592,7 @@ context_terminator(pm_context_t context, pm_token_t *token) {
     switch (context) {
         case PM_CONTEXT_MAIN:
         case PM_CONTEXT_DEF_PARAMS:
+        case PM_CONTEXT_DEFINED:
             return token->type == PM_TOKEN_EOF;
         case PM_CONTEXT_DEFAULT_PARAMS:
             return token->type == PM_TOKEN_COMMA || token->type == PM_TOKEN_PARENTHESIS_RIGHT;
@@ -7741,6 +7743,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_DEF: return "method definition";
         case PM_CONTEXT_DEF_PARAMS: return "method parameters";
         case PM_CONTEXT_DEFAULT_PARAMS: return "parameter default value";
+        case PM_CONTEXT_DEFINED: return "'defined?' expression";
         case PM_CONTEXT_ELSE: return "'else' clause";
         case PM_CONTEXT_ELSIF: return "'elsif' clause";
         case PM_CONTEXT_EMBEXPR: return "embedded expression";
@@ -15705,13 +15708,15 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
  * context. If it isn't, add an error to the parser.
  */
 static void
-parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
+parse_block_exit(pm_parser_t *parser, pm_node_t *node, const char *type) {
     pm_context_node_t *context_node = parser->current_context;
+    bool through_begin = false;
 
     while (context_node != NULL) {
         switch (context_node->context) {
             case PM_CONTEXT_BLOCK_BRACES:
             case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_FOR:
             case PM_CONTEXT_LAMBDA_BRACES:
             case PM_CONTEXT_LAMBDA_DO_END:
@@ -15731,15 +15736,34 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_RESCUE_DEF:
             case PM_CONTEXT_RESCUE_ELSE_DEF:
             case PM_CONTEXT_SCLASS:
-                // These are the bad cases. We're not allowed to have a block
-                // exit in these contexts.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_BLOCK_EXIT);
+                if (through_begin) {
+                    // If we get here, then we're about to mark this block exit
+                    // as invalid. However, it could later _become_ valid if we
+                    // find a trailing while/until on the begin. In this case
+                    // instead of adding the error here, we'll add the block
+                    // exit to the list of exits for the begin node, and the
+                    // begin node parsing will handle validating it instead.
+                    assert(parser->current_block_exits != NULL);
+                    pm_node_list_append(parser->current_block_exits, node);
+                } else {
+                    // These are the bad cases. We're not allowed to have a
+                    // block exit in these contexts.
+                    PM_PARSER_ERR_NODE_FORMAT(parser, node, PM_ERR_INVALID_BLOCK_EXIT, type);
+                }
+
                 return;
             case PM_CONTEXT_NONE:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
             case PM_CONTEXT_BEGIN:
+            case PM_CONTEXT_RESCUE_ELSE:
+            case PM_CONTEXT_RESCUE:
+                // If we got to a begin node, then we'll track that we have
+                // gotten here because we need to know it if this block exit is
+                // later marked as invalid.
+                through_begin = true;
+            /* fallthrough */
             case PM_CONTEXT_CASE_WHEN:
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_DEFAULT_PARAMS:
@@ -15751,8 +15775,6 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_IF:
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_PREDICATE:
-            case PM_CONTEXT_RESCUE_ELSE:
-            case PM_CONTEXT_RESCUE:
             case PM_CONTEXT_UNLESS:
                 // In these contexts we should continue walking up the list of
                 // contexts.
@@ -15767,11 +15789,12 @@ parse_block_exit(pm_parser_t *parser, const pm_token_t *token) {
  * Ensures that the current retry token is valid in the current context.
  */
 static void
-parse_retry(pm_parser_t *parser, const pm_token_t *token) {
+parse_retry(pm_parser_t *parser, const pm_node_t *node) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
         switch (context_node->context) {
+            case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_RESCUE:
             case PM_CONTEXT_RESCUE_DEF:
                 // These are the good cases. We're allowed to have a retry here.
@@ -15785,19 +15808,19 @@ parse_retry(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_SCLASS:
                 // These are the bad cases. We're not allowed to have a retry in
                 // these contexts.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
+                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
                 return;
             case PM_CONTEXT_RESCUE_ELSE:
             case PM_CONTEXT_RESCUE_ELSE_DEF:
                 // These are also bad cases, but with a more specific error
                 // message indicating the else.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_RETRY_AFTER_ELSE);
+                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ELSE);
                 return;
             case PM_CONTEXT_ENSURE:
             case PM_CONTEXT_ENSURE_DEF:
                 // These are also bad cases, but with a more specific error
                 // message indicating the ensure.
-                PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *token, PM_ERR_INVALID_RETRY_AFTER_ENSURE);
+                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ENSURE);
                 return;
             case PM_CONTEXT_NONE:
                 // This case should never happen.
@@ -15836,12 +15859,13 @@ parse_retry(pm_parser_t *parser, const pm_token_t *token) {
  * Ensures that the current yield token is valid in the current context.
  */
 static void
-parse_yield(pm_parser_t *parser, const pm_token_t *token) {
+parse_yield(pm_parser_t *parser, const pm_node_t *node) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
         switch (context_node->context) {
             case PM_CONTEXT_DEF:
+            case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_ENSURE_DEF:
             case PM_CONTEXT_RESCUE_DEF:
             case PM_CONTEXT_RESCUE_ELSE_DEF:
@@ -15853,7 +15877,7 @@ parse_yield(pm_parser_t *parser, const pm_token_t *token) {
             case PM_CONTEXT_MODULE:
                 // These are the bad cases. We're not allowed to have a retry in
                 // these contexts.
-                pm_parser_err_token(parser, token, PM_ERR_INVALID_YIELD);
+                pm_parser_err_node(parser, node, PM_ERR_INVALID_YIELD);
                 return;
             case PM_CONTEXT_NONE:
                 // This case should never happen.
@@ -16749,6 +16773,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_token_t begin_keyword = parser->previous;
             accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+
+            pm_node_list_t *previous_block_exits = parser->current_block_exits;
+            pm_node_list_t current_block_exits = { 0 };
+            parser->current_block_exits = &current_block_exits;
+
             pm_statements_node_t *begin_statements = NULL;
 
             if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
@@ -16768,6 +16797,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if ((begin_node->else_clause != NULL) && (begin_node->rescue_clause == NULL)) {
                 pm_parser_err_node(parser, (pm_node_t *) begin_node->else_clause, PM_ERR_BEGIN_LONELY_ELSE);
             }
+
+            if (!match2(parser, PM_TOKEN_KEYWORD_WHILE_MODIFIER, PM_TOKEN_KEYWORD_UNTIL_MODIFIER)) {
+                // If we didn't find a while or until modifier, then we need to
+                // go back in and mark all of the block exits as invalid.
+                for (size_t block_exit_index = 0; block_exit_index < current_block_exits.size; block_exit_index++) {
+                    pm_node_t *block_exit = current_block_exits.nodes[block_exit_index];
+                    const char *type;
+
+                    switch (PM_NODE_TYPE(block_exit)) {
+                        case PM_BREAK_NODE: type = "break"; break;
+                        case PM_NEXT_NODE: type = "next"; break;
+                        case PM_REDO_NODE: type = "redo"; break;
+                        default: assert(false && "unreachable"); type = ""; break;
+                    }
+
+                    PM_PARSER_ERR_NODE_FORMAT(parser, block_exit, PM_ERR_INVALID_BLOCK_EXIT, type);
+                }
+            }
+
+            parser->current_block_exits = previous_block_exits;
+            pm_node_list_free(&current_block_exits);
 
             return (pm_node_t *) begin_node;
         }
@@ -16810,12 +16860,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             switch (keyword.type) {
-                case PM_TOKEN_KEYWORD_BREAK:
-                    parse_block_exit(parser, &keyword);
-                    return (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
-                case PM_TOKEN_KEYWORD_NEXT:
-                    parse_block_exit(parser, &keyword);
-                    return (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
+                case PM_TOKEN_KEYWORD_BREAK: {
+                    pm_node_t *node = (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
+                    parse_block_exit(parser, node, "break");
+                    return node;
+                }
+                case PM_TOKEN_KEYWORD_NEXT: {
+                    pm_node_t *node = (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
+                    parse_block_exit(parser, node, "next");
+                    return node;
+                }
                 case PM_TOKEN_KEYWORD_RETURN: {
                     if (
                         (parser->current_context->context == PM_CONTEXT_CLASS) ||
@@ -16848,14 +16902,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_super_node_create(parser, &keyword, &arguments);
         }
         case PM_TOKEN_KEYWORD_YIELD: {
-            parse_yield(parser, &parser->current);
             parser_lex(parser);
 
             pm_token_t keyword = parser->previous;
             pm_arguments_t arguments = { 0 };
             parse_arguments_list(parser, &arguments, false, accepts_command_call);
 
-            return (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
+            pm_node_t *node = (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
+            parse_yield(parser, node);
+
+            return node;
         }
         case PM_TOKEN_KEYWORD_CLASS: {
             parser_lex(parser);
@@ -17245,6 +17301,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t lparen;
             pm_token_t rparen;
             pm_node_t *expression;
+            context_push(parser, PM_CONTEXT_DEFINED);
 
             if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
                 lparen = parser->previous;
@@ -17263,6 +17320,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_DEFINED_EXPRESSION);
             }
 
+            context_pop(parser);
             return (pm_node_t *) pm_defined_node_create(
                 parser,
                 &lparen,
@@ -17482,14 +17540,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
         case PM_TOKEN_KEYWORD_NIL:
             parser_lex(parser);
             return (pm_node_t *) pm_nil_node_create(parser, &parser->previous);
-        case PM_TOKEN_KEYWORD_REDO:
-            parse_block_exit(parser, &parser->current);
+        case PM_TOKEN_KEYWORD_REDO: {
             parser_lex(parser);
-            return (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
-        case PM_TOKEN_KEYWORD_RETRY:
-            parse_retry(parser, &parser->current);
+
+            pm_node_t *node = (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
+            parse_block_exit(parser, node, "redo");
+
+            return node;
+        }
+        case PM_TOKEN_KEYWORD_RETRY: {
             parser_lex(parser);
-            return (pm_node_t *) pm_retry_node_create(parser, &parser->previous);
+
+            pm_node_t *node = (pm_node_t *) pm_retry_node_create(parser, &parser->previous);
+            parse_retry(parser, node);
+
+            return node;
+        }
         case PM_TOKEN_KEYWORD_SELF:
             parser_lex(parser);
             return (pm_node_t *) pm_self_node_create(parser, &parser->previous);
@@ -19580,6 +19646,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .pattern_matching_newlines = false,
         .in_keyword_arg = false,
         .current_param_name = 0,
+        .current_block_exits = NULL,
         .semantic_token_seen = false,
         .frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET,
         .current_regular_expression_ascii_only = false
