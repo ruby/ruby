@@ -2683,6 +2683,18 @@ nodes:
 
           nil
           ^^^
+  - name: NoBlockParameterNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of `&nil` inside method arguments.
+
+          def a(&nil)
+                ^^^^
+          end
   - name: NoKeywordsParameterNode
     fields:
       - name: operator_loc
@@ -2827,7 +2839,6 @@ nodes:
           - NoKeywordsParameterNode
       - name: block
         type: node?
-        kind: BlockParameterNode
     comment: |
       Represents the list of parameters on a method, block, or lambda definition.
 

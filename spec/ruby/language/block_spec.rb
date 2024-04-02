@@ -1068,4 +1068,15 @@ describe "Anonymous block forwarding" do
       all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
     end
   end
+
+  ruby_version_is "3.4" do
+    it "works alongside disallowed block argument" do
+      no_block = eval <<-EOF
+        proc {|arg1, &nil| arg1}
+      EOF
+
+      no_block.call(:a).should == :a
+      -> { no_block.call(:a) {} }.should raise_error(ArgumentError, 'no block accepted')
+    end
+  end
 end

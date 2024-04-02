@@ -6822,6 +6822,11 @@ f_block_arg	: blkarg_mark tIDENTIFIER
                         $$ = $2;
                     /*% ripper: blockarg!($:2) %*/
                     }
+                | blkarg_mark keyword_nil
+                    {
+                        $$ = idNil;
+                    /*% ripper: blockarg!(ID2VAL(idNil)) %*/
+                    }
                 | blkarg_mark
                     {
                         arg_var(p, idFWD_BLOCK);
@@ -14987,6 +14992,10 @@ new_args_tail(struct parser_params *p, rb_node_kw_arg_t *kw_args, ID kw_rest_arg
     struct rb_args_info *args = &node->nd_ainfo;
     if (p->error_p) return node;
 
+    if (block == idNil) {
+        block = 0;
+        args->no_blockarg = TRUE;
+    }
     args->block_arg      = block;
     args->kw_args        = kw_args;
 

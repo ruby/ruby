@@ -5206,6 +5206,30 @@ pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token) {
 /**
  * Allocate and initialize a new NoKeywordsParameterNode node.
  */
+static pm_no_block_parameter_node_t *
+pm_no_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
+    assert(operator->type == PM_TOKEN_UAMPERSAND || operator->type == PM_TOKEN_AMPERSAND);
+    assert(keyword->type == PM_TOKEN_KEYWORD_NIL);
+    pm_no_block_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_no_block_parameter_node_t);
+
+    *node = (pm_no_block_parameter_node_t) {
+        {
+            .type = PM_NO_BLOCK_PARAMETER_NODE,
+            .location = {
+                .start = operator->start,
+                .end = keyword->end
+            }
+        },
+        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword)
+    };
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new NoKeywordsParameterNode node.
+ */
 static pm_no_keywords_parameter_node_t *
 pm_no_keywords_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
     assert(operator->type == PM_TOKEN_USTAR_STAR || operator->type == PM_TOKEN_STAR_STAR);
@@ -5460,9 +5484,9 @@ pm_parameters_node_keyword_rest_set(pm_parameters_node_t *params, pm_node_t *par
  * Set the block parameter on a ParametersNode node.
  */
 static void
-pm_parameters_node_block_set(pm_parameters_node_t *params, pm_block_parameter_node_t *param) {
+pm_parameters_node_block_set(pm_parameters_node_t *params, pm_node_t *param) {
     assert(params->block == NULL);
-    pm_parameters_node_location_set(params, (pm_node_t *) param);
+    pm_parameters_node_location_set(params, param);
     params->block = param;
 }
 
@@ -13117,27 +13141,34 @@ parse_parameters(
                 parser_lex(parser);
 
                 pm_token_t operator = parser->previous;
-                pm_token_t name;
+                pm_node_t *param;
 
-                bool repeated = false;
-                if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
-                    name = parser->previous;
-                    repeated = pm_parser_parameter_name_check(parser, &name);
-                    pm_parser_local_add_token(parser, &name);
+                if (accept1(parser, PM_TOKEN_KEYWORD_NIL)) {
+                    param = (pm_node_t *) pm_no_block_parameter_node_create(parser, &operator, &parser->previous);
                 } else {
-                    name = not_provided(parser);
-                    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_BLOCK;
+                    pm_token_t name;
+
+                    bool repeated = false;
+                    if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
+                        name = parser->previous;
+                        repeated = pm_parser_parameter_name_check(parser, &name);
+                        pm_parser_local_add_token(parser, &name);
+                    } else {
+                        name = not_provided(parser);
+                        parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_BLOCK;
+                    }
+
+                    param = (pm_node_t *) pm_block_parameter_node_create(parser, &name, &operator);
+                    if (repeated) {
+                        pm_node_flag_set_repeated_parameter(param);
+                    }
                 }
 
-                pm_block_parameter_node_t *param = pm_block_parameter_node_create(parser, &name, &operator);
-                if (repeated) {
-                    pm_node_flag_set_repeated_parameter((pm_node_t *)param);
-                }
                 if (params->block == NULL) {
                     pm_parameters_node_block_set(params, param);
                 } else {
-                    pm_parser_err_node(parser, (pm_node_t *) param, PM_ERR_PARAMETER_BLOCK_MULTI);
-                    pm_parameters_node_posts_append(params, (pm_node_t *) param);
+                    pm_parser_err_node(parser, param, PM_ERR_PARAMETER_BLOCK_MULTI);
+                    pm_parameters_node_posts_append(params, param);
                 }
 
                 break;
