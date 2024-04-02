@@ -27,6 +27,7 @@ module Gem::BUNDLED_GEMS
     "rinda" => "3.4.0",
     "syslog" => "3.4.0",
     "ostruct" => "3.5.0",
+    "pstore" => "3.5.0",
   }.freeze
 
   EXACT = {
@@ -43,6 +44,7 @@ module Gem::BUNDLED_GEMS
     "rinda" => true,
     "syslog" => true,
     "ostruct" => true,
+    "pstore" => true,
   }.freeze
 
   PREFIXED = {
