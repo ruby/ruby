@@ -4,6 +4,7 @@
 #![allow(dead_code)] // Counters are only used with the stats features
 
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::ptr::addr_of_mut;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 use std::collections::HashMap;
@@ -69,12 +70,14 @@ static mut ISEQ_CALL_COUNT: Option<Vec<u64>> = None;
 
 /// Assign an index to a given cfunc name string
 pub fn get_cfunc_idx(name: &str) -> usize {
-    unsafe { get_method_idx(name, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT) }
+    // SAFETY: We acquire a VM lock and don't create multiple &mut references to these static mut variables.
+    unsafe { get_method_idx(name, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT)) }
 }
 
 /// Assign an index to a given ISEQ name string
 pub fn get_iseq_idx(name: &str) -> usize {
-    unsafe { get_method_idx(name, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT) }
+    // SAFETY: We acquire a VM lock and don't create multiple &mut references to these static mut variables.
+    unsafe { get_method_idx(name, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT)) }
 }
 
 fn get_method_idx(
@@ -815,12 +818,12 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         // Create a hash for the cfunc call counts
         let cfunc_calls = rb_hash_new();
         rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), cfunc_calls);
-        set_call_counts(cfunc_calls, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT);
+        set_call_counts(cfunc_calls, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT));
 
         // Create a hash for the ISEQ call counts
         let iseq_calls = rb_hash_new();
         rb_hash_aset(hash, rust_str_to_sym("iseq_calls"), iseq_calls);
-        set_call_counts(iseq_calls, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT);
+        set_call_counts(iseq_calls, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT));
     }
 
     hash
