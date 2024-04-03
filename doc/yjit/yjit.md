@@ -268,7 +268,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
   - Avoid writing wrapper classes if you can (e.g. a class that only wraps a Ruby hash)
   - Avoid methods that just call another method
 - Ruby method calls are costly. Avoid things such as methods that only return a value from a hash
-- Try to write code so that the same variables and function arguments always have the same type
+- Try to write code so that the same variables and method arguments always have the same type
 - Avoid using `TracePoint` as it can cause YJIT to deoptimize code
 - Avoid using `Binding` as it can cause YJIT to deoptimize code
 
