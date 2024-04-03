@@ -4244,7 +4244,7 @@ Init_BareVM(void)
 
     rb_vm_postponed_job_queue_init(vm);
     ruby_current_vm_ptr = vm;
-    vm->objspace = rb_objspace_alloc();
+    rb_objspace_alloc();
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
