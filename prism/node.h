@@ -18,18 +18,6 @@
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
- * Attempts to grow the node list to the next size. If there is already
- * capacity in the list, this function does nothing. Otherwise it reallocates
- * the list to be twice as large as it was before. If the reallocation fails,
- * this function returns false, otherwise it returns true.
- *
- * @param list The list to grow.
- * @param size The number of nodes to grow the list by.
- * @return True if the list was successfully grown, false otherwise.
- */
-bool pm_node_list_grow(pm_node_list_t *list, size_t size);
-
-/**
  * Append a new node onto the end of the node list.
  *
  * @param list The list to append to.
