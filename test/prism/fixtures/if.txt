@@ -30,10 +30,10 @@ if type in 1
 elsif type in B
 end
 
-if 1
+if f1
   lambda do |_|
   end
-elsif 2
+elsif f2
   lambda do |_|
   end
 else
