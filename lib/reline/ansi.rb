@@ -151,7 +151,11 @@ class Reline::ANSI
   end
 
   def self.with_raw_input
-    @@input.raw { yield }
+    if @@input.tty?
+      @@input.raw(intr: true) { yield }
+    else
+      yield
+    end
   end
 
   @@buf = []
@@ -159,11 +163,13 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    until c = @@input.raw(intr: true) { @@input.wait_readable(0.1) && @@input.getbyte }
-      timeout_second -= 0.1
+    until @@input.wait_readable(0.01)
+      timeout_second -= 0.01
       return nil if timeout_second <= 0
-      Reline.core.line_editor.resize
+
+      Reline.core.line_editor.handle_signal
     end
+    c = @@input.getbyte
     (c == 0x16 && @@input.raw(min: 0, time: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.

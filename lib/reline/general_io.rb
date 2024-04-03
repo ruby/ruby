@@ -46,6 +46,7 @@ class Reline::GeneralIO
     end
     c = nil
     loop do
+      Reline.core.line_editor.handle_signal
       result = @@input.wait_readable(0.1)
       next if result.nil?
       c = @@input.read(1)

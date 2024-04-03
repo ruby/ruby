@@ -255,18 +255,18 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_ed_clear_screen
-    refute(@line_editor.instance_variable_get(:@cleared))
+    @line_editor.instance_variable_get(:@rendered_screen).lines = [[]]
     input_keys("\C-l", false)
-    assert(@line_editor.instance_variable_get(:@cleared))
+    assert_empty(@line_editor.instance_variable_get(:@rendered_screen).lines)
   end
 
   def test_ed_clear_screen_with_inputed
     input_keys('abc')
     input_keys("\C-b", false)
-    refute(@line_editor.instance_variable_get(:@cleared))
+    @line_editor.instance_variable_get(:@rendered_screen).lines = [[]]
     assert_line_around_cursor('ab', 'c')
     input_keys("\C-l", false)
-    assert(@line_editor.instance_variable_get(:@cleared))
+    assert_empty(@line_editor.instance_variable_get(:@rendered_screen).lines)
     assert_line_around_cursor('ab', 'c')
   end
 

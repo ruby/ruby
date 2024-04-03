@@ -259,7 +259,7 @@ class Reline::Windows
   def self.check_input_event
     num_of_events = 0.chr * 8
     while @@output_buf.empty?
-      Reline.core.line_editor.resize
+      Reline.core.line_editor.handle_signal
       if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
         # prevent for background consolemode change
         @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)

@@ -138,9 +138,6 @@ class Reline::LineEditor
     @screen_size = Reline::IOGate.get_screen_size
     reset_variables(prompt, encoding: encoding)
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
-    Reline::IOGate.set_winch_handler do
-      @resized = true
-    end
     if ENV.key?('RELINE_ALT_SCROLLBAR')
       @full_block = '::'
       @upper_half_block = "''"
@@ -164,7 +161,12 @@ class Reline::LineEditor
     end
   end
 
-  def resize
+  def handle_signal
+    handle_interrupted
+    handle_resized
+  end
+
+  private def handle_resized
     return unless @resized
 
     @screen_size = Reline::IOGate.get_screen_size
@@ -177,25 +179,35 @@ class Reline::LineEditor
     render_differential
   end
 
+  private def handle_interrupted
+    return unless @interrupted
+
+    @interrupted = false
+    clear_dialogs
+    scrolldown = render_differential
+    Reline::IOGate.scroll_down scrolldown
+    Reline::IOGate.move_cursor_column 0
+    @rendered_screen.lines = []
+    @rendered_screen.cursor_y = 0
+    case @old_trap
+    when 'DEFAULT', 'SYSTEM_DEFAULT'
+      raise Interrupt
+    when 'IGNORE'
+      # Do nothing
+    when 'EXIT'
+      exit
+    else
+      @old_trap.call if @old_trap.respond_to?(:call)
+    end
+  end
+
   def set_signal_handlers
-    @old_trap = Signal.trap('INT') {
-      clear_dialogs
-      scrolldown = render_differential
-      Reline::IOGate.scroll_down scrolldown
-      Reline::IOGate.move_cursor_column 0
-      @rendered_screen.lines = []
-      @rendered_screen.cursor_y = 0
-      case @old_trap
-      when 'DEFAULT', 'SYSTEM_DEFAULT'
-        raise Interrupt
-      when 'IGNORE'
-        # Do nothing
-      when 'EXIT'
-        exit
-      else
-        @old_trap.call if @old_trap.respond_to?(:call)
-      end
-    }
+    Reline::IOGate.set_winch_handler do
+      @resized = true
+    end
+    @old_trap = Signal.trap('INT') do
+      @interrupted = true
+    end
   end
 
   def finalize
@@ -212,7 +224,6 @@ class Reline::LineEditor
     @encoding = encoding
     @is_multiline = false
     @finished = false
-    @cleared = false
     @history_pointer = nil
     @kill_ring ||= Reline::KillRing.new
     @vi_clipboard = ''
@@ -234,6 +245,7 @@ class Reline::LineEditor
     @in_pasting = false
     @auto_indent_proc = nil
     @dialogs = []
+    @interrupted = false
     @resized = false
     @cache = {}
     @rendered_screen = RenderedScreen.new(base_y: 0, lines: [], cursor_y: 0)
@@ -541,19 +553,7 @@ class Reline::LineEditor
     screen_height - wrapped_cursor_y + screen_scroll_top - @rendered_screen.base_y - 1
   end
 
-  def handle_cleared
-    return unless @cleared
-
-    @cleared = false
-    Reline::IOGate.clear_screen
-    @screen_size = Reline::IOGate.get_screen_size
-    @rendered_screen.lines = []
-    @rendered_screen.base_y = 0
-    @rendered_screen.cursor_y = 0
-  end
-
   def rerender
-    handle_cleared
     render_differential unless @in_pasting
   end
 
@@ -2074,7 +2074,11 @@ class Reline::LineEditor
   alias_method :yank_pop, :em_yank_pop
 
   private def ed_clear_screen(key)
-    @cleared = true
+    Reline::IOGate.clear_screen
+    @screen_size = Reline::IOGate.get_screen_size
+    @rendered_screen.lines = []
+    @rendered_screen.base_y = 0
+    @rendered_screen.cursor_y = 0
   end
   alias_method :clear_screen, :ed_clear_screen
 
