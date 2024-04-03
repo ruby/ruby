@@ -47,8 +47,8 @@ assert_equal '10000000000000000001/10000000000000000000',
              '1.0000000000000000001r'
 
 assert_equal 'unexpected local variable or method, expecting end-of-input',
-             %q{begin eval('1ir', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error(?! found)) (.*)/, 1] end}
+             %q{begin eval('1ir', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error,) (.*)/, 1]; end}
 assert_equal 'unexpected local variable or method, expecting end-of-input',
-             %q{begin eval('1.2ir', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error(?! found)) (.*)/, 1] end}
+             %q{begin eval('1.2ir', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error,) (.*)/, 1]; end}
 assert_equal 'unexpected local variable or method, expecting end-of-input',
-             %q{begin eval('1e1r', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error(?! found)) (.*)/, 1] end}
+             %q{begin eval('1e1r', nil, '', 0); rescue SyntaxError => e; e.message[/(?:\^~*|\A:(?:\d+:)? syntax error,) (.*)/, 1]; end}
