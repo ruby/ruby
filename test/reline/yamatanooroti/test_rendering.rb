@@ -831,6 +831,20 @@ begin
       EOC
     end
 
+    def test_auto_indent_with_various_spaces
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write "(\n\C-v"
+      write "\C-k\n\C-v"
+      write "\C-k)"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> (
+        prompt> ^K
+        prompt> )
+      EOC
+    end
+
     def test_autowrap_in_the_middle_of_a_line
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def abcdefg; end\C-b\C-b\C-b\C-b\C-b")

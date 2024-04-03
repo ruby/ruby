@@ -794,7 +794,7 @@ class Reline::LineEditor
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: complete)
       after.lines("\n").map { |l| l.chomp('') }
     else
-      before
+      before.map { |l| Reline::Unicode.escape_for_print(l) }
     end
   end
 
@@ -1221,10 +1221,11 @@ class Reline::LineEditor
     new_indent = @auto_indent_proc.(@buffer_of_lines.take(line_index + 1).push(''), line_index, byte_pointer, add_newline)
     return unless new_indent
 
-    @buffer_of_lines[line_index] = ' ' * new_indent + line.lstrip
+    new_line = ' ' * new_indent + line.lstrip
+    @buffer_of_lines[line_index] = new_line
     if @line_index == line_index
-      old_indent = line[/\A */].size
-      @byte_pointer = [@byte_pointer + new_indent - old_indent, 0].max
+      indent_diff = new_line.bytesize - line.bytesize
+      @byte_pointer = [@byte_pointer + indent_diff, 0].max
     end
   end
 
