@@ -265,10 +265,12 @@ This section contains tips on writing Ruby code that will run as fast as possibl
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
 - Minimize layers of indirection
-  - Avoid classes that wrap objects if you can
-  - Avoid methods that just call another method, trivial one-liner methods
-- Try to write code so that the same variables always have the same type
-- CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
+  - Avoid writing wrapper classes if you can (e.g. a class that only wraps a Ruby hash)
+  - Avoid methods that just call another method
+- Ruby method calls are costly. Avoid things such as methods that only return a value from a hash
+- Try to write code so that the same variables and method arguments always have the same type
+- Avoid using `TracePoint` as it can cause YJIT to deoptimize code
+- Avoid using `Binding` as it can cause YJIT to deoptimize code
 
 You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
