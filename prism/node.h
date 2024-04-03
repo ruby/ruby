@@ -24,9 +24,10 @@
  * this function returns false, otherwise it returns true.
  *
  * @param list The list to grow.
+ * @param size The number of nodes to grow the list by.
  * @return True if the list was successfully grown, false otherwise.
  */
-bool pm_node_list_grow(pm_node_list_t *list);
+bool pm_node_list_grow(pm_node_list_t *list, size_t size);
 
 /**
  * Append a new node onto the end of the node list.
@@ -42,8 +43,15 @@ void pm_node_list_append(pm_node_list_t *list, pm_node_t *node);
  * @param list The list to prepend to.
  * @param node The node to prepend.
  */
-void
-pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+void pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+
+/**
+ * Concatenate the given node list onto the end of the other node list.
+ *
+ * @param list The list to concatenate onto.
+ * @param other The list to concatenate.
+ */
+void pm_node_list_concat(pm_node_list_t *list, pm_node_list_t *other);
 
 /**
  * Free the internal memory associated with the given node list.

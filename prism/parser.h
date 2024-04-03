@@ -358,6 +358,9 @@ typedef enum {
     /** a singleton class definition */
     PM_CONTEXT_SCLASS,
 
+    /** a ternary expression */
+    PM_CONTEXT_TERNARY,
+
     /** an unless statement */
     PM_CONTEXT_UNLESS,
 

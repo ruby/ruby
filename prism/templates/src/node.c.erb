@@ -21,13 +21,32 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
  * this function returns false, otherwise it returns true.
  */
 bool
-pm_node_list_grow(pm_node_list_t *list) {
-    if (list->size == list->capacity) {
-        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
-        list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
-        return list->nodes != NULL;
+pm_node_list_grow(pm_node_list_t *list, size_t size) {
+    size_t requested_size = list->size + size;
+
+    // If the requested size caused overflow, return false.
+    if (requested_size < list->size) return false;
+
+    // If the requested size is within the existing capacity, return true.
+    if (requested_size < list->capacity) return true;
+
+    // Otherwise, reallocate the list to be twice as large as it was before.
+    size_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+
+    // If multiplying by 2 caused overflow, return false.
+    if (next_capacity < list->capacity) return false;
+
+    // If we didn't get enough by doubling, keep doubling until we do.
+    while (requested_size > next_capacity) {
+        size_t double_capacity = next_capacity * 2;
+
+        // Ensure we didn't overflow by multiplying by 2.
+        if (double_capacity < next_capacity) return false;
+        next_capacity = double_capacity;
     }
-    return true;
+
+    list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * next_capacity);
+    return list->nodes != NULL;
 }
 
 /**
@@ -35,7 +54,7 @@ pm_node_list_grow(pm_node_list_t *list) {
  */
 void
 pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
-    if (pm_node_list_grow(list)) {
+    if (pm_node_list_grow(list, 1)) {
         list->nodes[list->size++] = node;
     }
 }
@@ -45,10 +64,21 @@ pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
  */
 void
 pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node) {
-    if (pm_node_list_grow(list)) {
+    if (pm_node_list_grow(list, 1)) {
         memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
         list->nodes[0] = node;
         list->size++;
+    }
+}
+
+/**
+ * Concatenate the given node list onto the end of the other node list.
+ */
+void
+pm_node_list_concat(pm_node_list_t *list, pm_node_list_t *other) {
+    if (other->size > 0 && pm_node_list_grow(list, other->size)) {
+        memcpy(list->nodes + list->size, other->nodes, other->size * sizeof(pm_node_t *));
+        list->size += other->size;
     }
 }
 
