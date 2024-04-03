@@ -724,12 +724,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_value, RNODE_MATCH3, "regexp (argument)");
         return;
 
-      case NODE_LIT:
-        ANN("literal");
-        ANN("format: [nd_lit]");
-        ANN("example: :sym, /foo/");
-        F_LIT(nd_lit, RNODE_LIT, "literal");
-        return;
       case NODE_STR:
         ANN("string literal");
         ANN("format: [nd_lit]");

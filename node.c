@@ -292,12 +292,7 @@ RBIMPL_ATTR_PURE()
 static bool
 nodetype_markable_p(enum node_type type)
 {
-    switch (type) {
-      case NODE_LIT:
-        return true;
-      default:
-        return false;
-    }
+    return false;
 }
 
 NODE *
@@ -389,29 +384,10 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
     }
 }
 
-static void
-mark_and_move_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
-{
-#ifdef UNIVERSAL_PARSER
-    bug_report_func rb_bug = ast->node_buffer->config->bug;
-#endif
-
-    switch (nd_type(node)) {
-      case NODE_LIT:
-        rb_gc_mark_and_move(&RNODE_LIT(node)->nd_lit);
-        break;
-      default:
-        rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
-    }
-}
-
 void
 rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating)
 {
     if (ast->node_buffer) {
-        node_buffer_t *nb = ast->node_buffer;
-        iterate_node_values(ast, &nb->markable, mark_and_move_ast_value, NULL);
-
         if (ast->body.script_lines) rb_gc_mark_and_move(&ast->body.script_lines);
     }
 }

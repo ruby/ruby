@@ -371,8 +371,6 @@ class RbInspector(LLDBInterface):
                     self._append_expression("*(struct RNode_MATCH2 *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_MATCH3"]:
                     self._append_expression("*(struct RNode_MATCH3 *) %0#x" % val.GetValueAsUnsigned())
-                elif nd_type == self.ruby_globals["NODE_LIT"]:
-                    self._append_expression("*(struct RNode_LIT *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_STR"]:
                     self._append_expression("*(struct RNode_STR *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_DSTR"]:
