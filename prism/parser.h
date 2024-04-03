@@ -304,11 +304,17 @@ typedef enum {
     /** an interpolated expression */
     PM_CONTEXT_EMBEXPR,
 
-    /** an ensure statement */
-    PM_CONTEXT_ENSURE,
+    /** an ensure statement with an explicit begin */
+    PM_CONTEXT_ENSURE_EXPLICIT_BEGIN,
+
+    /** an ensure statement with an implicit begin */
+    PM_CONTEXT_ENSURE_IMPLICIT_BEGIN,
 
     /** an ensure statement within a method definition */
     PM_CONTEXT_ENSURE_DEF,
+
+    /** an ensure statement within a do..end block */
+    PM_CONTEXT_ENSURE_DO_BLOCK,
 
     /** a for loop */
     PM_CONTEXT_FOR,
@@ -343,17 +349,29 @@ typedef enum {
     /** a BEGIN block */
     PM_CONTEXT_PREEXE,
 
-    /** a rescue else statement */
-    PM_CONTEXT_RESCUE_ELSE,
+    /** a rescue else statement with an explicit begin */
+    PM_CONTEXT_RESCUE_ELSE_EXPLICIT_BEGIN,
+
+    /** a rescue else statement with an implicit begin */
+    PM_CONTEXT_RESCUE_ELSE_IMPLICIT_BEGIN,
 
     /** a rescue else statement within a method definition */
     PM_CONTEXT_RESCUE_ELSE_DEF,
 
-    /** a rescue statement */
-    PM_CONTEXT_RESCUE,
+    /** a rescue else statement within a do..end block */
+    PM_CONTEXT_RESCUE_ELSE_DO_BLOCK,
+
+    /** a rescue statement with an explicit begin */
+    PM_CONTEXT_RESCUE_EXPLICIT_BEGIN,
+
+    /** a rescue statement with an implicit begin */
+    PM_CONTEXT_RESCUE_IMPLICIT_BEGIN,
 
     /** a rescue statement within a method definition */
     PM_CONTEXT_RESCUE_DEF,
+
+    /** a rescue statement within a do..end block */
+    PM_CONTEXT_RESCUE_DO_BLOCK,
 
     /** a singleton class definition */
     PM_CONTEXT_SCLASS,
