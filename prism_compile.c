@@ -4276,7 +4276,7 @@ pm_compile_constant_path(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
             ADD_INSN1(body, &dummy_line_node, getconstant, name);
         }
         else {
-            pm_compile_constant_path(iseq, cast->parent, prefix, body, popped, scope_node);
+            pm_compile_constant_path(iseq, cast->parent, prefix, body, false, scope_node);
             ADD_INSN1(body, &dummy_line_node, putobject, Qfalse);
             ADD_INSN1(body, &dummy_line_node, getconstant, name);
         }
