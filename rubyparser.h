@@ -136,7 +136,6 @@ enum node_type {
     NODE_MATCH,
     NODE_MATCH2,
     NODE_MATCH3,
-    NODE_LIT,
     NODE_INTEGER,
     NODE_FLOAT,
     NODE_RATIONAL,
@@ -675,12 +674,6 @@ typedef struct RNode_MATCH3 {
     struct RNode *nd_value;
 } rb_node_match3_t;
 
-typedef struct RNode_LIT {
-    NODE node;
-
-    VALUE nd_lit;
-} rb_node_lit_t;
-
 typedef struct RNode_INTEGER {
     NODE node;
 
@@ -1131,7 +1124,6 @@ typedef struct RNode_ERROR {
 #define RNODE_MATCH(node) ((struct RNode_MATCH *)(node))
 #define RNODE_MATCH2(node) ((struct RNode_MATCH2 *)(node))
 #define RNODE_MATCH3(node) ((struct RNode_MATCH3 *)(node))
-#define RNODE_LIT(node) ((struct RNode_LIT *)(node))
 #define RNODE_INTEGER(node) ((struct RNode_INTEGER *)(node))
 #define RNODE_FLOAT(node) ((struct RNode_FLOAT *)(node))
 #define RNODE_RATIONAL(node) ((struct RNode_RATIONAL *)(node))

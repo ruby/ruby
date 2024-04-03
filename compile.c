@@ -1927,9 +1927,6 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
         }
         else {
             switch (nd_type(val_node)) {
-              case NODE_LIT:
-                dv = RNODE_LIT(val_node)->nd_lit;
-                break;
               case NODE_SYM:
                 dv = rb_node_sym_string_val(val_node);
                 break;
@@ -4510,7 +4507,6 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
             else_label = NEW_LABEL(nd_line(cond));
         }
         goto again;
-      case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
@@ -4591,8 +4587,6 @@ static VALUE
 get_symbol_value(rb_iseq_t *iseq, const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_LIT:
-        return RNODE_LIT(node)->nd_lit;
       case NODE_SYM:
         return rb_node_sym_string_val(node);
       default:
@@ -4641,10 +4635,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             seen_nodes++;
 
             RUBY_ASSERT(nd_type_p(node, NODE_LIST));
-            if (key_node && nd_type_p(key_node, NODE_LIT) && SYMBOL_P(RNODE_LIT(key_node)->nd_lit)) {
-                /* can be keywords */
-            }
-            else if (key_node && nd_type_p(key_node, NODE_SYM)) {
+            if (key_node && nd_type_p(key_node, NODE_SYM)) {
                 /* can be keywords */
             }
             else {
@@ -4729,7 +4720,6 @@ static inline bool
 static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
 {
     switch (nd_type(node)) {
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
@@ -4788,8 +4778,6 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         else {
             return rb_fstring(get_string_value(node));
         }
-      case NODE_LIT:
-        return RNODE_LIT(node)->nd_lit;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -5068,7 +5056,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 FLUSH_CHUNK();
 
                 const NODE *kw = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
-                int empty_kw = nd_type_p(kw, NODE_LIT) && RB_TYPE_P(RNODE_LIT(kw)->nd_lit, T_HASH); /* foo(  ..., **{}, ...) */
+                int empty_kw = nd_type_p(kw, NODE_HASH) && (!RNODE_HASH(kw)->nd_head); /* foo(  ..., **{}, ...) */
                 int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
                 int last_kw = !RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next; /* foo(  ..., **kw) */
                 int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
@@ -5133,13 +5121,6 @@ VALUE
 rb_node_case_when_optimizable_literal(const NODE *const node)
 {
     switch (nd_type(node)) {
-      case NODE_LIT: {
-        VALUE v = RNODE_LIT(node)->nd_lit;
-        if (SYMBOL_P(v)) {
-            return v;
-        }
-        break;
-      }
       case NODE_INTEGER:
         return rb_node_integer_literal_val(node);
       case NODE_FLOAT: {
@@ -5815,7 +5796,6 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       }
         /* fall through */
       case NODE_STR:
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
@@ -6399,8 +6379,6 @@ optimizable_range_item_p(const NODE *n)
 {
     if (!n) return FALSE;
     switch (nd_type(n)) {
-      case NODE_LIT:
-        return RB_INTEGER_TYPE_P(RNODE_LIT(n)->nd_lit);
       case NODE_LINE:
         return TRUE;
       case NODE_INTEGER:
@@ -6416,8 +6394,6 @@ static VALUE
 optimized_range_item(const NODE *n)
 {
     switch (nd_type(n)) {
-      case NODE_LIT:
-        return RNODE_LIT(n)->nd_lit;
       case NODE_LINE:
         return rb_node_line_lineno_val(n);
       case NODE_INTEGER:
@@ -7243,7 +7219,6 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_INSNL(ret, line_node, jump, unmatched);
         break;
       }
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
@@ -8645,9 +8620,6 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
           case NODE_SYM:
             symbol = rb_node_sym_string_val(node);
             break;
-          case NODE_LIT:
-            symbol = RNODE_LIT(node)->nd_lit;
-            break;
           default:
             goto bad_arg;
         }
@@ -8693,9 +8665,6 @@ compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, c
     switch (nd_type(node)) {
       case NODE_SYM:
         name = rb_node_sym_string_val(node);
-        break;
-      case NODE_LIT:
-        name = RNODE_LIT(node)->nd_lit;
         break;
       default:
         goto bad_arg;
@@ -8935,20 +8904,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                 labels_table = st_init_numtable();
                 ISEQ_COMPILE_DATA(iseq)->labels_table = labels_table;
             }
-            if (nd_type_p(node->nd_args->nd_head, NODE_LIT) &&
-                SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
-
-                label_name = node->nd_args->nd_head->nd_lit;
-                if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
-                    label = NEW_LABEL(nd_line(line_node));
-                    label->position = nd_line(line_node);
-                    st_insert(labels_table, (st_data_t)label_name, (st_data_t)label);
-                }
-                else {
-                    label = (LABEL *)data;
-                }
-            }
-            else {
+            {
                 COMPILE_ERROR(ERROR_ARGS "invalid goto/label format");
                 return COMPILE_NG;
             }
@@ -9834,8 +9790,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         COMPILE_ERROR(ERROR_ARGS "unreachable");
         return COMPILE_NG;
     }
-    else if (nd_type_p(default_value, NODE_LIT) ||
-             nd_type_p(default_value, NODE_SYM) ||
+    else if (nd_type_p(default_value, NODE_SYM) ||
              nd_type_p(default_value, NODE_REGX) ||
              nd_type_p(default_value, NODE_LINE) ||
              nd_type_p(default_value, NODE_INTEGER) ||
@@ -10074,9 +10029,6 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         goto compile;
       case NODE_NIL:
         *value_p = Qnil;
-        goto compile;
-      case NODE_LIT:
-        *value_p = RNODE_LIT(node)->nd_lit;
         goto compile;
       case NODE_SYM:
         *value_p = rb_node_sym_string_val(node);
@@ -10664,14 +10616,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_MATCH3:
         CHECK(compile_match(iseq, ret, node, popped, type));
         break;
-      case NODE_LIT:{
-        debugp_param("lit", RNODE_LIT(node)->nd_lit);
-        if (!popped) {
-            ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
-            RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
-        }
-        break;
-      }
       case NODE_SYM:{
         if (!popped) {
             ADD_INSN1(ret, node, putobject, rb_node_sym_string_val(node));

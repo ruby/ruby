@@ -2642,9 +2642,6 @@ rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
       case NODE_IMAGINARY:
         rb_parser_printf(p, "%+"PRIsVALUE, rb_node_imaginary_literal_val($$));
         break;
-      case NODE_LIT:
-        rb_parser_printf(p, "%+"PRIsVALUE, RNODE_LIT($$)->nd_lit);
-        break;
       default:
         break;
     }
@@ -6848,7 +6845,6 @@ singleton	: var_ref
                           case NODE_DXSTR:
                           case NODE_REGX:
                           case NODE_DREGX:
-                          case NODE_LIT:
                           case NODE_SYM:
                           case NODE_LINE:
                           case NODE_FILE:
@@ -14222,7 +14218,6 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_CONST:
         useless = "a constant";
         break;
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
@@ -14368,7 +14363,6 @@ is_static_content(NODE *node)
         do {
             if (!is_static_content(RNODE_LIST(node)->nd_head)) return 0;
         } while ((node = RNODE_LIST(node)->nd_next) != 0);
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
@@ -14503,21 +14497,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
       case NODE_SYM:
       case NODE_DSYM:
-      warn_symbol:
         SWITCH_BY_COND_TYPE(type, warning, "symbol ");
-        break;
-
-      case NODE_LIT:
-        if (RNODE_LIT(node)->nd_lit == Qtrue ||
-            RNODE_LIT(node)->nd_lit == Qfalse) {
-            /* booleans are OK, e.g., while true */
-        }
-        else if (SYMBOL_P(RNODE_LIT(node)->nd_lit)) {
-            goto warn_symbol;
-        }
-        else {
-            SWITCH_BY_COND_TYPE(type, warning, "");
-        }
         break;
 
       case NODE_LINE:

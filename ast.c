@@ -551,6 +551,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         name[1] = (char)RNODE_BACK_REF(node)->nd_nth;
         name[2] = '\0';
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
+      case NODE_MATCH:
+        return rb_ary_new_from_args(1, rb_node_regx_string_val(node));
       case NODE_MATCH2:
         if (RNODE_MATCH2(node)->nd_args) {
             return rb_ary_new_from_node_args(ast, 3, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value, RNODE_MATCH2(node)->nd_args);
@@ -558,9 +560,6 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value);
       case NODE_MATCH3:
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH3(node)->nd_recv, RNODE_MATCH3(node)->nd_value);
-      case NODE_MATCH:
-      case NODE_LIT:
-        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_STR:
       case NODE_XSTR:
         return rb_ary_new_from_args(1, rb_node_str_string_val(node));
