@@ -1793,8 +1793,8 @@ impl Context {
     }
 
     /// Get an operand for the adjusted stack pointer address
-    pub fn sp_opnd(&self, offset_bytes: i32) -> Opnd {
-        let offset = ((self.sp_offset as i32) * SIZEOF_VALUE_I32) + offset_bytes;
+    pub fn sp_opnd(&self, offset: i32) -> Opnd {
+        let offset = (self.sp_offset as i32 + offset) * SIZEOF_VALUE_I32;
         return Opnd::mem(64, SP, offset);
     }
 
