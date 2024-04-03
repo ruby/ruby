@@ -19,9 +19,6 @@ void Init_ext(void);
 /* file.c */
 void Init_File(void);
 
-/* gc.c */
-void Init_heap(void);
-
 /* localeinit.c */
 int Init_enc_set_filesystem_encoding(void);
 
