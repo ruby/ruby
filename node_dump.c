@@ -60,6 +60,22 @@
          field_flag; /* should be optimized away */ \
          reset, field_flag = 0)
 
+#define A_SHAREABILITY(shareability) \
+    switch (shareability) { \
+      case rb_parser_shareable_none: \
+        rb_str_cat_cstr(buf, "none"); \
+        break; \
+      case rb_parser_shareable_literal: \
+        rb_str_cat_cstr(buf, "literal"); \
+        break; \
+      case rb_parser_shareable_copy: \
+        rb_str_cat_cstr(buf, "experimental_copy"); \
+        break; \
+      case rb_parser_shareable_everything: \
+        rb_str_cat_cstr(buf, "experimental_everything"); \
+        break; \
+    }
+
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, type, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(type(node)->name)
@@ -68,6 +84,7 @@
 #define F_LIT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(type(node)->name)
 #define F_VALUE(name, val, ann)     SIMPLE_FIELD1(#name, ann) A_LIT(val)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
+#define F_SHAREABILITY(name, type, ann) SIMPLE_FIELD1(#name, ann) A_SHAREABILITY(type(node)->name)
 
 #define F_NODE(name, type, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, RNODE(type(node)->name));}
@@ -463,6 +480,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             F_MSG(nd_vid, "constant", "0 (see extension field)");
             F_NODE(nd_else, RNODE_CDECL, "extension");
         }
+        F_SHAREABILITY(shareability, RNODE_CDECL, "shareability");
         LAST_NODE;
         F_NODE(nd_value, RNODE_CDECL, "rvalue");
         return;
@@ -513,6 +531,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: A::B ||= 1");
         F_NODE(nd_head, RNODE_OP_CDECL, "constant");
         F_ID(nd_aid, RNODE_OP_CDECL, "operator");
+        F_SHAREABILITY(shareability, RNODE_OP_CDECL, "shareability");
         LAST_NODE;
         F_NODE(nd_value, RNODE_OP_CDECL, "rvalue");
         return;

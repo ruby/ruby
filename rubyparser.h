@@ -66,6 +66,13 @@ typedef struct rb_parser_string {
     char *ptr;
 } rb_parser_string_t;
 
+enum rb_parser_shareability {
+    rb_parser_shareable_none,
+    rb_parser_shareable_literal,
+    rb_parser_shareable_copy,
+    rb_parser_shareable_everything,
+};
+
 /*
  * AST Node
  */
@@ -444,6 +451,7 @@ typedef struct RNode_CDECL {
     ID nd_vid;
     struct RNode *nd_value;
     struct RNode *nd_else;
+    enum rb_parser_shareability shareability;
 } rb_node_cdecl_t;
 
 typedef struct RNode_CVASGN {
@@ -492,6 +500,7 @@ typedef struct RNode_OP_CDECL {
     struct RNode *nd_head;
     struct RNode *nd_value;
     ID nd_aid;
+    enum rb_parser_shareability shareability;
 } rb_node_op_cdecl_t;
 
 typedef struct RNode_CALL {

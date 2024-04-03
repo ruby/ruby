@@ -28,7 +28,6 @@ VALUE rb_node_dregx_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
 VALUE rb_node_file_path_val(const NODE *);
 VALUE rb_node_encoding_val(const NODE *);
-VALUE rb_node_const_decl_val(const NODE *node);
 
 VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
