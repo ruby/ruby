@@ -17090,12 +17090,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             switch (keyword.type) {
                 case PM_TOKEN_KEYWORD_BREAK: {
                     pm_node_t *node = (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
-                    parse_block_exit(parser, node, "break");
+                    if (!parser->parsing_eval) parse_block_exit(parser, node, "break");
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_NEXT: {
                     pm_node_t *node = (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
-                    parse_block_exit(parser, node, "next");
+                    if (!parser->parsing_eval) parse_block_exit(parser, node, "next");
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_RETURN: {
@@ -17137,7 +17137,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parse_arguments_list(parser, &arguments, false, accepts_command_call);
 
             pm_node_t *node = (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
-            parse_yield(parser, node);
+            if (!parser->parsing_eval) parse_yield(parser, node);
 
             return node;
         }
@@ -17787,7 +17787,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *node = (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
-            parse_block_exit(parser, node, "redo");
+            if (!parser->parsing_eval) parse_block_exit(parser, node, "redo");
 
             return node;
         }
@@ -19895,6 +19895,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .start_line = 1,
         .explicit_encoding = NULL,
         .command_line = 0,
+        .parsing_eval = false,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -19955,6 +19956,8 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         parser->version = options->version;
 
         // scopes option
+        parser->parsing_eval = options->scopes_count > 0;
+
         for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
             const pm_options_scope_t *scope = pm_options_scope_get(options, scope_index);
             pm_parser_scope_push(parser, scope_index == 0);

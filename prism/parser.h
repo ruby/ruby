@@ -796,6 +796,12 @@ struct pm_parser {
      */
     int8_t frozen_string_literal;
 
+    /**
+     * Whether or not we are parsing an eval string. This impacts whether or not
+     * we should evaluate if block exits/yields are valid.
+     */
+    bool parsing_eval;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
