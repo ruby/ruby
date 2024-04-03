@@ -2099,7 +2099,6 @@ AC_CHECK_FUNCS(gettimeofday)		# for making ac_cv_func_gettimeofday
 AC_CHECK_FUNCS(getuid)
 AC_CHECK_FUNCS(getuidx)
 AC_CHECK_FUNCS(gmtime_r)
-AC_CHECK_FUNCS(grantpt)
 AC_CHECK_FUNCS(initgroups)
 AC_CHECK_FUNCS(ioctl)
 AC_CHECK_FUNCS(isfinite)

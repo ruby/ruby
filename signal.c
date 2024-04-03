@@ -1548,21 +1548,3 @@ Init_signal(void)
 
     rb_enable_interrupt();
 }
-
-#if defined(HAVE_GRANTPT)
-extern int grantpt(int);
-#else
-static int
-fake_grantfd(int masterfd)
-{
-    errno = ENOSYS;
-    return -1;
-}
-#define grantpt(fd) fake_grantfd(fd)
-#endif
-
-int
-rb_grantpt(int masterfd)
-{
-    return grantpt(masterfd);
-}
