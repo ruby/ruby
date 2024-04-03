@@ -20,7 +20,7 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
  * the list to be twice as large as it was before. If the reallocation fails,
  * this function returns false, otherwise it returns true.
  */
-bool
+static bool
 pm_node_list_grow(pm_node_list_t *list, size_t size) {
     size_t requested_size = list->size + size;
 
@@ -45,8 +45,12 @@ pm_node_list_grow(pm_node_list_t *list, size_t size) {
         next_capacity = double_capacity;
     }
 
-    list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * next_capacity);
-    return list->nodes != NULL;
+    pm_node_t **nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * next_capacity);
+    if (nodes == NULL) return false;
+
+    list->nodes = nodes;
+    list->capacity = next_capacity;
+    return true;
 }
 
 /**
