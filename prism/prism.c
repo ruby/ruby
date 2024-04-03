@@ -16073,6 +16073,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
     while (context_node != NULL) {
         switch (context_node->context) {
             case PM_CONTEXT_DEF:
+            case PM_CONTEXT_DEF_PARAMS:
             case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_DEF_ENSURE:
             case PM_CONTEXT_DEF_RESCUE:
@@ -16112,7 +16113,6 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_BLOCK_RESCUE:
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_CASE_WHEN:
-            case PM_CONTEXT_DEF_PARAMS:
             case PM_CONTEXT_DEFAULT_PARAMS:
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
