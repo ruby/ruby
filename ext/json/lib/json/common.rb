@@ -1,8 +1,9 @@
 #frozen_string_literal: false
 require 'json/version'
-require 'json/generic_object'
 
 module JSON
+  autoload :GenericObject, 'json/generic_object'
+
   NOT_SET = Object.new.freeze
   private_constant :NOT_SET
 
