@@ -309,6 +309,7 @@ describe "The if expression" do
     it "warns when Integer literals are used instead of predicates" do
       -> {
         eval <<~RUBY
+          $. = 0
           10.times { |i| ScratchPad << i if 4..5 }
         RUBY
       }.should complain(/warning: integer literal in flip-flop/, verbose: true)
