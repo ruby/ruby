@@ -75,6 +75,7 @@ debug_context(pm_context_t context) {
         case PM_CONTEXT_POSTEXE: return "POSTEXE";
         case PM_CONTEXT_PREDICATE: return "PREDICATE";
         case PM_CONTEXT_PREEXE: return "PREEXE";
+        case PM_CONTEXT_RESCUE_MODIFIER: return "RESCUE_MODIFIER";
         case PM_CONTEXT_SCLASS: return "SCLASS";
         case PM_CONTEXT_SCLASS_ENSURE: return "SCLASS_ENSURE";
         case PM_CONTEXT_SCLASS_ELSE: return "SCLASS_ELSE";
@@ -7615,6 +7616,7 @@ context_terminator(pm_context_t context, pm_token_t *token) {
         case PM_CONTEXT_DEF_PARAMS:
         case PM_CONTEXT_DEFINED:
         case PM_CONTEXT_TERNARY:
+        case PM_CONTEXT_RESCUE_MODIFIER:
             return token->type == PM_TOKEN_EOF;
         case PM_CONTEXT_DEFAULT_PARAMS:
             return token->type == PM_TOKEN_COMMA || token->type == PM_TOKEN_PARENTHESIS_RIGHT;
@@ -7824,6 +7826,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_DEF_RESCUE:
         case PM_CONTEXT_LAMBDA_RESCUE:
         case PM_CONTEXT_MODULE_RESCUE:
+        case PM_CONTEXT_RESCUE_MODIFIER:
         case PM_CONTEXT_SCLASS_RESCUE: return "'rescue' clause";
         case PM_CONTEXT_SCLASS: return "singleton class definition";
         case PM_CONTEXT_TERNARY: return "ternary expression";
@@ -14018,6 +14021,7 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node, const char *type) {
             case PM_CONTEXT_MODULE_ENSURE:
             case PM_CONTEXT_MODULE_RESCUE:
             case PM_CONTEXT_PARENS:
+            case PM_CONTEXT_RESCUE_MODIFIER:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
                 // If we got to an expression that could be modified by a
@@ -15994,6 +15998,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_MODULE_RESCUE:
             case PM_CONTEXT_SCLASS_RESCUE:
             case PM_CONTEXT_DEFINED:
+            case PM_CONTEXT_RESCUE_MODIFIER:
                 // These are the good cases. We're allowed to have a retry here.
                 return;
             case PM_CONTEXT_CLASS:
@@ -16129,6 +16134,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_MODIFIER:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
             case PM_CONTEXT_UNTIL:
@@ -17459,10 +17465,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, binding_power < PM_BINDING_POWER_COMPOSITION, PM_ERR_DEF_ENDLESS);
 
                 if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+                    context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
+
                     pm_token_t rescue_keyword = parser->previous;
                     pm_node_t *value = parse_expression(parser, binding_power, false, PM_ERR_RESCUE_MODIFIER_VALUE);
-                    pm_rescue_modifier_node_t *rescue_node = pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value);
-                    statement = (pm_node_t *)rescue_node;
+                    context_pop(parser);
+
+                    statement = (pm_node_t *) pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value);
                 }
 
                 pm_statements_node_body_append((pm_statements_node_t *) statements, statement);
@@ -18595,9 +18604,13 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
 
     // Contradicting binding powers, the right-hand-side value of rthe assignment allows the `rescue` modifier.
     if (match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
+
         pm_token_t rescue = parser->current;
         parser_lex(parser);
+
         pm_node_t *right = parse_expression(parser, binding_power, false, PM_ERR_RESCUE_MODIFIER_VALUE);
+        context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
     }
@@ -18629,6 +18642,8 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     // Contradicting binding powers, the right-hand-side value of the assignment
     // allows the `rescue` modifier.
     if ((single_value || (binding_power == (PM_BINDING_POWER_MULTI_ASSIGNMENT + 1))) && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
+
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
@@ -18644,6 +18659,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         }
 
         pm_node_t *right = parse_expression(parser, binding_power, accepts_command_call_inner, PM_ERR_RESCUE_MODIFIER_VALUE);
+        context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
     }
@@ -19496,9 +19512,12 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             }
         }
         case PM_TOKEN_KEYWORD_RESCUE_MODIFIER: {
+            context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
             parser_lex(parser);
             accept1(parser, PM_TOKEN_NEWLINE);
+
             pm_node_t *value = parse_expression(parser, binding_power, true, PM_ERR_RESCUE_MODIFIER_VALUE);
+            context_pop(parser);
 
             return (pm_node_t *) pm_rescue_modifier_node_create(parser, node, &token, value);
         }

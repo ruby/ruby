@@ -391,6 +391,9 @@ typedef enum {
     /** a BEGIN block */
     PM_CONTEXT_PREEXE,
 
+    /** a modifier rescue clause */
+    PM_CONTEXT_RESCUE_MODIFIER,
+
     /** a singleton class definition */
     PM_CONTEXT_SCLASS,
 
