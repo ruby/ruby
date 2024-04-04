@@ -979,7 +979,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_public_method_missing
     # [Bug #19793]
-    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.stress = true
 
       class Object
