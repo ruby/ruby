@@ -4861,7 +4861,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // This is the label where all of the when clauses will jump to if they
         // have matched and are done executing their bodies.
-        LABEL *end_label = NEW_LABEL(lineno);
+        LABEL *end_label = NEW_LABEL(location.line);
 
         // If we have a predicate on this case statement, then it's going to
         // compare all of the various when clauses to the predicate. If we
@@ -4877,15 +4877,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 int clause_lineno = pm_node_line_number(parser, (const pm_node_t *) clause);
                 LABEL *label = NEW_LABEL(clause_lineno);
 
-                ADD_LABEL(body_seq, label);
+                PUSH_LABEL(body_seq, label);
                 if (clause->statements != NULL) {
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    ADD_INSN(body_seq, &dummy_line_node, putnil);
+                    PUSH_INSN(body_seq, location, putnil);
                 }
 
-                ADD_INSNL(body_seq, &dummy_line_node, jump, end_label);
+                PUSH_INSNL(body_seq, location, jump, end_label);
 
                 // Compile each of the conditions for the when clause into the
                 // cond_seq. Each one should have a unique condition and should
@@ -4894,15 +4894,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     const pm_node_t *condition = conditions->nodes[condition_index];
 
                     if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
-                        ADD_INSN(cond_seq, &dummy_line_node, putnil);
+                        PUSH_INSN(cond_seq, location, putnil);
                         pm_compile_node(iseq, condition, cond_seq, false, scope_node);
-                        ADD_INSN1(cond_seq, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
-                        ADD_INSNL(cond_seq, &dummy_line_node, branchif, label);
+                        PUSH_INSN1(cond_seq, location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
+                        PUSH_INSNL(cond_seq, location, branchif, label);
                     }
                     else {
                         LABEL *next_label = NEW_LABEL(pm_node_line_number(parser, condition));
                         pm_compile_branch_condition(iseq, cond_seq, condition, label, next_label, false, scope_node);
-                        ADD_LABEL(cond_seq, next_label);
+                        PUSH_LABEL(cond_seq, next_label);
                     }
                 }
             }
@@ -4912,18 +4912,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_compile_node(iseq, (const pm_node_t *) cast->consequent, cond_seq, popped, scope_node);
             }
             else if (!popped) {
-                ADD_INSN(cond_seq, &dummy_line_node, putnil);
+                PUSH_INSN(cond_seq, location, putnil);
             }
 
             // Finally, jump to the end label if none of the other conditions
             // have matched.
-            ADD_INSNL(cond_seq, &dummy_line_node, jump, end_label);
+            PUSH_INSNL(cond_seq, location, jump, end_label);
             ADD_SEQ(ret, cond_seq);
         }
         else {
             // This is the label where everything will fall into if none of the
             // conditions matched.
-            LABEL *else_label = NEW_LABEL(lineno);
+            LABEL *else_label = NEW_LABEL(location.line);
 
             // It's possible for us to speed up the case node by using a
             // dispatch hash. This is a hash that maps the conditions of the
@@ -4948,7 +4948,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
                 const pm_node_list_t *conditions = &clause->conditions;
 
-                LABEL *label = NEW_LABEL(lineno);
+                LABEL *label = NEW_LABEL(location.line);
 
                 // Compile each of the conditions for the when clause into the
                 // cond_seq. Each one should have a unique comparison that then
@@ -4964,42 +4964,42 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
 
                     if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
-                        ADD_INSN(cond_seq, &dummy_line_node, dup);
+                        PUSH_INSN(cond_seq, location, dup);
                         pm_compile_node(iseq, condition, cond_seq, false, scope_node);
-                        ADD_INSN1(cond_seq, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+                        PUSH_INSN1(cond_seq, location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
                     }
                     else {
                         if (PM_NODE_TYPE_P(condition, PM_STRING_NODE)) {
                             const pm_string_node_t *string = (const pm_string_node_t *) condition;
                             VALUE value = rb_fstring(parse_string_encoded(scope_node, (const pm_node_t *) string, &string->unescaped));
-                            ADD_INSN1(cond_seq, &dummy_line_node, putobject, value);
+                            PUSH_INSN1(cond_seq, location, putobject, value);
                         }
                         else {
                             pm_compile_node(iseq, condition, cond_seq, false, scope_node);
                         }
 
-                        ADD_INSN1(cond_seq, &dummy_line_node, topn, INT2FIX(1));
-                        ADD_SEND_WITH_FLAG(cond_seq, &dummy_line_node, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+                        PUSH_INSN1(cond_seq, location, topn, INT2FIX(1));
+                        PUSH_SEND_WITH_FLAG(cond_seq, location, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
                     }
 
-                    ADD_INSNL(cond_seq, &dummy_line_node, branchif, label);
+                    PUSH_INSNL(cond_seq, location, branchif, label);
                 }
 
                 // Now, add the label to the body and compile the body of the
                 // when clause. This involves popping the predicate, compiling
                 // the statements to be executed, and then compiling a jump to
                 // the end of the case node.
-                ADD_LABEL(body_seq, label);
-                ADD_INSN(body_seq, &dummy_line_node, pop);
+                PUSH_LABEL(body_seq, label);
+                PUSH_INSN(body_seq, location, pop);
 
                 if (clause->statements != NULL) {
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    ADD_INSN(body_seq, &dummy_line_node, putnil);
+                    PUSH_INSN(body_seq, location, putnil);
                 }
 
-                ADD_INSNL(body_seq, &dummy_line_node, jump, end_label);
+                PUSH_INSNL(body_seq, location, jump, end_label);
             }
 
             // Now that we have compiled the conditions and the bodies of the
@@ -5012,7 +5012,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // optimization.
             if (dispatch != Qundef) {
                 PM_DUP;
-                ADD_INSN2(ret, &dummy_line_node, opt_case_dispatch, dispatch, else_label);
+                PUSH_INSN2(ret, location, opt_case_dispatch, dispatch, else_label);
                 LABEL_REF(else_label);
             }
 
@@ -5020,21 +5020,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             // Compile either the explicit else clause or an implicit else
             // clause.
-            ADD_LABEL(ret, else_label);
-            PM_POP;
+            PUSH_LABEL(ret, else_label);
+            PUSH_INSN(ret, location, pop);
 
             if (cast->consequent != NULL) {
                 PM_COMPILE((const pm_node_t *) cast->consequent);
             }
             else if (!popped) {
-                PM_PUTNIL;
+                PUSH_INSN(ret, location, putnil);
             }
 
-            ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+            PUSH_INSNL(ret, location, jump, end_label);
         }
 
         ADD_SEQ(ret, body_seq);
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
@@ -5060,12 +5060,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // This label is used to indicate the end of the entire node. It is
         // jumped to after the entire stack is cleaned up.
-        LABEL *end_label = NEW_LABEL(lineno);
+        LABEL *end_label = NEW_LABEL(location.line);
 
         // This label is used as the fallback for the case match. If no match is
         // found, then we jump to this label. This is either an `else` clause or
         // an error handler.
-        LABEL *else_label = NEW_LABEL(lineno);
+        LABEL *else_label = NEW_LABEL(location.line);
 
         // We're going to use this to uniquely identify each branch so that we
         // can track coverage information.
@@ -5080,14 +5080,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // First, we're going to push a bunch of stuff onto the stack that is
         // going to serve as our scratch space.
         if (in_single_pattern) {
-            ADD_INSN(ret, &dummy_line_node, putnil); // key error key
-            ADD_INSN(ret, &dummy_line_node, putnil); // key error matchee
-            ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse); // key error?
-            ADD_INSN(ret, &dummy_line_node, putnil); // error string
+            PUSH_INSN(ret, location, putnil); // key error key
+            PUSH_INSN(ret, location, putnil); // key error matchee
+            PUSH_INSN1(ret, location, putobject, Qfalse); // key error?
+            PUSH_INSN(ret, location, putnil); // error string
         }
 
         // Now we're going to compile the value to match against.
-        ADD_INSN(ret, &dummy_line_node, putnil); // deconstruct cache
+        PUSH_INSN(ret, location, putnil); // deconstruct cache
         PM_COMPILE_NOT_POPPED(cast->predicate);
 
         // Next, we'll loop through every in clause and compile its body into
@@ -5099,20 +5099,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             RUBY_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
             const pm_in_node_t *in_node = (const pm_in_node_t *) condition;
-
-            pm_line_node_t in_line;
-            pm_line_node(&in_line, scope_node, (const pm_node_t *) in_node);
-
-            pm_line_node_t pattern_line;
-            pm_line_node(&pattern_line, scope_node, (const pm_node_t *) in_node->pattern);
+            const pm_line_column_t in_location = pm_newline_list_line_column(&parser->newline_list, in_node->base.location.start, parser->start_line);
+            const pm_line_column_t pattern_location = pm_newline_list_line_column(&parser->newline_list, in_node->pattern->location.start, parser->start_line);
 
             if (branch_id) {
-                ADD_INSN(body_seq, &in_line.node, putnil);
+                PUSH_INSN(body_seq, in_location, putnil);
             }
 
-            LABEL *body_label = NEW_LABEL(in_line.lineno);
-            ADD_LABEL(body_seq, body_label);
-            ADD_INSN1(body_seq, &in_line.node, adjuststack, INT2FIX(in_single_pattern ? 6 : 2));
+            LABEL *body_label = NEW_LABEL(in_location.line);
+            PUSH_LABEL(body_seq, body_label);
+            PUSH_INSN1(body_seq, in_location, adjuststack, INT2FIX(in_single_pattern ? 6 : 2));
 
             // TODO: We need to come back to this and enable trace branch
             // coverage. At the moment we can't call this function because it
@@ -5124,15 +5120,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE_INTO_ANCHOR(body_seq, (const pm_node_t *) in_node->statements);
             }
             else if (!popped) {
-                ADD_INSN(body_seq, &in_line.node, putnil);
+                PUSH_INSN(body_seq, in_location, putnil);
             }
 
-            ADD_INSNL(body_seq, &in_line.node, jump, end_label);
-            LABEL *next_pattern_label = NEW_LABEL(pattern_line.lineno);
+            PUSH_INSNL(body_seq, in_location, jump, end_label);
+            LABEL *next_pattern_label = NEW_LABEL(pattern_location.line);
 
-            ADD_INSN(cond_seq, &pattern_line.node, dup);
+            PUSH_INSN(cond_seq, pattern_location, dup);
             pm_compile_pattern(iseq, scope_node, in_node->pattern, cond_seq, body_label, next_pattern_label, in_single_pattern, false, true, 2);
-            ADD_LABEL(cond_seq, next_pattern_label);
+            PUSH_LABEL(cond_seq, next_pattern_label);
             LABEL_UNREMOVABLE(next_pattern_label);
         }
 
@@ -5142,9 +5138,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // error).
             const pm_else_node_t *else_node = (const pm_else_node_t *) cast->consequent;
 
-            ADD_LABEL(cond_seq, else_label);
-            ADD_INSN(cond_seq, &dummy_line_node, pop);
-            ADD_INSN(cond_seq, &dummy_line_node, pop);
+            PUSH_LABEL(cond_seq, else_label);
+            PUSH_INSN(cond_seq, location, pop);
+            PUSH_INSN(cond_seq, location, pop);
 
             // TODO: trace branch coverage
             // add_trace_branch_coverage(iseq, cond_seq, cast->consequent, branch_id, "else", branches);
@@ -5153,19 +5149,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE_INTO_ANCHOR(cond_seq, (const pm_node_t *) else_node->statements);
             }
             else if (!popped) {
-                ADD_INSN(cond_seq, &dummy_line_node, putnil);
+                PUSH_INSN(cond_seq, location, putnil);
             }
 
-            ADD_INSNL(cond_seq, &dummy_line_node, jump, end_label);
-            ADD_INSN(cond_seq, &dummy_line_node, putnil);
-            if (popped) {
-                ADD_INSN(cond_seq, &dummy_line_node, putnil);
-            }
+            PUSH_INSNL(cond_seq, location, jump, end_label);
+            PUSH_INSN(cond_seq, location, putnil);
+            if (popped) PUSH_INSN(cond_seq, location, putnil);
         }
         else {
             // Otherwise, if we do not have an `else` clause, we will compile in
             // the code to handle raising an appropriate error.
-            ADD_LABEL(cond_seq, else_label);
+            PUSH_LABEL(cond_seq, else_label);
 
             // TODO: trace branch coverage
             // add_trace_branch_coverage(iseq, cond_seq, orig_node, branch_id, "else", branches);
@@ -5174,16 +5168,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_compile_pattern_error_handler(iseq, scope_node, node, cond_seq, end_label, popped);
             }
             else {
-                ADD_INSN1(cond_seq, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                ADD_INSN1(cond_seq, &dummy_line_node, putobject, rb_eNoMatchingPatternError);
-                ADD_INSN1(cond_seq, &dummy_line_node, topn, INT2FIX(2));
-                ADD_SEND(cond_seq, &dummy_line_node, id_core_raise, INT2FIX(2));
+                PUSH_INSN1(cond_seq, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                PUSH_INSN1(cond_seq, location, putobject, rb_eNoMatchingPatternError);
+                PUSH_INSN1(cond_seq, location, topn, INT2FIX(2));
+                PUSH_SEND(cond_seq, location, id_core_raise, INT2FIX(2));
 
-                ADD_INSN1(cond_seq, &dummy_line_node, adjuststack, INT2FIX(3));
-                if (!popped) ADD_INSN(cond_seq, &dummy_line_node, putnil);
-                ADD_INSNL(cond_seq, &dummy_line_node, jump, end_label);
-                ADD_INSN1(cond_seq, &dummy_line_node, dupn, INT2FIX(1));
-                if (popped) ADD_INSN(cond_seq, &dummy_line_node, putnil);
+                PUSH_INSN1(cond_seq, location, adjuststack, INT2FIX(3));
+                if (!popped) PUSH_INSN(cond_seq, location, putnil);
+                PUSH_INSNL(cond_seq, location, jump, end_label);
+                PUSH_INSN1(cond_seq, location, dupn, INT2FIX(1));
+                if (popped) PUSH_INSN(cond_seq, location, putnil);
             }
         }
 
@@ -5192,7 +5186,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // entire sequence with the end label.
         ADD_SEQ(ret, cond_seq);
         ADD_SEQ(ret, body_seq);
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
