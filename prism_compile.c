@@ -4364,8 +4364,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_TRACE(ret, event);
     }
 
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
-
     switch (PM_NODE_TYPE(node)) {
       case PM_ALIAS_GLOBAL_VARIABLE_NODE: {
         // alias $foo $bar
@@ -6444,7 +6442,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (!popped) PUSH_INSN(ret, location, dup);
 
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
-        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+        PUSH_SETLOCAL(ret, location, index.index, index.level);
         return;
       }
       case PM_MATCH_LAST_LINE_NODE: {
@@ -6594,7 +6592,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN1(ret, location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             PUSH_SEND(ret, location, idAREF, INT2FIX(1));
             PUSH_LABEL(ret, fail_label);
-            ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+            PUSH_SETLOCAL(ret, location, index.index, index.level);
             if (popped) PUSH_INSN(ret, location, pop);
             return;
         }
@@ -6616,10 +6614,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
             PUSH_INSN1(ret, location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             PUSH_SEND(ret, location, idAREF, INT2FIX(1));
-            ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+            PUSH_SETLOCAL(ret, location, index.index, index.level);
 
             PUSH_INSN(fail_anchor, location, putnil);
-            ADD_SETLOCAL(fail_anchor, &dummy_line_node, index.index, index.level);
+            PUSH_SETLOCAL(fail_anchor, location, index.index, index.level);
         }
 
         // Since we matched successfully, now we'll jump to the end.
@@ -6668,7 +6666,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_required_parameter_node_t *cast = (const pm_required_parameter_node_t *) node;
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, 0);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+        PUSH_SETLOCAL(ret, location, index.index, index.level);
         return;
       }
       case PM_MULTI_WRITE_NODE: {
@@ -6850,7 +6848,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE_NOT_POPPED(cast->value);
 
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, 0);
-        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+        PUSH_SETLOCAL(ret, location, index.index, index.level);
 
         return;
       }
@@ -7962,16 +7960,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     name = cast->name;
 
                     if (!PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) || PM_NODE_TYPE_P(value, PM_ARRAY_NODE) || PM_NODE_TYPE_P(value, PM_HASH_NODE) || PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
-                        LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
+                        LABEL *end_label = NEW_LABEL(location.line);
 
                         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, name, 0);
                         int kw_bits_idx = table_size - body->param.keyword->bits_start;
-                        ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(optional_index));
-                        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+                        PUSH_INSN2(ret, location, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(optional_index));
+                        PUSH_INSNL(ret, location, branchif, end_label);
                         PM_COMPILE(value);
-                        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
-
-                        ADD_LABEL(ret, end_label);
+                        PUSH_SETLOCAL(ret, location, index.index, index.level);
+                        PUSH_LABEL(ret, end_label);
                     }
                     optional_index++;
                     break;
@@ -8088,15 +8085,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             return;
           }
           case ISEQ_TYPE_METHOD: {
-            ADD_TRACE(ret, RUBY_EVENT_CALL);
+            PUSH_TRACE(ret, RUBY_EVENT_CALL);
             if (scope_node->body) {
-                PM_COMPILE((pm_node_t *)scope_node->body);
+                PM_COMPILE((const pm_node_t *) scope_node->body);
             }
             else {
-                ADD_INSN(ret, &dummy_line_node, putnil);
+                PUSH_INSN(ret, location, putnil);
             }
 
-            ADD_TRACE(ret, RUBY_EVENT_RETURN);
+            PUSH_TRACE(ret, RUBY_EVENT_RETURN);
             ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
             break;
@@ -8135,8 +8132,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         if (!PM_NODE_TYPE_P(scope_node->ast_node, PM_ENSURE_NODE)) {
-            NODE dummy_line_node = generate_dummy_line_node(ISEQ_COMPILE_DATA(iseq)->last_line, -1);
-            ADD_INSN(ret, &dummy_line_node, leave);
+            const pm_line_column_t location = { .line = ISEQ_COMPILE_DATA(iseq)->last_line, .column = -1 };
+            PUSH_INSN(ret, location, leave);
         }
         return;
       }
