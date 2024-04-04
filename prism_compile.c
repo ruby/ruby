@@ -4806,6 +4806,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CALL_OPERATOR_WRITE_NODE: {
+        // foo.bar += baz
+        // ^^^^^^^^^^^^^^^
+        //
         // Call operator writes occur when you have a call node on the left-hand
         // side of a write operator that is not `=`. As an example,
         // `foo.bar *= 1`. This breaks down to caching the receiver on the
@@ -4823,31 +4826,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         LABEL *safe_label = NULL;
         if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-            safe_label = NEW_LABEL(lineno);
-            PM_DUP;
-            ADD_INSNL(ret, &dummy_line_node, branchnil, safe_label);
+            safe_label = NEW_LABEL(location.line);
+            PUSH_INSN(ret, location, dup);
+            PUSH_INSNL(ret, location, branchnil, safe_label);
         }
 
-        PM_DUP;
+        PUSH_INSN(ret, location, dup);
 
         ID id_read_name = pm_constant_id_lookup(scope_node, cast->read_name);
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, id_read_name, INT2FIX(0), INT2FIX(flag));
+        PUSH_SEND_WITH_FLAG(ret, location, id_read_name, INT2FIX(0), INT2FIX(flag));
 
         PM_COMPILE_NOT_POPPED(cast->value);
         ID id_operator = pm_constant_id_lookup(scope_node, cast->operator);
-        ADD_SEND(ret, &dummy_line_node, id_operator, INT2FIX(1));
+        PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
         if (!popped) {
-            PM_SWAP;
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+            PUSH_INSN(ret, location, swap);
+            PUSH_INSN1(ret, location, topn, INT2FIX(1));
         }
 
         ID id_write_name = pm_constant_id_lookup(scope_node, cast->write_name);
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, id_write_name, INT2FIX(1), INT2FIX(flag));
+        PUSH_SEND_WITH_FLAG(ret, location, id_write_name, INT2FIX(1), INT2FIX(flag));
 
-        if (safe_label != NULL && popped) ADD_LABEL(ret, safe_label);
-        PM_POP;
-        if (safe_label != NULL && !popped) ADD_LABEL(ret, safe_label);
+        if (safe_label != NULL && popped) PUSH_LABEL(ret, safe_label);
+        PUSH_INSN(ret, location, pop);
+        if (safe_label != NULL && !popped) PUSH_LABEL(ret, safe_label);
 
         return;
       }
