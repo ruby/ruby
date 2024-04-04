@@ -1,7 +1,3 @@
-exclude(:test_class, "unknown")
 exclude(:test_return, "unknown")
 exclude(:test_return2, "unknown")
 exclude(:test_script_compiled, "unknown")
-exclude(:test_set_trace_func, "unknown")
-exclude(:test_thread_trace, "unknown")
-exclude(:test_tracepoint, "unknown")

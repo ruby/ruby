@@ -124,8 +124,11 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line_no, int c
 #define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
 
-#define PM_NODE_LINE_COLUMN(parser, node) \
+#define PM_NODE_START_LINE_COLUMN(parser, node) \
     pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start, (parser)->start_line)
+
+#define PM_NODE_END_LINE_COLUMN(parser, node) \
+    pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.end, (parser)->start_line)
 
 #define PM_LOCATION_LINE_COLUMN(parser, location) \
     pm_newline_list_line_column(&(parser)->newline_list, (location)->start, (parser)->start_line)
@@ -133,7 +136,7 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line_no, int c
 static int
 pm_node_line_number(const pm_parser_t *parser, const pm_node_t *node)
 {
-    return (int) PM_NODE_LINE_COLUMN(parser, node).line;
+    return (int) PM_NODE_START_LINE_COLUMN(parser, node).line;
 }
 
 static int
@@ -695,7 +698,7 @@ pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_no
 static void
 pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, cond);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, cond);
 
     DECL_ANCHOR(seq);
     INIT_ANCHOR(seq);
@@ -785,7 +788,7 @@ static void pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, cons
 static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond, LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, cond);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, cond);
 
 again:
     switch (PM_NODE_TYPE(cond)) {
@@ -1109,7 +1112,7 @@ pm_compile_call_and_or_write_node(rb_iseq_t *iseq, bool and_node, const pm_node_
 static void
 pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *elements, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     // If this element is not popped, then we need to create the hash on the
     // stack. Neighboring plain assoc nodes should be grouped together (either
@@ -1755,7 +1758,7 @@ static int pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, cons
 static int
 pm_compile_pattern_generic_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, VALUE message, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     LABEL *match_succeeded_label = NEW_LABEL(location.line);
 
     PUSH_INSN(ret, location, dup);
@@ -1785,7 +1788,7 @@ pm_compile_pattern_generic_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, c
 static int
 pm_compile_pattern_length_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, VALUE message, VALUE length, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     LABEL *match_succeeded_label = NEW_LABEL(location.line);
 
     PUSH_INSN(ret, location, dup);
@@ -1818,7 +1821,7 @@ pm_compile_pattern_length_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, co
 static int
 pm_compile_pattern_eqq_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     LABEL *match_succeeded_label = NEW_LABEL(location.line);
 
     PUSH_INSN(ret, location, dup);
@@ -1866,7 +1869,7 @@ pm_compile_pattern_match(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_
 static int
 pm_compile_pattern_deconstruct(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *deconstruct_label, LABEL *match_failed_label, LABEL *deconstructed_label, LABEL *type_error_label, bool in_single_pattern, bool use_deconstructed_cache, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     if (use_deconstructed_cache) {
         PUSH_INSN1(ret, location, topn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_DECONSTRUCTED_CACHE));
@@ -1918,7 +1921,7 @@ pm_compile_pattern_deconstruct(rb_iseq_t *iseq, pm_scope_node_t *scope_node, con
 static int
 pm_compile_pattern_constant(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *match_failed_label, bool in_single_pattern, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     PUSH_INSN(ret, location, dup);
     PM_COMPILE_NOT_POPPED(node);
@@ -1941,7 +1944,7 @@ pm_compile_pattern_constant(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const 
 static void
 pm_compile_pattern_error_handler(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *done_label, bool popped)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     LABEL *key_error_label = NEW_LABEL(location.line);
     LABEL *cleanup_label = NEW_LABEL(location.line);
 
@@ -1990,7 +1993,7 @@ pm_compile_pattern_error_handler(rb_iseq_t *iseq, const pm_scope_node_t *scope_n
 static int
 pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *matched_label, LABEL *unmatched_label, bool in_single_pattern, bool in_alternation_pattern, bool use_deconstructed_cache, unsigned int base_index)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ARRAY_PATTERN_NODE: {
@@ -3357,7 +3360,7 @@ pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, st_tabl
 static inline void
 pm_compile_destructured_param_write(rb_iseq_t *iseq, const pm_required_parameter_node_t *node, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, node->name, 0);
     PUSH_SETLOCAL(ret, location, index.index, index.level);
 }
@@ -3373,7 +3376,7 @@ pm_compile_destructured_param_write(rb_iseq_t *iseq, const pm_required_parameter
 static void
 pm_compile_destructured_param_writes(rb_iseq_t *iseq, const pm_multi_target_node_t *node, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     bool has_rest = (node->rest && PM_NODE_TYPE_P(node->rest, PM_SPLAT_NODE) && (((const pm_splat_node_t *) node->rest)->expression) != NULL);
     bool has_rights = node->rights.size > 0;
 
@@ -3570,7 +3573,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 static void
 pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
@@ -3786,7 +3789,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 static size_t
 pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     const pm_node_list_t *lefts;
     const pm_node_t *rest;
     const pm_node_list_t *rights;
@@ -3875,7 +3878,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 static void
 pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
@@ -4018,7 +4021,7 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
 {
     const pm_parser_t *parser = scope_node->parser;
     const pm_statements_node_t *statements = cast->ensure_clause->statements;
-    const pm_line_column_t location = statements != NULL ? PM_NODE_LINE_COLUMN(parser, statements) : *node_location;
+    const pm_line_column_t location = statements != NULL ? PM_NODE_START_LINE_COLUMN(parser, statements) : *node_location;
 
     LABEL *estart = NEW_LABEL(location.line);
     LABEL *eend = NEW_LABEL(location.line);
@@ -4199,7 +4202,7 @@ pm_constant_path_parts(const pm_node_t *node, const pm_scope_node_t *scope_node)
 static void
 pm_compile_constant_path(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const prefix, LINK_ANCHOR *const body, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_CONSTANT_READ_NODE: {
@@ -4307,7 +4310,7 @@ static void
 pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_parser_t *parser = scope_node->parser;
-    const pm_line_column_t location = PM_NODE_LINE_COLUMN(parser, node);
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(parser, node);
     int lineno = (int) location.line;
 
     if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
@@ -5059,8 +5062,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             RUBY_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
             const pm_in_node_t *in_node = (const pm_in_node_t *) condition;
-            const pm_line_column_t in_location = PM_NODE_LINE_COLUMN(parser, in_node);
-            const pm_line_column_t pattern_location = PM_NODE_LINE_COLUMN(parser, in_node->pattern);
+            const pm_line_column_t in_location = PM_NODE_START_LINE_COLUMN(parser, in_node);
+            const pm_line_column_t pattern_location = PM_NODE_START_LINE_COLUMN(parser, in_node->pattern);
 
             if (branch_id) {
                 PUSH_INSN(body_seq, in_location, putnil);
@@ -7227,6 +7230,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+            ADD_TRACE(ret, RUBY_EVENT_CLASS);
+        }
+
         if (scope_node->parameters) {
             switch (PM_NODE_TYPE(scope_node->parameters)) {
               case PM_BLOCK_PARAMETERS_NODE: {
@@ -8031,7 +8038,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             break;
           }
           case ISEQ_TYPE_ENSURE: {
-            const pm_line_column_t statements_location = (scope_node->body != NULL ? PM_NODE_LINE_COLUMN(scope_node->parser, scope_node->body) : location);
+            const pm_line_column_t statements_location = (scope_node->body != NULL ? PM_NODE_START_LINE_COLUMN(scope_node->parser, scope_node->body) : location);
             iseq_set_exception_local_table(iseq);
 
             if (scope_node->body != NULL) {
@@ -8089,10 +8096,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             break;
         }
 
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+            const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, scope_node->ast_node);
+            ADD_TRACE(ret, RUBY_EVENT_END);
+            ISEQ_COMPILE_DATA(iseq)->last_line = end_location.line;
+        }
+
         if (!PM_NODE_TYPE_P(scope_node->ast_node, PM_ENSURE_NODE)) {
             const pm_line_column_t location = { .line = ISEQ_COMPILE_DATA(iseq)->last_line, .column = -1 };
             PUSH_INSN(ret, location, leave);
         }
+
         return;
       }
       case PM_SELF_NODE: {
