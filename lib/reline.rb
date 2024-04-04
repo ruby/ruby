@@ -75,6 +75,7 @@ module Reline
 
     def initialize
       self.output = STDOUT
+      @mutex = Mutex.new
       @dialog_proc_list = {}
       yield self
       @completion_quote_character = nil
@@ -254,44 +255,48 @@ module Reline
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
-      unless confirm_multiline_termination
-        raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
-      end
+      @mutex.synchronize do
+        unless confirm_multiline_termination
+          raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
+        end
 
-      Reline.update_iogate
-      io_gate.with_raw_input do
-        inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
-      end
+        Reline.update_iogate
+        io_gate.with_raw_input do
+          inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
+        end
 
-      whole_buffer = line_editor.whole_buffer.dup
-      whole_buffer.taint if RUBY_VERSION < '2.7'
-      if add_hist and whole_buffer and whole_buffer.chomp("\n").size > 0
-        Reline::HISTORY << whole_buffer
-      end
+        whole_buffer = line_editor.whole_buffer.dup
+        whole_buffer.taint if RUBY_VERSION < '2.7'
+        if add_hist and whole_buffer and whole_buffer.chomp("\n").size > 0
+          Reline::HISTORY << whole_buffer
+        end
 
-      if line_editor.eof?
-        line_editor.reset_line
-        # Return nil if the input is aborted by C-d.
-        nil
-      else
-        whole_buffer
+        if line_editor.eof?
+          line_editor.reset_line
+          # Return nil if the input is aborted by C-d.
+          nil
+        else
+          whole_buffer
+        end
       end
     end
 
     def readline(prompt = '', add_hist = false)
-      Reline.update_iogate
-      io_gate.with_raw_input do
-        inner_readline(prompt, add_hist, false)
-      end
+      @mutex.synchronize do
+        Reline.update_iogate
+        io_gate.with_raw_input do
+          inner_readline(prompt, add_hist, false)
+        end
 
-      line = line_editor.line.dup
-      line.taint if RUBY_VERSION < '2.7'
-      if add_hist and line and line.chomp("\n").size > 0
-        Reline::HISTORY << line.chomp("\n")
-      end
+        line = line_editor.line.dup
+        line.taint if RUBY_VERSION < '2.7'
+        if add_hist and line and line.chomp("\n").size > 0
+          Reline::HISTORY << line.chomp("\n")
+        end
 
-      line_editor.reset_line if line_editor.line.nil?
-      line
+        line_editor.reset_line if line_editor.line.nil?
+        line
+      end
     end
 
     private def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)

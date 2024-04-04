@@ -1690,6 +1690,23 @@ begin
       EOC
     end
 
+    def test_thread_safe
+      start_terminal(6, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("[Thread.new{Reline.readline'>'},Thread.new{Reline.readmultiline('>'){true}}].map(&:join).size\n")
+      write("exit\n")
+      write("exit\n")
+      write("42\n")
+      close
+      assert_screen(<<~EOC)
+        >exit
+        >exit
+        => 2
+        prompt> 42
+        => 42
+        prompt>
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
