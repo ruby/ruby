@@ -5461,7 +5461,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_compile_constant_read(iseq, name, &cast->base.location, ret, scope_node);
         if (popped) PUSH_INSN(ret, location, pop);
-    
+
         return;
       }
       case PM_CONSTANT_AND_WRITE_NODE: {
@@ -5839,7 +5839,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(args, location, putobject, ID2SYM(id));
                 PUSH_GETLOCAL(args, location, idx, depth);
             }
-        
+
             PUSH_SEND(args, location, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
             flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
