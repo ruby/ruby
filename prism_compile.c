@@ -6641,6 +6641,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MULTI_WRITE_NODE: {
+        // foo, bar = baz
+        // ^^^^^^^^^^^^^^
+        //
         // A multi write node represents writing to multiple values using an =
         // operator. Importantly these nodes are only parsed when the left-hand
         // side of the operator has multiple targets. The right-hand side of the
@@ -6659,17 +6662,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         size_t stack_size = pm_compile_multi_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
 
         PM_COMPILE_NOT_POPPED(cast->value);
-        PM_DUP_UNLESS_POPPED;
+        if (!popped) PUSH_INSN(ret, location, dup);
 
         ADD_SEQ(ret, writes);
         if (!popped && stack_size >= 1) {
             // Make sure the value on the right-hand side of the = operator is
             // being returned before we pop the parent expressions.
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(stack_size));
+            PUSH_INSN1(ret, location, setn, INT2FIX(stack_size));
         }
 
         ADD_SEQ(ret, cleanup);
-
         return;
       }
       case PM_NEXT_NODE: {
