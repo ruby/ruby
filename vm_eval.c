@@ -1756,7 +1756,9 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         ruby_xfree(prev);
         prev = next;
     }
+
     pm_parse_result_free(&result);
+    rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
 
     return iseq;
 }
