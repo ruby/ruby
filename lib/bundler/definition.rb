@@ -227,7 +227,6 @@ module Bundler
       @resolver = nil
       @resolution_packages = nil
       @specs = nil
-      @gem_version_promoter = nil
 
       Bundler.ui.debug "The definition is missing dependencies, failed to resolve & materialize locally (#{e})"
       true
