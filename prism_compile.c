@@ -4622,15 +4622,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_BLOCK_ARGUMENT_NODE: {
-        pm_block_argument_node_t *cast = (pm_block_argument_node_t *) node;
+        // foo(&bar)
+        //     ^^^^
+        const pm_block_argument_node_t *cast = (const pm_block_argument_node_t *) node;
 
-        if (cast->expression) {
+        if (cast->expression != NULL) {
             PM_COMPILE(cast->expression);
         }
         else {
             // If there's no expression, this must be block forwarding.
             pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
-            ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(local_index.index + VM_ENV_DATA_SIZE - 1), INT2FIX(local_index.level));
+            PUSH_INSN2(ret, location, getblockparamproxy, INT2FIX(local_index.index + VM_ENV_DATA_SIZE - 1), INT2FIX(local_index.level));
         }
         return;
       }
