@@ -88,11 +88,6 @@
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
 
-#define rb_obj_freeze p->config->obj_freeze
-#define rb_obj_hide p->config->obj_hide
-#undef OBJ_FREEZE_RAW
-#define OBJ_FREEZE_RAW p->config->obj_freeze_raw
-
 #undef FIXNUM_P
 #define FIXNUM_P p->config->fixnum_p
 #undef SYMBOL_P
@@ -167,12 +162,6 @@
 #define rb_filesystem_str_new_cstr        p->config->filesystem_str_new_cstr
 #define rb_obj_as_string                  p->config->obj_as_string
 
-#define rb_hash_clear     p->config->hash_clear
-#define rb_hash_new       p->config->hash_new
-#define rb_hash_aset      p->config->hash_aset
-#define rb_hash_lookup    p->config->hash_lookup
-#define rb_ident_hash_new p->config->ident_hash_new
-
 #undef NUM2INT
 #define NUM2INT             p->config->num2int
 #undef INT2NUM
@@ -230,8 +219,6 @@
 #define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)p->config->sized_realloc_n((void *)(v), (m), sizeof(T), (n)))
 #undef RB_OBJ_WRITE
 #define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
-#undef RB_OBJ_WRITTEN
-#define RB_OBJ_WRITTEN(old, oldv, young) p->config->obj_written((VALUE)(old), (VALUE)(oldv), (VALUE)(young))
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
@@ -273,14 +260,11 @@
 #undef Qundef
 #define Qundef p->config->qundef
 #define rb_eArgError p->config->eArgError()
-#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
 #define rb_enc_mbminlen p->config->enc_mbminlen
 #define rb_enc_isascii p->config->enc_isascii
 #define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint
-
-#define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
 
 #undef st_init_table_with_size
 #define st_init_table_with_size rb_parser_st_init_table_with_size

@@ -82,8 +82,6 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 
 #define compile_callback rb_suppress_tracing
 VALUE rb_io_gets_internal(VALUE io);
-
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 #endif /* !UNIVERSAL_PARSER */
 
 #ifndef RIPPER
