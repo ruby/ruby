@@ -214,8 +214,6 @@
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
 
-#define rb_ractor_make_shareable p->config->ractor_make_shareable
-
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
 
