@@ -33,6 +33,8 @@ jobs:
             configure: '--disable-yjit'
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
+          - test_task: check
+            configure: '--with-shared-gc'
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
           - test_task: check
