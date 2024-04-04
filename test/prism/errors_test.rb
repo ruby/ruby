@@ -290,14 +290,14 @@ module Prism
 
     def test_argument_forwarding_when_parent_is_not_forwarding
       assert_errors expression('def a(x, y, z); b(...); end'), 'def a(x, y, z); b(...); end', [
-        ["unexpected `...` when the parent method is not forwarding", 18..21]
+        ["unexpected ... when the parent method is not forwarding", 18..21]
       ]
     end
 
     def test_argument_forwarding_only_effects_its_own_internals
       assert_errors expression('def a(...); b(...); end; def c(x, y, z); b(...); end'),
         'def a(...); b(...); end; def c(x, y, z); b(...); end', [
-          ["unexpected `...` when the parent method is not forwarding", 43..46]
+          ["unexpected ... when the parent method is not forwarding", 43..46]
         ]
     end
 
@@ -1054,7 +1054,7 @@ module Prism
       )
 
       assert_errors expected, "->(...) {}", [
-        ["unexpected `...` when the parent method is not forwarding", 3..6]
+        ["unexpected ... when the parent method is not forwarding", 3..6]
       ]
     end
 
@@ -1078,7 +1078,7 @@ module Prism
       )
 
       assert_errors expected, "a {|...|}", [
-        ["unexpected `...` when the parent method is not forwarding", 4..7]
+        ["unexpected ... when the parent method is not forwarding", 4..7]
       ]
     end
 
