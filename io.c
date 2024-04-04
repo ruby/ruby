@@ -14571,14 +14571,14 @@ argf_write_io(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.write(string)   -> integer
+ *     ARGF.write(*objects)  -> integer
  *
- *  Writes _string_ if inplace mode.
+ *  Writes each of the given +objects+ if inplace mode.
  */
 static VALUE
-argf_write(VALUE argf, VALUE str)
+argf_write(int argc, VALUE *argv, VALUE argf)
 {
-    return rb_io_write(argf_write_io(argf), str);
+    return rb_io_writev(argf_write_io(argf), argc, argv);
 }
 
 void
@@ -15823,7 +15823,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "binmode", argf_binmode_m, 0);
     rb_define_method(rb_cARGF, "binmode?", argf_binmode_p, 0);
 
-    rb_define_method(rb_cARGF, "write", argf_write, 1);
+    rb_define_method(rb_cARGF, "write", argf_write, -1);
     rb_define_method(rb_cARGF, "print", rb_io_print, -1);
     rb_define_method(rb_cARGF, "putc", rb_io_putc, 1);
     rb_define_method(rb_cARGF, "puts", rb_io_puts, -1);
