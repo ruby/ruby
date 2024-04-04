@@ -10262,6 +10262,8 @@ compile_shareable_constant_value(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pars
             ADD_SEQ(ret, anchor);
         }
         return COMPILE_OK;
+      default:
+        rb_bug("unexpected rb_parser_shareability: %d", shareable);
     }
 }
 
