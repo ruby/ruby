@@ -1073,12 +1073,11 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
  * method calls that are followed by a ||= or &&= operator.
  */
 static void
-pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_constant_id_t write_name, pm_constant_id_t read_name, bool safe_nav, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, bool popped, pm_scope_node_t *scope_node)
+pm_compile_call_and_or_write_node(rb_iseq_t *iseq, bool and_node, const pm_node_t *receiver, const pm_node_t *value, pm_constant_id_t write_name, pm_constant_id_t read_name, bool safe_nav, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
-
-    LABEL *lfin = NEW_LABEL(lineno);
-    LABEL *lcfin = NEW_LABEL(lineno);
+    const pm_line_column_t location = *node_location;
+    LABEL *lfin = NEW_LABEL(location.line);
+    LABEL *lcfin = NEW_LABEL(location.line);
     LABEL *lskip = NULL;
 
     int flag = PM_NODE_TYPE_P(receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
@@ -1086,42 +1085,42 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
 
     PM_COMPILE_NOT_POPPED(receiver);
     if (safe_nav) {
-        lskip = NEW_LABEL(lineno);
-        PM_DUP;
-        ADD_INSNL(ret, &dummy_line_node, branchnil, lskip);
+        lskip = NEW_LABEL(location.line);
+        PUSH_INSN(ret, location, dup);
+        PUSH_INSNL(ret, location, branchnil, lskip);
     }
 
-    PM_DUP;
-    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, id_read_name, INT2FIX(0), INT2FIX(flag));
-    PM_DUP_UNLESS_POPPED;
+    PUSH_INSN(ret, location, dup);
+    PUSH_SEND_WITH_FLAG(ret, location, id_read_name, INT2FIX(0), INT2FIX(flag));
+    if (!popped) PUSH_INSN(ret, location, dup);
 
     if (and_node) {
-        ADD_INSNL(ret, &dummy_line_node, branchunless, lcfin);
+        PUSH_INSNL(ret, location, branchunless, lcfin);
     }
     else {
-        ADD_INSNL(ret, &dummy_line_node, branchif, lcfin);
+        PUSH_INSNL(ret, location, branchif, lcfin);
     }
 
-    PM_POP_UNLESS_POPPED;
+    if (!popped) PUSH_INSN(ret, location, pop);
     PM_COMPILE_NOT_POPPED(value);
 
     if (!popped) {
-        PM_SWAP;
-        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        PUSH_INSN(ret, location, swap);
+        PUSH_INSN1(ret, location, topn, INT2FIX(1));
     }
 
     ID id_write_name = pm_constant_id_lookup(scope_node, write_name);
-    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, id_write_name, INT2FIX(1), INT2FIX(flag));
-    ADD_INSNL(ret, &dummy_line_node, jump, lfin);
+    PUSH_SEND_WITH_FLAG(ret, location, id_write_name, INT2FIX(1), INT2FIX(flag));
+    PUSH_INSNL(ret, location, jump, lfin);
 
-    ADD_LABEL(ret, lcfin);
-    if (!popped) PM_SWAP;
+    PUSH_LABEL(ret, lcfin);
+    if (!popped) PUSH_INSN(ret, location, swap);
 
-    ADD_LABEL(ret, lfin);
+    PUSH_LABEL(ret, lfin);
 
-    if (lskip && popped) ADD_LABEL(ret, lskip);
-    PM_POP;
-    if (lskip && !popped) ADD_LABEL(ret, lskip);
+    if (lskip && popped) PUSH_LABEL(ret, lskip);
+    PUSH_INSN(ret, location, pop);
+    if (lskip && !popped) PUSH_LABEL(ret, lskip);
 }
 
 /**
@@ -4793,13 +4792,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CALL_AND_WRITE_NODE: {
-        pm_call_and_write_node_t *cast = (pm_call_and_write_node_t*) node;
-        pm_compile_call_and_or_write_node(true, cast->receiver, cast->value, cast->write_name, cast->read_name, PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION), ret, iseq, lineno, popped, scope_node);
+        // foo.bar &&= baz
+        // ^^^^^^^^^^^^^^^
+        const pm_call_and_write_node_t *cast = (const pm_call_and_write_node_t *) node;
+        pm_compile_call_and_or_write_node(iseq, true, cast->receiver, cast->value, cast->write_name, cast->read_name, PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION), &location, ret, popped, scope_node);
         return;
       }
       case PM_CALL_OR_WRITE_NODE: {
-        pm_call_or_write_node_t *cast = (pm_call_or_write_node_t*) node;
-        pm_compile_call_and_or_write_node(false, cast->receiver, cast->value, cast->write_name, cast->read_name, PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION), ret, iseq, lineno, popped, scope_node);
+        // foo.bar ||= baz
+        // ^^^^^^^^^^^^^^^
+        const pm_call_or_write_node_t *cast = (pm_call_or_write_node_t*) node;
+        pm_compile_call_and_or_write_node(iseq, false, cast->receiver, cast->value, cast->write_name, cast->read_name, PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION), &location, ret, popped, scope_node);
         return;
       }
       case PM_CALL_OPERATOR_WRITE_NODE: {
