@@ -48,7 +48,6 @@ init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head, void *x
 
 #ifdef UNIVERSAL_PARSER
 #define ruby_xmalloc config->malloc
-#define Qnil config->qnil
 #endif
 
 #ifdef UNIVERSAL_PARSER
@@ -81,19 +80,9 @@ rb_node_buffer_new(void)
 #define ruby_xmalloc ast->node_buffer->config->malloc
 #undef xfree
 #define xfree ast->node_buffer->config->free
-#define rb_ident_hash_new ast->node_buffer->config->ident_hash_new
 #define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
 #define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
-#define rb_gc_mark ast->node_buffer->config->gc_mark
-#define rb_gc_location ast->node_buffer->config->gc_location
 #define rb_gc_mark_and_move ast->node_buffer->config->gc_mark_and_move
-#undef Qnil
-#define Qnil ast->node_buffer->config->qnil
-#define Qtrue ast->node_buffer->config->qtrue
-#define NIL_P ast->node_buffer->config->nil_p
-#define rb_hash_aset ast->node_buffer->config->hash_aset
-#define rb_hash_delete ast->node_buffer->config->hash_delete
-#define RB_OBJ_WRITE(old, slot, young) ast->node_buffer->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #endif
 
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
