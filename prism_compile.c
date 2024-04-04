@@ -5655,11 +5655,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE(cast->variable);
         return;
       }
-      case PM_FALSE_NODE:
+      case PM_FALSE_NODE: {
+        // false
+        // ^^^^^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+            PUSH_INSN1(ret, location, putobject, Qfalse);
         }
         return;
+      }
       case PM_ENSURE_NODE: {
         pm_ensure_node_t *ensure_node = (pm_ensure_node_t *)node;
 
@@ -5676,14 +5679,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_ELSE_NODE: {
-          pm_else_node_t *cast = (pm_else_node_t *)node;
-          if (cast->statements) {
-              PM_COMPILE((pm_node_t *)cast->statements);
-          }
-          else {
-              PM_PUTNIL_UNLESS_POPPED;
-          }
-          return;
+        // if foo then bar else baz end
+        //                 ^^^^^^^^^^^^
+        const pm_else_node_t *cast = (const pm_else_node_t *) node;
+
+        if (cast->statements != NULL) {
+            PM_COMPILE((const pm_node_t *) cast->statements);
+        }
+        else if (!popped) {
+            PUSH_INSN(ret, location, putnil);
+        }
+
+        return;
       }
       case PM_FLIP_FLOP_NODE: {
         pm_flip_flop_node_t *flip_flop_node = (pm_flip_flop_node_t *)node;
