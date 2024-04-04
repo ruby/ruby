@@ -6474,6 +6474,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MATCH_REQUIRED_NODE: {
+        // foo => bar
+        // ^^^^^^^^^^
+        //
         // A match required node represents pattern matching against a single
         // pattern using the => operator. For example,
         //
@@ -6484,17 +6487,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // immediately raise an error.
         const pm_match_required_node_t *cast = (const pm_match_required_node_t *) node;
 
-        LABEL *matched_label = NEW_LABEL(lineno);
-        LABEL *unmatched_label = NEW_LABEL(lineno);
-        LABEL *done_label = NEW_LABEL(lineno);
+        LABEL *matched_label = NEW_LABEL(location.line);
+        LABEL *unmatched_label = NEW_LABEL(location.line);
+        LABEL *done_label = NEW_LABEL(location.line);
 
         // First, we're going to push a bunch of stuff onto the stack that is
         // going to serve as our scratch space.
-        ADD_INSN(ret, &dummy_line_node, putnil); // key error key
-        ADD_INSN(ret, &dummy_line_node, putnil); // key error matchee
-        ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse); // key error?
-        ADD_INSN(ret, &dummy_line_node, putnil); // error string
-        ADD_INSN(ret, &dummy_line_node, putnil); // deconstruct cache
+        PUSH_INSN(ret, location, putnil); // key error key
+        PUSH_INSN(ret, location, putnil); // key error matchee
+        PUSH_INSN1(ret, location, putobject, Qfalse); // key error?
+        PUSH_INSN(ret, location, putnil); // error string
+        PUSH_INSN(ret, location, putnil); // deconstruct cache
 
         // Next we're going to compile the value expression such that it's on
         // the stack.
@@ -6502,7 +6505,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // Here we'll dup it so that it can be used for comparison, but also be
         // used for error handling.
-        ADD_INSN(ret, &dummy_line_node, dup);
+        PUSH_INSN(ret, location, dup);
 
         // Next we'll compile the pattern. We indicate to the pm_compile_pattern
         // function that this is the only pattern that will be matched against
@@ -6514,17 +6517,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // If the pattern did not match the value, then we're going to compile
         // in our error handler code. This will determine which error to raise
         // and raise it.
-        ADD_LABEL(ret, unmatched_label);
+        PUSH_LABEL(ret, unmatched_label);
         pm_compile_pattern_error_handler(iseq, scope_node, node, ret, done_label, popped);
 
         // If the pattern did match, we'll clean up the values we've pushed onto
         // the stack and then push nil onto the stack if it's not popped.
-        ADD_LABEL(ret, matched_label);
-        ADD_INSN1(ret, &dummy_line_node, adjuststack, INT2FIX(6));
-        if (!popped) ADD_INSN(ret, &dummy_line_node, putnil);
-        ADD_INSNL(ret, &dummy_line_node, jump, done_label);
+        PUSH_LABEL(ret, matched_label);
+        PUSH_INSN1(ret, location, adjuststack, INT2FIX(6));
+        if (!popped) PUSH_INSN(ret, location, putnil);
+        PUSH_INSNL(ret, location, jump, done_label);
 
-        ADD_LABEL(ret, done_label);
+        PUSH_LABEL(ret, done_label);
         return;
       }
       case PM_MATCH_WRITE_NODE: {
