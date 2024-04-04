@@ -1223,8 +1223,11 @@ pm_compile_hash_elements(const pm_node_list_t *elements, int lineno, rb_iseq_t *
 
 // This is details. Users should call pm_setup_args() instead.
 static int
-pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, NODE dummy_line_node)
+pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_line_column_t *node_location)
 {
+    const pm_line_column_t location = *node_location;
+    NODE dummy_line_node = generate_dummy_line_node(location.line, location.column);
+
     int orig_argc = 0;
     bool has_splat = false;
     bool has_keyword_splat = false;
@@ -1235,17 +1238,15 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
         }
     }
     else {
-        pm_node_list_t arguments_node_list = arguments_node->arguments;
-
-        has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
+        const pm_node_list_t *arguments = &arguments_node->arguments;
+        has_keyword_splat = PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
 
         // We count the number of elements post the splat node that are not keyword elements to
         // eventually pass as an argument to newarray
         int post_splat_counter = 0;
+        const pm_node_t *argument;
 
-        for (size_t index = 0; index < arguments_node_list.size; index++) {
-            const pm_node_t *argument = arguments_node_list.nodes[index];
-
+        PM_NODE_LIST_FOREACH(arguments, index, argument) {
             switch (PM_NODE_TYPE(argument)) {
               // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
               case PM_KEYWORD_HASH_NODE: {
@@ -1255,7 +1256,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
                     has_keyword_splat = true;
-                    pm_compile_hash_elements(elements, nd_line(&dummy_line_node), iseq, ret, scope_node);
+                    pm_compile_hash_elements(elements, location.line, iseq, ret, scope_node);
                 }
                 else {
                     // We need to first figure out if all elements of the
@@ -1335,7 +1336,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             PM_COMPILE_NOT_POPPED(assoc->value);
                         }
 
-                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(size * 2));
+                        PUSH_INSN1(ret, location, newhash, INT2FIX(size * 2));
                     }
                 }
                 break;
@@ -1360,8 +1361,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //
                     // foo(a, *b, c)
                     //        ^^
-                    if (index + 1 < arguments_node_list.size || has_regular_blockarg) {
-                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                    if (index + 1 < arguments->size || has_regular_blockarg) {
+                        PUSH_INSN1(ret, location, splatarray, Qtrue);
                         *flags |= VM_CALL_ARGS_SPLAT_MUT;
                     }
                     // If this is the first spalt array seen and it's the last
@@ -1370,7 +1371,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     // foo(a, *b)
                     //        ^^
                     else {
-                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                        PUSH_INSN1(ret, location, splatarray, Qfalse);
                     }
                 }
                 else {
@@ -1380,8 +1381,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //
                     // foo(a, *b, *c)
                     //            ^^
-                    ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                    ADD_INSN(ret, &dummy_line_node, concatarray);
+                    PUSH_INSN1(ret, location, splatarray, Qfalse);
+                    PUSH_INSN(ret, location, concatarray);
                 }
 
                 has_splat = true;
@@ -1400,7 +1401,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 // Push the *
                 pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
                 ADD_GETLOCAL(ret, &dummy_line_node, mult_local.index, mult_local.level);
-                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                PUSH_INSN1(ret, location, splatarray, Qtrue);
 
                 // Push the **
                 pm_local_index_t pow_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
@@ -1408,8 +1409,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
 
                 // Push the &
                 pm_local_index_t and_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
-                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(and_local.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_local.level));
-                ADD_INSN(ret, &dummy_line_node, splatkw);
+                PUSH_INSN2(ret, location, getblockparamproxy, INT2FIX(and_local.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_local.level));
+                PUSH_INSN(ret, location, splatkw);
 
                 break;
               }
@@ -1435,23 +1436,23 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     // If the next node is NULL (we have hit the end):
                     //
                     //   foo(*a, b)
-                    if (index == arguments_node_list.size - 1) {
+                    if (index == arguments->size - 1) {
                         RUBY_ASSERT(post_splat_counter > 0);
-                        ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(post_splat_counter));
+                        PUSH_INSN1(ret, location, pushtoarray, INT2FIX(post_splat_counter));
                     }
                     else {
-                        pm_node_t *next_arg = arguments_node_list.nodes[index + 1];
+                        pm_node_t *next_arg = arguments->nodes[index + 1];
 
                         switch (PM_NODE_TYPE(next_arg)) {
                           // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
                           case PM_KEYWORD_HASH_NODE: {
-                            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                            ADD_INSN(ret, &dummy_line_node, concatarray);
+                            PUSH_INSN1(ret, location, newarray, INT2FIX(post_splat_counter));
+                            PUSH_INSN(ret, location, concatarray);
                             break;
                           }
                           case PM_SPLAT_NODE: {
-                            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                            ADD_INSN(ret, &dummy_line_node, concatarray);
+                            PUSH_INSN1(ret, location, newarray, INT2FIX(post_splat_counter));
+                            PUSH_INSN(ret, location, concatarray);
                             break;
                           }
                           default:
@@ -1467,20 +1468,14 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
         }
     }
 
-    if (has_splat) {
-        orig_argc++;
-    }
-
-    if (has_keyword_splat) {
-        orig_argc++;
-    }
-
+    if (has_splat) orig_argc++;
+    if (has_keyword_splat) orig_argc++;
     return orig_argc;
 }
 
 // Compile the argument parts of a call
 static int
-pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, NODE dummy_line_node)
+pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_line_column_t *node_location)
 {
     if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
         // We compile the `&block_arg` expression first and stitch it later
@@ -1507,11 +1502,12 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
             }
         }
 
-        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, iseq, ret, scope_node, dummy_line_node);
+        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, iseq, ret, scope_node, node_location);
         ADD_SEQ(ret, block_arg);
         return argc;
     }
-    return pm_setup_args_core(arguments_node, block, flags, false, kw_arg, iseq, ret, scope_node, dummy_line_node);
+
+    return pm_setup_args_core(arguments_node, block, flags, false, kw_arg, iseq, ret, scope_node, node_location);
 }
 
 /**
@@ -1525,30 +1521,26 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
  * and then calling the []= method with the result of the operator method.
  */
 static void
-pm_compile_index_operator_write_node(pm_scope_node_t *scope_node, const pm_index_operator_write_node_t *node, rb_iseq_t *iseq, LINK_ANCHOR *const ret, bool popped)
+pm_compile_index_operator_write_node(rb_iseq_t *iseq, const pm_index_operator_write_node_t *node, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    int lineno = pm_node_line_number(scope_node->parser, (const pm_node_t *) node);
-    const NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
-
-    if (!popped) {
-        PM_PUTNIL;
-    }
+    const pm_line_column_t location = *node_location;
+    if (!popped) PUSH_INSN(ret, location, putnil);
 
     PM_COMPILE_NOT_POPPED(node->receiver);
 
     int boff = (node->block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(node->receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(node->arguments, node->block, &flag, &keywords, iseq, ret, scope_node, dummy_line_node);
+    int argc = pm_setup_args(node->arguments, node->block, &flag, &keywords, iseq, ret, scope_node, node_location);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
-            ADD_INSN(ret, &dummy_line_node, splatkw);
+            PUSH_INSN(ret, location, splatkw);
         }
         else {
-            ADD_INSN(ret, &dummy_line_node, dup);
-            ADD_INSN(ret, &dummy_line_node, splatkw);
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PUSH_INSN(ret, location, dup);
+            PUSH_INSN(ret, location, splatkw);
+            PUSH_INSN(ret, location, pop);
         }
     }
 
@@ -1560,76 +1552,77 @@ pm_compile_index_operator_write_node(pm_scope_node_t *scope_node, const pm_index
         dup_argn += keyword_len;
     }
 
-    ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(dup_argn));
-    ADD_SEND_R(ret, &dummy_line_node, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
-
+    PUSH_INSN1(ret, location, dupn, INT2FIX(dup_argn));
+    PUSH_SEND_R(ret, location, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
     PM_COMPILE_NOT_POPPED(node->value);
 
     ID id_operator = pm_constant_id_lookup(scope_node, node->operator);
-    ADD_SEND(ret, &dummy_line_node, id_operator, INT2FIX(1));
+    PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
     if (!popped) {
-        ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(dup_argn + 1));
+        PUSH_INSN1(ret, location, setn, INT2FIX(dup_argn + 1));
     }
     if (flag & VM_CALL_ARGS_SPLAT) {
         if (flag & VM_CALL_KW_SPLAT) {
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(2 + boff));
+            PUSH_INSN1(ret, location, topn, INT2FIX(2 + boff));
 
             if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                PUSH_INSN1(ret, location, splatarray, Qtrue);
                 flag |= VM_CALL_ARGS_SPLAT_MUT;
             }
 
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(1));
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(2 + boff));
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PUSH_INSN(ret, location, swap);
+            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(1));
+            PUSH_INSN1(ret, location, setn, INT2FIX(2 + boff));
+            PUSH_INSN(ret, location, pop);
         }
         else {
             if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN(ret, &dummy_line_node, pop);
+                PUSH_INSN1(ret, location, dupn, INT2FIX(3));
+                PUSH_INSN(ret, location, swap);
+                PUSH_INSN(ret, location, pop);
             }
             if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
-                ADD_INSN(ret, &dummy_line_node, swap);
+                PUSH_INSN(ret, location, swap);
+                PUSH_INSN1(ret, location, splatarray, Qtrue);
+                PUSH_INSN(ret, location, swap);
                 flag |= VM_CALL_ARGS_SPLAT_MUT;
             }
-            ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(1));
+            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(1));
             if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-                PM_POP;
-                PM_POP;
+                PUSH_INSN1(ret, location, setn, INT2FIX(3));
+                PUSH_INSN(ret, location, pop);
+                PUSH_INSN(ret, location, pop);
             }
         }
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc), NULL, INT2FIX(flag), keywords);
+
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc), NULL, INT2FIX(flag), keywords);
     }
     else if (flag & VM_CALL_KW_SPLAT) {
         if (boff > 0) {
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(2));
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-            PM_POP;
+            PUSH_INSN1(ret, location, topn, INT2FIX(2));
+            PUSH_INSN(ret, location, swap);
+            PUSH_INSN1(ret, location, setn, INT2FIX(3));
+            PUSH_INSN(ret, location, pop);
         }
-        ADD_INSN(ret, &dummy_line_node, swap);
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_INSN(ret, location, swap);
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
     else if (keyword_len) {
-        ADD_INSN(ret, &dummy_line_node, dup);
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keyword_len + boff + 2));
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keyword_len + boff + 1));
-        ADD_INSN(ret, &dummy_line_node, pop);
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_INSN(ret, location, dup);
+        PUSH_INSN1(ret, location, opt_reverse, INT2FIX(keyword_len + boff + 2));
+        PUSH_INSN1(ret, location, opt_reverse, INT2FIX(keyword_len + boff + 1));
+        PUSH_INSN(ret, location, pop);
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
     else {
         if (boff > 0) {
-            PM_SWAP;
+            PUSH_INSN(ret, location, swap);
         }
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
-    PM_POP;
+
+    PUSH_INSN(ret, location, pop);
 }
 
 /**
@@ -1645,30 +1638,25 @@ pm_compile_index_operator_write_node(pm_scope_node_t *scope_node, const pm_index
  * []= method.
  */
 static void
-pm_compile_index_control_flow_write_node(pm_scope_node_t *scope_node, const pm_node_t *node, const pm_node_t *receiver, const pm_arguments_node_t *arguments, const pm_node_t *block, const pm_node_t *value, rb_iseq_t *iseq, LINK_ANCHOR *const ret, bool popped)
+pm_compile_index_control_flow_write_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_t *receiver, const pm_arguments_node_t *arguments, const pm_node_t *block, const pm_node_t *value, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    int lineno = pm_node_line_number(scope_node->parser, node);
-    const NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
-
-    if (!popped) {
-        PM_PUTNIL;
-    }
-
+    const pm_line_column_t location = *node_location;
+    if (!popped) PUSH_INSN(ret, location, putnil);
     PM_COMPILE_NOT_POPPED(receiver);
 
     int boff = (block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(arguments, block, &flag, &keywords, iseq, ret, scope_node, dummy_line_node);
+    int argc = pm_setup_args(arguments, block, &flag, &keywords, iseq, ret, scope_node, node_location);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
-            ADD_INSN(ret, &dummy_line_node, splatkw);
+            PUSH_INSN(ret, location, splatkw);
         }
         else {
-            ADD_INSN(ret, &dummy_line_node, dup);
-            ADD_INSN(ret, &dummy_line_node, splatkw);
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PUSH_INSN(ret, location, dup);
+            PUSH_INSN(ret, location, splatkw);
+            PUSH_INSN(ret, location, pop);
         }
     }
 
@@ -1680,91 +1668,93 @@ pm_compile_index_control_flow_write_node(pm_scope_node_t *scope_node, const pm_n
         dup_argn += keyword_len;
     }
 
-    ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(dup_argn));
-    ADD_SEND_R(ret, &dummy_line_node, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
+    PUSH_INSN1(ret, location, dupn, INT2FIX(dup_argn));
+    PUSH_SEND_R(ret, location, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
 
-    LABEL *label = NEW_LABEL(lineno);
-    LABEL *lfin = NEW_LABEL(lineno);
+    LABEL *label = NEW_LABEL(location.line);
+    LABEL *lfin = NEW_LABEL(location.line);
 
-    ADD_INSN(ret, &dummy_line_node, dup);
+    PUSH_INSN(ret, location, dup);
     if (PM_NODE_TYPE_P(node, PM_INDEX_AND_WRITE_NODE)) {
-        ADD_INSNL(ret, &dummy_line_node, branchunless, label);
+        PUSH_INSNL(ret, location, branchunless, label);
     }
     else {
-        ADD_INSNL(ret, &dummy_line_node, branchif, label);
+        PUSH_INSNL(ret, location, branchif, label);
     }
 
-    PM_POP;
+    PUSH_INSN(ret, location, pop);
     PM_COMPILE_NOT_POPPED(value);
 
     if (!popped) {
-        ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(dup_argn + 1));
+        PUSH_INSN1(ret, location, setn, INT2FIX(dup_argn + 1));
     }
 
     if (flag & VM_CALL_ARGS_SPLAT) {
         if (flag & VM_CALL_KW_SPLAT) {
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(2 + boff));
+            PUSH_INSN1(ret, location, topn, INT2FIX(2 + boff));
             if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                PUSH_INSN1(ret, location, splatarray, Qtrue);
                 flag |= VM_CALL_ARGS_SPLAT_MUT;
             }
 
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(1));
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(2 + boff));
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PUSH_INSN(ret, location, swap);
+            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(1));
+            PUSH_INSN1(ret, location, setn, INT2FIX(2 + boff));
+            PUSH_INSN(ret, location, pop);
         }
         else {
             if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN(ret, &dummy_line_node, pop);
+                PUSH_INSN1(ret, location, dupn, INT2FIX(3));
+                PUSH_INSN(ret, location, swap);
+                PUSH_INSN(ret, location, pop);
             }
             if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
-                ADD_INSN(ret, &dummy_line_node, swap);
+                PUSH_INSN(ret, location, swap);
+                PUSH_INSN1(ret, location, splatarray, Qtrue);
+                PUSH_INSN(ret, location, swap);
                 flag |= VM_CALL_ARGS_SPLAT_MUT;
             }
-            ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(1));
+            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(1));
             if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-                PM_POP;
-                PM_POP;
+                PUSH_INSN1(ret, location, setn, INT2FIX(3));
+                PUSH_INSN(ret, location, pop);
+                PUSH_INSN(ret, location, pop);
             }
         }
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc), NULL, INT2FIX(flag), keywords);
+
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc), NULL, INT2FIX(flag), keywords);
     }
     else if (flag & VM_CALL_KW_SPLAT) {
         if (boff > 0) {
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(2));
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-            PM_POP;
+            PUSH_INSN1(ret, location, topn, INT2FIX(2));
+            PUSH_INSN(ret, location, swap);
+            PUSH_INSN1(ret, location, setn, INT2FIX(3));
+            PUSH_INSN(ret, location, pop);
         }
 
-        ADD_INSN(ret, &dummy_line_node, swap);
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_INSN(ret, location, swap);
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
     else if (keyword_len) {
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keyword_len + boff + 1));
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keyword_len + boff + 0));
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_INSN1(ret, location, opt_reverse, INT2FIX(keyword_len + boff + 1));
+        PUSH_INSN1(ret, location, opt_reverse, INT2FIX(keyword_len + boff + 0));
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
     else {
         if (boff > 0) {
-            PM_SWAP;
+            PUSH_INSN(ret, location, swap);
         }
-        ADD_SEND_R(ret, &dummy_line_node, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
+        PUSH_SEND_R(ret, location, idASET, INT2FIX(argc + 1), NULL, INT2FIX(flag), keywords);
     }
-    PM_POP;
-    ADD_INSNL(ret, &dummy_line_node, jump, lfin);
-    ADD_LABEL(ret, label);
+
+    PUSH_INSN(ret, location, pop);
+    PUSH_INSNL(ret, location, jump, lfin);
+    PUSH_LABEL(ret, label);
     if (!popped) {
-        ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(dup_argn + 1));
+        PUSH_INSN1(ret, location, setn, INT2FIX(dup_argn + 1));
     }
-    ADD_INSN1(ret, &dummy_line_node, adjuststack, INT2FIX(dup_argn + 1));
-    ADD_LABEL(ret, lfin);
+    PUSH_INSN1(ret, location, adjuststack, INT2FIX(dup_argn + 1));
+    PUSH_LABEL(ret, lfin);
 }
 
 // When we compile a pattern matching expression, we use the stack as a scratch
@@ -3165,21 +3155,19 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     const pm_location_t *message_loc = &call_node->message_loc;
     if (message_loc->start == NULL) message_loc = &call_node->base.location;
 
-    int lineno = pm_location_line_number(scope_node->parser, message_loc);
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
-
-    LABEL *else_label = NEW_LABEL(lineno);
-    LABEL *end_label = NEW_LABEL(lineno);
+    const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, message_loc->start, scope_node->parser->start_line);
+    LABEL *else_label = NEW_LABEL(location.line);
+    LABEL *end_label = NEW_LABEL(location.line);
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-        PM_DUP;
-        ADD_INSNL(ret, &dummy_line_node, branchnil, else_label);
+        PUSH_INSN(ret, location, dup);
+        PUSH_INSNL(ret, location, branchnil, else_label);
     }
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
 
-    int orig_argc = pm_setup_args(call_node->arguments, call_node->block, &flags, &kw_arg, iseq, ret, scope_node, dummy_line_node);
+    int orig_argc = pm_setup_args(call_node->arguments, call_node->block, &flags, &kw_arg, iseq, ret, scope_node, &location);
     const rb_iseq_t *block_iseq = NULL;
 
     if (call_node->block != NULL && PM_NODE_TYPE_P(call_node->block, PM_BLOCK_NODE)) {
@@ -3211,46 +3199,46 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     if (!popped && PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
         if (flags & VM_CALL_ARGS_BLOCKARG) {
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+            PUSH_INSN1(ret, location, topn, INT2FIX(1));
             if (flags & VM_CALL_ARGS_SPLAT) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(-1));
-                ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, INT2FIX(1), INT2FIX(0));
+                PUSH_INSN1(ret, location, putobject, INT2FIX(-1));
+                PUSH_SEND_WITH_FLAG(ret, location, idAREF, INT2FIX(1), INT2FIX(0));
             }
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 3));
-            PM_POP;
+            PUSH_INSN1(ret, location, setn, INT2FIX(orig_argc + 3));
+            PUSH_INSN(ret, location, pop);
         }
         else if (flags & VM_CALL_ARGS_SPLAT) {
-            ADD_INSN(ret, &dummy_line_node, dup);
-            ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(-1));
-            ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, INT2FIX(1), INT2FIX(0));
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 2));
-            PM_POP;
+            PUSH_INSN(ret, location, dup);
+            PUSH_INSN1(ret, location, putobject, INT2FIX(-1));
+            PUSH_SEND_WITH_FLAG(ret, location, idAREF, INT2FIX(1), INT2FIX(0));
+            PUSH_INSN1(ret, location, setn, INT2FIX(orig_argc + 2));
+            PUSH_INSN(ret, location, pop);
         }
         else {
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
+            PUSH_INSN1(ret, location, setn, INT2FIX(orig_argc + 1));
         }
     }
 
     if ((flags & VM_CALL_KW_SPLAT) && (flags & VM_CALL_ARGS_BLOCKARG) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
-        ADD_INSN(ret, &dummy_line_node, splatkw);
+        PUSH_INSN(ret, location, splatkw);
     }
 
-    ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-        ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-        ADD_LABEL(ret, else_label);
+        PUSH_INSNL(ret, location, jump, end_label);
+        PUSH_LABEL(ret, else_label);
     }
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) || (block_iseq && ISEQ_BODY(block_iseq)->catch_table)) {
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
     }
 
-    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
-        PM_POP_UNLESS_POPPED;
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
+        PUSH_INSN(ret, location, pop);
     }
 
-    PM_POP_IF_POPPED;
+    if (popped) PUSH_INSN(ret, location, pop);
 }
 
 // This is exactly the same as add_ensure_iseq, except it compiled
@@ -3621,8 +3609,8 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 static void
 pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
 {
-    int lineno = pm_node_line_number(scope_node->parser, node);
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start, scope_node->parser->start_line);
+    NODE dummy_line_node = generate_dummy_line_node(location.line, location.column);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
@@ -3631,7 +3619,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for i in []; end
         //
-        pm_local_variable_target_node_t *cast = (pm_local_variable_target_node_t *) node;
+        const pm_local_variable_target_node_t *cast = (const pm_local_variable_target_node_t *) node;
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
 
         ADD_SETLOCAL(writes, &dummy_line_node, index.index, index.level);
@@ -3643,10 +3631,10 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for @@i in []; end
         //
-        pm_class_variable_target_node_t *cast = (pm_class_variable_target_node_t *) node;
+        const pm_class_variable_target_node_t *cast = (const pm_class_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        ADD_INSN2(writes, &dummy_line_node, setclassvariable, ID2SYM(name), get_cvar_ic_value(iseq, name));
+        PUSH_INSN2(writes, location, setclassvariable, ID2SYM(name), get_cvar_ic_value(iseq, name));
         break;
       }
       case PM_CONSTANT_TARGET_NODE: {
@@ -3655,11 +3643,11 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for I in []; end
         //
-        pm_constant_target_node_t *cast = (pm_constant_target_node_t *) node;
+        const pm_constant_target_node_t *cast = (const pm_constant_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        ADD_INSN1(writes, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        ADD_INSN1(writes, &dummy_line_node, setconstant, ID2SYM(name));
+        PUSH_INSN1(writes, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        PUSH_INSN1(writes, location, setconstant, ID2SYM(name));
         break;
       }
       case PM_GLOBAL_VARIABLE_TARGET_NODE: {
@@ -3668,10 +3656,10 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for $i in []; end
         //
-        pm_global_variable_target_node_t *cast = (pm_global_variable_target_node_t *) node;
+        const pm_global_variable_target_node_t *cast = (const pm_global_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        ADD_INSN1(writes, &dummy_line_node, setglobal, ID2SYM(name));
+        PUSH_INSN1(writes, location, setglobal, ID2SYM(name));
         break;
       }
       case PM_INSTANCE_VARIABLE_TARGET_NODE: {
@@ -3680,10 +3668,10 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for @i in []; end
         //
-        pm_instance_variable_target_node_t *cast = (pm_instance_variable_target_node_t *) node;
+        const pm_instance_variable_target_node_t *cast = (const pm_instance_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        ADD_INSN2(writes, &dummy_line_node, setinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
+        PUSH_INSN2(writes, location, setinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
         break;
       }
       case PM_CONSTANT_PATH_TARGET_NODE: {
@@ -3702,21 +3690,21 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
             pm_compile_node(iseq, cast->parent, parents, false, scope_node);
         }
         else {
-            ADD_INSN1(parents, &dummy_line_node, putobject, rb_cObject);
+            PUSH_INSN1(parents, location, putobject, rb_cObject);
         }
 
         if (state == NULL) {
-            ADD_INSN(writes, &dummy_line_node, swap);
+            PUSH_INSN(writes, location, swap);
         }
         else {
-            ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(1));
+            PUSH_INSN1(writes, location, topn, INT2FIX(1));
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), 1);
         }
 
-        ADD_INSN1(writes, &dummy_line_node, setconstant, ID2SYM(name));
+        PUSH_INSN1(writes, location, setconstant, ID2SYM(name));
 
         if (state != NULL) {
-            ADD_INSN(cleanup, &dummy_line_node, pop);
+            PUSH_INSN(cleanup, location, pop);
         }
 
         break;
@@ -3736,19 +3724,19 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         pm_compile_node(iseq, cast->receiver, parents, false, scope_node);
 
         if (state != NULL) {
-            ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(1));
+            PUSH_INSN1(writes, location, topn, INT2FIX(1));
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), 1);
-            ADD_INSN(writes, &dummy_line_node, swap);
+            PUSH_INSN(writes, location, swap);
         }
 
         int flags = VM_CALL_ARGS_SIMPLE;
         if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY)) flags |= VM_CALL_FCALL;
 
-        ADD_SEND_WITH_FLAG(writes, &dummy_line_node, method_id, INT2FIX(1), INT2FIX(flags));
-        ADD_INSN(writes, &dummy_line_node, pop);
+        PUSH_SEND_WITH_FLAG(writes, location, method_id, INT2FIX(1), INT2FIX(flags));
+        PUSH_INSN(writes, location, pop);
 
         if (state != NULL) {
-            ADD_INSN(cleanup, &dummy_line_node, pop);
+            PUSH_INSN(cleanup, location, pop);
         }
 
         break;
@@ -3769,20 +3757,20 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         int flags = 0;
         struct rb_callinfo_kwarg *kwargs = NULL;
-        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &kwargs, iseq, parents, scope_node, dummy_line_node);
+        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &kwargs, iseq, parents, scope_node, &location);
 
         if (state != NULL) {
-            ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(argc + 1));
+            PUSH_INSN1(writes, location, topn, INT2FIX(argc + 1));
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), argc + 1);
 
             if (argc == 0) {
-                ADD_INSN(writes, &dummy_line_node, swap);
+                PUSH_INSN(writes, location, swap);
             }
             else {
                 for (int index = 0; index < argc; index++) {
-                    ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(argc + 1));
+                    PUSH_INSN1(writes, location, topn, INT2FIX(argc + 1));
                 }
-                ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(argc + 1));
+                PUSH_INSN1(writes, location, topn, INT2FIX(argc + 1));
             }
         }
 
@@ -3793,20 +3781,20 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         int ci_argc = argc + 1;
         if (flags & VM_CALL_ARGS_SPLAT) {
             ci_argc--;
-            ADD_INSN1(writes, &dummy_line_node, newarray, INT2FIX(1));
-            ADD_INSN(writes, &dummy_line_node, concatarray);
+            PUSH_INSN1(writes, location, newarray, INT2FIX(1));
+            PUSH_INSN(writes, location, concatarray);
         }
 
-        ADD_SEND_R(writes, &dummy_line_node, idASET, INT2NUM(ci_argc), NULL, INT2FIX(flags), kwargs);
-        ADD_INSN(writes, &dummy_line_node, pop);
+        PUSH_SEND_R(writes, location, idASET, INT2NUM(ci_argc), NULL, INT2FIX(flags), kwargs);
+        PUSH_INSN(writes, location, pop);
 
         if (state != NULL) {
             if (argc != 0) {
-                ADD_INSN(writes, &dummy_line_node, pop);
+                PUSH_INSN(writes, location, pop);
             }
 
             for (int index = 0; index < argc + 1; index++) {
-                ADD_INSN(cleanup, &dummy_line_node, pop);
+                PUSH_INSN(cleanup, location, pop);
             }
         }
 
@@ -6059,7 +6047,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // In this case a method call/local variable read is implied by virtue
         // of the missing value. To compile these nodes, we simply compile the
         // value that is implied, which is helpfully supplied by the parser.
-        pm_implicit_node_t *cast = (pm_implicit_node_t *)node;
+        const pm_implicit_node_t *cast = (const pm_implicit_node_t *)node;
         PM_COMPILE(cast->value);
         return;
       }
@@ -6069,17 +6057,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         rb_bug("Should not ever enter an in node directly");
         return;
       }
-      case PM_INDEX_OPERATOR_WRITE_NODE:
-        pm_compile_index_operator_write_node(scope_node, (const pm_index_operator_write_node_t *) node, iseq, ret, popped);
+      case PM_INDEX_OPERATOR_WRITE_NODE: {
+        // foo[bar] += baz
+        // ^^^^^^^^^^^^^^^
+        const pm_index_operator_write_node_t *cast = (const pm_index_operator_write_node_t *) node;
+        pm_compile_index_operator_write_node(iseq, cast, &location, ret, popped, scope_node);
         return;
+      }
       case PM_INDEX_AND_WRITE_NODE: {
+        // foo[bar] &&= baz
+        // ^^^^^^^^^^^^^^^^
         const pm_index_and_write_node_t *cast = (const pm_index_and_write_node_t *) node;
-        pm_compile_index_control_flow_write_node(scope_node, node, cast->receiver, cast->arguments, cast->block, cast->value, iseq, ret, popped);
+        pm_compile_index_control_flow_write_node(iseq, node, cast->receiver, cast->arguments, cast->block, cast->value, &location, ret, popped, scope_node);
         return;
       }
       case PM_INDEX_OR_WRITE_NODE: {
+        // foo[bar] ||= baz
+        // ^^^^^^^^^^^^^^^^
         const pm_index_or_write_node_t *cast = (const pm_index_or_write_node_t *) node;
-        pm_compile_index_control_flow_write_node(scope_node, node, cast->receiver, cast->arguments, cast->block, cast->value, iseq, ret, popped);
+        pm_compile_index_control_flow_write_node(iseq, node, cast->receiver, cast->arguments, cast->block, cast->value, &location, ret, popped, scope_node);
         return;
       }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
@@ -8254,7 +8250,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         int flags = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
-        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
+        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &keywords, iseq, ret, scope_node, &location);
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
         const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
@@ -8383,7 +8379,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         struct rb_callinfo_kwarg *keywords = NULL;
 
         if (cast->arguments) {
-            argc = pm_setup_args(cast->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
+            argc = pm_setup_args(cast->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, &location);
         }
 
         PUSH_INSN1(ret, location, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
