@@ -498,6 +498,10 @@ class TestParse < Test::Unit::TestCase
     t = Object.new
     a = []
     blk = proc {|x| a << x }
+
+    # Prevent an "assigned but unused variable" warning
+    _ = blk
+
     def t.[](_)
       yield(:aref)
       nil

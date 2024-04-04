@@ -133,6 +133,9 @@ class TestCall < Test::Unit::TestCase
     kw = {}
     b = lambda{}
 
+    # Prevent "assigned but unused variable" warnings
+    _ = [h, a, kw, b]
+
     message = /keyword arg given in index/
 
     # +=, without block, non-popped
@@ -293,6 +296,9 @@ class TestCall < Test::Unit::TestCase
 
     a = []
     kw = {}
+
+    # Prevent "assigned but unused variable" warnings
+    _ = [h, a, kw]
 
     assert_syntax_error(%q{h[*a, 2, b: 5, **kw] += 1}, message)
   end
