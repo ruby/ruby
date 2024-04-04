@@ -6570,6 +6570,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             return;
         }
 
+        DECL_ANCHOR(fail_anchor);
+        INIT_ANCHOR(fail_anchor);
+
         // Otherwise there is more than one local variable target, so we'll need
         // to do some bookkeeping.
         for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
@@ -6585,6 +6588,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN1(ret, location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             PUSH_SEND(ret, location, idAREF, INT2FIX(1));
             ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
+
+            PUSH_INSN(fail_anchor, location, putnil);
+            ADD_SETLOCAL(fail_anchor, &dummy_line_node, index.index, index.level);
         }
 
         // Since we matched successfully, now we'll jump to the end.
@@ -6594,17 +6600,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // variable target and set all of them to `nil`.
         PUSH_LABEL(ret, fail_label);
         PUSH_INSN(ret, location, pop);
-
-        for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
-            const pm_node_t *target = cast->targets.nodes[targets_index];
-            RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
-
-            const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
-            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
-
-            PUSH_INSN(ret, location, putnil);
-            ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
-        }
+        ADD_SEQ(ret, fail_anchor);
 
         // Finally, we can push the end label for either case.
         PUSH_LABEL(ret, end_label);
