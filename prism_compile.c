@@ -5664,18 +5664,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_ENSURE_NODE: {
-        pm_ensure_node_t *ensure_node = (pm_ensure_node_t *)node;
+        const pm_ensure_node_t *cast = (const pm_ensure_node_t *) node;
 
-        LABEL *start = NEW_LABEL(lineno);
-        LABEL *end = NEW_LABEL(lineno);
-        ADD_LABEL(ret, start);
-        if (ensure_node->statements) {
+        LABEL *start = NEW_LABEL(location.line);
+        LABEL *end = NEW_LABEL(location.line);
+        PUSH_LABEL(ret, start);
+
+        if (cast->statements != NULL) {
             LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
             ISEQ_COMPILE_DATA(iseq)->end_label = end;
-            PM_COMPILE((pm_node_t *)ensure_node->statements);
+
+            PM_COMPILE((const pm_node_t *) cast->statements);
             ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
         }
-        ADD_LABEL(ret, end);
+
+        PUSH_LABEL(ret, end);
         return;
       }
       case PM_ELSE_NODE: {
@@ -5693,20 +5696,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_FLIP_FLOP_NODE: {
-        pm_flip_flop_node_t *flip_flop_node = (pm_flip_flop_node_t *)node;
+        // if foo .. bar; end
+        //    ^^^^^^^^^^
+        const pm_flip_flop_node_t *cast = (const pm_flip_flop_node_t *) node;
 
-        LABEL *final_label = NEW_LABEL(lineno);
-        LABEL *then_label = NEW_LABEL(lineno);
-        LABEL *else_label = NEW_LABEL(lineno);
+        LABEL *final_label = NEW_LABEL(location.line);
+        LABEL *then_label = NEW_LABEL(location.line);
+        LABEL *else_label = NEW_LABEL(location.line);
 
-        pm_compile_flip_flop(flip_flop_node, else_label, then_label, iseq, lineno, ret, popped, scope_node);
+        pm_compile_flip_flop(cast, else_label, then_label, iseq, location.line, ret, popped, scope_node);
 
-        ADD_LABEL(ret, then_label);
-        ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-        ADD_INSNL(ret, &dummy_line_node, jump, final_label);
-        ADD_LABEL(ret, else_label);
-        ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
-        ADD_LABEL(ret, final_label);
+        PUSH_LABEL(ret, then_label);
+        PUSH_INSN1(ret, location, putobject, Qtrue);
+        PUSH_INSNL(ret, location, jump, final_label);
+        PUSH_LABEL(ret, else_label);
+        PUSH_INSN1(ret, location, putobject, Qfalse);
+        PUSH_LABEL(ret, final_label);
+
         return;
       }
       case PM_FLOAT_NODE: {
