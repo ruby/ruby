@@ -4707,80 +4707,89 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CALL_NODE: {
-        const pm_call_node_t *call_node = (const pm_call_node_t *) node;
-        LABEL *start = NEW_LABEL(lineno);
+        // foo
+        // ^^^
+        //
+        // foo.bar
+        // ^^^^^^^
+        //
+        // foo.bar() {}
+        // ^^^^^^^^^^^^
+        const pm_call_node_t *cast = (const pm_call_node_t *) node;
+        LABEL *start = NEW_LABEL(location.line);
 
-        if (call_node->block) {
-            ADD_LABEL(ret, start);
+        if (cast->block) {
+            PUSH_LABEL(ret, start);
         }
 
-        ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->name);
 
         switch (method_id) {
           case idUMinus: {
-            if (pm_opt_str_freeze_p(iseq, call_node)) {
-                VALUE value = rb_fstring(parse_string_encoded(scope_node, call_node->receiver, &((const pm_string_node_t * )call_node->receiver)->unescaped));
-                ADD_INSN2(ret, &dummy_line_node, opt_str_uminus, value, new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
+            if (pm_opt_str_freeze_p(iseq, cast)) {
+                VALUE value = rb_fstring(parse_string_encoded(scope_node, cast->receiver, &((const pm_string_node_t * ) cast->receiver)->unescaped));
+                PUSH_INSN2(ret, location, opt_str_uminus, value, new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
                 return;
             }
             break;
           }
           case idFreeze: {
-            if (pm_opt_str_freeze_p(iseq, call_node)) {
-                VALUE value = rb_fstring(parse_string_encoded(scope_node, call_node->receiver, &((const pm_string_node_t * )call_node->receiver)->unescaped));
-                ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, value, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
+            if (pm_opt_str_freeze_p(iseq, cast)) {
+                VALUE value = rb_fstring(parse_string_encoded(scope_node, cast->receiver, &((const pm_string_node_t * ) cast->receiver)->unescaped));
+                PUSH_INSN2(ret, location, opt_str_freeze, value, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
                 return;
             }
             break;
           }
           case idAREF: {
-            if (pm_opt_aref_with_p(iseq, call_node)) {
-                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[0];
+            if (pm_opt_aref_with_p(iseq, cast)) {
+                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) cast->arguments)->arguments.nodes[0];
                 VALUE value = rb_fstring(parse_string_encoded(scope_node, (const pm_node_t *) string, &string->unescaped));
 
-                PM_COMPILE_NOT_POPPED(call_node->receiver);
-                ADD_INSN2(ret, &dummy_line_node, opt_aref_with, value, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
+                PM_COMPILE_NOT_POPPED(cast->receiver);
+                PUSH_INSN2(ret, location, opt_aref_with, value, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
 
                 if (popped) {
-                    ADD_INSN(ret, &dummy_line_node, pop);
+                    PUSH_INSN(ret, location, pop);
                 }
+
                 return;
             }
             break;
           }
           case idASET: {
-            if (pm_opt_aset_with_p(iseq, call_node)) {
-                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[0];
+            if (pm_opt_aset_with_p(iseq, cast)) {
+                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) cast->arguments)->arguments.nodes[0];
                 VALUE value = rb_fstring(parse_string_encoded(scope_node, (const pm_node_t *) string, &string->unescaped));
 
-                PM_COMPILE_NOT_POPPED(call_node->receiver);
-                PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[1]);
+                PM_COMPILE_NOT_POPPED(cast->receiver);
+                PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) cast->arguments)->arguments.nodes[1]);
 
                 if (!popped) {
-                    ADD_INSN(ret, &dummy_line_node, swap);
-                    ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+                    PUSH_INSN(ret, location, swap);
+                    PUSH_INSN1(ret, location, topn, INT2FIX(1));
                 }
 
-                ADD_INSN2(ret, &dummy_line_node, opt_aset_with, value, new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
-                ADD_INSN(ret, &dummy_line_node, pop);
+                PUSH_INSN2(ret, location, opt_aset_with, value, new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
+                PUSH_INSN(ret, location, pop);
                 return;
             }
             break;
           }
         }
 
-        if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
-            PM_PUTNIL;
+        if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
+            PUSH_INSN(ret, location, putnil);
         }
 
-        if (call_node->receiver == NULL) {
-            PM_PUTSELF;
+        if (cast->receiver == NULL) {
+            PUSH_INSN(ret, location, putself);
         }
         else {
-            PM_COMPILE_NOT_POPPED(call_node->receiver);
+            PM_COMPILE_NOT_POPPED(cast->receiver);
         }
 
-        pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
+        pm_compile_call(iseq, cast, ret, popped, scope_node, method_id, start);
         return;
       }
       case PM_CALL_AND_WRITE_NODE: {
