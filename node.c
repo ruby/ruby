@@ -39,7 +39,7 @@ init_node_buffer_elem(node_buffer_elem_t *nbe, size_t allocated, void *xmalloc(s
 }
 
 static void
-init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head, void *xmalloc(size_t))
+init_node_buffer_list(node_buffer_list_t *nb, node_buffer_elem_t *head, void *xmalloc(size_t))
 {
     init_node_buffer_elem(head, NODE_BUF_DEFAULT_SIZE, xmalloc);
     nb->head = nb->last = head;
@@ -59,14 +59,13 @@ rb_node_buffer_new(void)
 #endif
 {
     const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_SIZE;
-    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
+    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size);
     STATIC_ASSERT(
         integer_overflow,
         offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_SIZE
-        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
+        > sizeof(node_buffer_t) + sizeof(node_buffer_elem_t));
     node_buffer_t *nb = ruby_xmalloc(alloc_size);
-    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
-    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size), ruby_xmalloc);
+    init_node_buffer_list(&nb->buffer_list, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
     nb->local_tables = 0;
     nb->tokens = 0;
 #ifdef UNIVERSAL_PARSER
@@ -238,9 +237,8 @@ rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
     if (ast->node_buffer && ast->node_buffer->tokens) {
         parser_tokens_free(ast, ast->node_buffer->tokens);
     }
-    iterate_node_values(ast, &nb->unmarkable, free_ast_value, NULL);
-    node_buffer_list_free(ast, &nb->unmarkable);
-    node_buffer_list_free(ast, &nb->markable);
+    iterate_node_values(ast, &nb->buffer_list, free_ast_value, NULL);
+    node_buffer_list_free(ast, &nb->buffer_list);
     struct rb_ast_local_table_link *local_table = nb->local_tables;
     while (local_table) {
         struct rb_ast_local_table_link *next_table = local_table->next;
@@ -277,6 +275,15 @@ ast_newnode_in_bucket(rb_ast_t *ast, node_buffer_list_t *nb, size_t size, size_t
     return ptr;
 }
 
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type, size_t size, size_t alignment)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    node_buffer_list_t *bucket = &nb->buffer_list;
+    return ast_newnode_in_bucket(ast, bucket, size, alignment);
+}
+
+#if RUBY_DEBUG
 RBIMPL_ATTR_PURE()
 static bool
 nodetype_markable_p(enum node_type type)
@@ -284,16 +291,6 @@ nodetype_markable_p(enum node_type type)
     return false;
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast, enum node_type type, size_t size, size_t alignment)
-{
-    node_buffer_t *nb = ast->node_buffer;
-    node_buffer_list_t *bucket =
-        (nodetype_markable_p(type) ? &nb->markable : &nb->unmarkable);
-    return ast_newnode_in_bucket(ast, bucket, size, alignment);
-}
-
-#if RUBY_DEBUG
 void
 rb_ast_node_type_change(NODE *n, enum node_type type)
 {
@@ -410,8 +407,7 @@ rb_ast_memsize(const rb_ast_t *ast)
 
     if (nb) {
         size += sizeof(node_buffer_t);
-        size += buffer_list_size(&nb->unmarkable);
-        size += buffer_list_size(&nb->markable);
+        size += buffer_list_size(&nb->buffer_list);
     }
     return size;
 }
