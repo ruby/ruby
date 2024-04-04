@@ -5892,94 +5892,99 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE: {
-        pm_global_variable_and_write_node_t *global_variable_and_write_node = (pm_global_variable_and_write_node_t*) node;
+        // $foo &&= bar
+        // ^^^^^^^^^^^^
+        const pm_global_variable_and_write_node_t *cast = (const pm_global_variable_and_write_node_t *) node;
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        LABEL *end_label = NEW_LABEL(lineno);
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
+        PUSH_INSN1(ret, location, getglobal, name);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        VALUE global_variable_name = ID2SYM(pm_constant_id_lookup(scope_node, global_variable_and_write_node->name));
+        PUSH_INSNL(ret, location, branchunless, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
-
-        PM_POP_UNLESS_POPPED;
-
-        PM_COMPILE_NOT_POPPED(global_variable_and_write_node->value);
-
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSN1(ret, &dummy_line_node, setglobal, global_variable_name);
-        ADD_LABEL(ret, end_label);
+        PUSH_INSN1(ret, location, setglobal, name);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
-        pm_global_variable_operator_write_node_t *global_variable_operator_write_node = (pm_global_variable_operator_write_node_t*) node;
+        // $foo += bar
+        // ^^^^^^^^^^^
+        const pm_global_variable_operator_write_node_t *cast = (const pm_global_variable_operator_write_node_t *) node;
 
-        VALUE global_variable_name = ID2SYM(pm_constant_id_lookup(scope_node, global_variable_operator_write_node->name));
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
+        PUSH_INSN1(ret, location, getglobal, name);
+        PM_COMPILE_NOT_POPPED(cast->value);
 
-        PM_COMPILE_NOT_POPPED(global_variable_operator_write_node->value);
-        ID method_id = pm_constant_id_lookup(scope_node, global_variable_operator_write_node->operator);
-
+        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
         int flags = VM_CALL_ARGS_SIMPLE;
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSN1(ret, &dummy_line_node, setglobal, global_variable_name);
+        if (!popped) PUSH_INSN(ret, location, dup);
+        PUSH_INSN1(ret, location, setglobal, name);
 
         return;
       }
       case PM_GLOBAL_VARIABLE_OR_WRITE_NODE: {
-        pm_global_variable_or_write_node_t *global_variable_or_write_node = (pm_global_variable_or_write_node_t*) node;
+        // $foo ||= bar
+        // ^^^^^^^^^^^^
+        const pm_global_variable_or_write_node_t *cast = (const pm_global_variable_or_write_node_t *) node;
+        LABEL *set_label = NEW_LABEL(location.line);
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        LABEL *set_label= NEW_LABEL(lineno);
-        LABEL *end_label = NEW_LABEL(lineno);
+        PUSH_INSN(ret, location, putnil);
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
 
-        PM_PUTNIL;
-        VALUE global_variable_name = ID2SYM(pm_constant_id_lookup(scope_node, global_variable_or_write_node->name));
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_GVAR), name, Qtrue);
+        PUSH_INSNL(ret, location, branchunless, set_label);
 
-        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_GVAR), global_variable_name, Qtrue);
+        PUSH_INSN1(ret, location, getglobal, name);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
+        PUSH_INSNL(ret, location, branchif, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+        PUSH_LABEL(ret, set_label);
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
-
-        PM_POP_UNLESS_POPPED;
-
-        ADD_LABEL(ret, set_label);
-        PM_COMPILE_NOT_POPPED(global_variable_or_write_node->value);
-
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSN1(ret, &dummy_line_node, setglobal, global_variable_name);
-        ADD_LABEL(ret, end_label);
+        PUSH_INSN1(ret, location, setglobal, name);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_GLOBAL_VARIABLE_READ_NODE: {
-        pm_global_variable_read_node_t *global_variable_read_node = (pm_global_variable_read_node_t *)node;
-        VALUE global_variable_name = ID2SYM(pm_constant_id_lookup(scope_node, global_variable_read_node->name));
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
-        PM_POP_IF_POPPED;
+        // $foo
+        // ^^^^
+        const pm_global_variable_read_node_t *cast = (const pm_global_variable_read_node_t *) node;
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
+
+        PUSH_INSN1(ret, location, getglobal, name);
+        if (popped) PUSH_INSN(ret, location, pop);
+
         return;
       }
       case PM_GLOBAL_VARIABLE_WRITE_NODE: {
-        pm_global_variable_write_node_t *write_node = (pm_global_variable_write_node_t *) node;
-        PM_COMPILE_NOT_POPPED(write_node->value);
-        PM_DUP_UNLESS_POPPED;
-        ID ivar_name = pm_constant_id_lookup(scope_node, write_node->name);
-        ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(ivar_name));
+        // $foo = 1
+        // ^^^^^^^^
+        const pm_global_variable_write_node_t *cast = (const pm_global_variable_write_node_t *) node;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
+
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+        PUSH_INSN1(ret, location, setglobal, ID2SYM(name));
+
         return;
       }
       case PM_HASH_NODE: {
+        // {}
+        // ^^
+        //
         // If every node in the hash is static, then we can compile the entire
         // hash now instead of later.
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
@@ -5988,7 +5993,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // statically known.
             if (!popped) {
                 VALUE value = pm_static_literal_value(iseq, node, scope_node);
-                ADD_INSN1(ret, &dummy_line_node, duphash, value);
+                PUSH_INSN1(ret, location, duphash, value);
                 RB_OBJ_WRITTEN(iseq, Qundef, value);
             }
         }
@@ -6033,8 +6038,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_IMAGINARY_NODE: {
+        // 1i
+        // ^^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_imaginary((pm_imaginary_node_t *)node));
+            PUSH_INSN1(ret, location, putobject, parse_imaginary((const pm_imaginary_node_t *) node));
         }
         return;
       }
