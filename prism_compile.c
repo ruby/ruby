@@ -37,8 +37,11 @@
 #define PUSH_SEND_WITH_FLAG(seq, location, id, argc, flag) \
     PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)(flag), NULL)
 
+#define PUSH_CALL_WITH_BLOCK(seq, location, id, argc, block) \
+    PUSH_SEND_R((seq), location, (id), (argc), (block), (VALUE)INT2FIX(VM_CALL_FCALL), NULL)
+
 #define PUSH_TRACE(seq, event) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) new_trace_body(iseq, (event), 0))
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_trace_body(iseq, (event), 0))
 
 /******************************************************************************/
 /* These are helper macros for the compiler.                                  */
@@ -6297,19 +6300,22 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_KEYWORD_HASH_NODE: {
-        pm_keyword_hash_node_t *keyword_hash_node = (pm_keyword_hash_node_t *) node;
-        pm_node_list_t elements = keyword_hash_node->elements;
+        // foo(bar: baz)
+        //     ^^^^^^^^
+        const pm_keyword_hash_node_t *cast = (const pm_keyword_hash_node_t *) node;
+        const pm_node_list_t *elements = &cast->elements;
 
-        for (size_t index = 0; index < elements.size; index++) {
-            PM_COMPILE(elements.nodes[index]);
+        const pm_node_t *element;
+        PM_NODE_LIST_FOREACH(elements, index, element) {
+            PM_COMPILE(element);
         }
 
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
-        }
+        if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
         return;
       }
       case PM_LAMBDA_NODE: {
+        // -> {}
+        // ^^^^^
         const pm_lambda_node_t *cast = (const pm_lambda_node_t *) node;
 
         pm_scope_node_t next_scope_node;
@@ -6320,12 +6326,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_destroy(&next_scope_node);
 
         VALUE argc = INT2FIX(0);
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        PUSH_CALL_WITH_BLOCK(ret, location, idLambda, argc, block);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) block);
 
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-        ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, idLambda, argc, block);
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
-
-        PM_POP_IF_POPPED;
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_LOCAL_VARIABLE_AND_WRITE_NODE: {
