@@ -31,8 +31,7 @@ typedef struct {
 } node_buffer_list_t;
 
 struct node_buffer_struct {
-    node_buffer_list_t unmarkable;
-    node_buffer_list_t markable;
+    node_buffer_list_t buffer_list;
     struct rb_ast_local_table_link *local_tables;
     // - id (sequence number)
     // - token_type
