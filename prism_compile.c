@@ -6083,95 +6083,98 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
-        pm_instance_variable_and_write_node_t *instance_variable_and_write_node = (pm_instance_variable_and_write_node_t*) node;
+        // @foo &&= bar
+        // ^^^^^^^^^^^^
+        const pm_instance_variable_and_write_node_t *cast = (const pm_instance_variable_and_write_node_t *) node;
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        LABEL *end_label = NEW_LABEL(lineno);
-        ID instance_variable_name_id = pm_constant_id_lookup(scope_node, instance_variable_and_write_node->name);
-        VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
+        ID name_id = pm_constant_id_lookup(scope_node, cast->name);
+        VALUE name = ID2SYM(name_id);
 
-        ADD_INSN2(ret, &dummy_line_node, getinstancevariable, instance_variable_name_val, get_ivar_ic_value(iseq, instance_variable_name_id));
-        PM_DUP_UNLESS_POPPED;
+        PUSH_INSN2(ret, location, getinstancevariable, name, get_ivar_ic_value(iseq, name_id));
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
-        PM_POP_UNLESS_POPPED;
+        PUSH_INSNL(ret, location, branchunless, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        PM_COMPILE_NOT_POPPED(instance_variable_and_write_node->value);
-        PM_DUP_UNLESS_POPPED;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        ADD_INSN2(ret, &dummy_line_node, setinstancevariable, instance_variable_name_val, get_ivar_ic_value(iseq, instance_variable_name_id));
-        ADD_LABEL(ret, end_label);
+        PUSH_INSN2(ret, location, setinstancevariable, name, get_ivar_ic_value(iseq, name_id));
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
-        pm_instance_variable_operator_write_node_t *instance_variable_operator_write_node = (pm_instance_variable_operator_write_node_t*) node;
+        // @foo += bar
+        // ^^^^^^^^^^^
+        const pm_instance_variable_operator_write_node_t *cast = (const pm_instance_variable_operator_write_node_t *) node;
 
-        ID instance_variable_name_id = pm_constant_id_lookup(scope_node, instance_variable_operator_write_node->name);
-        VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
+        ID name_id = pm_constant_id_lookup(scope_node, cast->name);
+        VALUE name = ID2SYM(name_id);
 
-        ADD_INSN2(ret, &dummy_line_node, getinstancevariable,
-                instance_variable_name_val,
-                get_ivar_ic_value(iseq, instance_variable_name_id));
+        PUSH_INSN2(ret, location, getinstancevariable, name, get_ivar_ic_value(iseq, name_id));
+        PM_COMPILE_NOT_POPPED(cast->value);
 
-        PM_COMPILE_NOT_POPPED(instance_variable_operator_write_node->value);
-        ID method_id = pm_constant_id_lookup(scope_node, instance_variable_operator_write_node->operator);
-
+        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
         int flags = VM_CALL_ARGS_SIMPLE;
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSN2(ret, &dummy_line_node, setinstancevariable,
-                instance_variable_name_val,
-                get_ivar_ic_value(iseq, instance_variable_name_id));
+        if (!popped) PUSH_INSN(ret, location, dup);
+        PUSH_INSN2(ret, location, setinstancevariable, name, get_ivar_ic_value(iseq, name_id));
 
         return;
       }
       case PM_INSTANCE_VARIABLE_OR_WRITE_NODE: {
-        pm_instance_variable_or_write_node_t *instance_variable_or_write_node = (pm_instance_variable_or_write_node_t*) node;
+        // @foo ||= bar
+        // ^^^^^^^^^^^^
+        const pm_instance_variable_or_write_node_t *cast = (const pm_instance_variable_or_write_node_t *) node;
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        LABEL *end_label = NEW_LABEL(lineno);
+        ID name_id = pm_constant_id_lookup(scope_node, cast->name);
+        VALUE name = ID2SYM(name_id);
 
-        ID instance_variable_name_id = pm_constant_id_lookup(scope_node, instance_variable_or_write_node->name);
-        VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
+        PUSH_INSN2(ret, location, getinstancevariable, name, get_ivar_ic_value(iseq, name_id));
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        ADD_INSN2(ret, &dummy_line_node, getinstancevariable, instance_variable_name_val, get_ivar_ic_value(iseq, instance_variable_name_id));
-        PM_DUP_UNLESS_POPPED;
+        PUSH_INSNL(ret, location, branchif, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
-        PM_POP_UNLESS_POPPED;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_COMPILE_NOT_POPPED(instance_variable_or_write_node->value);
-        PM_DUP_UNLESS_POPPED;
-
-        ADD_INSN2(ret, &dummy_line_node, setinstancevariable, instance_variable_name_val, get_ivar_ic_value(iseq, instance_variable_name_id));
-        ADD_LABEL(ret, end_label);
+        PUSH_INSN2(ret, location, setinstancevariable, name, get_ivar_ic_value(iseq, name_id));
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_INSTANCE_VARIABLE_READ_NODE: {
+        // @foo
+        // ^^^^
         if (!popped) {
-            pm_instance_variable_read_node_t *instance_variable_read_node = (pm_instance_variable_read_node_t *) node;
-            ID ivar_name = pm_constant_id_lookup(scope_node, instance_variable_read_node->name);
-            ADD_INSN2(ret, &dummy_line_node, getinstancevariable, ID2SYM(ivar_name), get_ivar_ic_value(iseq, ivar_name));
+            const pm_instance_variable_read_node_t *cast = (const pm_instance_variable_read_node_t *) node;
+            ID name = pm_constant_id_lookup(scope_node, cast->name);
+            PUSH_INSN2(ret, location, getinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
         }
         return;
       }
       case PM_INSTANCE_VARIABLE_WRITE_NODE: {
-        pm_instance_variable_write_node_t *write_node = (pm_instance_variable_write_node_t *) node;
-        PM_COMPILE_NOT_POPPED(write_node->value);
+        // @foo = 1
+        // ^^^^^^^^
+        const pm_instance_variable_write_node_t *cast = (const pm_instance_variable_write_node_t *) node;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+        PUSH_INSN2(ret, location, setinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
 
-        ID ivar_name = pm_constant_id_lookup(scope_node, write_node->name);
-        ADD_INSN2(ret, &dummy_line_node, setinstancevariable,
-                ID2SYM(ivar_name),
-                get_ivar_ic_value(iseq, ivar_name));
         return;
       }
       case PM_INTEGER_NODE: {
+        // 1
+        // ^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer((const pm_integer_node_t *) node));
+            PUSH_INSN1(ret, location, putobject, parse_integer((const pm_integer_node_t *) node));
         }
         return;
       }
