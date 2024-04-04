@@ -43,6 +43,7 @@ The following default gems are updated.
 * fiddle 1.1.3
 * io-console 0.7.2
 * irb 1.12.0
+* json 2.7.2
 * net-http 0.4.1
 * prism 0.24.0
 * rdoc 6.6.3.1
