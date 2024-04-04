@@ -3620,11 +3620,11 @@ CODE
     assert_predicate chilled_string.clone, :frozen?
 
     # @+ treat the original string as frozen
-    assert_not_predicate +chilled_string, :frozen?
+    assert_not_predicate(+chilled_string, :frozen?)
     assert_not_same chilled_string, +chilled_string
 
     # @- the original string as mutable
-    assert_predicate -chilled_string, :frozen?
+    assert_predicate(-chilled_string, :frozen?)
     assert_not_same chilled_string, -chilled_string
   end
 

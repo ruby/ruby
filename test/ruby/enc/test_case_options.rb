@@ -19,7 +19,7 @@ class TestCaseOptions < Test::Unit::TestCase
 
   def assert_raise_both_types(*options)
     assert_raise_functional_operations 'a', *options
-    assert_raise_bang_operations +'a', *options
+    assert_raise_bang_operations(+'a', *options)
     assert_raise_functional_operations :a, *options
   end
 
@@ -51,7 +51,7 @@ class TestCaseOptions < Test::Unit::TestCase
 
   def assert_okay_both_types(*options)
     assert_okay_functional_operations 'a', *options
-    assert_okay_bang_operations +'a', *options
+    assert_okay_bang_operations(+'a', *options)
     assert_okay_functional_operations :a, *options
   end
 
