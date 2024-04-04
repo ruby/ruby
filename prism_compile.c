@@ -6329,97 +6329,92 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_LOCAL_VARIABLE_AND_WRITE_NODE: {
-        pm_local_variable_and_write_node_t *local_variable_and_write_node = (pm_local_variable_and_write_node_t*) node;
+        // foo &&= bar
+        // ^^^^^^^^^^^
+        const pm_local_variable_and_write_node_t *cast = (const pm_local_variable_and_write_node_t *) node;
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        LABEL *end_label = NEW_LABEL(lineno);
-
-        pm_constant_id_t constant_id = local_variable_and_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, local_variable_and_write_node->depth);
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
+        PUSH_INSNL(ret, location, branchunless, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
-
-        PM_POP_UNLESS_POPPED;
-
-        PM_COMPILE_NOT_POPPED(local_variable_and_write_node->value);
-
-        PM_DUP_UNLESS_POPPED;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
         ADD_SETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
-        pm_local_variable_operator_write_node_t *local_variable_operator_write_node = (pm_local_variable_operator_write_node_t*) node;
+        // foo += bar
+        // ^^^^^^^^^^
+        const pm_local_variable_operator_write_node_t *cast = (const pm_local_variable_operator_write_node_t *) node;
 
-        pm_constant_id_t constant_id = local_variable_operator_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, local_variable_operator_write_node->depth);
-
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
 
-        PM_COMPILE_NOT_POPPED(local_variable_operator_write_node->value);
-        ID method_id = pm_constant_id_lookup(scope_node, local_variable_operator_write_node->operator);
+        PM_COMPILE_NOT_POPPED(cast->value);
 
+        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
         int flags = VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL;
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
-        PM_DUP_UNLESS_POPPED;
-
+        if (!popped) PUSH_INSN(ret, location, dup);
         ADD_SETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
 
         return;
       }
       case PM_LOCAL_VARIABLE_OR_WRITE_NODE: {
-        pm_local_variable_or_write_node_t *local_variable_or_write_node = (pm_local_variable_or_write_node_t*) node;
+        // foo ||= bar
+        // ^^^^^^^^^^^
+        const pm_local_variable_or_write_node_t *cast = (const pm_local_variable_or_write_node_t *) node;
 
-        LABEL *set_label= NEW_LABEL(lineno);
-        LABEL *end_label = NEW_LABEL(lineno);
+        LABEL *set_label = NEW_LABEL(location.line);
+        LABEL *end_label = NEW_LABEL(location.line);
 
-        ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-        ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
+        PUSH_INSN1(ret, location, putobject, Qtrue);
+        PUSH_INSNL(ret, location, branchunless, set_label);
 
-        pm_constant_id_t constant_id = local_variable_or_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, local_variable_or_write_node->depth);
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
+        PUSH_INSNL(ret, location, branchif, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
 
-        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
-
-        PM_POP_UNLESS_POPPED;
-
-        ADD_LABEL(ret, set_label);
-        PM_COMPILE_NOT_POPPED(local_variable_or_write_node->value);
-
-        PM_DUP_UNLESS_POPPED;
+        PUSH_LABEL(ret, set_label);
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
         ADD_SETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_LOCAL_VARIABLE_READ_NODE: {
-        pm_local_variable_read_node_t *local_read_node = (pm_local_variable_read_node_t *) node;
+        // foo
+        // ^^^
+        const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) node;
 
         if (!popped) {
-            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_read_node->name, local_read_node->depth);
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
             ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
         }
+
         return;
       }
       case PM_LOCAL_VARIABLE_WRITE_NODE: {
-        pm_local_variable_write_node_t *local_write_node = (pm_local_variable_write_node_t *) node;
-        PM_COMPILE_NOT_POPPED(local_write_node->value);
+        // foo = 1
+        // ^^^^^^^
+        const pm_local_variable_write_node_t *cast = (const pm_local_variable_write_node_t *) node;
+        PM_COMPILE_NOT_POPPED(cast->value);
+        if (!popped) PUSH_INSN(ret, location, dup);
 
-        PM_DUP_UNLESS_POPPED;
-
-        pm_constant_id_t constant_id = local_write_node->name;
-
-        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, constant_id, local_write_node->depth);
-
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
       }
