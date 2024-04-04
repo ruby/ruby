@@ -53,9 +53,6 @@ rb_ast_t *rb_ast_new(void);
 #endif
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
-#if RUBY_DEBUG
-void rb_ast_node_type_change(NODE *n, enum node_type type);
-#endif
 const char *ruby_node_name(int node);
 void rb_node_init(NODE *n, enum node_type type);
 

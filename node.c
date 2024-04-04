@@ -294,25 +294,6 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type, size_t size, size_t alignment
     return ast_newnode_in_bucket(ast, bucket, size, alignment);
 }
 
-#if RUBY_DEBUG
-RBIMPL_ATTR_PURE()
-static bool
-nodetype_markable_p(enum node_type type)
-{
-    return false;
-}
-
-void
-rb_ast_node_type_change(NODE *n, enum node_type type)
-{
-    enum node_type old_type = nd_type(n);
-    if (nodetype_markable_p(old_type) != nodetype_markable_p(type)) {
-        rb_bug("node type changed: %s -> %s",
-               ruby_node_name(old_type), ruby_node_name(type));
-    }
-}
-#endif
-
 rb_ast_id_table_t *
 rb_ast_new_local_table(rb_ast_t *ast, int size)
 {
@@ -432,8 +413,5 @@ rb_ast_dispose(rb_ast_t *ast)
 VALUE
 rb_node_set_type(NODE *n, enum node_type t)
 {
-#if RUBY_DEBUG
-    rb_ast_node_type_change(n, t);
-#endif
     return nd_init_type(n, t);
 }
