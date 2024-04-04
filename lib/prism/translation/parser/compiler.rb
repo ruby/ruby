@@ -406,9 +406,6 @@ module Prism
 
         # @@foo = 1
         # ^^^^^^^^^
-        #
-        # @@foo, @@bar = 1
-        # ^^^^^  ^^^^^
         def visit_class_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.cvar(token(node.name_loc))),
@@ -701,9 +698,6 @@ module Prism
 
         # $foo = 1
         # ^^^^^^^^
-        #
-        # $foo, $bar = 1
-        # ^^^^  ^^^^
         def visit_global_variable_write_node(node)
           builder.assign(
             builder.assignable(builder.gvar(token(node.name_loc))),
@@ -1028,6 +1022,7 @@ module Prism
         end
 
         # -> {}
+        # ^^^^^
         def visit_lambda_node(node)
           parameters = node.parameters
 
