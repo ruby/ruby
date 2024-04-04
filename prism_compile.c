@@ -4637,25 +4637,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_BREAK_NODE: {
-        pm_break_node_t *break_node = (pm_break_node_t *) node;
+        // break
+        // ^^^^^
+        //
+        // break foo
+        // ^^^^^^^^^
+        const pm_break_node_t *cast = (const pm_break_node_t *) node;
         unsigned long throw_flag = 0;
+
         if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
             /* while/until */
             LABEL *splabel = NEW_LABEL(0);
-            ADD_LABEL(ret, splabel);
-            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
-            if (break_node->arguments) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)break_node->arguments);
+            PUSH_LABEL(ret, splabel);
+            PUSH_ADJUST(ret, location, ISEQ_COMPILE_DATA(iseq)->redo_label);
+
+            if (cast->arguments != NULL) {
+                PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->arguments);
             }
             else {
-                PM_PUTNIL;
+                PUSH_INSN(ret, location, putnil);
             }
 
             pm_add_ensure_iseq(ret, iseq, 0, scope_node);
-            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
-            ADD_ADJUST_RESTORE(ret, splabel);
-
-            PM_PUTNIL_UNLESS_POPPED;
+            PUSH_INSNL(ret, location, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
         }
         else {
             const rb_iseq_t *ip = iseq;
@@ -4682,18 +4688,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
 
                 /* escape from block */
-                if (break_node->arguments) {
-                    PM_COMPILE_NOT_POPPED((pm_node_t *)break_node->arguments);
+                if (cast->arguments != NULL) {
+                    PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->arguments);
                 }
                 else {
-                    PM_PUTNIL;
+                    PUSH_INSN(ret, location, putnil);
                 }
 
-                ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(throw_flag | TAG_BREAK));
-                PM_POP_IF_POPPED;
+                PUSH_INSN1(ret, location, throw, INT2FIX(throw_flag | TAG_BREAK));
+                if (popped) PUSH_INSN(ret, location, pop);
 
                 return;
             }
+
             COMPILE_ERROR(ERROR_ARGS "Invalid break");
             rb_bug("Invalid break");
         }
