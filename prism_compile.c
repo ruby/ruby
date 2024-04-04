@@ -4583,34 +4583,39 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_BACK_REFERENCE_READ_NODE: {
+        // $+
+        // ^^
         if (!popped) {
             // Since a back reference is `$<char>`, ruby represents the ID as the
             // an rb_intern on the value after the `$`.
             char *char_ptr = (char *)(node->location.start) + 1;
             ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
-            ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(1), backref_val);
+            PUSH_INSN2(ret, location, getspecial, INT2FIX(1), backref_val);
         }
         return;
       }
       case PM_BEGIN_NODE: {
-        pm_begin_node_t *begin_node = (pm_begin_node_t *) node;
+        // begin end
+        // ^^^^^^^^^
+        const pm_begin_node_t *cast = (pm_begin_node_t *) node;
 
-        if (begin_node->ensure_clause) {
+        if (cast->ensure_clause) {
             // Compiling the ensure clause will compile the rescue clause (if
-            // there is one), which will compile the begin statements
-            pm_compile_ensure(iseq, begin_node, ret, lineno, popped, scope_node);
+            // there is one), which will compile the begin statements.
+            pm_compile_ensure(iseq, cast, ret, location.line, popped, scope_node);
         }
-        else if (begin_node->rescue_clause) {
-            // Compiling rescue will compile begin statements (if applicable)
-            pm_compile_rescue(iseq, begin_node, ret, lineno, popped, scope_node);
+        else if (cast->rescue_clause) {
+            // Compiling rescue will compile begin statements (if applicable).
+            pm_compile_rescue(iseq, cast, ret, location.line, popped, scope_node);
         }
         else {
-            // If there is neither ensure or rescue, the just compile statements
-            if (begin_node->statements) {
-                PM_COMPILE((pm_node_t *)begin_node->statements);
+            // If there is neither ensure or rescue, the just compile the
+            // statements.
+            if (cast->statements != NULL) {
+                PM_COMPILE((const pm_node_t *) cast->statements);
             }
-            else {
-                PM_PUTNIL_UNLESS_POPPED;
+            else if (!popped) {
+                PUSH_INSN(ret, location, putnil);
             }
         }
         return;
@@ -8073,18 +8078,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
-      case PM_SELF_NODE:
+      case PM_SELF_NODE: {
         // self
         // ^^^^
         if (!popped) {
             PUSH_INSN(ret, location, putself);
         }
         return;
-      case PM_SHAREABLE_CONSTANT_NODE:
+      }
+      case PM_SHAREABLE_CONSTANT_NODE: {
         // A value that is being written to a constant that is being marked as
         // shared depending on the current lexical context.
         PM_COMPILE(((const pm_shareable_constant_node_t *) node)->write);
         return;
+      }
       case PM_SINGLETON_CLASS_NODE: {
         // class << self; end
         // ^^^^^^^^^^^^^^^^^^
@@ -8236,13 +8243,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
-      case PM_TRUE_NODE:
+      case PM_TRUE_NODE: {
         // true
         // ^^^^
         if (!popped) {
             PUSH_INSN1(ret, location, putobject, Qtrue);
         }
         return;
+      }
       case PM_UNDEF_NODE: {
         // undef foo
         // ^^^^^^^^^
@@ -8348,9 +8356,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
         return;
       }
-      default:
+      default: {
         rb_raise(rb_eNotImpError, "node type %s not implemented", pm_node_type_to_str(PM_NODE_TYPE(node)));
         return;
+      }
     }
 }
 
