@@ -112,39 +112,6 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line_no, int c
 #define PM_COMPILE_NOT_POPPED(node) \
     pm_compile_node(iseq, (node), ret, false, scope_node)
 
-#define PM_POP \
-    ADD_INSN(ret, &dummy_line_node, pop)
-
-#define PM_POP_IF_POPPED \
-    if (popped) PM_POP
-
-#define PM_POP_UNLESS_POPPED \
-    if (!popped) PM_POP
-
-#define PM_DUP \
-    ADD_INSN(ret, &dummy_line_node, dup)
-
-#define PM_DUP_UNLESS_POPPED \
-    if (!popped) PM_DUP
-
-#define PM_PUTSELF \
-    ADD_INSN(ret, &dummy_line_node, putself)
-
-#define PM_PUTNIL \
-    ADD_INSN(ret, &dummy_line_node, putnil)
-
-#define PM_PUTNIL_UNLESS_POPPED \
-    if (!popped) PM_PUTNIL
-
-#define PM_SWAP \
-    ADD_INSN(ret, &dummy_line_node, swap)
-
-#define PM_SWAP_UNLESS_POPPED \
-    if (!popped) PM_SWAP
-
-#define PM_NOP \
-    ADD_INSN(ret, &dummy_line_node, nop)
-
 #define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
 #define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_DOT3 ((pm_constant_id_t)(idDot3 | PM_SPECIAL_CONSTANT_FLAG))
@@ -778,7 +745,7 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
     }
     if (!label->refcnt) {
         if (popped) {
-            PM_PUTNIL;
+            ADD_INSN(ret, &dummy_line_node, putnil);
         }
     }
     else {
@@ -797,7 +764,7 @@ pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *
         PM_COMPILE_NOT_POPPED(node);
         ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(rb_intern("$.")));
         ADD_SEND(ret, &dummy_line_node, idEq, INT2FIX(1));
-        PM_POP_IF_POPPED;
+        if (popped) ADD_INSN(ret, &dummy_line_node, pop);
     }
     else {
         PM_COMPILE(node);
@@ -822,7 +789,7 @@ pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_labe
         pm_compile_flip_flop_bound(iseq, flip_flop_node->left, ret, popped, scope_node);
     }
     else {
-        PM_PUTNIL;
+        ADD_INSN(ret, &dummy_line_node, putnil);
     }
 
     ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
@@ -837,7 +804,7 @@ pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_labe
         pm_compile_flip_flop_bound(iseq, flip_flop_node->right, ret, popped, scope_node);
     }
     else {
-        PM_PUTNIL;
+        ADD_INSN(ret, &dummy_line_node, putnil);
     }
 
     ADD_INSNL(ret, &dummy_line_node, branchunless, then_label);
@@ -1203,7 +1170,7 @@ pm_compile_hash_elements(const pm_node_list_t *elements, int lineno, rb_iseq_t *
                 if (!made_hash) {
                     ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
                     ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                    PM_SWAP;
+                    ADD_INSN(ret, &dummy_line_node, swap);
                     made_hash = true;
                 }
                 else {
@@ -1214,7 +1181,7 @@ pm_compile_hash_elements(const pm_node_list_t *elements, int lineno, rb_iseq_t *
                     // Since we already have a hash on the stack, we need to set
                     // up the method call for the next merge that will occur.
                     ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                    PM_SWAP;
+                    ADD_INSN(ret, &dummy_line_node, swap);
                 }
 
                 assoc_length = 0;
@@ -1238,7 +1205,7 @@ pm_compile_hash_elements(const pm_node_list_t *elements, int lineno, rb_iseq_t *
             // going to be the first argument.
             if (index != elements->size - 1) {
                 ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                PM_SWAP;
+                ADD_INSN(ret, &dummy_line_node, swap);
             }
 
             break;
@@ -5047,7 +5014,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // If we have a dispatch hash, then we'll use it here to create the
             // optimization.
             if (dispatch != Qundef) {
-                PM_DUP;
+                PUSH_INSN(ret, location, dup);
                 PUSH_INSN2(ret, location, opt_case_dispatch, dispatch, else_label);
                 LABEL_REF(else_label);
             }
@@ -8067,7 +8034,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             ADD_TRACE(ret, RUBY_EVENT_B_CALL);
-            PM_NOP;
+            ADD_INSN(ret, &dummy_line_node, nop);
             ADD_LABEL(ret, start);
 
             if (scope_node->body != NULL) {
@@ -8097,7 +8064,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             else {
-                PM_PUTNIL;
+                ADD_INSN(ret, &dummy_line_node, putnil);
             }
 
             ADD_LABEL(ret, end);
@@ -8126,7 +8093,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE((pm_node_t *)scope_node->body);
             }
             else {
-                PM_PUTNIL;
+                ADD_INSN(ret, &dummy_line_node, putnil);
             }
 
             ADD_TRACE(ret, RUBY_EVENT_RETURN);
@@ -8162,7 +8129,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE((pm_node_t *)scope_node->body);
             }
             else {
-                PM_PUTNIL;
+                PUSH_INSN(ret, location, putnil);
             }
             break;
         }
