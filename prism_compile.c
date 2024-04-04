@@ -6436,41 +6436,43 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MATCH_PREDICATE_NODE: {
-        pm_match_predicate_node_t *cast = (pm_match_predicate_node_t *) node;
+        // foo in bar
+        // ^^^^^^^^^^
+        const pm_match_predicate_node_t *cast = (const pm_match_predicate_node_t *) node;
 
         // First, allocate some stack space for the cached return value of any
         // calls to #deconstruct.
-        PM_PUTNIL;
+        PUSH_INSN(ret, location, putnil);
 
         // Next, compile the expression that we're going to match against.
         PM_COMPILE_NOT_POPPED(cast->value);
-        PM_DUP;
+        PUSH_INSN(ret, location, dup);
 
         // Now compile the pattern that is going to be used to match against the
         // expression.
-        LABEL *matched_label = NEW_LABEL(lineno);
-        LABEL *unmatched_label = NEW_LABEL(lineno);
-        LABEL *done_label = NEW_LABEL(lineno);
+        LABEL *matched_label = NEW_LABEL(location.line);
+        LABEL *unmatched_label = NEW_LABEL(location.line);
+        LABEL *done_label = NEW_LABEL(location.line);
         pm_compile_pattern(iseq, scope_node, cast->pattern, ret, matched_label, unmatched_label, false, false, true, 2);
 
         // If the pattern did not match, then compile the necessary instructions
         // to handle pushing false onto the stack, then jump to the end.
-        ADD_LABEL(ret, unmatched_label);
-        PM_POP;
-        PM_POP;
+        PUSH_LABEL(ret, unmatched_label);
+        PUSH_INSN(ret, location, pop);
+        PUSH_INSN(ret, location, pop);
 
-        if (!popped) ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
-        ADD_INSNL(ret, &dummy_line_node, jump, done_label);
-        PM_PUTNIL;
+        if (!popped) PUSH_INSN1(ret, location, putobject, Qfalse);
+        PUSH_INSNL(ret, location, jump, done_label);
+        PUSH_INSN(ret, location, putnil);
 
         // If the pattern did match, then compile the necessary instructions to
         // handle pushing true onto the stack, then jump to the end.
-        ADD_LABEL(ret, matched_label);
-        ADD_INSN1(ret, &dummy_line_node, adjuststack, INT2FIX(2));
-        if (!popped) ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-        ADD_INSNL(ret, &dummy_line_node, jump, done_label);
+        PUSH_LABEL(ret, matched_label);
+        PUSH_INSN1(ret, location, adjuststack, INT2FIX(2));
+        if (!popped) PUSH_INSN1(ret, location, putobject, Qtrue);
+        PUSH_INSNL(ret, location, jump, done_label);
 
-        ADD_LABEL(ret, done_label);
+        PUSH_LABEL(ret, done_label);
         return;
       }
       case PM_MATCH_REQUIRED_NODE: {
