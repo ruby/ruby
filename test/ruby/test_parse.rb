@@ -1107,9 +1107,13 @@ x = __ENCODING__
 
   def test_parsing_begin_statement_inside_method_definition
     assert_equal :bug_20234, eval("def (begin;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;rescue;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;ensure;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;rescue;else;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
 
     assert_raise(SyntaxError) { eval("def (begin;else;end).bug_20234; end") }
     assert_raise(SyntaxError) { eval("def (begin;ensure;else;end).bug_20234; end") }
