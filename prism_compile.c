@@ -5191,33 +5191,35 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CLASS_NODE: {
-        pm_class_node_t *class_node = (pm_class_node_t *)node;
+        // class Foo; end
+        // ^^^^^^^^^^^^^^
+        const pm_class_node_t *cast = (const pm_class_node_t *) node;
 
-        ID class_id = pm_constant_id_lookup(scope_node, class_node->name);
-
+        ID class_id = pm_constant_id_lookup(scope_node, cast->name);
         VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
 
         pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)class_node, &next_scope_node, scope_node);
-        const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(&next_scope_node, class_name, ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_init((pm_node_t *)cast, &next_scope_node, scope_node);
+
+        const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(&next_scope_node, class_name, ISEQ_TYPE_CLASS, location.line);
         pm_scope_node_destroy(&next_scope_node);
 
         // TODO: Once we merge constant path nodes correctly, fix this flag
         const int flags = VM_DEFINECLASS_TYPE_CLASS |
-            (class_node->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
-            pm_compile_class_path(iseq, class_node->constant_path, &location, ret, false, scope_node);
+            (cast->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
+            pm_compile_class_path(iseq, cast->constant_path, &location, ret, false, scope_node);
 
-        if (class_node->superclass) {
-            PM_COMPILE_NOT_POPPED(class_node->superclass);
+        if (cast->superclass) {
+            PM_COMPILE_NOT_POPPED(cast->superclass);
         }
         else {
-            PM_PUTNIL;
+            PUSH_INSN(ret, location, putnil);
         }
 
-        ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(class_id), class_iseq, INT2FIX(flags));
+        PUSH_INSN3(ret, location, defineclass, ID2SYM(class_id), class_iseq, INT2FIX(flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
 
-        PM_POP_IF_POPPED;
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_CLASS_VARIABLE_AND_WRITE_NODE: {
