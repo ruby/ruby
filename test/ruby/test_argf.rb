@@ -1154,7 +1154,7 @@ class TestArgf < Test::Unit::TestCase
     t = make_tempfile0("argf-#{__method__}")
     t.puts 'bar'
     t.close
-    ruby('-pi-', '-e', "print ARGF.puts('foo')", t.path) do |f|
+    ruby('-pi-', '-W0', '-e', "print ARGF.puts('foo')", t.path) do |f|
     end
     assert_equal("foo\nbar\n", File.read(t.path))
   end
