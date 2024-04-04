@@ -6673,51 +6673,55 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_NEXT_NODE: {
-        pm_next_node_t *next_node = (pm_next_node_t *) node;
+        // next
+        // ^^^^
+        //
+        // next foo
+        // ^^^^^^^^
+        const pm_next_node_t *cast = (const pm_next_node_t *) node;
 
         if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
             LABEL *splabel = NEW_LABEL(0);
+            PUSH_LABEL(ret, splabel);
 
-            ADD_LABEL(ret, splabel);
-
-            if (next_node->arguments) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
+            if (cast->arguments) {
+                PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->arguments);
             }
             else {
-                PM_PUTNIL;
+                PUSH_INSN(ret, location, putnil);
             }
             pm_add_ensure_iseq(ret, iseq, 0, scope_node);
 
-            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
-            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+            PUSH_ADJUST(ret, location, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            PUSH_INSNL(ret, location, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
 
-            ADD_ADJUST_RESTORE(ret, splabel);
-            PM_PUTNIL_UNLESS_POPPED;
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
         }
         else if (ISEQ_COMPILE_DATA(iseq)->end_label && can_add_ensure_iseq(iseq)) {
             LABEL *splabel = NEW_LABEL(0);
 
-            ADD_LABEL(ret, splabel);
-            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
+            PUSH_LABEL(ret, splabel);
+            PUSH_ADJUST(ret, location, ISEQ_COMPILE_DATA(iseq)->start_label);
 
-            if (next_node->arguments) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
+            if (cast->arguments != NULL) {
+                PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->arguments);
             }
             else {
-                PM_PUTNIL;
+                PUSH_INSN(ret, location, putnil);
             }
 
             pm_add_ensure_iseq(ret, iseq, 0, scope_node);
-            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
-            ADD_ADJUST_RESTORE(ret, splabel);
+            PUSH_INSNL(ret, location, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            PUSH_ADJUST_RESTORE(ret, splabel);
             splabel->unremovable = FALSE;
 
-            PM_PUTNIL_UNLESS_POPPED;
+            if (!popped) PUSH_INSN(ret, location, putnil);
         }
         else {
             const rb_iseq_t *ip = iseq;
-
             unsigned long throw_flag = 0;
+
             while (ip) {
                 if (!ISEQ_COMPILE_DATA(ip)) {
                     ip = 0;
@@ -6740,15 +6744,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ip = ISEQ_BODY(ip)->parent_iseq;
             }
             if (ip != 0) {
-                if (next_node->arguments) {
-                    PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
+                if (cast->arguments) {
+                    PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->arguments);
                 }
                 else {
-                    PM_PUTNIL;
+                    PUSH_INSN(ret, location, putnil);
                 }
-                ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(throw_flag | TAG_NEXT));
 
-                PM_POP_IF_POPPED;
+                PUSH_INSN1(ret, location, throw, INT2FIX(throw_flag | TAG_NEXT));
+                if (popped) PUSH_INSN(ret, location, pop);
             }
             else {
                 rb_raise(rb_eArgError, "Invalid next");
