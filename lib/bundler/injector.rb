@@ -120,9 +120,10 @@ module Bundler
         github = ", :github => \"#{d.github}\"" unless d.github.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
         ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
+        glob = ", :glob => \"#{d.glob}\"" unless d.glob.nil?
         require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{path}#{git}#{github}#{branch}#{ref}#{require_path})
+        %(gem #{name}#{requirement}#{group}#{source}#{path}#{git}#{github}#{branch}#{ref}#{glob}#{require_path})
       end.join("\n")
     end
 
