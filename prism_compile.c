@@ -1045,10 +1045,11 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
 }
 
 static int
-pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *constant_path_node, const NODE *line_node, bool popped, pm_scope_node_t *scope_node)
+pm_compile_class_path(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    if (PM_NODE_TYPE_P(constant_path_node, PM_CONSTANT_PATH_NODE)) {
-        pm_node_t *parent = ((pm_constant_path_node_t *)constant_path_node)->parent;
+    if (PM_NODE_TYPE_P(node, PM_CONSTANT_PATH_NODE)) {
+        const pm_node_t *parent = ((const pm_constant_path_node_t *) node)->parent;
+
         if (parent) {
             /* Bar::Foo */
             PM_COMPILE(parent);
@@ -1056,14 +1057,13 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
         }
         else {
             /* toplevel class ::Foo */
-            ADD_INSN1(ret, line_node, putobject, rb_cObject);
+            PUSH_INSN1(ret, *node_location, putobject, rb_cObject);
             return VM_DEFINECLASS_FLAG_SCOPED;
         }
     }
     else {
         /* class at cbase Foo */
-        ADD_INSN1(ret, line_node, putspecialobject,
-                INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        PUSH_INSN1(ret, *node_location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
         return 0;
     }
 }
@@ -5224,7 +5224,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // TODO: Once we merge constant path nodes correctly, fix this flag
         const int flags = VM_DEFINECLASS_TYPE_CLASS |
             (class_node->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
-            pm_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, false, scope_node);
+            pm_compile_class_path(iseq, class_node->constant_path, &location, ret, false, scope_node);
 
         if (class_node->superclass) {
             PM_COMPILE_NOT_POPPED(class_node->superclass);
@@ -6528,84 +6528,87 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MATCH_WRITE_NODE: {
+        // /(?<foo>foo)/ =~ bar
+        // ^^^^^^^^^^^^^^^^^^^^
+        //
         // Match write nodes are specialized call nodes that have a regular
         // expression with valid named capture groups on the left, the =~
         // operator, and some value on the right. The nodes themselves simply
         // wrap the call with the local variable targets that will be written
         // when the call is executed.
-        pm_match_write_node_t *cast = (pm_match_write_node_t *) node;
-        LABEL *fail_label = NEW_LABEL(lineno);
-        LABEL *end_label = NEW_LABEL(lineno);
+        const pm_match_write_node_t *cast = (const pm_match_write_node_t *) node;
+        LABEL *fail_label = NEW_LABEL(location.line);
+        LABEL *end_label = NEW_LABEL(location.line);
 
         // First, we'll compile the call so that all of its instructions are
         // present. Then we'll compile all of the local variable targets.
-        PM_COMPILE_NOT_POPPED((pm_node_t *) cast->call);
+        PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->call);
 
         // Now, check if the match was successful. If it was, then we'll
         // continue on and assign local variables. Otherwise we'll skip over the
         // assignment code.
-        ADD_INSN1(ret, &dummy_line_node, getglobal, rb_id2sym(idBACKREF));
-        PM_DUP;
-        ADD_INSNL(ret, &dummy_line_node, branchunless, fail_label);
+        PUSH_INSN1(ret, location, getglobal, rb_id2sym(idBACKREF));
+        PUSH_INSN(ret, location, dup);
+        PUSH_INSNL(ret, location, branchunless, fail_label);
 
         // If there's only a single local variable target, we can skip some of
         // the bookkeeping, so we'll put a special branch here.
         size_t targets_count = cast->targets.size;
 
         if (targets_count == 1) {
-            pm_node_t *target = cast->targets.nodes[0];
+            const pm_node_t *target = cast->targets.nodes[0];
             RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
 
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
-            ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
-            ADD_LABEL(ret, fail_label);
+            PUSH_INSN1(ret, location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
+            PUSH_SEND(ret, location, idAREF, INT2FIX(1));
+            PUSH_LABEL(ret, fail_label);
             ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
-            PM_POP_IF_POPPED;
+            if (popped) PUSH_INSN(ret, location, pop);
             return;
         }
 
         // Otherwise there is more than one local variable target, so we'll need
         // to do some bookkeeping.
         for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
-            pm_node_t *target = cast->targets.nodes[targets_index];
+            const pm_node_t *target = cast->targets.nodes[targets_index];
             RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
 
             if (((size_t) targets_index) < (targets_count - 1)) {
-                PM_DUP;
+                PUSH_INSN(ret, location, dup);
             }
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
-            ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
+            PUSH_INSN1(ret, location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
+            PUSH_SEND(ret, location, idAREF, INT2FIX(1));
             ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         }
 
         // Since we matched successfully, now we'll jump to the end.
-        ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+        PUSH_INSNL(ret, location, jump, end_label);
 
         // In the case that the match failed, we'll loop through each local
         // variable target and set all of them to `nil`.
-        ADD_LABEL(ret, fail_label);
-        PM_POP;
+        PUSH_LABEL(ret, fail_label);
+        PUSH_INSN(ret, location, pop);
 
         for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
-            pm_node_t *target = cast->targets.nodes[targets_index];
+            const pm_node_t *target = cast->targets.nodes[targets_index];
             RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
 
-            PM_PUTNIL;
+            PUSH_INSN(ret, location, putnil);
             ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         }
 
         // Finally, we can push the end label for either case.
-        ADD_LABEL(ret, end_label);
-        PM_POP_IF_POPPED;
+        PUSH_LABEL(ret, end_label);
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_MISSING_NODE: {
@@ -6613,29 +6616,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MODULE_NODE: {
-        pm_module_node_t *module_node = (pm_module_node_t *)node;
+        // module Foo; end
+        // ^^^^^^^^^^^^^^^
+        const pm_module_node_t *cast = (const pm_module_node_t *) node;
 
-        ID module_id = pm_constant_id_lookup(scope_node, module_node->name);
+        ID module_id = pm_constant_id_lookup(scope_node, cast->name);
         VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
 
         pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)module_node, &next_scope_node, scope_node);
-        const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&next_scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_init((const pm_node_t *) cast, &next_scope_node, scope_node);
+
+        const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&next_scope_node, module_name, ISEQ_TYPE_CLASS, location.line);
         pm_scope_node_destroy(&next_scope_node);
 
-        const int flags = VM_DEFINECLASS_TYPE_MODULE |
-            pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, false, scope_node);
+        const int flags = VM_DEFINECLASS_TYPE_MODULE | pm_compile_class_path(iseq, cast->constant_path, &location, ret, false, scope_node);
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) module_iseq);
 
-        PM_PUTNIL;
-        ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
-
-        PM_POP_IF_POPPED;
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_REQUIRED_PARAMETER_NODE: {
-        pm_required_parameter_node_t *required_parameter_node = (pm_required_parameter_node_t *)node;
-        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, required_parameter_node->name, 0);
+        // def foo(bar); end
+        //         ^^^
+        const pm_required_parameter_node_t *cast = (const pm_required_parameter_node_t *) node;
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, 0);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
