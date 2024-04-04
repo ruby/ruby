@@ -171,9 +171,26 @@ impl JITState {
         unsafe { *(self.pc.offset(arg_idx + 1)) }
     }
 
+    // Get an argument of the next instruction
+    pub fn next_insn_arg(&self, arg_idx: usize) -> VALUE {
+        let current_len = insn_len(self.get_opcode()).as_usize();
+        unsafe {
+            let next_pc = self.pc.add(current_len);
+            let next_opcode = rb_iseq_opcode_at_pc(self.iseq, next_pc);
+            assert!(insn_len(next_opcode as usize) as usize > (arg_idx + 1));
+            next_pc.add(arg_idx + 1).read()
+        }
+    }
+
     // Get the index of the next instruction
     fn next_insn_idx(&self) -> u16 {
         self.insn_idx + insn_len(self.get_opcode()) as u16
+    }
+
+    // Get the opcode of the next instruction
+    pub fn next_insn_opcode(&self) -> ruby_vminsn_type {
+        let next_idx = self.next_insn_idx();
+        iseq_opcode_at_idx(self.iseq, next_idx.into())
     }
 
     // Check if we are compiling the instruction at the stub PC
@@ -1392,8 +1409,7 @@ fn fuse_putobject_opt_ltlt(
     constant_object: VALUE,
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
-    let next_opcode = unsafe { rb_vm_insn_addr2opcode(jit.pc.add(insn_len(jit.opcode).as_usize()).read().as_ptr()) };
-    if next_opcode == YARVINSN_opt_ltlt as i32 && constant_object.fixnum_p() {
+    if jit.next_insn_opcode() == YARVINSN_opt_ltlt && constant_object.fixnum_p() {
         // Untag the fixnum shift amount
         let shift_amt = constant_object.as_isize() >> 1;
         if shift_amt > 63 || shift_amt < 0 {
@@ -3372,6 +3388,9 @@ fn gen_opt_lt(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
+    if let Some(result) = fuse_fixnum_cmp_branchunless(jit, asm, ocb, BranchGenFn::JGEToTarget0) {
+        return Some(result);
+    }
     gen_fixnum_cmp(jit, asm, ocb, Assembler::csel_l, BOP_LT)
 }
 
@@ -3515,11 +3534,85 @@ fn gen_equality_specialized(
     }
 }
 
+/// Attempt to generate code for a compare and branch instruction pair for fixnums, usually coming
+/// from code like `if a == b`. The caller specifies the condition for when the `branchunless`
+/// should be taken through `branch_fn`.
+fn fuse_fixnum_cmp_branchunless(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    branch_fn: BranchGenFn,
+) -> Option<CodegenStatus> {
+    if jit.next_insn_opcode() != YARVINSN_branchunless {
+        return None;
+    }
+
+    // Only fuse when there are two fixnums on the stack
+    match asm.ctx.two_fixnums_on_stack(jit) {
+        Some(true) => (),
+        Some(false) => return None,
+        None => {
+            // Defer compilation so we can peek at the stack
+            defer_compilation(jit, asm, ocb);
+            return Some(EndBlock);
+        }
+    };
+
+    // Give up if integer equality is overridden
+    if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQ) {
+        return None;
+    }
+
+    // Check that both operands are fixnums
+    guard_two_fixnums(jit, asm, ocb);
+
+    let jump_offset = jit.next_insn_arg(0).as_i32();
+
+    // Check for interrupts, but only on backward branches that may create loops
+    if jump_offset < 0 {
+        gen_check_ints(asm, Counter::branchunless_interrupted);
+    }
+
+    // Get the branch target instruction offsets
+    let next_idx = jit.next_insn_idx() + insn_len(YARVINSN_branchunless.as_usize()) as u16;
+    let jump_idx = (next_idx as i32) + jump_offset;
+    let next_block = BlockId {
+        iseq: jit.iseq,
+        idx: next_idx,
+    };
+    let jump_block = BlockId {
+        iseq: jit.iseq,
+        idx: jump_idx.try_into().unwrap(),
+    };
+
+    // Get the operands from the stack
+    let arg1 = asm.stack_pop(1);
+    let arg0 = asm.stack_pop(1);
+
+    incr_counter!(branch_insn_count);
+    incr_counter!(branch_fused_count);
+
+    // Compare the arguments
+    asm.cmp(arg0, arg1);
+
+    // Generate the branch instructions
+    let mut ctx = asm.ctx;
+    ctx.reset_chain_depth_and_defer();
+    gen_branch(jit, asm, ocb, jump_block, &ctx, None, None, branch_fn);
+
+    gen_direct_jump(jit, &ctx, next_block, asm);
+    Some(EndBlock)
+}
+
 fn gen_opt_eq(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
+    if let Some(result) = fuse_fixnum_cmp_branchunless(jit, asm, ocb, BranchGenFn::JNZToTarget0) {
+        return Some(result);
+    }
+
     let specialized = match gen_equality_specialized(jit, asm, ocb, true) {
         Some(specialized) => specialized,
         None => {

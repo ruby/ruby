@@ -555,6 +555,7 @@ make_counters! {
     defer_empty_count,
     branch_insn_count,
     branch_known_count,
+    branch_fused_count,
     max_inline_versions,
 
     freed_iseq_count,

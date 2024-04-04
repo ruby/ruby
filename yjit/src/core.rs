@@ -529,6 +529,7 @@ pub enum BranchGenFn {
     JBEToTarget0,
     JBToTarget0,
     JOMulToTarget0,
+    JGEToTarget0,
     JITReturn,
 }
 
@@ -573,6 +574,7 @@ impl BranchGenFn {
                     asm.jmp(target0);
                 }
             }
+            BranchGenFn::JGEToTarget0 => asm.jge(target0),
             BranchGenFn::JNZToTarget0 => {
                 asm.jnz(target0)
             }
@@ -608,6 +610,7 @@ impl BranchGenFn {
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
             BranchGenFn::JOMulToTarget0 |
+            BranchGenFn::JGEToTarget0 |
             BranchGenFn::JITReturn => BranchShape::Default,
         }
     }
@@ -630,6 +633,7 @@ impl BranchGenFn {
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
             BranchGenFn::JOMulToTarget0 |
+            BranchGenFn::JGEToTarget0 |
             BranchGenFn::JITReturn => {
                 assert_eq!(new_shape, BranchShape::Default);
             }
