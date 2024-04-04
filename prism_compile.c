@@ -322,6 +322,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
 {
     int stack_size = 0;
     size_t parts_size = parts->size;
+    bool interpolated = false;
 
     if (parts_size > 0) {
         VALUE current_string = Qnil;
@@ -340,41 +341,51 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                     current_string = string_value;
                 }
             }
-            else if (
-                PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
-                ((const pm_embedded_statements_node_t *) part)->statements != NULL &&
-                ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
-                PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)
-            ) {
-                const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
-                VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+            else {
+                interpolated = true;
 
-                if (RTEST(current_string)) {
-                    current_string = rb_str_concat(current_string, string_value);
+                if (
+                    PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
+                    ((const pm_embedded_statements_node_t *) part)->statements != NULL &&
+                    ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
+                    PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)
+                ) {
+                    const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
+                    VALUE string_value = parse_string_encoded(scope_node, (const pm_node_t *) string_node, &string_node->unescaped);
+
+                    if (RTEST(current_string)) {
+                        current_string = rb_str_concat(current_string, string_value);
+                    }
+                    else {
+                        current_string = string_value;
+                    }
                 }
                 else {
-                    current_string = string_value;
-                }
-            }
-            else {
-                if (!RTEST(current_string)) {
-                    current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
-                }
+                    if (!RTEST(current_string)) {
+                        current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
+                    }
 
-                PUSH_INSN1(ret, *node_location, putobject, rb_fstring(current_string));
-                PM_COMPILE_NOT_POPPED(part);
-                PUSH_INSN(ret, *node_location, dup);
-                PUSH_INSN1(ret, *node_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                PUSH_INSN(ret, *node_location, anytostring);
+                    PUSH_INSN1(ret, *node_location, putobject, rb_fstring(current_string));
+                    PM_COMPILE_NOT_POPPED(part);
+                    PUSH_INSN(ret, *node_location, dup);
+                    PUSH_INSN1(ret, *node_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
+                    PUSH_INSN(ret, *node_location, anytostring);
 
-                current_string = Qnil;
-                stack_size += 2;
+                    current_string = Qnil;
+                    stack_size += 2;
+                }
             }
         }
 
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
-            PUSH_INSN1(ret, *node_location, putobject, current_string);
+
+            if (stack_size == 0 && interpolated) {
+                PUSH_INSN1(ret, *node_location, putstring, current_string);
+            }
+            else {
+                PUSH_INSN1(ret, *node_location, putobject, current_string);
+            }
 
             current_string = Qnil;
             stack_size++;
@@ -6231,7 +6242,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         else {
             const pm_interpolated_string_node_t *cast = (const pm_interpolated_string_node_t *) node;
             int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node);
-
             if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             if (popped) PUSH_INSN(ret, location, pop);
         }
