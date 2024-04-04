@@ -5039,6 +5039,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CASE_MATCH_NODE: {
+        // case foo; in bar; end
+        // ^^^^^^^^^^^^^^^^^^^^^
+        //
         // If you use the `case` keyword to create a case match node, it will
         // match against all of the `in` clauses until it finds one that
         // matches. If it doesn't find one, it can optionally fall back to an
@@ -5594,11 +5597,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_DEF_NODE: {
+        // def foo; end
+        // ^^^^^^^^^^^^
+        //
+        // def self.foo; end
+        // ^^^^^^^^^^^^^^^^^
         const pm_def_node_t *cast = (const pm_def_node_t *) node;
         ID method_name = pm_constant_id_lookup(scope_node, cast->name);
 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((const pm_node_t *) cast, &next_scope_node, scope_node);
+
         rb_iseq_t *method_iseq = NEW_ISEQ(&next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, location.line);
         pm_scope_node_destroy(&next_scope_node);
 
@@ -5625,22 +5634,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_EMBEDDED_STATEMENTS_NODE: {
-        pm_embedded_statements_node_t *embedded_statements_node = (pm_embedded_statements_node_t *)node;
+        // "foo #{bar}"
+        //      ^^^^^^
+        const pm_embedded_statements_node_t *cast = (const pm_embedded_statements_node_t *) node;
 
-        if (embedded_statements_node->statements) {
-            PM_COMPILE((pm_node_t *) (embedded_statements_node->statements));
+        if (cast->statements != NULL) {
+            PM_COMPILE((const pm_node_t *) (cast->statements));
         }
         else {
-            PM_PUTNIL;
+            PUSH_INSN(ret, location, putnil);
         }
 
-        PM_POP_IF_POPPED;
-        // TODO: Concatenate the strings that exist here
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_EMBEDDED_VARIABLE_NODE: {
-        pm_embedded_variable_node_t *embedded_node = (pm_embedded_variable_node_t *)node;
-        PM_COMPILE(embedded_node->variable);
+        // "foo #@bar"
+        //      ^^^^^
+        const pm_embedded_variable_node_t *cast = (const pm_embedded_variable_node_t *) node;
+        PM_COMPILE(cast->variable);
         return;
       }
       case PM_FALSE_NODE:
