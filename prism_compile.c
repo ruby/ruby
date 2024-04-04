@@ -2680,7 +2680,14 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         break;
       }
       case PM_ENSURE_NODE: {
+        const pm_ensure_node_t *cast = (const pm_ensure_node_t *) node;
         scope->body = (pm_node_t *) node;
+
+        if (cast->statements != NULL) {
+            scope->base.location.start = cast->statements->base.location.start;
+            scope->base.location.end = cast->statements->base.location.end;
+        }
+
         break;
       }
       case PM_FOR_NODE: {
@@ -4010,10 +4017,12 @@ static void
 pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_parser_t *parser = scope_node->parser;
+    const pm_statements_node_t *statements = cast->ensure_clause->statements;
+    const pm_line_column_t location = statements != NULL ? PM_NODE_LINE_COLUMN(parser, statements) : *node_location;
 
-    LABEL *estart = NEW_LABEL(node_location->line);
-    LABEL *eend = NEW_LABEL(node_location->line);
-    LABEL *econt = NEW_LABEL(node_location->line);
+    LABEL *estart = NEW_LABEL(location.line);
+    LABEL *eend = NEW_LABEL(location.line);
+    LABEL *econt = NEW_LABEL(location.line);
 
     struct ensure_range er;
     struct iseq_compile_data_ensure_node_stack enl;
@@ -4026,7 +4035,7 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
 
     PUSH_LABEL(ret, estart);
     if (cast->rescue_clause) {
-        pm_compile_rescue(iseq, cast, node_location, ret, popped, scope_node);
+        pm_compile_rescue(iseq, cast, &location, ret, popped, scope_node);
     }
     else {
         if (cast->statements) {
@@ -4047,11 +4056,10 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
         &next_scope_node,
         rb_str_concat(rb_str_new2("ensure in "), ISEQ_BODY(iseq)->location.label),
         ISEQ_TYPE_ENSURE,
-        pm_node_line_number(parser, (const pm_node_t *) cast->ensure_clause)
+        location.line
     );
 
     pm_scope_node_destroy(&next_scope_node);
-
     ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
     erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
@@ -4064,7 +4072,6 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
 
     // Compile the ensure entry
-    const pm_statements_node_t *statements = cast->ensure_clause->statements;
     if (statements != NULL) {
         PM_COMPILE((const pm_node_t *) statements);
         if (!popped) PUSH_INSN(ret, *node_location, pop);
@@ -5616,19 +5623,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_ENSURE_NODE: {
         const pm_ensure_node_t *cast = (const pm_ensure_node_t *) node;
 
-        LABEL *start = NEW_LABEL(location.line);
-        LABEL *end = NEW_LABEL(location.line);
-        PUSH_LABEL(ret, start);
-
         if (cast->statements != NULL) {
+            LABEL *start = NEW_LABEL(location.line);
+            LABEL *end = NEW_LABEL(location.line);
+            PUSH_LABEL(ret, start);
+
             LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
             ISEQ_COMPILE_DATA(iseq)->end_label = end;
 
             PM_COMPILE((const pm_node_t *) cast->statements);
             ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
+            PUSH_LABEL(ret, end);
         }
 
-        PUSH_LABEL(ret, end);
         return;
       }
       case PM_ELSE_NODE: {
@@ -8024,14 +8031,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             break;
           }
           case ISEQ_TYPE_ENSURE: {
+            const pm_line_column_t statements_location = (scope_node->body != NULL ? PM_NODE_LINE_COLUMN(scope_node->parser, scope_node->body) : location);
             iseq_set_exception_local_table(iseq);
 
-            if (scope_node->body) {
+            if (scope_node->body != NULL) {
                 PM_COMPILE_POPPED((const pm_node_t *) scope_node->body);
             }
 
-            PUSH_GETLOCAL(ret, location, 1, 0);
-            PUSH_INSN1(ret, location, throw, INT2FIX(0));
+            PUSH_GETLOCAL(ret, statements_location, 1, 0);
+            PUSH_INSN1(ret, statements_location, throw, INT2FIX(0));
             return;
           }
           case ISEQ_TYPE_METHOD: {
