@@ -1371,9 +1371,6 @@ typedef struct rb_parser_config_struct {
     bool (*enc_isascii)(OnigCodePoint c, rb_encoding *enc);
     OnigCodePoint (*enc_mbc_to_codepoint)(const char *p, const char *e, rb_encoding *enc);
 
-    /* Ractor */
-    VALUE (*ractor_make_shareable)(VALUE obj);
-
     /* Compile */
     // int rb_local_defined(ID id, const rb_iseq_t *iseq);
     int (*local_defined)(ID, const void*);

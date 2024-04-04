@@ -573,8 +573,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isascii = enc_isascii,
     .enc_mbc_to_codepoint = enc_mbc_to_codepoint,
 
-    .ractor_make_shareable = rb_ractor_make_shareable,
-
     .local_defined = local_defined,
     .dvar_defined = dvar_defined,
 
