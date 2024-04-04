@@ -328,12 +328,6 @@ obj_write(VALUE old, VALUE *slot, VALUE young)
 }
 
 static VALUE
-obj_written(VALUE old, VALUE slot, VALUE young)
-{
-    return RB_OBJ_WRITTEN(old, slot, young);
-}
-
-static VALUE
 default_rs(void)
 {
     return rb_default_rs;
@@ -393,12 +387,6 @@ arg_error(void)
     return rb_eArgError;
 }
 
-static VALUE
-ruby_vm_frozen_core(void)
-{
-    return rb_mRubyVMFrozenCore;
-}
-
 static rb_ast_t *
 ast_new(VALUE nb)
 {
@@ -440,8 +428,6 @@ enc_mbc_to_codepoint(const char *p, const char *e, void *enc)
 
 VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_eArgError;
-extern VALUE rb_mRubyVMFrozenCore;
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
 static const rb_parser_config_t rb_global_parser_config = {
     .malloc = ruby_xmalloc,
@@ -460,10 +446,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .compile_callback = rb_suppress_tracing,
     .reg_named_capture_assign = reg_named_capture_assign,
-
-    .obj_freeze = rb_obj_freeze,
-    .obj_hide = rb_obj_hide,
-    .obj_freeze_raw = OBJ_FREEZE_RAW,
 
     .fixnum_p = fixnum_p,
     .symbol_p = symbol_p,
@@ -523,13 +505,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .filesystem_str_new_cstr = rb_filesystem_str_new_cstr,
     .obj_as_string = rb_obj_as_string,
 
-    .hash_clear = rb_hash_clear,
-    .hash_new = rb_hash_new,
-    .hash_aset = rb_hash_aset,
-    .hash_delete = rb_hash_delete,
-    .hash_lookup = rb_hash_lookup,
-    .ident_hash_new = rb_ident_hash_new,
-
     .num2int = rb_num2int_inline,
     .int2num = rb_int2num_inline,
 
@@ -588,11 +563,9 @@ static const rb_parser_config_t rb_global_parser_config = {
     .sized_xfree = ruby_sized_xfree,
     .sized_realloc_n = ruby_sized_realloc_n,
     .obj_write = obj_write,
-    .obj_written = obj_written,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
     .gc_mark_and_move = rb_gc_mark_and_move,
-    .gc_location = rb_gc_location,
 
     .reg_compile = rb_reg_compile,
     .reg_check_preprocess = rb_reg_check_preprocess,
@@ -621,10 +594,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .qfalse = Qfalse,
     .qundef = Qundef,
     .eArgError = arg_error,
-    .mRubyVMFrozenCore = ruby_vm_frozen_core,
     .long2int = rb_long2int,
-
-    .node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal,
 
     /* For Ripper */
     .static_id2sym = static_id2sym,

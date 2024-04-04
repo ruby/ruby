@@ -1248,11 +1248,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
 
-    /* Object */
-    VALUE (*obj_freeze)(VALUE obj);
-    VALUE (*obj_hide)(VALUE obj);
-    void (*obj_freeze_raw)(VALUE obj);
-
     int (*fixnum_p)(VALUE);
     int (*symbol_p)(VALUE);
 
@@ -1317,14 +1312,6 @@ typedef struct rb_parser_config_struct {
     long (*rstring_len)(VALUE str);
     VALUE (*filesystem_str_new_cstr)(const char *ptr);
     VALUE (*obj_as_string)(VALUE);
-
-    /* Hash */
-    VALUE (*hash_clear)(VALUE hash);
-    VALUE (*hash_new)(void);
-    VALUE (*hash_aset)(VALUE hash, VALUE key, VALUE val);
-    VALUE (*hash_delete)(VALUE hash, VALUE key);
-    VALUE (*hash_lookup)(VALUE hash, VALUE key);
-    VALUE (*ident_hash_new)(void);
 
     /* Numeric */
     int (*num2int)(VALUE val);
@@ -1394,11 +1381,9 @@ typedef struct rb_parser_config_struct {
     void (*sized_xfree)(void *x, size_t size);
     void *(*sized_realloc_n)(void *ptr, size_t new_count, size_t element_size, size_t old_count);
     VALUE (*obj_write)(VALUE, VALUE *, VALUE);
-    VALUE (*obj_written)(VALUE, VALUE, VALUE);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
     void (*gc_mark_and_move)(VALUE *ptr);
-    VALUE (*gc_location)(VALUE value);
 
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);
@@ -1432,10 +1417,7 @@ typedef struct rb_parser_config_struct {
     VALUE qfalse;
     VALUE qundef;
     VALUE (*eArgError)(void);
-    VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);
-
-    VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 
     /* For Ripper */
     int enc_coderange_7bit;
