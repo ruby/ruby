@@ -5716,19 +5716,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_FLOAT_NODE: {
+        // 1.0
+        // ^^^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_float((const pm_float_node_t *) node));
+            PUSH_INSN1(ret, location, putobject, parse_float((const pm_float_node_t *) node));
         }
         return;
       }
       case PM_FOR_NODE: {
-        pm_for_node_t *cast = (pm_for_node_t *) node;
+        // for foo in bar do end
+        // ^^^^^^^^^^^^^^^^^^^^^
+        const pm_for_node_t *cast = (const pm_for_node_t *) node;
 
-        LABEL *retry_label = NEW_LABEL(lineno);
-        LABEL *retry_end_l = NEW_LABEL(lineno);
+        LABEL *retry_label = NEW_LABEL(location.line);
+        LABEL *retry_end_l = NEW_LABEL(location.line);
 
         // First, compile the collection that we're going to be iterating over.
-        ADD_LABEL(ret, retry_label);
+        PUSH_LABEL(ret, retry_label);
         PM_COMPILE_NOT_POPPED(cast->collection);
 
         // Next, create the new scope that is going to contain the block that
@@ -5736,7 +5740,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((pm_node_t *) cast, &next_scope_node, scope_node);
 
-        const rb_iseq_t *child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        const rb_iseq_t *child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
         pm_scope_node_destroy(&next_scope_node);
 
         const rb_iseq_t *prev_block = ISEQ_COMPILE_DATA(iseq)->current_block;
@@ -5744,7 +5748,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // Now, create the method call to each that will be used to iterate over
         // the collection, and pass the newly created iseq as the block.
-        ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
+        PUSH_SEND_WITH_BLOCK(ret, location, idEach, INT2FIX(0), child_iseq);
 
         // We need to put the label "retry_end_l" immediately after the last
         // "send" instruction. This because vm_throw checks if the break cont is
@@ -5773,7 +5777,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        PM_POP_IF_POPPED;
+        if (popped) PUSH_INSN(ret, location, pop);
         ISEQ_COMPILE_DATA(iseq)->current_block = prev_block;
         ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
         return;
@@ -5783,25 +5787,30 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_FORWARDING_SUPER_NODE: {
-        pm_forwarding_super_node_t *forwarding_super_node = (pm_forwarding_super_node_t *) node;
+        // super
+        // ^^^^^
+        //
+        // super {}
+        // ^^^^^^^^
+        const pm_forwarding_super_node_t *cast = (const pm_forwarding_super_node_t *) node;
         const rb_iseq_t *block = NULL;
-        PM_PUTSELF;
+
+        PUSH_INSN(ret, location, putself);
         int flag = VM_CALL_ZSUPER | VM_CALL_SUPER | VM_CALL_FCALL;
 
-        if (forwarding_super_node->block) {
+        if (cast->block != NULL) {
             pm_scope_node_t next_scope_node;
-            pm_scope_node_init((pm_node_t *)forwarding_super_node->block, &next_scope_node, scope_node);
-            block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
-            pm_scope_node_destroy(&next_scope_node);
+            pm_scope_node_init((const pm_node_t *) cast->block, &next_scope_node, scope_node);
 
-            RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
+            block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
+            pm_scope_node_destroy(&next_scope_node);
+            RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) block);
         }
 
         DECL_ANCHOR(args);
         INIT_ANCHOR(args);
 
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-
         const rb_iseq_t *local_iseq = body->local_iseq;
         const struct rb_iseq_constant_body *const local_body = ISEQ_BODY(local_iseq);
 
@@ -5830,7 +5839,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             /* rest argument */
             int idx = local_body->local_table_size - local_body->param.rest_start;
             ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
-            ADD_INSN1(args, &dummy_line_node, splatarray, Qfalse);
+            PUSH_INSN1(args, location, splatarray, Qfalse);
 
             argc = local_body->param.rest_start + 1;
             flag |= VM_CALL_ARGS_SPLAT;
@@ -5849,8 +5858,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             if (local_body->param.flags.has_rest) {
                 // argc remains unchanged from rest branch
-                ADD_INSN1(args, &dummy_line_node, newarray, INT2FIX(j));
-                ADD_INSN (args, &dummy_line_node, concatarray);
+                PUSH_INSN1(args, location, newarray, INT2FIX(j));
+                PUSH_INSN(args, location, concatarray);
             }
             else {
                 argc = post_len + post_start;
@@ -5862,25 +5871,26 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             int local_size = local_body->local_table_size;
             argc++;
 
-            ADD_INSN1(args, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_INSN1(args, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 
             if (local_body->param.flags.has_kwrest) {
                 int idx = local_body->local_table_size - local_keyword->rest_start;
                 ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
                 RUBY_ASSERT(local_keyword->num > 0);
-                ADD_SEND(args, &dummy_line_node, rb_intern("dup"), INT2FIX(0));
+                PUSH_SEND(args, location, rb_intern("dup"), INT2FIX(0));
             }
             else {
-                ADD_INSN1(args, &dummy_line_node, newhash, INT2FIX(0));
+                PUSH_INSN1(args, location, newhash, INT2FIX(0));
             }
             int i = 0;
             for (; i < local_keyword->num; ++i) {
                 ID id = local_keyword->table[i];
                 int idx = local_size - get_local_var_idx(local_iseq, id);
-                ADD_INSN1(args, &dummy_line_node, putobject, ID2SYM(id));
+                PUSH_INSN1(args, location, putobject, ID2SYM(id));
                 ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
             }
-            ADD_SEND(args, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+        
+            PUSH_SEND(args, location, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
             flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
         else if (local_body->param.flags.has_kwrest) {
@@ -5891,8 +5901,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         ADD_SEQ(ret, args);
-        ADD_INSN2(ret, &dummy_line_node, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
-        PM_POP_IF_POPPED;
+        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
+        if (popped) PUSH_INSN(ret, location, pop);
+
         return;
       }
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE: {
