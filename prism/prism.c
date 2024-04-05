@@ -702,8 +702,12 @@ pm_locals_hash(pm_constant_id_t name) {
     return (uint32_t) (((uint64_t) ((square / pow(10, start))) % (uint64_t) pow(10, end)));
 }
 
+/**
+ * Resize the locals list to be twice its current size. If the next capacity is
+ * above the threshold for switching to a hash, then we'll switch to a hash.
+ */
 static void
-pm_locals_rehash(pm_locals_t *locals) {
+pm_locals_resize(pm_locals_t *locals) {
     pm_local_t *next_locals;
     uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
     assert(next_capacity > locals->capacity);
@@ -748,9 +752,9 @@ pm_locals_rehash(pm_locals_t *locals) {
  * Returns true if the local was added, and false if the local already exists.
  */
 static bool
-pm_locals_write(pm_locals_t *locals, pm_constant_id_t name) {
+pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, const uint8_t *start, const uint8_t *end) {
     if (locals->size >= (locals->capacity / 4 * 3)) {
-        pm_locals_rehash(locals);
+        pm_locals_resize(locals);
     }
 
     if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
@@ -760,6 +764,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name) {
             if (local->name == PM_CONSTANT_ID_UNSET) {
                 *local = (pm_local_t) {
                     .name = name,
+                    .location = { .start = start, .end = end },
                     .index = locals->size++,
                     .reads = 0,
                     .hash = 0
@@ -862,9 +867,12 @@ pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
  * Write out the locals into the given list of constant ids in the correct
  * order. This is used to set the list of locals on the nodes in the tree once
  * we're sure no additional locals will be added to the set.
+ *
+ * This function is also responsible for warning when a local variable has been
+ * written but not read in certain contexts.
  */
 static void
-pm_locals_order(pm_locals_t *locals, pm_constant_id_list_t *list) {
+pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool warn_unused) {
     pm_constant_id_list_init_capacity(list, locals->size);
 
     for (uint32_t index = 0; index < locals->capacity; index++) {
@@ -872,6 +880,19 @@ pm_locals_order(pm_locals_t *locals, pm_constant_id_list_t *list) {
 
         if (local->name != PM_CONSTANT_ID_UNSET) {
             pm_constant_id_list_insert(list, (size_t) local->index, local->name);
+
+            if (warn_unused && local->reads == 0) {
+                pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, local->name);
+
+                PM_PARSER_WARN_FORMAT(
+                    parser,
+                    local->location.start,
+                    local->location.end,
+                    PM_WARN_UNUSED_LOCAL_VARIABLE,
+                    (int) constant->length,
+                    (const char *) constant->start
+                );
+            }
         }
     }
 }
@@ -7169,6 +7190,23 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
     return true;
 }
 
+/**
+ * Determine if the current scope is at the top level. This means it is either
+ * the top-level scope or it is open to the top-level.
+ */
+static bool
+pm_parser_scope_toplevel_p(pm_parser_t *parser) {
+    pm_scope_t *scope = parser->current_scope;
+
+    do {
+        if (scope->previous == NULL) return true;
+        if (scope->closed) return false;
+    } while ((scope = scope->previous) != NULL);
+
+    assert(false && "unreachable");
+    return true;
+}
+
 static void
 pm_parser_scope_forwarding_param_check(pm_parser_t *parser, const pm_token_t * token, const uint8_t mask, pm_diagnostic_id_t diag) {
     pm_scope_t *scope = parser->current_scope;
@@ -7289,8 +7327,8 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
  * Add a constant id to the local table of the current scope.
  */
 static inline void
-pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
-    pm_locals_write(&parser->current_scope->locals, constant_id);
+pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id, const uint8_t *start, const uint8_t *end) {
+    pm_locals_write(&parser->current_scope->locals, constant_id, start, end);
 }
 
 /**
@@ -7299,7 +7337,7 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
 static pm_constant_id_t
 pm_parser_local_add_location(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     pm_constant_id_t constant_id = pm_parser_constant_id_location(parser, start, end);
-    if (constant_id != 0) pm_parser_local_add(parser, constant_id);
+    if (constant_id != 0) pm_parser_local_add(parser, constant_id, start, end);
     return constant_id;
 }
 
@@ -7317,7 +7355,7 @@ pm_parser_local_add_token(pm_parser_t *parser, pm_token_t *token) {
 static pm_constant_id_t
 pm_parser_local_add_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
     pm_constant_id_t constant_id = pm_parser_constant_id_owned(parser, start, length);
-    if (constant_id != 0) pm_parser_local_add(parser, constant_id);
+    if (constant_id != 0) pm_parser_local_add(parser, constant_id, parser->start, parser->start);
     return constant_id;
 }
 
@@ -7327,7 +7365,7 @@ pm_parser_local_add_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
 static pm_constant_id_t
 pm_parser_local_add_constant(pm_parser_t *parser, const char *start, size_t length) {
     pm_constant_id_t constant_id = pm_parser_constant_id_constant(parser, start, length);
-    if (constant_id != 0) pm_parser_local_add(parser, constant_id);
+    if (constant_id != 0) pm_parser_local_add(parser, constant_id, parser->start, parser->start);
     return constant_id;
 }
 
@@ -7349,7 +7387,7 @@ pm_local_variable_read_node_create_it(pm_parser_t *parser, const pm_token_t *nam
     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IT;
 
     pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
-    pm_parser_local_add(parser, name_id);
+    pm_parser_local_add(parser, name_id, name->start, name->end);
 
     return pm_local_variable_read_node_create_constant_id(parser, name, name_id, 0, false);
 }
@@ -14072,7 +14110,7 @@ parse_block(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(&parser->current_scope->locals, &locals);
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, !pm_parser_scope_toplevel_p(parser));
     pm_node_t *parameters = parse_blocklike_parameters(parser, (pm_node_t *) block_parameters, &opening, &parser->previous);
 
     pm_parser_scope_pop(parser);
@@ -15291,7 +15329,7 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
 
         int depth;
         if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-            pm_parser_local_add(parser, constant_id);
+            pm_parser_local_add(parser, constant_id, identifier.start, identifier.end);
         }
 
         parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&identifier));
@@ -15327,7 +15365,7 @@ parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures)
 
         int depth;
         if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-            pm_parser_local_add(parser, constant_id);
+            pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end);
         }
 
         parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
@@ -15353,7 +15391,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
 
     int depth;
     if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-        pm_parser_local_add(parser, constant_id);
+        pm_parser_local_add(parser, constant_id, value_loc->start, value_loc->end);
     }
 
     parse_pattern_capture(parser, captures, constant_id, value_loc);
@@ -15490,7 +15528,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
             int depth;
             if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-                pm_parser_local_add(parser, constant_id);
+                pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end);
             }
 
             parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
@@ -15825,7 +15863,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
         int depth;
 
         if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-            pm_parser_local_add(parser, constant_id);
+            pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end);
         }
 
         parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
@@ -17398,7 +17436,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
 
                 pm_constant_id_list_t locals;
-                pm_locals_order(&parser->current_scope->locals, &locals);
+                pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
 
                 pm_parser_scope_pop(parser);
                 pm_do_loop_stack_pop(parser);
@@ -17460,7 +17498,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(&parser->current_scope->locals, &locals);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
 
             pm_parser_scope_pop(parser);
             pm_do_loop_stack_pop(parser);
@@ -17736,7 +17774,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(&parser->current_scope->locals, &locals);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
 
             pm_parser_scope_pop(parser);
             pm_parser_current_param_name_restore(parser, saved_param_name);
@@ -18002,7 +18040,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(&parser->current_scope->locals, &locals);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
 
             pm_parser_scope_pop(parser);
             pm_parser_current_param_name_restore(parser, saved_param_name);
@@ -18771,7 +18809,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(&parser->current_scope->locals, &locals);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, !pm_parser_scope_toplevel_p(parser));
             pm_node_t *parameters = parse_blocklike_parameters(parser, (pm_node_t *) block_parameters, &operator, &parser->previous);
 
             pm_parser_scope_pop(parser);
@@ -19009,7 +19047,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                     // it to the local table unless it's a keyword.
                     if (pm_local_is_keyword((const char *) source, length)) continue;
 
-                    pm_parser_local_add(parser, name);
+                    pm_parser_local_add(parser, name, location.start, location.end);
                 }
 
                 // Here we lazily create the MatchWriteNode since we know we're
@@ -20047,7 +20085,7 @@ parse_program(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(&parser->current_scope->locals, &locals);
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
     pm_parser_scope_pop(parser);
 
     // If this is an empty file, then we're still going to parse all of the

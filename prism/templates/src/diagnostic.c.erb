@@ -351,7 +351,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_WARN_LITERAL_IN_CONDITION_DEFAULT]      = { "%sliteral in %s", PM_WARNING_LEVEL_DEFAULT },
     [PM_WARN_LITERAL_IN_CONDITION_VERBOSE]      = { "%sliteral in %s", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_SHEBANG_CARRIAGE_RETURN]           = { "shebang line ending with \\r may cause problems", PM_WARNING_LEVEL_DEFAULT },
-    [PM_WARN_UNEXPECTED_CARRIAGE_RETURN]        = { "encountered \\r in middle of line, treated as a mere space", PM_WARNING_LEVEL_DEFAULT }
+    [PM_WARN_UNEXPECTED_CARRIAGE_RETURN]        = { "encountered \\r in middle of line, treated as a mere space", PM_WARNING_LEVEL_DEFAULT },
+    [PM_WARN_UNUSED_LOCAL_VARIABLE]             = { "assigned but unused variable - %.*s", PM_WARNING_LEVEL_VERBOSE }
 };
 
 /**

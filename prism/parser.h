@@ -515,6 +515,7 @@ static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMEN
  */
 typedef struct {
     pm_constant_id_t name;
+    pm_location_t location;
     uint32_t index;
     uint32_t reads;
     uint32_t hash;
