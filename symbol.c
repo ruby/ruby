@@ -430,6 +430,9 @@ static void
 set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
 {
     ASSERT_vm_locking();
+    RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
+    RUBY_ASSERT(SYMBOL_P(sym));
+
     size_t idx = num / ID_ENTRY_UNIT;
 
     VALUE ary, ids = symbols->ids;
