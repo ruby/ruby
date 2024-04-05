@@ -1021,14 +1021,16 @@ pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals,
             if (warn_unused && local->reads == 0) {
                 pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, local->name);
 
-                PM_PARSER_WARN_FORMAT(
-                    parser,
-                    local->location.start,
-                    local->location.end,
-                    PM_WARN_UNUSED_LOCAL_VARIABLE,
-                    (int) constant->length,
-                    (const char *) constant->start
-                );
+                if (constant->length >= 1 && *constant->start != '_') {
+                    PM_PARSER_WARN_FORMAT(
+                        parser,
+                        local->location.start,
+                        local->location.end,
+                        PM_WARN_UNUSED_LOCAL_VARIABLE,
+                        (int) constant->length,
+                        (const char *) constant->start
+                    );
+                }
             }
         }
     }
