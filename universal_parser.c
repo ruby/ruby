@@ -88,11 +88,6 @@
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
 
-#undef FIXNUM_P
-#define FIXNUM_P p->config->fixnum_p
-#undef SYMBOL_P
-#define SYMBOL_P p->config->symbol_p
-
 #define rb_attr_get p->config->attr_get
 
 #define rb_ary_new           p->config->ary_new
@@ -102,7 +97,6 @@
 #define rb_ary_unshift       p->config->ary_unshift
 #undef rb_ary_new2
 #define rb_ary_new2          p->config->ary_new2
-#define rb_ary_clear         p->config->ary_clear
 #define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
@@ -245,8 +239,6 @@
 
 #undef RBOOL
 #define RBOOL p->config->rbool
-#undef UNDEF_P
-#define UNDEF_P p->config->undef_p
 #undef RTEST
 #define RTEST p->config->rtest
 #undef NIL_P

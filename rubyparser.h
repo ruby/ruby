@@ -1248,9 +1248,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
 
-    int (*fixnum_p)(VALUE);
-    int (*symbol_p)(VALUE);
-
     /* Variable */
     VALUE (*attr_get)(VALUE obj, ID id);
 
@@ -1260,7 +1257,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_new_from_args)(long n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
     VALUE (*ary_new2)(long capa); // ary_new_capa
-    VALUE (*ary_clear)(VALUE ary);
     void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
@@ -1409,7 +1405,6 @@ typedef struct rb_parser_config_struct {
 
     /* Misc */
     VALUE (*rbool)(VALUE);
-    int (*undef_p)(VALUE);
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
     VALUE qnil;
