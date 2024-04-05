@@ -828,31 +828,31 @@ pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
  * Called when a variable is read in a certain lexical context. Tracks the read
  * by adding to the reads count.
  */
-// static void
-// pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
-//     uint32_t index = pm_locals_find(locals, name);
-//     assert(index != UINT32_MAX);
+static void
+pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
+    uint32_t index = pm_locals_find(locals, name);
+    assert(index != UINT32_MAX);
 
-//     pm_local_t *local = &locals->locals[index];
-//     assert(local->reads < UINT32_MAX);
+    pm_local_t *local = &locals->locals[index];
+    assert(local->reads < UINT32_MAX);
 
-//     local->reads++;
-// }
+    local->reads++;
+}
 
 /**
  * Called when a variable read is transformed into a variable write, because a
  * write operator is found after the variable name.
  */
-// static void
-// pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
-//     uint32_t index = pm_locals_find(locals, name);
-//     assert(index != UINT32_MAX);
+static void
+pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
+    uint32_t index = pm_locals_find(locals, name);
+    assert(index != UINT32_MAX);
 
-//     pm_local_t *local = &locals->locals[index];
-//     assert(local->reads > 0);
+    pm_local_t *local = &locals->locals[index];
+    assert(local->reads > 0);
 
-//     local->reads--;
-// }
+    local->reads--;
+}
 
 /**
  * Write out the locals into the given list of constant ids in the correct
@@ -5062,9 +5062,15 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
  * Allocate a new LocalVariableReadNode node with constant_id.
  */
 static pm_local_variable_read_node_t *
-pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth) {
+pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth, bool missing) {
     if (parser->current_param_name == name_id) {
         PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, *name, PM_ERR_PARAMETER_CIRCULAR);
+    }
+
+    if (!missing) {
+        pm_scope_t *scope = parser->current_scope;
+        for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
+        pm_locals_read(&scope->locals, name_id);
     }
 
     pm_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_read_node_t);
@@ -5082,12 +5088,22 @@ pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_tok
 }
 
 /**
- * Allocate a new LocalVariableReadNode node.
+ * Allocate and initialize a new LocalVariableReadNode node.
  */
 static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
     pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
-    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, depth);
+    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, depth, false);
+}
+
+/**
+ * Allocate and initialize a new LocalVariableReadNode node for a missing local
+ * variable. (This will only happen when there is a syntax error.)
+ */
+static pm_local_variable_read_node_t *
+pm_local_variable_read_node_missing_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
+    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
+    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, depth, true);
 }
 
 /**
@@ -7331,7 +7347,7 @@ pm_local_variable_read_node_create_it(pm_parser_t *parser, const pm_token_t *nam
     pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
     pm_parser_local_add(parser, name_id);
 
-    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, 0);
+    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, 0, false);
 }
 
 /**
@@ -12417,13 +12433,22 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             assert(sizeof(pm_global_variable_target_node_t) == sizeof(pm_global_variable_read_node_t));
             target->type = PM_GLOBAL_VARIABLE_TARGET_NODE;
             return target;
-        case PM_LOCAL_VARIABLE_READ_NODE:
+        case PM_LOCAL_VARIABLE_READ_NODE: {
             pm_refute_numbered_parameter(parser, target->location.start, target->location.end);
+
+            const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) target;
+            uint32_t name = cast->name;
+            uint32_t depth = cast->depth;
+
+            pm_scope_t *scope = parser->current_scope;
+            for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
+            pm_locals_unread(&scope->locals, name);
 
             assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
             target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
 
             return target;
+        }
         case PM_INSTANCE_VARIABLE_READ_NODE:
             assert(sizeof(pm_instance_variable_target_node_t) == sizeof(pm_instance_variable_read_node_t));
             target->type = PM_INSTANCE_VARIABLE_TARGET_NODE;
@@ -12463,20 +12488,12 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
                     // When it was parsed in the prefix position, foo was seen as a
                     // method call with no receiver and no arguments. Now we have an
                     // =, so we know it's a local variable write.
-                    const pm_location_t message = call->message_loc;
+                    const pm_location_t message_loc = call->message_loc;
 
-                    pm_parser_local_add_location(parser, message.start, message.end);
+                    pm_constant_id_t name = pm_parser_local_add_location(parser, message_loc.start, message_loc.end);
                     pm_node_destroy(parser, target);
 
-                    uint32_t depth = 0;
-                    const pm_token_t name = { .type = PM_TOKEN_IDENTIFIER, .start = message.start, .end = message.end };
-                    target = (pm_node_t *) pm_local_variable_read_node_create(parser, &name, depth);
-
-                    assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
-                    target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
-
-                    pm_refute_numbered_parameter(parser, message.start, message.end);
-                    return target;
+                    return (pm_node_t *) pm_local_variable_target_node_create(parser, &message_loc, name, 0);
                 }
 
                 if (*call->message_loc.start == '_' || parser->encoding->alnum_char(call->message_loc.start, call->message_loc.end - call->message_loc.start)) {
@@ -12578,6 +12595,10 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
             pm_constant_id_t constant_id = local_read->name;
             uint32_t depth = local_read->depth;
+
+            pm_scope_t *scope = parser->current_scope;
+            for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
+            pm_locals_unread(&scope->locals, constant_id);
 
             pm_location_t name_loc = target->location;
             pm_node_destroy(parser, target);
@@ -14973,7 +14994,7 @@ parse_variable(pm_parser_t *parser) {
 
             // Finally we can create the local variable read node.
             pm_constant_id_t name_id = pm_parser_local_add_constant(parser, pm_numbered_parameter_names[numbered_parameters - 1], 2);
-            return pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0);
+            return pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false);
         }
     }
 
@@ -15646,7 +15667,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                             variable = (pm_node_t *) read;
                         } else {
                             PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE);
-                            variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
+                            variable = (pm_node_t *) pm_local_variable_read_node_missing_create(parser, &parser->previous, 0);
                         }
                     }
 
