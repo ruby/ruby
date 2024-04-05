@@ -1011,7 +1011,12 @@ static void
 pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool warn_unused) {
     pm_constant_id_list_init_capacity(list, locals->size);
 
-    for (uint32_t index = 0; index < locals->capacity; index++) {
+    // If we're still below the threshold for switching to a hash, then we only
+    // need to loop over the locals until we hit the size because the locals are
+    // stored in a list.
+    uint32_t capacity = locals->capacity < PM_LOCALS_HASH_THRESHOLD ? locals->size : locals->capacity;
+
+    for (uint32_t index = 0; index < capacity; index++) {
         pm_local_t *local = &locals->locals[index];
 
         if (local->name != PM_CONSTANT_ID_UNSET) {
