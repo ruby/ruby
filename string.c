@@ -11763,6 +11763,9 @@ sym_inspect(VALUE sym)
         RB_GC_GUARD(orig_str);
     }
     dest[0] = ':';
+
+    RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
+
     return str;
 }
 
