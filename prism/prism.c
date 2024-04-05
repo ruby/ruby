@@ -824,21 +824,17 @@ pm_locals_hash(pm_constant_id_t name) {
  */
 static void
 pm_locals_resize(pm_locals_t *locals) {
-    pm_local_t *next_locals;
     uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
     assert(next_capacity > locals->capacity);
 
-    if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
-        next_locals = xmalloc(next_capacity * sizeof(pm_local_t));
-        if (next_locals == NULL) abort();
+    pm_local_t *next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
+    if (next_locals == NULL) abort();
 
+    if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
         if (locals->size > 0) {
             memcpy(next_locals, locals->locals, locals->size * sizeof(pm_local_t));
         }
     } else {
-        next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
-        if (next_locals == NULL) abort();
-
         // If we just switched from a list to a hash, then we need to fill in
         // the hash values of all of the locals.
         bool hash_needed = locals->locals[0].hash == 0;
