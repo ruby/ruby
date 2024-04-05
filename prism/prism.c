@@ -673,6 +673,122 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
     PM_PARSER_WARN_FORMAT(parser, (node)->location.start, (node)->location.end, diag_id, __VA_ARGS__)
 
 /******************************************************************************/
+/* Scope-related functions                                                    */
+/******************************************************************************/
+
+/**
+ * Allocate and initialize a new scope. Push it onto the scope stack.
+ */
+static bool
+pm_parser_scope_push(pm_parser_t *parser, bool closed) {
+    pm_scope_t *scope = (pm_scope_t *) xmalloc(sizeof(pm_scope_t));
+    if (scope == NULL) return false;
+
+    *scope = (pm_scope_t) {
+        .previous = parser->current_scope,
+        .locals = { 0 },
+        .parameters = PM_SCOPE_PARAMETERS_NONE,
+        .numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_NONE,
+        .shareable_constant = (closed || parser->current_scope == NULL) ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
+        .closed = closed
+    };
+
+    parser->current_scope = scope;
+    return true;
+}
+
+/**
+ * Determine if the current scope is at the top level. This means it is either
+ * the top-level scope or it is open to the top-level.
+ */
+static bool
+pm_parser_scope_toplevel_p(pm_parser_t *parser) {
+    pm_scope_t *scope = parser->current_scope;
+
+    do {
+        if (scope->previous == NULL) return true;
+        if (scope->closed) return false;
+    } while ((scope = scope->previous) != NULL);
+
+    assert(false && "unreachable");
+    return true;
+}
+
+/**
+ * Retrieve the scope at the given depth.
+ */
+static pm_scope_t *
+pm_parser_scope_find(pm_parser_t *parser, uint32_t depth) {
+    pm_scope_t *scope = parser->current_scope;
+
+    while (depth-- > 0) {
+        assert(scope != NULL);
+        scope = scope->previous;
+    }
+
+    return scope;
+}
+
+static void
+pm_parser_scope_forwarding_param_check(pm_parser_t *parser, const pm_token_t * token, const uint8_t mask, pm_diagnostic_id_t diag) {
+    pm_scope_t *scope = parser->current_scope;
+    while (scope) {
+        if (scope->parameters & mask) {
+            if (!scope->closed) {
+                pm_parser_err_token(parser, token, diag);
+                return;
+            }
+            return;
+        }
+        if (scope->closed) break;
+        scope = scope->previous;
+    }
+
+    pm_parser_err_token(parser, token, diag);
+}
+
+static inline void
+pm_parser_scope_forwarding_block_check(pm_parser_t *parser, const pm_token_t * token) {
+    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_BLOCK, PM_ERR_ARGUMENT_NO_FORWARDING_AMP);
+}
+
+static inline void
+pm_parser_scope_forwarding_positionals_check(pm_parser_t *parser, const pm_token_t * token) {
+    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
+}
+
+static inline void
+pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t * token) {
+    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_ALL, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+}
+
+static inline void
+pm_parser_scope_forwarding_keywords_check(pm_parser_t *parser, const pm_token_t * token) {
+    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR);
+}
+
+/**
+ * Get the current state of constant shareability.
+ */
+static inline pm_shareable_constant_value_t
+pm_parser_scope_shareable_constant_get(pm_parser_t *parser) {
+    return parser->current_scope->shareable_constant;
+}
+
+/**
+ * Set the current state of constant shareability. We'll set it on all of the
+ * open scopes so that reads are quick.
+ */
+static void
+pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constant_value_t shareable_constant) {
+    pm_scope_t *scope = parser->current_scope;
+
+    do {
+        scope->shareable_constant = shareable_constant;
+    } while (!scope->closed && (scope = scope->previous) != NULL);
+}
+
+/******************************************************************************/
 /* Local variable-related functions                                           */
 /******************************************************************************/
 
@@ -5108,11 +5224,7 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
  */
 static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth, bool missing) {
-    if (!missing) {
-        pm_scope_t *scope = parser->current_scope;
-        for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
-        pm_locals_read(&scope->locals, name_id);
-    }
+    if (!missing) pm_locals_read(&pm_parser_scope_find(parser, depth)->locals, name_id);
 
     pm_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_read_node_t);
 
@@ -7180,107 +7292,6 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
 }
 
 #undef PM_ALLOC_NODE
-
-/******************************************************************************/
-/* Scope-related functions                                                    */
-/******************************************************************************/
-
-/**
- * Allocate and initialize a new scope. Push it onto the scope stack.
- */
-static bool
-pm_parser_scope_push(pm_parser_t *parser, bool closed) {
-    pm_scope_t *scope = (pm_scope_t *) xmalloc(sizeof(pm_scope_t));
-    if (scope == NULL) return false;
-
-    *scope = (pm_scope_t) {
-        .previous = parser->current_scope,
-        .locals = { 0 },
-        .parameters = PM_SCOPE_PARAMETERS_NONE,
-        .numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_NONE,
-        .shareable_constant = (closed || parser->current_scope == NULL) ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
-        .closed = closed
-    };
-
-    parser->current_scope = scope;
-    return true;
-}
-
-/**
- * Determine if the current scope is at the top level. This means it is either
- * the top-level scope or it is open to the top-level.
- */
-static bool
-pm_parser_scope_toplevel_p(pm_parser_t *parser) {
-    pm_scope_t *scope = parser->current_scope;
-
-    do {
-        if (scope->previous == NULL) return true;
-        if (scope->closed) return false;
-    } while ((scope = scope->previous) != NULL);
-
-    assert(false && "unreachable");
-    return true;
-}
-
-static void
-pm_parser_scope_forwarding_param_check(pm_parser_t *parser, const pm_token_t * token, const uint8_t mask, pm_diagnostic_id_t diag) {
-    pm_scope_t *scope = parser->current_scope;
-    while (scope) {
-        if (scope->parameters & mask) {
-            if (!scope->closed) {
-                pm_parser_err_token(parser, token, diag);
-                return;
-            }
-            return;
-        }
-        if (scope->closed) break;
-        scope = scope->previous;
-    }
-
-    pm_parser_err_token(parser, token, diag);
-}
-
-static inline void
-pm_parser_scope_forwarding_block_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_BLOCK, PM_ERR_ARGUMENT_NO_FORWARDING_AMP);
-}
-
-static inline void
-pm_parser_scope_forwarding_positionals_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
-}
-
-static inline void
-pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_ALL, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
-}
-
-static inline void
-pm_parser_scope_forwarding_keywords_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR);
-}
-
-/**
- * Get the current state of constant shareability.
- */
-static inline pm_shareable_constant_value_t
-pm_parser_scope_shareable_constant_get(pm_parser_t *parser) {
-    return parser->current_scope->shareable_constant;
-}
-
-/**
- * Set the current state of constant shareability. We'll set it on all of the
- * open scopes so that reads are quick.
- */
-static void
-pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constant_value_t shareable_constant) {
-    pm_scope_t *scope = parser->current_scope;
-
-    do {
-        scope->shareable_constant = shareable_constant;
-    } while (!scope->closed && (scope = scope->previous) != NULL);
-}
 
 /**
  * Check if any of the currently visible scopes contain a local variable
@@ -12470,10 +12481,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) target;
             uint32_t name = cast->name;
             uint32_t depth = cast->depth;
-
-            pm_scope_t *scope = parser->current_scope;
-            for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
-            pm_locals_unread(&scope->locals, name);
+            pm_locals_unread(&pm_parser_scope_find(parser, depth)->locals, name);
 
             assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
             target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
@@ -12624,17 +12632,14 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             pm_refute_numbered_parameter(parser, target->location.start, target->location.end);
             pm_local_variable_read_node_t *local_read = (pm_local_variable_read_node_t *) target;
 
-            pm_constant_id_t constant_id = local_read->name;
+            pm_constant_id_t name = local_read->name;
             uint32_t depth = local_read->depth;
-
-            pm_scope_t *scope = parser->current_scope;
-            for (uint32_t index = 0; index < depth; index++) scope = scope->previous;
-            pm_locals_unread(&scope->locals, constant_id);
+            pm_locals_unread(&pm_parser_scope_find(parser, depth)->locals, name);
 
             pm_location_t name_loc = target->location;
             pm_node_destroy(parser, target);
 
-            return (pm_node_t *) pm_local_variable_write_node_create(parser, constant_id, depth, value, &name_loc, operator);
+            return (pm_node_t *) pm_local_variable_write_node_create(parser, name, depth, value, &name_loc, operator);
         }
         case PM_INSTANCE_VARIABLE_READ_NODE: {
             pm_node_t *write_node = (pm_node_t *) pm_instance_variable_write_node_create(parser, (pm_instance_variable_read_node_t *) target, operator, value);
