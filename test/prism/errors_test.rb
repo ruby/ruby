@@ -1949,11 +1949,13 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["circular argument reference - bar", 14..17],
-        ["circular argument reference - bar", 37..40],
-        ["circular argument reference - foo", 61..64],
-        ["circular argument reference - foo", 81..84],
+        ["circular argument reference - bar", 8..11],
+        ["circular argument reference - bar", 32..35],
+        ["circular argument reference - foo", 55..58],
+        ["circular argument reference - foo", 76..79]
       ]
+
+      refute_error_messages("def foo(bar: bar = 1); end")
     end
 
     def test_command_calls

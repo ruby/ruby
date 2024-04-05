@@ -790,9 +790,6 @@ struct pm_parser {
      */
     const pm_encoding_t *explicit_encoding;
 
-    /** The current parameter name id on parsing its default value. */
-    pm_constant_id_t current_param_name;
-
     /**
      * When parsing block exits (e.g., break, next, redo), we need to validate
      * that they are in correct contexts. For the most part we can do this by
