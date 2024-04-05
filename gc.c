@@ -13500,7 +13500,8 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 
 #endif /* GC_DEBUG */
 
-/*
+/* :nodoc:
+ *
  *  call-seq:
  *    GC.add_stress_to_class(class[, ...])
  *
