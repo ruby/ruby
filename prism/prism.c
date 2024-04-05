@@ -811,11 +811,11 @@ static uint32_t
 pm_locals_hash(pm_constant_id_t name) {
     uint64_t square = (uint64_t) name * (uint64_t) name;
 
-    uint32_t num_digits = (uint32_t) floor(log10(square) + 1);
+    uint32_t num_digits = (uint32_t) floor(log10((double) square) + 1);
     uint32_t start = num_digits / 2;
     uint32_t end = start + 1;
 
-    return (uint32_t) (((uint64_t) ((square / pow(10, start))) % (uint64_t) pow(10, end)));
+    return (uint32_t) (((uint64_t) ((square / ((uint64_t) pow(10, (double) start)))) % (uint64_t) pow(10, (double) end)));
 }
 
 /**
