@@ -1222,6 +1222,13 @@ module IRB
         irb_bug = true
       else
         irb_bug = false
+        # This is mostly to make IRB work nicely with Rails console's backtrace filtering, which patches WorkSpace#filter_backtrace
+        # In such use case, we want to filter the exception's backtrace before its displayed through Exception#full_message
+        # And we clone the exception object in order to avoid mutating the original exception
+        # TODO: introduce better API to expose exception backtrace externally
+        backtrace = exc.backtrace.map { |l| @context.workspace.filter_backtrace(l) }.compact
+        exc = exc.clone
+        exc.set_backtrace(backtrace)
       end
 
       if RUBY_VERSION < '3.0.0'
@@ -1246,7 +1253,6 @@ module IRB
           lines = m.split("\n").reverse
         end
         unless irb_bug
-          lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
           if lines.size > @context.back_trace_limit
             omit = lines.size - @context.back_trace_limit
             lines = lines[0..(@context.back_trace_limit - 1)]
