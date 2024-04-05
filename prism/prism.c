@@ -719,12 +719,16 @@ pm_locals_rehash(pm_locals_t *locals) {
         next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
         if (next_locals == NULL) abort();
 
+        // If we just switched from a list to a hash, then we need to fill in
+        // the hash values of all of the locals.
+        bool hash_needed = locals->locals[0].hash == 0;
         uint32_t mask = next_capacity - 1;
+
         for (uint32_t index = 0; index < locals->capacity; index++) {
             pm_local_t *local = &locals->locals[index];
 
             if (local->name != PM_CONSTANT_ID_UNSET) {
-                uint32_t hash = local->hash;
+                uint32_t hash = hash_needed ? pm_locals_hash(local->name) : local->hash;
 
                 while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
                 next_locals[hash & mask] = *local;
@@ -758,7 +762,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name) {
                     .name = name,
                     .index = locals->size++,
                     .reads = 0,
-                    .hash = pm_locals_hash(name)
+                    .hash = 0
                 };
                 return true;
             } else if (local->name == name) {
