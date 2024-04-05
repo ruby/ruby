@@ -805,7 +805,7 @@ typedef struct RNode_ARGS_AUX {
     NODE node;
 
     ID nd_pid;
-    long nd_plen;
+    int nd_plen;
     struct RNode *nd_next;
 } rb_node_args_aux_t;
 
