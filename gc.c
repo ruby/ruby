@@ -13520,7 +13520,8 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-/*
+/* :nodoc:
+ *
  *  call-seq:
  *    GC.remove_stress_to_class(class[, ...])
  *
