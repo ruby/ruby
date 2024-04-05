@@ -514,10 +514,19 @@ static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMEN
  * well as the number of times is it read.
  */
 typedef struct {
+    /** The name of the local variable. */
     pm_constant_id_t name;
+
+    /** The location of the local variable in the source. */
     pm_location_t location;
+
+    /** The index of the local variable in the local table. */
     uint32_t index;
+
+    /** The number of times the local variable is read. */
     uint32_t reads;
+
+    /** The hash of the local variable. */
     uint32_t hash;
 } pm_local_t;
 
@@ -527,8 +536,13 @@ typedef struct {
  * order to warn if they only get written.
  */
 typedef struct pm_locals {
+    /** The number of local variables in the set. */
     uint32_t size;
+
+    /** The capacity of the local variables set. */
     uint32_t capacity;
+
+    /** The nullable allocated memory for the local variables in the set. */
     pm_local_t *locals;
 } pm_locals_t;
 
