@@ -4101,7 +4101,7 @@ MINIOBJS="$MINIDLNOBJ"
 
 AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
-       [AC_SUBST(ENABLE_DEBUG_ENV, yes)])
+       [RUBY_APPEND_OPTION(CPPFLAGS, -DRUBY_DEBUG=1)])
 
 AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
     AC_MSG_CHECKING([if ${MAKE-make} is GNU make])

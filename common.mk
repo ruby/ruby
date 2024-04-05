@@ -1305,11 +1305,9 @@ $(GOLF_PRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
 
-MAINCPPFLAGS = $(ENABLE_DEBUG_ENV:yes=-DRUBY_DEBUG_ENV=1)
-
 $(MAINOBJ): $(srcdir)/$(MAINSRC)
 	$(ECHO) compiling $(srcdir)/$(MAINSRC)
-	$(Q) $(CC) $(MAINCPPFLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
 
 {$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
 
