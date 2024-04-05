@@ -1620,7 +1620,7 @@ ruby_thread_set_native(rb_thread_t *th)
 
     // setup TLS
 
-    if (th && th->ec) {
+    if (th && th->ec && th->ec != th->ractor->threads.running_ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
 #ifdef RB_THREAD_LOCAL_SPECIFIER
