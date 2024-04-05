@@ -481,6 +481,19 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
     }
     GLOBAL_SYMBOLS_LEAVE();
 
+    if (result) {
+        switch (t) {
+          case ID_ENTRY_STR:
+            RUBY_ASSERT(BUILTIN_TYPE(result) == T_STRING);
+            break;
+          case ID_ENTRY_SYM:
+            RUBY_ASSERT(SYMBOL_P(result));
+            break;
+          default:
+            break;
+        }
+    }
+
     return result;
 }
 
