@@ -15,7 +15,7 @@ pm_constant_id_list_init(pm_constant_id_list_t *list) {
  */
 void
 pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity) {
-    list->ids = xmalloc(sizeof(pm_constant_id_t) * capacity);
+    list->ids = xcalloc(capacity, sizeof(pm_constant_id_t));
     if (list->ids == NULL) abort();
 
     list->size = 0;

@@ -676,6 +676,11 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
 /* Local variable-related functions                                           */
 /******************************************************************************/
 
+/**
+ * The point at which the set of locals switches from being a list to a hash.
+ */
+#define PM_LOCALS_HASH_THRESHOLD 9
+
 static void
 pm_locals_free(pm_locals_t *locals) {
     if (locals->capacity > 0) {
@@ -699,21 +704,31 @@ pm_locals_hash(pm_constant_id_t name) {
 
 static void
 pm_locals_rehash(pm_locals_t *locals) {
-    uint32_t next_capacity = locals->capacity == 0 ? 8 : (locals->capacity * 2);
+    pm_local_t *next_locals;
+    uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
     assert(next_capacity > locals->capacity);
 
-    pm_local_t *next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
-    if (next_locals == NULL) abort();
+    if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
+        next_locals = xmalloc(next_capacity * sizeof(pm_local_t));
+        if (next_locals == NULL) abort();
 
-    uint32_t mask = next_capacity - 1;
-    for (uint32_t index = 0; index < locals->capacity; index++) {
-        pm_local_t *local = &locals->locals[index];
+        if (locals->size > 0) {
+            memcpy(next_locals, locals->locals, locals->size * sizeof(pm_local_t));
+        }
+    } else {
+        next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
+        if (next_locals == NULL) abort();
 
-        if (local->name != PM_CONSTANT_ID_UNSET) {
-            uint32_t hash = local->hash;
+        uint32_t mask = next_capacity - 1;
+        for (uint32_t index = 0; index < locals->capacity; index++) {
+            pm_local_t *local = &locals->locals[index];
 
-            while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
-            next_locals[hash & mask] = *local;
+            if (local->name != PM_CONSTANT_ID_UNSET) {
+                uint32_t hash = local->hash;
+
+                while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
+                next_locals[hash & mask] = *local;
+            }
         }
     }
 
@@ -734,27 +749,45 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name) {
         pm_locals_rehash(locals);
     }
 
-    uint32_t mask = locals->capacity - 1;
-    uint32_t hash = pm_locals_hash(name);
-    uint32_t initial_hash = hash;
+    if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
+        for (uint32_t index = 0; index < locals->capacity; index++) {
+            pm_local_t *local = &locals->locals[index];
 
-    do {
-        pm_local_t *local = &locals->locals[hash & mask];
-
-        if (local->name == PM_CONSTANT_ID_UNSET) {
-            *local = (pm_local_t) {
-                .name = name,
-                .index = locals->size++,
-                .reads = 0,
-                .hash = hash
-            };
-            return true;
-        } else if (local->name == name) {
-            return false;
-        } else {
-            hash++;
+            if (local->name == PM_CONSTANT_ID_UNSET) {
+                *local = (pm_local_t) {
+                    .name = name,
+                    .index = locals->size++,
+                    .reads = 0,
+                    .hash = pm_locals_hash(name)
+                };
+                return true;
+            } else if (local->name == name) {
+                return false;
+            }
         }
-    } while ((hash & mask) != initial_hash);
+    } else {
+        uint32_t mask = locals->capacity - 1;
+        uint32_t hash = pm_locals_hash(name);
+        uint32_t initial_hash = hash;
+
+        do {
+            pm_local_t *local = &locals->locals[hash & mask];
+
+            if (local->name == PM_CONSTANT_ID_UNSET) {
+                *local = (pm_local_t) {
+                    .name = name,
+                    .index = locals->size++,
+                    .reads = 0,
+                    .hash = hash
+                };
+                return true;
+            } else if (local->name == name) {
+                return false;
+            } else {
+                hash++;
+            }
+        } while ((hash & mask) != initial_hash);
+    }
 
     assert(false && "unreachable");
 }
@@ -765,23 +798,28 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name) {
  */
 static uint32_t
 pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
-    if (locals->capacity == 0) return UINT32_MAX;
-
-    uint32_t mask = locals->capacity - 1;
-    uint32_t hash = pm_locals_hash(name);
-    uint32_t initial_hash = hash & mask;
-
-    do {
-        pm_local_t *local = &locals->locals[hash & mask];
-
-        if (local->name == PM_CONSTANT_ID_UNSET) {
-            return UINT32_MAX;
-        } else if (local->name == name) {
-            return hash & mask;
-        } else {
-            hash++;
+    if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
+        for (uint32_t index = 0; index < locals->size; index++) {
+            pm_local_t *local = &locals->locals[index];
+            if (local->name == name) return index;
         }
-    } while ((hash & mask) != initial_hash);
+    } else {
+        uint32_t mask = locals->capacity - 1;
+        uint32_t hash = pm_locals_hash(name);
+        uint32_t initial_hash = hash & mask;
+
+        do {
+            pm_local_t *local = &locals->locals[hash & mask];
+
+            if (local->name == PM_CONSTANT_ID_UNSET) {
+                return UINT32_MAX;
+            } else if (local->name == name) {
+                return hash & mask;
+            } else {
+                hash++;
+            }
+        } while ((hash & mask) != initial_hash);
+    }
 
     return UINT32_MAX;
 }
