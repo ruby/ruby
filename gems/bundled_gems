@@ -8,7 +8,7 @@
 
 minitest        5.22.3  https://github.com/minitest/minitest 287b35d60c8e19c11ba090efc6eeb225325a8520
 power_assert    2.0.3   https://github.com/ruby/power_assert 84e85124c5014a139af39161d484156cfe87a9ed
-rake            13.2.0  https://github.com/ruby/rake
+rake            13.2.1  https://github.com/ruby/rake
 test-unit       3.6.2   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
