@@ -7,7 +7,6 @@ module Bundler
     autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
-      allow_deployment_source_credential_changes
       allow_offline_install
       auto_clean_without_path
       auto_install

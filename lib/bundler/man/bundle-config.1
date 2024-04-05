@@ -1,6 +1,6 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-CONFIG" "1" "March 2024" ""
+.TH "BUNDLE\-CONFIG" "1" "April 2024" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -94,8 +94,6 @@ The canonical form of this configuration is \fB"without"\fR\. To convert the can
 Any periods in the configuration keys must be replaced with two underscores when setting it via environment variables\. The configuration key \fBlocal\.rack\fR becomes the environment variable \fBBUNDLE_LOCAL__RACK\fR\.
 .SH "LIST OF AVAILABLE KEYS"
 The following is a list of all configuration keys and their purpose\. You can learn more about their operation in bundle install(1) \fIbundle\-install\.1\.html\fR\.
-.IP "\(bu" 4
-\fBallow_deployment_source_credential_changes\fR (\fBBUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES\fR): When in deployment mode, allow changing the credentials to a gem's source\. Ex: \fBhttps://some\.host\.com/gems/path/\fR \-> \fBhttps://user_name:password@some\.host\.com/gems/path\fR
 .IP "\(bu" 4
 \fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR): Allow Bundler to use cached data when installing without network access\.
 .IP "\(bu" 4

@@ -183,50 +183,10 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
     end
 
-    it "prevents the replace by default" do
-      bundle :install, raise_on_error: false
+    it "allows the replace" do
+      bundle :install
 
-      expect(err).to match(/The list of sources changed/)
-    end
-
-    context "when allow_deployment_source_credential_changes is true" do
-      before { bundle "config set allow_deployment_source_credential_changes true" }
-
-      it "allows the replace" do
-        bundle :install
-
-        expect(out).to match(/Bundle complete!/)
-      end
-    end
-
-    context "when allow_deployment_source_credential_changes is false" do
-      before { bundle "config set allow_deployment_source_credential_changes false" }
-
-      it "prevents the replace" do
-        bundle :install, raise_on_error: false
-
-        expect(err).to match(/The list of sources changed/)
-      end
-    end
-
-    context "when BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES env var is true" do
-      before { ENV["BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES"] = "true" }
-
-      it "allows the replace" do
-        bundle :install
-
-        expect(out).to match(/Bundle complete!/)
-      end
-    end
-
-    context "when BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES env var is false" do
-      before { ENV["BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES"] = "false" }
-
-      it "prevents the replace" do
-        bundle :install, raise_on_error: false
-
-        expect(err).to match(/The list of sources changed/)
-      end
+      expect(out).to match(/Bundle complete!/)
     end
   end
 
