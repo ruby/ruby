@@ -18,7 +18,7 @@ module Spec
     end
 
     def rake_version
-      "13.2.0"
+      "13.2.1"
     end
 
     def build_repo1
