@@ -1129,7 +1129,7 @@ static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body
 static rb_node_regx_t *rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc);
+static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLTYPE *loc);
 static rb_node_opt_arg_t *rb_node_opt_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_kw_arg_t *rb_node_kw_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_postarg_t *rb_node_postarg_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
@@ -12421,7 +12421,7 @@ rb_node_args_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_args_aux_t *
-rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc)
+rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLTYPE *loc)
 {
     rb_node_args_aux_t *n = NODE_NEWNODE(NODE_ARGS_AUX, rb_node_args_aux_t, loc);
     n->nd_pid = nd_pid;
@@ -14669,10 +14669,10 @@ new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_
         rest_arg = idFWD_REST;
     }
 
-    args->pre_args_num   = pre_args ? rb_long2int(pre_args->nd_plen) : 0;
+    args->pre_args_num   = pre_args ? pre_args->nd_plen : 0;
     args->pre_init       = pre_args ? pre_args->nd_next : 0;
 
-    args->post_args_num  = post_args ? rb_long2int(post_args->nd_plen) : 0;
+    args->post_args_num  = post_args ? post_args->nd_plen : 0;
     args->post_init      = post_args ? post_args->nd_next : 0;
     args->first_post_arg = post_args ? post_args->nd_pid : 0;
 
