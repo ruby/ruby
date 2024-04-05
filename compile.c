@@ -9782,16 +9782,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_SEQ(ret, recv);
         ADD_SEQ(ret, args);
 
-        if (flag & VM_CALL_ARGS_BLOCKARG) {
-            ADD_INSN1(ret, node, topn, INT2FIX(1));
-            if (flag & VM_CALL_ARGS_SPLAT) {
-                ADD_INSN1(ret, node, putobject, INT2FIX(-1));
-                ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
-            }
-            ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 3));
-            ADD_INSN (ret, node, pop);
-        }
-        else if (flag & VM_CALL_ARGS_SPLAT) {
+        if (flag & VM_CALL_ARGS_SPLAT) {
             ADD_INSN(ret, node, dup);
             ADD_INSN1(ret, node, putobject, INT2FIX(-1));
             ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
