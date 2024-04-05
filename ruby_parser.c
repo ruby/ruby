@@ -298,12 +298,6 @@ rbool(VALUE v)
 }
 
 static int
-undef_p(VALUE v)
-{
-    return RB_UNDEF_P(v);
-}
-
-static int
 rtest(VALUE obj)
 {
     return (int)RB_TEST(obj);
@@ -355,18 +349,6 @@ static int *
 rb_errno_ptr2(void)
 {
     return rb_errno_ptr();
-}
-
-static int
-fixnum_p(VALUE obj)
-{
-    return (int)RB_FIXNUM_P(obj);
-}
-
-static int
-symbol_p(VALUE obj)
-{
-    return (int)RB_SYMBOL_P(obj);
 }
 
 static void *
@@ -447,9 +429,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .compile_callback = rb_suppress_tracing,
     .reg_named_capture_assign = reg_named_capture_assign,
 
-    .fixnum_p = fixnum_p,
-    .symbol_p = symbol_p,
-
     .attr_get = rb_attr_get,
 
     .ary_new = rb_ary_new,
@@ -457,7 +436,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_new_from_args = rb_ary_new_from_args,
     .ary_unshift = rb_ary_unshift,
     .ary_new2 = rb_ary_new2,
-    .ary_clear = rb_ary_clear,
     .ary_modify = rb_ary_modify,
     .array_len = rb_array_len,
     .array_aref = RARRAY_AREF,
@@ -586,7 +564,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .strtod = ruby_strtod,
 
     .rbool = rbool,
-    .undef_p = undef_p,
     .rtest = rtest,
     .nil_p = nil_p,
     .qnil = Qnil,
