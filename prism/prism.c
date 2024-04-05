@@ -805,17 +805,15 @@ pm_locals_free(pm_locals_t *locals) {
 }
 
 /**
- * Use the mid-square method to hash the given constant id.
+ * Use as simple and fast a hash function as we can that still properly mixes
+ * the bits.
  */
 static uint32_t
 pm_locals_hash(pm_constant_id_t name) {
-    uint64_t square = (uint64_t) name * (uint64_t) name;
-
-    uint32_t num_digits = (uint32_t) floor(log10((double) square) + 1);
-    uint32_t start = num_digits / 2;
-    uint32_t end = start + 1;
-
-    return (uint32_t) (((uint64_t) ((square / ((uint64_t) pow(10, (double) start)))) % (uint64_t) pow(10, (double) end)));
+    name = ((name >> 16) ^ name) * 0x45d9f3b;
+    name = ((name >> 16) ^ name) * 0x45d9f3b;
+    name = (name >> 16) ^ name;
+    return name;
 }
 
 /**
@@ -837,15 +835,16 @@ pm_locals_resize(pm_locals_t *locals) {
     } else {
         // If we just switched from a list to a hash, then we need to fill in
         // the hash values of all of the locals.
-        bool hash_needed = locals->locals[0].hash == 0;
+        bool hash_needed = (locals->capacity <= PM_LOCALS_HASH_THRESHOLD);
         uint32_t mask = next_capacity - 1;
 
         for (uint32_t index = 0; index < locals->capacity; index++) {
             pm_local_t *local = &locals->locals[index];
 
             if (local->name != PM_CONSTANT_ID_UNSET) {
-                uint32_t hash = hash_needed ? pm_locals_hash(local->name) : local->hash;
+                if (hash_needed) local->hash = pm_locals_hash(local->name);
 
+                uint32_t hash = local->hash;
                 while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
                 next_locals[hash & mask] = *local;
             }
@@ -908,7 +907,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, const uint8_t *start
                     .name = name,
                     .index = locals->size++,
                     .reads = reads,
-                    .hash = hash
+                    .hash = initial_hash
                 };
                 return true;
             } else if (local->name == name) {
@@ -920,6 +919,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, const uint8_t *start
     }
 
     assert(false && "unreachable");
+    return true;
 }
 
 /**
