@@ -6,7 +6,6 @@
 # Never use optparse in this file.
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
-# Maintain Ruby 1.8 compatibility for now
 
 $start_time = Time.now
 
@@ -428,7 +427,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def initialize(*args)
     super
     self.class.add self
-    @category = self.path.match(/test_(.+)\.rb/)[1]
+    @category = self.path.match(/test_(.+)\.rb/)&.[](1)
   end
 
   def call
