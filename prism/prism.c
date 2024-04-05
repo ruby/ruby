@@ -905,6 +905,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, const uint8_t *start
             if (local->name == PM_CONSTANT_ID_UNSET) {
                 *local = (pm_local_t) {
                     .name = name,
+                    .location = { .start = start, .end = end },
                     .index = locals->size++,
                     .reads = reads,
                     .hash = initial_hash
