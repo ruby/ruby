@@ -45,7 +45,7 @@ The following default gems are updated.
 * irb 1.12.0
 * json 2.7.2
 * net-http 0.4.1
-* prism 0.24.0
+* prism 0.25.0
 * rdoc 6.6.3.1
 * reline 0.5.0
 * resolv 0.4.0
