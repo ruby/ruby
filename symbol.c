@@ -953,12 +953,17 @@ rb_id2sym(ID x)
 VALUE
 rb_sym2str(VALUE sym)
 {
+    VALUE str;
     if (DYNAMIC_SYM_P(sym)) {
-        return RSYMBOL(sym)->fstr;
+        str = RSYMBOL(sym)->fstr;
+        RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
     }
     else {
-        return rb_id2str(STATIC_SYM2ID(sym));
+        str = rb_id2str(STATIC_SYM2ID(sym));
+        RUBY_ASSERT(str == 0 || BUILTIN_TYPE(str) == T_STRING);
     }
+
+    return str;
 }
 
 VALUE
