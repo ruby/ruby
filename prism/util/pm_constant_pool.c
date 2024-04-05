@@ -11,6 +11,18 @@ pm_constant_id_list_init(pm_constant_id_list_t *list) {
 }
 
 /**
+ * Initialize a list of constant ids with a given capacity.
+ */
+void
+pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity) {
+    list->ids = xmalloc(sizeof(pm_constant_id_t) * capacity);
+    if (list->ids == NULL) abort();
+
+    list->size = 0;
+    list->capacity = capacity;
+}
+
+/**
  * Append a constant id to a list of constant ids. Returns false if any
  * potential reallocations fail.
  */
@@ -24,6 +36,18 @@ pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id) {
 
     list->ids[list->size++] = id;
     return true;
+}
+
+/**
+ * Insert a constant id into a list of constant ids at the specified index.
+ */
+void
+pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id) {
+    assert(index < list->capacity);
+    assert(list->ids[index] == PM_CONSTANT_ID_UNSET);
+
+    list->ids[index] = id;
+    list->size++;
 }
 
 /**

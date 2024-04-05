@@ -510,6 +510,28 @@ static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMEN
 static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = 0x4;
 
 /**
+ * This tracks an individual local variable in a certain lexical context, as
+ * well as the number of times is it read.
+ */
+typedef struct {
+    pm_constant_id_t name;
+    uint32_t index;
+    uint32_t reads;
+    uint32_t hash;
+} pm_local_t;
+
+/**
+ * This is a set of local variables in a certain lexical context (method, class,
+ * module, etc.). We need to track how many times these variables are read in
+ * order to warn if they only get written.
+ */
+typedef struct pm_locals {
+    uint32_t size;
+    uint32_t capacity;
+    pm_local_t *locals;
+} pm_locals_t;
+
+/**
  * This struct represents a node in a linked list of scopes. Some scopes can see
  * into their parent scopes, while others cannot.
  */
@@ -518,7 +540,7 @@ typedef struct pm_scope {
     struct pm_scope *previous;
 
     /** The IDs of the locals in the given scope. */
-    pm_constant_id_list_t locals;
+    pm_locals_t locals;
 
     /**
      * This is a bitfield that indicates the parameters that are being used in
