@@ -869,10 +869,6 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
-    if (IMEMO_TYPE_P(node, imemo_ifunc)) {
-        rb_raise(rb_eArgError, "unexpected imemo_ifunc");
-    }
-
     if (node == 0) {
         NO_CHECK(COMPILE(ret, "nil", node));
         iseq_set_local_table(iseq, 0);
