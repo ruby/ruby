@@ -1830,7 +1830,7 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S(s) s
 # define WARN_I(i) i
 # define WARN_ID(i) rb_id2name(i)
-# define WARN_IVAL(i) NUM2INT(i)
+# define WARN_IVAL(i) i
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
@@ -13462,7 +13462,7 @@ rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *
         st_data_t line;
         if (st_lookup(p->case_labels, (st_data_t)arg, &line)) {
             rb_warning1("duplicated 'when' clause with line %d is ignored",
-                        WARN_IVAL(INT2NUM((int)line)));
+                        WARN_IVAL((int)line));
             return;
         }
     }
