@@ -8129,7 +8129,7 @@ escaped_control_code(int c)
 }
 
 #define WARN_SPACE_CHAR(c, prefix) \
-    rb_warn1("invalid character syntax; use "prefix"\\%c", WARN_I(c2))
+    rb_warn1("invalid character syntax; use "prefix"\\%c", WARN_I(c))
 
 static int
 tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
