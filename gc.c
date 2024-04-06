@@ -3729,6 +3729,7 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
     objspace_each_exec(protected, &each_obj_data);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 objspace_each_pages(rb_objspace_t *objspace, each_page_callback *callback, void *data, bool protected)
 {
@@ -3740,6 +3741,7 @@ objspace_each_pages(rb_objspace_t *objspace, each_page_callback *callback, void 
     };
     objspace_each_exec(protected, &each_obj_data);
 }
+#endif
 
 struct os_each_struct {
     size_t num;
@@ -10544,7 +10546,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
             /* Find out which pool has the most pages */
             size_t max_existing_pages = 0;
-            for(int i = 0; i < SIZE_POOL_COUNT; i++) {
+            for (int i = 0; i < SIZE_POOL_COUNT; i++) {
                 rb_size_pool_t *size_pool = &size_pools[i];
                 rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
                 max_existing_pages = MAX(max_existing_pages, heap->total_pages);
