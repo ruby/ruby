@@ -156,8 +156,6 @@
 #define rb_filesystem_str_new_cstr        p->config->filesystem_str_new_cstr
 #define rb_obj_as_string                  p->config->obj_as_string
 
-#undef NUM2INT
-#define NUM2INT             p->config->num2int
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
 
