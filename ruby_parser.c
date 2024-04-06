@@ -483,7 +483,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .filesystem_str_new_cstr = rb_filesystem_str_new_cstr,
     .obj_as_string = rb_obj_as_string,
 
-    .num2int = rb_num2int_inline,
     .int2num = rb_int2num_inline,
 
     .stderr_tty_p = rb_stderr_tty_p,

@@ -1310,7 +1310,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*obj_as_string)(VALUE);
 
     /* Numeric */
-    int (*num2int)(VALUE val);
     VALUE (*int2num)(int v);
 
     /* IO */
