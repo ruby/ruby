@@ -65,7 +65,6 @@ int rb_ruby_parser_end_seen_p(rb_parser_t *p);
 int rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag);
 rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
 
-void rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc);
 void rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash);
 int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);

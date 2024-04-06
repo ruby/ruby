@@ -84,7 +84,6 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 VALUE rb_io_gets_internal(VALUE io);
 #endif /* !UNIVERSAL_PARSER */
 
-#ifndef RIPPER
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
 
 static int
@@ -210,7 +209,6 @@ literal_hash(st_data_t a)
 #endif
     }
 }
-#endif /* !RIPPER */
 
 static inline int
 parse_isascii(int c)
@@ -1491,6 +1489,8 @@ int reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 static int literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_string_t *tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
+static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
+
 #ifdef RIPPER
 static VALUE var_field(struct parser_params *p, VALUE a);
 #define get_value(idx) (rb_ary_entry(p->s_value_stack, idx))
@@ -2038,7 +2038,6 @@ get_nd_args(struct parser_params *p, NODE *node)
     }
 }
 
-#ifndef RIPPER
 static st_index_t
 djb2(const uint8_t *str, size_t len)
 {
@@ -2056,7 +2055,6 @@ parser_memhash(const void *ptr, long len)
 {
     return djb2(ptr, len);
 }
-#endif
 
 #define PARSER_STRING_PTR(str) (str->ptr)
 #define PARSER_STRING_LEN(str) (str->len)
@@ -2120,7 +2118,6 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
     xfree(str);
 }
 
-#ifndef RIPPER
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)
 {
@@ -2132,7 +2129,6 @@ rb_char_p_hash(const char *c)
 {
     return parser_memhash((const void *)c, strlen(c));
 }
-#endif
 
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
@@ -2528,7 +2524,6 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
     return str;
 }
 
-#ifndef RIPPER
 # define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len,                            \
@@ -2549,6 +2544,7 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
             memcmp(ptr1, ptr2, len1) != 0);
 }
 
+#ifndef RIPPER
 static void
 rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
 {
@@ -5376,7 +5372,7 @@ do_body 	:   {
 
 case_args	: arg_value
                     {
-                        rb_parser_check_literal_when(p, $1, &@1);
+                        check_literal_when(p, $1, &@1);
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
@@ -5387,7 +5383,7 @@ case_args	: arg_value
                     }
                 | case_args ',' arg_value
                     {
-                        rb_parser_check_literal_when(p, $3, &@3);
+                        check_literal_when(p, $3, &@3);
                         $$ = last_arg_append(p, $1, $3, &@$);
                     /*% ripper: args_add!($:1, $:3) %*/
                     }
@@ -13439,7 +13435,6 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return node;
 }
 
-#ifndef RIPPER
 static const
 struct st_hash_type literal_type = {
     literal_cmp,
@@ -13448,8 +13443,8 @@ struct st_hash_type literal_type = {
 
 static int nd_type_st_key_enable_p(NODE *node);
 
-void
-rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
+static void
+check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
 {
     /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     if (!arg || !p->case_labels) return;
@@ -13462,13 +13457,12 @@ rb_parser_check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *
         st_data_t line;
         if (st_lookup(p->case_labels, (st_data_t)arg, &line)) {
             rb_warning1("duplicated 'when' clause with line %d is ignored",
-                        WARN_IVAL((int)line));
+                        WARN_I((int)line));
             return;
         }
     }
     st_insert(p->case_labels, (st_data_t)arg, (st_data_t)p->ruby_sourceline);
 }
-#endif
 
 #ifdef RIPPER
 static int
@@ -14860,7 +14854,6 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return node;
 }
 
-#ifndef RIPPER
 static int
 nd_type_st_key_enable_p(NODE *node)
 {
@@ -14881,6 +14874,7 @@ nd_type_st_key_enable_p(NODE *node)
     }
 }
 
+#ifndef RIPPER
 static VALUE
 nd_value(struct parser_params *p, NODE *node)
 {
