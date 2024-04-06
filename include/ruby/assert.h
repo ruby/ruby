@@ -282,6 +282,17 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
 #endif
 
 /**
+ * A variant of #RUBY_ASSERT that  asserts when either #RUBY_DEBUG or built-in
+ * type of `obj` is `type`.
+ *
+ * @param  obj  Object to check its built-in typue.
+ * @param  type  Built-in type constant, T_ARRAY, T_STRING, etc.
+ */
+#define RUBY_ASSERT_BUILTIN_TYPE(obj, type) \
+    RUBY_ASSERT(RB_TYPE_P(obj, type), \
+                "Actual type is %s", rb_builtin_type_name(BUILTIN_TYPE(obj)))
+
+/**
  * This is either #RUBY_ASSERT or #RBIMPL_ASSUME, depending on #RUBY_DEBUG.
  *
  * @copydetails #RUBY_ASSERT

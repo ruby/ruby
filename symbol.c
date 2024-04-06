@@ -430,8 +430,8 @@ static void
 set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
 {
     ASSERT_vm_locking();
-    RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
-    RUBY_ASSERT(SYMBOL_P(sym));
+    RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
+    RUBY_ASSERT_BUILTIN_TYPE(sym, T_SYMBOL);
 
     size_t idx = num / ID_ENTRY_UNIT;
 
@@ -484,10 +484,10 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
     if (result) {
         switch (t) {
           case ID_ENTRY_STR:
-            RUBY_ASSERT(BUILTIN_TYPE(result) == T_STRING);
+            RUBY_ASSERT_BUILTIN_TYPE(result, T_STRING);
             break;
           case ID_ENTRY_SYM:
-            RUBY_ASSERT(SYMBOL_P(result));
+            RUBY_ASSERT_BUILTIN_TYPE(result, T_SYMBOL);
             break;
           default:
             break;
@@ -972,11 +972,11 @@ rb_sym2str(VALUE sym)
     VALUE str;
     if (DYNAMIC_SYM_P(sym)) {
         str = RSYMBOL(sym)->fstr;
-        RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
+        RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
     }
     else {
         str = rb_id2str(STATIC_SYM2ID(sym));
-        RUBY_ASSERT(str == 0 || BUILTIN_TYPE(str) == T_STRING);
+        if (str) RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
     }
 
     return str;

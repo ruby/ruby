@@ -11764,7 +11764,7 @@ sym_inspect(VALUE sym)
     }
     dest[0] = ':';
 
-    RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
+    RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
 
     return str;
 }
