@@ -315,7 +315,7 @@ class Reline::ANSI
   end
 
   def self.hide_cursor
-    if Reline::Terminfo.enabled?
+    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
         @@output.write Reline::Terminfo.tigetstr('civis')
       rescue Reline::Terminfo::TerminfoError
@@ -327,7 +327,7 @@ class Reline::ANSI
   end
 
   def self.show_cursor
-    if Reline::Terminfo.enabled?
+    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
         @@output.write Reline::Terminfo.tigetstr('cnorm')
       rescue Reline::Terminfo::TerminfoError
