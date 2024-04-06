@@ -1178,7 +1178,7 @@ typedef struct RNode_ERROR {
 #define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
-/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
+/* NODE_FL: 0..4: UNUSED,  5: UNUSED,  6: UNUSED,   7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
  */

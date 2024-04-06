@@ -15,7 +15,6 @@
 #include "node.h"
 #include "rubyparser.h"
 #include "internal/parse.h"
-#define T_NODE 0x1b
 
 #else
 
@@ -87,16 +86,10 @@ rb_node_buffer_new(void)
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
 static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, void *ctx);
 
-/* Setup NODE structure.
- * NODE is not an object managed by GC, but it imitates an object
- * so that it can work with `RB_TYPE_P(obj, T_NODE)`.
- * This dirty hack is needed because Ripper jumbles NODEs and other type
- * objects.
- */
 void
 rb_node_init(NODE *n, enum node_type type)
 {
-    RNODE(n)->flags = T_NODE;
+    RNODE(n)->flags = 0;
     nd_init_type(RNODE(n), type);
     RNODE(n)->nd_loc.beg_pos.lineno = 0;
     RNODE(n)->nd_loc.beg_pos.column = 0;
