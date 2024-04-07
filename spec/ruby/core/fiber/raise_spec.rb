@@ -91,6 +91,23 @@ describe "Fiber#raise" do
 
     fiber_two.resume.should == [:yield_one, :rescued]
   end
+
+  ruby_version_is "3.4" do
+    it "raises on the resumed fiber" do
+      root_fiber = Fiber.current
+      f1 = Fiber.new { root_fiber.transfer }
+      f2 = Fiber.new { f1.resume }
+      f2.transfer
+
+      error = nil
+      begin
+        f2.raise(RuntimeError)
+      rescue RuntimeError => error
+      end
+
+      error.should be_kind_of(RuntimeError)
+    end
+  end
 end
 
 

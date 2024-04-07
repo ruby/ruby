@@ -3227,7 +3227,10 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 static VALUE
 fiber_raise(rb_fiber_t *fiber, VALUE exception)
 {
-    if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
+    if (fiber->resuming_fiber) {
+        return fiber_raise(fiber->resuming_fiber, exception);
+    }
+    else if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
         return fiber_transfer_kw(fiber, -1, &exception, RB_NO_KEYWORDS);
     }
     else {
@@ -3504,6 +3507,7 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
+
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 
     rb_define_singleton_method(rb_cFiber, "blocking?", rb_fiber_s_blocking_p, 0);
