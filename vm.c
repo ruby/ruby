@@ -4034,9 +4034,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
-#if EXTSTATIC
-    vm->static_ext_inits = st_init_strtable();
-#endif
 
 #ifdef HAVE_MMAP
     vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t), rb_eRuntimeError),
