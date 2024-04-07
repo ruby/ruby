@@ -3140,9 +3140,13 @@ f_exec(int c, const VALUE *a, VALUE _)
     UNREACHABLE_RETURN(Qnil);
 }
 
-#define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
-#define ERRMSG1(str, a) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a)); } while (0)
-#define ERRMSG2(str, a, b) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a), (b)); } while (0)
+#define ERRMSG(str) \
+    ((errmsg && 0 < errmsg_buflen) ? \
+     (void)strlcpy(errmsg, (str), errmsg_buflen) : (void)0)
+
+#define ERRMSG_FMT(...) \
+    ((errmsg && 0 < errmsg_buflen) ? \
+     (void)snprintf(errmsg, errmsg_buflen, __VA_ARGS__) : (void)0)
 
 static int fd_get_cloexec(int fd, char *errmsg, size_t errmsg_buflen);
 static int fd_set_cloexec(int fd, char *errmsg, size_t errmsg_buflen);
