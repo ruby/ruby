@@ -5258,7 +5258,7 @@ static rb_pid_t
 ruby_setsid(void)
 {
     rb_pid_t pid;
-    int ret;
+    int ret, fd;
 
     pid = getpid();
 #if defined(SETPGRP_VOID)
