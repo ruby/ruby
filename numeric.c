@@ -5459,7 +5459,7 @@ rb_fix_digits(VALUE fix, long base)
         x /= base;
     }
     rb_ary_push(digits, LONG2NUM(x));
-    
+
     return digits;
 }
 
