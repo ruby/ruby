@@ -207,7 +207,7 @@ class TestFiberMutex < Test::Unit::TestCase
       Fiber.schedule do
         mutex.synchronize do
           puts 'in synchronize'
-          Fiber.yield
+          scheduler.transfer
         end
       end
 
