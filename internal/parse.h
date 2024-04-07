@@ -68,6 +68,7 @@ rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
 void rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash);
 int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);
+VALUE rb_parser_node_case_when_optimizable_literal(struct parser_params *p, const NODE *const node);
 int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc);
 int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq_struct *iseq);
