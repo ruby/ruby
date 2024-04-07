@@ -42,4 +42,12 @@ class TestFiberEnumerator < Test::Unit::TestCase
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
   end
+
+  def enumerator_fiber_is_nonblocking
+    enumerator = Enumerator.new do |yielder|
+      yielder << Fiber.current.blocking?
+    end
+
+    assert_equal(false, enumerator.next)
+  end
 end
