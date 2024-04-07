@@ -5453,12 +5453,13 @@ rb_fix_digits(VALUE fix, long base)
         return rb_ary_new_from_args(1, INT2FIX(0));
 
     digits = rb_ary_new();
-    while (x > 0) {
+    while (x >= base) {
         long q = x % base;
         rb_ary_push(digits, LONG2NUM(q));
         x /= base;
     }
-
+    rb_ary_push(digits, LONG2NUM(x));
+    
     return digits;
 }
 
