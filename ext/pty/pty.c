@@ -118,10 +118,10 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     (void) setsid();
 #else /* HAS_SETSID */
 # ifdef HAVE_SETPGRP
-#  ifdef SETGRP_VOID
+#  ifdef SETPGRP_VOID
     if (setpgrp() == -1)
         ERROR_EXIT("setpgrp()");
-#  else /* SETGRP_VOID */
+#  else /* SETPGRP_VOID */
     if (setpgrp(0, getpid()) == -1)
         ERROR_EXIT("setpgrp()");
     {
@@ -132,7 +132,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
             ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
     }
-#  endif /* SETGRP_VOID */
+#  endif /* SETPGRP_VOID */
 # endif /* HAVE_SETPGRP */
 #endif /* HAS_SETSID */
 
