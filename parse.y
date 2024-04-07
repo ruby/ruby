@@ -1807,7 +1807,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
 # define WARN_ID(i) rb_id2str(i)
-# define WARN_IVAL(i) i
 # define PRIsWARN PRIsVALUE
 # define rb_warn0L_experimental(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
@@ -1830,7 +1829,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S(s) s
 # define WARN_I(i) i
 # define WARN_ID(i) rb_id2name(i)
-# define WARN_IVAL(i) i
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
