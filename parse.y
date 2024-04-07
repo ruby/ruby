@@ -14890,7 +14890,6 @@ nd_type_st_key_enable_p(NODE *node)
     }
 }
 
-#ifndef RIPPER
 static VALUE
 nd_value(struct parser_params *p, NODE *node)
 {
@@ -14921,8 +14920,8 @@ nd_value(struct parser_params *p, NODE *node)
     }
 }
 
-void
-rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
+static void
+warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     st_table *literal_keys = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
@@ -14942,9 +14941,9 @@ rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
             key = (st_data_t)head;
 
             if (st_delete(literal_keys, &key, &data)) {
-                rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                                "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                                nd_value(p, head), nd_line(head));
+                rb_warn2L(nd_line((NODE *)data),
+                          "key %+"PRIsWARN" is duplicated and overwritten on line %d",
+                          nd_value(p, head), WARN_I(nd_line(head)));
             }
             st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
         }
@@ -14952,12 +14951,11 @@ rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
     }
     st_free_table(literal_keys);
 }
-#endif
 
 static NODE *
 new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
-    if (hash) rb_parser_warn_duplicate_keys(p, hash);
+    if (hash) warn_duplicate_keys(p, hash);
     return NEW_HASH(hash, loc);
 }
 
