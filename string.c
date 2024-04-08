@@ -87,6 +87,8 @@ VALUE rb_cSymbol;
  * 2:     STR_SHARED (equal to ELTS_SHARED)
  *            The string is shared. The buffer this string points to is owned by
  *            another string (the shared root).
+ * 3:     STR_CHILLED (will be frozen in a future version)
+ *            The string appears frozen but can be mutated with a warning.
  * 5:     STR_SHARED_ROOT
  *            Other strings may point to the contents of this string. When this
  *            flag is set, STR_SHARED must not be set.
