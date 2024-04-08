@@ -103,7 +103,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os }}
+          os: ${{ matrix.os || 'ubuntu-22.04' }}
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
