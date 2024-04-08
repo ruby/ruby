@@ -98,13 +98,13 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def self.mktmpdir(prefix_suffix=nil, *rest, **options)
+  def self.mktmpdir(prefix_suffix=nil, *rest, **options, &block)
     base = nil
     path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|path, _, _, d|
       base = d
       mkdir(path, 0700)
     }
-    if block_given?
+    if block
       begin
         yield path.dup
       ensure
