@@ -99,13 +99,9 @@ describe "Fiber#raise" do
       f2 = Fiber.new { f1.resume }
       f2.transfer
 
-      error = nil
-      begin
-        f2.raise(RuntimeError)
-      rescue RuntimeError => error
-      end
-
-      error.should be_kind_of(RuntimeError)
+      -> do
+        f2.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
     end
   end
 end
