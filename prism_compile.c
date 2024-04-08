@@ -311,7 +311,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
         encoding = scope_node->encoding;
     }
 
-    VALUE value = rb_enc_interned_str((const char *) pm_string_source(string), pm_string_length(string), encoding);
+    VALUE value = rb_enc_literal_str((const char *) pm_string_source(string), pm_string_length(string), encoding);
     rb_enc_str_coderange(value);
 
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {

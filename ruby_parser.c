@@ -921,7 +921,7 @@ rb_parser_build_script_lines_from(rb_parser_ary_t *lines)
 VALUE
 rb_str_new_parser_string(rb_parser_string_t *str)
 {
-    VALUE string = rb_enc_interned_str(str->ptr, str->len, str->enc);
+    VALUE string = rb_enc_literal_str(str->ptr, str->len, str->enc);
     rb_enc_str_coderange(string);
     return string;
 }
