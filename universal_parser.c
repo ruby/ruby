@@ -95,8 +95,6 @@
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
-#undef rb_ary_new2
-#define rb_ary_new2          p->config->ary_new2
 #define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
