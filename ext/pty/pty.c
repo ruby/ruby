@@ -256,7 +256,21 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     RB_GC_GUARD(carg.execarg_obj);
 }
 
-#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME)
+#if defined(HAVE_PTSNAME) && !defined(HAVE_PTSNAME_R)
+/* glibc only, not obsolete interface on Tru64 or HP-UX */
+static int
+ptsname_r(int fd, char *buf, size_t buflen)
+{
+    extern char *ptsname(int);
+    char *name = ptsname(fd);
+    if (!name) return -1;
+    strlcpy(buf, name, buflen);
+    return 0;
+}
+# define HAVE_PTSNAME_R 1
+#endif
+
+#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME_R)
 static int
 no_mesg(char *slavedevice, int nomesg)
 {
@@ -320,7 +334,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #endif
     if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
     if (unlockpt(masterfd) == -1) goto error;
-    if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -333,7 +348,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
   grantpt_error:
@@ -387,7 +401,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     char *slavedevice;
     void (*s)();
 
-    extern char *ptsname(int);
     extern int unlockpt(int);
     extern int grantpt(int);
 
@@ -405,7 +418,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #endif
     signal(SIGCHLD, s);
     if(unlockpt(masterfd) == -1) goto error;
-    if((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -416,7 +430,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #endif
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
   error:
