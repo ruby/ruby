@@ -427,7 +427,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def initialize(*args)
     super
     self.class.add self
-    @category = self.path.match(/test_(.+)\.rb/)&.[](1)
+    @category = self.path[/\Atest_(.+)\.rb\z/, 1]
   end
 
   def call
