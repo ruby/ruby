@@ -92,9 +92,13 @@ struct pty_info {
 
 static void getDevice(int*, int*, char [DEVICELEN], int);
 
+static int start_new_session(char *errbuf, size_t errbuf_len);
+static int obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len);
+static int drop_privilige(char *errbuf, size_t errbuf_len);
+
 struct child_info {
     int master, slave;
-    char *slavename;
+    const char *slavename;
     VALUE execarg_obj;
     struct rb_execarg *eargp;
 };
@@ -102,18 +106,34 @@ struct child_info {
 static int
 chfunc(void *data, char *errbuf, size_t errbuf_len)
 {
-    struct child_info *carg = data;
+    const struct child_info *carg = data;
     int master = carg->master;
     int slave = carg->slave;
+    const char *slavename = carg->slavename;
+
+    if (start_new_session(errbuf, errbuf_len))
+        return -1;
+
+    if (obtain_ctty(master, slave, slavename, errbuf, errbuf_len))
+        return -1;
+
+    if (drop_privilige(errbuf, errbuf_len))
+        return -1;
+
+    return rb_exec_async_signal_safe(carg->eargp, errbuf, errbuf_len);
+}
 
 #define ERROR_EXIT(str) do { \
         strlcpy(errbuf, (str), errbuf_len); \
         return -1; \
     } while (0)
 
-    /*
-     * Set free from process group and controlling terminal
-     */
+/*
+ * Set free from process group and controlling terminal
+ */
+static int
+start_new_session(char *errbuf, size_t errbuf_len)
+{
 #ifdef HAVE_SETSID
     (void) setsid();
 #else /* HAS_SETSID */
@@ -135,17 +155,22 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
 #  endif /* SETPGRP_VOID */
 # endif /* HAVE_SETPGRP */
 #endif /* HAS_SETSID */
+    return 0;
+}
 
-    /*
-     * obtain new controlling terminal
-     */
+/*
+ * obtain new controlling terminal
+ */
+static int
+obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len)
+{
 #if defined(TIOCSCTTY)
     close(master);
     (void) ioctl(slave, TIOCSCTTY, (char *)0);
     /* errors ignored for sun */
 #else
     close(slave);
-    slave = rb_cloexec_open(carg->slavename, O_RDWR, 0);
+    slave = rb_cloexec_open(slavename, O_RDWR, 0);
     if (slave < 0) {
         ERROR_EXIT("open: pty slave");
     }
@@ -156,13 +181,19 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,1);
     dup2(slave,2);
     if (slave < 0 || slave > 2) (void)!close(slave);
+    return 0;
+}
+
+static int
+drop_privilige(char *errbuf, size_t errbuf_len)
+{
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
-
-    return rb_exec_async_signal_safe(carg->eargp, errbuf, sizeof(errbuf_len));
-#undef ERROR_EXIT
+    return 0;
 }
+
+#undef ERROR_EXIT
 
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
