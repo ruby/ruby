@@ -16,10 +16,6 @@ class Dir
   # Class variables are inaccessible from non-main Ractor.
   # And instance variables too, in Ruby 3.0.
 
-  # System-wide temporary directory path
-  SYSTMPDIR = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
-  private_constant :SYSTMPDIR
-
   ##
   # Returns the operating system's temporary file path.
   #
@@ -27,7 +23,7 @@ class Dir
   #   Dir.tmpdir # => "/tmp"
 
   def self.tmpdir
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', SYSTMPDIR], ['/tmp']*2, ['.']*2].find do |name, dir|
+    Tmpname::TMPDIR_CANDIDATES.find do |name, dir|
       unless dir
         next if !(dir = ENV[name] rescue next) or dir.empty?
       end
@@ -125,6 +121,18 @@ class Dir
   # Temporary name generator
   module Tmpname # :nodoc:
     module_function
+
+    # System-wide temporary directory path
+    systmpdir = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
+
+    # Temporary directory candidates consisting of environment variable
+    # names or description and path pairs.
+    TMPDIR_CANDIDATES = [
+      'TMPDIR', 'TMP', 'TEMP',
+      ['system temporary path', systmpdir],
+      %w[/tmp /tmp],
+      %w[. .],
+    ].each(&:freeze).freeze
 
     def tmpdir
       Dir.tmpdir
