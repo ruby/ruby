@@ -24,6 +24,10 @@ echo "* Show warning when bundle exec with shebang's script"
 bundle exec ./test_warn_bundle_exec_shebang.rb
 echo
 
+echo "* Show warning when bundle exec with -r option"
+bundle exec ruby -rostruct -e ''
+echo
+
 echo "* Show warning with bootsnap"
 ruby test_warn_bootsnap.rb
 echo
