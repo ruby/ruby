@@ -107,9 +107,10 @@ class Dir
         yield path.dup
       ensure
         unless base
-          stat = File.stat(File.dirname(path))
+          base = File.dirname(path)
+          stat = File.stat(base)
           if stat.world_writable? and !stat.sticky?
-            raise ArgumentError, "parent directory is world writable but not sticky"
+            raise ArgumentError, "parent directory is world writable but not sticky: #{base}"
           end
         end
         FileUtils.remove_entry path
