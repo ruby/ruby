@@ -165,4 +165,6 @@ native_tls_set(native_tls_key_t key, void *ptr)
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 #endif
 
+bool ruby_thread_set_pthread_native(struct rb_thread_struct *th);
+
 #endif /* RUBY_THREAD_PTHREAD_H */

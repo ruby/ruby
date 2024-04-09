@@ -1609,26 +1609,33 @@ ruby_thread_from_native(void)
 #endif
 }
 
-int
-ruby_thread_set_native(rb_thread_t *th)
+bool
+ruby_thread_set_pthread_native(rb_thread_t *th)
 {
+    RUBY_ASSERT(th->ractor->threads.running_ec == th->ec);
+
     if (th) {
 #ifdef USE_UBF_LIST
         ccan_list_node_init(&th->sched.node.ubf);
 #endif
     }
 
-    // setup TLS
-
-    if (th && th->ec) {
-        rb_ractor_set_current_ec(th->ractor, th->ec);
-    }
 #ifdef RB_THREAD_LOCAL_SPECIFIER
     ruby_native_thread = th;
     return 1;
 #else
     return pthread_setspecific(ruby_native_thread_key, th) == 0;
 #endif
+}
+
+int
+ruby_thread_set_native(rb_thread_t *th)
+{
+    if (th && th->ec) {
+        rb_ractor_set_current_ec(th->ractor, th->ec);
+    }
+
+    return ruby_thread_set_pthread_native(th);
 }
 
 static void native_thread_setup(struct rb_native_thread *nt);
