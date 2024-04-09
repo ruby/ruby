@@ -47,7 +47,7 @@ The following default gems are updated.
 * net-http 0.4.1
 * prism 0.25.0
 * rdoc 6.6.3.1
-* reline 0.5.0
+* reline 0.5.1
 * resolv 0.4.0
 * stringio 3.1.1
 * strscan 3.1.1
