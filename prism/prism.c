@@ -8404,6 +8404,10 @@ lex_global_variable(pm_parser_t *parser) {
                 do {
                     parser->current.end += width;
                 } while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);
+            } else if (pm_char_is_whitespace(peek(parser))) {
+                // If we get here, then we have a $ followed by whitespace,
+                // which is not allowed.
+                pm_parser_err_token(parser, &parser->current, PM_ERR_GLOBAL_VARIABLE_BARE);
             } else {
                 // If we get here, then we have a $ followed by something that
                 // isn't recognized as a global variable.

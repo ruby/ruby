@@ -1257,9 +1257,10 @@ module Prism
     end
 
     def test_unterminated_global_variable
-      assert_errors expression("$"), "$", [
-        ["'$' without identifiers is not allowed as a global variable name", 0..1]
-      ]
+      message = "'$' without identifiers is not allowed as a global variable name"
+
+      assert_errors expression("$"), "$", [[message, 0..1]]
+      assert_errors expression("$ "), "$ ", [[message, 0..1]]
     end
 
     def test_invalid_global_variable_write
