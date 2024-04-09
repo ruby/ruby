@@ -24,7 +24,7 @@ module Prism
     end
 
     def test_equal_in_conditional
-      assert_warning("if a = 1; end", "should be ==")
+      assert_warning("if a = 1; end; a", "should be ==")
     end
 
     def test_dot_dot_dot_eol
@@ -88,6 +88,43 @@ module Prism
       assert_warning("if /foo\#{bar}/; end", "regex")
     end
 
+    def test_unused_local_variables
+      assert_warning("foo = 1", "unused")
+
+      refute_warning("foo = 1", compare: false, command_line: "e")
+      refute_warning("foo = 1", compare: false, scopes: [[]])
+
+      assert_warning("def foo; bar = 1; end", "unused")
+      assert_warning("def foo; bar, = 1; end", "unused")
+
+      refute_warning("def foo; bar &&= 1; end")
+      refute_warning("def foo; bar ||= 1; end")
+      refute_warning("def foo; bar += 1; end")
+
+      refute_warning("def foo; bar = bar; end")
+      refute_warning("def foo; bar = bar = 1; end")
+      refute_warning("def foo; bar = (bar = 1); end")
+      refute_warning("def foo; bar = begin; bar = 1; end; end")
+      refute_warning("def foo; bar = (qux; bar = 1); end")
+      refute_warning("def foo; bar, = bar = 1; end")
+      refute_warning("def foo; bar, = 1, bar = 1; end")
+
+      refute_warning("def foo(bar); end")
+      refute_warning("def foo(bar = 1); end")
+      refute_warning("def foo((bar)); end")
+      refute_warning("def foo(*bar); end")
+      refute_warning("def foo(*, bar); end")
+      refute_warning("def foo(*, (bar)); end")
+      refute_warning("def foo(bar:); end")
+      refute_warning("def foo(**bar); end")
+      refute_warning("def foo(&bar); end")
+      refute_warning("->(bar) {}")
+      refute_warning("->(; bar) {}", compare: false)
+
+      refute_warning("def foo; bar = 1; tap { bar }; end")
+      refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
+    end
+
     private
 
     def assert_warning(source, message)
@@ -101,10 +138,10 @@ module Prism
       end
     end
 
-    def refute_warning(source)
-      assert_empty Prism.parse(source).warnings
+    def refute_warning(source, compare: true, **options)
+      assert_empty Prism.parse(source, **options).warnings
 
-      if defined?(RubyVM::AbstractSyntaxTree)
+      if compare && defined?(RubyVM::AbstractSyntaxTree)
         assert_empty capture_warning { RubyVM::AbstractSyntaxTree.parse(source) }
       end
     end

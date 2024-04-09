@@ -1005,13 +1005,17 @@ pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
  * written but not read in certain contexts.
  */
 static void
-pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool warn_unused) {
+pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool toplevel) {
     pm_constant_id_list_init_capacity(list, locals->size);
 
     // If we're still below the threshold for switching to a hash, then we only
     // need to loop over the locals until we hit the size because the locals are
     // stored in a list.
     uint32_t capacity = locals->capacity < PM_LOCALS_HASH_THRESHOLD ? locals->size : locals->capacity;
+
+    // We will only warn for unused variables if we're not at the top level, or
+    // if we're parsing a file outside of eval or -e.
+    bool warn_unused = !toplevel || (!parser->parsing_eval && !PM_PARSER_COMMAND_LINE_OPTION_E(parser));
 
     for (uint32_t index = 0; index < capacity; index++) {
         pm_local_t *local = &locals->locals[index];
@@ -12329,7 +12333,8 @@ static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id);
 
 /**
- * This is a wrapper of parse_expression, which also checks whether the resulting node is value expression.
+ * This is a wrapper of parse_expression, which also checks whether the
+ * resulting node is a value expression.
  */
 static pm_node_t *
 parse_value_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
@@ -13217,7 +13222,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     pm_static_literals_t literals = { 0 };
                     pm_hash_key_static_literals_add(parser, &literals, argument);
 
-                    // Finish parsing the one we are part way through
+                    // Finish parsing the one we are part way through.
                     pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_HASH_VALUE);
                     argument = (pm_node_t *) pm_assoc_node_create(parser, argument, &operator, value);
 
@@ -14014,9 +14019,8 @@ parse_block_parameters(
                 pm_parser_local_add_token(parser, &parser->previous, 1);
 
                 pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
-                if (repeated) {
-                    pm_node_flag_set_repeated_parameter((pm_node_t *)local);
-                }
+                if (repeated) pm_node_flag_set_repeated_parameter((pm_node_t *) local);
+
                 pm_block_parameters_node_append_local(block_parameters, local);
             } while (accept1(parser, PM_TOKEN_COMMA));
         }
@@ -14118,7 +14122,7 @@ parse_block(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, !pm_parser_scope_toplevel_p(parser));
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
     pm_node_t *parameters = parse_blocklike_parameters(parser, (pm_node_t *) block_parameters, &opening, &parser->previous);
 
     pm_parser_scope_pop(parser);
@@ -17442,7 +17446,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
 
                 pm_constant_id_list_t locals;
-                pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
+                pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
 
                 pm_parser_scope_pop(parser);
                 pm_do_loop_stack_pop(parser);
@@ -17502,7 +17506,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
 
             pm_parser_scope_pop(parser);
             pm_do_loop_stack_pop(parser);
@@ -17767,7 +17771,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
             pm_parser_scope_pop(parser);
 
             /**
@@ -18029,7 +18033,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
 
             pm_parser_scope_pop(parser);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM);
@@ -18795,7 +18799,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals;
-            pm_locals_order(parser, &parser->current_scope->locals, &locals, !pm_parser_scope_toplevel_p(parser));
+            pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
             pm_node_t *parameters = parse_blocklike_parameters(parser, (pm_node_t *) block_parameters, &operator, &parser->previous);
 
             pm_parser_scope_pop(parser);
@@ -18851,11 +18855,21 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
     }
 }
 
-static inline pm_node_t *
+/**
+ * Parse a value that is going to be written to some kind of variable or method
+ * call. We need to handle this separately because the rescue modifier is
+ * permitted on the end of the these expressions, which is a deviation from its
+ * normal binding power.
+ *
+ * Note that this will only be called after an operator write, as in &&=, ||=,
+ * or any of the binary operators that can be written to a variable.
+ */
+static pm_node_t *
 parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
     pm_node_t *value = parse_value_expression(parser, binding_power, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH, diag_id);
 
-    // Contradicting binding powers, the right-hand-side value of rthe assignment allows the `rescue` modifier.
+    // Contradicting binding powers, the right-hand-side value of the assignment
+    // allows the `rescue` modifier.
     if (match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
         context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
@@ -18871,14 +18885,63 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
     return value;
 }
 
+/**
+ * When a local variable write node is the value being written in a different
+ * write, the local variable is considered "used".
+ */
+static void
+parse_assignment_value_local(pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->statements != NULL) parse_assignment_value_local(parser, (const pm_node_t *) cast->statements);
+            break;
+        }
+        case PM_LOCAL_VARIABLE_WRITE_NODE: {
+            const pm_local_variable_write_node_t *cast = (const pm_local_variable_write_node_t *) node;
+            pm_locals_read(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
+            break;
+        }
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body != NULL) parse_assignment_value_local(parser, cast->body);
+            break;
+        }
+        case PM_STATEMENTS_NODE: {
+            const pm_statements_node_t *cast = (const pm_statements_node_t *) node;
+            const pm_node_t *statement;
 
-static inline pm_node_t *
+            PM_NODE_LIST_FOREACH(&cast->body, index, statement) {
+                parse_assignment_value_local(parser, statement);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+/**
+ * Parse the value (or values, through an implicit array) that is going to be
+ * written to some kind of variable or method call. We need to handle this
+ * separately because the rescue modifier is permitted on the end of the these
+ * expressions, which is a deviation from its normal binding power.
+ *
+ * Additionally, if the value is a local variable write node (e.g., a = a = 1),
+ * the "a" is marked as being used so the parser should not warn on it.
+ *
+ * Note that this will only be called after an = operator, as that is the only
+ * operator that allows multiple values after it.
+ */
+static pm_node_t *
 parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
     pm_node_t *value = parse_starred_expression(parser, binding_power, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH, diag_id);
-    bool single_value = true;
+    parse_assignment_value_local(parser, value);
 
+    bool single_value = true;
     if (previous_binding_power == PM_BINDING_POWER_STATEMENT && (PM_NODE_TYPE_P(value, PM_SPLAT_NODE) || match1(parser, PM_TOKEN_COMMA))) {
         single_value = false;
+
         pm_token_t opening = not_provided(parser);
         pm_array_node_t *array = pm_array_node_create(parser, &opening);
 
@@ -18887,8 +18950,11 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
 
         while (accept1(parser, PM_TOKEN_COMMA)) {
             pm_node_t *element = parse_starred_expression(parser, binding_power, false, PM_ERR_ARRAY_ELEMENT);
+
             pm_array_node_elements_append(array, element);
             if (PM_NODE_TYPE_P(element, PM_MISSING_NODE)) break;
+
+            parse_assignment_value_local(parser, element);
         }
     }
 
@@ -19173,7 +19239,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
-                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 0);
+                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 1);
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_and_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
@@ -19286,7 +19352,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
-                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 0);
+                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 1);
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_or_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
@@ -19409,7 +19475,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_location_t *message_loc = &cast->message_loc;
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
-                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 0);
+                        pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 1);
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_operator_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
@@ -20070,7 +20136,7 @@ parse_program(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
     pm_parser_scope_pop(parser);
 
     // If this is an empty file, then we're still going to parse all of the
