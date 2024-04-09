@@ -26,8 +26,6 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 #define MMTK_MIN_OBJ_ALIGN 8
 
-#define MMTK_GC_THREAD_KIND_CONTROLLER 0
-
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
 typedef struct RubyBindingOptions {
@@ -145,6 +143,10 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
 bool mmtk_will_never_move(MMTk_ObjectReference object);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
+
+void mmtk_prepare_to_fork(void);
+
+void mmtk_after_fork(MMTk_VMThread tls);
 
 void mmtk_enable_collection(void);
 

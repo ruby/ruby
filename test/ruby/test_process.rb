@@ -1920,7 +1920,8 @@ class TestProcess < Test::Unit::TestCase
       end
     end
 
-    if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
+    # Note: MMTk has many GC worker threads, and they will be visible in /proc/self/task.
+    if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM && !defined?(GC::MMTk)
       def test_daemon_no_threads
         pid, data = IO.popen("-", "r+") do |f|
           break f.pid, f.readlines if f
@@ -1931,7 +1932,7 @@ class TestProcess < Test::Unit::TestCase
         assert_include(1..2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
-    else # darwin
+    else # darwin or MMTk
       def test_daemon_no_threads
         data = EnvUtil.timeout(3) do
           IO.popen("-") do |f|

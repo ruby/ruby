@@ -102,6 +102,10 @@ void rb_mmtk_pin_object(VALUE obj);
 void rb_mmtk_assert_is_pinned(VALUE obj);
 void rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot);
 
+// Forking support
+void rb_mmtk_shutdown_gc_threads(void);
+void rb_mmtk_respawn_gc_threads(void);
+
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);
 VALUE rb_mmtk_plan_name(VALUE _);

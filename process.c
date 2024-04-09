@@ -1677,11 +1677,21 @@ static void
 before_fork_ruby(void)
 {
     before_exec();
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_shutdown_gc_threads();
+    }
+#endif
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_respawn_gc_threads();
+    }
+#endif
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     if (pid == 0) {
         // child
@@ -9236,15 +9246,7 @@ InitVM_process(void)
 #endif
 
     rb_define_singleton_method(rb_mProcess, "exec", f_exec, -1);
-#if USE_MMTK
-    // FIXME: MMTk currently doesn't support forking, so Process will not respond to :fork for not.
-    // We should add necessary mechanism to mmtk-core in order to support forking.
-    if (!rb_mmtk_enabled_p()) {
-#endif
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
-#if USE_MMTK
-    }
-#endif
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", f_exit, -1);
