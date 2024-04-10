@@ -8,7 +8,7 @@ module IRB
   module Command
     class Break < DebugCommand
       def execute(arg)
-        execute_debug_command(pre_cmds: "break #{arg}".rstrip)
+        execute_debug_command(pre_cmds: "break #{arg}")
       end
     end
   end

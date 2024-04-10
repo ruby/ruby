@@ -8,7 +8,7 @@ module IRB
   module Command
     class Info < DebugCommand
       def execute(arg)
-        execute_debug_command(pre_cmds: "info #{arg}".rstrip)
+        execute_debug_command(pre_cmds: "info #{arg}")
       end
     end
   end

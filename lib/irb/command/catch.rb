@@ -8,7 +8,7 @@ module IRB
   module Command
     class Catch < DebugCommand
       def execute(arg)
-        execute_debug_command(pre_cmds: "catch #{arg}".rstrip)
+        execute_debug_command(pre_cmds: "catch #{arg}")
       end
     end
   end

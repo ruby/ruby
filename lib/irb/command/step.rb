@@ -8,7 +8,7 @@ module IRB
   module Command
     class Step < DebugCommand
       def execute(arg)
-        execute_debug_command(do_cmds: "step #{arg}".rstrip)
+        execute_debug_command(do_cmds: "step #{arg}")
       end
     end
   end
