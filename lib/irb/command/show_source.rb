@@ -24,18 +24,9 @@ module IRB
           show_source Foo::BAR
       HELP_MESSAGE
 
-      class << self
-        def transform_args(args)
-          # Return a string literal as is for backward compatibility
-          if args.empty? || string_literal?(args)
-            args
-          else # Otherwise, consider the input as a String for convenience
-            args.strip.dump
-          end
-        end
-      end
-
-      def execute(str = nil)
+      def execute(arg)
+        # Accept string literal for backward compatibility
+        str = unwrap_string_literal(arg)
         unless str.is_a?(String)
           puts "Error: Expected a string but got #{str.inspect}"
           return

@@ -12,29 +12,17 @@ module IRB # :nodoc:
 
   # Installs the default irb extensions command bundle.
   module ExtendCommandBundle
-    EXCB = ExtendCommandBundle # :nodoc:
-
-    # See #install_alias_method.
+    # See ExtendCommandBundle.execute_as_command?.
     NO_OVERRIDE = 0
-    # See #install_alias_method.
     OVERRIDE_PRIVATE_ONLY = 0x01
-    # See #install_alias_method.
     OVERRIDE_ALL = 0x02
 
-    # Displays current configuration.
-    #
-    # Modifying the configuration is achieved by sending a message to IRB.conf.
-    def irb_context
-      IRB.CurrentContext
-    end
-
-    @ALIASES = [
-      [:context, :irb_context, NO_OVERRIDE],
-      [:conf, :irb_context, NO_OVERRIDE],
-    ]
-
-
     @EXTEND_COMMANDS = [
+      [
+        :irb_context, :Context, "command/context",
+        [:context, NO_OVERRIDE],
+        [:conf, NO_OVERRIDE],
+      ],
       [
         :irb_exit, :Exit, "command/exit",
         [:exit, OVERRIDE_PRIVATE_ONLY],
@@ -204,6 +192,26 @@ module IRB # :nodoc:
       ],
     ]
 
+    def self.command_override_policies
+      @@command_override_policies ||= @EXTEND_COMMANDS.flat_map do |cmd_name, cmd_class, load_file, *aliases|
+        [[cmd_name, OVERRIDE_ALL]] + aliases
+      end.to_h
+    end
+
+    def self.execute_as_command?(name, public_method:, private_method:)
+      case command_override_policies[name]
+      when OVERRIDE_ALL
+        true
+      when OVERRIDE_PRIVATE_ONLY
+        !public_method
+      when NO_OVERRIDE
+        !public_method && !private_method
+      end
+    end
+
+    def self.command_names
+      command_override_policies.keys.map(&:to_s)
+    end
 
     @@commands = []
 
@@ -247,77 +255,13 @@ module IRB # :nodoc:
       nil
     end
 
-    # Installs the default irb commands.
-    def self.install_extend_commands
-      for args in @EXTEND_COMMANDS
-        def_extend_command(*args)
-      end
-    end
-
-    # Evaluate the given +cmd_name+ on the given +cmd_class+ Class.
-    #
-    # Will also define any given +aliases+ for the method.
-    #
-    # The optional +load_file+ parameter will be required within the method
-    # definition.
     def self.def_extend_command(cmd_name, cmd_class, load_file, *aliases)
-      case cmd_class
-      when Symbol
-        cmd_class = cmd_class.id2name
-      when String
-      when Class
-        cmd_class = cmd_class.name
-      end
+      @EXTEND_COMMANDS.delete_if { |name,| name == cmd_name }
+      @EXTEND_COMMANDS << [cmd_name, cmd_class, load_file, *aliases]
 
-      line = __LINE__; eval %[
-        def #{cmd_name}(*opts, **kwargs, &b)
-          Kernel.require_relative "#{load_file}"
-          ::IRB::Command::#{cmd_class}.execute(irb_context, *opts, **kwargs, &b)
-        end
-      ], nil, __FILE__, line
-
-      for ali, flag in aliases
-        @ALIASES.push [ali, cmd_name, flag]
-      end
+      # Just clear memoized values
+      @@commands = []
+      @@command_override_policies = nil
     end
-
-    # Installs alias methods for the default irb commands, see
-    # ::install_extend_commands.
-    def install_alias_method(to, from, override = NO_OVERRIDE)
-      to = to.id2name unless to.kind_of?(String)
-      from = from.id2name unless from.kind_of?(String)
-
-      if override == OVERRIDE_ALL or
-          (override == OVERRIDE_PRIVATE_ONLY) && !respond_to?(to) or
-          (override == NO_OVERRIDE) &&  !respond_to?(to, true)
-        target = self
-        (class << self; self; end).instance_eval{
-          if target.respond_to?(to, true) &&
-            !target.respond_to?(EXCB.irb_original_method_name(to), true)
-            alias_method(EXCB.irb_original_method_name(to), to)
-          end
-          alias_method to, from
-        }
-      else
-        Kernel.warn "irb: warn: can't alias #{to} from #{from}.\n"
-      end
-    end
-
-    def self.irb_original_method_name(method_name) # :nodoc:
-      "irb_" + method_name + "_org"
-    end
-
-    # Installs alias methods for the default irb commands on the given object
-    # using #install_alias_method.
-    def self.extend_object(obj)
-      unless (class << obj; ancestors; end).include?(EXCB)
-        super
-        for ali, com, flg in @ALIASES
-          obj.install_alias_method(ali, com, flg)
-        end
-      end
-    end
-
-    install_extend_commands
   end
 end

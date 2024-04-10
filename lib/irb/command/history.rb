@@ -12,14 +12,12 @@ module IRB
       category "IRB"
       description "Shows the input history. `-g [query]` or `-G [query]` allows you to filter the output."
 
-      def self.transform_args(args)
-        match = args&.match(/(-g|-G)\s+(?<grep>.+)\s*\n\z/)
-        return unless match
+      def execute(arg)
 
-        "grep: #{Regexp.new(match[:grep]).inspect}"
-      end
+        if (match = arg&.match(/(-g|-G)\s+(?<grep>.+)\s*\n\z/))
+          grep = Regexp.new(match[:grep])
+        end
 
-      def execute(grep: nil)
         formatted_inputs = irb_context.io.class::HISTORY.each_with_index.reverse_each.filter_map do |input, index|
           next if grep && !input.match?(grep)
 

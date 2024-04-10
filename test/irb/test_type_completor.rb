@@ -9,7 +9,7 @@ rescue LoadError
   return
 end
 
-require 'irb/completion'
+require 'irb'
 require 'tempfile'
 require_relative './helper'
 
@@ -53,6 +53,11 @@ module TestIRB
       candidates = @completor.completion_candidates('(', ')', '', bind: binding)
       assert_equal [], candidates
       assert_doc_namespace('(', ')', nil)
+    end
+
+    def test_command_completion
+      assert_include(@completor.completion_candidates('', 'show_s', '', bind: binding), 'show_source')
+      assert_not_include(@completor.completion_candidates(';', 'show_s', '', bind: binding), 'show_source')
     end
   end
 

@@ -108,8 +108,10 @@ EOF
     # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
-    def load_commands_to_main
-      main.extend ExtendCommandBundle
+    def load_helper_methods_to_main
+      if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
+        main.extend ExtendCommandBundle
+      end
     end
 
     # Evaluate the given +statements+ within the  context of this workspace.

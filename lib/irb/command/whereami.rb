@@ -8,7 +8,7 @@ module IRB
       category "Context"
       description "Show the source code around binding.irb again."
 
-      def execute(*)
+      def execute(_arg)
         code = irb_context.workspace.code_around_binding
         if code
           puts code

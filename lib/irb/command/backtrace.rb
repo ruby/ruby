@@ -7,12 +7,8 @@ module IRB
 
   module Command
     class Backtrace < DebugCommand
-      def self.transform_args(args)
-        args&.dump
-      end
-
-      def execute(*args)
-        super(pre_cmds: ["backtrace", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(pre_cmds: "backtrace #{arg}".rstrip)
       end
     end
   end

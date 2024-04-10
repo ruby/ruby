@@ -26,19 +26,9 @@ module IRB
           edit Foo#bar
       HELP_MESSAGE
 
-      class << self
-        def transform_args(args)
-          # Return a string literal as is for backward compatibility
-          if args.nil? || args.empty? || string_literal?(args)
-            args
-          else # Otherwise, consider the input as a String for convenience
-            args.strip.dump
-          end
-        end
-      end
-
-      def execute(*args)
-        path = args.first
+      def execute(arg)
+        # Accept string literal for backward compatibility
+        path = unwrap_string_literal(arg)
 
         if path.nil?
           path = @irb_context.irb_path

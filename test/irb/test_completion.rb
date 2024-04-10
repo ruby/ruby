@@ -14,6 +14,13 @@ module TestIRB
       IRB::RegexpCompletor.new.doc_namespace('', target, '', bind: bind)
     end
 
+    class CommandCompletionTest < CompletionTest
+      def test_command_completion
+        assert_include(IRB::RegexpCompletor.new.completion_candidates('', 'show_s', '', bind: binding), 'show_source')
+        assert_not_include(IRB::RegexpCompletor.new.completion_candidates(';', 'show_s', '', bind: binding), 'show_source')
+      end
+    end
+
     class MethodCompletionTest < CompletionTest
       def test_complete_string
         assert_include(completion_candidates("'foo'.up", binding), "'foo'.upcase")

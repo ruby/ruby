@@ -7,8 +7,8 @@ module IRB
 
   module Command
     class Delete < DebugCommand
-      def execute(*args)
-        super(pre_cmds: ["delete", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(pre_cmds: "delete #{arg}".rstrip)
       end
     end
   end

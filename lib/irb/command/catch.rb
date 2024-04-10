@@ -7,12 +7,8 @@ module IRB
 
   module Command
     class Catch < DebugCommand
-      def self.transform_args(args)
-        args&.dump
-      end
-
-      def execute(*args)
-        super(pre_cmds: ["catch", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(pre_cmds: "catch #{arg}".rstrip)
       end
     end
   end

@@ -13,7 +13,11 @@ module IRB
         binding.method(:irb).source_location.first,
       ].map { |file| /\A#{Regexp.escape(file)}:\d+:in (`|'Binding#)irb'\z/ }
 
-      def execute(pre_cmds: nil, do_cmds: nil)
+      def execute(_arg)
+        execute_debug_command
+      end
+
+      def execute_debug_command(pre_cmds: nil, do_cmds: nil)
         if irb_context.with_debugger
           # If IRB is already running with a debug session, throw the command and IRB.debug_readline will pass it to the debugger.
           if cmd = pre_cmds || do_cmds

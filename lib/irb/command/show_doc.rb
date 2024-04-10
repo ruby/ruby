@@ -3,17 +3,6 @@
 module IRB
   module Command
     class ShowDoc < Base
-      class << self
-        def transform_args(args)
-          # Return a string literal as is for backward compatibility
-          if args.empty? || string_literal?(args)
-            args
-          else # Otherwise, consider the input as a String for convenience
-            args.strip.dump
-          end
-        end
-      end
-
       category "Context"
       description "Look up documentation with RI."
 
@@ -31,7 +20,9 @@ module IRB
 
       HELP_MESSAGE
 
-      def execute(*names)
+      def execute(arg)
+        # Accept string literal for backward compatibility
+        name = unwrap_string_literal(arg)
         require 'rdoc/ri/driver'
 
         unless ShowDoc.const_defined?(:Ri)
@@ -39,15 +30,13 @@ module IRB
           ShowDoc.const_set(:Ri, RDoc::RI::Driver.new(opts))
         end
 
-        if names.empty?
+        if name.nil?
           Ri.interactive
         else
-          names.each do |name|
-            begin
-              Ri.display_name(name.to_s)
-            rescue RDoc::RI::Error
-              puts $!.message
-            end
+          begin
+            Ri.display_name(name)
+          rescue RDoc::RI::Error
+            puts $!.message
           end
         end
 

@@ -19,10 +19,9 @@ module IRB # :nodoc:
           @workspace_stack.push current_workspace, previous_workspace
         end
       else
-        @workspace_stack.push WorkSpace.new(workspace.binding, _main[0])
-        if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
-          main.extend ExtendCommandBundle
-        end
+        new_workspace = WorkSpace.new(workspace.binding, _main[0])
+        @workspace_stack.push new_workspace
+        new_workspace.load_helper_methods_to_main
       end
     end
 

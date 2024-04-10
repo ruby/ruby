@@ -8,7 +8,7 @@ module IRB
       category "IRB"
       description "Show information about IRB."
 
-      def execute
+      def execute(_arg)
         str  = "Ruby version: #{RUBY_VERSION}\n"
         str += "IRB version: #{IRB.version}\n"
         str += "InputMethod: #{IRB.CurrentContext.io.inspect}\n"

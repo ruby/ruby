@@ -929,7 +929,7 @@ module IRB
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
-      @context.workspace.load_commands_to_main
+      @context.workspace.load_helper_methods_to_main
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
       @line_no = 1
@@ -950,7 +950,7 @@ module IRB
     def debug_readline(binding)
       workspace = IRB::WorkSpace.new(binding)
       context.replace_workspace(workspace)
-      context.workspace.load_commands_to_main
+      context.workspace.load_helper_methods_to_main
       @line_no += 1
 
       # When users run:
@@ -1028,7 +1028,15 @@ module IRB
               return statement.code
             end
 
-            @context.evaluate(statement.evaluable_code, line_no)
+            case statement
+            when Statement::EmptyInput
+              # Do nothing
+            when Statement::Expression
+              @context.evaluate(statement.code, line_no)
+            when Statement::Command
+              ret = statement.command_class.execute(@context, statement.arg)
+              @context.set_last_value(ret)
+            end
 
             if @context.echo? && !statement.suppresses_echo?
               if statement.is_assignment?
@@ -1084,10 +1092,7 @@ module IRB
         end
 
         code << line
-
-        # Accept any single-line input for symbol aliases or commands that transform
-        # args
-        return code if single_line_command?(code)
+        return code if command?(code)
 
         tokens, opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
         return code if terminated
@@ -1114,23 +1119,36 @@ module IRB
       end
 
       code.force_encoding(@context.io.encoding)
-      command_or_alias, arg = code.split(/\s/, 2)
-      # Transform a non-identifier alias (@, $) or keywords (next, break)
-      command_name = @context.command_aliases[command_or_alias.to_sym]
-      command = command_name || command_or_alias
-      command_class = ExtendCommandBundle.load_command(command)
-
-      if command_class
-        Statement::Command.new(code, command, arg, command_class)
+      if (command, arg = parse_command(code))
+        command_class = ExtendCommandBundle.load_command(command)
+        Statement::Command.new(code, command_class, arg)
       else
         is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
         Statement::Expression.new(code, is_assignment_expression)
       end
     end
 
-    def single_line_command?(code)
-      command = code.split(/\s/, 2).first
-      @context.symbol_alias?(command) || @context.transform_args?(command)
+    def parse_command(code)
+      command_name, arg = code.strip.split(/\s+/, 2)
+      return unless code.lines.size == 1 && command_name
+
+      arg ||= ''
+      command = command_name.to_sym
+      # Command aliases are always command. example: $, @
+      if (alias_name = @context.command_aliases[command])
+        return [alias_name, arg]
+      end
+
+      # Check visibility
+      public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
+      private_method = !public_method && !!Kernel.instance_method(:method).bind_call(@context.main, command) rescue false
+      if ExtendCommandBundle.execute_as_command?(command, public_method: public_method, private_method: private_method)
+        [command, arg]
+      end
+    end
+
+    def command?(code)
+      !!parse_command(code)
     end
 
     def configure_io
@@ -1148,9 +1166,7 @@ module IRB
               false
             end
           else
-            # Accept any single-line input for symbol aliases or commands that transform
-            # args
-            next true if single_line_command?(code)
+            next true if command?(code)
 
             _tokens, _opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
             terminated

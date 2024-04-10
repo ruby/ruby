@@ -210,6 +210,98 @@ module TestIRB
     end
   end
 
+  class CustomCommandTestCase < CommandTestCase
+    def setup
+      super
+      execute_lines("help\n") # To ensure command initialization is done
+      @EXTEND_COMMANDS_backup = IRB::ExtendCommandBundle.instance_variable_get(:@EXTEND_COMMANDS).dup
+      @cvars_backup = IRB::ExtendCommandBundle.class_variables.to_h do |cvar|
+        [cvar, IRB::ExtendCommandBundle.class_variable_get(cvar)]
+      end
+    end
+
+    def teardown
+      super
+      IRB::ExtendCommandBundle.instance_variable_set(:@EXTEND_COMMANDS, @EXTEND_COMMANDS_backup)
+      @cvars_backup.each do |cvar, value|
+        IRB::ExtendCommandBundle.class_variable_set(cvar, value)
+      end
+    end
+  end
+
+  class CommandArgTest < CustomCommandTestCase
+    class PrintArgCommand < IRB::Command::Base
+      category 'CommandTest'
+      description 'print_command_arg'
+      def execute(arg)
+        puts "arg=#{arg.inspect}"
+      end
+    end
+
+    def test_arg
+      IRB::Command.const_set :PrintArgCommand, PrintArgCommand
+      IRB::ExtendCommandBundle.def_extend_command(:print_arg, :PrintArgCommand, nil, [:pa, IRB::ExtendCommandBundle::OVERRIDE_ALL])
+      out, err = execute_lines("print_arg\n")
+      assert_empty err
+      assert_include(out, 'arg=""')
+
+      out, err = execute_lines("print_arg  \n")
+      assert_empty err
+      assert_include(out, 'arg=""')
+
+      out, err = execute_lines("print_arg a r  g\n")
+      assert_empty err
+      assert_include(out, 'arg="a r  g"')
+
+      out, err = execute_lines("print_arg  a r  g  \n")
+      assert_empty err
+      assert_include(out, 'arg="a r  g"')
+
+      out, err = execute_lines("pa  a r  g  \n")
+      assert_empty err
+      assert_include(out, 'arg="a r  g"')
+    ensure
+      IRB::Command.send(:remove_const, :PrintArgCommand)
+    end
+  end
+
+  class ExtendCommandBundleCompatibilityTest < CustomCommandTestCase
+    class FooBarCommand < IRB::Command::Base
+      category 'FooBarCategory'
+      description 'foobar_description'
+      def execute(_arg)
+        puts "FooBar executed"
+      end
+    end
+
+    def setup
+      super
+      IRB::Command.const_set :FooBarCommand, FooBarCommand
+    end
+
+    def teardown
+      super
+      IRB::Command.send(:remove_const, :FooBarCommand)
+    end
+
+    def test_def_extend_command
+      command = [:foobar, :FooBarCommand, nil, [:fbalias, IRB::ExtendCommandBundle::OVERRIDE_ALL]]
+      IRB::ExtendCommandBundle.instance_variable_get(:@EXTEND_COMMANDS).push(command)
+      IRB::ExtendCommandBundle.def_extend_command(*command)
+      out, err = execute_lines("foobar\n")
+      assert_empty err
+      assert_include(out, "FooBar executed")
+
+      out, err = execute_lines("fbalias\n")
+      assert_empty err
+      assert_include(out, "FooBar executed")
+
+      out, err = execute_lines("show_cmds\n")
+      assert_include(out, "FooBarCategory")
+      assert_include(out, "foobar_description")
+    end
+  end
+
   class MeasureTest < CommandTestCase
     def test_measure
       conf = {
@@ -373,17 +465,19 @@ module TestIRB
         }
       }
       out, err = execute_lines(
-        "measure :foo",
-        "measure :on, :bar",
-        "3\n",
+        "measure :foo\n",
+        "1\n",
+        "measure :on, :bar\n",
+        "2\n",
         "measure :off, :foo\n",
-        "measure :off, :bar\n",
         "3\n",
+        "measure :off, :bar\n",
+        "4\n",
         conf: conf
       )
 
       assert_empty err
-      assert_match(/\AFOO is added\.\n=> nil\nfoo\nBAR is added\.\n=> nil\nbar\nfoo\n=> 3\nbar\nfoo\n=> nil\nbar\n=> nil\n=> 3\n/, out)
+      assert_match(/\AFOO is added\.\n=> nil\nfoo\n=> 1\nBAR is added\.\n=> nil\nbar\nfoo\n=> 2\n=> nil\nbar\n=> 3\n=> nil\n=> 4\n/, out)
     end
 
     def test_measure_with_proc_warning
@@ -402,7 +496,6 @@ module TestIRB
       out, err = execute_lines(
         "3\n",
         "measure do\n",
-        "end\n",
         "3\n",
         conf: conf,
         main: c
@@ -554,7 +647,8 @@ module TestIRB
       out, err = execute_lines(
         "pushws Foo.new\n",
         "popws\n",
-        "cwws.class",
+        "cwws\n",
+        "_.class",
       )
       assert_empty err
       assert_include(out, "=> #{self.class}")
@@ -573,7 +667,8 @@ module TestIRB
     def test_chws_replaces_the_current_workspace
       out, err = execute_lines(
         "chws #{self.class}::Foo.new\n",
-        "cwws.class",
+        "cwws\n",
+        "_.class",
       )
       assert_empty err
       assert_include(out, "=> #{self.class}::Foo")
@@ -582,7 +677,8 @@ module TestIRB
     def test_chws_does_nothing_when_receiving_no_argument
       out, err = execute_lines(
         "chws\n",
-        "cwws.class",
+        "cwws\n",
+        "_.class",
       )
       assert_empty err
       assert_include(out, "=> #{self.class}")
@@ -730,18 +826,18 @@ module TestIRB
     def test_ls_grep_empty
       out, err = execute_lines("ls\n")
       assert_empty err
-      assert_match(/whereami/, out)
-      assert_match(/show_source/, out)
+      assert_match(/assert/, out)
+      assert_match(/refute/, out)
 
       [
-        "ls grep: /whereami/\n",
-        "ls -g whereami\n",
-        "ls -G whereami\n",
+        "ls grep: /assert/\n",
+        "ls -g assert\n",
+        "ls -G assert\n",
       ].each do |line|
         out, err = execute_lines(line)
         assert_empty err
-        assert_match(/whereami/, out)
-        assert_not_match(/show_source/, out)
+        assert_match(/assert/, out)
+        assert_not_match(/refute/, out)
       end
     end
 
@@ -951,4 +1047,19 @@ module TestIRB
 
   end
 
+  class HelperMethodInsallTest < CommandTestCase
+    def test_helper_method_install
+      IRB::ExtendCommandBundle.module_eval do
+        def foobar
+          "test_helper_method_foobar"
+        end
+      end
+
+      out, err = execute_lines("foobar.upcase")
+      assert_empty err
+      assert_include(out, '=> "TEST_HELPER_METHOD_FOOBAR"')
+    ensure
+      IRB::ExtendCommandBundle.remove_method :foobar
+    end
+  end
 end

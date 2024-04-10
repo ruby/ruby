@@ -20,27 +20,35 @@ module IRB
           -g [query]  Filter the output with a query.
       HELP_MESSAGE
 
-      def self.transform_args(args)
-        if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)
-          args = match[:args]
-          "#{args}#{',' unless args.chomp.empty?} grep: /#{match[:grep]}/"
+      def execute(arg)
+        if match = arg.match(/\A(?<target>.+\s|)(-g|-G)\s+(?<grep>.+)$/)
+          if match[:target].empty?
+            use_main = true
+          else
+            obj = @irb_context.workspace.binding.eval(match[:target])
+          end
+          grep = Regexp.new(match[:grep])
         else
-          args
+          args, kwargs = ruby_args(arg)
+          use_main = args.empty?
+          obj = args.first
+          grep = kwargs[:grep]
         end
-      end
 
-      def execute(*arg, grep: nil)
+        if use_main
+          obj = irb_context.workspace.main
+          locals = irb_context.workspace.binding.local_variables
+        end
+
         o = Output.new(grep: grep)
 
-        obj    = arg.empty? ? irb_context.workspace.main : arg.first
-        locals = arg.empty? ? irb_context.workspace.binding.local_variables : []
         klass  = (obj.class == Class || obj.class == Module ? obj : obj.class)
 
         o.dump("constants", obj.constants) if obj.respond_to?(:constants)
         dump_methods(o, klass, obj)
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
-        o.dump("locals", locals)
+        o.dump("locals", locals) if locals
         o.print_result
       end
 

@@ -7,8 +7,8 @@ module IRB
 
   module Command
     class Next < DebugCommand
-      def execute(*args)
-        super(do_cmds: ["next", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(do_cmds: "next #{arg}".rstrip)
       end
     end
   end

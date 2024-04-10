@@ -86,6 +86,14 @@ module IRB
         )
     end
 
+    def command_completions(preposing, target)
+      if preposing.empty? && !target.empty?
+        IRB::ExtendCommandBundle.command_names.select { _1.start_with?(target) }
+      else
+        []
+      end
+    end
+
     def retrieve_files_to_require_relative_from_current_dir
       @files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
         path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
@@ -103,9 +111,11 @@ module IRB
     end
 
     def completion_candidates(preposing, target, _postposing, bind:)
+      commands = command_completions(preposing, target)
       result = ReplTypeCompletor.analyze(preposing + target, binding: bind, filename: @context.irb_path)
-      return [] unless result
-      result.completion_candidates.map { target + _1 }
+      return commands unless result
+
+      commands | result.completion_candidates.map { target + _1 }
     end
 
     def doc_namespace(preposing, matched, _postposing, bind:)
@@ -181,7 +191,8 @@ module IRB
         result = complete_require_path(target, preposing, postposing)
         return result if result
       end
-      retrieve_completion_data(target, bind: bind, doc_namespace: false).compact.map{ |i| i.encode(Encoding.default_external) }
+      commands = command_completions(preposing || '', target)
+      commands | retrieve_completion_data(target, bind: bind, doc_namespace: false).compact.map{ |i| i.encode(Encoding.default_external) }
     end
 
     def doc_namespace(_preposing, matched, _postposing, bind:)
