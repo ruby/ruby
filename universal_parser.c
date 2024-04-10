@@ -245,8 +245,6 @@
 #define Qtrue p->config->qtrue
 #undef Qfalse
 #define Qfalse p->config->qfalse
-#undef Qundef
-#define Qundef p->config->qundef
 #define rb_eArgError p->config->eArgError()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
