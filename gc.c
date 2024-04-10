@@ -10070,7 +10070,7 @@ rb_gc_prepare_heap(void)
 static int
 gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 {
-#ifdef USE_MMTK
+#if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
     }
