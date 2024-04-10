@@ -332,8 +332,6 @@ RBIMPL_WARNING_POP()
 
 #define NO_LEX_CTXT (struct lex_context){0}
 
-#define AREF(ary, i) RARRAY_AREF(ary, i)
-
 #ifndef WARN_PAST_SCOPE
 # define WARN_PAST_SCOPE 0
 #endif
