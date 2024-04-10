@@ -6,7 +6,6 @@
 #include <stdlib.h>
 
 #include "internal/bits.h"
-#include "internal/gc.h"
 
 // Type for a dynamic array. Use to declare a dynamic array.
 // It is a pointer so it fits in st_table nicely. Designed
@@ -125,8 +124,7 @@ rb_darray_capa(const void *ary)
 static inline void
 rb_darray_free(void *ary)
 {
-    rb_darray_meta_t *meta = ary;
-    if (meta) ruby_sized_xfree(ary, meta->capa);
+    xfree(ary);
 }
 
 /* Internal function. Resizes the capacity of a darray. The new capacity must
@@ -137,7 +135,7 @@ rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
 
-    rb_darray_meta_t *new_ary = rb_xrealloc_mul_add(meta, new_capa, element_size, header_size);
+    rb_darray_meta_t *new_ary = xrealloc(meta, new_capa * element_size + header_size);
 
     if (meta == NULL) {
         /* First allocation. Initialize size. On subsequence allocations
@@ -180,7 +178,7 @@ rb_darray_make_impl(void *ptr_to_ary, size_t array_size, size_t header_size, siz
         return;
     }
 
-    rb_darray_meta_t *meta = rb_xcalloc_mul_add(array_size, element_size, header_size);
+    rb_darray_meta_t *meta = xcalloc(array_size * element_size + header_size, 1);
 
     meta->size = array_size;
     meta->capa = array_size;
