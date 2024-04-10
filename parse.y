@@ -7959,7 +7959,7 @@ nextline(struct parser_params *p, int set_encoding)
         }
 #ifndef RIPPER
         if (p->debug_lines) {
-            VALUE v = rb_str_new_parser_string(str);
+            VALUE v = rb_str_new_mutable_parser_string(str);
             if (set_encoding) rb_enc_associate(v, p->enc);
             rb_ary_push(p->debug_lines, v);
         }
