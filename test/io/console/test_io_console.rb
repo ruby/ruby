@@ -15,6 +15,7 @@ class TestIO_Console < Test::Unit::TestCase
     raise
   end
   PATHS.uniq!
+  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
@@ -457,7 +458,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def run_pty(src, n = 1)
     pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
 
-    args = ["-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src]
+    args = [TestIO_Console::INCLUDE_OPTS, "-rio/console", "-e", src]
     args.shift if args.first == "-I" # statically linked
     r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
@@ -551,6 +552,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
       t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
+        TestIO_Console::INCLUDE_OPTS,
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
