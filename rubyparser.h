@@ -1408,7 +1408,6 @@ typedef struct rb_parser_config_struct {
     VALUE qnil;
     VALUE qtrue;
     VALUE qfalse;
-    VALUE qundef;
     VALUE (*eArgError)(void);
     int (*long2int)(long);
 

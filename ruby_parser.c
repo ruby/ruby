@@ -567,7 +567,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .qnil = Qnil,
     .qtrue = Qtrue,
     .qfalse = Qfalse,
-    .qundef = Qundef,
     .eArgError = arg_error,
     .long2int = rb_long2int,
 
