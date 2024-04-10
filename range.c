@@ -365,12 +365,18 @@ linear_object_p(VALUE obj)
     return FALSE;
 }
 
+static inline bool
+is_numeric_p(VALUE v)
+{
+    return rb_integer_type_p(v) || rb_obj_is_kind_of(v, rb_cNumeric);
+}
+
 static VALUE
 check_step_domain(VALUE step)
 {
     VALUE zero = INT2FIX(0);
     int cmp;
-    if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+    if (!is_numeric_p(step)) {
         step = rb_to_int(step);
     }
     cmp = rb_cmpint(rb_funcallv(step, idCmp, 1, &zero), step, zero);
@@ -392,7 +398,7 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
         step = check_step_domain(RARRAY_AREF(args, 0));
     }
 
-    if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
+    if (is_numeric_p(b) && is_numeric_p(e)) {
         return ruby_num_interval_step_size(b, e, step, EXCL(range));
     }
     return Qnil;
@@ -445,15 +451,15 @@ range_step(int argc, VALUE *argv, VALUE range)
     step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
 
     if (!rb_block_given_p()) {
-        if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+        if (!is_numeric_p(step)) {
             step = rb_to_int(step);
         }
         if (rb_equal(step, INT2FIX(0))) {
             rb_raise(rb_eArgError, "step can't be 0");
         }
 
-        const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
-        const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
+        const VALUE b_num_p = is_numeric_p(b);
+        const VALUE e_num_p = is_numeric_p(e);
         if ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p)) {
             return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
                     range_step_size, b, e, step, EXCL(range));
@@ -502,7 +508,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     else if (ruby_float_step(b, e, step, EXCL(range), TRUE)) {
         /* done */
     }
-    else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
+    else if (is_numeric_p(b) ||
              !NIL_P(rb_check_to_integer(b, "to_int")) ||
              !NIL_P(rb_check_to_integer(e, "to_int"))) {
         ID op = EXCL(range) ? '<' : idLE;
@@ -639,7 +645,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
         else if (!RTEST(v)) { \
             smaller = 0; \
         } \
-        else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
+        else if (is_numeric_p(v)) { \
             int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
             if (!cmp) return val; \
             smaller = cmp < 0; \
@@ -836,17 +842,17 @@ static VALUE
 range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
-    if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
-            return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
-        }
-        if (NIL_P(e)) {
+    if (NIL_P(b)) {
+        if (is_numeric_p(e)) {
             return DBL2NUM(HUGE_VAL);
         }
     }
-    else if (NIL_P(b)) {
-        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
+    else if (is_numeric_p(b)) {
+        if (NIL_P(e)) {
             return DBL2NUM(HUGE_VAL);
+        }
+        if (is_numeric_p(e)) {
+            return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
         }
     }
 
@@ -1558,7 +1564,7 @@ static VALUE
 range_max(int argc, VALUE *argv, VALUE range)
 {
     VALUE e = RANGE_END(range);
-    int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
+    int nm = is_numeric_p(e);
 
     if (NIL_P(RANGE_END(range))) {
         rb_raise(rb_eRangeError, "cannot get the maximum of endless range");
