@@ -13814,6 +13814,10 @@ new_bv(struct parser_params *p, ID name)
     }
     if (!shadowing_lvar_0(p, name)) return;
     dyna_var(p, name);
+    ID *vidp = 0;
+    if (dvar_defined_ref(p, name, &vidp)) {
+        if (vidp) *vidp |= LVAR_USED;
+    }
 }
 
 static void

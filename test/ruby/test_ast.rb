@@ -1232,6 +1232,12 @@ dummy
     EXP
   end
 
+  def test_unused_block_local_variable
+    assert_warning('') do
+      RubyVM::AbstractSyntaxTree.parse(%{->(; foo) {}})
+    end
+  end
+
   def assert_error_tolerant(src, expected, keep_tokens: false)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
