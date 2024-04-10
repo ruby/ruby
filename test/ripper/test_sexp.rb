@@ -123,6 +123,21 @@ eot
     assert_equal(exp, named)
   end
 
+  def test_command
+    sexp = Ripper.sexp("a::C {}")
+    assert_equal(
+      [:program,
+        [
+          [:method_add_block,
+            [:command_call,
+              [:vcall, [:@ident, "a", [1, 0]]],
+              [:@op, "::", [1, 1]],
+              [:@const, "C", [1, 3]],
+              nil],
+          [:brace_block, nil, [[:void_stmt]]]]]],
+      sexp)
+  end
+
   def search_sexp(sym, sexp)
     return sexp if !sexp or sexp[0] == sym
     sexp.find do |e|

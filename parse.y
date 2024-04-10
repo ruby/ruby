@@ -3447,7 +3447,7 @@ command		: fcall command_args       %prec tLOWEST
                     {
                         set_embraced_location($5, &@4, &@6);
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, Qnull, $5, &@3, &@$);
-                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qundef), $:5) %*/
+                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
                 | keyword_super command_args
                     {
