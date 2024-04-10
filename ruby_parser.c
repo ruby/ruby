@@ -742,6 +742,14 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
 VALUE
 rb_str_new_parser_string(rb_parser_string_t *str)
 {
+    VALUE string = rb_enc_interned_str(str->ptr, str->len, str->enc);
+    rb_enc_str_coderange(string);
+    return string;
+}
+
+VALUE
+rb_str_new_mutable_parser_string(rb_parser_string_t *str)
+{
     return rb_enc_str_new(str->ptr, str->len, str->enc);
 }
 

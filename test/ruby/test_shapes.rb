@@ -1006,7 +1006,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_freezing_and_cloning_string
-    str = "str".freeze
+    str = ("str" + "str").freeze
     str2 = str.clone(freeze: true)
     assert_predicate(str2, :frozen?)
     assert_shape_equal(RubyVM::Shape.of(str), RubyVM::Shape.of(str2))
