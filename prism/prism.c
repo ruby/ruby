@@ -13859,6 +13859,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_RESCUE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_RESCUE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_RESCUE; break;
+                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
             pm_statements_node_t *statements = parse_statements(parser, context);
