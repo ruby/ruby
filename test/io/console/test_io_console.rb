@@ -441,6 +441,11 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     def test_sync
       assert_equal(["true"], run_pty("p IO.console.sync"))
     end
+
+    def test_ttyname
+      return unless IO.method_defined?(:ttyname)
+      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname"))
+    end
   end
 
   private
@@ -531,6 +536,13 @@ defined?(IO.console) and TestIO_Console.class_eval do
     def test_getch_timeout
       assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
     end
+
+    def test_ttyname
+      return unless IO.method_defined?(:ttyname)
+      ttyname = IO.console.ttyname
+      assert_not_nil(ttyname)
+      File.open(ttyname) {|f| assert_predicate(f, :tty?)}
+    end
   end
 end
 
@@ -546,7 +558,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
   if noctty
     require 'tempfile'
     NOCTTY = noctty
-    def test_noctty
+    def run_noctty(src)
       t = Tempfile.new("noctty_out")
       t.close
       t2 = Tempfile.new("noctty_run")
@@ -557,7 +569,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
         '-e',   'require "io/console"',
-        '-e',   'f.puts IO.console.inspect',
+        '-e',   "f.puts (#{src}).inspect",
         '-e',   'f.flush',
         '-e',   'File.unlink(ARGV[1])',
         '-e', '}',
@@ -568,10 +580,17 @@ defined?(IO.console) and TestIO_Console.class_eval do
         sleep 0.1
       end
       t.open
-      assert_equal("nil", t.gets(nil).chomp)
+      t.gets.lines(chomp: true)
     ensure
       t.close! if t and !t.closed?
       t2.close!
+    end
+
+    def test_noctty
+      assert_equal(["nil"], run_noctty("IO.console"))
+      if IO.method_defined?(:ttyname)
+        assert_equal(["nil"], run_noctty("STDIN.ttyname rescue $!"))
+      end
     end
   end
 end

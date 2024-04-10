@@ -9,6 +9,7 @@ have_func("rb_syserr_fail_str(0, Qnil)") or
 have_func("rb_syserr_new_str(0, Qnil)") or
   abort
 
+have_func("rb_interned_str_cstr")
 have_func("rb_io_path")
 have_func("rb_io_descriptor")
 have_func("rb_io_get_write_io")
@@ -51,6 +52,7 @@ when true
   elsif have_func("rb_scheduler_timeout") # 3.0
     have_func("rb_io_wait")
   end
+  have_func("ttyname_r") or have_func("ttyname")
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }
