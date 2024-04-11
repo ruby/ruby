@@ -198,6 +198,17 @@ module Prism
       assert_equal 7, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
+    def test_location_chop
+      location = Prism.parse("foo").value.location
+
+      assert_equal "fo", location.chop.slice
+      assert_equal "", location.chop.chop.chop.slice
+
+      # Check that we don't go negative.
+      10.times { location = location.chop }
+      assert_equal "", location.slice
+    end
+
     def test_heredoc?
       refute parse_expression("\"foo\"").heredoc?
       refute parse_expression("\"foo \#{1}\"").heredoc?
