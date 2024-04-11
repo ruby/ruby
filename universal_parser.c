@@ -252,8 +252,5 @@
 #define rb_enc_isascii p->config->enc_isascii
 #define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint
 
-#undef st_init_table_with_size
-#define st_init_table_with_size rb_parser_st_init_table_with_size
-
 #define rb_ast_new() \
     rb_ast_new(p->config)
