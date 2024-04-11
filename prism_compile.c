@@ -8352,7 +8352,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // `foo`
         // ^^^^^
         const pm_x_string_node_t *cast = (const pm_x_string_node_t *) node;
-        VALUE value = parse_string_encoded(scope_node, node, &cast->unescaped);
+        VALUE value = rb_fstring(parse_string_encoded(scope_node, node, &cast->unescaped));
 
         PUSH_INSN(ret, location, putself);
         PUSH_INSN1(ret, location, putobject, value);
