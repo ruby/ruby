@@ -434,6 +434,7 @@ rb_str_make_embedded(VALUE str)
     TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
 }
 
+void
 rb_debug_rstring_null_ptr(const char *func)
 {
     fprintf(stderr, "%s is returning NULL!! "
