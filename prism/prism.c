@@ -13907,6 +13907,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ELSE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ELSE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ELSE; break;
+                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
             else_statements = parse_statements(parser, context);
@@ -13936,6 +13937,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ENSURE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ENSURE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ENSURE; break;
+                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
             ensure_statements = parse_statements(parser, context);
