@@ -1070,7 +1070,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     const char *file = NULL;
     int line = 0;
 
-#ifdef USE_MMTK
+#if USE_MMTK
     // When using MMTk, this function may be called from GC worker threads,
     // in which case there will not be a Ruby execution context.
     if (rb_current_execution_context(!rb_mmtk_enabled_p())) {
