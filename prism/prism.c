@@ -1183,6 +1183,158 @@ pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
 }
 
 /**
+ * Warn if the given node is a "void" statement.
+ */
+static void
+pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
+    const char *type = NULL;
+    int length = 0;
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BACK_REFERENCE_READ_NODE:
+        case PM_CLASS_VARIABLE_READ_NODE:
+        case PM_GLOBAL_VARIABLE_READ_NODE:
+        case PM_INSTANCE_VARIABLE_READ_NODE:
+        case PM_LOCAL_VARIABLE_READ_NODE:
+        case PM_NUMBERED_REFERENCE_READ_NODE:
+            type = "a variable";
+            length = 10;
+            break;
+        case PM_CALL_NODE: {
+            const pm_call_node_t *cast = (const pm_call_node_t *) node;
+            if (cast->call_operator_loc.start != NULL || cast->message_loc.start == NULL) break;
+
+            const pm_constant_t *message = pm_constant_pool_id_to_constant(&parser->constant_pool, cast->name);
+            switch (message->length) {
+                case 1:
+                    switch (message->start[0]) {
+                        case '+':
+                        case '-':
+                        case '*':
+                        case '/':
+                        case '%':
+                        case '|':
+                        case '^':
+                        case '&':
+                        case '>':
+                        case '<':
+                            type = (const char *) message->start;
+                            length = 1;
+                            break;
+                    }
+                    break;
+                case 2:
+                    switch (message->start[1]) {
+                        case '=':
+                            if (message->start[0] == '<' || message->start[0] == '>' || message->start[0] == '!' || message->start[0] == '=') {
+                                type = (const char *) message->start;
+                                length = 2;
+                            }
+                            break;
+                        case '@':
+                            if (message->start[0] == '+' || message->start[0] == '-') {
+                                type = (const char *) message->start;
+                                length = 2;
+                            }
+                            break;
+                        case '*':
+                            if (message->start[0] == '*') {
+                                type = (const char *) message->start;
+                                length = 2;
+                            }
+                            break;
+                    }
+                    break;
+                case 3:
+                    if (memcmp(message->start, "<=>", 3) == 0) {
+                        type = "<=>";
+                        length = 3;
+                    }
+                    break;
+            }
+
+            break;
+        }
+        case PM_CONSTANT_PATH_NODE:
+            type = "::";
+            length = 2;
+            break;
+        case PM_CONSTANT_READ_NODE:
+            type = "a constant";
+            length = 10;
+            break;
+        case PM_DEFINED_NODE:
+            type = "defined?";
+            length = 8;
+            break;
+        case PM_FALSE_NODE:
+            type = "false";
+            length = 5;
+            break;
+        case PM_FLOAT_NODE:
+        case PM_IMAGINARY_NODE:
+        case PM_INTEGER_NODE:
+        case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+        case PM_INTERPOLATED_STRING_NODE:
+        case PM_RATIONAL_NODE:
+        case PM_REGULAR_EXPRESSION_NODE:
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_SOURCE_LINE_NODE:
+        case PM_STRING_NODE:
+        case PM_SYMBOL_NODE:
+            type = "a literal";
+            length = 9;
+            break;
+        case PM_NIL_NODE:
+            type = "nil";
+            length = 3;
+            break;
+        case PM_RANGE_NODE: {
+            const pm_range_node_t *cast = (const pm_range_node_t *) node;
+
+            if (PM_NODE_FLAG_P(cast, PM_RANGE_FLAGS_EXCLUDE_END)) {
+                type = "...";
+                length = 3;
+            } else {
+                type = "..";
+                length = 2;
+            }
+
+            break;
+        }
+        case PM_SELF_NODE:
+            type = "self";
+            length = 4;
+            break;
+        case PM_TRUE_NODE:
+            type = "true";
+            length = 4;
+            break;
+        default:
+            break;
+    }
+
+    if (type != NULL) {
+        PM_PARSER_WARN_NODE_FORMAT(parser, node, PM_WARN_VOID_STATEMENT, length, type);
+    }
+}
+
+/**
+ * Warn if any of the statements that are not the last statement in the list are
+ * a "void" statement.
+ */
+static void
+pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node) {
+    if (parser->parsing_eval) return;
+
+    assert(node->body.size > 0);
+    for (size_t index = 0; index < node->body.size - 1; index++) {
+        pm_void_statement_check(parser, node->body.nodes[index]);
+    }
+}
+
+/**
  * When we're handling the predicate of a conditional, we need to know our
  * context in order to determine the kind of warning we should deliver to the
  * user.
@@ -12911,6 +13063,8 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
     }
 
     context_pop(parser);
+    pm_void_statements_check(parser, statements);
+
     return statements;
 }
 
@@ -16666,6 +16820,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pop_block_exits(parser, previous_block_exits);
             pm_node_list_free(&current_block_exits);
 
+            pm_void_statements_check(parser, statements);
             return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous);
         }
         case PM_TOKEN_BRACE_LEFT: {
@@ -20137,8 +20292,15 @@ parse_program(pm_parser_t *parser) {
 
     parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN);
-    if (!statements) {
+
+    if (statements == NULL) {
         statements = pm_statements_node_create(parser);
+    } else if (!parser->parsing_eval) {
+        // If we have statements, then the top-level statement should be
+        // explicitly checked as well. We have to do this here because
+        // everywhere else we check all but the last statement.
+        assert(statements->body.size > 0);
+        pm_void_statement_check(parser, statements->body.nodes[statements->body.size - 1]);
     }
 
     pm_constant_id_list_t locals;
@@ -20589,7 +20751,7 @@ pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
     pm_node_t *node = pm_parse(&parser);
     pm_node_destroy(&parser, node);
 
-    bool result = parser.error_list.size == 0 && parser.warning_list.size == 0;
+    bool result = parser.error_list.size == 0;
     pm_parser_free(&parser);
     pm_options_free(&options);
 
