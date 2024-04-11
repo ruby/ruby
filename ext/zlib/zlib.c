@@ -2961,11 +2961,6 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
     dst = zstream_shift_buffer(&gz->z, len, outbuf);
     gzfile_calc_crc(gz, dst);
 
-    if (!NIL_P(outbuf)) {
-        rb_str_resize(outbuf, RSTRING_LEN(dst));
-        memcpy(RSTRING_PTR(outbuf), RSTRING_PTR(dst), RSTRING_LEN(dst));
-	dst = outbuf;
-    }
     return dst;
 }
 
