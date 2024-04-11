@@ -66,8 +66,11 @@ End
   end
 
   def test_id2ref_invalid_symbol_id
+    # RB_STATIC_SYM_P checks for static symbols by checking that the bottom
+    # 8 bits of the object is equal to RUBY_SYMBOL_FLAG, so we need to make
+    # sure that the bottom 8 bits remain unchanged.
     msg = /is not symbol id value/
-    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]) }
+    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + 256) }
   end
 
   def test_count_objects
