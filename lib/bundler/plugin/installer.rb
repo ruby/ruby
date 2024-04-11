@@ -77,7 +77,7 @@ module Bundler
 
       def install_path(names, version, path)
         source_list = SourceList.new
-        source = source_list.add_path_source({ "path" => path })
+        source = source_list.add_path_source({ "path" => path, "root_path" => SharedHelpers.pwd })
 
         install_all_sources(names, version, source_list, source)
       end
