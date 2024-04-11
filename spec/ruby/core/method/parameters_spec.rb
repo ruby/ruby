@@ -22,6 +22,8 @@ describe "Method#parameters" do
       local_is_not_parameter = {}
     end
 
+    def forward_parameters(...) end
+
     def underscore_parameters(_, _, _ = 1, *_, _:, _: 2, **_, &_); end
 
     define_method(:one_optional_defined_method) {|x = 1|}
@@ -264,6 +266,20 @@ describe "Method#parameters" do
         end
         object.method(:foo).parameters
       RUBY
+    end
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "returns [:rest, :*], [:block, :&] for forward parameters operator" do
+      m = MethodSpecs::Methods.new
+      m.method(:forward_parameters).parameters.should == [[:rest, :*], [:block, :&]]
+    end
+  end
+
+  ruby_version_is "3.1" do
+    it "returns [:rest, :*], [:keyrest, :**], [:block, :&] for forward parameters operator" do
+      m = MethodSpecs::Methods.new
+      m.method(:forward_parameters).parameters.should == [[:rest, :*], [:keyrest, :**], [:block, :&]]
     end
   end
 

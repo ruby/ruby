@@ -980,31 +980,27 @@ class Complex_Test < Test::Unit::TestCase
     }
   end
 
-  def test_Complex_without_exception
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex('5x', exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(nil, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(Object.new, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, nil, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, Object.new, exception: false))
-    }
+  def assert_complex_with_exception(error, *args, message: "")
+    assert_raise(error, message) do
+      Complex(*args, exception: true)
+    end
+    assert_nothing_raised(error, message) do
+      assert_nil(Complex(*args, exception: false))
+      assert_nil($!)
+    end
+  end
+
+  def test_Complex_with_exception
+    assert_complex_with_exception(ArgumentError, '5x')
+    assert_complex_with_exception(TypeError, nil)
+    assert_complex_with_exception(TypeError, Object.new)
+    assert_complex_with_exception(TypeError, 1, nil)
+    assert_complex_with_exception(TypeError, 1, Object.new)
 
     o = Object.new
     def o.to_c; raise; end
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(o, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, o, exception: false))
-    }
+    assert_complex_with_exception(RuntimeError, o)
+    assert_complex_with_exception(TypeError, 1, o)
   end
 
   def test_respond
@@ -1056,6 +1052,29 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Rational(3), Rational(Complex(3)))
     assert_raise(RangeError){Complex(3,2).to_r}
     assert_raise(RangeError){Rational(Complex(3,2))}
+  end
+
+  def test_to_r_with_float
+    assert_equal(Rational(3), Complex(3, 0.0).to_r)
+    assert_raise(RangeError){Complex(3, 1.0).to_r}
+  end
+
+  def test_to_r_with_numeric_obj
+    c = Class.new(Numeric)
+
+    num = 0
+    c.define_method(:to_s) { num.to_s }
+    c.define_method(:==) { num == it }
+    c.define_method(:<)  { num <  it }
+
+    o = c.new
+    assert_equal(Rational(3), Complex(3, o).to_r)
+
+    num = 1
+    assert_raise(RangeError){Complex(3, o).to_r}
+
+    c.define_method(:to_r) { 0r }
+    assert_equal(Rational(3), Complex(3, o).to_r)
   end
 
   def test_to_c

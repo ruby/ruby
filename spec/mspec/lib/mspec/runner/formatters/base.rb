@@ -5,6 +5,9 @@ require 'mspec/utils/options'
 
 if ENV['CHECK_LEAKS']
   require 'mspec/runner/actions/leakchecker'
+end
+
+if ENV['CHECK_LEAKS'] || ENV['CHECK_CONSTANT_LEAKS']
   require 'mspec/runner/actions/constants_leak_checker'
 end
 
@@ -40,8 +43,11 @@ class BaseFormatter
     @counter = @tally.counter
 
     if ENV['CHECK_LEAKS']
-      save = ENV['CHECK_LEAKS'] == 'save'
       LeakCheckerAction.new.register
+    end
+
+    if ENV['CHECK_LEAKS'] || ENV['CHECK_CONSTANT_LEAKS']
+      save = ENV['CHECK_LEAKS'] == 'save' || ENV['CHECK_CONSTANT_LEAKS'] == 'save'
       ConstantsLeakCheckerAction.new(save).register
     end
 

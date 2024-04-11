@@ -7,7 +7,7 @@ class Gem::SpecificationPolicy
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/ # :nodoc:
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape(".-_")}]+/ # :nodoc:
 
   VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z} # :nodoc:
 
@@ -102,6 +102,8 @@ class Gem::SpecificationPolicy
     validate_values
 
     validate_dependencies
+
+    validate_required_ruby_version
 
     validate_extensions
 
@@ -224,6 +226,12 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
+    end
+  end
+
+  def validate_required_ruby_version
+    if @specification.required_ruby_version.requirements == [Gem::Requirement::DefaultRequirement]
+      warning "make sure you specify the oldest ruby version constraint (like \">= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute"
     end
   end
 
@@ -427,13 +435,13 @@ or set it to nil if you don't want to specify a license.
 
     # Make sure a homepage is valid HTTP/HTTPS URI
     if homepage && !homepage.empty?
-      require "uri"
+      require_relative "vendor/uri/lib/uri"
       begin
-        homepage_uri = URI.parse(homepage)
-        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
+        homepage_uri = Gem::URI.parse(homepage)
+        unless [Gem::URI::HTTP, Gem::URI::HTTPS].member? homepage_uri.class
           error "\"#{homepage}\" is not a valid HTTP URI"
         end
-      rescue URI::InvalidURIError
+      rescue Gem::URI::InvalidURIError
         error "\"#{homepage}\" is not a valid HTTP URI"
       end
     end
@@ -497,10 +505,10 @@ You have specified rust based extension, but Cargo.lock is not part of the gem f
 
   def validate_rake_extensions(builder) # :nodoc:
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" && d.type == :runtime }
 
     warning <<-WARNING if rake_extension && !rake_dependency
-You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.
+You have specified rake based extension, but rake is not added as runtime dependency. It is recommended to add rake as a runtime dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
   end
 

@@ -31,7 +31,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       bundler/lib/bundler/man/gemfile.5
       bundler/lib/bundler/man/gemfile.5.ronn
       bundler/lib/bundler/templates/.circleci/config.yml
-      bundler/lib/bundler/templates/.travis.yml
     ]
 
     create_dummy_files(filelist)
@@ -178,7 +177,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       assert_path_exist File.join(dir, "bundler/b.rb")
 
       assert_path_exist File.join(dir, "bundler/templates/.circleci/config.yml")
-      assert_path_exist File.join(dir, "bundler/templates/.travis.yml")
     end
   end
 

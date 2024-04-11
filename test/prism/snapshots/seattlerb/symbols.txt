@@ -7,19 +7,19 @@
             ├── flags: ∅
             ├── elements: (length: 3)
             │   ├── @ SymbolNode (location: (1,3)-(1,4))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,3)-(1,4) = "a"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a"
             │   ├── @ SymbolNode (location: (1,5)-(1,6))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,5)-(1,6) = "b"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "b"
             │   └── @ SymbolNode (location: (1,7)-(1,8))
-            │       ├── flags: ∅
+            │       ├── flags: forced_us_ascii_encoding
             │       ├── opening_loc: ∅
             │       ├── value_loc: (1,7)-(1,8) = "c"
             │       ├── closing_loc: ∅

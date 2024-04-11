@@ -789,6 +789,10 @@ def check_coredump
   end
 end
 
+def yjit_enabled?
+  ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
+end
+
 def rjit_enabled?
   # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
   ENV.fetch('RUN_OPTS', '').include?('rjit')

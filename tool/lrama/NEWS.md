@@ -1,5 +1,92 @@
 # NEWS for Lrama
 
+## Lrama 0.6.3 (2024-02-15)
+
+### Bring Your Own Stack
+
+Provide functionalities for Bring Your Own Stack.
+
+Ruby’s Ripper library requires their own semantic value stack to manage Ruby Objects returned by user defined callback method. Currently Ripper uses semantic value stack (`yyvsa`) which is used by parser to manage Node. This hack introduces some limitation on Ripper. For example, Ripper can not execute semantic analysis depending on Node structure.
+
+Lrama introduces two features to support another semantic value stack by parser generator users.
+
+1. Callback entry points
+
+User can emulate semantic value stack by these callbacks.
+Lrama provides these five callbacks. Registered functions are called when each event happen. For example %after-shift function is called when shift happens on original semantic value stack.
+
+* `%after-shift` function_name
+* `%before-reduce` function_name
+* `%after-reduce` function_name
+* `%after-shift-error-token` function_name
+* `%after-pop-stack` function_name
+
+2. `$:n` variable to access index of each grammar symbols
+
+User also needs to access semantic value of their stack in grammar action. `$:n` provides the way to access to it. `$:n` is translated to the minus index from the top of the stack.
+For example
+
+```
+primary: k_if expr_value then compstmt if_tail k_end
+          {
+          /*% ripper: if!($:2, $:4, $:5) %*/
+          /* $:2 = -5, $:4 = -3, $:5 = -2. */
+          }
+```
+
+## Lrama 0.6.2 (2024-01-27)
+
+### %no-stdlib directive
+
+If `%no-stdlib` directive is set, Lrama doesn't load Lrama standard library for
+parameterizing rules, stdlib.y.
+
+https://github.com/ruby/lrama/pull/344
+
+## Lrama 0.6.1 (2024-01-13)
+
+### Nested parameterizing rules
+
+Allow to pass an instantiated rule to other parameterizing rules.
+
+```
+%rule constant(X) : X
+              ;
+
+%rule option(Y) : /* empty */
+                | Y
+                ;
+
+%%
+
+program         : option(constant(number)) // Nested rule
+                ;
+%%
+```
+
+Allow to use nested parameterizing rules when define parameterizing rules.
+
+```
+%rule option(x) : /* empty */
+                | X
+                ;
+
+%rule double(Y) : Y Y
+                ;
+
+%rule double_opt(A) : option(double(A)) // Nested rule
+                    ;
+
+%%
+
+program         : double_opt(number)
+                ;
+
+%%
+```
+
+https://github.com/ruby/lrama/pull/337
+
 ## Lrama 0.6.0 (2023-12-25)
 
 ### User defined parameterizing rules
@@ -19,6 +106,8 @@ stmt: pair(ODD, EVEN) <num>
     | pair(EVEN, ODD) <num>
     ;
 ```
+
+https://github.com/ruby/lrama/pull/285
 
 ## Lrama 0.5.11 (2023-12-02)
 

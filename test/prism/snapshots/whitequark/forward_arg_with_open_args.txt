@@ -38,8 +38,7 @@
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (2,6)-(2,9))
         │   │           │           ├── closing_loc: (2,9)-(2,10) = ")"
         │   │           │           └── block: ∅
-        │   │           ├── locals: [:"..."]
-        │   │           ├── locals_body_index: 1
+        │   │           ├── locals: []
         │   │           ├── def_keyword_loc: (1,1)-(1,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -83,8 +82,7 @@
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (5,18)-(5,21))
         │   │           │           ├── closing_loc: (5,21)-(5,22) = ")"
         │   │           │           └── block: ∅
-        │   │           ├── locals: [:"..."]
-        │   │           ├── locals_body_index: 1
+        │   │           ├── locals: []
         │   │           ├── def_keyword_loc: (5,1)-(5,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -108,8 +106,7 @@
         │   │   │   @ ForwardingParameterNode (location: (7,8)-(7,11))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -147,8 +144,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (10,17)-(10,20))
         │   │           ├── closing_loc: (10,20)-(10,21) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
         │   ├── def_keyword_loc: (10,0)-(10,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -163,6 +159,7 @@
         │   │   @ ParametersNode (location: (12,8)-(12,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (12,8)-(12,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -188,8 +185,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (13,6)-(13,9))
         │   │           ├── closing_loc: (13,9)-(13,10) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:a, :"..."]
-        │   ├── locals_body_index: 2
+        │   ├── locals: [:a]
         │   ├── def_keyword_loc: (12,0)-(12,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -204,6 +200,7 @@
         │   │   @ ParametersNode (location: (16,8)-(16,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (16,8)-(16,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -229,8 +226,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (16,20)-(16,23))
         │   │           ├── closing_loc: (16,23)-(16,24) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:a, :"..."]
-        │   ├── locals_body_index: 2
+        │   ├── locals: [:a]
         │   ├── def_keyword_loc: (16,0)-(16,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -245,15 +241,18 @@
         │   │   @ ParametersNode (location: (18,8)-(18,21))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (18,8)-(18,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (18,11)-(18,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (18,11)-(18,12) = "b"
         │   │   │       ├── operator_loc: (18,13)-(18,14) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (18,15)-(18,16))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -261,8 +260,7 @@
         │   │   │   @ ForwardingParameterNode (location: (18,18)-(18,21))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:a, :b, :"..."]
-        │   ├── locals_body_index: 3
+        │   ├── locals: [:a, :b]
         │   ├── def_keyword_loc: (18,0)-(18,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -278,12 +276,14 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (21,8)-(21,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (21,8)-(21,9) = "b"
         │   │   │       ├── operator_loc: (21,10)-(21,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (21,12)-(21,13))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -307,8 +307,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (22,6)-(22,9))
         │   │           ├── closing_loc: (22,9)-(22,10) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:b, :"..."]
-        │   ├── locals_body_index: 2
+        │   ├── locals: [:b]
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -324,12 +323,14 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (25,8)-(25,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (25,8)-(25,9) = "b"
         │   │   │       ├── operator_loc: (25,10)-(25,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (25,12)-(25,13))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
@@ -353,8 +354,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (25,24)-(25,27))
         │   │           ├── closing_loc: (25,27)-(25,28) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:b, :"..."]
-        │   ├── locals_body_index: 2
+        │   ├── locals: [:b]
         │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -369,6 +369,7 @@
             │   @ ParametersNode (location: (27,8)-(27,14))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (27,8)-(27,9))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -394,8 +395,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (27,20)-(27,23))
             │           ├── closing_loc: (27,23)-(27,24) = ")"
             │           └── block: ∅
-            ├── locals: [:a, :"..."]
-            ├── locals_body_index: 2
+            ├── locals: [:a]
             ├── def_keyword_loc: (27,0)-(27,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (27,7)-(27,8) = "("

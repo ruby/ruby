@@ -25,7 +25,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (1,8)-(1,9))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,9))
@@ -50,7 +51,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (3,8)-(3,9))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathWriteNode (location: (5,0)-(5,10))
@@ -74,7 +76,8 @@
         │   ├── operator_loc: (5,7)-(5,8) = "="
         │   └── value:
         │       @ IntegerNode (location: (5,9)-(5,10))
-        │       └── flags: decimal
+        │       ├── flags: decimal
+        │       └── value: 1
         └── @ CallNode (location: (7,0)-(7,10))
             ├── flags: attribute_write
             ├── receiver:
@@ -97,6 +100,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (7,9)-(7,10))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── closing_loc: ∅
             └── block: ∅

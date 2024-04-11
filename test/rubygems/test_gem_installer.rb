@@ -1652,19 +1652,6 @@ end
         installer.install
       end
       assert_path_exist so
-    rescue StandardError
-      puts "-" * 78
-      puts File.read File.join(@gemhome, "gems", "a-2", "Makefile")
-      puts "-" * 78
-
-      path = File.join(@gemhome, "gems", "a-2", "gem_make.out")
-
-      if File.exist?(path)
-        puts File.read(path)
-        puts "-" * 78
-      end
-
-      raise
     end
   end
 

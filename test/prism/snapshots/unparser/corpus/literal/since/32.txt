@@ -11,6 +11,7 @@
         │   │   @ ParametersNode (location: (1,8)-(1,20))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,8)-(1,16))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :argument
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -18,6 +19,7 @@
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (1,18)-(1,20))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (1,18)-(1,20) = "**"
@@ -47,8 +49,7 @@
         │   │           │                   └── operator_loc: (2,16)-(2,18) = "**"
         │   │           ├── closing_loc: (2,18)-(2,19) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:argument, :**]
-        │   ├── locals_body_index: 2
+        │   ├── locals: [:argument]
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -63,10 +64,12 @@
             │   @ ParametersNode (location: (5,8)-(5,19))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (5,8)-(5,16))
+            │   │       ├── flags: ∅
             │   │       └── name: :argument
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (5,18)-(5,19))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (5,18)-(5,19) = "*"
@@ -96,8 +99,7 @@
             │           │           └── expression: ∅
             │           ├── closing_loc: (6,17)-(6,18) = ")"
             │           └── block: ∅
-            ├── locals: [:argument, :*]
-            ├── locals_body_index: 2
+            ├── locals: [:argument]
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (5,7)-(5,8) = "("

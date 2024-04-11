@@ -2384,13 +2384,14 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         goto fail;
     }
     else {
-        kprintf("'%s' is not a "
 # ifdef __LP64__
-                "64"
+#   define bitsize "64"
 # else
-                "32"
+#   define bitsize "32"
 # endif
+        kprintf("'%s' is not a " bitsize
                 "-bit Mach-O file!\n",binary_filename);
+# undef bitsize
         close(fd);
         goto fail;
     }

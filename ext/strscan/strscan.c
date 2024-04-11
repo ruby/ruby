@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.0.8"
+#define STRSCAN_VERSION "3.1.1"
 
 /* =======================================================================
                          Data Type Definitions
@@ -903,6 +903,57 @@ strscan_getch(VALUE self)
 }
 
 /*
+ * Scans one byte and returns it as an integer.
+ * This method is not multibyte character sensitive.
+ * See also: #getch.
+ *
+ *   s = StringScanner.new('ab')
+ *   s.scan_byte         # => 97
+ *   s.scan_byte         # => 98
+ *   s.scan_byte         # => nil
+ *
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.scan_byte         # => 0xA4
+ *   s.scan_byte         # => 0xA2
+ *   s.scan_byte         # => nil
+ */
+static VALUE
+strscan_scan_byte(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    CLEAR_MATCH_STATUS(p);
+    if (EOS_P(p))
+        return Qnil;
+
+    VALUE byte = INT2FIX((unsigned char)*CURPTR(p));
+    p->prev = p->curr;
+    p->curr++;
+    MATCHED(p);
+    adjust_registers_to_matched(p);
+    return byte;
+}
+
+/*
+ * Peeks at the current byte and returns it as an integer.
+ *
+ *   s = StringScanner.new('ab')
+ *   s.peek_byte         # => 97
+ */
+static VALUE
+strscan_peek_byte(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    if (EOS_P(p))
+        return Qnil;
+
+    return INT2FIX((unsigned char)*CURPTR(p));
+}
+
+/*
  * Scans one byte and returns it.
  * This method is not multibyte character sensitive.
  * See also: #getch.
@@ -1243,10 +1294,10 @@ strscan_size(VALUE self)
  * If nothing was priorly matched, it returns nil.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
- *   s.captures                         # -> ["Fri", "Dec", "12"]
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> nil
- *   s.captures                         # -> nil
+ *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> "Fri Dec 12 "
+ *   s.captures                                # -> ["Fri", "Dec", "12", nil]
+ *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> nil
+ *   s.captures                                # -> nil
  */
 static VALUE
 strscan_captures(VALUE self)
@@ -1262,9 +1313,13 @@ strscan_captures(VALUE self)
     new_ary  = rb_ary_new2(num_regs);
 
     for (i = 1; i < num_regs; i++) {
-        VALUE str = extract_range(p,
-                                  adjust_register_position(p, p->regs.beg[i]),
-                                  adjust_register_position(p, p->regs.end[i]));
+        VALUE str;
+        if (p->regs.beg[i] == -1)
+            str = Qnil;
+        else
+            str = extract_range(p,
+                                adjust_register_position(p, p->regs.beg[i]),
+                                adjust_register_position(p, p->regs.end[i]));
         rb_ary_push(new_ary, str);
     }
 
@@ -1601,6 +1656,7 @@ strscan_named_captures(VALUE self)
  *
  * - #getch
  * - #get_byte
+ * - #scan_byte
  * - #scan
  * - #scan_until
  * - #skip
@@ -1613,6 +1669,7 @@ strscan_named_captures(VALUE self)
  * - #exist?
  * - #match?
  * - #peek
+ * - #peek_byte
  *
  * === Finding Where we Are
  *
@@ -1704,7 +1761,9 @@ Init_strscan(void)
     rb_define_method(StringScanner, "getch",       strscan_getch,       0);
     rb_define_method(StringScanner, "get_byte",    strscan_get_byte,    0);
     rb_define_method(StringScanner, "getbyte",     strscan_getbyte,     0);
+    rb_define_method(StringScanner, "scan_byte",   strscan_scan_byte,   0);
     rb_define_method(StringScanner, "peek",        strscan_peek,        1);
+    rb_define_method(StringScanner, "peek_byte",   strscan_peek_byte,   0);
     rb_define_method(StringScanner, "peep",        strscan_peep,        1);
 
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);

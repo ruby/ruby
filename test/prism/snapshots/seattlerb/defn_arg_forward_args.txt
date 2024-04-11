@@ -11,6 +11,7 @@
             │   @ ParametersNode (location: (1,6)-(1,12))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │       ├── flags: ∅
             │   │       └── name: :x
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -39,8 +40,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (1,20)-(1,23))
             │           ├── closing_loc: (1,23)-(1,24) = ")"
             │           └── block: ∅
-            ├── locals: [:x, :"..."]
-            ├── locals_body_index: 2
+            ├── locals: [:x]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

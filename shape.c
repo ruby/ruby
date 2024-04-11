@@ -322,7 +322,7 @@ rb_shape_each_shape(each_shape_callback callback, void *data)
     }
 }
 
-RUBY_FUNC_EXPORTED rb_shape_t*
+RUBY_FUNC_EXPORTED rb_shape_t *
 rb_shape_get_shape_by_id(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
@@ -1233,6 +1233,14 @@ Init_default_shapes(void)
     rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError),
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     rb_shape_tree_ptr->cache_size = 0;
+
+    // If mmap fails, then give up on the redblack tree cache.
+    // We set the cache size such that the redblack node allocators think
+    // the cache is full.
+    if (GET_SHAPE_TREE()->shape_cache == MAP_FAILED) {
+        GET_SHAPE_TREE()->shape_cache = 0;
+        GET_SHAPE_TREE()->cache_size = REDBLACK_CACHE_SIZE;
+    }
 #endif
 
     // Shapes by size pool

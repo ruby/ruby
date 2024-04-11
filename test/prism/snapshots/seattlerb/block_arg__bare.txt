@@ -17,12 +17,12 @@
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (1,6)-(1,7))
+            │       ├── flags: ∅
             │       ├── name: ∅
             │       ├── name_loc: ∅
             │       └── operator_loc: (1,6)-(1,7) = "&"
             ├── body: ∅
-            ├── locals: [:&]
-            ├── locals_body_index: 1
+            ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

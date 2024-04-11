@@ -30,7 +30,7 @@ struct coroutine_context
 
 typedef void(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
-void coroutine_trampoline();
+void coroutine_trampoline(void);
 
 static inline void coroutine_initialize_main(struct coroutine_context * context) {
     context->stack_pointer = NULL;

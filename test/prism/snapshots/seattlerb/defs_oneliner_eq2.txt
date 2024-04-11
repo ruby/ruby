@@ -23,6 +23,7 @@
             │           │   @ ParametersNode (location: (2,14)-(2,15))
             │           │   ├── requireds: (length: 1)
             │           │   │   └── @ RequiredParameterNode (location: (2,14)-(2,15))
+            │           │   │       ├── flags: ∅
             │           │   │       └── name: :o
             │           │   ├── optionals: (length: 0)
             │           │   ├── rest: ∅
@@ -34,9 +35,9 @@
             │           │   @ StatementsNode (location: (2,19)-(2,21))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,19)-(2,21))
-            │           │           └── flags: decimal
+            │           │           ├── flags: decimal
+            │           │           └── value: 42
             │           ├── locals: [:o]
-            │           ├── locals_body_index: 1
             │           ├── def_keyword_loc: (2,2)-(2,5) = "def"
             │           ├── operator_loc: (2,10)-(2,11) = "."
             │           ├── lparen_loc: (2,13)-(2,14) = "("

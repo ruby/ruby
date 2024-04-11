@@ -16,7 +16,6 @@
             │   └── arguments: (length: 2)
             │       ├── @ LambdaNode (location: (1,2)-(1,15))
             │       │   ├── locals: []
-            │       │   ├── locals_body_index: 0
             │       │   ├── operator_loc: (1,2)-(1,4) = "->"
             │       │   ├── opening_loc: (1,5)-(1,6) = "{"
             │       │   ├── closing_loc: (1,14)-(1,15) = "}"
@@ -25,7 +24,7 @@
             │       │       @ StatementsNode (location: (1,7)-(1,13))
             │       │       └── body: (length: 1)
             │       │           └── @ SymbolNode (location: (1,7)-(1,13))
-            │       │               ├── flags: ∅
+            │       │               ├── flags: forced_us_ascii_encoding
             │       │               ├── opening_loc: (1,7)-(1,8) = ":"
             │       │               ├── value_loc: (1,8)-(1,13) = "hello"
             │       │               ├── closing_loc: ∅
@@ -36,20 +35,20 @@
             │               └── @ AssocNode (location: (1,17)-(1,21))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,17)-(1,19))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,17)-(1,18) = "a"
             │                   │   ├── closing_loc: (1,18)-(1,19) = ":"
             │                   │   └── unescaped: "a"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,20)-(1,21))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,22)-(1,28))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body: ∅
                 ├── opening_loc: (1,22)-(1,24) = "do"

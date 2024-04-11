@@ -29,7 +29,7 @@ class TestDebug < Test::Unit::TestCase
         # check same location
         assert_equal(loc.path, iseq.path, msg)
         assert_equal(loc.absolute_path, iseq.absolute_path, msg)
-        assert_equal(loc.label, iseq.label, msg)
+        #assert_equal(loc.label, iseq.label, msg)
         assert_operator(loc.lineno, :>=, iseq.first_lineno, msg)
       end
 

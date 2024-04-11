@@ -107,7 +107,7 @@ module Bundler
         def install_path
           @install_path ||=
             begin
-              base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
+              base_name = File.basename(Gem::URI.parse(uri).normalize.path)
 
               gem_install_dir.join("#{base_name}-#{uri_hash[0..11]}")
             end
@@ -176,7 +176,7 @@ module Bundler
         #
         # This is used by `app_cache_path`
         def app_cache_dirname
-          base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
+          base_name = File.basename(Gem::URI.parse(uri).normalize.path)
           "#{base_name}-#{uri_hash}"
         end
 

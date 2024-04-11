@@ -9,14 +9,15 @@
             │   ├── @ AssocNode (location: (1,2)-(1,8))
             │   │   ├── key:
             │   │   │   @ SymbolNode (location: (1,2)-(1,6))
-            │   │   │   ├── flags: ∅
+            │   │   │   ├── flags: forced_us_ascii_encoding
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── value_loc: (1,2)-(1,5) = "foo"
             │   │   │   ├── closing_loc: (1,5)-(1,6) = ":"
             │   │   │   └── unescaped: "foo"
             │   │   ├── value:
             │   │   │   @ IntegerNode (location: (1,7)-(1,8))
-            │   │   │   └── flags: decimal
+            │   │   │   ├── flags: decimal
+            │   │   │   └── value: 2
             │   │   └── operator_loc: ∅
             │   └── @ AssocSplatNode (location: (1,10)-(1,15))
             │       ├── value:

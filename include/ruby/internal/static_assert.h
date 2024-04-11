@@ -71,7 +71,7 @@
 
 #else
 # define RBIMPL_STATIC_ASSERT(name, expr) \
-    typedef int static_assert_ ## name ## _check[1 - 2 * !(expr)]
+    MAYBE_UNUSED(typedef int static_assert_ ## name ## _check[1 - 2 * !(expr)])
 #endif
 
 #endif /* RBIMPL_STATIC_ASSERT_H */

@@ -253,9 +253,9 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
 
-            assert(rb_darray_size(feature_indexes) == 2);
+            RUBY_ASSERT(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
-            assert(!SPECIAL_CONST_P((VALUE)feature_indexes));
+            RUBY_ASSERT(!SPECIAL_CONST_P((VALUE)feature_indexes));
 
             *value = (st_data_t)feature_indexes;
         }
@@ -737,38 +737,42 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
+        rb_execution_context_t *ec = GET_EC();
+        VALUE v = rb_vm_push_frame_fname(ec, fname);
+
+        rb_thread_t *th = rb_ec_thread_ptr(ec);
+        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
+
         if (*rb_ruby_prism_ptr()) {
-            pm_string_t input;
-            pm_options_t options = { 0 };
+            pm_parse_result_t result = { 0 };
+            result.options.line = 1;
 
-            pm_string_mapped_init(&input, RSTRING_PTR(fname));
-            pm_options_filepath_set(&options, RSTRING_PTR(fname));
+            VALUE error = pm_load_parse_file(&result, fname);
 
-            pm_parser_t parser;
-            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
-
-            iseq = rb_iseq_new_main_prism(&input, &options, fname);
-
-            pm_string_free(&input);
-            pm_options_free(&options);
+            if (error == Qnil) {
+                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);
+                pm_parse_result_free(&result);
+            }
+            else {
+                rb_vm_pop_frame(ec);
+                RB_GC_GUARD(v);
+                pm_parse_result_free(&result);
+                rb_exc_raise(error);
+            }
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
-            VALUE v = rb_vm_push_frame_fname(ec, fname);
             rb_ast_t *ast;
             VALUE parser = rb_parser_new();
             rb_parser_set_context(parser, NULL, FALSE);
             ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
 
-            rb_thread_t *th = rb_ec_thread_ptr(ec);
-            VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
-
             iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
                                    fname, realpath_internal_cached(realpath_map, fname), NULL);
             rb_ast_dispose(ast);
-            rb_vm_pop_frame(ec);
-            RB_GC_GUARD(v);
         }
+
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);
@@ -883,9 +887,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  LoadError will be raised.
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
- *  be executed under an anonymous module, protecting the calling
- *  program's global namespace.  If the optional _wrap_ parameter is a
- *  module, the loaded script will be executed under the given module.
+ *  be executed under an anonymous module. If the optional _wrap_ parameter
+ *  is a module, the loaded script will be executed under the given module.
  *  In no circumstance will any local variables in the loaded file be
  *  propagated to the loading environment.
  */
@@ -1612,5 +1615,5 @@ Init_load(void)
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
     ruby_dln_libmap = rb_hash_new_with_size(0);
-    rb_gc_register_mark_object(ruby_dln_libmap);
+    rb_vm_register_global_object(ruby_dln_libmap);
 }

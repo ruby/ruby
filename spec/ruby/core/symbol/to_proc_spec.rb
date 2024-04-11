@@ -39,8 +39,8 @@ describe "Symbol#to_proc" do
       @a = []
       singleton_class.class_eval(&body)
       tap(&:pub)
-      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method `pro' called/)
-      proc{tap(&:pri)}.should raise_error(NoMethodError, /private method `pri' called/)
+      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method [`']pro' called/)
+      proc{tap(&:pri)}.should raise_error(NoMethodError, /private method [`']pri' called/)
       @a.should == [:pub]
 
       @a = []
@@ -48,8 +48,8 @@ describe "Symbol#to_proc" do
       o = c.new
       o.instance_variable_set(:@a, [])
       o.tap(&:pub)
-      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method `pro' called/)
-      proc{o.tap(&:pri)}.should raise_error(NoMethodError, /private method `pri' called/)
+      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method [`']pro' called/)
+      proc{o.tap(&:pri)}.should raise_error(NoMethodError, /private method [`']pri' called/)
       o.a.should == [:pub]
     end
   end

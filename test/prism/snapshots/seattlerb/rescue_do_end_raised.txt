@@ -15,10 +15,9 @@
             └── block:
                 @ BlockNode (location: (1,4)-(5,3))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
-                │   @ BeginNode (location: (2,2)-(5,3))
+                │   @ BeginNode (location: (1,4)-(5,3))
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements:
                 │   │   @ StatementsNode (location: (2,2)-(2,7))
@@ -42,7 +41,7 @@
                 │   │   │   @ StatementsNode (location: (4,2)-(4,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "ensure"
                 │   │   │           ├── closing_loc: ∅

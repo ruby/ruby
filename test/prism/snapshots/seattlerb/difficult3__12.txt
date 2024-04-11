@@ -15,13 +15,13 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,17))
                 ├── locals: [:a, :b]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,15))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,14))
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :a
                 │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,14))
                 │   │   │       ├── lefts: (length: 0)
@@ -31,6 +31,7 @@
                 │   │   │       │   └── expression: ∅
                 │   │   │       ├── rights: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
                 │   │   │       └── rparen_loc: (1,13)-(1,14) = ")"

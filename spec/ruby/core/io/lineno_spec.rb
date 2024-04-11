@@ -26,7 +26,8 @@ describe "IO#lineno" do
   end
 
   it "raises an IOError on a duplexed stream with the read side closed" do
-    IO.popen('cat', 'r+') do |p|
+    cmd = platform_is(:windows) ? 'rem' : 'cat'
+    IO.popen(cmd, 'r+') do |p|
       p.close_read
       -> { p.lineno }.should raise_error(IOError)
     end
@@ -70,7 +71,8 @@ describe "IO#lineno=" do
   end
 
   it "raises an IOError on a duplexed stream with the read side closed" do
-    IO.popen('cat', 'r+') do |p|
+    cmd = platform_is(:windows) ? 'rem' : 'cat'
+    IO.popen(cmd, 'r+') do |p|
       p.close_read
       -> { p.lineno = 0 }.should raise_error(IOError)
     end

@@ -345,7 +345,7 @@ struct getaddrinfo_arg
     char *node, *service;
     struct addrinfo hints;
     struct addrinfo *ai;
-    int err, refcount, done, cancelled;
+    int err, gai_errno, refcount, done, cancelled;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
 };
@@ -406,8 +406,9 @@ do_getaddrinfo(void *ptr)
 {
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
 
-    int err;
+    int err, gai_errno;
     err = getaddrinfo(arg->node, arg->service, &arg->hints, &arg->ai);
+    gai_errno = errno;
 #ifdef __linux__
     /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
      * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
@@ -420,6 +421,7 @@ do_getaddrinfo(void *ptr)
     rb_nativethread_lock_lock(&arg->lock);
     {
         arg->err = err;
+        arg->gai_errno = gai_errno;
         if (arg->cancelled) {
             freeaddrinfo(arg->ai);
         }
@@ -461,7 +463,7 @@ cancel_getaddrinfo(void *ptr)
 }
 
 static int
-do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg)
+do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     do {
@@ -469,7 +471,7 @@ do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routi
         //
         // https://bugs.openjdk.org/browse/JDK-8268605
         // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, attr, start_routine, arg);
+        ret = pthread_create(th, 0, start_routine, arg);
     } while (ret == EAGAIN && limit-- > 0);
     return ret;
 }
@@ -479,7 +481,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err;
+    int err, gai_errno = 0;
 
 start:
     retry = 0;
@@ -489,32 +491,12 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_attr_t attr;
-    if (pthread_attr_init(&attr) != 0) {
-        free_getaddrinfo_arg(arg);
-        return EAI_AGAIN;
-    }
-#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
-    cpu_set_t tmp_cpu_set;
-    CPU_ZERO(&tmp_cpu_set);
-    int cpu = sched_getcpu();
-    if (cpu < CPU_SETSIZE) {
-        CPU_SET(cpu, &tmp_cpu_set);
-        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
-    }
-#endif
-
     pthread_t th;
-    if (do_pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
+    if (do_pthread_create(&th, do_getaddrinfo, arg) != 0) {
         free_getaddrinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
-
-    int r;
-    if ((r = pthread_attr_destroy(&attr)) != 0) {
-        rb_bug_errno("pthread_attr_destroy", r);
-    }
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -523,6 +505,7 @@ start:
     {
         if (arg->done) {
             err = arg->err;
+            gai_errno = arg->gai_errno;
             if (err == 0) *ai = arg->ai;
         }
         else if (arg->cancelled) {
@@ -545,6 +528,10 @@ start:
     rb_thread_check_ints();
     if (retry) goto start;
 
+    /* Because errno is threadlocal, the errno value we got from the call to getaddrinfo() in the thread
+     * (in case of EAI_SYSTEM return value) is not propagated to the caller of _this_ function. Set errno
+     * explicitly, as round-tripped through struct getaddrinfo_arg, to deal with that */
+    if (gai_errno) errno = gai_errno;
     return err;
 }
 
@@ -611,7 +598,7 @@ struct getnameinfo_arg
     size_t hostlen;
     char *serv;
     size_t servlen;
-    int err, refcount, done, cancelled;
+    int err, gni_errno, refcount, done, cancelled;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
 };
@@ -664,12 +651,14 @@ do_getnameinfo(void *ptr)
 {
     struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
 
-    int err;
+    int err, gni_errno;
     err = getnameinfo(arg->sa, arg->salen, arg->host, (socklen_t)arg->hostlen, arg->serv, (socklen_t)arg->servlen, arg->flags);
+    gni_errno = errno;
 
     int need_free = 0;
     rb_nativethread_lock_lock(&arg->lock);
     arg->err = err;
+    arg->gni_errno = gni_errno;
     if (!arg->cancelled) {
         arg->done = 1;
         rb_native_cond_signal(&arg->cond);
@@ -711,7 +700,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
     int retry;
     struct getnameinfo_arg *arg;
-    int err;
+    int err, gni_errno = 0;
 
 start:
     retry = 0;
@@ -721,32 +710,12 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_attr_t attr;
-    if (pthread_attr_init(&attr) != 0) {
-        free_getnameinfo_arg(arg);
-        return EAI_AGAIN;
-    }
-#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
-    cpu_set_t tmp_cpu_set;
-    CPU_ZERO(&tmp_cpu_set);
-    int cpu = sched_getcpu();
-    if (cpu < CPU_SETSIZE) {
-        CPU_SET(cpu, &tmp_cpu_set);
-        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
-    }
-#endif
-
     pthread_t th;
-    if (do_pthread_create(&th, &attr, do_getnameinfo, arg) != 0) {
+    if (do_pthread_create(&th, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
-
-    int r;
-    if ((r = pthread_attr_destroy(&attr)) != 0) {
-        rb_bug_errno("pthread_attr_destroy", r);
-    }
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
@@ -754,6 +723,7 @@ start:
     rb_nativethread_lock_lock(&arg->lock);
     if (arg->done) {
         err = arg->err;
+        gni_errno = arg->gni_errno;
         if (err == 0) {
             if (host) memcpy(host, arg->host, hostlen);
             if (serv) memcpy(serv, arg->serv, servlen);
@@ -778,6 +748,9 @@ start:
     rb_thread_check_ints();
     if (retry) goto start;
 
+    /* Make sure we copy the thread-local errno value from the getnameinfo thread back to this thread, so
+     * calling code sees the correct errno */
+    if (gni_errno) errno = gni_errno;
     return err;
 }
 

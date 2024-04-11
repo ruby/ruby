@@ -15,7 +15,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,4)-(2,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,4)-(1,6) = "do"
@@ -32,10 +31,9 @@
         │   └── block:
         │       @ BlockNode (location: (4,4)-(6,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (5,0)-(6,3))
+        │       │   @ BeginNode (location: (4,4)-(6,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:
@@ -63,7 +61,6 @@
         │   └── block:
         │       @ BlockNode (location: (8,4)-(11,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (9,2)-(10,5))
@@ -89,13 +86,13 @@
         │   └── block:
         │       @ BlockNode (location: (13,4)-(14,3))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (13,7)-(13,10))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (13,8)-(13,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (13,8)-(13,9))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -130,13 +127,13 @@
         │   └── block:
         │       @ BlockNode (location: (16,12)-(20,3))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (16,15)-(16,18))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (16,16)-(16,17))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (16,16)-(16,17))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -176,7 +173,6 @@
             └── block:
                 @ BlockNode (location: (22,12)-(26,3))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (25,2)-(25,3))

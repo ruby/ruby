@@ -65,18 +65,18 @@ End Class
 =end
 
 
-if defined?(WIN32OLE_RECORD)
+if defined?(WIN32OLE::Record)
   def rbcomtest_exist?
     WIN32OLE.new(PROGID_RBCOMTEST)
     true
-  rescue WIN32OLERuntimeError
+  rescue WIN32OLE::RuntimeError
     false
   end
 
   class TestWIN32OLE_RECORD_BY_RBCOMTEST < Test::Unit::TestCase
     unless rbcomtest_exist?
       def test_dummy_for_skip_message
-        omit "#{PROGID_RBCOMTEST} for WIN32OLE_RECORD test is not installed"
+        omit "#{PROGID_RBCOMTEST} for WIN32OLE::Record test is not installed"
       end
     else
       def setup
@@ -84,42 +84,42 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_s_new_from_win32ole
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         assert(rec)
-        assert_instance_of(WIN32OLE_RECORD, rec)
+        assert_instance_of(WIN32OLE::Record, rec)
       end
 
       def test_s_new_from_win32ole_typelib
         tlib = @obj.ole_typelib
-        rec = WIN32OLE_RECORD.new('Book', tlib)
+        rec = WIN32OLE::Record.new('Book', tlib)
         assert(rec)
-        assert_instance_of(WIN32OLE_RECORD, rec)
+        assert_instance_of(WIN32OLE::Record, rec)
       end
 
       def test_s_new_raise
-        assert_raise(WIN32OLERuntimeError) {
-          WIN32OLE_RECORD.new('NonExistRecordName', @obj)
+        assert_raise(WIN32OLE::RuntimeError) {
+          WIN32OLE::Record.new('NonExistRecordName', @obj)
         }
         assert_raise(ArgumentError) {
-          WIN32OLE_RECORD.new
+          WIN32OLE::Record.new
         }
         assert_raise(ArgumentError) {
-          WIN32OLE_RECORD.new('NonExistRecordName')
+          WIN32OLE::Record.new('NonExistRecordName')
         }
       end
 
       def test_to_h
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         assert_equal({'title'=>nil, 'cost'=>nil}, rec.to_h)
       end
 
       def test_typename
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         assert_equal('Book', rec.typename)
       end
 
       def test_method_missing_getter
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         assert_equal(nil, rec.title)
         assert_raise(KeyError) {
           rec.non_exist_name
@@ -127,14 +127,14 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_method_missing_setter
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         rec.title = "Ruby Book"
         assert_equal("Ruby Book", rec.title)
       end
 
       def test_get_record_from_comserver
         rec = @obj.getBook
-        assert_instance_of(WIN32OLE_RECORD, rec)
+        assert_instance_of(WIN32OLE::Record, rec)
         assert_equal("The Ruby Book", rec.title)
         assert_equal(20, rec.cost)
       end
@@ -143,16 +143,16 @@ if defined?(WIN32OLE_RECORD)
         rec = @obj.getBooks
         assert_instance_of(Array, rec)
         assert_equal(2, rec.size)
-        assert_instance_of(WIN32OLE_RECORD, rec[0])
+        assert_instance_of(WIN32OLE::Record, rec[0])
         assert_equal("The CRuby Book", rec[0].title)
         assert_equal(30, rec[0].cost)
-        assert_instance_of(WIN32OLE_RECORD, rec[1])
+        assert_instance_of(WIN32OLE::Record, rec[1])
         assert_equal("The JRuby Book", rec[1].title)
         assert_equal(40, rec[1].cost)
       end
 
       def test_pass_record_parameter
-        rec = WIN32OLE_RECORD.new('Book', @obj)
+        rec = WIN32OLE::Record.new('Book', @obj)
         rec.title = "Ruby Book"
         rec.cost = 60
         book = @obj.getVer2BookByValBook(rec)
@@ -161,23 +161,23 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_pass_variant_parameter_byref
-        obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
+        obj = WIN32OLE::Variant.new(nil, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
         @obj.getBookByRefBook(obj)
-        assert_instance_of(WIN32OLE_RECORD, obj.value)
+        assert_instance_of(WIN32OLE::Record, obj.value)
         book = obj.value
         assert_equal("The Ruby Reference Book2", book.title)
         assert_equal(44, book.cost)
       end
 
       def test_pass_record_parameter_byref
-        book = WIN32OLE_RECORD.new('Book', @obj)
+        book = WIN32OLE::Record.new('Book', @obj)
         @obj.getBookByRefBook(book)
         assert_equal("The Ruby Reference Book2", book.title)
         assert_equal(44, book.cost)
       end
 
       def test_pass_and_get_record_parameter_byref
-        book = WIN32OLE_RECORD.new('Book', @obj)
+        book = WIN32OLE::Record.new('Book', @obj)
         book.title = "Ruby Book"
         book.cost = 60
         @obj.getVer3BookByRefBook(book)
@@ -186,13 +186,13 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_ole_instance_variable_get
-        obj = WIN32OLE_RECORD.new('Book', @obj)
+        obj = WIN32OLE::Record.new('Book', @obj)
         assert_equal(nil, obj.ole_instance_variable_get(:title))
         assert_equal(nil, obj.ole_instance_variable_get('title'))
       end
 
       def test_ole_instance_variable_set
-        book = WIN32OLE_RECORD.new('Book', @obj)
+        book = WIN32OLE::Record.new('Book', @obj)
         book.ole_instance_variable_set(:title, "Ruby Book")
         assert_equal("Ruby Book", book.title)
         book.ole_instance_variable_set('title', "Ruby Book2")
@@ -200,8 +200,8 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_inspect
-        book = WIN32OLE_RECORD.new('Book', @obj)
-        assert_equal(%q[#<WIN32OLE_RECORD(Book) {"title"=>nil, "cost"=>nil}>], book.inspect)
+        book = WIN32OLE::Record.new('Book', @obj)
+        assert_equal(%q[#<WIN32OLE::Record(Book) {"title"=>nil, "cost"=>nil}>], book.inspect)
       end
     end
   end

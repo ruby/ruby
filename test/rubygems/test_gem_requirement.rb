@@ -12,6 +12,14 @@ class TestGemRequirement < Gem::TestCase
     assert_equal [[">=", v(1)], ["<", v(2)]], r.requirements
   end
 
+  def test_initialize_copy
+    r = req("= 1.2")
+    r2 = r.dup
+
+    assert_equal r.requirements, r2.requirements
+    refute_same r.requirements, r2.requirements
+  end
+
   def test_equals2
     r = req "= 1.2"
     assert_equal r, r.dup

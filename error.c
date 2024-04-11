@@ -32,6 +32,7 @@
 #endif
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
@@ -49,6 +50,7 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "yjit.h"
 
 #if USE_MMTK
 #include "internal/mmtk_support.h"
@@ -1068,7 +1070,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     const char *file = NULL;
     int line = 0;
 
-#ifdef USE_MMTK
+#if USE_MMTK
     // When using MMTk, this function may be called from GC worker threads,
     // in which case there will not be a Ruby execution context.
     if (rb_current_execution_context(!rb_mmtk_enabled_p())) {
@@ -1139,10 +1141,25 @@ rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
 void
 rb_assert_failure(const char *file, int line, const char *name, const char *expr)
 {
+    rb_assert_failure_detail(file, line, name, expr, NULL);
+}
+
+void
+rb_assert_failure_detail(const char *file, int line, const char *name, const char *expr,
+                         const char *fmt, ...)
+{
     FILE *out = stderr;
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
+
+    if (fmt && *fmt) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(out, fmt, args);
+        va_end(args);
+    }
+
     preface_dump(out);
     rb_vm_bugreport(NULL, out);
     bug_report_end(out, -1);
@@ -1410,6 +1427,7 @@ rb_exc_new_cstr(VALUE etype, const char *s)
 VALUE
 rb_exc_new_str(VALUE etype, VALUE str)
 {
+    rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     StringValue(str);
     return rb_class_new_instance(1, &str, etype);
 }
@@ -2387,7 +2405,7 @@ name_err_mesg_to_str(VALUE obj)
                 VALUE klass;
               object:
                 klass = CLASS_OF(obj);
-                if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
+                if (RB_TYPE_P(klass, T_CLASS) && RCLASS_SINGLETON_P(klass)) {
                     s = FAKE_CSTR(&s_str, "");
                     if (obj == rb_vm_top_self()) {
                         c = FAKE_CSTR(&c_str, "main");
@@ -2719,37 +2737,45 @@ rb_free_warning(void)
 }
 
 static VALUE
+setup_syserr(int n, const char *name)
+{
+    VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+
+    /* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
+    switch (n) {
+      case EAGAIN:
+        rb_eEAGAIN = error;
+
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+        break;
+      case EWOULDBLOCK:
+#endif
+
+        rb_eEWOULDBLOCK = error;
+        break;
+      case EINPROGRESS:
+        rb_eEINPROGRESS = error;
+        break;
+    }
+
+    rb_define_const(error, "Errno", INT2NUM(n));
+    st_add_direct(syserr_tbl, n, (st_data_t)error);
+    return error;
+}
+
+static VALUE
 set_syserr(int n, const char *name)
 {
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-        error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
-
-        /* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
-        switch (n) {
-          case EAGAIN:
-            rb_eEAGAIN = error;
-
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-            break;
-          case EWOULDBLOCK:
-#endif
-
-            rb_eEWOULDBLOCK = error;
-            break;
-          case EINPROGRESS:
-            rb_eEINPROGRESS = error;
-            break;
-        }
-
-        rb_define_const(error, "Errno", INT2NUM(n));
-        st_add_direct(syserr_tbl, n, error);
+        return setup_syserr(n, name);
     }
     else {
-        rb_define_const(rb_mErrno, name, error);
+        VALUE errclass = (VALUE)error;
+        rb_define_const(rb_mErrno, name, errclass);
+        return errclass;
     }
-    return error;
 }
 
 static VALUE
@@ -2758,12 +2784,12 @@ get_syserr(int n)
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-        char name[8];	/* some Windows' errno have 5 digits. */
+        char name[DECIMAL_SIZE_OF(n) + sizeof("E-")];
 
         snprintf(name, sizeof(name), "E%03d", n);
-        error = set_syserr(n, name);
+        return setup_syserr(n, name);
     }
-    return error;
+    return (VALUE)error;
 }
 
 /*
@@ -3150,7 +3176,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  * Document-class: fatal
  *
- * fatal is an Exception that is raised when Ruby has encountered a fatal
+ * +fatal+ is an Exception that is raised when Ruby has encountered a fatal
  * error and must exit.
  */
 
@@ -3820,6 +3846,7 @@ inspect_frozen_obj(VALUE obj, VALUE mesg, int recur)
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
+    rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
@@ -3856,9 +3883,13 @@ rb_check_copyable(VALUE obj, VALUE orig)
 void
 Init_syserr(void)
 {
-    rb_eNOERROR = set_syserr(0, "NOERROR");
+    rb_eNOERROR = setup_syserr(0, "NOERROR");
+#if 0
+    /* No error */
+    rb_define_const(rb_mErrno, "NOERROR", rb_eNOERROR);
+#endif
 #define defined_error(name, num) set_syserr((num), (name));
-#define undefined_error(name) set_syserr(0, (name));
+#define undefined_error(name) rb_define_const(rb_mErrno, (name), rb_eNOERROR);
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error

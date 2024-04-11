@@ -44,7 +44,7 @@ if defined?(WIN32OLE)
       assert_equal(0, links.size)
 
       # Now create shortcut to @dummy_path
-      arg = WIN32OLE_VARIANT.new("Link")
+      arg = WIN32OLE::Variant.new("Link")
       @fi2.InvokeVerb(arg)
 
       # Now search shortcut to @dummy_path

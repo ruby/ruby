@@ -7,11 +7,17 @@ They should not be called with unknown or unsanitized commands.
 
 These methods include:
 
+- Kernel.exec
+- Kernel.spawn
 - Kernel.system
-- Kernel.open
 - {\`command` (backtick method)}[rdoc-ref:Kernel#`]
   (also called by the expression <tt>%x[command]</tt>).
-- IO.popen(command).
+- IO.popen (when called with other than <tt>"-"</tt>).
+
+Some methods execute a system command only if the given path name starts
+with a <tt>|</tt>:
+
+- Kernel.open(command).
 - IO.read(command).
 - IO.write(command).
 - IO.binread(command).
@@ -21,7 +27,7 @@ These methods include:
 - URI.open(command).
 
 Note that some of these methods do not execute commands when called
-from subclass \File:
+from subclass +File+:
 
 - File.read(path).
 - File.write(path).

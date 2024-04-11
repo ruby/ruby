@@ -49,7 +49,7 @@ class Gem::S3URISigner
     string_to_sign = generate_string_to_sign(date_time, credential_info, canonical_request)
     signature = generate_signature(s3_config, date, string_to_sign)
 
-    URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
+    Gem::URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
   end
 
   private
@@ -140,7 +140,7 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_credentials_json
-    require_relative "net/http"
+    require_relative "vendored_net_http"
     require_relative "request"
     require_relative "request/connection_pools"
     require "json"
@@ -152,7 +152,7 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_request(url)
-    uri = URI(url)
+    uri = Gem::URI(url)
     @request_pool ||= create_request_pool(uri)
     request = Gem::Request.new(uri, Gem::Net::HTTP::Get, nil, @request_pool)
     response = request.fetch

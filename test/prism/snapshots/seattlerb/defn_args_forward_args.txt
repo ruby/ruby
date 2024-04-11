@@ -11,10 +11,13 @@
             │   @ ParametersNode (location: (1,6)-(1,18))
             │   ├── requireds: (length: 3)
             │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :x
             │   │   ├── @ RequiredParameterNode (location: (1,9)-(1,10))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :y
             │   │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
+            │   │       ├── flags: ∅
             │   │       └── name: :z
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -38,7 +41,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 3)
             │           │       ├── @ SymbolNode (location: (1,23)-(1,27))
-            │           │       │   ├── flags: ∅
+            │           │       │   ├── flags: forced_us_ascii_encoding
             │           │       │   ├── opening_loc: (1,23)-(1,24) = ":"
             │           │       │   ├── value_loc: (1,24)-(1,27) = "get"
             │           │       │   ├── closing_loc: ∅
@@ -49,8 +52,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (1,32)-(1,35))
             │           ├── closing_loc: (1,35)-(1,36) = ")"
             │           └── block: ∅
-            ├── locals: [:x, :y, :z, :"..."]
-            ├── locals_body_index: 4
+            ├── locals: [:x, :y, :z]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

@@ -28,12 +28,15 @@
             │       │   ├── flags: ∅
             │       │   ├── elements: (length: 2)
             │       │   │   ├── @ IntegerNode (location: (1,3)-(1,4))
-            │       │   │   │   └── flags: decimal
+            │       │   │   │   ├── flags: decimal
+            │       │   │   │   └── value: 1
             │       │   │   └── @ IntegerNode (location: (1,6)-(1,7))
-            │       │   │       └── flags: decimal
+            │       │   │       ├── flags: decimal
+            │       │   │       └── value: 2
             │       │   ├── opening_loc: (1,2)-(1,3) = "["
             │       │   └── closing_loc: (1,7)-(1,8) = "]"
             │       └── @ IntegerNode (location: (1,12)-(1,13))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 3
             ├── closing_loc: (1,8)-(1,9) = "]"
             └── block: ∅

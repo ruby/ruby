@@ -27,7 +27,6 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
                  feature_name);
     }
     vm->builtin_function_table = table;
-    vm->builtin_inline_index = 0;
     static const rb_compile_option_t optimization = {
         TRUE, /* unsigned int inline_const_cache; */
         TRUE, /* unsigned int peephole_optimization; */
@@ -52,7 +51,7 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
 
 #ifndef INCLUDED_BY_BUILTIN_C
     st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
-    rb_gc_register_mark_object((VALUE)iseq);
+    rb_vm_register_global_object((VALUE)iseq);
 #endif
 
     return iseq;

@@ -1725,11 +1725,20 @@ no_exception_p(VALUE opts)
 #define RUBY_IO_TIMEOUT_DEFAULT Qnil
 #endif
 
+#ifdef HAVE_RB_IO_TIMEOUT
+#define IO_TIMEOUT_ERROR rb_eIOTimeoutError
+#else
+#define IO_TIMEOUT_ERROR rb_eIOError
+#endif
+
+
 static void
 io_wait_writable(VALUE io)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_writable(errno, io, RUBY_IO_TIMEOUT_DEFAULT);
+    if (!rb_io_maybe_wait_writable(errno, io, RUBY_IO_TIMEOUT_DEFAULT)) {
+        rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become writable!");
+    }
 #else
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
@@ -1741,7 +1750,9 @@ static void
 io_wait_readable(VALUE io)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_readable(errno, io, RUBY_IO_TIMEOUT_DEFAULT);
+    if (!rb_io_maybe_wait_readable(errno, io, RUBY_IO_TIMEOUT_DEFAULT)) {
+        rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become readable!");
+    }
 #else
     rb_io_t *fptr;
     GetOpenFile(io, fptr);

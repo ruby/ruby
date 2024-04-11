@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,14))
                 ├── locals: [:b]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,12))
                 │   ├── parameters:
@@ -23,12 +22,13 @@
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,5)-(1,11))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :b
                 │   │   │       ├── name_loc: (1,5)-(1,6) = "b"
                 │   │   │       ├── operator_loc: (1,7)-(1,8) = "="
                 │   │   │       └── value:
                 │   │   │           @ SymbolNode (location: (1,9)-(1,11))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (1,9)-(1,10) = ":"
                 │   │   │           ├── value_loc: (1,10)-(1,11) = "c"
                 │   │   │           ├── closing_loc: ∅

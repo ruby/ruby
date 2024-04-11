@@ -323,7 +323,7 @@ require_relative "openssl"
 # == Original author
 #
 # Paul Duncan <pabs@pablotron.org>
-# http://pablotron.org/
+# https://pablotron.org/
 
 module Gem::Security
   ##

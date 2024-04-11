@@ -49,7 +49,7 @@ class NameErrorExtensionTest < Test::Unit::TestCase
 
     get_message(error)
 
-    assert_match(/^undefined method `sizee' for /,
+    assert_match(/^undefined method [`']sizee' for /,
                  Marshal.load(Marshal.dump(error)).original_message)
   end
 end

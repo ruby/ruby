@@ -79,4 +79,4 @@ class JSONGenericObjectTest < Test::Unit::TestCase
   ensure
     JSON::GenericObject.json_creatable = false
   end
-end
+end if defined?(JSON::GenericObject)

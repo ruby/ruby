@@ -3,7 +3,11 @@
 # YAML::Store
 #
 require 'yaml'
-require 'pstore'
+
+begin
+  require 'pstore'
+rescue LoadError
+end
 
 # YAML::Store provides the same functionality as PStore, except it uses YAML
 # to dump objects instead of Marshal.
@@ -83,4 +87,4 @@ class YAML::Store < PStore
   def empty_marshal_checksum
     CHECKSUM_ALGO.digest(empty_marshal_data)
   end
-end
+end if defined?(::PStore)

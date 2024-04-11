@@ -48,11 +48,11 @@ install:
 
     results = results.join("\n").b
 
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} install$/, results)
 
-    unless /nmake/.match?(results)
+    unless results.include?("nmake")
       assert_match(/^clean: destination$/,   results)
       assert_match(/^all: destination$/,     results)
       assert_match(/^install: destination$/, results)
@@ -77,12 +77,14 @@ install:
 
     results = results.join("\n").b
 
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} install$/, results)
   end
 
   def test_custom_make_with_options
+    pend "native windows platform only provides nmake" if vc_windows?
+
     ENV["make"] = "make V=1"
     results = []
     File.open File.join(@ext, "Makefile"), "w" do |io|
@@ -159,6 +161,9 @@ install:
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     extension_in_lib(false) do
+      @orig_install_extension_in_lib = Gem.configuration.install_extension_in_lib
+      Gem.configuration.install_extension_in_lib = false
+
       @spec.extensions << "ext/extconf.rb"
 
       ext_dir = File.join @spec.gem_dir, "ext"
@@ -192,6 +197,8 @@ install:
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
+  ensure
+    Gem.configuration.install_extension_in_lib = @orig_install_extension_in_lib
   end
 
   def test_build_extensions_none

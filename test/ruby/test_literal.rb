@@ -184,6 +184,11 @@ class TestRubyLiteral < Test::Unit::TestCase
     list.each { |str| assert_predicate str, :frozen? }
   end
 
+  def test_string_in_hash_literal
+    hash = eval("# frozen-string-literal: false\n""{foo: 'foo'}")
+    assert_not_predicate(hash[:foo], :frozen?)
+  end
+
   if defined?(RubyVM::InstructionSequence.compile_option) and
     RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
     def test_debug_frozen_string
@@ -498,6 +503,7 @@ class TestRubyLiteral < Test::Unit::TestCase
       '//',
       '__LINE__',
       '__FILE__',
+      '__ENCODING__',
     ) do |key|
       assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
     end

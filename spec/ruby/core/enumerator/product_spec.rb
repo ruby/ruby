@@ -69,7 +69,7 @@ ruby_version_is "3.2" do
     it "raises NoMethodError when argument doesn't respond to #each_entry" do
       -> {
         Enumerator.product(Object.new).to_a
-      }.should raise_error(NoMethodError, /undefined method `each_entry' for/)
+      }.should raise_error(NoMethodError, /undefined method [`']each_entry' for/)
     end
 
     it "calls #each_entry lazily" do

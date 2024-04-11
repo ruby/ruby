@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr" do
   before :each do
@@ -153,4 +154,6 @@ describe "Module#attr" do
       (attr :qux, true).should == [:qux, :qux=]
     end
   end
+
+  it_behaves_like :module_attr_added, :attr
 end

@@ -8,11 +8,14 @@ module Prism
   #       [
   #         Prism::IntegerNode.new(
   #           Prism::IntegerBaseFlags::DECIMAL,
+  #           1,
   #           Prism::Location.new(source, 1, 1),
+  #           source
   #         )
   #       ],
   #       Prism::Location.new(source, 0, 1),
-  #       Prism::Location.new(source, 2, 1)
+  #       Prism::Location.new(source, 2, 1),
+  #       source
   #     )
   #
   # you could instead write:
@@ -20,9 +23,10 @@ module Prism
   #     source = Prism::Source.new("[1]")
   #
   #     ArrayNode(
-  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, Location(source, 1, 1))),
+  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, 1, Location(source, 1, 1)), source),
   #       Location(source, 0, 1),
-  #       Location(source, 2, 1)
+  #       Location(source, 2, 1),
+  #       source
   #     )
   #
   # This is mostly helpful in the context of writing tests, but can also be used
@@ -32,13 +36,13 @@ module Prism
 
     # Create a new Location object
     def Location(source = nil, start_offset = 0, length = 0)
-      Location.new(source, start_offset, length)
+      Location.new(source, start_offset, length) # steep:ignore
     end
     <%- nodes.each do |node| -%>
 
     # Create a new <%= node.name %> node
-    def <%= node.name %>(<%= (node.fields.map(&:name) + ["location = Location()"]).join(", ") %>)
-      <%= node.name %>.new(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    def <%= node.name %>(<%= (node.fields.map(&:name) + ["source = nil, location = Location()"]).join(", ") %>)
+      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
     end
     <%- end -%>
   end

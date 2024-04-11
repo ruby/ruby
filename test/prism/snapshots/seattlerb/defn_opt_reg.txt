@@ -12,6 +12,7 @@
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 1)
             │   │   └── @ OptionalParameterNode (location: (1,6)-(1,11))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       ├── name_loc: (1,6)-(1,7) = "a"
             │   │       ├── operator_loc: (1,7)-(1,8) = "="
@@ -20,13 +21,13 @@
             │   ├── rest: ∅
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,13)-(1,14))
+            │   │       ├── flags: ∅
             │   │       └── name: :b
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

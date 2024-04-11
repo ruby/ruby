@@ -139,13 +139,8 @@ ruby_mn_threads_params(void)
 {
 }
 
-void
-ruby_init_stack(volatile VALUE *addr)
-{
-}
-
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
     th->ec->machine.stack_start = (VALUE *)rb_wasm_stack_get_base();
@@ -321,6 +316,12 @@ void
 rb_thread_sched_mark_zombies(rb_vm_t *vm)
 {
     // do nothing
+}
+
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

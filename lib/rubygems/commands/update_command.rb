@@ -244,7 +244,7 @@ command to remove old versions.
 
     @installer = Gem::DependencyInstaller.new update_options
 
-    say "Updating #{name}" unless options[:system] && options[:silent]
+    say "Updating #{name}" unless options[:system]
     begin
       @installer.install name, Gem::Requirement.new(version)
     rescue Gem::InstallError, Gem::DependencyError => e
@@ -282,7 +282,7 @@ command to remove old versions.
     check_oldest_rubygems version
 
     installed_gems = Gem::Specification.find_all_by_name "rubygems-update", requirement
-    installed_gems = update_gem("rubygems-update", version) if installed_gems.empty? || installed_gems.first.version != version
+    installed_gems = update_gem("rubygems-update", requirement) if installed_gems.empty? || installed_gems.first.version != version
     return if installed_gems.empty?
 
     install_rubygems installed_gems.first
@@ -294,9 +294,7 @@ command to remove old versions.
     args << "--prefix" << Gem.prefix if Gem.prefix
     args << "--no-document" unless options[:document].include?("rdoc") || options[:document].include?("ri")
     args << "--no-format-executable" if options[:no_format_executable]
-    args << "--previous-version" << Gem::VERSION if
-      options[:system] == true ||
-      Gem::Version.new(options[:system]) >= Gem::Version.new(2)
+    args << "--previous-version" << Gem::VERSION
     args
   end
 

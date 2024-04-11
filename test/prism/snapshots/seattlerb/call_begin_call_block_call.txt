@@ -41,7 +41,6 @@
             │           │           └── block:
             │           │               @ BlockNode (location: (2,4)-(2,10))
             │           │               ├── locals: []
-            │           │               ├── locals_body_index: 0
             │           │               ├── parameters: ∅
             │           │               ├── body: ∅
             │           │               ├── opening_loc: (2,4)-(2,6) = "do"

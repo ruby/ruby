@@ -23,7 +23,7 @@ def ado_csv_installed?
   installed
 end
 
-if defined?(WIN32OLE_VARIANT)
+if defined?(WIN32OLE::Variant)
     class TestWIN32OLE_VARIANT_OUTARG < Test::Unit::TestCase
       module ADO
       end
@@ -48,11 +48,11 @@ if defined?(WIN32OLE_VARIANT)
         @db.execute(sql, -1)
         c = WIN32OLE::ARGV[1]
         assert_equal(1, c)
-        obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
+        obj = WIN32OLE::Variant.new(nil, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
         assert_equal(nil, obj.value)
         @db.execute(sql , obj)
         assert_equal(1, obj.value)
-        obj = WIN32OLE_VARIANT.new(-100, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
+        obj = WIN32OLE::Variant.new(-100, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
         assert_equal(-100, obj.value)
         @db.execute(sql, obj)
         assert_equal(1, obj.value)

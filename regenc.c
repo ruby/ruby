@@ -57,7 +57,7 @@ onigenc_mbclen(const OnigUChar* p,const OnigUChar* e, OnigEncoding enc)
   int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc, p, e);
   if (ONIGENC_MBCLEN_CHARFOUND_P(ret)) {
     ret = ONIGENC_MBCLEN_CHARFOUND_LEN(ret);
-    if (ret > (int)(e - p)) ret = (int)(e - p); // just for case
+    if (p + ret > e) ret = (int)(e - p); // just for case
     return ret;
   }
   else if (ONIGENC_MBCLEN_NEEDMORE_P(ret)) {

@@ -112,6 +112,7 @@
 #include "encindex.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/inits.h"
@@ -533,10 +534,12 @@ static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
 extern ID ruby_static_id_signo;
 
-NORETURN(static void raise_on_write(rb_io_t *fptr, int e, VALUE errinfo));
+NORETURN(static void rb_sys_fail_on_write(rb_io_t *fptr));
 static void
-raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
+rb_sys_fail_on_write(rb_io_t *fptr)
 {
+    int e = errno;
+    VALUE errinfo = rb_syserr_new_path(e, (fptr)->pathv);
 #if defined EPIPE
     if (fptr_signal_on_epipe(fptr) && (e == EPIPE)) {
         const VALUE sig =
@@ -549,12 +552,6 @@ raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
 #endif
     rb_exc_raise(errinfo);
 }
-
-#define rb_sys_fail_on_write(fptr) \
-    do { \
-        int e = errno; \
-        raise_on_write(fptr, e, rb_syserr_new_path(e, (fptr)->pathv)); \
-    } while (0)
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
@@ -1704,7 +1701,6 @@ make_writeconv(rb_io_t *fptr)
 /* writing functions */
 struct binwrite_arg {
     rb_io_t *fptr;
-    VALUE str;
     const char *ptr;
     long length;
 };
@@ -1800,13 +1796,11 @@ io_binwrite_string(VALUE arg)
         // Write as much as possible:
         ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
 
-        // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
-        // should try again.
         if (result == 0) {
-            errno = EWOULDBLOCK;
+            // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
+            // should try again immediately.
         }
-
-        if (result > 0) {
+        else if (result > 0) {
             if ((size_t)result == remaining) break;
             ptr += result;
             remaining -= result;
@@ -1856,7 +1850,7 @@ io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
 }
 
 static long
-io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
+io_binwrite(const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
     if (len <= 0) return len;
 
@@ -1869,7 +1863,6 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         struct binwrite_arg arg;
 
         arg.fptr = fptr;
-        arg.str = str;
         arg.ptr = ptr;
         arg.length = len;
 
@@ -1977,9 +1970,9 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (converted)
         OBJ_FREEZE(str);
 
-    tmp = rb_str_tmp_frozen_acquire(str);
+    tmp = rb_str_tmp_frozen_no_embed_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
-    n = io_binwrite(tmp, ptr, len, fptr, nosync);
+    n = io_binwrite(ptr, len, fptr, nosync);
     rb_str_tmp_frozen_release(str, tmp);
 
     return n;
@@ -1992,7 +1985,7 @@ rb_io_bufwrite(VALUE io, const void *buf, size_t size)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    return (ssize_t)io_binwrite(0, buf, (long)size, fptr, 0);
+    return (ssize_t)io_binwrite(buf, (long)size, fptr, 0);
 }
 
 static VALUE
@@ -2284,7 +2277,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
     if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
         if (io != rb_ractor_stderr() && RTEST(ruby_verbose)) {
             VALUE klass = CLASS_OF(io);
-            char sep = FL_TEST(klass, FL_SINGLETON) ? (klass = io, '.') : '#';
+            char sep = RCLASS_SINGLETON_P(klass) ? (klass = io, '.') : '#';
             rb_category_warning(
                 RB_WARN_CATEGORY_DEPRECATED, "%+"PRIsVALUE"%c""write is outdated interface"
                 " which accepts just one argument",
@@ -2678,7 +2671,7 @@ rb_io_eof(VALUE io)
     READ_CHECK(fptr);
 #if RUBY_CRLF_ENVIRONMENT
     if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
-        return RBOOL(eof(fptr->fd));;
+        return RBOOL(eof(fptr->fd));
     }
 #endif
     return RBOOL(io_fillbuf(fptr) < 0);
@@ -4304,11 +4297,8 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns the next line as determined by line separator +sep+,
- *    or +nil+ if none.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4457,10 +4447,8 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.close
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns lines as determined by line separator +sep+.
- *  - But returns no more bytes in a line than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4580,10 +4568,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "ne\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Calls with the next line as determined by line separator +sep+.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -5121,7 +5107,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
         b = rb_str_new((const char *)&c, 1);
         break;
       default:
-        SafeStringValue(b);
+        StringValue(b);
     }
     io_ungetbyte(b, fptr);
     return Qnil;
@@ -5183,7 +5169,7 @@ rb_io_ungetc(VALUE io, VALUE c)
         c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
     }
     else {
-        SafeStringValue(c);
+        StringValue(c);
     }
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
@@ -5429,7 +5415,7 @@ maygvl_close(int fd, int keepgvl)
      * close() may block for certain file types (NFS, SO_LINGER sockets,
      * inotify), so let other threads run.
      */
-    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_close, &fd, RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_close, &fd);
 }
 
 static void*
@@ -5446,7 +5432,7 @@ maygvl_fclose(FILE *file, int keepgvl)
     if (keepgvl)
         return fclose(file);
 
-    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_fclose, file);
 }
 
 static void free_io_buffer(rb_io_buffer_t *buf);
@@ -5633,7 +5619,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
 }
 #define rb_io_fptr_finalize(fptr) rb_io_fptr_finalize_internal(fptr)
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_io_memsize(const rb_io_t *fptr)
 {
     size_t size = sizeof(rb_io_t);
@@ -6834,7 +6820,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     else {
         const char *p;
 
-        SafeStringValue(vmode);
+        StringValue(vmode);
         p = StringValueCStr(vmode);
         fmode = rb_io_modestr_fmode(p);
         oflags = rb_io_fmode_oflags(fmode);
@@ -6967,8 +6953,7 @@ sysopen_func(void *ptr)
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
-    int fd;
-    fd = (int)(VALUE)rb_thread_call_without_gvl(sysopen_func, data, RUBY_UBF_IO, 0);
+    int fd = IO_WITHOUT_GVL_INT(sysopen_func, data);
     if (0 <= fd)
         rb_update_max_fd(fd);
     return fd;
@@ -7166,8 +7151,6 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     if (p) {
         parse_mode_enc(p+1, rb_usascii_encoding(),
                        &convconfig.enc, &convconfig.enc2, &fmode);
-        convconfig.ecflags = 0;
-        convconfig.ecopts = Qnil;
     }
     else {
         rb_encoding *e;
@@ -7175,9 +7158,18 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 
         e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
         rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2, fmode);
-        convconfig.ecflags = 0;
-        convconfig.ecopts = Qnil;
     }
+
+    convconfig.ecflags = (fmode & FMODE_READABLE) ?
+        MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+            0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+    convconfig.ecflags |= (fmode & FMODE_WRITABLE) ?
+        MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+            0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
+    SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(convconfig.enc2, convconfig.ecflags);
+    convconfig.ecopts = Qnil;
 
     return rb_file_open_generic(io, filename,
             rb_io_fmode_oflags(fmode),
@@ -7943,7 +7935,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
         RB_GC_GUARD(tmp);
     }
     else {
-        SafeStringValue(pname);
+        StringValue(pname);
         execarg_obj = Qnil;
         if (!is_popen_fork(pname))
             execarg_obj = rb_execarg_new(1, &pname, TRUE, FALSE);
@@ -8148,7 +8140,7 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
     else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int")))
         oflags = NUM2INT(intmode);
     else {
-        SafeStringValue(vmode);
+        StringValue(vmode);
         oflags = rb_io_modestr_oflags(StringValueCStr(vmode));
     }
     if (NIL_P(vperm)) perm = 0666;
@@ -8608,7 +8600,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn_deprecated("`%s'", NULL, rb_id2name(id));
+        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
     }
     *var = val;
 }
@@ -9241,11 +9233,27 @@ static VALUE
 prep_io(int fd, int fmode, VALUE klass, const char *path)
 {
     VALUE path_value = Qnil;
+    rb_encoding *e;
+    struct rb_io_encoding convconfig;
+
     if (path) {
         path_value = rb_obj_freeze(rb_str_new_cstr(path));
     }
 
-    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, NULL);
+    e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
+    rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2, fmode);
+    convconfig.ecflags = (fmode & FMODE_READABLE) ?
+        MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+            0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+    convconfig.ecflags |= (fmode & FMODE_WRITABLE) ?
+        MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+            0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
+    SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(convconfig.enc2, convconfig.ecflags);
+    convconfig.ecopts = Qnil;
+
+    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, &convconfig);
     rb_io_t*io = RFILE(self)->fptr;
 
     if (!io_check_tty(io)) {
@@ -10453,8 +10461,9 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    $cat t.txt | ruby -e "p readlines 12"
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *
- *  With arguments +sep+ and +limit+ given, combines the two behaviors;
- *  see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit].
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -10546,7 +10555,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     VALUE result;
     rb_io_t *fptr;
 
-    SafeStringValue(str);
+    StringValue(str);
     rb_last_status_clear();
     port = pipe_open_s(str, "r", FMODE_READABLE|DEFAULT_TEXTMODE, NULL);
     if (NIL_P(port)) return rb_str_new(0,0);
@@ -11552,7 +11561,7 @@ rb_f_syscall(int argc, VALUE *argv, VALUE _)
         VALUE v = rb_check_string_type(argv[i]);
 
         if (!NIL_P(v)) {
-            SafeStringValue(v);
+            StringValue(v);
             rb_str_modify(v);
             arg[i] = (VALUE)StringValueCStr(v);
         }
@@ -11965,7 +11974,7 @@ io_s_foreach(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]):
  *
  *    File.foreach('t.txt', 7) {|line| p line }
  *
@@ -11981,10 +11990,9 @@ io_s_foreach(VALUE v)
  *    "Fourth l"
  *    "line\n"
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12057,15 +12065,14 @@ io_s_readlines(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -13215,7 +13222,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, stp->src_fptr);
         if (stp->dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
+            if (io_binwrite(RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
                 rb_sys_fail_on_write(stp->dst_fptr);
         }
         else /* others such as StringIO */
@@ -13237,7 +13244,7 @@ copy_stream_body(VALUE arg)
         return copy_stream_fallback(stp);
     }
 
-    rb_thread_call_without_gvl(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
+    IO_WITHOUT_GVL(nogvl_copy_stream_func, stp);
     return Qnil;
 }
 
@@ -14677,47 +14684,253 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 /*
  * Document-class:  ARGF
  *
- * ARGF is a stream designed for use in scripts that process files given as
- * command-line arguments or passed in via STDIN.
+ * == \ARGF and +ARGV+
  *
- * The arguments passed to your script are stored in the +ARGV+ Array, one
- * argument per element. ARGF assumes that any arguments that aren't
- * filenames have been removed from +ARGV+. For example:
+ * The \ARGF object works with the array at global variable +ARGV+
+ * to make <tt>$stdin</tt> and file streams available in the Ruby program:
  *
- *     $ ruby argf.rb --verbose file1 file2
+ * - **ARGV** may be thought of as the <b>argument vector</b> array.
  *
- *     ARGV  #=> ["--verbose", "file1", "file2"]
- *     option = ARGV.shift #=> "--verbose"
- *     ARGV  #=> ["file1", "file2"]
+ *   Initially, it contains the command-line arguments and options
+ *   that are passed to the Ruby program;
+ *   the program can modify that array as it likes.
  *
- * You can now use ARGF to work with a concatenation of each of these named
- * files. For instance, ARGF.read will return the contents of _file1_
- * followed by the contents of _file2_.
+ * - **ARGF** may be thought of as the <b>argument files</b> object.
  *
- * After a file in +ARGV+ has been read ARGF removes it from the Array.
- * Thus, after all files have been read +ARGV+ will be empty.
+ *   It can access file streams and/or the <tt>$stdin</tt> stream,
+ *   based on what it finds in +ARGV+.
+ *   This provides a convenient way for the command line
+ *   to specify streams for a Ruby program to read.
  *
- * You can manipulate +ARGV+ yourself to control what ARGF operates on. If
- * you remove a file from +ARGV+, it is ignored by ARGF; if you add files to
- * +ARGV+, they are treated as if they were named on the command line. For
- * example:
+ * == Reading
  *
- *     ARGV.replace ["file1"]
- *     ARGF.readlines # Returns the contents of file1 as an Array
- *     ARGV           #=> []
- *     ARGV.replace ["file2", "file3"]
- *     ARGF.read      # Returns the contents of file2 and file3
+ * \ARGF may read from _source_ streams,
+ * which at any particular time are determined by the content of +ARGV+.
  *
- * If +ARGV+ is empty, ARGF acts as if it contained <tt>"-"</tt> that
- * makes ARGF read from STDIN, i.e. the data piped or typed to your
- * script. For example:
+ * === Simplest Case
  *
- *     $ echo "glark" | ruby -e 'p ARGF.read'
- *     "glark\n"
+ * When the <i>very first</i> \ARGF read occurs with an empty +ARGV+ (<tt>[]</tt>),
+ * the source is <tt>$stdin</tt>:
  *
- *     $ echo Glark > file1
- *     $ echo "glark" | ruby -e 'p ARGF.read' -- - file1
- *     "glark\nGlark\n"
+ * - \File +t.rb+:
+ *
+ *     p ['ARGV', ARGV]
+ *     p ['ARGF.read', ARGF.read]
+ *
+ * - Commands and outputs
+ *   (see below for the content of files +foo.txt+ and +bar.txt+):
+ *
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb
+ *     ["ARGV", []]
+ *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
+ *
+ *     $ cat foo.txt bar.txt | ruby t.rb
+ *     ["ARGV", []]
+ *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
+ *
+ * === About the Examples
+ *
+ * Many examples here assume the existence of files +foo.txt+ and +bar.txt+:
+ *
+ *   $ cat foo.txt
+ *   Foo 0
+ *   Foo 1
+ *   $ cat bar.txt
+ *   Bar 0
+ *   Bar 1
+ *   Bar 2
+ *   Bar 3
+ *
+ * === Sources in +ARGV+
+ *
+ * For any \ARGF read _except_ the {simplest case}[rdoc-ref:ARGF@Simplest+Case]
+ * (that is, _except_ for the <i>very first</i> \ARGF read with an empty +ARGV+),
+ * the sources are found in +ARGV+.
+ *
+ * \ARGF assumes that each element in array +ARGV+ is a potential source,
+ * and is one of:
+ *
+ * - The string path to a file that may be opened as a stream.
+ * - The character <tt>'-'</tt>, meaning stream <tt>$stdin</tt>.
+ *
+ * Each element that is _not_ one of these
+ * should be removed from +ARGV+ before \ARGF accesses that source.
+ *
+ * In the following example:
+ *
+ * - Filepaths +foo.txt+ and +bar.txt+ may be retained as potential sources.
+ * - Options <tt>--xyzzy</tt> and <tt>--mojo</tt> should be removed.
+ *
+ * Example:
+ *
+ * - \File +t.rb+:
+ *
+ *     # Print arguments (and options, if any) found on command line.
+ *     p ['ARGV', ARGV]
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb --xyzzy --mojo foo.txt bar.txt
+ *     ["ARGV", ["--xyzzy", "--mojo", "foo.txt", "bar.txt"]]
+ *
+ * \ARGF's stream access considers the elements of +ARGV+, left to right:
+ *
+ * - \File +t.rb+:
+ *
+ *     p "ARGV: #{ARGV}"
+ *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb foo.txt bar.txt
+ *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
+ *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
+ *
+ * Because the value at +ARGV+ is an ordinary array,
+ * you can manipulate it to control which sources \ARGF considers:
+ *
+ * - If you remove an element from +ARGV+, \ARGF will not consider the corresponding source.
+ * - If you add an element to +ARGV+, \ARGF will consider the corresponding source.
+ *
+ * Each element in +ARGV+ is removed when its corresponding source is accessed;
+ * when all sources have been accessed, the array is empty:
+ *
+ * - \File +t.rb+:
+ *
+ *     until ARGV.empty? && ARGF.eof?
+ *       p "ARGV: #{ARGV}"
+ *       p "Line: #{ARGF.readline}" # Read each line from each specified stream.
+ *     end
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb foo.txt bar.txt
+ *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
+ *     "Line: Foo 0\n"
+ *     "ARGV: [\"bar.txt\"]"
+ *     "Line: Foo 1\n"
+ *     "ARGV: [\"bar.txt\"]"
+ *     "Line: Bar 0\n"
+ *     "ARGV: []"
+ *     "Line: Bar 1\n"
+ *     "ARGV: []"
+ *     "Line: Bar 2\n"
+ *     "ARGV: []"
+ *     "Line: Bar 3\n"
+ *
+ * ==== Filepaths in +ARGV+
+ *
+ * The +ARGV+ array may contain filepaths the specify sources for \ARGF reading.
+ *
+ * This program prints what it reads from files at the paths specified
+ * on the command line:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ['ARGV', ARGV]
+ *     # Read and print all content from the specified sources.
+ *     p ['ARGF.read', ARGF.read]
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb foo.txt bar.txt
+ *     ["ARGV", [foo.txt, bar.txt]
+ *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
+ *
+ * ==== Specifying <tt>$stdin</tt> in +ARGV+
+ *
+ * To specify stream <tt>$stdin</tt> in +ARGV+, us the character <tt>'-'</tt>:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ['ARGV', ARGV]
+ *     p ['ARGF.read', ARGF.read]
+ *
+ * - Command and output:
+ *
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb -
+ *     ["ARGV", ["-"]]
+ *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
+ *
+ * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
+ * (exception:
+ * see {Specifying $stdin in ARGV}[rdoc-ref:ARGF@Specifying+-24stdin+in+ARGV]):
+ *
+ * - Command and output:
+ *
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb foo.txt bar.txt
+ *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
+ *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
+ *
+ * ==== Mixtures and Repetitions in +ARGV+
+ *
+ * For an \ARGF reader, +ARGV+ may contain any mixture of filepaths
+ * and character <tt>'-'</tt>, including repetitions.
+ *
+ * ==== Modifications to +ARGV+
+ *
+ * The running Ruby program may make any modifications to the +ARGV+ array;
+ * the current value of +ARGV+ affects \ARGF reading.
+ *
+ * ==== Empty +ARGV+
+ *
+ * For an empty +ARGV+, an \ARGF read method either returns +nil+
+ * or raises an exception, depending on the specific method.
+ *
+ * === More Read Methods
+ *
+ * As seen above, method ARGF#read reads the content of all sources
+ * into a single string.
+ * Other \ARGF methods provide other ways to access that content;
+ * these include:
+ *
+ * - Byte access: #each_byte, #getbyte, #readbyte.
+ * - Character access: #each_char, #getc, #readchar.
+ * - Codepoint access: #each_codepoint.
+ * - Line access: #each_line, #gets, #readline, #readlines.
+ * - Source access: #read, #read_nonblock, #readpartial.
+ *
+ * === About \Enumerable
+ *
+ * \ARGF includes module Enumerable.
+ * Virtually all methods in \Enumerable call method <tt>#each</tt> in the including class.
+ *
+ * <b>Note well</b>: In \ARGF, method #each returns data from the _sources_,
+ * _not_ from +ARGV+;
+ * therefore, for example, <tt>ARGF#entries</tt> returns an array of lines from the sources,
+ * not an array of the strings from +ARGV+:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ['ARGV', ARGV]
+ *     p ['ARGF.entries', ARGF.entries]
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb foo.txt bar.txt
+ *     ["ARGV", ["foo.txt", "bar.txt"]]
+ *     ["ARGF.entries", ["Foo 0\n", "Foo 1\n", "Bar 0\n", "Bar 1\n", "Bar 2\n", "Bar 3\n"]]
+ *
+ * == Writing
+ *
+ * If <i>inplace mode</i> is in effect,
+ * \ARGF may write to target streams,
+ * which at any particular time are determined by the content of ARGV.
+ *
+ * Methods about inplace mode:
+ *
+ * - #inplace_mode
+ * - #inplace_mode=
+ * - #to_write_io
+ *
+ * Methods for writing:
+ *
+ * - #print
+ * - #printf
+ * - #putc
+ * - #puts
+ * - #write
+ *
  */
 
 /*
@@ -14869,56 +15082,64 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == Line \IO
  *
- *  You can read an \IO stream line-by-line using these methods:
+ *  \Class \IO supports line-oriented
+ *  {input}[rdoc-ref:IO@Line+Input] and {output}[rdoc-ref:IO@Line+Output]
+ *
+ *  === Line Input
+ *
+ *  \Class \IO supports line-oriented input for
+ *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input]
+ *
+ *  ==== \File Line Input
+ *
+ *  You can read lines from a file using these methods:
+ *
+ *  - IO.foreach: Reads each line and passes it to the given block.
+ *  - IO.readlines: Reads and returns all lines in an array.
+ *
+ *  For each of these methods:
+ *
+ *  - You can specify {open options}[rdoc-ref:IO@Open+Options].
+ *  - Line parsing depends on the effective <i>line separator</i>;
+ *    see {Line Separator}[rdoc-ref:IO@Line+Separator].
+ *  - The length of each returned line depends on the effective <i>line limit</i>;
+ *    see {Line Limit}[rdoc-ref:IO@Line+Limit].
+ *
+ *  ==== Stream Line Input
+ *
+ *  You can read lines from an \IO stream using these methods:
  *
  *  - IO#each_line: Reads each remaining line, passing it to the given block.
  *  - IO#gets: Returns the next line.
  *  - IO#readline: Like #gets, but raises an exception at end-of-stream.
  *  - IO#readlines: Returns all remaining lines in an array.
  *
- *  Each of these reader methods accepts:
+ *  For each of these methods:
  *
- *  - An optional line separator, +sep+;
+ *  - Reading may begin mid-line,
+ *    depending on the stream's _position_;
+ *    see {Position}[rdoc-ref:IO@Position].
+ *  - Line parsing depends on the effective <i>line separator</i>;
  *    see {Line Separator}[rdoc-ref:IO@Line+Separator].
- *  - An optional line-size limit, +limit+;
+ *  - The length of each returned line depends on the effective <i>line limit</i>;
  *    see {Line Limit}[rdoc-ref:IO@Line+Limit].
  *
- *  For each of these reader methods, reading may begin mid-line,
- *  depending on the stream's position;
- *  see {Position}[rdoc-ref:IO@Position]:
+ *  ===== Line Separator
+ *
+ *  Each of the {line input methods}[rdoc-ref:IO@Line+Input] uses a <i>line separator</i>:
+ *  the string that determines what is considered a line;
+ *  it is sometimes called the <i>input record separator</i>.
+ *
+ *  The default line separator is taken from global variable <tt>$/</tt>,
+ *  whose initial value is <tt>"\n"</tt>.
+ *
+ *  Generally, the line to be read next is all data
+ *  from the current {position}[rdoc-ref:IO@Position]
+ *  to the next line separator
+ *  (but see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values]):
  *
  *    f = File.new('t.txt')
- *    f.pos = 27
- *    f.each_line {|line| p line }
- *    f.close
- *
- *  Output:
- *
- *    "rth line\n"
- *    "Fifth line\n"
- *
- *  You can write to an \IO stream line-by-line using this method:
- *
- *  - IO#puts: Writes objects to the stream.
- *
- *  === Line Separator
- *
- *  Each of these methods uses a <i>line separator</i>,
- *  which is the string that delimits lines:
- *
- *  - IO.foreach.
- *  - IO.readlines.
- *  - IO#each_line.
- *  - IO#gets.
- *  - IO#readline.
- *  - IO#readlines.
- *
- *  The default line separator is the given by the global variable <tt>$/</tt>,
- *  whose value is by default <tt>"\n"</tt>.
- *  The line to be read next is all data from the current position
- *  to the next line separator:
- *
- *    f = File.new('t.txt')
+ *    # Method gets with no sep argument returns the next line, according to $/.
  *    f.gets # => "First line\n"
  *    f.gets # => "Second line\n"
  *    f.gets # => "\n"
@@ -14926,7 +15147,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets # => "Fifth line\n"
  *    f.close
  *
- *  You can specify a different line separator:
+ *  You can use a different line separator by passing argument +sep+:
  *
  *    f = File.new('t.txt')
  *    f.gets('l')   # => "First l"
@@ -14935,15 +15156,27 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets        # => "e\n"
  *    f.close
  *
- *  There are two special line separators:
+ *  Or by setting global variable <tt>$/</tt>:
  *
- *  - +nil+: The entire stream is read into a single string:
+ *    f = File.new('t.txt')
+ *    $/ = 'l'
+ *    f.gets # => "First l"
+ *    f.gets # => "ine\nSecond l"
+ *    f.gets # => "ine\n\nFourth l"
+ *    f.close
+ *
+ *  ===== Special Line Separator Values
+ *
+ *  Each of the {line input methods}[rdoc-ref:IO@Line+Input]
+ *  accepts two special values for parameter +sep+:
+ *
+ *  - +nil+: The entire stream is to be read ("slurped") into a single string:
  *
  *      f = File.new('t.txt')
  *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *      f.close
  *
- *  - <tt>''</tt> (the empty string): The next "paragraph" is read
+ *  - <tt>''</tt> (the empty string): The next "paragraph" is to be read
  *    (paragraphs being separated by two consecutive line separators):
  *
  *      f = File.new('t.txt')
@@ -14951,23 +15184,18 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f.gets('') # => "Fourth line\nFifth line\n"
  *      f.close
  *
- *  === Line Limit
+ *  ===== Line Limit
  *
- *  Each of these methods uses a <i>line limit</i>,
- *  which specifies that the number of bytes returned may not be (much) longer
- *  than the given +limit+;
+ *  Each of the {line input methods}[rdoc-ref:IO@Line+Input]
+ *  uses an integer <i>line limit</i>,
+ *  which restricts the number of bytes that may be returned.
+ *  (A multi-byte character will not be split, and so a returned line may be slightly longer
+ *  than the limit).
  *
- *  - IO.foreach.
- *  - IO.readlines.
- *  - IO#each_line.
- *  - IO#gets.
- *  - IO#readline.
- *  - IO#readlines.
+ *  The default limit value is <tt>-1</tt>;
+ *  any negative limit value means that there is no limit.
  *
- *  A multi-byte character will not be split, and so a line may be slightly longer
- *  than the given limit.
- *
- *  If +limit+ is not given, the line is determined only by +sep+.
+ *  If there is no limit, the line is determined only by +sep+.
  *
  *    # Text with 1-byte characters.
  *    File.open('t.txt') {|f| f.gets(1) }  # => "F"
@@ -14985,24 +15213,21 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.rus') {|f| f.gets(3).size } # => 2
  *    File.open('t.rus') {|f| f.gets(4).size } # => 2
  *
- *  === Line Separator and Line Limit
+ *  ===== Line Separator and Line Limit
  *
- *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
+ *  With arguments +sep+ and +limit+ given, combines the two behaviors:
  *
  *  - Returns the next line as determined by line separator +sep+.
- *  - But returns no more bytes than are allowed by the limit.
+ *  - But returns no more bytes than are allowed by the limit +limit+.
  *
  *  Example:
  *
  *    File.open('t.txt') {|f| f.gets('li', 20) } # => "First li"
  *    File.open('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
  *
- *  === Line Number
+ *  ===== Line Number
  *
- *  A readable \IO stream has a non-negative integer <i>line number</i>.
- *
- *  The relevant methods:
+ *  A readable \IO stream has a non-negative integer <i>line number</i>:
  *
  *  - IO#lineno: Returns the line number.
  *  - IO#lineno=: Resets and returns the line number.
@@ -15010,7 +15235,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Unless modified by a call to method IO#lineno=,
  *  the line number is the number of lines read
  *  by certain line-oriented methods,
- *  according to the given line separator +sep+:
+ *  according to the effective {line separator}[rdoc-ref:IO@Line+Separator]:
  *
  *  - IO.foreach: Increments the line number on each call to the block.
  *  - IO#each_line: Increments the line number on each call to the block.
@@ -15099,6 +15324,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f.seek(0, :SET)
  *      $.          # => 5
  *      f.close
+ *
+ *  === Line Output
+ *
+ *  You can write to an \IO stream line-by-line using this method:
+ *
+ *  - IO#puts: Writes objects to the stream.
  *
  *  == Character \IO
  *
@@ -15398,7 +15629,7 @@ Init_IO(void)
     rb_define_hooked_variable("$,", &rb_output_fs, 0, deprecated_str_setter);
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
-    rb_gc_register_mark_object(rb_default_rs);
+    rb_vm_register_global_object(rb_default_rs);
     rb_rs = rb_default_rs;
     rb_output_rs = Qnil;
     rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_str_setter);

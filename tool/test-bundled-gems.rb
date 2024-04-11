@@ -31,6 +31,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   toplib = gem
   case gem
+  when "resolv-replace"
+    # Skip test suite
+    next
   when "typeprof"
 
   when "rbs"

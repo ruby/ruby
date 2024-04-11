@@ -7,7 +7,7 @@
             ├── flags: ∅
             ├── elements: (length: 3)
             │   ├── @ SymbolNode (location: (1,3)-(1,4))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,3)-(1,4) = "a"
             │   │   ├── closing_loc: ∅
@@ -30,7 +30,8 @@
             │   │   │       │           ├── flags: ∅
             │   │   │       │           ├── receiver:
             │   │   │       │           │   @ IntegerNode (location: (1,8)-(1,9))
-            │   │   │       │           │   └── flags: decimal
+            │   │   │       │           │   ├── flags: decimal
+            │   │   │       │           │   └── value: 1
             │   │   │       │           ├── call_operator_loc: ∅
             │   │   │       │           ├── name: :+
             │   │   │       │           ├── message_loc: (1,9)-(1,10) = "+"
@@ -40,13 +41,14 @@
             │   │   │       │           │   ├── flags: ∅
             │   │   │       │           │   └── arguments: (length: 1)
             │   │   │       │           │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │   │   │       │           │           └── flags: decimal
+            │   │   │       │           │           ├── flags: decimal
+            │   │   │       │           │           └── value: 1
             │   │   │       │           ├── closing_loc: ∅
             │   │   │       │           └── block: ∅
             │   │   │       └── closing_loc: (1,11)-(1,12) = "}"
             │   │   └── closing_loc: ∅
             │   └── @ SymbolNode (location: (1,13)-(1,14))
-            │       ├── flags: ∅
+            │       ├── flags: forced_us_ascii_encoding
             │       ├── opening_loc: ∅
             │       ├── value_loc: (1,13)-(1,14) = "c"
             │       ├── closing_loc: ∅

@@ -9,7 +9,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (2,2)-(9,3))
+        │   │   @ BeginNode (location: (1,0)-(9,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (2,2)-(2,3))
@@ -80,7 +80,6 @@
         │   │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -93,7 +92,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (12,2)-(19,3))
+        │   │   @ BeginNode (location: (11,0)-(19,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (12,2)-(12,12))
@@ -178,7 +177,6 @@
         │   │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (11,0)-(11,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -197,16 +195,17 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,8)-(21,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── name_loc: (21,8)-(21,12) = "bar:"
         │   │   │   └── @ RequiredKeywordParameterNode (location: (21,14)-(21,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── name_loc: (21,14)-(21,18) = "baz:"
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar, :baz]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (21,7)-(21,8) = "("
@@ -220,7 +219,6 @@
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (24,0)-(24,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -246,7 +244,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (27,0)-(27,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -259,7 +256,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (32,2)-(37,3))
+        │   │   @ BeginNode (location: (31,0)-(37,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (32,2)-(32,5))
@@ -314,7 +311,6 @@
         │   │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (31,0)-(31,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -327,7 +323,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (40,2)-(43,3))
+        │   │   @ BeginNode (location: (39,0)-(43,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (40,2)-(40,5))
@@ -363,7 +359,6 @@
         │   │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (39,0)-(39,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -376,7 +371,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (46,2)-(49,3))
+        │   │   @ BeginNode (location: (45,0)-(49,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (46,2)-(46,5))
@@ -415,7 +410,6 @@
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (49,0)-(49,3) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (45,0)-(45,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -430,6 +424,7 @@
         │   │   @ ParametersNode (location: (51,8)-(51,11))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (51,8)-(51,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -444,7 +439,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (51,0)-(51,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (51,7)-(51,8) = "("
@@ -459,8 +453,10 @@
         │   │   @ ParametersNode (location: (55,8)-(55,16))
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ RequiredParameterNode (location: (55,8)-(55,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :bar
         │   │   │   └── @ RequiredParameterNode (location: (55,13)-(55,16))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :baz
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -475,7 +471,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar, :baz]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (55,0)-(55,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (55,7)-(55,8) = "("
@@ -491,6 +486,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (59,8)-(59,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (59,8)-(59,11) = "bar"
         │   │   │       ├── operator_loc: (59,12)-(59,13) = "="
@@ -511,7 +507,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (59,0)-(59,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (59,7)-(59,8) = "("
@@ -527,6 +522,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (63,8)-(63,24))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (63,8)-(63,11) = "bar"
         │   │   │       ├── operator_loc: (63,12)-(63,13) = "="
@@ -555,7 +551,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (63,0)-(63,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (63,7)-(63,8) = "("
@@ -571,6 +566,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (66,8)-(66,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (66,8)-(66,11) = "bar"
         │   │   │       ├── operator_loc: (66,12)-(66,13) = "="
@@ -588,7 +584,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (66,0)-(66,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (66,7)-(66,8) = "("
@@ -603,9 +598,11 @@
         │   │   @ ParametersNode (location: (70,8)-(70,23))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (70,8)-(70,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (70,13)-(70,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (70,13)-(70,16) = "baz"
         │   │   │       ├── operator_loc: (70,17)-(70,18) = "="
@@ -623,7 +620,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar, :baz]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (70,0)-(70,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (70,7)-(70,8) = "("
@@ -642,16 +638,17 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (74,8)-(74,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (74,8)-(74,12) = "bar:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (74,13)-(74,14))
-        │   │   │           └── flags: decimal
+        │   │   │           ├── flags: decimal
+        │   │   │           └── value: 1
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (74,0)-(74,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (74,7)-(74,8) = "("
@@ -670,6 +667,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (77,8)-(77,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (77,8)-(77,12) = "bar:"
         │   │   │       └── value:
@@ -687,7 +685,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (77,0)-(77,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (77,7)-(77,8) = "("
@@ -706,6 +703,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (80,8)-(80,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (80,8)-(80,12) = "bar:"
         │   │   │       └── value:
@@ -723,7 +721,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (80,0)-(80,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (80,7)-(80,8) = "("
@@ -740,6 +737,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (83,8)-(83,9))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (83,8)-(83,9) = "*"
@@ -760,8 +758,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── locals: [:*]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
         │   ├── def_keyword_loc: (83,0)-(83,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (83,7)-(83,8) = "("
@@ -778,6 +775,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (87,8)-(87,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   ├── name_loc: (87,9)-(87,12) = "bar"
         │   │   │   └── operator_loc: (87,8)-(87,9) = "*"
@@ -792,7 +790,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (87,0)-(87,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (87,7)-(87,8) = "("
@@ -807,10 +804,12 @@
         │   │   @ ParametersNode (location: (91,8)-(91,17))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (91,8)-(91,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (91,13)-(91,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :baz
         │   │   │   ├── name_loc: (91,14)-(91,17) = "baz"
         │   │   │   └── operator_loc: (91,13)-(91,14) = "*"
@@ -825,7 +824,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar, :baz]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (91,0)-(91,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (91,7)-(91,8) = "("
@@ -841,6 +839,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (95,8)-(95,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (95,8)-(95,11) = "baz"
         │   │   │       ├── operator_loc: (95,12)-(95,13) = "="
@@ -848,6 +847,7 @@
         │   │   │           @ TrueNode (location: (95,14)-(95,18))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (95,20)-(95,24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (95,21)-(95,24) = "bor"
         │   │   │   └── operator_loc: (95,20)-(95,21) = "*"
@@ -869,7 +869,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: [:baz, :bor]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (95,0)-(95,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (95,7)-(95,8) = "("
@@ -885,6 +884,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (99,8)-(99,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (99,8)-(99,11) = "baz"
         │   │   │       ├── operator_loc: (99,12)-(99,13) = "="
@@ -892,6 +892,7 @@
         │   │   │           @ TrueNode (location: (99,14)-(99,18))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (99,20)-(99,24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (99,21)-(99,24) = "bor"
         │   │   │   └── operator_loc: (99,20)-(99,21) = "*"
@@ -900,6 +901,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (99,26)-(99,32))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (99,27)-(99,32) = "block"
         │   │       └── operator_loc: (99,26)-(99,27) = "&"
@@ -917,7 +919,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: [:baz, :bor, :block]
-        │   ├── locals_body_index: 3
         │   ├── def_keyword_loc: (99,0)-(99,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (99,7)-(99,8) = "("
@@ -932,9 +933,11 @@
         │   │   @ ParametersNode (location: (103,8)-(103,29))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (103,8)-(103,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (103,13)-(103,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (103,13)-(103,16) = "baz"
         │   │   │       ├── operator_loc: (103,17)-(103,18) = "="
@@ -942,6 +945,7 @@
         │   │   │           @ TrueNode (location: (103,19)-(103,23))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (103,25)-(103,29))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (103,26)-(103,29) = "bor"
         │   │   │   └── operator_loc: (103,25)-(103,26) = "*"
@@ -956,7 +960,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar, :baz, :bor]
-        │   ├── locals_body_index: 3
         │   ├── def_keyword_loc: (103,0)-(103,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (103,7)-(103,8) = "("
@@ -977,6 +980,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (107,8)-(107,14))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (107,9)-(107,14) = "block"
         │   │       └── operator_loc: (107,8)-(107,9) = "&"
@@ -994,7 +998,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: [:block]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (107,0)-(107,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (107,7)-(107,8) = "("
@@ -1009,6 +1012,7 @@
         │   │   @ ParametersNode (location: (111,8)-(111,19))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (111,8)-(111,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -1017,6 +1021,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (111,13)-(111,19))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (111,14)-(111,19) = "block"
         │   │       └── operator_loc: (111,13)-(111,14) = "&"
@@ -1027,7 +1032,6 @@
         │   │           ├── name: :bar
         │   │           └── depth: 0
         │   ├── locals: [:bar, :block]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (111,0)-(111,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (111,7)-(111,8) = "("
@@ -1063,7 +1067,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (115,0)-(115,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -1082,6 +1085,7 @@
         │   │   │       │   └── @ MultiTargetNode (location: (120,7)-(120,10))
         │   │   │       │       ├── lefts: (length: 1)
         │   │   │       │       │   └── @ RequiredParameterNode (location: (120,8)-(120,9))
+        │   │   │       │       │       ├── flags: ∅
         │   │   │       │       │       └── name: :a
         │   │   │       │       ├── rest: ∅
         │   │   │       │       ├── rights: (length: 0)
@@ -1099,7 +1103,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:a]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (120,0)-(120,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (120,5)-(120,6) = "("
@@ -1118,9 +1121,11 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ RequiredKeywordParameterNode (location: (123,8)-(123,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── name_loc: (123,8)-(123,12) = "bar:"
         │   │   │   └── @ OptionalKeywordParameterNode (location: (123,14)-(123,26))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (123,14)-(123,18) = "baz:"
         │   │   │       └── value:
@@ -1134,7 +1139,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:bar, :baz]
-        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (123,0)-(123,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (123,7)-(123,8) = "("
@@ -1170,7 +1174,6 @@
         │   │           │       └── unescaped: "\n"
         │   │           └── closing_loc: (129,0)-(130,0) = "  HEREDOC\n"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (126,0)-(126,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -1192,7 +1195,6 @@
             │           ├── closing_loc: (133,4)-(133,5) = ")"
             │           └── unescaped: ""
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (132,0)-(132,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

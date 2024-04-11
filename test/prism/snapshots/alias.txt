@@ -6,14 +6,14 @@
         ├── @ AliasMethodNode (location: (1,0)-(1,15))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (1,6)-(1,10))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (1,6)-(1,7) = ":"
         │   │   ├── value_loc: (1,7)-(1,10) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (1,11)-(1,15))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (1,11)-(1,12) = ":"
         │   │   ├── value_loc: (1,12)-(1,15) = "bar"
         │   │   ├── closing_loc: ∅
@@ -22,14 +22,14 @@
         ├── @ AliasMethodNode (location: (3,0)-(3,21))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (3,6)-(3,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (3,6)-(3,9) = "%s["
         │   │   ├── value_loc: (3,9)-(3,12) = "abc"
         │   │   ├── closing_loc: (3,12)-(3,13) = "]"
         │   │   └── unescaped: "abc"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (3,14)-(3,21))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (3,14)-(3,17) = "%s["
         │   │   ├── value_loc: (3,17)-(3,20) = "def"
         │   │   ├── closing_loc: (3,20)-(3,21) = "]"
@@ -38,14 +38,14 @@
         ├── @ AliasMethodNode (location: (5,0)-(5,19))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (5,6)-(5,12))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (5,6)-(5,8) = ":'"
         │   │   ├── value_loc: (5,8)-(5,11) = "abc"
         │   │   ├── closing_loc: (5,11)-(5,12) = "'"
         │   │   └── unescaped: "abc"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (5,13)-(5,19))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (5,13)-(5,15) = ":'"
         │   │   ├── value_loc: (5,15)-(5,18) = "def"
         │   │   ├── closing_loc: (5,18)-(5,19) = "'"
@@ -68,12 +68,13 @@
         │   │   │       │   @ StatementsNode (location: (7,13)-(7,14))
         │   │   │       │   └── body: (length: 1)
         │   │   │       │       └── @ IntegerNode (location: (7,13)-(7,14))
-        │   │   │       │           └── flags: decimal
+        │   │   │       │           ├── flags: decimal
+        │   │   │       │           └── value: 1
         │   │   │       └── closing_loc: (7,14)-(7,15) = "}"
         │   │   └── closing_loc: (7,15)-(7,16) = "\""
         │   ├── old_name:
         │   │   @ SymbolNode (location: (7,17)-(7,23))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (7,17)-(7,19) = ":'"
         │   │   ├── value_loc: (7,19)-(7,22) = "def"
         │   │   ├── closing_loc: (7,22)-(7,23) = "'"
@@ -90,14 +91,14 @@
         ├── @ AliasMethodNode (location: (11,0)-(11,13))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (11,6)-(11,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (11,6)-(11,9) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (11,10)-(11,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (11,10)-(11,13) = "bar"
         │   │   ├── closing_loc: ∅
@@ -114,14 +115,14 @@
         ├── @ AliasMethodNode (location: (15,0)-(15,12))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (15,6)-(15,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (15,6)-(15,9) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (15,10)-(15,12))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (15,10)-(15,12) = "if"
         │   │   ├── closing_loc: ∅
@@ -130,14 +131,14 @@
         ├── @ AliasMethodNode (location: (17,0)-(17,13))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (17,6)-(17,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (17,6)-(17,9) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (17,10)-(17,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (17,10)-(17,13) = "<=>"
         │   │   ├── closing_loc: ∅
@@ -146,14 +147,14 @@
         ├── @ AliasMethodNode (location: (19,0)-(19,15))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (19,6)-(19,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (19,6)-(19,7) = ":"
         │   │   ├── value_loc: (19,7)-(19,9) = "=="
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "=="
         │   ├── old_name:
         │   │   @ SymbolNode (location: (19,10)-(19,15))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: (19,10)-(19,11) = ":"
         │   │   ├── value_loc: (19,11)-(19,15) = "eql?"
         │   │   ├── closing_loc: ∅
@@ -162,14 +163,14 @@
         ├── @ AliasMethodNode (location: (21,0)-(21,9))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (21,6)-(21,7))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (21,6)-(21,7) = "A"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "A"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (21,8)-(21,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: forced_us_ascii_encoding
         │   │   ├── opening_loc: ∅
         │   │   ├── value_loc: (21,8)-(21,9) = "B"
         │   │   ├── closing_loc: ∅
@@ -178,14 +179,14 @@
         └── @ AliasMethodNode (location: (23,0)-(23,11))
             ├── new_name:
             │   @ SymbolNode (location: (23,6)-(23,8))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (23,6)-(23,7) = ":"
             │   ├── value_loc: (23,7)-(23,8) = "A"
             │   ├── closing_loc: ∅
             │   └── unescaped: "A"
             ├── old_name:
             │   @ SymbolNode (location: (23,9)-(23,11))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (23,9)-(23,10) = ":"
             │   ├── value_loc: (23,10)-(23,11) = "B"
             │   ├── closing_loc: ∅

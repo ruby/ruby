@@ -15,16 +15,17 @@
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 2)
             │   │   ├── @ RequiredKeywordParameterNode (location: (1,6)-(1,8))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── name: :a
             │   │   │   └── name_loc: (1,6)-(1,8) = "a:"
             │   │   └── @ RequiredKeywordParameterNode (location: (1,10)-(1,12))
+            │   │       ├── flags: ∅
             │   │       ├── name: :b
             │   │       └── name_loc: (1,10)-(1,12) = "b:"
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

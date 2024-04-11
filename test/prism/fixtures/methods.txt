@@ -161,9 +161,6 @@ def method(a)
   item >> a {}
 end
 
-def foo(_a, _a, b, c)
-end
-
 foo = 1
 def foo.bar; end
 

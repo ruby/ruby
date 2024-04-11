@@ -11,6 +11,7 @@
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
+#include "internal/sanitizers.h"
 #include <process.h>
 
 #define TIME_QUANTUM_USEC (10 * 1000)
@@ -581,10 +582,6 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
     /* */
 }
 
-void
-ruby_init_stack(volatile VALUE *addr)
-{
-}
 
 #define CHECK_ERR(expr) \
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
@@ -594,20 +591,20 @@ COMPILER_WARNING_PUSH
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
 static inline SIZE_T
-query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi)
+query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi, void *local_in_parent_frame)
 {
-    return VirtualQuery(mi, mi, sizeof(*mi));
+    return VirtualQuery(asan_get_real_stack_addr(local_in_parent_frame), mi, sizeof(*mi));
 }
 COMPILER_WARNING_POP
 
 static void
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     MEMORY_BASIC_INFORMATION mi;
     char *base, *end;
     DWORD size, space;
 
-    CHECK_ERR(query_memory_basic_info(&mi));
+    CHECK_ERR(query_memory_basic_info(&mi, local_in_parent_frame));
     base = mi.AllocationBase;
     end = mi.BaseAddress;
     end += mi.RegionSize;
@@ -638,7 +635,7 @@ thread_start_func_1(void *th_ptr)
     rb_thread_t *th = th_ptr;
     volatile HANDLE thread_id = th->nt->thread_id;
 
-    native_thread_init_stack(th);
+    native_thread_init_stack(th, &th);
     th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
 
     /* run */
@@ -1004,6 +1001,12 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     }
 
         vm->ractor.sync.lock_owner = NULL;
+}
+
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

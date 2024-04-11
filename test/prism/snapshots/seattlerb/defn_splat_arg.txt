@@ -13,18 +13,19 @@
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,6)-(1,7))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,6)-(1,7) = "*"
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
-            ├── locals: [:*, :a]
-            ├── locals_body_index: 2
+            ├── locals: [:a]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

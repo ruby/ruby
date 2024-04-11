@@ -20,7 +20,7 @@
             │               ├── @ AssocNode (location: (1,4)-(1,6))
             │               │   ├── key:
             │               │   │   @ SymbolNode (location: (1,4)-(1,6))
-            │               │   │   ├── flags: ∅
+            │               │   │   ├── flags: forced_us_ascii_encoding
             │               │   │   ├── opening_loc: ∅
             │               │   │   ├── value_loc: (1,4)-(1,5) = "a"
             │               │   │   ├── closing_loc: (1,5)-(1,6) = ":"
@@ -42,7 +42,7 @@
             │               └── @ AssocNode (location: (1,8)-(1,10))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,8)-(1,10))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,8)-(1,9) = "b"
             │                   │   ├── closing_loc: (1,9)-(1,10) = ":"

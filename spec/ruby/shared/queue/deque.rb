@@ -70,7 +70,7 @@ describe :queue_deq, shared: true do
         q = @object.call
 
         t = Thread.new {
-          q.send(@method, timeout: 1).should == 1
+          q.send(@method, timeout: TIME_TOLERANCE).should == 1
         }
         Thread.pass until t.status == "sleep" && q.num_waiting == 1
         q << 1
@@ -80,10 +80,9 @@ describe :queue_deq, shared: true do
       it "returns nil if no item is available in time" do
         q = @object.call
 
-        t = Thread.new {
-          q.send(@method, timeout: 0.1).should == nil
-        }
-        t.join
+        Thread.new {
+          q.send(@method, timeout: 0.001).should == nil
+        }.join
       end
 
       it "does nothing if the timeout is nil" do
@@ -91,7 +90,7 @@ describe :queue_deq, shared: true do
         t = Thread.new {
           q.send(@method, timeout: nil).should == 1
         }
-        t.join(0.2).should == nil
+        Thread.pass until t.status == "sleep" && q.num_waiting == 1
         q << 1
         t.join
       end
@@ -105,23 +104,20 @@ describe :queue_deq, shared: true do
 
       it "raise TypeError if timeout is not a valid numeric" do
         q = @object.call
-        -> { q.send(@method, timeout: "1") }.should raise_error(
-          TypeError,
-          "no implicit conversion to float from string",
-        )
+        -> {
+          q.send(@method, timeout: "1")
+        }.should raise_error(TypeError, "no implicit conversion to float from string")
 
-        -> { q.send(@method, timeout: false) }.should raise_error(
-          TypeError,
-          "no implicit conversion to float from false",
-        )
+        -> {
+          q.send(@method, timeout: false)
+        }.should raise_error(TypeError, "no implicit conversion to float from false")
       end
 
       it "raise ArgumentError if non_block = true is passed too" do
         q = @object.call
-        -> { q.send(@method, true, timeout: 1) }.should raise_error(
-          ArgumentError,
-          "can't set a timeout if non_block is enabled",
-        )
+        -> {
+          q.send(@method, true, timeout: 1)
+        }.should raise_error(ArgumentError, "can't set a timeout if non_block is enabled")
       end
 
       it "returns nil for a closed empty queue" do

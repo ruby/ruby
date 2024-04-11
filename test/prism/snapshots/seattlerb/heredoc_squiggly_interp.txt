@@ -29,7 +29,8 @@
             │   │   │   │   @ StatementsNode (location: (3,5)-(3,7))
             │   │   │   │   └── body: (length: 1)
             │   │   │   │       └── @ IntegerNode (location: (3,5)-(3,7))
-            │   │   │   │           └── flags: decimal
+            │   │   │   │           ├── flags: decimal
+            │   │   │   │           └── value: 42
             │   │   │   └── closing_loc: (3,7)-(3,8) = "}"
             │   │   ├── @ StringNode (location: (3,8)-(4,0))
             │   │   │   ├── flags: ∅

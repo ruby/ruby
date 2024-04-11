@@ -69,7 +69,7 @@ describe "TCPServer#accept" do
     Thread.pass while t.status and t.status != "sleep"
     # Thread#backtrace uses SIGVTALRM on TruffleRuby and potentially other implementations.
     # Sending a signal to a thread is not possible with Ruby APIs.
-    t.backtrace.join("\n").should.include?("in `accept'")
+    t.backtrace.join("\n").should =~ /in [`'](?:TCPServer#)?accept'/
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.write("OK")
@@ -113,6 +113,19 @@ describe 'TCPServer#accept' do
       it 'returns a TCPSocket' do
         @socket = @server.accept
         @socket.should be_an_instance_of(TCPSocket)
+      end
+
+      platform_is_not :windows do
+        it "returns a TCPSocket which is set to nonblocking" do
+          require 'io/nonblock'
+          @socket = @server.accept
+          @socket.should.nonblock?
+        end
+      end
+
+      it "returns a TCPSocket which is set to close on exec" do
+        @socket = @server.accept
+        @socket.should.close_on_exec?
       end
     end
   end

@@ -11,8 +11,10 @@
         │   │   @ ParametersNode (location: (1,8)-(1,12))
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ RequiredParameterNode (location: (1,8)-(1,9))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :_
         │   │   │   └── @ RequiredParameterNode (location: (1,11)-(1,12))
+        │   │   │       ├── flags: repeated_parameter
         │   │   │       └── name: :_
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -22,7 +24,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:_]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -37,8 +38,10 @@
             │   @ ParametersNode (location: (3,8)-(3,14))
             │   ├── requireds: (length: 2)
             │   │   ├── @ RequiredParameterNode (location: (3,8)-(3,10))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :_a
             │   │   └── @ RequiredParameterNode (location: (3,12)-(3,14))
+            │   │       ├── flags: repeated_parameter
             │   │       └── name: :_a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -48,7 +51,6 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:_a]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (3,7)-(3,8) = "("

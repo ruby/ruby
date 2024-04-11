@@ -80,10 +80,20 @@ static char **argv1_addr = NULL;
 
 #endif /* HAVE_SETPROCTITLE */
 
+#if defined(SPT_TYPE) && SPT_TYPE == SPT_REUSEARGV
+# define ALLOCATE_ENVIRON 1
+#else
+# define ALLOCATE_ENVIRON 0
+#endif
+
+#if ALLOCATE_ENVIRON
+static char **orig_environ = NULL;
+#endif
+
 void
 compat_init_setproctitle(int argc, char *argv[])
 {
-#if defined(SPT_TYPE) && SPT_TYPE == SPT_REUSEARGV
+#if ALLOCATE_ENVIRON
 	extern char **environ;
 	char *lastargv = NULL;
 	char *lastenvp = NULL;
@@ -100,9 +110,10 @@ compat_init_setproctitle(int argc, char *argv[])
 		return;
 
 	/* Fail if we can't allocate room for the new environment */
-	for (i = 0; envp[i] != NULL; i++)
-		;
-	if ((environ = calloc(i + 1, sizeof(*environ))) == NULL) {
+	for (i = 0; envp[i] != NULL; i++);
+
+	orig_environ = environ = xcalloc(i + 1, sizeof(*environ));
+	if (environ == NULL) {
 		environ = envp;	/* put it back */
 		return;
 	}
@@ -132,6 +143,27 @@ compat_init_setproctitle(int argc, char *argv[])
 		environ[i] = ruby_strdup(envp[i]);
 	environ[i] = NULL;
 #endif /* SPT_REUSEARGV */
+}
+
+void
+ruby_free_proctitle(void)
+{
+#if ALLOCATE_ENVIRON
+	extern char **environ;
+
+	if (!orig_environ) return; /* environ is allocated by OS */
+
+	/* ruby_setenv could allocate a new environ, so we need to free orig_environ
+	 * in that case. */
+	if (environ != orig_environ) {
+		for (int i = 0; orig_environ[i] != NULL; i++) {
+			xfree(orig_environ[i]);
+		}
+
+		xfree(orig_environ);
+		orig_environ = NULL;
+	}
+#endif
 }
 
 #ifndef HAVE_SETPROCTITLE

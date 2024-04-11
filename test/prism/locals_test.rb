@@ -7,7 +7,7 @@
 #
 # There have also been changes made in other versions of Ruby, so we only want
 # to test on the most recent versions.
-return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.2"
+return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
 # Omit tests if running on a 32-bit machine because there is a bug with how
 # Ruby is handling large ISeqs on 32-bit machines
@@ -56,24 +56,6 @@ module Prism
 
     # Dead code eliminated
     invalid << "whitequark/ruby_bug_10653.txt"
-
-    # case :a
-    # in Symbol(*lhs, x, *rhs)
-    # end
-    todos << "seattlerb/case_in.txt"
-
-    # <<~HERE
-    #   #{<<~THERE}
-    #   THERE
-    # HERE
-    todos << "seattlerb/heredoc_nested.txt"
-
-    # Ruby < 3.3.0 fails to parse:
-    #
-    # <<-'  HERE'
-    #  foo
-    #   HERE
-    invalid << "heredocs_leading_whitespace.txt" if RUBY_VERSION < "3.3.0"
 
     base = File.join(__dir__, "fixtures")
     skips = invalid | todos

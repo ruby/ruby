@@ -6,7 +6,7 @@
         ├── @ UndefNode (location: (1,0)-(1,10))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (1,6)-(1,10))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: forced_us_ascii_encoding
         │   │       ├── opening_loc: (1,6)-(1,7) = ":"
         │   │       ├── value_loc: (1,7)-(1,10) = "foo"
         │   │       ├── closing_loc: ∅
@@ -15,13 +15,13 @@
         └── @ UndefNode (location: (2,0)-(2,16))
             ├── names: (length: 2)
             │   ├── @ SymbolNode (location: (2,6)-(2,10))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: (2,6)-(2,7) = ":"
             │   │   ├── value_loc: (2,7)-(2,10) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   └── @ SymbolNode (location: (2,12)-(2,16))
-            │       ├── flags: ∅
+            │       ├── flags: forced_us_ascii_encoding
             │       ├── opening_loc: (2,12)-(2,13) = ":"
             │       ├── value_loc: (2,13)-(2,16) = "bar"
             │       ├── closing_loc: ∅

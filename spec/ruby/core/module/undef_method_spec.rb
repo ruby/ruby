@@ -50,7 +50,7 @@ describe "Module#undef_method" do
   end
 
   it "raises a NameError when passed a missing name for a module" do
-    -> { @module.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for module `#{@module}'/) { |e|
+    -> { @module.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method [`']not_exist' for module [`']#{@module}'/) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
@@ -58,7 +58,7 @@ describe "Module#undef_method" do
 
   it "raises a NameError when passed a missing name for a class" do
     klass = Class.new
-    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `#{klass}'/) { |e|
+    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method [`']not_exist' for class [`']#{klass}'/) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
@@ -69,8 +69,8 @@ describe "Module#undef_method" do
     obj = klass.new
     sclass = obj.singleton_class
 
-    -> { sclass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `#{sclass}'/) { |e|
-      e.message.should include('`#<Class:#<#<Class:')
+    -> { sclass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method [`']not_exist' for class [`']#{sclass}'/) { |e|
+      e.message.should =~ /[`']#<Class:#<#<Class:/
 
       # a NameError and not a NoMethodError
       e.class.should == NameError
@@ -79,7 +79,7 @@ describe "Module#undef_method" do
 
   it "raises a NameError when passed a missing name for a metaclass" do
     klass = String.singleton_class
-    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `String'/) { |e|
+    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method [`']not_exist' for class [`']String'/) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }

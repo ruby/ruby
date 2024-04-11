@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,14))
                 ├── locals: [:a, :b]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,12))
                 │   ├── parameters:
@@ -24,8 +23,10 @@
                 │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,11))
                 │   │   │       ├── lefts: (length: 2)
                 │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+                │   │   │       │   │   ├── flags: ∅
                 │   │   │       │   │   └── name: :a
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rest: ∅
                 │   │   │       ├── rights: (length: 0)

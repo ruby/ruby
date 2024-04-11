@@ -67,7 +67,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl(VALUE self) {
 }
 
 /* This is unblocked by a signal. */
-static void* blocking_gvl_func_for_udf_io(void *data) {
+static void* blocking_gvl_func_for_ubf_io(void *data) {
   int rfd = (int)(size_t)data;
   char dummy;
 
@@ -87,7 +87,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
     rb_raise(rb_eRuntimeError, "could not create pipe");
   }
 
-  ret = rb_thread_call_without_gvl(blocking_gvl_func_for_udf_io,
+  ret = rb_thread_call_without_gvl(blocking_gvl_func_for_ubf_io,
                                   (void*)(size_t)fds[0], RUBY_UBF_IO, 0);
   close(fds[0]);
   close(fds[1]);

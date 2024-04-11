@@ -20,7 +20,8 @@
         │   │           ├── name_loc: (1,8)-(1,9) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (1,12)-(1,13))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           └── operator_loc: (1,10)-(1,11) = "="
         │   ├── end_keyword_loc: (1,14)-(1,17) = "end"
         │   └── name: :A
@@ -33,7 +34,7 @@
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (3,9)-(3,20))
+        │   │   @ BeginNode (location: (3,0)-(3,20))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause: ∅
@@ -55,7 +56,7 @@
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (5,9)-(5,34))
+        │   │   @ BeginNode (location: (5,0)-(5,34))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
@@ -98,7 +99,8 @@
         │   │           ├── name_loc: (8,0)-(8,1) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (8,4)-(8,5))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           └── operator_loc: (8,2)-(8,3) = "="
         │   ├── end_keyword_loc: (9,0)-(9,3) = "end"
         │   └── name: :A
@@ -147,7 +149,7 @@
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (14,18)-(14,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (14,24)-(14,35))
+        │   │           │   @ BeginNode (location: (14,9)-(14,35))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause: ∅
@@ -179,7 +181,7 @@
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (16,18)-(16,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (16,24)-(16,49))
+        │   │           │   @ BeginNode (location: (16,9)-(16,49))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause:
@@ -287,7 +289,8 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (29,0)-(29,1))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :+
         │   │           ├── message_loc: (29,2)-(29,3) = "+"
@@ -297,7 +300,8 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (29,4)-(29,5))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
@@ -314,7 +318,8 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (32,14)-(32,15))
-        │   │           │   └── flags: decimal
+        │   │           │   ├── flags: decimal
+        │   │           │   └── value: 1
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :+
         │   │           ├── message_loc: (32,16)-(32,17) = "+"
@@ -324,7 +329,8 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (32,18)-(32,19))
-        │   │           │           └── flags: decimal
+        │   │           │           ├── flags: decimal
+        │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   └── end_keyword_loc: (32,20)-(32,23) = "end"
@@ -350,7 +356,8 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (34,12)-(34,13))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── closing_loc: (34,13)-(34,14) = "]"
             │   └── block: ∅
             ├── body: ∅

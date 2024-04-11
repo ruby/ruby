@@ -15,6 +15,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ RequiredKeywordParameterNode (location: (1,6)-(1,8))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       └── name_loc: (1,6)-(1,8) = "b:"
         │   │   ├── keyword_rest: ∅
@@ -26,7 +27,6 @@
         │   │           ├── keyword_loc: (2,0)-(2,6) = "return"
         │   │           └── arguments: ∅
         │   ├── locals: [:b]
-        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -44,14 +44,15 @@
             │   │   └── @ AssocNode (location: (6,0)-(7,1))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (6,0)-(6,2))
-            │   │       │   ├── flags: ∅
+            │   │       │   ├── flags: forced_us_ascii_encoding
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (6,0)-(6,1) = "a"
             │   │       │   ├── closing_loc: (6,1)-(6,2) = ":"
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (7,0)-(7,1))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 1
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (8,0)-(8,1) = "}"
             └── operator_loc: (5,2)-(5,3) = "="

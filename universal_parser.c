@@ -30,13 +30,6 @@
 #define RSTRING_GETMEM(str, ptrvar, lenvar) \
     ((ptrvar) = RSTRING_PTR(str),           \
      (lenvar) = RSTRING_LEN(str))
-#if defined(USE_FLONUM)
-# /* Take that. */
-#elif SIZEOF_VALUE >= SIZEOF_DOUBLE
-# define USE_FLONUM 1
-#else
-# define USE_FLONUM 0
-#endif
 
 /* parser_st */
 #define st_table parser_st_table
@@ -63,19 +56,6 @@
 #define st_is_member parser_st_is_member
 
 #define rb_encoding void
-
-#undef T_FLOAT
-#define T_FLOAT    0x04
-#undef T_REGEXP
-#define T_REGEXP   0x06
-#undef T_HASH
-#define T_HASH     0x08
-#undef T_BIGNUM
-#define T_BIGNUM   0x0a
-#undef T_COMPLEX
-#define T_COMPLEX  0x0e
-#undef T_RATIONAL
-#define T_RATIONAL 0x0f
 
 #ifndef INTERNAL_IMEMO_H
 struct rb_imemo_tmpbuf_struct {
@@ -115,15 +95,9 @@ struct rb_imemo_tmpbuf_struct {
 
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
-#define script_lines_defined     p->config->script_lines_defined
-#define script_lines_get         p->config->script_lines_get
 
 #define rb_obj_freeze p->config->obj_freeze
 #define rb_obj_hide p->config->obj_hide
-#undef RB_OBJ_FROZEN
-#define RB_OBJ_FROZEN p->config->obj_frozen
-#undef RB_TYPE_P
-#define RB_TYPE_P p->config->type_p
 #undef OBJ_FREEZE_RAW
 #define OBJ_FREEZE_RAW p->config->obj_freeze_raw
 
@@ -138,22 +112,15 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ary_push          p->config->ary_push
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
-#define rb_ary_pop           p->config->ary_pop
-#define rb_ary_last          p->config->ary_last
 #define rb_ary_unshift       p->config->ary_unshift
 #undef rb_ary_new2
 #define rb_ary_new2          p->config->ary_new2
-#define rb_ary_entry         p->config->ary_entry
-#define rb_ary_join          p->config->ary_join
-#define rb_ary_reverse       p->config->ary_reverse
 #define rb_ary_clear         p->config->ary_clear
 #define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
 #define RARRAY_AREF          p->config->array_aref
 
-#undef rb_sym_intern_ascii_cstr
-#define rb_sym_intern_ascii_cstr p->config->sym_intern_ascii_cstr
 #define rb_make_temporary_id     p->config->make_temporary_id
 #define is_local_id              p->config->is_local_id
 #define is_attrset_id            p->config->is_attrset_id
@@ -167,10 +134,8 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_intern_str            p->config->intern_str
 #define is_notop_id              p->config->is_notop_id
 #define rb_enc_symname_type      p->config->enc_symname_type
-#define rb_str_intern            p->config->str_intern
 #define rb_id2name               p->config->id2name
 #define rb_id2str                p->config->id2str
-#define rb_id2sym                p->config->id2sym
 #undef ID2SYM
 #define ID2SYM                   p->config->id2sym
 #undef SYM2ID
@@ -180,7 +145,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef rb_str_cat_cstr
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
 #define rb_str_subseq                     p->config->str_subseq
-#define rb_str_dup                        p->config->str_dup
 #define rb_str_new_frozen                 p->config->str_new_frozen
 #define rb_str_buf_new                    p->config->str_buf_new
 #undef rb_str_buf_cat
@@ -193,7 +157,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_str_new                        p->config->str_new
 #undef rb_str_new_cstr
 #define rb_str_new_cstr                   p->config->str_new_cstr
-#define rb_fstring                        p->config->fstring
+#define rb_str_to_interned_str            p->config->str_to_interned_str
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
 #define rb_enc_str_buf_cat                p->config->enc_str_buf_cat
@@ -237,6 +201,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_enc_isalnum          p->config->enc_isalnum
 #define rb_enc_precise_mbclen   p->config->enc_precise_mbclen
 #define MBCLEN_CHARFOUND_P      p->config->mbclen_charfound_p
+#define MBCLEN_CHARFOUND_LEN    p->config->mbclen_charfound_len
 #define rb_enc_name             p->config->enc_name
 #define rb_enc_prev_char        p->config->enc_prev_char
 #define rb_enc_get              p->config->enc_get
@@ -263,7 +228,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define rb_ractor_make_shareable p->config->ractor_make_shareable
 
-#define ruby_vm_keep_script_lines p->config->vm_keep_script_lines()
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
 
@@ -285,7 +249,6 @@ struct rb_imemo_tmpbuf_struct {
 #define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #undef RB_OBJ_WRITTEN
 #define RB_OBJ_WRITTEN(old, oldv, young) p->config->obj_written((VALUE)(old), (VALUE)(oldv), (VALUE)(young))
-#define rb_gc_register_mark_object p->config->gc_register_mark_object
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
@@ -326,15 +289,10 @@ struct rb_imemo_tmpbuf_struct {
 #define Qfalse p->config->qfalse
 #undef Qundef
 #define Qundef p->config->qundef
-#define rb_eArgError p->config->eArgError
-#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore
+#define rb_eArgError p->config->eArgError()
+#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
-#undef SPECIAL_CONST_P
-#define SPECIAL_CONST_P p->config->special_const_p
-#undef BUILTIN_TYPE
-#define BUILTIN_TYPE p->config->builtin_type
-#define ruby_snprintf p->config->snprintf
 
 #define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
 

@@ -1,3 +1,248 @@
+errors:
+  - ALIAS_ARGUMENT
+  - AMPAMPEQ_MULTI_ASSIGN
+  - ARGUMENT_AFTER_BLOCK
+  - ARGUMENT_AFTER_FORWARDING_ELLIPSES
+  - ARGUMENT_BARE_HASH
+  - ARGUMENT_BLOCK_FORWARDING
+  - ARGUMENT_BLOCK_MULTI
+  - ARGUMENT_FORMAL_CLASS
+  - ARGUMENT_FORMAL_CONSTANT
+  - ARGUMENT_FORMAL_GLOBAL
+  - ARGUMENT_FORMAL_IVAR
+  - ARGUMENT_FORWARDING_UNBOUND
+  - ARGUMENT_IN
+  - ARGUMENT_NO_FORWARDING_AMP
+  - ARGUMENT_NO_FORWARDING_ELLIPSES
+  - ARGUMENT_NO_FORWARDING_STAR
+  - ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT
+  - ARGUMENT_SPLAT_AFTER_SPLAT
+  - ARGUMENT_TERM_PAREN
+  - ARGUMENT_UNEXPECTED_BLOCK
+  - ARRAY_ELEMENT
+  - ARRAY_EXPRESSION
+  - ARRAY_EXPRESSION_AFTER_STAR
+  - ARRAY_SEPARATOR
+  - ARRAY_TERM
+  - BEGIN_LONELY_ELSE
+  - BEGIN_TERM
+  - BEGIN_UPCASE_BRACE
+  - BEGIN_UPCASE_TERM
+  - BEGIN_UPCASE_TOPLEVEL
+  - BLOCK_PARAM_LOCAL_VARIABLE
+  - BLOCK_PARAM_PIPE_TERM
+  - BLOCK_TERM_BRACE
+  - BLOCK_TERM_END
+  - CANNOT_PARSE_EXPRESSION
+  - CANNOT_PARSE_STRING_PART
+  - CASE_EXPRESSION_AFTER_CASE
+  - CASE_EXPRESSION_AFTER_WHEN
+  - CASE_MATCH_MISSING_PREDICATE
+  - CASE_MISSING_CONDITIONS
+  - CASE_TERM
+  - CLASS_IN_METHOD
+  - CLASS_NAME
+  - CLASS_SUPERCLASS
+  - CLASS_TERM
+  - CLASS_UNEXPECTED_END
+  - CONDITIONAL_ELSIF_PREDICATE
+  - CONDITIONAL_IF_PREDICATE
+  - CONDITIONAL_PREDICATE_TERM
+  - CONDITIONAL_TERM
+  - CONDITIONAL_TERM_ELSE
+  - CONDITIONAL_UNLESS_PREDICATE
+  - CONDITIONAL_UNTIL_PREDICATE
+  - CONDITIONAL_WHILE_PREDICATE
+  - CONSTANT_PATH_COLON_COLON_CONSTANT
+  - DEF_ENDLESS
+  - DEF_ENDLESS_SETTER
+  - DEF_NAME
+  - DEF_NAME_AFTER_RECEIVER
+  - DEF_PARAMS_TERM
+  - DEF_PARAMS_TERM_PAREN
+  - DEF_RECEIVER
+  - DEF_RECEIVER_TERM
+  - DEF_TERM
+  - DEFINED_EXPRESSION
+  - EMBDOC_TERM
+  - EMBEXPR_END
+  - EMBVAR_INVALID
+  - END_UPCASE_BRACE
+  - END_UPCASE_TERM
+  - ESCAPE_INVALID_CONTROL
+  - ESCAPE_INVALID_CONTROL_REPEAT
+  - ESCAPE_INVALID_HEXADECIMAL
+  - ESCAPE_INVALID_META
+  - ESCAPE_INVALID_META_REPEAT
+  - ESCAPE_INVALID_UNICODE
+  - ESCAPE_INVALID_UNICODE_CM_FLAGS
+  - ESCAPE_INVALID_UNICODE_LITERAL
+  - ESCAPE_INVALID_UNICODE_LONG
+  - ESCAPE_INVALID_UNICODE_TERM
+  - EXPECT_ARGUMENT
+  - EXPECT_EOL_AFTER_STATEMENT
+  - EXPECT_EXPRESSION_AFTER_AMPAMPEQ
+  - EXPECT_EXPRESSION_AFTER_COMMA
+  - EXPECT_EXPRESSION_AFTER_EQUAL
+  - EXPECT_EXPRESSION_AFTER_LESS_LESS
+  - EXPECT_EXPRESSION_AFTER_LPAREN
+  - EXPECT_EXPRESSION_AFTER_OPERATOR
+  - EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ
+  - EXPECT_EXPRESSION_AFTER_QUESTION
+  - EXPECT_EXPRESSION_AFTER_SPLAT
+  - EXPECT_EXPRESSION_AFTER_SPLAT_HASH
+  - EXPECT_EXPRESSION_AFTER_STAR
+  - EXPECT_IDENT_REQ_PARAMETER
+  - EXPECT_LPAREN_REQ_PARAMETER
+  - EXPECT_RBRACKET
+  - EXPECT_RPAREN
+  - EXPECT_RPAREN_AFTER_MULTI
+  - EXPECT_RPAREN_REQ_PARAMETER
+  - EXPECT_STRING_CONTENT
+  - EXPECT_WHEN_DELIMITER
+  - EXPRESSION_BARE_HASH
+  - FLOAT_PARSE
+  - FOR_COLLECTION
+  - FOR_IN
+  - FOR_INDEX
+  - FOR_TERM
+  - HASH_EXPRESSION_AFTER_LABEL
+  - HASH_KEY
+  - HASH_ROCKET
+  - HASH_TERM
+  - HASH_VALUE
+  - HEREDOC_TERM
+  - INCOMPLETE_QUESTION_MARK
+  - INCOMPLETE_VARIABLE_CLASS
+  - INCOMPLETE_VARIABLE_CLASS_3_3_0
+  - INCOMPLETE_VARIABLE_INSTANCE
+  - INCOMPLETE_VARIABLE_INSTANCE_3_3_0
+  - INVALID_CHARACTER
+  - INVALID_ENCODING_MAGIC_COMMENT
+  - INVALID_FLOAT_EXPONENT
+  - INVALID_MULTIBYTE_CHAR
+  - INVALID_MULTIBYTE_CHARACTER
+  - INVALID_MULTIBYTE_ESCAPE
+  - INVALID_NUMBER_BINARY
+  - INVALID_NUMBER_DECIMAL
+  - INVALID_NUMBER_HEXADECIMAL
+  - INVALID_NUMBER_OCTAL
+  - INVALID_NUMBER_UNDERSCORE
+  - INVALID_PERCENT
+  - INVALID_PRINTABLE_CHARACTER
+  - INVALID_VARIABLE_GLOBAL
+  - INVALID_VARIABLE_GLOBAL_3_3_0
+  - IT_NOT_ALLOWED_NUMBERED
+  - IT_NOT_ALLOWED_ORDINARY
+  - LAMBDA_OPEN
+  - LAMBDA_TERM_BRACE
+  - LAMBDA_TERM_END
+  - LIST_I_LOWER_ELEMENT
+  - LIST_I_LOWER_TERM
+  - LIST_I_UPPER_ELEMENT
+  - LIST_I_UPPER_TERM
+  - LIST_W_LOWER_ELEMENT
+  - LIST_W_LOWER_TERM
+  - LIST_W_UPPER_ELEMENT
+  - LIST_W_UPPER_TERM
+  - MALLOC_FAILED
+  - MIXED_ENCODING
+  - MODULE_IN_METHOD
+  - MODULE_NAME
+  - MODULE_TERM
+  - MULTI_ASSIGN_MULTI_SPLATS
+  - MULTI_ASSIGN_UNEXPECTED_REST
+  - NO_LOCAL_VARIABLE
+  - NOT_EXPRESSION
+  - NUMBER_LITERAL_UNDERSCORE
+  - NUMBERED_PARAMETER_IT
+  - NUMBERED_PARAMETER_ORDINARY
+  - NUMBERED_PARAMETER_OUTER_SCOPE
+  - OPERATOR_MULTI_ASSIGN
+  - OPERATOR_WRITE_ARGUMENTS
+  - OPERATOR_WRITE_BLOCK
+  - PARAMETER_ASSOC_SPLAT_MULTI
+  - PARAMETER_BLOCK_MULTI
+  - PARAMETER_CIRCULAR
+  - PARAMETER_METHOD_NAME
+  - PARAMETER_NAME_REPEAT
+  - PARAMETER_NO_DEFAULT
+  - PARAMETER_NO_DEFAULT_KW
+  - PARAMETER_NUMBERED_RESERVED
+  - PARAMETER_ORDER
+  - PARAMETER_SPLAT_MULTI
+  - PARAMETER_STAR
+  - PARAMETER_UNEXPECTED_FWD
+  - PARAMETER_WILD_LOOSE_COMMA
+  - PATTERN_EXPRESSION_AFTER_BRACKET
+  - PATTERN_EXPRESSION_AFTER_COMMA
+  - PATTERN_EXPRESSION_AFTER_HROCKET
+  - PATTERN_EXPRESSION_AFTER_IN
+  - PATTERN_EXPRESSION_AFTER_KEY
+  - PATTERN_EXPRESSION_AFTER_PAREN
+  - PATTERN_EXPRESSION_AFTER_PIN
+  - PATTERN_EXPRESSION_AFTER_PIPE
+  - PATTERN_EXPRESSION_AFTER_RANGE
+  - PATTERN_EXPRESSION_AFTER_REST
+  - PATTERN_HASH_KEY
+  - PATTERN_HASH_KEY_LABEL
+  - PATTERN_IDENT_AFTER_HROCKET
+  - PATTERN_LABEL_AFTER_COMMA
+  - PATTERN_REST
+  - PATTERN_TERM_BRACE
+  - PATTERN_TERM_BRACKET
+  - PATTERN_TERM_PAREN
+  - PIPEPIPEEQ_MULTI_ASSIGN
+  - REGEXP_ENCODING_OPTION_MISMATCH
+  - REGEXP_INCOMPAT_CHAR_ENCODING
+  - REGEXP_INVALID_UNICODE_RANGE
+  - REGEXP_NON_ESCAPED_MBC
+  - REGEXP_TERM
+  - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
+  - RESCUE_EXPRESSION
+  - RESCUE_MODIFIER_VALUE
+  - RESCUE_TERM
+  - RESCUE_VARIABLE
+  - RETURN_INVALID
+  - SINGLETON_FOR_LITERALS
+  - STATEMENT_ALIAS
+  - STATEMENT_POSTEXE_END
+  - STATEMENT_PREEXE_BEGIN
+  - STATEMENT_UNDEF
+  - STRING_CONCATENATION
+  - STRING_INTERPOLATED_TERM
+  - STRING_LITERAL_EOF
+  - STRING_LITERAL_TERM
+  - SYMBOL_INVALID
+  - SYMBOL_TERM_DYNAMIC
+  - SYMBOL_TERM_INTERPOLATED
+  - TERNARY_COLON
+  - TERNARY_EXPRESSION_FALSE
+  - TERNARY_EXPRESSION_TRUE
+  - UNARY_RECEIVER
+  - UNDEF_ARGUMENT
+  - UNEXPECTED_TOKEN_CLOSE_CONTEXT
+  - UNEXPECTED_TOKEN_IGNORE
+  - UNTIL_TERM
+  - VOID_EXPRESSION
+  - WHILE_TERM
+  - WRITE_TARGET_IN_METHOD
+  - WRITE_TARGET_READONLY
+  - WRITE_TARGET_UNEXPECTED
+  - XSTRING_TERM
+warnings:
+  - AMBIGUOUS_FIRST_ARGUMENT_MINUS
+  - AMBIGUOUS_FIRST_ARGUMENT_PLUS
+  - AMBIGUOUS_PREFIX_STAR
+  - AMBIGUOUS_SLASH
+  - DOT_DOT_DOT_EOL
+  - EQUAL_IN_CONDITIONAL
+  - END_IN_METHOD
+  - DUPLICATED_HASH_KEY
+  - DUPLICATED_WHEN_CLAUSE
+  - FLOAT_OUT_OF_RANGE
+  - INTEGER_IN_FLIP_FLOP
+  - KEYWORD_EOL
 tokens:
   - name: EOF
     value: 1
@@ -378,6 +623,11 @@ flags:
       - name: BEGIN_MODIFIER
         comment: "a loop after a begin statement, so the body is executed first before the condition"
     comment: Flags for while and until loop nodes.
+  - name: ParameterFlags
+    values:
+      - name: REPEATED_PARAMETER
+        comment: "a parameter name that has been repeated in the method signature"
+    comment: Flags for parameter nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
@@ -470,10 +720,31 @@ nodes:
     fields:
       - name: left
         type: node
+        comment: |
+          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              left and right
+              ^^^^
+
+              1 && 2
+              ^
       - name: right
         type: node
+        comment: |
+          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              left && right
+                      ^^^^^
+
+              1 and 2
+                    ^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `and` keyword or the `&&` operator.
+
+              left and right
+                   ^^^
     comment: |
       Represents the use of the `&&` operator or the `and` keyword.
 
@@ -503,8 +774,7 @@ nodes:
       - name: closing_loc
         type: location?
     comment: |
-      Represents an array literal. This can be a regular array using brackets or
-      a special array using % like %w or %i.
+      Represents an array literal. This can be a regular array using brackets or a special array using % like %w or %i.
 
           [1, 2, 3]
           ^^^^^^^^^
@@ -544,7 +814,7 @@ nodes:
       - name: key
         type: node
         comment: |
-          The key of the association. This can be any node that represents a non-void expression.
+          The key of the association. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               { a: b }
                 ^
@@ -555,11 +825,9 @@ nodes:
               { def a; end => 1 }
                 ^^^^^^^^^^
       - name: value
-        type: node?
+        type: node
         comment: |
-          The value of the association, if present. This can be any node that
-          represents a non-void expression. It can be optionally omitted if this
-          node is an element in a `HashPatternNode`.
+          The value of the association, if present. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               { foo => bar }
                        ^^^
@@ -583,8 +851,7 @@ nodes:
       - name: value
         type: node?
         comment: |
-          The value to be splatted, if present. Will be missing when keyword
-          rest argument forwarding is used.
+          The value to be splatted, if present. Will be missing when keyword rest argument forwarding is used.
 
               { **foo }
                   ^^^
@@ -604,6 +871,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the back-reference variable, including the leading `$`.
+
+              $& # name `:$&`
+
+              $+ # name `:$+`
     comment: |
       Represents reading a reference to a field in the previous match.
 
@@ -648,6 +921,9 @@ nodes:
           ^^^^^^^^^^
   - name: BlockLocalVariableNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -659,8 +935,6 @@ nodes:
     fields:
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: parameters
         type: node?
       - name: body
@@ -672,10 +946,13 @@ nodes:
     comment: |
       Represents a block of ruby code.
 
-      [1, 2, 3].each { |i| puts x }
-                     ^^^^^^^^^^^^^^
+          [1, 2, 3].each { |i| puts x }
+                         ^^^^^^^^^^^^^^
   - name: BlockParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -695,6 +972,7 @@ nodes:
         kind: ParametersNode
       - name: locals
         type: node[]
+        kind: BlockLocalVariableNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -752,9 +1030,7 @@ nodes:
       - name: receiver
         type: node?
         comment: |
-          The object that the method is being called on. This can be either
-          `nil` or a node representing any kind of expression that returns a
-          non-void value.
+          The object that the method is being called on. This can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               foo.bar
               ^^^
@@ -1002,6 +1278,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @@abc   # name `:@@abc`
+
+              @@_test # name `:@@_test`
     comment: |
       Represents referencing a class variable.
 
@@ -1098,6 +1380,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1141,6 +1426,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1172,6 +1460,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the [constant](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#constants).
+
+              X              # name `:X`
+
+              SOME_CONSTANT  # name `:SOME_CONSTANT`
     comment: |
       Represents referencing a constant.
 
@@ -1216,8 +1510,6 @@ nodes:
         type: node?
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: def_keyword_loc
         type: location
       - name: operator_loc
@@ -1356,6 +1648,10 @@ nodes:
           baz if foo .. bar
                  ^^^^^^^^^^
   - name: FloatNode
+    fields:
+      - name: value
+        type: double
+        comment: The value of the floating point number as a Float.
     comment: |
       Represents a floating point number literal.
 
@@ -1459,6 +1755,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the global variable, which is a `$` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifier). Alternatively, it can be one of the special global variables designated by a symbol.
+
+              $foo   # name `:$foo`
+
+              $_Test # name `:$_Test`
     comment: |
       Represents referencing a global variable.
 
@@ -1499,6 +1801,9 @@ nodes:
               ^
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
         comment: |
           The elements of the hash. These can be either `AssocNode`s or `AssocSplatNode`s.
 
@@ -1525,8 +1830,12 @@ nodes:
         type: node?
       - name: elements
         type: node[]
+        kind: AssocNode
       - name: rest
         type: node?
+        kind:
+          - AssocSplatNode
+          - NoKeywordsParameterNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -1567,6 +1876,10 @@ nodes:
     fields:
       - name: numeric
         type: node
+        kind:
+          - FloatNode
+          - IntegerNode
+          - RationalNode
     comment: |
       Represents an imaginary number literal.
 
@@ -1577,14 +1890,16 @@ nodes:
       - name: value
         type: node
     comment: |
-      Represents a node that is implicitly being added to the tree but doesn't
-      correspond directly to a node in the source.
+      Represents a node that is implicitly being added to the tree but doesn't correspond directly to a node in the source.
 
           { foo: }
             ^^^^
 
           { Foo: }
             ^^^^
+
+          foo in { bar: }
+                   ^^^^
   - name: ImplicitRestNode
     comment: |
       Represents using a trailing comma to indicate an implicit rest parameter.
@@ -1779,6 +2094,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the instance variable, which is a `@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @x     # name `:@x`
+
+              @_test # name `:@_test`
     comment: |
       Represents referencing an instance variable.
 
@@ -1813,19 +2134,9 @@ nodes:
       - name: flags
         type: flags
         kind: IntegerBaseFlags
-        comment: |
-          Represents flag indicating the base of the integer
-
-              10    base decimal, value 10
-              0d10  base decimal, value 10
-              0b10  base binary, value 2
-              0o10  base octal, value 8
-              010   base octal, value 8
-              0x10  base hexidecimal, value 16
-
-          A 0 prefix indicates the number has a different base.
-          The d, b, o, and x prefixes indicate the base. If one of those
-          four letters is omitted, the base is assumed to be octal.
+      - name: value
+        type: integer
+        comment: The value of the integer literal as a number.
     comment: |
       Represents an integer number literal.
 
@@ -1840,13 +2151,15 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
     comment: |
-      Represents a regular expression literal that contains interpolation that
-      is being used in the predicate of a conditional to implicitly match
-      against the last line read by an IO object.
+      Represents a regular expression literal that contains interpolation that is being used in the predicate of a conditional to implicitly match against the last line read by an IO object.
 
           if /foo #{bar} baz/ then end
              ^^^^^^^^^^^^^^^^
@@ -1859,6 +2172,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1873,6 +2190,11 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
+          - InterpolatedStringNode # `"a" "#{b}"`
       - name: closing_loc
         type: location?
     newline: parts
@@ -1887,6 +2209,10 @@ nodes:
         type: location?
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -1901,6 +2227,10 @@ nodes:
         type: location
       - name: parts
         type: node[]
+        kind:
+          - StringNode
+          - EmbeddedStatementsNode
+          - EmbeddedVariableNode
       - name: closing_loc
         type: location
     newline: parts
@@ -1909,6 +2239,12 @@ nodes:
 
           `foo #{bar} baz`
           ^^^^^^^^^^^^^^^^
+  - name: ItParametersNode
+    comment: |
+      Represents an implicit set of parameters through the use of the `it` keyword within a block or lambda.
+
+          -> { it + it }
+          ^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
       - name: flags
@@ -1916,6 +2252,9 @@ nodes:
         kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
+        kind:
+          - AssocNode
+          - AssocSplatNode
     comment: |
       Represents a hash literal without opening and closing braces.
 
@@ -1923,6 +2262,9 @@ nodes:
               ^^^^
   - name: KeywordRestParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -1939,8 +2281,6 @@ nodes:
     fields:
       - name: locals
         type: constant[]
-      - name: locals_body_index
-        type: uint32
       - name: operator_loc
         type: location
       - name: opening_loc
@@ -2013,12 +2353,33 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the local variable, which is an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              x      # name `:x`
+
+              _Test  # name `:_Test`
+
+          Note that this can also be an underscore followed by a number for the default block parameters.
+
+              _1     # name `:_1`
+
+          Finally, for the default `it` block parameter, the name is `0it`. This is to distinguish it from an `it` local variable that is explicitly declared.
+
+              it     # name `:0it`
+
       - name: depth
         type: uint32
+        comment: |
+          The number of visible scopes that should be searched to find the origin of this local variable.
+
+              foo = 1; foo # depth 0
+
+              bar = 2; tap { bar } # depth 1
+
+          The specific rules for calculating the depth may differ from individual Ruby implementations, as they are not specified by the language. For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
     comment: |
-      Represents reading a local variable. Note that this requires that a local
-      variable of the same name has already been written to in the same scope,
-      otherwise it is parsed as a method call.
+      Represents reading a local variable. Note that this requires that a local variable of the same name has already been written to in the same scope, otherwise it is parsed as a method call.
 
           foo
           ^^^
@@ -2064,9 +2425,7 @@ nodes:
       - name: unescaped
         type: string
     comment: |
-      Represents a regular expression literal used in the predicate of a
-      conditional to implicitly match against the last line read by an IO
-      object.
+      Represents a regular expression literal used in the predicate of a conditional to implicitly match against the last line read by an IO object.
 
           if /foo/i then end
              ^^^^^^
@@ -2103,16 +2462,15 @@ nodes:
         kind: CallNode
       - name: targets
         type: node[]
+        kind: LocalVariableTargetNode
     comment: |
-      Represents writing local variables using a regular expression match with
-      named capture groups.
+      Represents writing local variables using a regular expression match with named capture groups.
 
           /(?<foo>bar)/ =~ baz
           ^^^^^^^^^^^^^^^^^^^^
   - name: MissingNode
     comment: |
-      Represents a node that is missing from the source and results in a syntax
-      error.
+      Represents a node that is missing from the source and results in a syntax error.
   - name: ModuleNode
     fields:
       - name: locals
@@ -2136,10 +2494,35 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `$',`
+          - NumberedReferenceReadNode # On parsing error of `$1,`
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - RequiredParameterNode
+          - BackReferenceReadNode # On parsing error of `*,$'`
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2153,10 +2536,30 @@ nodes:
     fields:
       - name: lefts
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: rest
         type: node?
       - name: rights
         type: node[]
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
       - name: lparen_loc
         type: location?
       - name: rparen_loc
@@ -2205,8 +2608,7 @@ nodes:
       - name: maximum
         type: uint8
     comment: |
-      Represents an implicit set of parameters through the use of numbered
-      parameters within a block or lambda.
+      Represents an implicit set of parameters through the use of numbered parameters within a block or lambda.
 
           -> { _1 + _2 }
           ^^^^^^^^^^^^^^
@@ -2214,6 +2616,14 @@ nodes:
     fields:
       - name: number
         type: uint32
+        comment: |
+          The (1-indexed, from the left) number of the capture group. Numbered references that would overflow a `uint32`  result in a `number` of exactly `2**32 - 1`.
+
+              $1          # number `1`
+
+              $5432       # number `5432`
+
+              $4294967296 # number `4294967295`
     comment: |
       Represents reading a numbered reference to a capture in the previous match.
 
@@ -2221,6 +2631,9 @@ nodes:
           ^^
   - name: OptionalKeywordParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2235,6 +2648,9 @@ nodes:
           end
   - name: OptionalParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2253,10 +2669,31 @@ nodes:
     fields:
       - name: left
         type: node
+        comment: |
+          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              left or right
+              ^^^^
+
+              1 || 2
+              ^
       - name: right
         type: node
+        comment: |
+          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              left || right
+                      ^^^^^
+
+              1 or 2
+                   ^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `or` keyword or the `||` operator.
+
+              left or right
+                   ^^
     comment: |
       Represents the use of the `||` operator or the `or` keyword.
 
@@ -2266,16 +2703,36 @@ nodes:
     fields:
       - name: requireds
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
       - name: optionals
         type: node[]
+        kind: OptionalParameterNode
       - name: rest
         type: node?
+        kind:
+          - RestParameterNode
+          - ImplicitRestNode # Only in block parameters
       - name: posts
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
+          # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
+          - KeywordRestParameterNode
+          - NoKeywordsParameterNode
       - name: keywords
         type: node[]
+        kind:
+          - RequiredKeywordParameterNode
+          - OptionalKeywordParameterNode
       - name: keyword_rest
         type: node?
+        kind:
+          - KeywordRestParameterNode
+          - ForwardingParameterNode
+          - NoKeywordsParameterNode
       - name: block
         type: node?
         kind: BlockParameterNode
@@ -2310,8 +2767,7 @@ nodes:
       - name: rparen_loc
         type: location
     comment: |
-      Represents the use of the `^` operator for pinning an expression in a
-      pattern matching expression.
+      Represents the use of the `^` operator for pinning an expression in a pattern matching expression.
 
           foo in ^(bar)
                  ^^^^^^
@@ -2322,8 +2778,7 @@ nodes:
       - name: operator_loc
         type: location
     comment: |
-      Represents the use of the `^` operator for pinning a variable in a pattern
-      matching expression.
+      Represents the use of the `^` operator for pinning a variable in a pattern matching expression.
 
           foo in ^bar
                  ^^^^
@@ -2372,18 +2827,10 @@ nodes:
       - name: flags
         type: flags
         kind: RangeFlags
-        comment: |
-          A flag indicating whether the range excludes the end value.
-
-              1..3  # includes 3
-
-              1...3 # excludes 3
       - name: left
         type: node?
         comment: |
-          The left-hand side of the range, if present. Can be either `nil` or
-          a node representing any kind of expression that returns a non-void
-          value.
+          The left-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               1...
               ^
@@ -2393,17 +2840,14 @@ nodes:
       - name: right
         type: node?
         comment: |
-          The right-hand side of the range, if present. Can be either `nil` or
-          a node representing any kind of expression that returns a non-void
-          value.
+          The right-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               ..5
                 ^
 
               1...foo
                   ^^^
-          If neither right-hand or left-hand side was included, this will be a
-          MissingNode.
+          If neither right-hand or left-hand side was included, this will be a MissingNode.
       - name: operator_loc
         type: location
         comment: |
@@ -2451,6 +2895,9 @@ nodes:
           ^^^^^^
   - name: RequiredKeywordParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2463,6 +2910,9 @@ nodes:
           end
   - name: RequiredParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -2510,10 +2960,12 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end
 
-      `Foo, *splat, Bar` are in the `exceptions` field.
-      `ex` is in the `exception` field.
+      `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `exception` field.
   - name: RestParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -2624,8 +3076,7 @@ nodes:
       - name: unescaped
         type: string
     comment: |
-      Represents a string literal, a string contained within a `%w` list, or
-      plain string content within an interpolated string.
+      Represents a string literal, a string contained within a `%w` list, or plain string content within an interpolated string.
 
           "foo"
           ^^^^^
@@ -2687,6 +3138,9 @@ nodes:
     fields:
       - name: names
         type: node[]
+        kind:
+          - SymbolNode
+          - InterpolatedSymbolNode
       - name: keyword_loc
         type: location
     comment: |
@@ -2748,6 +3202,8 @@ nodes:
         type: location
       - name: conditions
         type: node[]
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

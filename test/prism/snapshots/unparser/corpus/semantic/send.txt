@@ -25,7 +25,8 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (2,4)-(2,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: (2,5)-(2,6) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (4,0)-(4,15))

@@ -35,8 +35,10 @@
                     ├── flags: ∅
                     ├── elements: (length: 2)
                     │   ├── @ IntegerNode (location: (1,24)-(1,25))
-                    │   │   └── flags: decimal
+                    │   │   ├── flags: decimal
+                    │   │   └── value: 1
                     │   └── @ IntegerNode (location: (1,27)-(1,28))
-                    │       └── flags: decimal
+                    │       ├── flags: decimal
+                    │       └── value: 2
                     ├── opening_loc: (1,23)-(1,24) = "["
                     └── closing_loc: (1,28)-(1,29) = "]"

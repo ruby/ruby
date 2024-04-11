@@ -49,20 +49,37 @@ module Prism
 
   class StringNode < Node
     include HeredocQuery
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    def to_interpolated
+      InterpolatedStringNode.new(
+        source,
+        opening_loc,
+        [copy(opening_loc: nil, closing_loc: nil, location: content_loc)],
+        closing_loc,
+        location
+      )
+    end
   end
 
   class XStringNode < Node
     include HeredocQuery
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    def to_interpolated
+      InterpolatedXStringNode.new(
+        source,
+        opening_loc,
+        [StringNode.new(source, 0, nil, content_loc, nil, unescaped, content_loc)],
+        closing_loc,
+        location
+      )
+    end
   end
 
   private_constant :HeredocQuery
-
-  class FloatNode < Node
-    # Returns the value of the node as a Ruby Float.
-    def value
-      Float(slice)
-    end
-  end
 
   class ImaginaryNode < Node
     # Returns the value of the node as a Ruby Complex.
@@ -71,17 +88,10 @@ module Prism
     end
   end
 
-  class IntegerNode < Node
-    # Returns the value of the node as a Ruby Integer.
-    def value
-      Integer(slice)
-    end
-  end
-
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
     def value
-      Rational(numeric.is_a?(IntegerNode) && !numeric.decimal? ? numeric.value : slice.chomp("r"))
+      Rational(numeric.is_a?(IntegerNode) ? numeric.value : slice.chomp("r"))
     end
   end
 
@@ -94,7 +104,20 @@ module Prism
 
     # Returns the full name of this constant. For example: "Foo"
     def full_name
-      name.name
+      name.to_s
+    end
+  end
+
+  class ConstantWriteNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    def full_name_parts
+      [name]
+    end
+
+    # Returns the full name of this constant. For example: "Foo"
+    def full_name
+      name.to_s
     end
   end
 
@@ -107,18 +130,27 @@ module Prism
     # local variable
     class DynamicPartsInConstantPathError < StandardError; end
 
+    # An error class raised when missing nodes are found while computing a
+    # constant path's full name. For example:
+    # Foo:: -> raises because the constant path is missing the last part
+    class MissingNodesInConstantPathError < StandardError; end
+
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
-      parts = [child.name]
-      current = parent
+      parts = [] #: Array[Symbol]
+      current = self #: node?
 
       while current.is_a?(ConstantPathNode)
-        parts.unshift(current.child.name)
+        child = current.child
+        if child.is_a?(MissingNode)
+          raise MissingNodesInConstantPathError, "Constant path contains missing nodes. Cannot compute full name"
+        end
+        parts.unshift(child.name)
         current = current.parent
       end
 
-      unless current.is_a?(ConstantReadNode)
+      if !current.is_a?(ConstantReadNode) && !current.nil?
         raise DynamicPartsInConstantPathError, "Constant path contains dynamic parts. Cannot compute full name"
       end
 
@@ -135,7 +167,22 @@ module Prism
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
-      (parent&.full_name_parts || [:""]).push(child.name)
+      parts =
+        case parent
+        when ConstantPathNode, ConstantReadNode
+          parent.full_name_parts
+        when nil
+          [:""]
+        else
+          # e.g. self::Foo, (var)::Bar = baz
+          raise ConstantPathNode::DynamicPartsInConstantPathError, "Constant target path contains dynamic parts. Cannot compute full name"
+        end
+
+      if child.is_a?(MissingNode)
+        raise ConstantPathNode::MissingNodesInConstantPathError, "Constant target path contains missing nodes. Cannot compute full name"
+      end
+
+      parts.push(child.name)
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
@@ -144,25 +191,48 @@ module Prism
     end
   end
 
+  class ConstantTargetNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    def full_name_parts
+      [name]
+    end
+
+    # Returns the full name of this constant. For example: "Foo"
+    def full_name
+      name.to_s
+    end
+  end
+
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
     def signature
-      names = []
+      names = [] #: Array[[Symbol, Symbol] | [Symbol]]
 
       requireds.each do |param|
         names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
       end
 
       optionals.each { |param| names << [:opt, param.name] }
-      names << [:rest, rest.name || :*] if rest
+
+      if rest && rest.is_a?(RestParameterNode)
+        names << [:rest, rest.name || :*]
+      end
 
       posts.each do |param|
-        names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
+        if param.is_a?(MultiTargetNode)
+          names << [:req]
+        elsif param.is_a?(NoKeywordsParameterNode)
+          # Invalid syntax, e.g. "def f(**nil, ...)" moves the NoKeywordsParameterNode to posts
+          raise "Invalid syntax"
+        else
+          names << [:req, param.name]
+        end
       end
 
       # Regardless of the order in which the keywords were defined, the required
       # keywords always come first followed by the optional keywords.
-      keyopt = []
+      keyopt = [] #: Array[OptionalKeywordParameterNode]
       keywords.each do |param|
         if param.is_a?(OptionalKeywordParameterNode)
           keyopt << param

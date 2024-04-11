@@ -952,6 +952,7 @@ pub fn jmp32(cb: &mut CodeBlock, offset: i32) {
 pub fn lea(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
     if let X86Opnd::Reg(reg) = dst {
         assert!(reg.num_bits == 64);
+        assert!(matches!(src, X86Opnd::Mem(_) | X86Opnd::IPRel(_)));
         write_rm(cb, false, true, dst, src, None, &[0x8d]);
     } else {
         unreachable!();

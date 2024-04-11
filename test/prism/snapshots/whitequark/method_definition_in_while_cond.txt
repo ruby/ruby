@@ -17,6 +17,7 @@
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (1,14)-(1,28))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :a
         │   │   │   │       ├── name_loc: (1,14)-(1,15) = "a"
         │   │   │   │       ├── operator_loc: (1,16)-(1,17) = "="
@@ -33,7 +34,6 @@
         │   │   │   │           └── block:
         │   │   │   │               @ BlockNode (location: (1,22)-(1,28))
         │   │   │   │               ├── locals: []
-        │   │   │   │               ├── locals_body_index: 0
         │   │   │   │               ├── parameters: ∅
         │   │   │   │               ├── body: ∅
         │   │   │   │               ├── opening_loc: (1,22)-(1,24) = "do"
@@ -45,7 +45,6 @@
         │   │   │   └── block: ∅
         │   │   ├── body: ∅
         │   │   ├── locals: [:a]
-        │   │   ├── locals_body_index: 1
         │   │   ├── def_keyword_loc: (1,6)-(1,9) = "def"
         │   │   ├── operator_loc: ∅
         │   │   ├── lparen_loc: ∅
@@ -83,13 +82,11 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (3,19)-(3,25))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (3,19)-(3,21) = "do"
         │   │   │               └── closing_loc: (3,22)-(3,25) = "end"
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── def_keyword_loc: (3,6)-(3,9) = "def"
         │   │   ├── operator_loc: ∅
         │   │   ├── lparen_loc: ∅
@@ -117,6 +114,7 @@
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (5,19)-(5,33))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :a
         │   │   │   │       ├── name_loc: (5,19)-(5,20) = "a"
         │   │   │   │       ├── operator_loc: (5,21)-(5,22) = "="
@@ -133,7 +131,6 @@
         │   │   │   │           └── block:
         │   │   │   │               @ BlockNode (location: (5,27)-(5,33))
         │   │   │   │               ├── locals: []
-        │   │   │   │               ├── locals_body_index: 0
         │   │   │   │               ├── parameters: ∅
         │   │   │   │               ├── body: ∅
         │   │   │   │               ├── opening_loc: (5,27)-(5,29) = "do"
@@ -145,7 +142,6 @@
         │   │   │   └── block: ∅
         │   │   ├── body: ∅
         │   │   ├── locals: [:a]
-        │   │   ├── locals_body_index: 1
         │   │   ├── def_keyword_loc: (5,6)-(5,9) = "def"
         │   │   ├── operator_loc: (5,14)-(5,15) = "."
         │   │   ├── lparen_loc: ∅
@@ -184,13 +180,11 @@
             │   │           └── block:
             │   │               @ BlockNode (location: (7,24)-(7,30))
             │   │               ├── locals: []
-            │   │               ├── locals_body_index: 0
             │   │               ├── parameters: ∅
             │   │               ├── body: ∅
             │   │               ├── opening_loc: (7,24)-(7,26) = "do"
             │   │               └── closing_loc: (7,27)-(7,30) = "end"
             │   ├── locals: []
-            │   ├── locals_body_index: 0
             │   ├── def_keyword_loc: (7,6)-(7,9) = "def"
             │   ├── operator_loc: (7,14)-(7,15) = "."
             │   ├── lparen_loc: ∅

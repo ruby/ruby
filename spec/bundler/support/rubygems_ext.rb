@@ -38,6 +38,10 @@ module Spec
       FileUtils.mkdir_p(Path.tmpdir)
 
       ENV["HOME"] = Path.home.to_s
+      # Remove "RUBY_CODESIGN", which is used by mkmf-generated Makefile to
+      # sign extension bundles on macOS, to avoid trying to find the specified key
+      # from the fake $HOME/Library/Keychains directory.
+      ENV.delete "RUBY_CODESIGN"
       ENV["TMPDIR"] = Path.tmpdir.to_s
 
       require "rubygems/user_interaction"
@@ -86,7 +90,7 @@ module Spec
         puts success_message
         puts
       else
-        system("git status --porcelain")
+        system("git diff")
 
         puts
         puts error_message

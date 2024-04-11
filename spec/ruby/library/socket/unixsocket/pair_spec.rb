@@ -3,7 +3,7 @@ require_relative '../fixtures/classes'
 require_relative '../shared/partially_closable_sockets'
 
 with_feature :unix_socket do
-  describe "UNIXSocket#pair" do
+  describe "UNIXSocket.pair" do
     it_should_behave_like :partially_closable_sockets
 
     before :each do

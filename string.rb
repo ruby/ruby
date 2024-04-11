@@ -1,11 +1,11 @@
-#  A \String object has an arbitrary sequence of bytes,
+#  A +String+ object has an arbitrary sequence of bytes,
 #  typically representing text or binary data.
-#  A \String object may be created using String::new or as literals.
+#  A +String+ object may be created using String::new or as literals.
 #
 #  String objects differ from Symbol objects in that Symbol objects are
 #  designed to be used as identifiers, instead of text or data.
 #
-#  You can create a \String object explicitly with:
+#  You can create a +String+ object explicitly with:
 #
 #  - A {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals].
 #  - A {heredoc literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals].
@@ -14,7 +14,7 @@
 #
 #  - \Method #String.
 #
-#  Some \String methods modify +self+.
+#  Some +String+ methods modify +self+.
 #  Typically, a method whose name ends with <tt>!</tt> modifies +self+
 #  and returns +self+;
 #  often a similarly named method (without the <tt>!</tt>)
@@ -64,14 +64,14 @@
 #
 #    'THX1138'.gsub('\d+', '00') # => "THX1138"
 #
-#  <b>\String +replacement+</b>
+#  <b>+String+ +replacement+</b>
 #
 #  If +replacement+ is a string, that string will determine
 #  the replacing string that is to be substituted for the matched text.
 #
 #  Each of the examples above uses a simple string as the replacing string.
 #
-#  \String +replacement+ may contain back-references to the pattern's captures:
+#  +String+ +replacement+ may contain back-references to the pattern's captures:
 #
 #  - <tt>\n</tt> (_n_ a non-negative integer) refers to <tt>$n</tt>.
 #  - <tt>\k<name></tt> refers to the named capture +name+.
@@ -139,7 +139,7 @@
 #
 #  == Whitespace in Strings
 #
-#  In class \String, _whitespace_ is defined as a contiguous sequence of characters
+#  In class +String+, _whitespace_ is defined as a contiguous sequence of characters
 #  consisting of any mixture of the following:
 #
 #  - NL (null): <tt>"\x00"</tt>, <tt>"\u0000"</tt>.
@@ -157,7 +157,7 @@
 #  - #rstrip, #rstrip!: strip trailing whitespace.
 #  - #strip, #strip!: strip leading and trailing whitespace.
 #
-#  == \String Slices
+#  == +String+ Slices
 #
 #  A _slice_ of a string is a substring that is selected by certain criteria.
 #
@@ -290,7 +290,7 @@
 #
 #  <b><tt>string[substring]</tt></b>
 #
-#  When the single \String argument +substring+ is given,
+#  When the single +String+ argument +substring+ is given,
 #  returns the substring from +self+ if found, otherwise +nil+:
 #
 #    'foo'['oo'] # => "oo"
@@ -298,12 +298,12 @@
 #
 #  == What's Here
 #
-#  First, what's elsewhere. \Class \String:
+#  First, what's elsewhere. \Class +String+:
 #
 #  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 #  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
 #
-#  Here, class \String provides methods that are useful for:
+#  Here, class +String+ provides methods that are useful for:
 #
 #  - {Creating a String}[rdoc-ref:String@Methods+for+Creating+a+String]
 #  - {Frozen/Unfrozen Strings}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String]
@@ -314,7 +314,7 @@
 #  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non--5CString]
 #  - {Iterating}[rdoc-ref:String@Methods+for+Iterating]
 #
-#  === Methods for Creating a \String
+#  === Methods for Creating a +String+
 #
 #  - ::new: Returns a new string.
 #  - ::try_convert: Returns a new string created from a given object.
@@ -374,7 +374,7 @@
 #  - #casecmp?: Returns +true+ if the string is equal to a given string after Unicode case folding;
 #    +false+ otherwise.
 #
-#  === Methods for Modifying a \String
+#  === Methods for Modifying a +String+
 #
 #  Each of these methods modifies +self+.
 #
@@ -428,9 +428,9 @@
 #  - #chop!: Removes trailing newline characters if found; otherwise removes the last character;
 #    returns +self+ if any changes, +nil+ otherwise.
 #
-#  === Methods for Converting to New \String
+#  === Methods for Converting to New +String+
 #
-#  Each of these methods returns a new \String based on +self+,
+#  Each of these methods returns a new +String+ based on +self+,
 #  often just a modified copy of +self+.
 #
 #  _Extension_
@@ -494,12 +494,12 @@
 #
 #  _Duplication_
 #
-#  - #to_s, $to_str: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+#  - #to_s, $to_str: If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
 #    otherwise, returns +self+.
 #
-#  === Methods for Converting to Non-\String
+#  === Methods for Converting to Non-+String+
 #
-#  Each of these methods converts the contents of +self+ to a non-\String.
+#  Each of these methods converts the contents of +self+ to a non-+String+.
 #
 #  <em>Characters, Bytes, and Clusters</em>
 #

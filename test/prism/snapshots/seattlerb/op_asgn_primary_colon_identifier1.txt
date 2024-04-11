@@ -16,4 +16,5 @@
             ├── operator_loc: (1,5)-(1,7) = "+="
             └── value:
                 @ IntegerNode (location: (1,8)-(1,9))
-                └── flags: decimal
+                ├── flags: decimal
+                └── value: 1

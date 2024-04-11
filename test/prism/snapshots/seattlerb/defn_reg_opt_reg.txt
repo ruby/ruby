@@ -11,15 +11,17 @@
             │   @ ParametersNode (location: (1,6)-(1,18))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── optionals: (length: 1)
             │   │   └── @ OptionalParameterNode (location: (1,9)-(1,15))
+            │   │       ├── flags: ∅
             │   │       ├── name: :b
             │   │       ├── name_loc: (1,9)-(1,10) = "b"
             │   │       ├── operator_loc: (1,11)-(1,12) = "="
             │   │       └── value:
             │   │           @ SymbolNode (location: (1,13)-(1,15))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,13)-(1,14) = ":"
             │   │           ├── value_loc: (1,14)-(1,15) = "c"
             │   │           ├── closing_loc: ∅
@@ -27,13 +29,13 @@
             │   ├── rest: ∅
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,17)-(1,18))
+            │   │       ├── flags: ∅
             │   │       └── name: :d
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b, :d]
-            ├── locals_body_index: 3
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

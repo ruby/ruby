@@ -24,12 +24,17 @@
         │   │   │   │   │   └── @ AssocNode (location: (2,3)-(2,5))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (2,3)-(2,5))
-        │   │   │   │   │       │   ├── flags: ∅
+        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (2,3)-(2,4) = "a"
         │   │   │   │   │       │   ├── closing_loc: (2,4)-(2,5) = ":"
         │   │   │   │   │       │   └── unescaped: "a"
-        │   │   │   │   │       ├── value: ∅
+        │   │   │   │   │       ├── value:
+        │   │   │   │   │       │   @ ImplicitNode (location: (2,3)-(2,4))
+        │   │   │   │   │       │   └── value:
+        │   │   │   │   │       │       @ LocalVariableTargetNode (location: (2,3)-(2,4))
+        │   │   │   │   │       │       ├── name: :a
+        │   │   │   │   │       │       └── depth: 0
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: ∅
@@ -38,7 +43,8 @@
         │   │   │   │   @ StatementsNode (location: (3,0)-(4,4))
         │   │   │   │   └── body: (length: 2)
         │   │   │   │       ├── @ IntegerNode (location: (3,0)-(3,1))
-        │   │   │   │       │   └── flags: decimal
+        │   │   │   │       │   ├── flags: decimal
+        │   │   │   │       │   └── value: 0
         │   │   │   │       └── @ TrueNode (location: (4,0)-(4,4))
         │   │   │   ├── in_loc: (2,0)-(2,2) = "in"
         │   │   │   └── then_loc: ∅
@@ -50,12 +56,17 @@
         │   │       │   │   └── @ AssocNode (location: (5,3)-(5,7))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (5,3)-(5,7))
-        │   │       │   │       │   ├── flags: ∅
+        │   │       │   │       │   ├── flags: forced_us_ascii_encoding
         │   │       │   │       │   ├── opening_loc: (5,3)-(5,4) = "\""
         │   │       │   │       │   ├── value_loc: (5,4)-(5,5) = "b"
         │   │       │   │       │   ├── closing_loc: (5,5)-(5,7) = "\":"
         │   │       │   │       │   └── unescaped: "b"
-        │   │       │   │       ├── value: ∅
+        │   │       │   │       ├── value:
+        │   │       │   │       │   @ ImplicitNode (location: (5,4)-(5,5))
+        │   │       │   │       │   └── value:
+        │   │       │   │       │       @ LocalVariableTargetNode (location: (5,4)-(5,5))
+        │   │       │   │       │       ├── name: :b
+        │   │       │   │       │       └── depth: 0
         │   │       │   │       └── operator_loc: ∅
         │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: ∅
@@ -64,7 +75,8 @@
         │   │       │   @ StatementsNode (location: (6,0)-(7,4))
         │   │       │   └── body: (length: 2)
         │   │       │       ├── @ IntegerNode (location: (6,0)-(6,1))
-        │   │       │       │   └── flags: decimal
+        │   │       │       │   ├── flags: decimal
+        │   │       │       │   └── value: 0
         │   │       │       └── @ TrueNode (location: (7,0)-(7,4))
         │   │       ├── in_loc: (5,0)-(5,2) = "in"
         │   │       └── then_loc: ∅
@@ -98,14 +110,15 @@
         │   │               └── @ AssocNode (location: (10,8)-(11,1))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (10,8)-(10,14))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (10,8)-(10,9) = "\""
         │   │                   │   ├── value_loc: (10,9)-(10,12) = "foo"
         │   │                   │   ├── closing_loc: (10,12)-(10,14) = "\":"
         │   │                   │   └── unescaped: "foo"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (11,0)-(11,1))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 1
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -136,14 +149,15 @@
             │               └── @ AssocNode (location: (13,8)-(14,1))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (13,8)-(13,12))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (13,8)-(13,11) = "foo"
             │                   │   ├── closing_loc: (13,11)-(13,12) = ":"
             │                   │   └── unescaped: "foo"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (14,0)-(14,1))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block: ∅

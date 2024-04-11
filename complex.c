@@ -411,15 +411,15 @@ nucomp_s_alloc(VALUE klass)
 inline static VALUE
 f_complex_new_bang1(VALUE klass, VALUE x)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(x, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, ZERO);
 }
 
 inline static VALUE
 f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
-    assert(!RB_TYPE_P(y, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(x, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(y, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, y);
 }
 
@@ -432,7 +432,7 @@ nucomp_real_check(VALUE num)
         !RB_TYPE_P(num, T_RATIONAL)) {
         if (RB_TYPE_P(num, T_COMPLEX) && nucomp_real_p(num)) {
             VALUE real = RCOMPLEX(num)->real;
-            assert(!RB_TYPE_P(real, T_COMPLEX));
+            RUBY_ASSERT(!RB_TYPE_P(real, T_COMPLEX));
             return real;
         }
         if (!k_numeric_p(num) || !f_real_p(num))
@@ -1065,9 +1065,11 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
     else if (f_eqeq_p(dat->real, f_negate(dat->imag))) {
         x = dat->imag;
         dir = 3;
+    } else {
+        dir = 0;
     }
 
-    if (x == Qundef) return x;
+    if (UNDEF_P(x)) return x;
 
     if (f_negative_p(x)) {
         x = f_negate(x);
@@ -1139,7 +1141,7 @@ rb_complex_pow(VALUE self, VALUE other)
     }
 
     VALUE result = complex_pow_for_special_angle(self, other);
-    if (result != Qundef) return result;
+    if (!UNDEF_P(result)) return result;
 
     if (RB_TYPE_P(other, T_COMPLEX)) {
         VALUE r, theta, nr, ntheta;
@@ -1839,9 +1841,11 @@ nucomp_to_f(VALUE self)
  *
  *   Complex.rect(1, 0).to_r              # => (1/1)
  *   Complex.rect(1, Rational(0, 1)).to_r # => (1/1)
+ *   Complex.rect(1, 0.0).to_r            # => (1/1)
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>)
+ * and <tt>self.imag.to_r</tt> is not exactly zero.
  *
  * Related: Complex#rationalize.
  */
@@ -1850,9 +1854,15 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (!k_exact_zero_p(dat->imag)) {
-        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
-                 self);
+    if (RB_FLOAT_TYPE_P(dat->imag) && FLOAT_ZERO_P(dat->imag)) {
+        /* Do nothing here */
+    }
+    else if (!k_exact_zero_p(dat->imag)) {
+        VALUE imag = rb_check_convert_type_with_id(dat->imag, T_RATIONAL, "Rational", idTo_r);
+        if (NIL_P(imag) || !k_exact_zero_p(imag)) {
+            rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
+                     self);
+        }
     }
     return f_to_r(dat->real);
 }
@@ -2321,8 +2331,11 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
             return a1;
         /* should raise exception for consistency */
         if (!k_numeric_p(a1)) {
-            if (!raise)
-                return rb_protect(to_complex, a1, NULL);
+            if (!raise) {
+                a1 = rb_protect(to_complex, a1, NULL);
+                rb_set_errinfo(Qnil);
+                return a1;
+            }
             return to_complex(a1);
         }
     }
@@ -2710,7 +2723,7 @@ Init_Complex(void)
                     f_complex_new_bang2(rb_cComplex, ZERO, ONE));
 
 #if !USE_FLONUM
-    rb_gc_register_mark_object(RFLOAT_0 = DBL2NUM(0.0));
+    rb_vm_register_global_object(RFLOAT_0 = DBL2NUM(0.0));
 #endif
 
     rb_provide("complex.so");	/* for backward compatibility */

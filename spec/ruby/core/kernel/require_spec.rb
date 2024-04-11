@@ -26,7 +26,7 @@ describe "Kernel#require" do
     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
 
     # Ignore CRuby internals
-    features -= %w[encdb transdb windows_1252]
+    features -= %w[encdb transdb windows_1252 windows_31j]
     features.reject! { |feature| feature.end_with?('-fake') }
 
     features.sort.should == provided.sort

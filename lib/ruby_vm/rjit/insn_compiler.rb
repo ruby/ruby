@@ -3736,7 +3736,7 @@ module RubyVM::RJIT
 
           ctx.upgrade_opnd_type(insn_opnd, Type::Flonum)
         end
-      elsif C.FL_TEST(known_klass, C::RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
+      elsif C.RCLASS_SINGLETON_P(known_klass) && comptime_obj == C.rb_class_attached_object(known_klass)
         # Singleton classes are attached to one specific object, so we can
         # avoid one memory access (and potentially the is_heap check) by
         # looking for the expected object directly.
@@ -4452,6 +4452,11 @@ module RubyVM::RJIT
         return CantCompile
       end
 
+      if flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_iseq_kw_splat)
+        return CantCompile
+      end
+
       if iseq_has_rest && opt_num != 0
         asm.incr_counter(:send_iseq_has_rest_and_optional)
         return CantCompile
@@ -4924,13 +4929,10 @@ module RubyVM::RJIT
 
       asm.comment('inlined leaf builtin')
 
-      # Skip this if it doesn't trigger GC
-      if iseq.body.builtin_attrs & C::BUILTIN_ATTR_NO_GC == 0
-        # The callee may allocate, e.g. Integer#abs on a Bignum.
-        # Save SP for GC, save PC for allocation tracing, and prepare
-        # for global invalidation after GC's VM lock contention.
-        jit_prepare_routine_call(jit, ctx, asm)
-      end
+      # The callee may allocate, e.g. Integer#abs on a Bignum.
+      # Save SP for GC, save PC for allocation tracing, and prepare
+      # for global invalidation after GC's VM lock contention.
+      jit_prepare_routine_call(jit, ctx, asm)
 
       # Call the builtin func (ec, recv, arg1, arg2, ...)
       asm.mov(C_ARGS[0], EC)

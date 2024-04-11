@@ -13,6 +13,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "wasm/asyncify.h"
 #include "wasm/machine.h"
 #include "wasm/fiber.h"
@@ -47,10 +48,13 @@ static inline void coroutine_initialize_main(struct coroutine_context * context)
 
 static inline void coroutine_initialize(struct coroutine_context *context, coroutine_start start, void *stack, size_t size)
 {
-    if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (context = %p, stack = %p ... %p)\n", __func__, context, stack, (char *)stack + size);
+    // Linear stack pointer must be always aligned down to 16 bytes.
+    // https://github.com/WebAssembly/tool-conventions/blob/c74267a5897c1bdc9aa60adeaf41816387d3cd12/BasicCABI.md#the-linear-stack
+    uintptr_t sp = ((uintptr_t)stack + size) & ~0xF;
+    if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (context = %p, stack = %p ... %p)\n", __func__, context, stack, (char *)sp);
     rb_wasm_init_context(&context->fc, coroutine_trampoline, start, context);
     // record the initial stack pointer position to restore it after resumption
-    context->current_sp = (char *)stack + size;
+    context->current_sp = (char *)sp;
     context->stack_base = stack;
     context->size = size;
 }

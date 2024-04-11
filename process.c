@@ -1677,11 +1677,21 @@ static void
 before_fork_ruby(void)
 {
     before_exec();
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_shutdown_gc_threads();
+    }
+#endif
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_respawn_gc_threads();
+    }
+#endif
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     if (pid == 0) {
         // child
@@ -2482,12 +2492,12 @@ rb_check_argv(int argc, VALUE *argv)
         }
         prog = RARRAY_AREF(tmp, 0);
         argv[0] = RARRAY_AREF(tmp, 1);
-        SafeStringValue(prog);
+        StringValue(prog);
         StringValueCStr(prog);
         prog = rb_str_new_frozen(prog);
     }
     for (i = 0; i < argc; i++) {
-        SafeStringValue(argv[i]);
+        StringValue(argv[i]);
         argv[i] = rb_str_new_frozen(argv[i]);
         StringValueCStr(argv[i]);
     }
@@ -3083,7 +3093,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  or contain meta characters:
  *
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
- *    exec('echo')                         # Built-in.
+ *    exec('exit')                         # Built-in.
  *    exec('date > date.tmp')              # Contains meta character.
  *
  *  The command line may also contain arguments and options for the command:
@@ -3114,7 +3124,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    Sat Aug 26 09:38:00 AM CDT 2023
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    exec('doesnt_exist') # Raises Errno::ENOENT
  *
@@ -4772,14 +4784,14 @@ rb_spawn(int argc, const VALUE *argv)
  *  or contain meta characters:
  *
  *    system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *    system('echo')                                  # => true  # Built-in.
+ *    system('exit')                                  # => true  # Built-in.
  *    system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *    system('date > /nop/date.tmp')                  # => false
  *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
  *
  *  Assigns the command's error status to <tt>$?</tt>:
  *
- *    system('echo')                             # => true  # Built-in.
+ *    system('exit')                             # => true  # Built-in.
  *    $?                                         # => #<Process::Status: pid 640610 exit 0>
  *    system('date > /nop/date.tmp')             # => false
  *    $?                                         # => #<Process::Status: pid 640742 exit 2>
@@ -4820,7 +4832,9 @@ rb_spawn(int argc, const VALUE *argv)
  *    system('foo')           # => nil
  *    $?                      # => #<Process::Status: pid 645608 exit 127>
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    system('doesnt_exist') # => nil
  *
@@ -4948,7 +4962,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    spawn('if true; then echo "Foo"; fi') # => 798847 # Shell reserved word.
  *    Process.wait                          # => 798847
- *    spawn('echo')                         # => 798848 # Built-in.
+ *    spawn('exit')                         # => 798848 # Built-in.
  *    Process.wait                          # => 798848
  *    spawn('date > /tmp/date.tmp')         # => 798879 # Contains meta character.
  *    Process.wait                          # => 798849
@@ -4972,26 +4986,20 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Argument +exe_path+ is one of the following:
  *
- *  - The string path to an executable to be called:
+ *  - The string path to an executable to be called.
+ *  - A 2-element array containing the path to an executable to be called,
+ *    and the string to be used as the name of the executing process.
  *
  *      spawn('/usr/bin/date') # Path to date on Unix-style system.
  *      Process.wait
  *
  *    Output:
  *
- *      Thu Aug 31 10:06:48 AM CDT 2023
+ *      Mon Aug 28 11:43:10 AM CDT 2023
  *
- *  - A 2-element array containing the path to an executable
- *    and the string to be used as the name of the executing process:
- *
- *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
- *      p `ps -p #{pid} -o command=`
- *
- *    Output:
- *
- *      "Hello! 1\n"
- *
- *  Ruby invokes the executable directly, with no shell and no shell expansion.
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *  If one or more +args+ is given, each is an argument or option
  *  to be passed to the executable:
@@ -8841,14 +8849,14 @@ proc_warmup(VALUE _)
  *   or if it contains one or more meta characters.
  * - +exe_path+ otherwise.
  *
- * <b>Argument +command_line+</b>
+ * ==== Argument +command_line+
  *
  * \String argument +command_line+ is a command line to be passed to a shell;
  * it must begin with a shell reserved word, begin with a special built-in,
  * or contain meta characters:
  *
  *   system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *   system('echo')                                  # => true  # Built-in.
+ *   system('exit')                                  # => true  # Built-in.
  *   system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *   system('date > /nop/date.tmp')                  # => false
  *   system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
@@ -8863,22 +8871,88 @@ proc_warmup(VALUE _)
  *
  * See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- * <b>Argument +exe_path+</b>
+ * ==== Argument +exe_path+
  *
  * Argument +exe_path+ is one of the following:
  *
- * - The string path to an executable to be called.
- * - A 2-element array containing the path to an executable to be called,
- *   and the string to be used as the name of the executing process.
+ * - The string path to an executable file to be called:
+ *
+ *   Example:
+ *
+ *     system('/usr/bin/date') # => true # Path to date on Unix-style system.
+ *     system('foo')           # => nil  # Command execlution failed.
+ *
+ *   Output:
+ *
+ *     Thu Aug 31 10:06:48 AM CDT 2023
+ *
+ *   A path or command name containing spaces without arguments cannot
+ *   be distinguished from +command_line+ above, so you must quote or
+ *   escape the entire command name using a shell in platform
+ *   dependent manner, or use the array form below.
+ *
+ *   If +exe_path+ does not contain any path separator, an executable
+ *   file is searched from directories specified with the +PATH+
+ *   environment variable.  What the word "executable" means here is
+ *   depending on platforms.
+ *
+ *   Even if the file considered "executable", its content may not be
+ *   in proper executable format.  In that case, Ruby tries to run it
+ *   by using <tt>/bin/sh</tt> on a Unix-like system, like system(3)
+ *   does.
+ *
+ *     File.write('shell_command', 'echo $SHELL', perm: 0o755)
+ *     system('./shell_command')        # prints "/bin/sh" or something.
+ *
+ * - A 2-element array containing the path to an executable
+ *   and the string to be used as the name of the executing process:
+ *
+ *   Example:
+ *
+ *     pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+ *     p `ps -p #{pid} -o command=`
+ *
+ *   Output:
+ *
+ *     "Hello! 1\n"
+ *
+ * === Arguments +args+
+ *
+ * If +command_line+ does not contain shell meta characters except for
+ * spaces and tabs, or +exe_path+ is given, Ruby invokes the
+ * executable directly.  This form does not use the shell:
+ *
+ *   spawn("doesnt_exist")       # Raises Errno::ENOENT
+ *   spawn("doesnt_exist", "\n") # Raises Errno::ENOENT
+ *
+ *   spawn("doesnt_exist\n")     # => false
+ *   # sh: 1: doesnot_exist: not found
+ *
+ * The error message is from a shell and would vary depending on your
+ * system.
+ *
+ * If one or more +args+ is given after +exe_path+, each is an
+ * argument or option to be passed to the executable:
  *
  * Example:
  *
- *   system('/usr/bin/date') # => true # Path to date on Unix-style system.
- *   system('foo')           # => nil  # Command failed.
+ *   system('echo', '<', 'C*', '|', '$SHELL', '>')   # => true
  *
  * Output:
  *
- *   Mon Aug 28 11:43:10 AM CDT 2023
+ *   < C* | $SHELL >
+ *
+ * However, there are exceptions on Windows.  See {Execution Shell on
+ * Windows}[rdoc-ref:Process@Execution+Shell+on+Windows].
+ *
+ * If you want to invoke a path containing spaces with no arguments
+ * without shell, you will need to use a 2-element array +exe_path+.
+ *
+ * Example:
+ *
+ *   path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+ *   spawn(path) # Raises Errno::ENOENT; No such file or directory - /Applications/Google
+ *   spawn([path] * 2)
  *
  * === Execution Options
  *
@@ -9013,21 +9087,48 @@ proc_warmup(VALUE _)
  * === Execution Shell
  *
  * On a Unix-like system, the shell invoked is <tt>/bin/sh</tt>;
- * otherwise the shell invoked is determined by environment variable
- * <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- * Except for the +COMSPEC+ case,
  * the entire string +command_line+ is passed as an argument
  * to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
  * The shell performs normal shell expansion on the command line:
  *
- *   spawn('echo C*') # => 799139
- *   Process.wait     # => 799139
+ * Example:
+ *
+ *   system('echo $SHELL: C*') # => true
  *
  * Output:
  *
- *   CONTRIBUTING.md COPYING COPYING.ja
+ *   /bin/bash: CONTRIBUTING.md COPYING COPYING.ja
+ *
+ * ==== Execution Shell on Windows
+ *
+ * On Windows, the shell invoked is determined by environment variable
+ * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise; the entire string
+ * +command_line+ is passed as an argument to <tt>-c</tt> option for
+ * +RUBYSHELL+, as well as <tt>/bin/sh</tt>, and {/c
+ * option}[https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd]
+ * for +COMSPEC+.  The shell is invoked automatically in the following
+ * cases:
+ *
+ * - The command is a built-in of +cmd.exe+, such as +echo+.
+ * - The executable file is a batch file; its name ends with +.bat+ or
+ *   +.cmd+.
+ *
+ * Note that the command will still be invoked as +command_line+ form
+ * even when called in +exe_path+ form, because +cmd.exe+ does not
+ * accept a script name like <tt>/bin/sh</tt> does but only works with
+ * <tt>/c</tt> option.
+ *
+ * The standard shell +cmd.exe+ performs environment variable
+ * expansion but does not have globbing functionality:
+ *
+ * Example:
+ *
+ *   system("echo %COMSPEC%: C*")' # => true
+ *
+ * Output:
+ *
+ *   C:\WINDOWS\system32\cmd.exe: C*
  *
  * == What's Here
  *
@@ -9145,15 +9246,7 @@ InitVM_process(void)
 #endif
 
     rb_define_singleton_method(rb_mProcess, "exec", f_exec, -1);
-#if USE_MMTK
-    // FIXME: MMTk currently doesn't support forking, so Process will not respond to :fork for not.
-    // We should add necessary mechanism to mmtk-core in order to support forking.
-    if (!rb_mmtk_enabled_p()) {
-#endif
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
-#if USE_MMTK
-    }
-#endif
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", f_exit, -1);

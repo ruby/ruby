@@ -6,7 +6,7 @@ end
 
 require 'test/unit'
 
-if defined?(WIN32OLE_TYPE)
+if defined?(WIN32OLE::Type)
   require_relative 'available_ole'
 
   class TestWIN32OLE_TYPE_EVENT < Test::Unit::TestCase
@@ -17,7 +17,7 @@ if defined?(WIN32OLE_TYPE)
     else
 
       def setup
-        @ole_type = WIN32OLE_TYPE.new('System Monitor Control', 'SystemMonitor')
+        @ole_type = WIN32OLE::Type.new('System Monitor Control', 'SystemMonitor')
       end
 
       def test_implemented_ole_types

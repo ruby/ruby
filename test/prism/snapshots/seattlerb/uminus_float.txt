@@ -4,3 +4,4 @@
     @ StatementsNode (location: (1,0)-(1,4))
     └── body: (length: 1)
         └── @ FloatNode (location: (1,0)-(1,4))
+            └── value: -0.0

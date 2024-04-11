@@ -16,6 +16,7 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,9)-(1,18))
+            │   │   ├── flags: ∅
             │   │   ├── name: :testing
             │   │   ├── name_loc: (1,11)-(1,18) = "testing"
             │   │   └── operator_loc: (1,9)-(1,11) = "**"
@@ -46,7 +47,6 @@
             │           ├── closing_loc: (1,40)-(1,41) = ")"
             │           └── block: ∅
             ├── locals: [:testing]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,8)-(1,9) = "("

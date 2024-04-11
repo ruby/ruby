@@ -734,7 +734,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
         if (RB_TYPE_P(klass, T_ICLASS)) {
             klass = RBASIC(klass)->klass;
         }
-        else if (FL_TEST(klass, FL_SINGLETON)) {
+        else if (RCLASS_SINGLETON_P(klass)) {
             klass = RCLASS_ATTACHED_OBJECT(klass);
         }
     }
@@ -1259,6 +1259,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
             (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
             if (def->body.bmethod.hooks == NULL) {
                 def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+                def->body.bmethod.hooks->is_local = true;
             }
             rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
             rb_hash_aset(tp->local_target_set, target, Qfalse);
@@ -1273,7 +1274,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
     if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) {
+        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
         rb_clear_bf_ccs();
     }
 
@@ -1526,7 +1527,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
                 VALUE sym = rb_tracearg_method_id(trace_arg);
                 if (NIL_P(sym))
                     break;
-                return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in `%"PRIsVALUE"'>",
+                return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in '%"PRIsVALUE"'>",
                                   rb_tracearg_event(trace_arg),
                                   rb_tracearg_path(trace_arg),
                                   FIX2INT(rb_tracearg_lineno(trace_arg)),
@@ -1536,7 +1537,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
           case RUBY_EVENT_C_CALL:
           case RUBY_EVENT_RETURN:
           case RUBY_EVENT_C_RETURN:
-            return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"' %"PRIsVALUE":%d>",
+            return rb_sprintf("#<TracePoint:%"PRIsVALUE" '%"PRIsVALUE"' %"PRIsVALUE":%d>",
                               rb_tracearg_event(trace_arg),
                               rb_tracearg_method_id(trace_arg),
                               rb_tracearg_path(trace_arg),

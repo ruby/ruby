@@ -52,6 +52,9 @@ module Prism
 
       assert_equal line, result.value.location.start_line
       assert_equal line + 1, find_source_file_node(result.value).location.start_line
+
+      result = Prism.parse_lex("def foo\n __FILE__\nend", line: line)
+      assert_equal line, result.value.first.location.start_line
     end
 
     def test_parse_takes_negative_lines
@@ -60,6 +63,9 @@ module Prism
 
       assert_equal line, result.value.location.start_line
       assert_equal line + 1, find_source_file_node(result.value).location.start_line
+
+      result = Prism.parse_lex("def foo\n __FILE__\nend", line: line)
+      assert_equal line, result.value.first.location.start_line
     end
 
     def test_parse_lex
@@ -69,11 +75,96 @@ module Prism
       assert_equal 5, tokens.length
     end
 
+    def test_dump_file
+      assert_nothing_raised do
+        Prism.dump_file(__FILE__)
+      end
+
+      error = assert_raise Errno::ENOENT do
+        Prism.dump_file("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.dump_file(nil)
+      end
+    end
+
+    def test_lex_file
+      assert_nothing_raised do
+        Prism.lex_file(__FILE__)
+      end
+
+      error = assert_raise Errno::ENOENT do
+        Prism.lex_file("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.lex_file(nil)
+      end
+    end
+
     def test_parse_lex_file
       node, tokens = Prism.parse_lex_file(__FILE__).value
 
       assert_kind_of ProgramNode, node
       refute_empty tokens
+
+      error = assert_raise Errno::ENOENT do
+        Prism.parse_lex_file("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.parse_lex_file(nil)
+      end
+    end
+
+    def test_parse_file
+      node = Prism.parse_file(__FILE__).value
+      assert_kind_of ProgramNode, node
+
+      error = assert_raise Errno::ENOENT do
+        Prism.parse_file("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.parse_file(nil)
+      end
+    end
+
+    def test_parse_file_success
+      assert_predicate Prism.parse_file_comments(__FILE__), :any?
+
+      error = assert_raise Errno::ENOENT do
+        Prism.parse_file_comments("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.parse_file_comments(nil)
+      end
+    end
+
+    def test_parse_file_comments
+      assert_predicate Prism.parse_file_comments(__FILE__), :any?
+
+      error = assert_raise Errno::ENOENT do
+        Prism.parse_file_comments("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        Prism.parse_file_comments(nil)
+      end
     end
 
     # To accurately compare against Ripper, we need to make sure that we're
@@ -87,7 +178,7 @@ module Prism
 
     relatives.each do |relative|
       # These fail on TruffleRuby due to a difference in Symbol#inspect: :测试 vs :"测试"
-      next if RUBY_ENGINE == "truffleruby" and %w[seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
+      next if RUBY_ENGINE == "truffleruby" and %w[emoji_method_calls.txt seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
 
       filepath = File.join(base, relative)
       snapshot = File.expand_path(File.join("snapshots", relative), __dir__)

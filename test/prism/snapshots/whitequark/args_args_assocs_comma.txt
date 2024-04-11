@@ -40,14 +40,15 @@
             │               └── @ AssocNode (location: (1,9)-(1,18))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,9)-(1,13))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,9)-(1,10) = ":"
             │                   │   ├── value_loc: (1,10)-(1,13) = "baz"
             │                   │   ├── closing_loc: ∅
             │                   │   └── unescaped: "baz"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,17)-(1,18))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: (1,14)-(1,16) = "=>"
             ├── closing_loc: (1,19)-(1,20) = "]"
             └── block: ∅

@@ -137,6 +137,9 @@ module Test
 
       attr_reader :__name__ # :nodoc:
 
+      # Method name of this test.
+      alias method_name __name__
+
       PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException,
                                 Interrupt, SystemExit] # :nodoc:
 

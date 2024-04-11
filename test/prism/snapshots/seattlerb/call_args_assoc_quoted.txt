@@ -41,7 +41,8 @@
         │   │                   │   └── closing_loc: (1,7)-(1,9) = "\":"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (1,9)-(1,11))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 42
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -62,14 +63,15 @@
         │   │               └── @ AssocNode (location: (3,2)-(3,8))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (3,2)-(3,6))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (3,2)-(3,3) = "\""
         │   │                   │   ├── value_loc: (3,3)-(3,4) = "k"
         │   │                   │   ├── closing_loc: (3,4)-(3,6) = "\":"
         │   │                   │   └── unescaped: "k"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (3,6)-(3,8))
-        │   │                   │   └── flags: decimal
+        │   │                   │   ├── flags: decimal
+        │   │                   │   └── value: 42
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
@@ -90,14 +92,15 @@
             │               └── @ AssocNode (location: (5,2)-(5,8))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (5,2)-(5,6))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: (5,2)-(5,3) = "'"
             │                   │   ├── value_loc: (5,3)-(5,4) = "k"
             │                   │   ├── closing_loc: (5,4)-(5,6) = "':"
             │                   │   └── unescaped: "k"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (5,6)-(5,8))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 42
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block: ∅

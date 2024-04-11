@@ -2,9 +2,31 @@ module Prism
   # This represents a node in the tree. It is the parent class of all of the
   # various node types.
   class Node
+    # A pointer to the source that this node was created from.
+    attr_reader :source
+    private :source
+
     # A Location instance that represents the location of this node in the
     # source.
-    attr_reader :location
+    def location
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+
+    # The start offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def start_offset
+      location = @location
+      location.is_a?(Location) ? location.start_offset : location >> 32
+    end
+
+    # The end offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def end_offset
+      location = @location
+      location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
+    end
 
     def newline? # :nodoc:
       @newline ? true : false
@@ -34,7 +56,51 @@ module Prism
 
     # Convert this node into a graphviz dot graph string.
     def to_dot
+      # @type self: node
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
+    end
+
+    # --------------------------------------------------------------------------
+    # :section: Node interface
+    # These methods are effectively abstract methods that must be implemented by
+    # the various subclasses of Node. They are here to make it easier to work
+    # with typecheckers.
+    # --------------------------------------------------------------------------
+
+    # Accepts a visitor and calls back into the specialized visit function.
+    def accept(visitor)
+      raise NoMethodError, "undefined method `accept' for #{inspect}"
+    end
+
+    # Returns an array of child nodes, including `nil`s in the place of optional
+    # nodes that were not present.
+    def child_nodes
+      raise NoMethodError, "undefined method `child_nodes' for #{inspect}"
+    end
+
+    alias deconstruct child_nodes
+
+    # Returns an array of child nodes, excluding any `nil`s in the place of
+    # optional nodes that were not present.
+    def compact_child_nodes
+      raise NoMethodError, "undefined method `compact_child_nodes' for #{inspect}"
+    end
+
+    # Returns an array of child nodes and locations that could potentially have
+    # comments attached to them.
+    def comment_targets
+      raise NoMethodError, "undefined method `comment_targets' for #{inspect}"
+    end
+
+    # Returns a symbol symbolizing the type of node that this represents. This
+    # is particularly useful for case statements and array comparisons.
+    def type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
+    end
+
+    # Returns a string representation of the node.
+    def inspect(inspector = NodeInspector.new)
+      raise NoMethodError, "undefined method `inspect' for #{inspect}"
     end
   end
   <%- nodes.each do |node| -%>
@@ -43,23 +109,17 @@ module Prism
   #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
-    <%- node.fields.each do |field| -%>
-    <%- if field.comment.nil? -%>
-    # <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
-    <%- else -%>
-    <%- field.each_comment_line do |line| -%>
-    #<%= line %>
-    <%- end -%>
-    <%- end -%>
-    <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
-
-    <%- end -%>
     # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
-    def initialize(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    def initialize(source, <%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+      @source = source
+      @newline = false
+      @location = location
       <%- node.fields.each do |field| -%>
+      <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
+      raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
+      <%- end -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>
-      @location = location
     end
 
     # def accept: (Visitor visitor) -> void
@@ -76,9 +136,9 @@ module Prism
     def set_newline_flag(newline_marked) # :nodoc:
       <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
       <%- case field -%>
-      <%- when Prism::NodeField -%>
+      <%- when Prism::Template::NodeField -%>
       <%= field.name %>.set_newline_flag(newline_marked)
-      <%- when Prism::NodeListField -%>
+      <%- when Prism::Template::NodeListField -%>
       first = <%= field.name %>.first
       first.set_newline_flag(newline_marked) if first
       <%- else raise field.class.name -%>
@@ -90,23 +150,23 @@ module Prism
     def child_nodes
       [<%= node.fields.map { |field|
         case field
-        when Prism::NodeField, Prism::OptionalNodeField then field.name
-        when Prism::NodeListField then "*#{field.name}"
+        when Prism::Template::NodeField, Prism::Template::OptionalNodeField then field.name
+        when Prism::Template::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
     end
 
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
-      <%- if node.fields.any? { |field| field.is_a?(Prism::OptionalNodeField) } -%>
-      compact = []
+      <%- if node.fields.any? { |field| field.is_a?(Prism::Template::OptionalNodeField) } -%>
+      compact = [] #: Array[Prism::node]
       <%- node.fields.each do |field| -%>
       <%- case field -%>
-      <%- when Prism::NodeField -%>
+      <%- when Prism::Template::NodeField -%>
       compact << <%= field.name %>
-      <%- when Prism::OptionalNodeField -%>
+      <%- when Prism::Template::OptionalNodeField -%>
       compact << <%= field.name %> if <%= field.name %>
-      <%- when Prism::NodeListField -%>
+      <%- when Prism::Template::NodeListField -%>
       compact.concat(<%= field.name %>)
       <%- end -%>
       <%- end -%>
@@ -114,8 +174,8 @@ module Prism
       <%- else -%>
       [<%= node.fields.map { |field|
         case field
-        when Prism::NodeField then field.name
-        when Prism::NodeListField then "*#{field.name}"
+        when Prism::Template::NodeField then field.name
+        when Prism::Template::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
       <%- end -%>
@@ -125,19 +185,15 @@ module Prism
     def comment_targets
       [<%= node.fields.map { |field|
         case field
-        when Prism::NodeField, Prism::LocationField then field.name
-        when Prism::OptionalNodeField, Prism::NodeListField, Prism::OptionalLocationField then "*#{field.name}"
+        when Prism::Template::NodeField, Prism::Template::LocationField then field.name
+        when Prism::Template::OptionalNodeField, Prism::Template::NodeListField, Prism::Template::OptionalLocationField then "*#{field.name}"
         end
-      }.compact.join(", ") %>]
+      }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (**params) -> <%= node.name %>
-    def copy(**params)
-      <%= node.name %>.new(
-        <%- (node.fields.map(&:name) + ["location"]).map do |name| -%>
-        params.fetch(:<%= name %>) { <%= name %> },
-        <%- end -%>
-      )
+    # def copy: (<%= (node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" } + ["?location: Location"]).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (node.fields.map(&:name) + ["location"]).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]
@@ -147,9 +203,42 @@ module Prism
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
+
+    <%- node.fields.each do |field| -%>
+    <%- if field.comment.nil? -%>
+    # <%= "private " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    <%- else -%>
+    <%- field.each_comment_line do |line| -%>
+    #<%= line %>
+    <%- end -%>
+    <%- end -%>
+    <%- case field -%>
+    <%- when Prism::Template::LocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      return location if location.is_a?(Location)
+      @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+    <%- when Prism::Template::OptionalLocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      case location
+      when nil
+        nil
+      when Location
+        location
+      else
+        @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+      end
+    end
+    <%- else -%>
+    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
+    <%- end -%>
+
+    <%- end -%>
     <%- node.fields.each do |field| -%>
     <%- case field -%>
-    <%- when Prism::LocationField -%>
+    <%- when Prism::Template::LocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
 
@@ -157,7 +246,7 @@ module Prism
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>.slice
     end
-    <%- when Prism::OptionalLocationField -%>
+    <%- when Prism::Template::OptionalLocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
 
@@ -165,7 +254,7 @@ module Prism
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>&.slice
     end
-    <%- when Prism::FlagsField -%>
+    <%- when Prism::Template::FlagsField -%>
     <%- flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag }.values.each do |value| -%>
 
     # def <%= value.name.downcase %>?: () -> bool
@@ -182,33 +271,33 @@ module Prism
       <%- node.fields.each_with_index do |field, index| -%>
       <%- pointer, preadd = index == node.fields.length - 1 ? ["└── ", "    "] : ["├── ", "│   "] -%>
       <%- case field -%>
-      <%- when Prism::NodeListField -%>
+      <%- when Prism::Template::NodeListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.list("#{inspector.prefix}<%= preadd %>", <%= field.name %>)}"
-      <%- when Prism::ConstantListField -%>
+      <%- when Prism::Template::ConstantListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when Prism::NodeField -%>
+      <%- when Prism::Template::NodeField -%>
       inspector << "<%= pointer %><%= field.name %>:\n"
       inspector << inspector.child_node(<%= field.name %>, "<%= preadd %>")
-      <%- when Prism::OptionalNodeField -%>
+      <%- when Prism::Template::OptionalNodeField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?
         inspector << "<%= pointer %><%= field.name %>: ∅\n"
       else
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt8Field, Prism::UInt32Field -%>
+      <%- when Prism::Template::ConstantField, Prism::Template::StringField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField, Prism::Template::DoubleField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when Prism::OptionalConstantField -%>
+      <%- when Prism::Template::OptionalConstantField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?
         inspector << "<%= pointer %><%= field.name %>: ∅\n"
       else
         inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       end
-      <%- when Prism::FlagsField -%>
+      <%- when Prism::Template::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
       flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact
       inspector << "<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n"
-      <%- when Prism::LocationField, Prism::OptionalLocationField -%>
+      <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.location(<%= field.name %>)}\n"
       <%- else -%>
       <%- raise -%>

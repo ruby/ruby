@@ -15,7 +15,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,2)-(1,18))
         │       ├── locals: [:foo, :bar]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (1,4)-(1,16))
         │       │   ├── parameters:
@@ -24,8 +23,10 @@
         │       │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,15))
         │       │   │   │       ├── lefts: (length: 2)
         │       │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,9))
+        │       │   │   │       │   │   ├── flags: ∅
         │       │   │   │       │   │   └── name: :foo
         │       │   │   │       │   └── @ RequiredParameterNode (location: (1,11)-(1,14))
+        │       │   │   │       │       ├── flags: ∅
         │       │   │   │       │       └── name: :bar
         │       │   │   │       ├── rest: ∅
         │       │   │   │       ├── rights: (length: 0)
@@ -55,13 +56,13 @@
             └── block:
                 @ BlockNode (location: (3,2)-(3,11))
                 ├── locals: [:foo]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (3,4)-(3,9))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (3,5)-(3,8))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (3,5)-(3,8))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :foo
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

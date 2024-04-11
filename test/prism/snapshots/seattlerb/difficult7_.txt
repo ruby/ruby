@@ -9,7 +9,7 @@
             │   ├── @ AssocNode (location: (2,8)-(2,33))
             │   │   ├── key:
             │   │   │   @ SymbolNode (location: (2,8)-(2,10))
-            │   │   │   ├── flags: ∅
+            │   │   │   ├── flags: forced_us_ascii_encoding
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── value_loc: (2,8)-(2,9) = "a"
             │   │   │   ├── closing_loc: (2,9)-(2,10) = ":"
@@ -27,7 +27,6 @@
             │   │   │   └── block:
             │   │   │       @ BlockNode (location: (2,18)-(2,33))
             │   │   │       ├── locals: []
-            │   │   │       ├── locals_body_index: 0
             │   │   │       ├── parameters: ∅
             │   │   │       ├── body:
             │   │   │       │   @ StatementsNode (location: (2,20)-(2,31))
@@ -83,7 +82,7 @@
             │   └── @ AssocNode (location: (3,8)-(3,14))
             │       ├── key:
             │       │   @ SymbolNode (location: (3,8)-(3,10))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: forced_us_ascii_encoding
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (3,8)-(3,9) = "e"
             │       │   ├── closing_loc: (3,9)-(3,10) = ":"

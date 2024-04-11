@@ -11,6 +11,7 @@
             │   @ ParametersNode (location: (1,6)-(1,7))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │       ├── flags: ∅
             │   │       └── name: :y
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -42,7 +43,8 @@
             │       │   ├── operator_loc: (3,4)-(3,6) = "*="
             │       │   ├── value:
             │       │   │   @ IntegerNode (location: (3,7)-(3,8))
-            │       │   │   └── flags: decimal
+            │       │   │   ├── flags: decimal
+            │       │   │   └── value: 2
             │       │   ├── name: :y
             │       │   ├── operator: :*
             │       │   └── depth: 0
@@ -56,7 +58,6 @@
             │                       ├── name: :y
             │                       └── depth: 0
             ├── locals: [:y]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

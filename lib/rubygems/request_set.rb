@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "tsort"
+require_relative "vendored_tsort"
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.

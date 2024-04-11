@@ -124,8 +124,9 @@ module TestIRB
       end
 
       def test_complete_require_library_name_first
-        candidates = IRB::RegexpCompletor.new.completion_candidates("require ", "'csv", "", bind: binding)
-        assert_equal "'csv", candidates.first
+        # Test that library name is completed first with subdirectories
+        candidates = IRB::RegexpCompletor.new.completion_candidates("require ", "'irb", "", bind: binding)
+        assert_equal "'irb", candidates.first
       end
 
       def test_complete_require_relative

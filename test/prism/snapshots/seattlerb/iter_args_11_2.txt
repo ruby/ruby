@@ -15,34 +15,39 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,28))
                 ├── locals: [:a, :b, :c, :d, :e]
-                ├── locals_body_index: 5
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,26))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,25))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :a
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,8)-(1,14))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :b
                 │   │   │       ├── name_loc: (1,8)-(1,9) = "b"
                 │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,12)-(1,14))
-                │   │   │           └── flags: decimal
+                │   │   │           ├── flags: decimal
+                │   │   │           └── value: 42
                 │   │   ├── rest:
                 │   │   │   @ RestParameterNode (location: (1,16)-(1,18))
+                │   │   │   ├── flags: ∅
                 │   │   │   ├── name: :c
                 │   │   │   ├── name_loc: (1,17)-(1,18) = "c"
                 │   │   │   └── operator_loc: (1,16)-(1,17) = "*"
                 │   │   ├── posts: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,20)-(1,21))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :d
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest: ∅
                 │   │   └── block:
                 │   │       @ BlockParameterNode (location: (1,23)-(1,25))
+                │   │       ├── flags: ∅
                 │   │       ├── name: :e
                 │   │       ├── name_loc: (1,24)-(1,25) = "e"
                 │   │       └── operator_loc: (1,23)-(1,24) = "&"

@@ -141,12 +141,10 @@ class BindingGenerator
     # Define variables
     @values.each do |type, values|
       values.each do |value|
-        println "  def C.#{value}"
-        println "    Primitive.cexpr! %q{ #{type}2NUM(#{value}) }"
-        println "  end"
-        println
+        println "  def C.#{value} = Primitive.cexpr!(%q{ #{type}2NUM(#{value}) })"
       end
     end
+    println
 
     # Define function pointers
     @funcs.each do |func|
@@ -182,8 +180,12 @@ class BindingGenerator
       unless generate_node(nodes_index[type])&.start_with?('CType::Immediate')
         raise "Non-immediate type is given to dynamic_types: #{type}"
       end
+      # Only one Primitive.cexpr! is allowed for each line: https://github.com/ruby/ruby/pull/9612
       println "  def C.#{type}"
-      println "    @#{type} ||= CType::Immediate.find(Primitive.cexpr!(\"SIZEOF(#{type})\"), Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"))"
+      println "    @#{type} ||= CType::Immediate.find("
+      println "      Primitive.cexpr!(\"SIZEOF(#{type})\"),"
+      println "      Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"),"
+      println "    )"
       println "  end"
       println
     end
@@ -396,7 +398,6 @@ generator = BindingGenerator.new(
       BOP_OR
       BOP_PLUS
       BUILTIN_ATTR_LEAF
-      BUILTIN_ATTR_NO_GC
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
       INVALID_SHAPE_ID
@@ -422,7 +423,6 @@ generator = BindingGenerator.new(
       RUBY_FIXNUM_FLAG
       RUBY_FLONUM_FLAG
       RUBY_FLONUM_MASK
-      RUBY_FL_SINGLETON
       RUBY_IMMEDIATE_MASK
       RUBY_SPECIAL_SHIFT
       RUBY_SYMBOL_FLAG
@@ -601,6 +601,7 @@ generator = BindingGenerator.new(
     rb_callcache
     rb_callinfo
     rb_captured_block
+    rb_cfunc_t
     rb_control_frame_t
     rb_cref_t
     rb_execution_context_struct

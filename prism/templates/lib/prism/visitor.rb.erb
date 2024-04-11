@@ -7,16 +7,19 @@ module Prism
     # Calls `accept` on the given node if it is not `nil`, which in turn should
     # call back into this visitor by calling the appropriate `visit_*` method.
     def visit(node)
+      # @type self: _Visitor
       node&.accept(self)
     end
 
     # Visits each node in `nodes` by calling `accept` on each one.
     def visit_all(nodes)
+      # @type self: _Visitor
       nodes.each { |node| node&.accept(self) }
     end
 
     # Visits the child nodes of `node` by calling `accept` on each one.
     def visit_child_nodes(node)
+      # @type self: _Visitor
       node.compact_child_nodes.each { |node| node.accept(self) }
     end
   end

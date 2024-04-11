@@ -93,7 +93,7 @@ class PP < PrettyPrint
   #
   # PP.pp returns +out+.
   def PP.pp(obj, out=$>, width=width_for(out))
-    q = PP.new(out, width)
+    q = new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
     #$pp = q
@@ -286,14 +286,19 @@ class PP < PrettyPrint
       group(1, '{', '}') {
         seplist(obj, nil, :each_pair) {|k, v|
           group {
-            pp k
-            text '=>'
-            group(1) {
-              breakable ''
-              pp v
-            }
+            pp_hash_pair k, v
           }
         }
+      }
+    end
+
+    # A pretty print for a pair of Hash
+    def pp_hash_pair(k, v)
+      pp k
+      text '=>'
+      group(1) {
+        breakable ''
+        pp v
       }
     end
   end
@@ -422,8 +427,10 @@ end
 
 class Data # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.group(1, sprintf("#<data %s", PP.mcall(self, Kernel, :class).name), '>') {
-      q.seplist(PP.mcall(self, Data, :members), lambda { q.text "," }) {|member|
+    class_name = PP.mcall(self, Kernel, :class).name
+    class_name = " #{class_name}" if class_name
+    q.group(1, "#<data#{class_name}", '>') {
+      q.seplist(PP.mcall(self, Kernel, :class).members, lambda { q.text "," }) {|member|
         q.breakable
         q.text member.to_s
         q.text '='
@@ -438,11 +445,11 @@ class Data # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
   end
-end if "3.2" <= RUBY_VERSION
+end if defined?(Data.define)
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.pp self.begin
+    q.pp self.begin if self.begin
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''

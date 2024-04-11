@@ -687,7 +687,7 @@ describe "Predefined global $," do
   end
 
   it "warns if assigned non-nil" do
-    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    -> { $, = "_" }.should complain(/warning: [`']\$,' is deprecated/)
   end
 end
 
@@ -724,7 +724,7 @@ describe "Predefined global $;" do
   end
 
   it "warns if assigned non-nil" do
-    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    -> { $; = "_" }.should complain(/warning: [`']\$;' is deprecated/)
   end
 end
 

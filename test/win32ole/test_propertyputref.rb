@@ -11,7 +11,7 @@ if defined?(WIN32OLE)
       begin
         @sapi = WIN32OLE.new('SAPI.SpVoice')
         @sv = @sapi.voice
-      rescue WIN32OLERuntimeError
+      rescue WIN32OLE::RuntimeError
         @sapi = nil
       end
     end

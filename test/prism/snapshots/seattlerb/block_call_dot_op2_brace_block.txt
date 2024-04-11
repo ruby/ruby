@@ -41,7 +41,6 @@
             │   └── block:
             │       @ BlockNode (location: (1,8)-(1,16))
             │       ├── locals: []
-            │       ├── locals_body_index: 0
             │       ├── parameters: ∅
             │       ├── body:
             │       │   @ StatementsNode (location: (1,11)-(1,12))
@@ -67,13 +66,13 @@
             └── block:
                 @ BlockNode (location: (1,19)-(1,31))
                 ├── locals: [:f]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,22)-(1,25))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,23)-(1,24))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,23)-(1,24))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :f
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

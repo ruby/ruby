@@ -31,6 +31,13 @@ ruby_version_is "3.2" do
       data.unit.should == "km"
     end
 
+    it "accepts String keyword arguments" do
+      data = DataSpecs::Measure.new("amount" => 42, "unit" => "km")
+
+      data.amount.should == 42
+      data.unit.should == "km"
+    end
+
     it "raises ArgumentError if no arguments are given" do
       -> {
         DataSpecs::Measure.new

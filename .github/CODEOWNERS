@@ -1,0 +1,7 @@
+# YJIT sources and tests
+yjit*      @ruby/yjit
+yjit/**/*  @ruby/yjit
+doc/yjit/* @ruby/yjit
+bootstraptest/test_yjit* @ruby/yjit
+test/ruby/test_yjit*     @ruby/yjit
+yjit/src/cruby_bindings.inc.rs

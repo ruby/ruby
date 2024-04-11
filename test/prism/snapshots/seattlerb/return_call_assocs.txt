@@ -10,21 +10,23 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (1,7)-(1,8))
-        │           │   └── flags: decimal
+        │           │   ├── flags: decimal
+        │           │   └── value: 1
         │           └── @ KeywordHashNode (location: (1,10)-(1,17))
         │               ├── flags: symbol_keys
         │               └── elements: (length: 1)
         │                   └── @ AssocNode (location: (1,10)-(1,17))
         │                       ├── key:
         │                       │   @ SymbolNode (location: (1,10)-(1,12))
-        │                       │   ├── flags: ∅
+        │                       │   ├── flags: forced_us_ascii_encoding
         │                       │   ├── opening_loc: (1,10)-(1,11) = ":"
         │                       │   ├── value_loc: (1,11)-(1,12) = "z"
         │                       │   ├── closing_loc: ∅
         │                       │   └── unescaped: "z"
         │                       ├── value:
         │                       │   @ IntegerNode (location: (1,16)-(1,17))
-        │                       │   └── flags: decimal
+        │                       │   ├── flags: decimal
+        │                       │   └── value: 1
         │                       └── operator_loc: (1,13)-(1,15) = "=>"
         ├── @ ReturnNode (location: (3,0)-(3,26))
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
@@ -33,33 +35,36 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (3,7)-(3,8))
-        │           │   └── flags: decimal
+        │           │   ├── flags: decimal
+        │           │   └── value: 1
         │           └── @ KeywordHashNode (location: (3,10)-(3,26))
         │               ├── flags: symbol_keys
         │               └── elements: (length: 2)
         │                   ├── @ AssocNode (location: (3,10)-(3,17))
         │                   │   ├── key:
         │                   │   │   @ SymbolNode (location: (3,10)-(3,12))
-        │                   │   │   ├── flags: ∅
+        │                   │   │   ├── flags: forced_us_ascii_encoding
         │                   │   │   ├── opening_loc: (3,10)-(3,11) = ":"
         │                   │   │   ├── value_loc: (3,11)-(3,12) = "z"
         │                   │   │   ├── closing_loc: ∅
         │                   │   │   └── unescaped: "z"
         │                   │   ├── value:
         │                   │   │   @ IntegerNode (location: (3,16)-(3,17))
-        │                   │   │   └── flags: decimal
+        │                   │   │   ├── flags: decimal
+        │                   │   │   └── value: 1
         │                   │   └── operator_loc: (3,13)-(3,15) = "=>"
         │                   └── @ AssocNode (location: (3,19)-(3,26))
         │                       ├── key:
         │                       │   @ SymbolNode (location: (3,19)-(3,21))
-        │                       │   ├── flags: ∅
+        │                       │   ├── flags: forced_us_ascii_encoding
         │                       │   ├── opening_loc: (3,19)-(3,20) = ":"
         │                       │   ├── value_loc: (3,20)-(3,21) = "w"
         │                       │   ├── closing_loc: ∅
         │                       │   └── unescaped: "w"
         │                       ├── value:
         │                       │   @ IntegerNode (location: (3,25)-(3,26))
-        │                       │   └── flags: decimal
+        │                       │   ├── flags: decimal
+        │                       │   └── value: 2
         │                       └── operator_loc: (3,22)-(3,24) = "=>"
         ├── @ ReturnNode (location: (5,0)-(5,14))
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
@@ -84,14 +89,15 @@
         │               │               └── @ AssocNode (location: (5,9)-(5,14))
         │               │                   ├── key:
         │               │                   │   @ SymbolNode (location: (5,9)-(5,11))
-        │               │                   │   ├── flags: ∅
+        │               │                   │   ├── flags: forced_us_ascii_encoding
         │               │                   │   ├── opening_loc: (5,9)-(5,10) = ":"
         │               │                   │   ├── value_loc: (5,10)-(5,11) = "z"
         │               │                   │   ├── closing_loc: ∅
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (5,13)-(5,14))
-        │               │                   │   └── flags: decimal
+        │               │                   │   ├── flags: decimal
+        │               │                   │   └── value: 1
         │               │                   └── operator_loc: (5,11)-(5,13) = "=>"
         │               ├── closing_loc: ∅
         │               └── block: ∅
@@ -118,14 +124,15 @@
         │               │               └── @ AssocNode (location: (7,9)-(7,12))
         │               │                   ├── key:
         │               │                   │   @ SymbolNode (location: (7,9)-(7,11))
-        │               │                   │   ├── flags: ∅
+        │               │                   │   ├── flags: forced_us_ascii_encoding
         │               │                   │   ├── opening_loc: ∅
         │               │                   │   ├── value_loc: (7,9)-(7,10) = "z"
         │               │                   │   ├── closing_loc: (7,10)-(7,11) = ":"
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (7,11)-(7,12))
-        │               │                   │   └── flags: decimal
+        │               │                   │   ├── flags: decimal
+        │               │                   │   └── value: 1
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: ∅
         │               └── block: ∅
@@ -152,14 +159,15 @@
         │               │               └── @ AssocNode (location: (9,9)-(9,12))
         │               │                   ├── key:
         │               │                   │   @ SymbolNode (location: (9,9)-(9,11))
-        │               │                   │   ├── flags: ∅
+        │               │                   │   ├── flags: forced_us_ascii_encoding
         │               │                   │   ├── opening_loc: ∅
         │               │                   │   ├── value_loc: (9,9)-(9,10) = "z"
         │               │                   │   ├── closing_loc: (9,10)-(9,11) = ":"
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (9,11)-(9,12))
-        │               │                   │   └── flags: decimal
+        │               │                   │   ├── flags: decimal
+        │               │                   │   └── value: 1
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: (9,12)-(9,13) = ")"
         │               └── block: ∅
@@ -197,7 +205,8 @@
                         │                   │   └── block: ∅
                         │                   ├── value:
                         │                   │   @ IntegerNode (location: (11,12)-(11,13))
-                        │                   │   └── flags: decimal
+                        │                   │   ├── flags: decimal
+                        │                   │   └── value: 1
                         │                   └── operator_loc: (11,10)-(11,12) = "=>"
                         ├── closing_loc: (11,13)-(11,14) = ")"
                         └── block: ∅

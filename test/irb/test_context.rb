@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'tempfile'
 require 'irb'
-require 'rubygems' if defined?(Gem)
 
 require_relative "helper"
 
@@ -39,6 +38,14 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
+      if RUBY_ENGINE == 'truffleruby'
+        omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
+      end
+
+      if RUBY_VERSION >= "3.4."
+        omit "Now raises SyntaxError"
+      end
+
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[:"\xAE"], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
@@ -64,11 +71,27 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_pattern_list([:*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
-                           :*, /#<RuntimeError: Foo>\n/,
-                           :*, /0$/,
-                           :*, /0$/,
-                           /\s*/], out)
+
+      expected_output =
+        if RUBY_3_4
+          [
+            :*, /\(irb\):1:in '<main>': Foo \(RuntimeError\)\n/,
+            :*, /#<RuntimeError: Foo>\n/,
+            :*, /0$/,
+            :*, /0$/,
+            /\s*/
+          ]
+        else
+          [
+            :*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
+            :*, /#<RuntimeError: Foo>\n/,
+            :*, /0$/,
+            :*, /0$/,
+            /\s*/
+          ]
+        end
+
+      assert_pattern_list(expected_output, out)
     ensure
       $VERBOSE = verbose
     end
@@ -84,11 +107,21 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_pattern_list([
-          :*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
-          :*, /\(irb\):2:in `<main>': Bar \(RuntimeError\)\n/,
-          :*, /#<RuntimeError: Bar>\n/,
-        ], out)
+      expected_output =
+        if RUBY_3_4
+          [
+            :*, /\(irb\):1:in '<main>': Foo \(RuntimeError\)\n/,
+            :*, /\(irb\):2:in '<main>': Bar \(RuntimeError\)\n/,
+            :*, /#<RuntimeError: Bar>\n/,
+          ]
+        else
+          [
+            :*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
+            :*, /\(irb\):2:in `<main>': Bar \(RuntimeError\)\n/,
+            :*, /#<RuntimeError: Bar>\n/,
+          ]
+        end
+      assert_pattern_list(expected_output, out)
     end
 
     def test_prompt_n_deprecation
@@ -126,9 +159,9 @@ module TestIRB
         [:marshal, "123", Marshal.dump(123)],
       ],
       failed: [
-        [false, "BasicObject.new", /#<NoMethodError: undefined method `to_s' for/],
-        [:p, "class Foo; undef inspect ;end; Foo.new", /#<NoMethodError: undefined method `inspect' for/],
-        [:yaml, "BasicObject.new", /#<NoMethodError: undefined method `inspect' for/],
+        [false, "BasicObject.new", /#<NoMethodError: undefined method (`|')to_s' for/],
+        [:p, "class Foo; undef inspect ;end; Foo.new", /#<NoMethodError: undefined method (`|')inspect' for/],
+        [:yaml, "BasicObject.new", /#<NoMethodError: undefined method (`|')inspect' for/],
         [:marshal, "[Object.new, Class.new]", /#<TypeError: can't dump anonymous class #<Class:/]
       ]
     }.each do |scenario, cases|
@@ -206,7 +239,7 @@ module TestIRB
       end
       assert_empty err
       assert_match(/An error occurred when inspecting the object: #<RuntimeError: foo>/, out)
-      assert_match(/An error occurred when running Kernel#inspect: #<NoMethodError: undefined method `inspect' for/, out)
+      assert_match(/An error occurred when running Kernel#inspect: #<NoMethodError: undefined method (`|')inspect' for/, out)
     ensure
       $VERBOSE = verbose
     end
@@ -496,22 +529,30 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
-        expected = [
-          :*, /Traceback \(most recent call last\):\n/,
-          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
-          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
-          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
-        ]
-      else
-        expected = [
-          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
-          :*, /\tfrom \(irb\):1:in `hoge'\n/,
-          :*, /\tfrom \(irb\):1:in `<main>'\n/,
-          :*
-        ]
-      end
-      assert_pattern_list(expected, out)
+      expected_output =
+        if RUBY_3_4
+          [
+            :*, /\(irb\):1:in 'fuga': unhandled exception\n/,
+            :*, /\tfrom \(irb\):1:in 'hoge'\n/,
+            :*, /\tfrom \(irb\):1:in '<main>'\n/,
+            :*
+          ]
+        elsif RUBY_VERSION < '3.0.0' && STDOUT.tty?
+          [
+            :*, /Traceback \(most recent call last\):\n/,
+            :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+            :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+            :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+          ]
+        else
+          [
+            :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+            :*, /\tfrom \(irb\):1:in `hoge'\n/,
+            :*, /\tfrom \(irb\):1:in `<main>'\n/,
+            :*
+          ]
+        end
+      assert_pattern_list(expected_output, out)
     ensure
       $VERBOSE = verbose
     end
@@ -526,22 +567,31 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
-        expected = [
-          :*, /Traceback \(most recent call last\):\n/,
-          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
-          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
-          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
-        ]
-      else
-        expected = [
-          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
-          :*, /\tfrom \(irb\):1:in `hoge'\n/,
-          :*, /\tfrom \(irb\):1:in `<main>'\n/,
-          :*
-        ]
-      end
-      assert_pattern_list(expected, out)
+      expected_output =
+        if RUBY_3_4
+          [
+            :*, /\(irb\):1:in 'fuga': A\\xF3B \(RuntimeError\)\n/,
+            :*, /\tfrom \(irb\):1:in 'hoge'\n/,
+            :*, /\tfrom \(irb\):1:in '<main>'\n/,
+            :*
+          ]
+        elsif RUBY_VERSION < '3.0.0' && STDOUT.tty?
+          [
+            :*, /Traceback \(most recent call last\):\n/,
+            :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+            :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+            :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+          ]
+        else
+          [
+            :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+            :*, /\tfrom \(irb\):1:in `hoge'\n/,
+            :*, /\tfrom \(irb\):1:in `<main>'\n/,
+            :*
+          ]
+        end
+
+      assert_pattern_list(expected_output, out)
     ensure
       $VERBOSE = verbose
     end
@@ -567,43 +617,43 @@ module TestIRB
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t... \d+ levels...\n/,
-          :*, /\t16: from \(irb\):1:in `a4'\n/,
-          :*, /\t15: from \(irb\):1:in `a5'\n/,
-          :*, /\t14: from \(irb\):1:in `a6'\n/,
-          :*, /\t13: from \(irb\):1:in `a7'\n/,
-          :*, /\t12: from \(irb\):1:in `a8'\n/,
-          :*, /\t11: from \(irb\):1:in `a9'\n/,
-          :*, /\t10: from \(irb\):1:in `a10'\n/,
-          :*, /\t 9: from \(irb\):1:in `a11'\n/,
-          :*, /\t 8: from \(irb\):1:in `a12'\n/,
-          :*, /\t 7: from \(irb\):1:in `a13'\n/,
-          :*, /\t 6: from \(irb\):1:in `a14'\n/,
-          :*, /\t 5: from \(irb\):1:in `a15'\n/,
-          :*, /\t 4: from \(irb\):1:in `a16'\n/,
-          :*, /\t 3: from \(irb\):1:in `a17'\n/,
-          :*, /\t 2: from \(irb\):1:in `a18'\n/,
-          :*, /\t 1: from \(irb\):1:in `a19'\n/,
-          :*, /\(irb\):1:in `a20': unhandled exception\n/,
+          :*, /\t16: from \(irb\):1:in (`|')a4'\n/,
+          :*, /\t15: from \(irb\):1:in (`|')a5'\n/,
+          :*, /\t14: from \(irb\):1:in (`|')a6'\n/,
+          :*, /\t13: from \(irb\):1:in (`|')a7'\n/,
+          :*, /\t12: from \(irb\):1:in (`|')a8'\n/,
+          :*, /\t11: from \(irb\):1:in (`|')a9'\n/,
+          :*, /\t10: from \(irb\):1:in (`|')a10'\n/,
+          :*, /\t 9: from \(irb\):1:in (`|')a11'\n/,
+          :*, /\t 8: from \(irb\):1:in (`|')a12'\n/,
+          :*, /\t 7: from \(irb\):1:in (`|')a13'\n/,
+          :*, /\t 6: from \(irb\):1:in (`|')a14'\n/,
+          :*, /\t 5: from \(irb\):1:in (`|')a15'\n/,
+          :*, /\t 4: from \(irb\):1:in (`|')a16'\n/,
+          :*, /\t 3: from \(irb\):1:in (`|')a17'\n/,
+          :*, /\t 2: from \(irb\):1:in (`|')a18'\n/,
+          :*, /\t 1: from \(irb\):1:in (`|')a19'\n/,
+          :*, /\(irb\):1:in (`|')a20': unhandled exception\n/,
         ]
       else
         expected = [
-          :*, /\(irb\):1:in `a20': unhandled exception\n/,
-          :*, /\tfrom \(irb\):1:in `a19'\n/,
-          :*, /\tfrom \(irb\):1:in `a18'\n/,
-          :*, /\tfrom \(irb\):1:in `a17'\n/,
-          :*, /\tfrom \(irb\):1:in `a16'\n/,
-          :*, /\tfrom \(irb\):1:in `a15'\n/,
-          :*, /\tfrom \(irb\):1:in `a14'\n/,
-          :*, /\tfrom \(irb\):1:in `a13'\n/,
-          :*, /\tfrom \(irb\):1:in `a12'\n/,
-          :*, /\tfrom \(irb\):1:in `a11'\n/,
-          :*, /\tfrom \(irb\):1:in `a10'\n/,
-          :*, /\tfrom \(irb\):1:in `a9'\n/,
-          :*, /\tfrom \(irb\):1:in `a8'\n/,
-          :*, /\tfrom \(irb\):1:in `a7'\n/,
-          :*, /\tfrom \(irb\):1:in `a6'\n/,
-          :*, /\tfrom \(irb\):1:in `a5'\n/,
-          :*, /\tfrom \(irb\):1:in `a4'\n/,
+          :*, /\(irb\):1:in (`|')a20': unhandled exception\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a19'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a18'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a17'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a16'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a15'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a14'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a13'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a12'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a11'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a10'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a9'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a8'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a7'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a6'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a5'\n/,
+          :*, /\tfrom \(irb\):1:in (`|')a4'\n/,
           :*, /\t... \d+ levels...\n/,
         ]
       end
@@ -660,6 +710,18 @@ module TestIRB
           :*, /\b3\n/,
           :*, /\b6\n/,
         ], out)
+    end
+
+    def test_irb_path_setter
+      @context.irb_path = __FILE__
+      assert_equal(__FILE__, @context.irb_path)
+      assert_equal("#{__FILE__}(irb)", @context.instance_variable_get(:@eval_path))
+      @context.irb_path = 'file/does/not/exist'
+      assert_equal('file/does/not/exist', @context.irb_path)
+      assert_equal('file/does/not/exist', @context.instance_variable_get(:@eval_path))
+      @context.irb_path = "#{__FILE__}(irb)"
+      assert_equal("#{__FILE__}(irb)", @context.irb_path)
+      assert_equal("#{__FILE__}(irb)", @context.instance_variable_get(:@eval_path))
     end
 
     def test_build_completor

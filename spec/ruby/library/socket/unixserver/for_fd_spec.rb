@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 with_feature :unix_socket do
-  describe "UNIXServer#for_fd" do
+  describe "UNIXServer.for_fd" do
     before :each do
       @unix_path = SocketSpecs.socket_path
       @unix = UNIXServer.new(@unix_path)

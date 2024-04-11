@@ -3395,7 +3395,7 @@ next_setup(Node* node, Node* next_node, regex_t* reg)
   }
   else if (type == NT_ENCLOSE) {
     EncloseNode* en = NENCLOSE(node);
-    if (en->type == ENCLOSE_MEMORY) {
+    if (en->type == ENCLOSE_MEMORY && !IS_ENCLOSE_CALLED(en)) {
       node = en->target;
       goto retry;
     }
@@ -5496,10 +5496,8 @@ clear_optimize_info(regex_t* reg)
   reg->sub_anchor    = 0;
   reg->exact_end     = (UChar* )NULL;
   reg->threshold_len = 0;
-  if (IS_NOT_NULL(reg->exact)) {
-    xfree(reg->exact);
-    reg->exact = (UChar* )NULL;
-  }
+  xfree(reg->exact);
+  reg->exact = (UChar* )NULL;
 }
 
 #ifdef ONIG_DEBUG

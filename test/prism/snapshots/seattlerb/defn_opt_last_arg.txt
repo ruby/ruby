@@ -12,6 +12,7 @@
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 1)
             │   │   └── @ OptionalParameterNode (location: (1,6)-(1,17))
+            │   │       ├── flags: ∅
             │   │       ├── name: :arg
             │   │       ├── name_loc: (1,6)-(1,9) = "arg"
             │   │       ├── operator_loc: (1,10)-(1,11) = "="
@@ -24,7 +25,6 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:arg]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

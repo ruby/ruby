@@ -306,7 +306,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     ENV["RUBYGEMS_HOST"] = @fetcher.host
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
+    @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n" + extra_input)
 
     use_ui @sign_in_ui do
       if args.length > 0

@@ -30,14 +30,15 @@
             │               └── @ AssocNode (location: (1,4)-(1,13))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,4)-(1,8))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,4)-(1,5) = ":"
             │                   │   ├── value_loc: (1,5)-(1,8) = "baz"
             │                   │   ├── closing_loc: ∅
             │                   │   └── unescaped: "baz"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,12)-(1,13))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 1
             │                   └── operator_loc: (1,9)-(1,11) = "=>"
             ├── closing_loc: (1,14)-(1,15) = "]"
             └── block: ∅

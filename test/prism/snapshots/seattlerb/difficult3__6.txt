@@ -15,26 +15,29 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,21))
                 ├── locals: [:a, :b, :c, :d]
-                ├── locals_body_index: 4
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,19))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,18))
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :a
                 │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,18))
                 │   │   │       ├── lefts: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rest:
                 │   │   │       │   @ SplatNode (location: (1,12)-(1,14))
                 │   │   │       │   ├── operator_loc: (1,12)-(1,13) = "*"
                 │   │   │       │   └── expression:
                 │   │   │       │       @ RequiredParameterNode (location: (1,13)-(1,14))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :c
                 │   │   │       ├── rights: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,16)-(1,17))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :d
                 │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
                 │   │   │       └── rparen_loc: (1,17)-(1,18) = ")"

@@ -80,6 +80,13 @@ class TestString < Test::Unit::TestCase
     assert_equal("mystring", str.__send__(:initialize, "mystring", capacity: 1000))
     str = S("mystring")
     assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
+
+    if @cls == String
+      100.times {
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".
+          __send__(:initialize, capacity: -1)
+      }
+    end
   end
 
   def test_initialize_shared
@@ -301,6 +308,9 @@ CODE
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -1}
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << 0x81308130}
     assert_nothing_raised {S("a".force_encoding(Encoding::GB18030)) << 0x81308130}
+
+    s = "\x95".force_encoding(Encoding::SJIS).tap(&:valid_encoding?)
+    assert_predicate(s << 0x5c, :valid_encoding?)
   end
 
   def test_MATCH # '=~'
@@ -899,6 +909,7 @@ CODE
   end
 
   def test_undump_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     EnvUtil.under_gc_compact_stress do
       assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
@@ -1119,6 +1130,11 @@ CODE
     end;
   end
 
+  def test_byteslice_grapheme_clusters
+    string = "안녕"
+    assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
+  end
+
   def test_each_line
     verbose, $VERBOSE = $VERBOSE, nil
 
@@ -1274,6 +1290,7 @@ CODE
   end
 
   def test_gsub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
   end
 
@@ -1321,6 +1338,7 @@ CODE
   end
 
   def test_gsub_bang_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       a = S("hello")
       a.gsub!(/([aeiou])/, S('<\1>'))
@@ -1662,6 +1680,7 @@ CODE
   end
 
   def test_scan_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
@@ -2093,6 +2112,7 @@ CODE
   end
 
   def test_sub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
       assert_equal("amp", m["foo"])

@@ -147,3 +147,10 @@ lst << A {}
 "#{(v)}"
 
 def f(*); p *; end
+
+foo 1, Bar { 1 }
+
+foo = 1
+foo {}
+
+@a.b "c#{name}": 42

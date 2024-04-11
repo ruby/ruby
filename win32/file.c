@@ -263,7 +263,7 @@ rb_default_home_dir(VALUE result)
 {
     WCHAR *dir = rb_w32_home_dir();
     if (!dir) {
-        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
     }
     append_wstr(result, dir, -1,
                        CP_UTF8, rb_utf8_encoding());
@@ -326,7 +326,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         whome = rb_w32_home_dir();
         if (whome == NULL) {
             free(wpath);
-            rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+            rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
         }
         whome_len = wcslen(whome);
 
@@ -404,7 +404,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             if (whome == NULL) {
                 free(wpath);
                 free(wdir);
-                rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+                rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
             }
             whome_len = wcslen(whome);
 

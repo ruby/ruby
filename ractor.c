@@ -1670,7 +1670,7 @@ ractor_selector__wait(VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yiel
     }
 
     // check recv_queue
-    if (do_receive && (ret_v = ractor_try_receive(ec, cr, rq)) != Qundef) {
+    if (do_receive && !UNDEF_P(ret_v = ractor_try_receive(ec, cr, rq))) {
         ret_r = ID2SYM(rb_intern("receive"));
         goto success;
     }
@@ -2481,6 +2481,22 @@ rb_ractor_terminate_all(void)
 rb_execution_context_t *
 rb_vm_main_ractor_ec(rb_vm_t *vm)
 {
+    /* This code needs to carefully work around two bugs:
+     *   - Bug #20016: When M:N threading is enabled, running_ec is NULL if no thread is
+     *     actually currently running (as opposed to without M:N threading, when
+     *     running_ec will still point to the _last_ thread which ran)
+     *   - Bug #20197: If the main thread is sleeping, setting its postponed job
+     *     interrupt flag is pointless; it won't look at the flag until it stops sleeping
+     *     for some reason. It would be better to set the flag on the running ec, which
+     *     will presumably look at it soon.
+     *
+     *  Solution: use running_ec if it's set, otherwise fall back to the main thread ec.
+     *  This is still susceptible to some rare race conditions (what if the last thread
+     *  to run just entered a long-running sleep?), but seems like the best balance of
+     *  robustness and complexity.
+     */
+    rb_execution_context_t *running_ec = vm->ractor.main_ractor->threads.running_ec;
+    if (running_ec) { return running_ec; }
     return vm->ractor.main_thread->ec;
 }
 

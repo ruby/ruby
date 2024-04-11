@@ -1140,4 +1140,40 @@ class TestArgf < Test::Unit::TestCase
       argf.close
     end
   end
+
+  def test_putc
+    t = make_tempfile0("argf-#{__method__}")
+    t.puts 'bar'
+    t.close
+    ruby('-pi-', '-e', "print ARGF.putc('x')", t.path) do |f|
+    end
+    assert_equal("xxbar\n", File.read(t.path))
+  end
+
+  def test_puts
+    t = make_tempfile0("argf-#{__method__}")
+    t.puts 'bar'
+    t.close
+    ruby('-pi-', '-e', "print ARGF.puts('foo')", t.path) do |f|
+    end
+    assert_equal("foo\nbar\n", File.read(t.path))
+  end
+
+  def test_print
+    t = make_tempfile0("argf-#{__method__}")
+    t.puts 'bar'
+    t.close
+    ruby('-pi-', '-e', "print ARGF.print('foo')", t.path) do |f|
+    end
+    assert_equal("foobar\n", File.read(t.path))
+  end
+
+  def test_printf
+    t = make_tempfile0("argf-#{__method__}")
+    t.puts 'bar'
+    t.close
+    ruby('-pi-', '-e', "print ARGF.printf('%s', 'foo')", t.path) do |f|
+    end
+    assert_equal("foobar\n", File.read(t.path))
+  end
 end

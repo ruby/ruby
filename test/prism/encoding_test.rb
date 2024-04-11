@@ -137,9 +137,7 @@ module Prism
     # These test that we're correctly parsing codepoints for each alias of each
     # encoding that prism supports.
     encodings.each do |encoding, range|
-      encoding.names.each do |name|
-        next if name == "locale"
-
+      (encoding.names - %w[external internal filesystem locale]).each do |name|
         define_method(:"test_encoding_#{name}") do
           assert_encoding(encoding, name, range)
         end
@@ -150,10 +148,42 @@ module Prism
     # encoding that prism supports.
     escapes = ["\\x00", "\\x7F", "\\x80", "\\xFF", "\\u{00}", "\\u{7F}", "\\u{80}", "\\M-\\C-?"]
     escapes = escapes.concat(escapes.product(escapes).map(&:join))
+    symbols = [:a, :ą, :+]
+    regexps = [/a/, /ą/, //]
 
     encodings.each_key do |encoding|
       define_method(:"test_encoding_flags_#{encoding.name}") do
         assert_encoding_flags(encoding, escapes)
+      end
+
+      define_method(:"test_symbol_encoding_flags_#{encoding.name}") do
+        assert_symbol_encoding_flags(encoding, symbols)
+      end
+
+      define_method(:"test_symbol_character_escape_encoding_flags_#{encoding.name}") do
+        assert_symbol_character_escape_encoding_flags(encoding, escapes)
+      end
+
+      define_method(:"test_regular_expression_encoding_flags_#{encoding.name}") do
+        assert_regular_expression_encoding_flags(encoding, regexps.map(&:inspect))
+      end
+
+      define_method(:"test_regular_expression_escape_encoding_flags_#{encoding.name}") do
+        assert_regular_expression_encoding_flags(encoding, escapes.map { |e| "/#{e}/" })
+      end
+    end
+
+    encoding_modifiers = { ascii_8bit: "n", utf_8: "u", euc_jp: "e", windows_31j: "s" }
+    regexp_sources = ["abc", "garçon", "\\x80", "gar\\xC3\\xA7on", "gar\\u{E7}on", "abc\\u{FFFFFF}", "\\x80\\u{80}" ]
+
+    encoding_modifiers.each_value do |modifier|
+      encodings.each_key do |encoding|
+        define_method(:"test_regular_expression_encoding_modifiers_/#{modifier}_#{encoding.name}") do
+          assert_regular_expression_encoding_flags(
+            encoding,
+            regexp_sources.product(encoding_modifiers.values).map { |r, modifier| "/#{r}/#{modifier}" }
+          )
+        end
       end
     end
 
@@ -212,6 +242,19 @@ module Prism
       slice = Prism.parse("# encoding: Shift_JIS\nア").value.slice
       assert_equal (+"ア").force_encoding(Encoding::SHIFT_JIS), slice
       assert_equal Encoding::SHIFT_JIS, slice.encoding
+    end
+
+    def test_multibyte_escapes
+      [
+        ["'", "'"],
+        ["\"", "\""],
+        ["`", "`"],
+        ["/", "/"],
+        ["<<'HERE'\n", "\nHERE"],
+        ["<<-HERE\n", "\nHERE"]
+      ].each do |opening, closing|
+        assert Prism.parse_success?("# encoding: shift_jis\n'\\\x82\xA0'\n")
+      end
     end
 
     private
@@ -341,6 +384,186 @@ module Prism
               end
             end
           end
+
+        assert_equal expected, actual
+      end
+    end
+
+    # Test Symbol literals without any interpolation or escape sequences.
+    def assert_symbol_encoding_flags(encoding, symbols)
+      symbols.each do |symbol|
+        source = "# encoding: #{encoding.name}\n#{symbol.inspect}"
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            unless error.message.include?("invalid multibyte char")
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              symbol = result.value.statements.body.first
+
+              if symbol.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif symbol.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif symbol.forced_us_ascii_encoding?
+                Encoding::US_ASCII
+              else
+                encoding
+              end
+            else
+              error = result.errors.last
+
+              unless error.message.include?("invalid symbol")
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
+      end
+    end
+
+    def assert_symbol_character_escape_encoding_flags(encoding, escapes)
+      escapes.each do |escaped|
+        source = "# encoding: #{encoding.name}\n:\"#{escaped}\""
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            if error.message.include?("UTF-8 mixed within")
+              error.message[/: (.+?)\n/, 1]
+            else
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              symbol = result.value.statements.body.first
+
+              if symbol.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif symbol.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif symbol.forced_us_ascii_encoding?
+                Encoding::US_ASCII
+              else
+                encoding
+              end
+            else
+              error = result.errors.first
+
+              if error.message.include?("mixed")
+                error.message
+              else
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
+      end
+    end
+
+    def assert_regular_expression_encoding_flags(encoding, regexps)
+      regexps.each do |regexp|
+        regexp_modifier_used = regexp.end_with?("/u") || regexp.end_with?("/e") || regexp.end_with?("/s") || regexp.end_with?("/n")
+        source = "# encoding: #{encoding.name}\n#{regexp}"
+
+        encoding_errors = ["invalid multibyte char", "escaped non ASCII character in UTF-8 regexp", "differs from source encoding"]
+        skipped_errors = ["invalid multibyte escape", "incompatible character encoding", "UTF-8 character in non UTF-8 regexp", "invalid Unicode range", "invalid Unicode list"]
+
+        # TODO (nirvdrum 21-Feb-2024): Prism currently does not handle Regexp validation unless modifiers are used. So, skip processing those errors for now: https://github.com/ruby/prism/issues/2104
+        unless regexp_modifier_used
+          skipped_errors += encoding_errors
+          encoding_errors.clear
+        end
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            if encoding_errors.find { |e| error.message.include?(e) }
+              error.message.split("\n").map { |m| m[/: (.+?)$/, 1] }
+            elsif skipped_errors.find { |e| error.message.include?(e) }
+              next
+            else
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              regexp = result.value.statements.body.first
+
+              actual_encoding = if regexp.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif regexp.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif regexp.forced_us_ascii_encoding?
+                Encoding::US_ASCII
+              elsif regexp.ascii_8bit?
+                Encoding::ASCII_8BIT
+              elsif regexp.utf_8?
+                Encoding::UTF_8
+              elsif regexp.euc_jp?
+                Encoding::EUC_JP
+              elsif regexp.windows_31j?
+                Encoding::Windows_31J
+              else
+                encoding
+              end
+
+              if regexp.utf_8? && actual_encoding != Encoding::UTF_8
+                raise "expected regexp encoding to be UTF-8 due to '/u' modifier, but got #{actual_encoding.name}"
+              elsif regexp.ascii_8bit? && (actual_encoding != Encoding::ASCII_8BIT && actual_encoding != Encoding::US_ASCII)
+                raise "expected regexp encoding to be ASCII-8BIT or US-ASCII due to '/n' modifier, but got #{actual_encoding.name}"
+              elsif regexp.euc_jp? && actual_encoding != Encoding::EUC_JP
+                raise "expected regexp encoding to be EUC-JP due to '/e' modifier, but got #{actual_encoding.name}"
+              elsif regexp.windows_31j? && actual_encoding != Encoding::Windows_31J
+                raise "expected regexp encoding to be Windows-31J due to '/s' modifier, but got #{actual_encoding.name}"
+              end
+
+              if regexp.utf_8? && regexp.forced_utf8_encoding?
+                raise "the forced_utf8 flag should not be set when the UTF-8 modifier (/u) is used"
+              elsif regexp.ascii_8bit? && regexp.forced_binary_encoding?
+                raise "the forced_ascii_8bit flag should not be set when the UTF-8 modifier (/u) is used"
+              end
+
+              actual_encoding
+            else
+              errors = result.errors.map(&:message)
+
+              if errors.last&.include?("UTF-8 mixed within")
+                nil
+              else
+                errors
+              end
+            end
+          end
+
+        # TODO (nirvdrum 22-Feb-2024): Remove this workaround once Prism better maps CRuby's error messages.
+        # This class of error message is tricky. The part not being compared is a representation of the regexp.
+        # Depending on the source encoding and any encoding modifiers being used, CRuby alters how the regexp is represented.
+        # Sometimes it's an MBC string. Other times it uses hexadecimal character escapes. And in other cases it uses
+        # the long-form Unicode escape sequences. This short-circuit checks that the error message is mostly correct.
+        if expected.is_a?(Array) && actual.is_a?(Array)
+          if expected.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:") &&
+              actual.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:")
+              expected.last.clear
+              actual.last.clear
+          end
+        end
 
         assert_equal expected, actual
       end

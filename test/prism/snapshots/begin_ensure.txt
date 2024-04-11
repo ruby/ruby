@@ -157,7 +157,7 @@
             │           │           ├── flags: ∅
             │           │           ├── receiver:
             │           │           │   @ SymbolNode (location: (15,11)-(15,13))
-            │           │           │   ├── flags: ∅
+            │           │           │   ├── flags: forced_us_ascii_encoding
             │           │           │   ├── opening_loc: (15,11)-(15,12) = ":"
             │           │           │   ├── value_loc: (15,12)-(15,13) = "s"
             │           │           │   ├── closing_loc: ∅
@@ -195,7 +195,6 @@
             │           │           │           │   │           └── block:
             │           │           │           │   │               @ BlockNode (location: (15,40)-(21,3))
             │           │           │           │   │               ├── locals: []
-            │           │           │           │   │               ├── locals_body_index: 0
             │           │           │           │   │               ├── parameters: ∅
             │           │           │           │   │               ├── body:
             │           │           │           │   │               │   @ StatementsNode (location: (16,2)-(20,5))
@@ -230,7 +229,6 @@
             │           │           │           │   │               │           │   │           └── block:
             │           │           │           │   │               │           │   │               @ BlockNode (location: (18,22)-(19,7))
             │           │           │           │   │               │           │   │               ├── locals: []
-            │           │           │           │   │               │           │   │               ├── locals_body_index: 0
             │           │           │           │   │               │           │   │               ├── parameters: ∅
             │           │           │           │   │               │           │   │               ├── body: ∅
             │           │           │           │   │               │           │   │               ├── opening_loc: (18,22)-(18,24) = "do"

@@ -18,7 +18,7 @@ bool
 pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id) {
     if (list->size >= list->capacity) {
         list->capacity = list->capacity == 0 ? 8 : list->capacity * 2;
-        list->ids = (pm_constant_id_t *) realloc(list->ids, sizeof(pm_constant_id_t) * list->capacity);
+        list->ids = (pm_constant_id_t *) xrealloc(list->ids, sizeof(pm_constant_id_t) * list->capacity);
         if (list->ids == NULL) return false;
     }
 
@@ -51,7 +51,7 @@ pm_constant_id_list_memsize(pm_constant_id_list_t *list) {
 void
 pm_constant_id_list_free(pm_constant_id_list_t *list) {
     if (list->ids != NULL) {
-        free(list->ids);
+        xfree(list->ids);
     }
 }
 
@@ -111,7 +111,7 @@ pm_constant_pool_resize(pm_constant_pool_t *pool) {
     const uint32_t mask = next_capacity - 1;
     const size_t element_size = sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t);
 
-    void *next = calloc(next_capacity, element_size);
+    void *next = xcalloc(next_capacity, element_size);
     if (next == NULL) return false;
 
     pm_constant_pool_bucket_t *next_buckets = next;
@@ -124,13 +124,13 @@ pm_constant_pool_resize(pm_constant_pool_t *pool) {
 
         // If an id is set on this constant, then we know we have content here.
         // In this case we need to insert it into the next constant pool.
-        if (bucket->id != 0) {
+        if (bucket->id != PM_CONSTANT_ID_UNSET) {
             uint32_t next_index = bucket->hash & mask;
 
             // This implements linear scanning to find the next available slot
             // in case this index is already taken. We don't need to bother
             // comparing the values since we know that the hash is unique.
-            while (next_buckets[next_index].id != 0) {
+            while (next_buckets[next_index].id != PM_CONSTANT_ID_UNSET) {
                 next_index = (next_index + 1) & mask;
             }
 
@@ -145,7 +145,7 @@ pm_constant_pool_resize(pm_constant_pool_t *pool) {
 
     // pool->constants and pool->buckets are allocated out of the same chunk
     // of memory, with the buckets coming first.
-    free(pool->buckets);
+    xfree(pool->buckets);
     pool->constants = next_constants;
     pool->buckets = next_buckets;
     pool->capacity = next_capacity;
@@ -162,7 +162,7 @@ pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity) {
 
     capacity = next_power_of_two(capacity);
     const size_t element_size = sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t);
-    void *memory = calloc(capacity, element_size);
+    void *memory = xcalloc(capacity, element_size);
     if (memory == NULL) return false;
 
     pool->buckets = memory;
@@ -177,8 +177,33 @@ pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity) {
  */
 pm_constant_t *
 pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
-    assert(constant_id > 0 && constant_id <= pool->size);
+    assert(constant_id != PM_CONSTANT_ID_UNSET && constant_id <= pool->size);
     return &pool->constants[constant_id - 1];
+}
+
+/**
+ * Find a constant in a constant pool. Returns the id of the constant, or 0 if
+ * the constant is not found.
+ */
+pm_constant_id_t
+pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    assert(is_power_of_two(pool->capacity));
+    const uint32_t mask = pool->capacity - 1;
+
+    uint32_t hash = pm_constant_pool_hash(start, length);
+    uint32_t index = hash & mask;
+    pm_constant_pool_bucket_t *bucket;
+
+    while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
+        pm_constant_t *constant = &pool->constants[bucket->id - 1];
+        if ((constant->length == length) && memcmp(constant->start, start, length) == 0) {
+            return bucket->id;
+        }
+
+        index = (index + 1) & mask;
+    }
+
+    return PM_CONSTANT_ID_UNSET;
 }
 
 /**
@@ -187,7 +212,7 @@ pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t
 static inline pm_constant_id_t
 pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
-        if (!pm_constant_pool_resize(pool)) return 0;
+        if (!pm_constant_pool_resize(pool)) return PM_CONSTANT_ID_UNSET;
     }
 
     assert(is_power_of_two(pool->capacity));
@@ -197,7 +222,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
     uint32_t index = hash & mask;
     pm_constant_pool_bucket_t *bucket;
 
-    while (bucket = &pool->buckets[index], bucket->id != 0) {
+    while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
         // If there is a collision, then we need to check if the content is the
         // same as the content we are trying to insert. If it is, then we can
         // return the id of the existing constant.
@@ -212,12 +237,12 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
                 // an existing constant, then either way we don't want the given
                 // memory. Either it's duplicated with the existing constant or
                 // it's not necessary because we have a shared version.
-                free((void *) start);
+                xfree((void *) start);
             } else if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
                 // If we're attempting to insert a shared constant and the
                 // existing constant is owned, then we can free the owned
                 // constant and replace it with the shared constant.
-                free((void *) constant->start);
+                xfree((void *) constant->start);
                 constant->start = start;
                 bucket->type = (unsigned int) (PM_CONSTANT_POOL_BUCKET_DEFAULT & 0x3);
             }
@@ -228,7 +253,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
         index = (index + 1) & mask;
     }
 
-    // IDs are allocated starting at 1, since the value 0 denotes a non-existant
+    // IDs are allocated starting at 1, since the value 0 denotes a non-existent
     // constant.
     uint32_t id = ++pool->size;
     assert(pool->size < ((uint32_t) (1 << 30)));
@@ -248,8 +273,8 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
 }
 
 /**
- * Insert a constant into a constant pool. Returns the id of the constant, or 0
- * if any potential calls to resize fail.
+ * Insert a constant into a constant pool. Returns the id of the constant, or
+ * PM_CONSTANT_ID_UNSET if any potential calls to resize fail.
  */
 pm_constant_id_t
 pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
@@ -258,17 +283,18 @@ pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, s
 
 /**
  * Insert a constant into a constant pool from memory that is now owned by the
- * constant pool. Returns the id of the constant, or 0 if any potential calls to
- * resize fail.
+ * constant pool. Returns the id of the constant, or PM_CONSTANT_ID_UNSET if any
+ * potential calls to resize fail.
  */
 pm_constant_id_t
-pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length) {
     return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
 }
 
 /**
  * Insert a constant into a constant pool from memory that is constant. Returns
- * the id of the constant, or 0 if any potential calls to resize fail.
+ * the id of the constant, or PM_CONSTANT_ID_UNSET if any potential calls to
+ * resize fail.
  */
 pm_constant_id_t
 pm_constant_pool_insert_constant(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
@@ -286,11 +312,11 @@ pm_constant_pool_free(pm_constant_pool_t *pool) {
         pm_constant_pool_bucket_t *bucket = &pool->buckets[index];
 
         // If an id is set on this constant, then we know we have content here.
-        if (bucket->id != 0 && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
+        if (bucket->id != PM_CONSTANT_ID_UNSET && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
             pm_constant_t *constant = &pool->constants[bucket->id - 1];
-            free((void *) constant->start);
+            xfree((void *) constant->start);
         }
     }
 
-    free(pool->buckets);
+    xfree(pool->buckets);
 }

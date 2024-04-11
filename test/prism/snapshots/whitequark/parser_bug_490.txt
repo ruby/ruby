@@ -28,7 +28,6 @@
         │   │           │           └── operator_loc: (1,24)-(1,25) = "="
         │   │           └── end_keyword_loc: (1,31)-(1,34) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -65,7 +64,6 @@
         │   │           │           └── name: :C
         │   │           └── end_keyword_loc: (3,36)-(3,39) = "end"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -100,7 +98,6 @@
             │           │           └── name: :M
             │           └── end_keyword_loc: (5,37)-(5,40) = "end"
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

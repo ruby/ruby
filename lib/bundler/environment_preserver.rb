@@ -58,9 +58,9 @@ module Bundler
       env = @original.clone
       @keys.each do |key|
         value = env[key]
-        if !value.nil? && !value.empty?
+        if !value.nil?
           env[@prefix + key] ||= value
-        elsif value.nil?
+        else
           env[@prefix + key] ||= INTENTIONALLY_NIL
         end
       end
@@ -72,7 +72,7 @@ module Bundler
       env = @original.clone
       @keys.each do |key|
         value_original = env[@prefix + key]
-        next if value_original.nil? || value_original.empty?
+        next if value_original.nil?
         if value_original == INTENTIONALLY_NIL
           env.delete(key)
         else

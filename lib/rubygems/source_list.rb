@@ -44,7 +44,7 @@ class Gem::SourceList
   end
 
   ##
-  # Appends +obj+ to the source list which may be a Gem::Source, URI or URI
+  # Appends +obj+ to the source list which may be a Gem::Source, Gem::URI or URI
   # String.
 
   def <<(obj)

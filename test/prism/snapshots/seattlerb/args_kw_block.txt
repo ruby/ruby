@@ -15,20 +15,22 @@
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
             │   │   └── @ OptionalKeywordParameterNode (location: (1,6)-(1,10))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,9)-(1,10))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 1
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (1,12)-(1,14))
+            │       ├── flags: ∅
             │       ├── name: :b
             │       ├── name_loc: (1,13)-(1,14) = "b"
             │       └── operator_loc: (1,12)-(1,13) = "&"
             ├── body: ∅
             ├── locals: [:a, :b]
-            ├── locals_body_index: 2
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

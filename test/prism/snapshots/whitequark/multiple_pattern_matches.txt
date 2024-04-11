@@ -11,14 +11,15 @@
         │   │   │   └── @ AssocNode (location: (1,1)-(1,5))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (1,1)-(1,3))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (1,1)-(1,2) = "a"
         │   │   │       │   ├── closing_loc: (1,2)-(1,3) = ":"
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (1,4)-(1,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (1,5)-(1,6) = "}"
         │   ├── pattern:
@@ -28,12 +29,17 @@
         │   │   │   └── @ AssocNode (location: (1,10)-(1,12))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (1,10)-(1,12))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (1,10)-(1,11) = "a"
         │   │   │       │   ├── closing_loc: (1,11)-(1,12) = ":"
         │   │   │       │   └── unescaped: "a"
-        │   │   │       ├── value: ∅
+        │   │   │       ├── value:
+        │   │   │       │   @ ImplicitNode (location: (1,10)-(1,11))
+        │   │   │       │   └── value:
+        │   │   │       │       @ LocalVariableTargetNode (location: (1,10)-(1,11))
+        │   │   │       │       ├── name: :a
+        │   │   │       │       └── depth: 0
         │   │   │       └── operator_loc: ∅
         │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
@@ -47,14 +53,15 @@
         │   │   │   └── @ AssocNode (location: (2,1)-(2,5))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (2,1)-(2,3))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (2,1)-(2,2) = "a"
         │   │   │       │   ├── closing_loc: (2,2)-(2,3) = ":"
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (2,4)-(2,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (2,5)-(2,6) = "}"
         │   ├── pattern:
@@ -64,12 +71,17 @@
         │   │   │   └── @ AssocNode (location: (2,10)-(2,12))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (2,10)-(2,12))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (2,10)-(2,11) = "a"
         │   │   │       │   ├── closing_loc: (2,11)-(2,12) = ":"
         │   │   │       │   └── unescaped: "a"
-        │   │   │       ├── value: ∅
+        │   │   │       ├── value:
+        │   │   │       │   @ ImplicitNode (location: (2,10)-(2,11))
+        │   │   │       │   └── value:
+        │   │   │       │       @ LocalVariableTargetNode (location: (2,10)-(2,11))
+        │   │   │       │       ├── name: :a
+        │   │   │       │       └── depth: 0
         │   │   │       └── operator_loc: ∅
         │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
@@ -83,14 +95,15 @@
         │   │   │   └── @ AssocNode (location: (4,1)-(4,5))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (4,1)-(4,3))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (4,1)-(4,2) = "a"
         │   │   │       │   ├── closing_loc: (4,2)-(4,3) = ":"
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (4,4)-(4,5))
-        │   │   │       │   └── flags: decimal
+        │   │   │       │   ├── flags: decimal
+        │   │   │       │   └── value: 0
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (4,5)-(4,6) = "}"
         │   ├── pattern:
@@ -100,12 +113,17 @@
         │   │   │   └── @ AssocNode (location: (4,10)-(4,12))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (4,10)-(4,12))
-        │   │   │       │   ├── flags: ∅
+        │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (4,10)-(4,11) = "a"
         │   │   │       │   ├── closing_loc: (4,11)-(4,12) = ":"
         │   │   │       │   └── unescaped: "a"
-        │   │   │       ├── value: ∅
+        │   │   │       ├── value:
+        │   │   │       │   @ ImplicitNode (location: (4,10)-(4,11))
+        │   │   │       │   └── value:
+        │   │   │       │       @ LocalVariableTargetNode (location: (4,10)-(4,11))
+        │   │   │       │       ├── name: :a
+        │   │   │       │       └── depth: 0
         │   │   │       └── operator_loc: ∅
         │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
@@ -119,14 +137,15 @@
             │   │   └── @ AssocNode (location: (5,1)-(5,5))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (5,1)-(5,3))
-            │   │       │   ├── flags: ∅
+            │   │       │   ├── flags: forced_us_ascii_encoding
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (5,1)-(5,2) = "a"
             │   │       │   ├── closing_loc: (5,2)-(5,3) = ":"
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (5,4)-(5,5))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 0
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (5,5)-(5,6) = "}"
             ├── pattern:
@@ -136,12 +155,17 @@
             │   │   └── @ AssocNode (location: (5,10)-(5,12))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (5,10)-(5,12))
-            │   │       │   ├── flags: ∅
+            │   │       │   ├── flags: forced_us_ascii_encoding
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (5,10)-(5,11) = "a"
             │   │       │   ├── closing_loc: (5,11)-(5,12) = ":"
             │   │       │   └── unescaped: "a"
-            │   │       ├── value: ∅
+            │   │       ├── value:
+            │   │       │   @ ImplicitNode (location: (5,10)-(5,11))
+            │   │       │   └── value:
+            │   │       │       @ LocalVariableTargetNode (location: (5,10)-(5,11))
+            │   │       │       ├── name: :a
+            │   │       │       └── depth: 0
             │   │       └── operator_loc: ∅
             │   ├── rest: ∅
             │   ├── opening_loc: ∅

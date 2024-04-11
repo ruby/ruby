@@ -253,6 +253,11 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
     if (!iseq) {
         return Qnil;
     }
+
+    if (ISEQ_BODY(iseq)->prism) {
+        rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
+    }
+
     lines = ISEQ_BODY(iseq)->variable.script_lines;
 
     VALUE path = rb_iseq_path(iseq);
@@ -429,7 +434,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_RESCUE:
         return rb_ary_new_from_node_args(ast, 3, RNODE_RESCUE(node)->nd_head, RNODE_RESCUE(node)->nd_resq, RNODE_RESCUE(node)->nd_else);
       case NODE_RESBODY:
-        return rb_ary_new_from_node_args(ast, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_head);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
       case NODE_ENSURE:
         return rb_ary_new_from_node_args(ast, 2, RNODE_ENSURE(node)->nd_head, RNODE_ENSURE(node)->nd_ensr);
       case NODE_AND:
@@ -555,9 +560,10 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH3(node)->nd_recv, RNODE_MATCH3(node)->nd_value);
       case NODE_MATCH:
       case NODE_LIT:
+        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_STR:
       case NODE_XSTR:
-        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
+        return rb_ary_new_from_args(1, rb_node_str_string_val(node));
       case NODE_INTEGER:
         return rb_ary_new_from_args(1, rb_node_integer_literal_val(node));
       case NODE_FLOAT:
@@ -566,6 +572,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_args(1, rb_node_rational_literal_val(node));
       case NODE_IMAGINARY:
         return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(node));
+      case NODE_REGX:
+        return rb_ary_new_from_args(1, rb_node_regx_string_val(node));
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
@@ -579,7 +587,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                 head = NEW_CHILD(ast, n->nd_head);
                 next = NEW_CHILD(ast, n->nd_next);
             }
-            return rb_ary_new_from_args(3, RNODE_DSTR(node)->nd_lit, head, next);
+            return rb_ary_new_from_args(3, rb_node_dstr_string_val(node), head, next);
         }
       case NODE_SYM:
         return rb_ary_new_from_args(1, rb_node_sym_string_val(node));
@@ -706,11 +714,11 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_args(1, rb_node_line_lineno_val(node));
       case NODE_FILE:
         return rb_ary_new_from_args(1, rb_node_file_path_val(node));
+      case NODE_ENCODING:
+        return rb_ary_new_from_args(1, rb_node_encoding_val(node));
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
-      case NODE_RIPPER:
-      case NODE_RIPPER_VALUES:
       case NODE_LAST:
         break;
     }

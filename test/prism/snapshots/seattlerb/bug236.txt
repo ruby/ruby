@@ -15,13 +15,13 @@
         │   └── block:
         │       @ BlockNode (location: (1,1)-(1,7))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (1,2)-(1,6))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (1,3)-(1,5))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (1,3)-(1,4))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -48,13 +48,13 @@
             └── block:
                 @ BlockNode (location: (3,1)-(3,6))
                 ├── locals: [:a]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (3,2)-(3,5))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (3,3)-(3,4))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (3,3)-(3,4))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :a
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

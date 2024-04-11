@@ -460,6 +460,35 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rubocop 1.37.1")
     end
 
+    it "includes the gem without warning if two gemspecs add it with the same requirement" do
+      gem1 = tmp.join("my-gem-1")
+      gem2 = tmp.join("my-gem-2")
+
+      build_lib "my-gem", path: gem1 do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_lib "my-gem-2", path: gem2 do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec path: "#{gem1}"
+        gemspec path: "#{gem2}"
+      G
+
+      bundle :install
+
+      expect(err).to be_empty
+      expect(the_bundle).to include_gems("rubocop 1.36.0")
+    end
+
     it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do
       build_lib "my-gem", path: bundled_app do |s|
         s.add_development_dependency "rails", ">= 5"

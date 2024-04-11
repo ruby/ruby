@@ -26,8 +26,6 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 #define MMTK_MIN_OBJ_ALIGN 8
 
-#define MMTK_GC_THREAD_KIND_CONTROLLER 0
-
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
 typedef struct RubyBindingOptions {
@@ -75,6 +73,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_obj_id_tables)(void);
     void (*update_global_symbols_table)(void);
     void (*update_overloaded_cme_table)(void);
+    void (*update_ci_table)(void);
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
     void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
     size_t (*vm_live_bytes)(void);
@@ -144,6 +143,10 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
 bool mmtk_will_never_move(MMTk_ObjectReference object);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
+
+void mmtk_prepare_to_fork(void);
+
+void mmtk_after_fork(MMTk_VMThread tls);
 
 void mmtk_enable_collection(void);
 

@@ -20,14 +20,15 @@
             │               └── @ AssocNode (location: (1,2)-(1,5))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,2)-(1,4))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,2)-(1,3) = "a"
             │                   │   ├── closing_loc: (1,3)-(1,4) = ":"
             │                   │   └── unescaped: "a"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,4)-(1,5))
-            │                   │   └── flags: decimal
+            │                   │   ├── flags: decimal
+            │                   │   └── value: 3
             │                   └── operator_loc: ∅
             ├── closing_loc: (1,5)-(1,6) = ")"
             └── block: ∅

@@ -233,6 +233,23 @@ vm_check_frame(VALUE type,
 static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
+// Return the index of the instruction right before the given PC.
+// This is needed because insn_entry advances PC before the insn body.
+static unsigned int
+previous_insn_index(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    unsigned int pos = 0;
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int opcode = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[pos]);
+        unsigned int next_pos = pos + insn_len(opcode);
+        if (ISEQ_BODY(iseq)->iseq_encoded + next_pos == pc) {
+            return pos;
+        }
+        pos = next_pos;
+    }
+    rb_bug("failed to find the previous insn");
+}
+
 void
 rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
@@ -259,15 +276,14 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     }
 
     const VALUE *orig = rb_iseq_original_iseq(iseq);
-    const VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
-    const ptrdiff_t pos = GET_PC() - encoded;
-    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
-    const char *name = insn_name(insn);
     const VALUE iseqw = rb_iseqw_new(iseq);
     const VALUE inspection = rb_inspect(iseqw);
     const char *stri = rb_str_to_cstr(inspection);
     const VALUE disasm = rb_iseq_disasm(iseq);
     const char *strd = rb_str_to_cstr(disasm);
+    const ptrdiff_t pos = previous_insn_index(iseq, GET_PC());
+    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
+    const char *name = insn_name(insn);
 
     /* rb_bug() is not capable of outputting this large contents.  It
        is designed to run form a SIGSEGV handler, which tends to be
@@ -336,6 +352,17 @@ vm_push_frame_debug_counter_inc(
 #else
 #define vm_push_frame_debug_counter_inc(ec, cfp, t) /* void */
 #endif
+
+// Return a poison value to be set above the stack top to verify leafness.
+VALUE
+rb_vm_stack_canary(void)
+{
+#if VM_CHECK_MODE > 0
+    return vm_stack_canary;
+#else
+    return 0;
+#endif
+}
 
 STATIC_ASSERT(VM_ENV_DATA_INDEX_ME_CREF, VM_ENV_DATA_INDEX_ME_CREF == -2);
 STATIC_ASSERT(VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL == -1);
@@ -494,6 +521,7 @@ vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
+// YJIT assumes this function never runs GC
 static inline void
 vm_env_write(const VALUE *ep, int index, VALUE v)
 {
@@ -612,7 +640,12 @@ lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
 static struct vm_svar *
 svar_new(VALUE obj)
 {
-    return (struct vm_svar *)rb_imemo_new(imemo_svar, Qnil, Qnil, Qnil, obj);
+    struct vm_svar *svar = IMEMO_NEW(struct vm_svar, imemo_svar, obj);
+    *((VALUE *)&svar->lastline) = Qnil;
+    *((VALUE *)&svar->backref) = Qnil;
+    *((VALUE *)&svar->others) = Qnil;
+
+    return svar;
 }
 
 static void
@@ -924,7 +957,7 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-        if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+        if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
                 RCLASS_EXT(CREF_CLASS(cref))->cloned) {
             return key_cref;
         }
@@ -1138,7 +1171,7 @@ vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_l
     }
 
     while (CREF_NEXT(cref) &&
-           (NIL_P(CREF_CLASS(cref)) || FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+           (NIL_P(CREF_CLASS(cref)) || RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
             CREF_PUSHED_BY_EVAL(cref) || CREF_SINGLETON(cref))) {
         cref = CREF_NEXT(cref);
     }
@@ -1343,7 +1376,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     }
 
-    if (default_value != Qundef) {
+    if (!UNDEF_P(default_value)) {
         RUBY_ASSERT(!UNDEF_P(val));
     }
 
@@ -2032,7 +2065,7 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
 }
 #endif
 
-static const rb_callable_method_entry_t *check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci);
+const rb_callable_method_entry_t *rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci);
 
 static const struct rb_callcache *
 vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
@@ -2118,7 +2151,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
 
-    cme = check_overloaded_cme(cme, ci);
+    cme = rb_check_overloaded_cme(cme, ci);
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
     vm_ccs_push(klass, ccs, ci, cc);
@@ -2668,8 +2701,10 @@ static inline VALUE
 vm_caller_setup_keyword_hash(const struct rb_callinfo *ci, VALUE keyword_hash)
 {
     if (UNLIKELY(!RB_TYPE_P(keyword_hash, T_HASH))) {
-        /* Convert a non-hash keyword splat to a new hash */
-        keyword_hash = rb_hash_dup(rb_to_hash_type(keyword_hash));
+        if (keyword_hash != Qnil) {
+            /* Convert a non-hash keyword splat to a new hash */
+            keyword_hash = rb_hash_dup(rb_to_hash_type(keyword_hash));
+        }
     }
     else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
         /* Convert a hash keyword splat to a new hash unless
@@ -2699,7 +2734,7 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
             if (vm_caller_setup_arg_splat(cfp, calling, ary, max_args)) return;
 
             // put kw
-            if (!RHASH_EMPTY_P(kwh)) {
+            if (kwh != Qnil && !RHASH_EMPTY_P(kwh)) {
                 if (UNLIKELY(calling->heap_argv)) {
                     rb_ary_push(calling->heap_argv, kwh);
                     ((struct RHash *)kwh)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
@@ -2770,7 +2805,7 @@ check_keyword:
         VM_ASSERT(calling->kw_splat == 1);
         VALUE kwh = vm_caller_setup_keyword_hash(ci, cfp->sp[-1]);
 
-        if (RHASH_EMPTY_P(kwh)) {
+        if (kwh == Qnil || RHASH_EMPTY_P(kwh)) {
             cfp->sp--;
             calling->argc--;
             calling->kw_splat = 0;
@@ -2923,7 +2958,7 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
 static VALUE builtin_invoker0(rb_execution_context_t *ec, VALUE self, const VALUE *argv, rb_insn_func_t funcptr);
 
 static VALUE
-vm_call_single_noarg_inline_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
                                     struct rb_calling_info *calling)
 {
     const struct rb_builtin_function *bf = calling->cc->aux_.bf;
@@ -2953,11 +2988,11 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (cacheable_ci && vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) &&
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) &&
                     !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
                     VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
-                    CC_SET_FASTPATH(cc, vm_call_single_noarg_inline_builtin, true);
+                    CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);
@@ -3501,6 +3536,24 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
     return val;
 }
 
+// Push a C method frame for a given cme. This is called when JIT code skipped
+// pushing a frame but the C method reached a point where a frame is needed.
+void
+rb_vm_push_cfunc_frame(const rb_callable_method_entry_t *cme, int recv_idx)
+{
+    VM_ASSERT(cme->def->type == VM_METHOD_TYPE_CFUNC);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE *sp = ec->cfp->sp;
+    VALUE recv = *(sp - recv_idx - 1);
+    VALUE frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    VALUE block_handler = VM_BLOCK_HANDLER_NONE;
+#if VM_CHECK_MODE > 0
+    // Clean up the stack canary since we're about to satisfy the "leaf or lazy push" assumption
+    *(GET_EC()->cfp->sp) = Qfalse;
+#endif
+    vm_push_frame(ec, NULL, frame_type, recv, block_handler, (VALUE)cme, 0, ec->cfp->sp, 0, 0);
+}
+
 // If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
 bool
 rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
@@ -3596,7 +3649,7 @@ vm_call_cfunc_only_splat_kw(rb_execution_context_t *ec, rb_control_frame_t *reg_
     RB_DEBUG_COUNTER_INC(ccf_cfunc_only_splat_kw);
     VALUE keyword_hash = reg_cfp->sp[-1];
 
-    if (RB_TYPE_P(keyword_hash, T_HASH) && RHASH_EMPTY_P(keyword_hash)) {
+    if (keyword_hash == Qnil || (RB_TYPE_P(keyword_hash, T_HASH) && RHASH_EMPTY_P(keyword_hash))) {
         return vm_call_cfunc_array_argv(ec, reg_cfp, calling, 1, 0);
     }
 
@@ -5202,15 +5255,29 @@ vm_concat_array(VALUE ary1, VALUE ary2st)
     if (NIL_P(tmp1)) {
         tmp1 = rb_ary_new3(1, ary1);
     }
-
-    if (NIL_P(tmp2)) {
-        tmp2 = rb_ary_new3(1, ary2);
-    }
-
     if (tmp1 == ary1) {
         tmp1 = rb_ary_dup(ary1);
     }
-    return rb_ary_concat(tmp1, tmp2);
+
+    if (NIL_P(tmp2)) {
+        return rb_ary_push(tmp1, ary2);
+    } else {
+        return rb_ary_concat(tmp1, tmp2);
+    }
+}
+
+static VALUE
+vm_concat_to_array(VALUE ary1, VALUE ary2st)
+{
+    /* ary1 must be a newly created array */
+    const VALUE ary2 = ary2st;
+    VALUE tmp2 = rb_check_to_array(ary2);
+
+    if (NIL_P(tmp2)) {
+        return rb_ary_push(ary1, ary2);
+    } else {
+        return rb_ary_concat(ary1, tmp2);
+    }
 }
 
 // YJIT implementation is using the C function
@@ -5219,6 +5286,12 @@ VALUE
 rb_vm_concat_array(VALUE ary1, VALUE ary2st)
 {
     return vm_concat_array(ary1, ary2st);
+}
+
+VALUE
+rb_vm_concat_to_array(VALUE ary1, VALUE ary2st)
+{
+    return vm_concat_to_array(ary1, ary2st);
 }
 
 static VALUE
@@ -5862,7 +5935,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
         return;
     }
 
-    struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
+    struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
@@ -6531,22 +6604,6 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
             rb_exec_event_hook_orig(ec, local_hooks, event, self, 0, 0, 0 , val, 0);
             reg_cfp->pc--;
         }
-    }
-}
-
-// Return true if given cc has cfunc which is NOT handled by opt_send_without_block.
-bool
-rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
-{
-    switch (insn) {
-      case BIN(opt_eq):
-        return check_cfunc(vm_cc_cme(cc), rb_obj_equal);
-      case BIN(opt_nil_p):
-        return check_cfunc(vm_cc_cme(cc), rb_false);
-      case BIN(opt_not):
-        return check_cfunc(vm_cc_cme(cc), rb_obj_not);
-      default:
-        return false;
     }
 }
 

@@ -6,7 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
@@ -22,14 +22,15 @@
             │       │   │   └── @ AssocNode (location: (2,10)-(2,14))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,10)-(2,12))
-            │       │   │       │   ├── flags: ∅
+            │       │   │       │   ├── flags: forced_us_ascii_encoding
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,10)-(2,11) = "b"
             │       │   │       │   ├── closing_loc: (2,11)-(2,12) = ":"
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (2,13)-(2,14))
-            │       │   │       │   └── flags: decimal
+            │       │   │       │   ├── flags: decimal
+            │       │   │       │   └── value: 1
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,9)-(2,10) = "["
@@ -38,7 +39,8 @@
             │       │   @ StatementsNode (location: (3,2)-(3,3))
             │       │   └── body: (length: 1)
             │       │       └── @ IntegerNode (location: (3,2)-(3,3))
-            │       │           └── flags: decimal
+            │       │           ├── flags: decimal
+            │       │           └── value: 1
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

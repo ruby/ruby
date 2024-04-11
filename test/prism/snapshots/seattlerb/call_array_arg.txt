@@ -7,7 +7,8 @@
             ├── flags: ∅
             ├── receiver:
             │   @ IntegerNode (location: (1,0)-(1,1))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── call_operator_loc: ∅
             ├── name: :==
             ├── message_loc: (1,2)-(1,4) = "=="
@@ -20,13 +21,13 @@
             │           ├── flags: ∅
             │           ├── elements: (length: 2)
             │           │   ├── @ SymbolNode (location: (1,6)-(1,8))
-            │           │   │   ├── flags: ∅
+            │           │   │   ├── flags: forced_us_ascii_encoding
             │           │   │   ├── opening_loc: (1,6)-(1,7) = ":"
             │           │   │   ├── value_loc: (1,7)-(1,8) = "b"
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "b"
             │           │   └── @ SymbolNode (location: (1,10)-(1,12))
-            │           │       ├── flags: ∅
+            │           │       ├── flags: forced_us_ascii_encoding
             │           │       ├── opening_loc: (1,10)-(1,11) = ":"
             │           │       ├── value_loc: (1,11)-(1,12) = "c"
             │           │       ├── closing_loc: ∅

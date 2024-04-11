@@ -55,6 +55,10 @@ struct BumpPointer {
 const char *mmtk_pre_arg_plan = NULL;
 const char *mmtk_post_arg_plan = NULL;
 const char *mmtk_chosen_plan = NULL;
+bool mmtk_plan_is_immix = false;
+bool mmtk_plan_uses_bump_pointer = false;
+bool mmtk_plan_implicitly_pinning = false;
+
 size_t mmtk_pre_max_heap_size = 0;
 size_t mmtk_post_max_heap_size = 0;
 
@@ -262,7 +266,10 @@ apply_cmdline_options(MMTk_Builder *mmtk_builder)
 {
     if (mmtk_chosen_plan != NULL) {
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
-    } 
+        mmtk_plan_is_immix = strcmp(mmtk_chosen_plan, "Immix") == 0 || strcmp(mmtk_chosen_plan, "StickyImmix") == 0;
+        mmtk_plan_uses_bump_pointer = mmtk_plan_is_immix;
+        mmtk_plan_implicitly_pinning = strcmp(mmtk_chosen_plan, "MarkSweep") == 0;
+    }
 
     if (mmtk_max_heap_size > 0) {
         mmtk_builder_set_fixed_heap_size(mmtk_builder, mmtk_max_heap_size);
@@ -354,9 +361,13 @@ rb_mmtk_suffix_size(void)
 ////////////////////////////////////////////////////////////////////////////////
 
 static void*
-rb_mmtk_immix_alloc_fast(size_t size)
+rb_mmtk_immix_alloc_fast_bump_pointer(size_t size)
 {
     struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
+    // TODO: verify the usefulness of this prefetching.
+    PREFETCH((void*)local->last_new_cursor, 1);
+    PREFETCH((void*)local->last_meta_addr, 1);
+
     struct BumpPointer *immix_bump_pointer = local->immix_bump_pointer;
     uintptr_t cursor = immix_bump_pointer->cursor;
     uintptr_t limit = immix_bump_pointer->limit;
@@ -377,23 +388,18 @@ rb_mmtk_immix_alloc_fast(size_t size)
 
 /// Wrap mmtk_alloc, but use fast path if possible.
 static void*
-rb_mmtk_alloc(size_t size)
+rb_mmtk_alloc(size_t size, MMTk_AllocationSemantics semantics)
 {
-    if (size > MMTK_MAX_IMMIX_OBJECT_SIZE) {
-        return mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_LOS);
+    if (semantics == MMTK_ALLOCATION_SEMANTICS_DEFAULT && mmtk_plan_uses_bump_pointer) {
+        // Try the fast path.
+        void *fast_result = rb_mmtk_immix_alloc_fast_bump_pointer(size);
+        if (fast_result != NULL) {
+            return fast_result;
+        }
     }
 
-    struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
-
-    PREFETCH((void*)local->last_new_cursor, 1);
-    PREFETCH((void*)local->last_meta_addr, 1);
-
-    void *fast_result = rb_mmtk_immix_alloc_fast(size);
-    if (fast_result != NULL) {
-        return fast_result;
-    }
-
-    void *result = mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    // Fall back to the slow path.
+    void *result = mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, semantics);
 
     return result;
 }
@@ -401,38 +407,47 @@ rb_mmtk_alloc(size_t size)
 #define RB_MMTK_USE_POST_ALLOC_FAST_PATH true
 #define RB_MMTK_VO_BIT_SET_NON_ATOMIC true
 
+static void
+rb_mmtk_post_alloc_fast_immix(VALUE obj)
+{
+    uintptr_t obj_addr = obj;
+    uintptr_t region_offset = obj_addr >> mmtk_vo_bit_log_region_size;
+    uintptr_t byte_offset = region_offset / 8;
+    uintptr_t bit_offset = region_offset % 8;
+    uintptr_t meta_byte_address = mmtk_vo_bit_base_addr + byte_offset;
+    uint8_t byte = 1 << bit_offset;
+    if (RB_MMTK_VO_BIT_SET_NON_ATOMIC) {
+        uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
+        *meta_byte_ptr |= byte;
+    } else {
+        volatile _Atomic uint8_t *meta_byte_ptr = (volatile _Atomic uint8_t*)meta_byte_address;
+        // relaxed: We don't use VO bits for synchronisation during mutator phase.
+        // When GC is triggered, the handshake between GC and mutator provides synchronization.
+        atomic_fetch_or_explicit(meta_byte_ptr, byte, memory_order_relaxed);
+    }
+    rb_mmtk_mutator_local.last_meta_addr = meta_byte_address;
+}
+
 /// Wrap mmtk_post_alloc, but use fast path if possible.
 static void
-rb_mmtk_post_alloc(VALUE obj, size_t mmtk_alloc_size)
+rb_mmtk_post_alloc(VALUE obj, size_t mmtk_alloc_size, MMTk_AllocationSemantics semantics)
 {
-    if (RB_MMTK_USE_POST_ALLOC_FAST_PATH) {
-        uintptr_t obj_addr = obj;
-        uintptr_t region_offset = obj_addr >> mmtk_vo_bit_log_region_size;
-        uintptr_t byte_offset = region_offset / 8;
-        uintptr_t bit_offset = region_offset % 8;
-        uintptr_t meta_byte_address = mmtk_vo_bit_base_addr + byte_offset;
-        uint8_t byte = 1 << bit_offset;
-        if (RB_MMTK_VO_BIT_SET_NON_ATOMIC) {
-            uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
-            *meta_byte_ptr |= byte;
-        } else {
-            volatile _Atomic uint8_t *meta_byte_ptr = (volatile _Atomic uint8_t*)meta_byte_address;
-            // relaxed: We don't use VO bits for synchronisation during mutator phase.
-            // When GC is triggered, the handshake between GC and mutator provides synchronization.
-            atomic_fetch_or_explicit(meta_byte_ptr, byte, memory_order_relaxed);
-        }
-        rb_mmtk_mutator_local.last_meta_addr = meta_byte_address;
+    if (RB_MMTK_USE_POST_ALLOC_FAST_PATH && semantics == MMTK_ALLOCATION_SEMANTICS_DEFAULT && mmtk_plan_is_immix) {
+        rb_mmtk_post_alloc_fast_immix(obj);
     } else {
         // Call post_alloc.  This will initialize GC-specific metadata.
-        mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
+        mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, semantics);
     }
 }
 
 VALUE
 rb_mmtk_alloc_obj(size_t mmtk_alloc_size, size_t size_pool_size, size_t prefix_size)
 {
+    MMTk_AllocationSemantics semantics = mmtk_alloc_size <= MMTK_MAX_IMMIX_OBJECT_SIZE ? MMTK_ALLOCATION_SEMANTICS_DEFAULT
+                                       : MMTK_ALLOCATION_SEMANTICS_LOS;
+
     // Allocate the object.
-    void *addr = rb_mmtk_alloc(mmtk_alloc_size);
+    void *addr = rb_mmtk_alloc(mmtk_alloc_size, semantics);
 
     // Store the Ruby-level object size before the object.
     *(size_t*)addr = size_pool_size;
@@ -441,7 +456,7 @@ rb_mmtk_alloc_obj(size_t mmtk_alloc_size, size_t size_pool_size, size_t prefix_s
     // allocation unit.
     VALUE obj = (VALUE)addr + prefix_size;
 
-    rb_mmtk_post_alloc(obj, mmtk_alloc_size);
+    rb_mmtk_post_alloc(obj, mmtk_alloc_size, semantics);
 
     return obj;
 }
@@ -566,6 +581,7 @@ rb_mmtk_is_ppp(VALUE obj) {
         return true;
       case T_IMEMO:
         switch (imemo_type(obj)) {
+          case imemo_iseq:
           case imemo_tmpbuf:
           case imemo_ast:
           case imemo_ifunc:
@@ -1095,6 +1111,24 @@ rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf)
 // Object pinning
 ////////////////////////////////////////////////////////////////////////////////
 
+// Pin an object.  Do nothing if the plan implicitly pins all objects (i.e. non-moving).
+void
+rb_mmtk_pin_object(VALUE obj)
+{
+    if (!mmtk_plan_implicitly_pinning) {
+        mmtk_pin_object((MMTk_ObjectReference)obj);
+    }
+}
+
+// Assert if an object is pinned.  Do nothing if the plan implicitly pins all objects (i.e. non-moving).
+void
+rb_mmtk_assert_is_pinned(VALUE obj)
+{
+    if (!mmtk_plan_implicitly_pinning) {
+        RUBY_ASSERT(mmtk_is_pinned((MMTk_ObjectReference)obj));
+    }
+}
+
 // Temporarily pin the buffer of an array so that it can be passed to native functions which are
 // not aware of object movement.
 void
@@ -1107,6 +1141,20 @@ rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot)
     } else {
         *stack_slot = RARRAY_EXT(array)->objbuf;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Forking support
+////////////////////////////////////////////////////////////////////////////////
+void
+rb_mmtk_shutdown_gc_threads(void)
+{
+    mmtk_prepare_to_fork();
+}
+
+void rb_mmtk_respawn_gc_threads(void)
+{
+    mmtk_after_fork(GET_THREAD());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1539,6 +1587,7 @@ void rb_mmtk_update_finalizer_table(void); // Defined in gc.c
 void rb_mmtk_update_obj_id_tables(void); // Defined in gc.c
 void rb_mmtk_update_global_symbols_table(void); // Defined in gc.c
 void rb_mmtk_update_overloaded_cme_table(void); // Defined in gc.c
+void rb_mmtk_update_ci_table(void); // Defined in gc.c
 
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -1560,6 +1609,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_obj_id_tables,
     rb_mmtk_update_global_symbols_table,
     rb_mmtk_update_overloaded_cme_table,
+    rb_mmtk_update_ci_table,
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
     rb_mmtk_vm_live_bytes,

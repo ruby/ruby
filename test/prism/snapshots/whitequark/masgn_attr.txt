@@ -43,9 +43,11 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── arguments: (length: 2)
         │   │       │       ├── @ IntegerNode (location: (3,13)-(3,14))
-        │   │       │       │   └── flags: decimal
+        │   │       │       │   ├── flags: decimal
+        │   │       │       │   └── value: 1
         │   │       │       └── @ IntegerNode (location: (3,16)-(3,17))
-        │   │       │           └── flags: decimal
+        │   │       │           ├── flags: decimal
+        │   │       │           └── value: 2
         │   │       ├── closing_loc: (3,17)-(3,18) = "]"
         │   │       └── block: ∅
         │   ├── rest: ∅

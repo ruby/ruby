@@ -789,15 +789,15 @@ class TestClass < Test::Unit::TestCase
       c.attached_object
     end
 
-    assert_raise_with_message(TypeError, /`NilClass' is not a singleton class/) do
+    assert_raise_with_message(TypeError, /'NilClass' is not a singleton class/) do
       nil.singleton_class.attached_object
     end
 
-    assert_raise_with_message(TypeError, /`FalseClass' is not a singleton class/) do
+    assert_raise_with_message(TypeError, /'FalseClass' is not a singleton class/) do
       false.singleton_class.attached_object
     end
 
-    assert_raise_with_message(TypeError, /`TrueClass' is not a singleton class/) do
+    assert_raise_with_message(TypeError, /'TrueClass' is not a singleton class/) do
       true.singleton_class.attached_object
     end
   end

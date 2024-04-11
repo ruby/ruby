@@ -215,7 +215,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
             --len; \
         } \
         if (len > 0) { \
-            fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+            fprintf(stderr, "ignored "name" option: '%.*s'\n", len, str); \
         } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \
@@ -683,7 +683,7 @@ debug_log_dump(FILE *out, unsigned int n)
             int index = current_index - size + i;
             if (index < 0) index += MAX_DEBUG_LOG;
             VM_ASSERT(index <= MAX_DEBUG_LOG);
-            const char *mesg = RUBY_DEBUG_LOG_MEM_ENTRY(index);;
+            const char *mesg = RUBY_DEBUG_LOG_MEM_ENTRY(index);
             fprintf(out, "%4u: %s\n", debug_log.cnt - size + i, mesg);
         }
     }

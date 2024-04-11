@@ -370,7 +370,7 @@ assert_equal %q{}, %q{
 }
 
 ##
-assert_match /undefined method `foo\'/, %q{#`
+assert_match /undefined method 'foo\'/, %q{#`
   STDERR.reopen(STDOUT)
   class C
     def inspect

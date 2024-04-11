@@ -3,7 +3,10 @@
 require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
-require 'ostruct'
+begin
+  require 'ostruct'
+rescue LoadError
+end
 begin
   require 'bigdecimal'
 rescue LoadError
@@ -412,21 +415,6 @@ EOT
     end
   end
 
-  class SubOpenStruct < OpenStruct
-    def [](k)
-      __send__(k)
-    end
-
-    def []=(k, v)
-      @item_set = true
-      __send__("#{k}=", v)
-    end
-
-    def item_set?
-      @item_set
-    end
-  end
-
   def test_parse_object_custom_hash_derived_class
     res = parse('{"foo":"bar"}', :object_class => SubHash)
     assert_equal({"foo" => "bar"}, res)
@@ -434,24 +422,41 @@ EOT
     assert res.item_set?
   end
 
-  def test_parse_object_custom_non_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
-    assert_equal "bar", res.foo
-    assert_equal(SubOpenStruct, res.class)
-    assert res.item_set?
-  end
+  if defined?(::OpenStruct)
+    class SubOpenStruct < OpenStruct
+      def [](k)
+        __send__(k)
+      end
 
-  def test_parse_generic_object
-    res = parse(
-      '{"foo":"bar", "baz":{}}',
-      :object_class => JSON::GenericObject
-    )
-    assert_equal(JSON::GenericObject, res.class)
-    assert_equal "bar", res.foo
-    assert_equal "bar", res["foo"]
-    assert_equal "bar", res[:foo]
-    assert_equal "bar", res.to_hash[:foo]
-    assert_equal(JSON::GenericObject, res.baz.class)
+      def []=(k, v)
+        @item_set = true
+        __send__("#{k}=", v)
+      end
+
+      def item_set?
+        @item_set
+      end
+    end
+
+    def test_parse_object_custom_non_hash_derived_class
+      res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
+      assert_equal "bar", res.foo
+      assert_equal(SubOpenStruct, res.class)
+      assert res.item_set?
+    end
+
+    def test_parse_generic_object
+      res = parse(
+        '{"foo":"bar", "baz":{}}',
+        :object_class => JSON::GenericObject
+      )
+      assert_equal(JSON::GenericObject, res.class)
+      assert_equal "bar", res.foo
+      assert_equal "bar", res["foo"]
+      assert_equal "bar", res[:foo]
+      assert_equal "bar", res.to_hash[:foo]
+      assert_equal(JSON::GenericObject, res.baz.class)
+    end
   end
 
   def test_generate_core_subclasses_with_new_to_json

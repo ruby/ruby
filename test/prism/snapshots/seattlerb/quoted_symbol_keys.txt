@@ -9,14 +9,14 @@
             │   └── @ AssocNode (location: (1,2)-(1,9))
             │       ├── key:
             │       │   @ SymbolNode (location: (1,2)-(1,6))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: forced_us_ascii_encoding
             │       │   ├── opening_loc: (1,2)-(1,3) = "'"
             │       │   ├── value_loc: (1,3)-(1,4) = "a"
             │       │   ├── closing_loc: (1,4)-(1,6) = "':"
             │       │   └── unescaped: "a"
             │       ├── value:
             │       │   @ SymbolNode (location: (1,7)-(1,9))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: forced_us_ascii_encoding
             │       │   ├── opening_loc: (1,7)-(1,8) = ":"
             │       │   ├── value_loc: (1,8)-(1,9) = "b"
             │       │   ├── closing_loc: ∅

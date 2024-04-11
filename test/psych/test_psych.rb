@@ -430,6 +430,32 @@ eoyml
     assert_match(/\A--- :foo\n(?:\.\.\.\n)?\z/, Psych.safe_dump(:foo, permitted_symbols: [:foo]))
   end
 
+  def test_safe_dump_stringify_names
+    yaml = <<-eoyml
+---
+foo:
+  bar: bar
+  'no': special escapes
+  123: number
+eoyml
+
+    payload = Psych.safe_dump({
+      foo: {
+        bar: "bar",
+        no: "special escapes",
+        123 => "number"
+      }
+    }, stringify_names: true)
+    assert_equal yaml, payload
+
+    assert_equal("---\nfoo: :bar\n", Psych.safe_dump({foo: :bar}, stringify_names: true, permitted_symbols: [:bar]))
+
+    error = assert_raise Psych::DisallowedClass do
+      Psych.safe_dump({foo: :bar}, stringify_names: true)
+    end
+    assert_equal "Tried to dump unspecified class: Symbol(:bar)", error.message
+  end
+
   def test_safe_dump_aliases
     x = []
     x << x

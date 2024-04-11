@@ -16,7 +16,6 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (1,2)-(1,20))
         │   │           ├── locals: [:a]
-        │   │           ├── locals_body_index: 1
         │   │           ├── operator_loc: (1,2)-(1,4) = "->"
         │   │           ├── opening_loc: (1,17)-(1,18) = "{"
         │   │           ├── closing_loc: (1,19)-(1,20) = "}"
@@ -27,13 +26,13 @@
         │   │           │   │   ├── requireds: (length: 0)
         │   │           │   │   ├── optionals: (length: 1)
         │   │           │   │   │   └── @ OptionalParameterNode (location: (1,5)-(1,15))
+        │   │           │   │   │       ├── flags: ∅
         │   │           │   │   │       ├── name: :a
         │   │           │   │   │       ├── name_loc: (1,5)-(1,6) = "a"
         │   │           │   │   │       ├── operator_loc: (1,7)-(1,8) = "="
         │   │           │   │   │       └── value:
         │   │           │   │   │           @ LambdaNode (location: (1,9)-(1,15))
         │   │           │   │   │           ├── locals: [:_1]
-        │   │           │   │   │           ├── locals_body_index: 1
         │   │           │   │   │           ├── operator_loc: (1,9)-(1,11) = "->"
         │   │           │   │   │           ├── opening_loc: (1,11)-(1,12) = "{"
         │   │           │   │   │           ├── closing_loc: (1,14)-(1,15) = "}"
@@ -75,7 +74,6 @@
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (3,2)-(3,19))
             │           ├── locals: [:a]
-            │           ├── locals_body_index: 1
             │           ├── operator_loc: (3,2)-(3,4) = "->"
             │           ├── opening_loc: (3,16)-(3,17) = "{"
             │           ├── closing_loc: (3,18)-(3,19) = "}"
@@ -89,12 +87,12 @@
             │           │   │   ├── posts: (length: 0)
             │           │   │   ├── keywords: (length: 1)
             │           │   │   │   └── @ OptionalKeywordParameterNode (location: (3,5)-(3,14))
+            │           │   │   │       ├── flags: ∅
             │           │   │   │       ├── name: :a
             │           │   │   │       ├── name_loc: (3,5)-(3,7) = "a:"
             │           │   │   │       └── value:
             │           │   │   │           @ LambdaNode (location: (3,8)-(3,14))
             │           │   │   │           ├── locals: [:_1]
-            │           │   │   │           ├── locals_body_index: 1
             │           │   │   │           ├── operator_loc: (3,8)-(3,10) = "->"
             │           │   │   │           ├── opening_loc: (3,10)-(3,11) = "{"
             │           │   │   │           ├── closing_loc: (3,13)-(3,14) = "}"

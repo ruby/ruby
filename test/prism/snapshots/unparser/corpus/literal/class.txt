@@ -202,13 +202,12 @@
         │   │           │   @ StatementsNode (location: (30,4)-(30,8))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ SymbolNode (location: (30,4)-(30,8))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (30,4)-(30,5) = ":"
         │   │           │           ├── value_loc: (30,5)-(30,8) = "bar"
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── unescaped: "bar"
         │   │           ├── locals: []
-        │   │           ├── locals_body_index: 0
         │   │           ├── def_keyword_loc: (29,2)-(29,5) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅

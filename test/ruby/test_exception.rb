@@ -540,6 +540,14 @@ end.join
     assert_equal(Encoding.find("locale"), Errno::EINVAL.new.message.encoding)
   end
 
+  def test_errno_constants
+    assert_equal [:NOERROR], Errno.constants.grep_v(/\AE/)
+    all_assertions_foreach("should be a subclass of SystemCallError", *Errno.constants) do |c|
+      e = Errno.const_get(c)
+      assert_operator e, :<, SystemCallError, proc {e.ancestors.inspect}
+    end
+  end
+
   def test_too_many_args_in_eval
     bug5720 = '[ruby-core:41520]'
     arg_string = (0...140000).to_a.join(", ")
@@ -801,7 +809,7 @@ end.join
   def test_cause_at_end
     errs = [
       /-: unexpected return\n/,
-      /.*undefined local variable or method `n'.*\n/,
+      /.*undefined local variable or method 'n'.*\n/,
     ]
     assert_in_out_err([], <<-'end;', [], errs)
       END{n}; END{return}
@@ -1037,7 +1045,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_message_of_name_error
-    assert_raise_with_message(NameError, /\Aundefined method `foo' for module `#<Module:.*>'$/) do
+    assert_raise_with_message(NameError, /\Aundefined method 'foo' for module '#<Module:.*>'$/) do
       Module.new do
         module_function :foo
       end
@@ -1085,7 +1093,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def test_warning_warn
     warning = capture_warning_warn {$asdfasdsda_test_warning_warn}
-    assert_match(/global variable `\$asdfasdsda_test_warning_warn' not initialized/, warning[0])
+    assert_match(/global variable '\$asdfasdsda_test_warning_warn' not initialized/, warning[0])
 
     assert_equal(["a\nz\n"], capture_warning_warn {warn "a\n", "z"})
     assert_equal([],         capture_warning_warn {warn})
@@ -1161,7 +1169,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_warning_warn_super
-    assert_in_out_err(%[-W0], "#{<<~"{#"}\n#{<<~'};'}", [], /global variable `\$asdfiasdofa_test_warning_warn_super' not initialized/)
+    assert_in_out_err(%[-W0], "#{<<~"{#"}\n#{<<~'};'}", [], /global variable '\$asdfiasdofa_test_warning_warn_super' not initialized/)
     {#
       module Warning
         def warn(message)
@@ -1435,7 +1443,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end
 
       bug14670 = '[ruby-dev:50522] [Bug #14670]'
-      assert_raise_with_message(NoMethodError, /`foo'/, bug14670) do
+      assert_raise_with_message(NoMethodError, /'foo'/, bug14670) do
         Object.new.foo
       end
     end;
@@ -1460,6 +1468,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_detailed_message_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       e = RuntimeError.new("foo\nbar\nbaz")
       assert_equal("foo (RuntimeError)\nbar\nbaz", e.detailed_message)

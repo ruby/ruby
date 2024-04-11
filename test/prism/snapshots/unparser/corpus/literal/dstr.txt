@@ -215,7 +215,8 @@
         │   │                       │   │   │   @ StatementsNode (location: (28,6)-(28,8))
         │   │                       │   │   │   └── body: (length: 1)
         │   │                       │   │   │       └── @ IntegerNode (location: (28,6)-(28,8))
-        │   │                       │   │   │           └── flags: decimal
+        │   │                       │   │   │           ├── flags: decimal
+        │   │                       │   │   │           └── value: 42
         │   │                       │   │   └── closing_loc: (28,8)-(28,9) = "}"
         │   │                       │   └── @ StringNode (location: (28,9)-(29,0))
         │   │                       │       ├── flags: ∅
@@ -318,13 +319,13 @@
             └── block:
                 @ BlockNode (location: (34,16)-(37,1))
                 ├── locals: [:x]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (34,18)-(34,21))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (34,19)-(34,20))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (34,19)-(34,20))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :x
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

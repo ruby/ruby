@@ -15,22 +15,23 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,17))
                 ├── locals: [:b, :c]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,15))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,14))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :b
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,8)-(1,14))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :c
                 │   │   │       ├── name_loc: (1,8)-(1,9) = "c"
                 │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
                 │   │   │       └── value:
                 │   │   │           @ SymbolNode (location: (1,12)-(1,14))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (1,12)-(1,13) = ":"
                 │   │   │           ├── value_loc: (1,13)-(1,14) = "d"
                 │   │   │           ├── closing_loc: ∅

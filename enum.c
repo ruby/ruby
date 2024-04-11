@@ -4538,7 +4538,7 @@ struct enum_sum_memo {
 static void
 sum_iter_normalize_memo(struct enum_sum_memo *memo)
 {
-    assert(FIXABLE(memo->n));
+    RUBY_ASSERT(FIXABLE(memo->n));
     memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
     memo->n = 0;
 
@@ -4640,7 +4640,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 static void
 sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
-    assert(memo != NULL);
+    RUBY_ASSERT(memo != NULL);
     if (memo->block_given) {
         i = rb_yield(i);
     }
@@ -4691,8 +4691,8 @@ hash_sum_i(VALUE key, VALUE value, VALUE arg)
 static void
 hash_sum(VALUE hash, struct enum_sum_memo *memo)
 {
-    assert(RB_TYPE_P(hash, T_HASH));
-    assert(memo != NULL);
+    RUBY_ASSERT(RB_TYPE_P(hash, T_HASH));
+    RUBY_ASSERT(memo != NULL);
 
     rb_hash_foreach(hash, hash_sum_i, (VALUE)memo);
 }

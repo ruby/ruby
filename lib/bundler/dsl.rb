@@ -19,6 +19,7 @@ module Bundler
                     platform platforms type source install_if gemfile force_ruby_platform].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
+    GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
 
     attr_reader :gemspecs, :gemfile
     attr_accessor :dependencies
@@ -46,7 +47,7 @@ module Bundler
       @gemfile = expanded_gemfile_path
       @gemfiles << expanded_gemfile_path
       contents ||= Bundler.read_file(@gemfile.to_s)
-      instance_eval(contents, gemfile.to_s, 1)
+      instance_eval(contents, @gemfile.to_s, 1)
     rescue Exception => e # rubocop:disable Lint/RescueException
       message = "There was an error " \
         "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
@@ -102,9 +103,6 @@ module Bundler
 
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
-        # Always prefer the dependency from the Gemfile
-        @dependencies.delete(current) if current.gemspec_dev_dep?
-
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
@@ -116,8 +114,6 @@ module Bundler
               Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
             end
-
-            return if dep.gemspec_dev_dep?
           else
             update_prompt = ""
 
@@ -135,8 +131,13 @@ module Bundler
                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
-        elsif current.gemspec_dev_dep? || dep.gemspec_dev_dep?
-          return if dep.gemspec_dev_dep?
+        end
+
+        # Always prefer the dependency from the Gemfile
+        if current.gemspec_dev_dep?
+          @dependencies.delete(current)
+        elsif dep.gemspec_dev_dep?
+          return
         elsif current.source != dep.source
           raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
                           "You specified that #{dep.name} (#{dep.requirement}) should come from " \
@@ -307,6 +308,20 @@ module Bundler
         user_name, repo_name = repo_name.split("/")
         repo_name ||= user_name
         "https://#{user_name}@bitbucket.org/#{user_name}/#{repo_name}.git"
+      end
+
+      git_source(:gitlab) do |repo_name|
+        if repo_name =~ GITLAB_MERGE_REQUEST_URL
+          {
+            "git" => "https://gitlab.com/#{$1}.git",
+            "branch" => nil,
+            "ref" => "refs/merge-requests/#{$2}/head",
+            "tag" => nil,
+          }
+        else
+          repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+          "https://gitlab.com/#{repo_name}.git"
+        end
       end
     end
 

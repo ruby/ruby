@@ -33,13 +33,13 @@
             │           └── block:
             │               @ BlockNode (location: (1,13)-(1,25))
             │               ├── locals: [:bar]
-            │               ├── locals_body_index: 1
             │               ├── parameters:
             │               │   @ BlockParametersNode (location: (1,16)-(1,21))
             │               │   ├── parameters:
             │               │   │   @ ParametersNode (location: (1,17)-(1,20))
             │               │   │   ├── requireds: (length: 1)
             │               │   │   │   └── @ RequiredParameterNode (location: (1,17)-(1,20))
+            │               │   │   │       ├── flags: ∅
             │               │   │   │       └── name: :bar
             │               │   │   ├── optionals: (length: 0)
             │               │   │   ├── rest: ∅

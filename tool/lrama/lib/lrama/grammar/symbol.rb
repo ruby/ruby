@@ -11,7 +11,7 @@ module Lrama
       attr_reader :term
       attr_writer :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
 
-      def initialize(id:, alias_name: nil, number: nil, tag: nil, term:, token_id: nil, nullable: nil, precedence: nil, printer: nil)
+      def initialize(id:, term:, alias_name: nil, number: nil, tag: nil, token_id: nil, nullable: nil, precedence: nil, printer: nil)
         @id = id
         @alias_name = alias_name
         @number = number

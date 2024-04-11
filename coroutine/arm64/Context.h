@@ -50,22 +50,19 @@ static inline void coroutine_initialize_main(struct coroutine_context * context)
     context->stack_pointer = NULL;
 }
 
-#if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
-// Sign the given instruction address with the given modifier and key A
 static inline void *ptrauth_sign_instruction_addr(void *addr, void *modifier) {
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
+    // Sign the given instruction address with the given modifier and key A
     register void *r17 __asm("r17") = addr;
     register void *r16 __asm("r16") = modifier;
     // Use HINT mnemonic instead of PACIA1716 for compatibility with older assemblers.
-    asm ("hint #8;" : "+r"(r17) : "r"(r16));
+    __asm ("hint #8;" : "+r"(r17) : "r"(r16));
     addr = r17;
-    return addr;
-}
 #else
-// No-op if PAC is not enabled
-static inline void *ptrauth_sign_instruction_addr(void *addr, void *modifier) {
+    // No-op if PAC is not enabled
+#endif
     return addr;
 }
-#endif
 
 static inline void coroutine_initialize(
     struct coroutine_context *context,

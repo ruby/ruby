@@ -62,7 +62,7 @@ describe "NoMethodError#message" do
       NoMethodErrorSpecs::NoMethodErrorC.new.a_private_method
     rescue Exception => e
       e.should be_kind_of(NoMethodError)
-      e.message.lines[0].should =~ /private method `a_private_method' called for /
+      e.message.lines[0].should =~ /private method [`']a_private_method' called for /
     end
   end
 
@@ -130,14 +130,14 @@ describe "NoMethodError#message" do
     begin
       klass.foo
     rescue NoMethodError => error
-      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
+      error.message.lines.first.chomp.should =~ /^undefined method [`']foo' for /
     end
 
     mod = Module.new { def self.name; "MyModule"; end }
     begin
       mod.foo
     rescue NoMethodError => error
-      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
+      error.message.lines.first.chomp.should =~ /^undefined method [`']foo' for /
     end
   end
 end

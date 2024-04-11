@@ -20,7 +20,7 @@
         │   │               └── @ AssocNode (location: (1,7)-(1,15))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (1,7)-(1,10))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (1,7)-(1,9) = "do"
         │   │                   │   ├── closing_loc: (1,9)-(1,10) = ":"
@@ -70,7 +70,7 @@
             │               └── @ AssocNode (location: (5,2)-(5,26))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (5,2)-(5,4))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (5,2)-(5,3) = "x"
             │                   │   ├── closing_loc: (5,3)-(5,4) = ":"
@@ -78,7 +78,6 @@
             │                   ├── value:
             │                   │   @ LambdaNode (location: (5,5)-(5,26))
             │                   │   ├── locals: []
-            │                   │   ├── locals_body_index: 0
             │                   │   ├── operator_loc: (5,5)-(5,7) = "->"
             │                   │   ├── opening_loc: (5,8)-(5,10) = "do"
             │                   │   ├── closing_loc: (5,23)-(5,26) = "end"
@@ -98,7 +97,6 @@
             │                   │               └── block:
             │                   │                   @ BlockNode (location: (5,16)-(5,22))
             │                   │                   ├── locals: []
-            │                   │                   ├── locals_body_index: 0
             │                   │                   ├── parameters: ∅
             │                   │                   ├── body: ∅
             │                   │                   ├── opening_loc: (5,16)-(5,18) = "do"

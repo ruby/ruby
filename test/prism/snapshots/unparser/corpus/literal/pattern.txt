@@ -24,9 +24,11 @@
         │   │   │   │   │   └── name: :A
         │   │   │   │   ├── requireds: (length: 2)
         │   │   │   │   │   ├── @ IntegerNode (location: (2,5)-(2,6))
-        │   │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   └── @ IntegerNode (location: (2,8)-(2,9))
-        │   │   │   │   │       └── flags: decimal
+        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       └── value: 2
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ SplatNode (location: (2,11)-(2,13))
         │   │   │   │   │   ├── operator_loc: (2,11)-(2,12) = "*"
@@ -36,7 +38,8 @@
         │   │   │   │   │       └── depth: 0
         │   │   │   │   ├── posts: (length: 1)
         │   │   │   │   │   └── @ IntegerNode (location: (2,15)-(2,16))
-        │   │   │   │   │       └── flags: decimal
+        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       └── value: 3
         │   │   │   │   ├── opening_loc: (2,4)-(2,5) = "["
         │   │   │   │   └── closing_loc: (2,16)-(2,17) = "]"
         │   │   │   ├── statements:
@@ -51,9 +54,11 @@
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── requireds: (length: 2)
         │   │   │   │   │   ├── @ IntegerNode (location: (4,4)-(4,5))
-        │   │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   └── @ IntegerNode (location: (4,7)-(4,8))
-        │   │   │   │   │       └── flags: decimal
+        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       └── value: 2
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ ImplicitRestNode (location: (4,8)-(4,9))
         │   │   │   │   ├── posts: (length: 0)
@@ -84,12 +89,17 @@
         │   │   │   │   │   └── @ AssocNode (location: (6,5)-(6,7))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (6,5)-(6,7))
-        │   │   │   │   │       │   ├── flags: ∅
+        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (6,5)-(6,6) = "x"
         │   │   │   │   │       │   ├── closing_loc: (6,6)-(6,7) = ":"
         │   │   │   │   │       │   └── unescaped: "x"
-        │   │   │   │   │       ├── value: ∅
+        │   │   │   │   │       ├── value:
+        │   │   │   │   │       │   @ ImplicitNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │   └── value:
+        │   │   │   │   │       │       @ LocalVariableTargetNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │       ├── name: :x
+        │   │   │   │   │       │       └── depth: 0
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: (6,4)-(6,5) = "("
@@ -176,26 +186,28 @@
         │   │   │   │   │   ├── @ AssocNode (location: (14,4)-(14,8))
         │   │   │   │   │   │   ├── key:
         │   │   │   │   │   │   │   @ SymbolNode (location: (14,4)-(14,6))
-        │   │   │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   │   │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   │   ├── value_loc: (14,4)-(14,5) = "a"
         │   │   │   │   │   │   │   ├── closing_loc: (14,5)-(14,6) = ":"
         │   │   │   │   │   │   │   └── unescaped: "a"
         │   │   │   │   │   │   ├── value:
         │   │   │   │   │   │   │   @ IntegerNode (location: (14,7)-(14,8))
-        │   │   │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   │   └── operator_loc: ∅
         │   │   │   │   │   └── @ AssocNode (location: (14,10)-(14,15))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (14,10)-(14,13))
-        │   │   │   │   │       │   ├── flags: ∅
+        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (14,10)-(14,12) = "aa"
         │   │   │   │   │       │   ├── closing_loc: (14,12)-(14,13) = ":"
         │   │   │   │   │       │   └── unescaped: "aa"
         │   │   │   │   │       ├── value:
         │   │   │   │   │       │   @ IntegerNode (location: (14,14)-(14,15))
-        │   │   │   │   │       │   └── flags: decimal
+        │   │   │   │   │       │   ├── flags: decimal
+        │   │   │   │   │       │   └── value: 2
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: (14,3)-(14,4) = "{"
@@ -245,14 +257,15 @@
         │   │   │   │   │   └── @ AssocNode (location: (20,4)-(20,10))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (20,4)-(20,8))
-        │   │   │   │   │       │   ├── flags: ∅
+        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: (20,4)-(20,5) = "\""
         │   │   │   │   │       │   ├── value_loc: (20,5)-(20,6) = "a"
         │   │   │   │   │       │   ├── closing_loc: (20,6)-(20,8) = "\":"
         │   │   │   │   │       │   └── unescaped: "a"
         │   │   │   │   │       ├── value:
         │   │   │   │   │       │   @ IntegerNode (location: (20,9)-(20,10))
-        │   │   │   │   │       │   └── flags: decimal
+        │   │   │   │   │       │   ├── flags: decimal
+        │   │   │   │   │       │   └── value: 1
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: (20,3)-(20,4) = "{"
@@ -268,10 +281,12 @@
         │   │   │   │   @ AlternationPatternNode (location: (22,3)-(22,8))
         │   │   │   │   ├── left:
         │   │   │   │   │   @ IntegerNode (location: (22,3)-(22,4))
-        │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   └── value: 1
         │   │   │   │   ├── right:
         │   │   │   │   │   @ IntegerNode (location: (22,7)-(22,8))
-        │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   └── value: 2
         │   │   │   │   └── operator_loc: (22,5)-(22,6) = "|"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (23,2)-(23,6))
@@ -284,7 +299,8 @@
         │   │   │   │   @ CapturePatternNode (location: (24,3)-(24,9))
         │   │   │   │   ├── value:
         │   │   │   │   │   @ IntegerNode (location: (24,3)-(24,4))
-        │   │   │   │   │   └── flags: decimal
+        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   └── value: 1
         │   │   │   │   ├── target:
         │   │   │   │   │   @ LocalVariableTargetNode (location: (24,8)-(24,9))
         │   │   │   │   │   ├── name: :a
@@ -313,14 +329,16 @@
         │   │   ├── @ InNode (location: (28,0)-(28,4))
         │   │   │   ├── pattern:
         │   │   │   │   @ IntegerNode (location: (28,3)-(28,4))
-        │   │   │   │   └── flags: decimal
+        │   │   │   │   ├── flags: decimal
+        │   │   │   │   └── value: 1
         │   │   │   ├── statements: ∅
         │   │   │   ├── in_loc: (28,0)-(28,2) = "in"
         │   │   │   └── then_loc: ∅
         │   │   └── @ InNode (location: (29,0)-(30,6))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (29,3)-(29,4))
-        │   │       │   └── flags: decimal
+        │   │       │   ├── flags: decimal
+        │   │       │   └── value: 2
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (30,2)-(30,6))
         │   │       │   └── body: (length: 1)
@@ -358,9 +376,11 @@
         │   │       │   │   └── name: :A
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ IntegerNode (location: (35,5)-(35,6))
-        │   │       │   │   │   └── flags: decimal
+        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   └── value: 1
         │   │       │   │   └── @ IntegerNode (location: (35,8)-(35,9))
-        │   │       │   │       └── flags: decimal
+        │   │       │   │       ├── flags: decimal
+        │   │       │   │       └── value: 2
         │   │       │   ├── rest:
         │   │       │   │   @ SplatNode (location: (35,11)-(35,13))
         │   │       │   │   ├── operator_loc: (35,11)-(35,12) = "*"
@@ -370,7 +390,8 @@
         │   │       │   │       └── depth: 0
         │   │       │   ├── posts: (length: 1)
         │   │       │   │   └── @ IntegerNode (location: (35,15)-(35,16))
-        │   │       │   │       └── flags: decimal
+        │   │       │   │       ├── flags: decimal
+        │   │       │   │       └── value: 3
         │   │       │   ├── opening_loc: (35,4)-(35,5) = "["
         │   │       │   └── closing_loc: (35,16)-(35,17) = "]"
         │   │       ├── statements: ∅
@@ -409,7 +430,8 @@
         └── @ MatchPredicateNode (location: (41,0)-(41,8))
             ├── value:
             │   @ IntegerNode (location: (41,0)-(41,1))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 1
             ├── pattern:
             │   @ ArrayPatternNode (location: (41,5)-(41,8))
             │   ├── constant: ∅

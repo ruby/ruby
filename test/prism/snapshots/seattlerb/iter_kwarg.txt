@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,12))
                 ├── locals: [:b]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,10))
                 │   ├── parameters:
@@ -26,11 +25,13 @@
                 │   │   ├── posts: (length: 0)
                 │   │   ├── keywords: (length: 1)
                 │   │   │   └── @ OptionalKeywordParameterNode (location: (1,5)-(1,9))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :b
                 │   │   │       ├── name_loc: (1,5)-(1,7) = "b:"
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,8)-(1,9))
-                │   │   │           └── flags: decimal
+                │   │   │           ├── flags: decimal
+                │   │   │           └── value: 1
                 │   │   ├── keyword_rest: ∅
                 │   │   └── block: ∅
                 │   ├── locals: (length: 0)

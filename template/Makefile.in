@@ -269,6 +269,8 @@ ACTIONS_ENDGROUP = @$(NULLCMD)
 
 DESTDIR       = @DESTDIR@
 
+cleanlibs = @cleanlibs@
+
 configure_args = @configure_args@
 #### End of variables
 
@@ -491,8 +493,9 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	$(Q)find . \( -name '*.bc' -o -name '*.[is]' \) -delete
-	-$(Q)$(RMALL) exe/ *.dSYM
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.bc)
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.i)
+	@$(RM) $(ALLOBJS:.$(OBJEXT)=.s)
 
 distclean-local::
 	$(Q)$(RM) \
@@ -575,7 +578,16 @@ update-benchmark-driver:
 		$(BENCHMARK_DRIVER_GIT_URL) benchmark-driver $(GIT_OPTS)
 
 update-known-errors:
-	errno --list | cut -d' ' -f1 | sort -u - $(srcdir)/defs/known_errors.def | \
+	errno --list | \
+	$(BASERUBY) -nl -e 'BEGIN {errs = {}}' \
+	-e '/^(E[A-Z_0-9]+)(?: +(?:\d+ +)?(.+))?/ =~ $$_ && errs[$$1] ||= $$2' \
+	-e 'END {' \
+	-e   'errs.delete("ELAST")' \
+	-e   'errs = errs.sort' \
+	-e   'errs << ["ELAST", "Largest errno"]' \
+	-e   'errs.each {|e,d| puts sprintf("%-15s %s", e, d).strip}' \
+	-e '}' \
+	$(srcdir)/defs/known_errors.def - | \
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
 INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
@@ -644,6 +656,7 @@ yes-test-leaked-globals: yes-test-leaked-globals-precheck
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \
 	  SYMBOLS_IN_EMPTYLIB="@XSYMBOLS_IN_EMPTYLIB@" \
+	  EXTSTATIC="$(EXTSTATIC)" \
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
 	$(ACTIONS_ENDGROUP)

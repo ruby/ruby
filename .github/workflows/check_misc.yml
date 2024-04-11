@@ -52,14 +52,6 @@ jobs:
           exit $fail
         working-directory: include
 
-      # This should be able to be removed once old platforms are dropped.
-      - id: c99-check
-        name: Check for C99 features which may not be supported
-        run: |
-          # VC2013: z modifier for size_t is not supported.
-          grep -r -n --include='*.[chyS]' '%[0-9]*z[idu]' -- . && exit 1 || :
-        continue-on-error: true # Just show in the annotations
-
       - id: gems
         run: true
         if: ${{ github.ref == 'refs/heads/master' }}

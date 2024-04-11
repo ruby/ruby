@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/hash.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
@@ -89,7 +90,7 @@ rb_dump_literal(VALUE lit)
         switch (RB_BUILTIN_TYPE(lit)) {
           case T_CLASS: case T_MODULE: case T_ICLASS:
             str = rb_class_path(lit);
-            if (FL_TEST(lit, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(lit)) {
                 str = rb_sprintf("<%"PRIsVALUE">", str);
             }
             return str;
@@ -351,7 +352,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_args, RNODE_RESBODY, "rescue exceptions");
         F_NODE(nd_body, RNODE_RESBODY, "rescue clause");
         LAST_NODE;
-        F_NODE(nd_head, RNODE_RESBODY, "next rescue clause");
+        F_NODE(nd_next, RNODE_RESBODY, "next rescue clause");
         return;
 
       case NODE_ENSURE:
@@ -678,7 +679,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("match expression (against $_ implicitly)");
         ANN("format: [nd_lit] (in condition)");
         ANN("example: if /foo/; foo; end");
-        F_LIT(nd_lit, RNODE_MATCH, "regexp");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
         return;
 
       case NODE_MATCH2:
@@ -707,18 +709,19 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("literal");
         ANN("format: [nd_lit]");
         ANN("example: :sym, /foo/");
-        goto lit;
+        F_LIT(nd_lit, RNODE_LIT, "literal");
+        return;
       case NODE_STR:
         ANN("string literal");
         ANN("format: [nd_lit]");
         ANN("example: 'foo'");
-        goto lit;
+        goto str;
       case NODE_XSTR:
         ANN("xstring literal");
         ANN("format: [nd_lit]");
         ANN("example: `foo`");
-      lit:
-        F_LIT(nd_lit, RNODE_LIT, "literal");
+      str:
+        F_VALUE(string, rb_node_str_string_val(node), "literal");
         return;
 
       case NODE_INTEGER:
@@ -749,6 +752,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_VALUE(val, rb_node_imaginary_literal_val(node), "val");
         return;
 
+      case NODE_REGX:
+        ANN("regexp literal");
+        ANN("format: [string]");
+        ANN("example: /foo/");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
+        return;
+
       case NODE_ONCE:
         ANN("once evaluation");
         ANN("format: [nd_body]");
@@ -777,7 +788,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_lit]");
         ANN("example: :\"foo#{ bar }baz\"");
       dlit:
-        F_LIT(nd_lit, RNODE_DSTR, "preceding string");
+        F_VALUE(string, rb_node_dstr_string_val(node), "preceding string");
         if (!RNODE_DSTR(node)->nd_next) return;
         F_NODE(nd_next->nd_head, RNODE_DSTR, "interpolation");
         LAST_NODE;
@@ -1149,13 +1160,18 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_VALUE(path, rb_node_file_path_val(node), "path");
         return;
 
+      case NODE_ENCODING:
+        ANN("encoding");
+        ANN("format: [enc]");
+        ANN("example: __ENCODING__");
+        F_VALUE(enc, rb_node_encoding_val(node), "enc");
+        return;
+
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
         return;
 
       case NODE_ARGS_AUX:
-      case NODE_RIPPER:
-      case NODE_RIPPER_VALUES:
       case NODE_LAST:
         break;
     }

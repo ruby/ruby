@@ -43,6 +43,7 @@ module Prism
     end
 
     def test_AssocNode
+      assert_location(AssocNode, "{ '': 1 }", 2...7) { |node| node.elements.first }
       assert_location(AssocNode, "{ foo: :bar }", 2...11) { |node| node.elements.first }
       assert_location(AssocNode, "{ :foo => :bar }", 2...14) { |node| node.elements.first }
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }
@@ -63,8 +64,8 @@ module Prism
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz end")
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz\nensure qux end")
 
-      assert_location(BeginNode, "class Foo\nrescue then end", 10..25, &:body)
-      assert_location(BeginNode, "module Foo\nrescue then end", 11..26, &:body)
+      assert_location(BeginNode, "class Foo\nrescue then end", 0..25, &:body)
+      assert_location(BeginNode, "module Foo\nrescue then end", 0..26, &:body)
     end
 
     def test_BlockArgumentNode
@@ -174,6 +175,14 @@ module Prism
 
       assert_location(CallNode, "foo bar baz")
       assert_location(CallNode, "foo bar('baz')")
+
+      assert_location(CallNode, "-> { it }", 5...7, version: "3.3.0") do |node|
+        node.body.body.first
+      end
+
+      assert_location(LocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
+        node.body.body.first
+      end
     end
 
     def test_CallAndWriteNode
@@ -534,6 +543,10 @@ module Prism
       assert_location(InterpolatedXStringNode, '`foo #{bar} baz`')
     end
 
+    def test_ItParametersNode
+      assert_location(ItParametersNode, "-> { it }", &:parameters)
+    end
+
     def test_KeywordHashNode
       assert_location(KeywordHashNode, "foo(a, b: 1)", 7...11) { |node| node.arguments.arguments[1] }
     end
@@ -570,6 +583,12 @@ module Prism
 
     def test_LocalVariableReadNode
       assert_location(LocalVariableReadNode, "foo = 1; foo", 9...12)
+      assert_location(LocalVariableReadNode, "-> { it }", 5...7) do |node|
+        node.body.body.first
+      end
+      assert_location(LocalVariableReadNode, "foo { it }", 6...8) do |node|
+        node.block.body.body.first
+      end
     end
 
     def test_LocalVariableTargetNode
@@ -674,6 +693,9 @@ module Prism
 
     def test_PinnedVariableNode
       assert_location(PinnedVariableNode, "bar = 1; foo in ^bar", 16...20, &:pattern)
+      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15) do |node|
+        node.receiver.block.body.body.first.pattern
+      end
     end
 
     def test_PostExecutionNode
@@ -891,8 +913,8 @@ module Prism
 
     private
 
-    def assert_location(kind, source, expected = 0...source.length)
-      result = Prism.parse(source)
+    def assert_location(kind, source, expected = 0...source.length, **options)
+      result = Prism.parse(source, **options)
       assert_equal [], result.comments
       assert_equal [], result.errors
 

@@ -5,11 +5,11 @@ rescue LoadError
 end
 require "test/unit"
 
-if defined?(WIN32OLE_TYPE)
+if defined?(WIN32OLE::Type)
   class TestWIN32OLE_TYPE < Test::Unit::TestCase
 
     def test_s_progids
-      progids = WIN32OLE_TYPE.progids
+      progids = WIN32OLE::Type.progids
       assert_instance_of(Array, progids)
       assert(progids.size > 0)
       assert_instance_of(String, progids[0])
@@ -18,25 +18,25 @@ if defined?(WIN32OLE_TYPE)
 
     def test_initialize
       assert_raise(ArgumentError) {
-        WIN32OLE_TYPE.new
+        WIN32OLE::Type.new
       }
       assert_raise(ArgumentError) {
-        WIN32OLE_TYPE.new("foo")
+        WIN32OLE::Type.new("foo")
       }
       assert_raise(TypeError) {
-        WIN32OLE_TYPE.new(1, 2)
+        WIN32OLE::Type.new(1, 2)
       }
       assert_raise(TypeError) {
-        WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", 1)
+        WIN32OLE::Type.new("Microsoft Shell Controls And Automation", 1)
       }
-      assert_raise(WIN32OLERuntimeError) {
-        WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "foo")
+      assert_raise(WIN32OLE::RuntimeError) {
+        WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "foo")
       }
-      assert_raise(WIN32OLERuntimeError) {
-        WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Application")
+      assert_raise(WIN32OLE::RuntimeError) {
+        WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Application")
       }
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
-      assert_instance_of(WIN32OLE_TYPE, ole_type)
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
+      assert_instance_of(WIN32OLE::Type, ole_type)
       assert_equal("Shell", ole_type.name)
       assert_equal("Class", ole_type.ole_type)
       assert_equal("{13709620-C279-11CE-A49E-444553540000}", ole_type.guid)
@@ -53,8 +53,8 @@ if defined?(WIN32OLE_TYPE)
       assert_equal([], ole_type.variables)
       assert(ole_type.ole_methods.select{|m|/NameSpace/i =~ m.name}.size > 0)
 
-      ole_type2 = WIN32OLE_TYPE.new("{13709620-C279-11CE-A49E-444553540000}", "Shell")
-      assert_instance_of(WIN32OLE_TYPE, ole_type)
+      ole_type2 = WIN32OLE::Type.new("{13709620-C279-11CE-A49E-444553540000}", "Shell")
+      assert_instance_of(WIN32OLE::Type, ole_type)
       assert_equal(ole_type.name, ole_type2.name)
       assert_equal(ole_type.ole_type, ole_type2.ole_type)
       assert_equal(ole_type.guid, ole_type2.guid)
@@ -76,7 +76,7 @@ if defined?(WIN32OLE_TYPE)
     end
 
     def setup
-      @ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
+      @ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
     end
 
     def test_name
@@ -97,7 +97,7 @@ if defined?(WIN32OLE_TYPE)
 
     def test_visible?
       assert(@ole_type.visible?)
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "IShellDispatch")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "IShellDispatch")
       assert(!ole_type.visible?)
     end
 
@@ -107,13 +107,13 @@ if defined?(WIN32OLE_TYPE)
 
     def test_major_version
       assert_equal(0, @ole_type.major_version)
-      # ole_type = WIN32OLE_TYPE.new("Microsoft Word 11.0 Object Library", "Documents")
+      # ole_type = WIN32OLE::Type.new("Microsoft Word 11.0 Object Library", "Documents")
       # assert_equal(8, ole_type.major_version)
     end
 
     def test_minor_version
       assert_equal(0, @ole_type.minor_version)
-      # ole_type = WIN32OLE_TYPE.new("Microsoft Word 11.0 Object Library", "Documents")
+      # ole_type = WIN32OLE::Type.new("Microsoft Word 11.0 Object Library", "Documents")
       # assert_equal(3, ole_type.minor_version)
     end
 
@@ -126,20 +126,20 @@ if defined?(WIN32OLE_TYPE)
     end
 
     def test_src_type
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "DriveTypeConst")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "DriveTypeConst")
       assert_match(/__MIDL___MIDL_itf_scrrun_/, ole_type.src_type)
       assert_equal(nil, @ole_type.src_type)
     end
 
     def test_helpfile
       assert_equal("", @ole_type.helpfile)
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "Folders")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "Folders")
       assert_match(/VBENLR98\.CHM$/i, ole_type.helpfile)
     end
 
     def test_helpcontext
       assert_equal(0, @ole_type.helpcontext)
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "Folders")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "Folders")
       assert_equal(2181929, ole_type.helpcontext)
     end
 
@@ -148,25 +148,25 @@ if defined?(WIN32OLE_TYPE)
       assert_instance_of(Array, variables)
       assert(variables.size == 0)
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "ShellSpecialFolderConstants")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "ShellSpecialFolderConstants")
       variables = ole_type.variables
       assert_instance_of(Array, variables)
       assert(variables.size > 0)
 
-      assert_instance_of(WIN32OLE_VARIABLE, variables[0])
+      assert_instance_of(WIN32OLE::Variable, variables[0])
     end
 
     def test_ole_methods
       methods = @ole_type.ole_methods
       assert_instance_of(Array, methods)
       assert(methods.size > 0)
-      assert_instance_of(WIN32OLE_METHOD, methods[0]);
+      assert_instance_of(WIN32OLE::Method, methods[0]);
       assert(methods.collect{|m| m.name}.include?("Application"))
     end
 
     def test_ole_typelib
       tlib = @ole_type.ole_typelib
-      assert_instance_of(WIN32OLE_TYPELIB, tlib)
+      assert_instance_of(WIN32OLE::TypeLib, tlib)
       assert_equal("Microsoft Shell Controls And Automation", tlib.name)
     end
 
@@ -178,20 +178,20 @@ if defined?(WIN32OLE_TYPE)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_TYPE:Shell>", @ole_type.inspect)
+      assert_equal("#<WIN32OLE::Type:Shell>", @ole_type.inspect)
     end
 
-    # WIN32OLE_TYPE.typelibs will be obsoleted.
+    # WIN32OLE::Type.typelibs will be obsoleted.
     def test_s_typelibs
-      tlibs = WIN32OLE_TYPE.typelibs.sort
-      tlibs2 = WIN32OLE_TYPELIB.typelibs.collect{|t|t.name}.sort
+      tlibs = WIN32OLE::Type.typelibs.sort
+      tlibs2 = WIN32OLE::TypeLib.typelibs.collect{|t|t.name}.sort
       assert_equal(tlibs2, tlibs)
     end
 
-    # WIN32OLE_TYPE.ole_classes will be obsoleted.
+    # WIN32OLE::Type.ole_classes will be obsoleted.
     def test_s_ole_classes
-      ots1 = WIN32OLE_TYPE.ole_classes("Microsoft Shell Controls And Automation")
-      ots2 = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation").ole_types
+      ots1 = WIN32OLE::Type.ole_classes("Microsoft Shell Controls And Automation")
+      ots2 = WIN32OLE::TypeLib.new("Microsoft Shell Controls And Automation").ole_types
       otns1 = ots1.collect{|t| t.name}.sort
       otns2 = ots2.collect{|t| t.name}.sort
       assert_equal(otns2, otns1)

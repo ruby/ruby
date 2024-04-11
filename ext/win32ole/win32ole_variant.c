@@ -267,7 +267,7 @@ folevariant_s_allocate(VALUE klass)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT.array(ary, vt)
+ *     array(ary, vt)
  *
  *  Returns Ruby object wrapping OLE variant whose variant type is VT_ARRAY.
  *  The first argument should be Array object which specifies dimensions
@@ -277,7 +277,7 @@ folevariant_s_allocate(VALUE klass)
  *  The following create 2 dimensions OLE array. The first dimensions size
  *  is 3, and the second is 4.
  *
- *     ole_ary = WIN32OLE_VARIANT.array([3,4], VT_I4)
+ *     ole_ary = WIN32OLE::Variant.array([3,4], VT_I4)
  *     ruby_ary = ole_ary.value # => [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
  *
  */
@@ -357,44 +357,44 @@ check_type_val2variant(VALUE val)
         case T_NIL:
             break;
         default:
-            rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
+            rb_raise(rb_eTypeError, "can not convert WIN32OLE::Variant from type %s",
                      rb_obj_classname(val));
         }
     }
 }
 
 /*
- * Document-class: WIN32OLE_VARIANT
+ * Document-class: WIN32OLE::Variant
  *
- *   <code>WIN32OLE_VARIANT</code> objects represents OLE variant.
+ *   +WIN32OLE::Variant+ objects represents OLE variant.
  *
  *   Win32OLE converts Ruby object into OLE variant automatically when
  *   invoking OLE methods. If OLE method requires the argument which is
  *   different from the variant by automatic conversion of Win32OLE, you
- *   can convert the specified variant type by using WIN32OLE_VARIANT class.
+ *   can convert the specified variant type by using WIN32OLE::Variant class.
  *
- *     param = WIN32OLE_VARIANT.new(10, WIN32OLE::VARIANT::VT_R4)
+ *     param = WIN32OLE::Variant.new(10, WIN32OLE::VARIANT::VT_R4)
  *     oleobj.method(param)
  *
- *   WIN32OLE_VARIANT does not support VT_RECORD variant. Use WIN32OLE_RECORD
- *   class instead of WIN32OLE_VARIANT if the VT_RECORD variant is needed.
+ *   WIN32OLE::Variant does not support VT_RECORD variant. Use WIN32OLE::Record
+ *   class instead of WIN32OLE::Variant if the VT_RECORD variant is needed.
  */
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT.new(val, vartype) #=> WIN32OLE_VARIANT object.
+ *     new(val, vartype) #=> WIN32OLE::Variant object.
  *
  *  Returns Ruby object wrapping OLE variant.
  *  The first argument specifies Ruby object to convert OLE variant variable.
  *  The second argument specifies VARIANT type.
- *  In some situation, you need the WIN32OLE_VARIANT object to pass OLE method
+ *  In some situation, you need the WIN32OLE::Variant object to pass OLE method
  *
  *     shell = WIN32OLE.new("Shell.Application")
  *     folder = shell.NameSpace("C:\\Windows")
  *     item = folder.ParseName("tmp.txt")
  *     # You can't use Ruby String object to call FolderItem.InvokeVerb.
- *     # Instead, you have to use WIN32OLE_VARIANT object to call the method.
- *     shortcut = WIN32OLE_VARIANT.new("Create Shortcut(\&S)")
+ *     # Instead, you have to use WIN32OLE::Variant object to call the method.
+ *     shortcut = WIN32OLE::Variant.new("Create Shortcut(\&S)")
  *     item.invokeVerb(shortcut)
  *
  */
@@ -422,7 +422,7 @@ folevariant_initialize(VALUE self, VALUE args)
         vvt = rb_ary_entry(args, 1);
         vt = RB_NUM2INT(vvt);
         if ((vt & VT_TYPEMASK) == VT_RECORD) {
-            rb_raise(rb_eArgError, "not supported VT_RECORD WIN32OLE_VARIANT object");
+            rb_raise(rb_eArgError, "not supported VT_RECORD WIN32OLE::Variant object");
         }
         ole_val2olevariantdata(val, vt, pvar);
     }
@@ -482,22 +482,22 @@ unlock_safe_array(SAFEARRAY *psa)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT[i,j,...] #=> element of OLE array.
+ *     variant[i,j,...] #=> element of OLE array.
  *
- *  Returns the element of WIN32OLE_VARIANT object(OLE array).
+ *  Returns the element of WIN32OLE::Variant object(OLE array).
  *  This method is available only when the variant type of
- *  WIN32OLE_VARIANT object is VT_ARRAY.
+ *  WIN32OLE::Variant object is VT_ARRAY.
  *
  *  REMARK:
  *     The all indices should be 0 or natural number and
  *     lower than or equal to max indices.
  *     (This point is different with Ruby Array indices.)
  *
- *     obj = WIN32OLE_VARIANT.new([[1,2,3],[4,5,6]])
+ *     obj = WIN32OLE::Variant.new([[1,2,3],[4,5,6]])
  *     p obj[0,0] # => 1
  *     p obj[1,0] # => 4
- *     p obj[2,0] # => WIN32OLERuntimeError
- *     p obj[0, -1] # => WIN32OLERuntimeError
+ *     p obj[2,0] # => WIN32OLE::RuntimeError
+ *     p obj[0, -1] # => WIN32OLE::RuntimeError
  *
  */
 static VALUE
@@ -537,23 +537,23 @@ folevariant_ary_aref(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT[i,j,...] = val #=> set the element of OLE array
+ *     variant[i,j,...] = val #=> set the element of OLE array
  *
- *  Set the element of WIN32OLE_VARIANT object(OLE array) to val.
+ *  Set the element of WIN32OLE::Variant object(OLE array) to val.
  *  This method is available only when the variant type of
- *  WIN32OLE_VARIANT object is VT_ARRAY.
+ *  WIN32OLE::Variant object is VT_ARRAY.
  *
  *  REMARK:
  *     The all indices should be 0 or natural number and
  *     lower than or equal to max indices.
  *     (This point is different with Ruby Array indices.)
  *
- *     obj = WIN32OLE_VARIANT.new([[1,2,3],[4,5,6]])
+ *     obj = WIN32OLE::Variant.new([[1,2,3],[4,5,6]])
  *     obj[0,0] = 7
  *     obj[1,0] = 8
  *     p obj.value # => [[7,2,3], [8,5,6]]
- *     obj[2,0] = 9 # => WIN32OLERuntimeError
- *     obj[0, -1] = 9 # => WIN32OLERuntimeError
+ *     obj[2,0] = 9 # => WIN32OLE::RuntimeError
+ *     obj[0, -1] = 9 # => WIN32OLE::RuntimeError
  *
  */
 static VALUE
@@ -598,10 +598,10 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT.value #=> Ruby object.
+ *     value #=> Ruby object.
  *
  *  Returns Ruby object value from OLE variant.
- *     obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_BSTR)
+ *     obj = WIN32OLE::Variant.new(1, WIN32OLE::VARIANT::VT_BSTR)
  *     obj.value # => "1" (not Integer object, but String object "1")
  *
  */
@@ -637,10 +637,10 @@ folevariant_value(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT.vartype #=> OLE variant type.
+ *     vartype #=> OLE variant type.
  *
  *  Returns OLE variant type.
- *     obj = WIN32OLE_VARIANT.new("string")
+ *     obj = WIN32OLE::Variant.new("string")
  *     obj.vartype # => WIN32OLE::VARIANT::VT_BSTR
  *
  */
@@ -654,7 +654,7 @@ folevariant_vartype(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIANT.value = val #=> set WIN32OLE_VARIANT value to val.
+ *     variant.value = val #=> set WIN32OLE::Variant value to val.
  *
  *  Sets variant value to val. If the val type does not match variant value
  *  type(vartype), then val is changed to match variant value type(vartype)
@@ -662,7 +662,7 @@ folevariant_vartype(VALUE self)
  *  This method is not available when vartype is VT_ARRAY(except VT_UI1|VT_ARRAY).
  *  If the vartype is VT_UI1|VT_ARRAY, the val should be String object.
  *
- *     obj = WIN32OLE_VARIANT.new(1) # obj.vartype is WIN32OLE::VARIANT::VT_I4
+ *     obj = WIN32OLE::Variant.new(1) # obj.vartype is WIN32OLE::VARIANT::VT_I4
  *     obj.value = 3.2 # 3.2 is changed to 3 when setting value.
  *     p obj.value # => 3
  */
@@ -696,6 +696,7 @@ Init_win32ole_variant(void)
 {
 #undef rb_intern
     cWIN32OLE_VARIANT = rb_define_class_under(cWIN32OLE, "Variant", rb_cObject);
+    /* Alias of WIN32OLE::Variant, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_VARIANT", cWIN32OLE_VARIANT);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_singleton_method(cWIN32OLE_VARIANT, "array", folevariant_s_array, 2);
@@ -729,7 +730,7 @@ Init_win32ole_variant(void)
      * This constants is used for not specified parameter.
      *
      *  fso = WIN32OLE.new("Scripting.FileSystemObject")
-     *  fso.openTextFile(filename, WIN32OLE_VARIANT::NoParam, false)
+     *  fso.openTextFile(filename, WIN32OLE::Variant::NoParam, false)
      */
     rb_define_const(cWIN32OLE_VARIANT, "NoParam",
             rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));

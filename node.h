@@ -35,7 +35,6 @@ struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
     struct rb_ast_local_table_link *local_tables;
-    VALUE mark_hash;
     // - id (sequence number)
     // - token_type
     // - text of token
@@ -43,14 +42,14 @@ struct node_buffer_struct {
     // Array, whose entry is array
     VALUE tokens;
 #ifdef UNIVERSAL_PARSER
-    rb_parser_config_t *config;
+    const rb_parser_config_t *config;
 #endif
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifdef UNIVERSAL_PARSER
-rb_ast_t *rb_ast_new(rb_parser_config_t *config);
+rb_ast_t *rb_ast_new(const rb_parser_config_t *config);
 #else
 rb_ast_t *rb_ast_new(void);
 #endif
@@ -63,11 +62,9 @@ void rb_ast_node_type_change(NODE *n, enum node_type type);
 const char *ruby_node_name(int node);
 void rb_node_init(NODE *n, enum node_type type);
 
-void rb_ast_mark(rb_ast_t*);
+void rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating);
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
-void rb_ast_add_mark_object(rb_ast_t*, VALUE);
-void rb_ast_delete_mark_object(rb_ast_t*, VALUE);
 void rb_ast_set_tokens(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);

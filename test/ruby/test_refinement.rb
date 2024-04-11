@@ -1606,18 +1606,35 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       using R
+      def m
+        C.new.m
+      end
+
       assert_equal(:foo, C.new.m)
+      assert_equal(:foo, m)
 
       module R
         refine C do
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           alias m m
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           def m
             :bar
           end
+
+          assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+          assert_equal(:bar, m, "[Bug #20285]")
         end
       end
 
       assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+      assert_equal(:bar, m, "[Bug #20285]")
     end;
   end
 
@@ -2670,6 +2687,35 @@ class TestRefinement < Test::Unit::TestCase
       def foo = :v2 # invalidate
     end
     assert_equal(:v2, obj.cached_foo_callsite)
+  end
+
+  # [Bug #20302]
+  def test_multiple_refinements_for_same_module
+    assert_in_out_err([], <<-INPUT, %w(:f2 :f1), [])
+      module M1
+        refine(Kernel) do
+          def f1 = :f1
+        end
+      end
+
+      module M2
+        refine(Kernel) do
+          def f2 = :f2
+        end
+      end
+
+      class Foo
+        using M1
+        using M2
+
+        def test
+          p f2
+          p f1
+        end
+      end
+
+      Foo.new.test
+    INPUT
   end
 
   private

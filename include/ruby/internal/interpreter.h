@@ -141,7 +141,7 @@ void ruby_show_copyright(void);
  *
  * @param[in]  addr  A pointer somewhere on the stack, near its bottom.
  */
-void ruby_init_stack(volatile VALUE *addr);
+void ruby_init_stack(void *addr);
 
 /**
  * Initializes the VM and builtin libraries.

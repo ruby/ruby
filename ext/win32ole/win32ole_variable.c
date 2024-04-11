@@ -43,9 +43,9 @@ olevariable_size(const void *ptr)
 }
 
 /*
- * Document-class: WIN32OLE_VARIABLE
+ * Document-class: WIN32OLE::Variable
  *
- *   <code>WIN32OLE_VARIABLE</code> objects represent OLE variable information.
+ *   +WIN32OLE::Variable+ objects represent OLE variable information.
  */
 
 VALUE
@@ -63,11 +63,11 @@ create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#name
+ *     name
  *
  *  Returns the name of variable.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *     variables = tobj.variables
  *     variables.each do |variable|
  *       puts "#{variable.name}"
@@ -103,11 +103,11 @@ ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  *   call-seq:
- *      WIN32OLE_VARIABLE#ole_type
+ *      ole_type
  *
  *   Returns OLE type string.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *     variables = tobj.variables
  *     variables.each do |variable|
  *       puts "#{variable.ole_type} #{variable.name}"
@@ -145,11 +145,11 @@ ole_variable_ole_type_detail(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#ole_type_detail
+ *     ole_type_detail
  *
  *  Returns detail information of type. The information is array of type.
  *
- *     tobj = WIN32OLE_TYPE.new('DirectX 7 for Visual Basic Type Library', 'D3DCLIPSTATUS')
+ *     tobj = WIN32OLE::Type.new('DirectX 7 for Visual Basic Type Library', 'D3DCLIPSTATUS')
  *     variable = tobj.variables.find {|variable| variable.name == 'lFlags'}
  *     tdetail  = variable.ole_type_detail
  *     p tdetail # => ["USERDEFINED", "CONST_D3DCLIPSTATUSFLAGS"]
@@ -180,12 +180,12 @@ ole_variable_value(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#value
+ *     value
  *
  *  Returns value if value is exists. If the value does not exist,
  *  this method returns nil.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *     variables = tobj.variables
  *     variables.each do |variable|
  *       puts "#{variable.name} #{variable.value}"
@@ -227,11 +227,11 @@ ole_variable_visible(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#visible?
+ *     visible?
  *
  *  Returns true if the variable is public.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *     variables = tobj.variables
  *     variables.each do |variable|
  *       puts "#{variable.name} #{variable.visible?}"
@@ -284,11 +284,11 @@ ole_variable_kind(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  * call-seq:
- *   WIN32OLE_VARIABLE#variable_kind
+ *   variable_kind
  *
  * Returns variable kind string.
  *
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *    variables = tobj.variables
  *    variables.each do |variable|
  *      puts "#{variable.name} #{variable.variable_kind}"
@@ -325,10 +325,10 @@ ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#varkind
+ *     varkind
  *
  *  Returns the number which represents variable kind.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *    variables = tobj.variables
  *    variables.each do |variable|
  *      puts "#{variable.name} #{variable.varkind}"
@@ -351,7 +351,7 @@ folevariable_varkind(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_VARIABLE#inspect -> String
+ *     inspect -> String
  *
  *  Returns the OLE variable name and the value with class name.
  *
@@ -362,7 +362,7 @@ folevariable_inspect(VALUE self)
     VALUE v = rb_inspect(folevariable_value(self));
     VALUE n = folevariable_name(self);
     VALUE detail = rb_sprintf("%"PRIsVALUE"=%"PRIsVALUE, n, v);
-    return make_inspect("WIN32OLE_VARIABLE", detail);
+    return make_inspect("WIN32OLE::Variable", detail);
 }
 
 VALUE cWIN32OLE_VARIABLE;
@@ -370,6 +370,7 @@ VALUE cWIN32OLE_VARIABLE;
 void Init_win32ole_variable(void)
 {
     cWIN32OLE_VARIABLE = rb_define_class_under(cWIN32OLE, "Variable", rb_cObject);
+    /* Alias of WIN32OLE::Variable, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_VARIABLE", cWIN32OLE_VARIABLE);
     rb_undef_alloc_func(cWIN32OLE_VARIABLE);
     rb_define_method(cWIN32OLE_VARIABLE, "name", folevariable_name, 0);

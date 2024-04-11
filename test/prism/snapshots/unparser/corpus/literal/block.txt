@@ -15,7 +15,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,4)-(2,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,4)-(1,5) = "{"
@@ -32,13 +31,13 @@
         │   └── block:
         │       @ BlockNode (location: (3,4)-(4,1))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (3,6)-(3,9))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (3,7)-(3,8))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (3,7)-(3,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -64,13 +63,13 @@
         │   └── block:
         │       @ BlockNode (location: (5,4)-(6,1))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (5,6)-(5,10))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (5,7)-(5,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (5,7)-(5,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -97,13 +96,13 @@
         │   └── block:
         │       @ BlockNode (location: (7,4)-(8,1))
         │       ├── locals: [:a, :x]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (7,6)-(7,13))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (7,7)-(7,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (7,7)-(7,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -114,6 +113,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (7,11)-(7,12))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :x
         │       │   ├── opening_loc: (7,6)-(7,7) = "|"
         │       │   └── closing_loc: (7,12)-(7,13) = "|"
@@ -132,15 +132,16 @@
         │   └── block:
         │       @ BlockNode (location: (9,4)-(10,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (9,6)-(9,12))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (9,7)-(9,11))
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (9,7)-(9,8))
+        │       │   │   │   │   ├── flags: ∅
         │       │   │   │   │   └── name: :a
         │       │   │   │   └── @ RequiredParameterNode (location: (9,10)-(9,11))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :b
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -166,12 +167,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-        │   │           └── flags: decimal
+        │   │           ├── flags: decimal
+        │   │           └── value: 1
         │   ├── closing_loc: (11,5)-(11,6) = ")"
         │   └── block:
         │       @ BlockNode (location: (11,7)-(13,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (12,2)-(12,5))
@@ -191,17 +192,18 @@
         │   └── block:
         │       @ BlockNode (location: (14,4)-(16,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (14,6)-(14,13))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (14,7)-(14,12))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (14,7)-(14,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (14,10)-(14,12))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: :b
         │       │   │   │   ├── name_loc: (14,11)-(14,12) = "b"
         │       │   │   │   └── operator_loc: (14,10)-(14,11) = "*"
@@ -230,17 +232,18 @@
         │   └── block:
         │       @ BlockNode (location: (17,4)-(19,1))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (17,6)-(17,12))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (17,7)-(17,11))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (17,7)-(17,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (17,10)-(17,11))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: ∅
         │       │   │   │   ├── name_loc: ∅
         │       │   │   │   └── operator_loc: (17,10)-(17,11) = "*"
@@ -269,7 +272,6 @@
         │   └── block:
         │       @ BlockNode (location: (20,4)-(22,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (21,2)-(21,5))
@@ -308,7 +310,6 @@
         │   └── block:
         │       @ BlockNode (location: (23,8)-(25,1))
         │       ├── locals: [:a, :b, :c]
-        │       ├── locals_body_index: 3
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (23,10)-(23,21))
         │       │   ├── parameters:
@@ -317,14 +318,17 @@
         │       │   │   │   ├── @ MultiTargetNode (location: (23,11)-(23,17))
         │       │   │   │   │   ├── lefts: (length: 2)
         │       │   │   │   │   │   ├── @ RequiredParameterNode (location: (23,12)-(23,13))
+        │       │   │   │   │   │   │   ├── flags: ∅
         │       │   │   │   │   │   │   └── name: :a
         │       │   │   │   │   │   └── @ RequiredParameterNode (location: (23,15)-(23,16))
+        │       │   │   │   │   │       ├── flags: ∅
         │       │   │   │   │   │       └── name: :b
         │       │   │   │   │   ├── rest: ∅
         │       │   │   │   │   ├── rights: (length: 0)
         │       │   │   │   │   ├── lparen_loc: (23,11)-(23,12) = "("
         │       │   │   │   │   └── rparen_loc: (23,16)-(23,17) = ")"
         │       │   │   │   └── @ RequiredParameterNode (location: (23,19)-(23,20))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :c
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -372,7 +376,6 @@
         │   └── block:
         │       @ BlockNode (location: (26,8)-(27,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (26,10)-(26,17))
         │       │   ├── parameters:
@@ -381,6 +384,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (26,11)-(26,13))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: :a
         │       │   │   │   ├── name_loc: (26,12)-(26,13) = "a"
         │       │   │   │   └── operator_loc: (26,11)-(26,12) = "*"
@@ -390,6 +394,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (26,15)-(26,16))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (26,10)-(26,11) = "|"
         │       │   └── closing_loc: (26,16)-(26,17) = "|"
@@ -418,13 +423,13 @@
         │   └── block:
         │       @ BlockNode (location: (28,8)-(29,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (28,10)-(28,16))
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (28,11)-(28,12))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (28,11)-(28,12))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -434,6 +439,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (28,14)-(28,15))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (28,10)-(28,11) = "|"
         │       │   └── closing_loc: (28,15)-(28,16) = "|"
@@ -462,14 +468,15 @@
         │   └── block:
         │       @ BlockNode (location: (30,8)-(31,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (30,10)-(30,18))
         │       │   ├── parameters: ∅
         │       │   ├── locals: (length: 2)
         │       │   │   ├── @ BlockLocalVariableNode (location: (30,13)-(30,14))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   └── name: :a
         │       │   │   └── @ BlockLocalVariableNode (location: (30,16)-(30,17))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (30,10)-(30,11) = "|"
         │       │   └── closing_loc: (30,17)-(30,18) = "|"
@@ -498,7 +505,6 @@
         │   └── block:
         │       @ BlockNode (location: (32,8)-(34,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (32,10)-(32,13))
         │       │   ├── parameters:
@@ -507,6 +513,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (32,11)-(32,12))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: ∅
         │       │   │   │   ├── name_loc: ∅
         │       │   │   │   └── operator_loc: (32,11)-(32,12) = "*"
@@ -554,7 +561,6 @@
         │   └── block:
         │       @ BlockNode (location: (35,8)-(37,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (35,10)-(35,15))
         │       │   ├── parameters:
@@ -615,7 +621,6 @@
         │   └── block:
         │       @ BlockNode (location: (38,8)-(40,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (38,10)-(38,17))
         │       │   ├── parameters:
@@ -682,7 +687,6 @@
         │   └── block:
         │       @ BlockNode (location: (41,8)-(43,1))
         │       ├── locals: [:a]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (41,10)-(41,20))
         │       │   ├── parameters:
@@ -691,6 +695,7 @@
         │       │   │   │   └── @ MultiTargetNode (location: (41,11)-(41,19))
         │       │   │   │       ├── lefts: (length: 2)
         │       │   │   │       │   ├── @ RequiredParameterNode (location: (41,12)-(41,13))
+        │       │   │   │       │   │   ├── flags: ∅
         │       │   │   │       │   │   └── name: :a
         │       │   │   │       │   └── @ MultiTargetNode (location: (41,15)-(41,18))
         │       │   │   │       │       ├── lefts: (length: 0)
@@ -751,7 +756,6 @@
         │   └── block:
         │       @ BlockNode (location: (44,8)-(46,1))
         │       ├── locals: [:a, :b]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (44,10)-(44,18))
         │       │   ├── parameters:
@@ -760,8 +764,10 @@
         │       │   │   │   └── @ MultiTargetNode (location: (44,11)-(44,17))
         │       │   │   │       ├── lefts: (length: 2)
         │       │   │   │       │   ├── @ RequiredParameterNode (location: (44,12)-(44,13))
+        │       │   │   │       │   │   ├── flags: ∅
         │       │   │   │       │   │   └── name: :a
         │       │   │   │       │   └── @ RequiredParameterNode (location: (44,15)-(44,16))
+        │       │   │   │       │       ├── flags: ∅
         │       │   │   │       │       └── name: :b
         │       │   │   │       ├── rest: ∅
         │       │   │   │       ├── rights: (length: 0)
@@ -816,7 +822,6 @@
         │   │   └── block:
         │   │       @ BlockNode (location: (47,8)-(48,1))
         │   │       ├── locals: []
-        │   │       ├── locals_body_index: 0
         │   │       ├── parameters: ∅
         │   │       ├── body: ∅
         │   │       ├── opening_loc: (47,8)-(47,9) = "{"
@@ -840,10 +845,9 @@
         │   └── block:
         │       @ BlockNode (location: (49,2)-(51,3))
         │       ├── locals: [:e]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (50,0)-(51,3))
+        │       │   @ BeginNode (location: (49,2)-(51,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:
@@ -876,10 +880,9 @@
         │   └── block:
         │       @ BlockNode (location: (52,2)-(56,3))
         │       ├── locals: [:bar]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (53,2)-(56,3))
+        │       │   @ BeginNode (location: (52,2)-(56,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (53,2)-(53,5))
@@ -929,10 +932,9 @@
         │   └── block:
         │       @ BlockNode (location: (57,2)-(61,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (58,2)-(61,3))
+        │       │   @ BeginNode (location: (57,2)-(61,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (58,2)-(58,5))
@@ -999,10 +1001,9 @@
         │   └── block:
         │       @ BlockNode (location: (62,2)-(66,3))
         │       ├── locals: [:exception]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (63,2)-(66,3))
+        │       │   @ BeginNode (location: (62,2)-(66,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (63,2)-(63,5))
@@ -1072,10 +1073,9 @@
         │   └── block:
         │       @ BlockNode (location: (67,2)-(71,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (68,2)-(71,3))
+        │       │   @ BeginNode (location: (67,2)-(71,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (68,2)-(68,5))
@@ -1140,10 +1140,9 @@
         │   └── block:
         │       @ BlockNode (location: (72,2)-(75,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (73,2)-(75,3))
+        │       │   @ BeginNode (location: (72,2)-(75,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (73,2)-(73,5))
@@ -1185,10 +1184,9 @@
         │   └── block:
         │       @ BlockNode (location: (76,2)-(81,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (77,2)-(81,3))
+        │       │   @ BeginNode (location: (76,2)-(81,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (77,2)-(77,5))
@@ -1244,10 +1242,9 @@
         │   └── block:
         │       @ BlockNode (location: (82,2)-(86,3))
         │       ├── locals: [:exception]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (83,2)-(86,3))
+        │       │   @ BeginNode (location: (82,2)-(86,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (83,2)-(83,5))
@@ -1315,10 +1312,9 @@
         │   └── block:
         │       @ BlockNode (location: (87,2)-(89,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (88,0)-(89,3))
+        │       │   @ BeginNode (location: (87,2)-(89,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause: ∅
@@ -1343,10 +1339,9 @@
         │   └── block:
         │       @ BlockNode (location: (90,2)-(93,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (91,0)-(93,3))
+        │       │   @ BeginNode (location: (90,2)-(93,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:
@@ -1378,7 +1373,6 @@
             └── block:
                 @ BlockNode (location: (94,4)-(96,1))
                 ├── locals: [:_1, :_2]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (94,4)-(96,1))
                 │   └── maximum: 2

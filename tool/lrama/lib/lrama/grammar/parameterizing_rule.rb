@@ -1,6 +1,3 @@
-module Lrama
-  class Grammar
-    class ParameterizingRule < Struct.new(:rules, :token, keyword_init: true)
-    end
-  end
-end
+require_relative 'parameterizing_rule/resolver'
+require_relative 'parameterizing_rule/rhs'
+require_relative 'parameterizing_rule/rule'

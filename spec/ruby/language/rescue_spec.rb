@@ -61,6 +61,78 @@ describe "The rescue keyword" do
     end
   end
 
+  describe 'capturing in a local variable (that defines it)' do
+    it 'captures successfully in a method' do
+      ScratchPad.record []
+
+      def a
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      a
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a block' do
+      ScratchPad.record []
+
+      p = proc do
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      p.call
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a class' do
+      ScratchPad.record []
+
+      class RescueSpecs::C
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a module' do
+      ScratchPad.record []
+
+      module RescueSpecs::M
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures sucpcessfully in a singleton class' do
+      ScratchPad.record []
+
+      class << Object.new
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully at the top-level' do
+      ScratchPad.record []
+
+      require_relative 'fixtures/rescue/top_level'
+
+      ScratchPad.recorded.should == ["message"]
+    end
+  end
+
   it "returns value from `rescue` if an exception was raised" do
     begin
       raise
@@ -191,7 +263,7 @@ describe "The rescue keyword" do
       rescue ArgumentError
       end
     rescue StandardError => e
-      e.backtrace.first.should include ":in `raise_standard_error'"
+      e.backtrace.first.should =~ /:in [`'](?:RescueSpecs\.)?raise_standard_error'/
     else
       fail("exception wasn't handled by the correct rescue block")
     end

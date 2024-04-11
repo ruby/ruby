@@ -106,7 +106,7 @@ class Gem::CommandManager
   # Register all the subcommands supported by the gem command.
 
   def initialize
-    require_relative "timeout"
+    require_relative "vendored_timeout"
     @commands = {}
 
     BUILTIN_COMMANDS.each do |name|

@@ -19,6 +19,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (3,2)-(3,5))
         │   │   │       └── body: (length: 1)
@@ -45,6 +46,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,2)-(5,5))
         │   │           └── body: (length: 1)
@@ -87,6 +89,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements: ∅
         │   │   └── @ WhenNode (location: (9,0)-(10,5))
         │   │       ├── keyword_loc: (9,0)-(9,4) = "when"
@@ -101,6 +104,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (10,2)-(10,5))
         │   │           └── body: (length: 1)
@@ -143,6 +147,7 @@
         │   │   │   │       ├── arguments: ∅
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── block: ∅
+        │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (14,2)-(14,5))
         │   │   │       └── body: (length: 1)
@@ -169,6 +174,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (16,2)-(16,5))
         │   │           └── body: (length: 1)
@@ -221,11 +227,12 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (20,2)-(20,8))
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (20,2)-(20,8))
-        │   │                   ├── flags: ∅
+        │   │                   ├── flags: forced_us_ascii_encoding
         │   │                   ├── opening_loc: (20,2)-(20,3) = ":"
         │   │                   ├── value_loc: (20,3)-(20,8) = "other"
         │   │                   ├── closing_loc: ∅
@@ -262,11 +269,12 @@
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (24,2)-(24,8))
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (24,2)-(24,8))
-        │   │                   ├── flags: ∅
+        │   │                   ├── flags: forced_us_ascii_encoding
         │   │                   ├── opening_loc: (24,2)-(24,3) = ":"
         │   │                   ├── value_loc: (24,3)-(24,8) = "value"
         │   │                   ├── closing_loc: ∅
@@ -300,6 +308,7 @@
         │   │       │       ├── arguments: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (28,2)-(28,5))
         │   │           └── body: (length: 1)
@@ -320,7 +329,7 @@
         │   │   │   @ StatementsNode (location: (30,2)-(30,6))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ SymbolNode (location: (30,2)-(30,6))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: forced_us_ascii_encoding
         │   │   │           ├── opening_loc: (30,2)-(30,3) = ":"
         │   │   │           ├── value_loc: (30,3)-(30,6) = "foo"
         │   │   │           ├── closing_loc: ∅
@@ -380,6 +389,7 @@
         │   │       │           │           └── block: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
+        │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
@@ -425,9 +435,11 @@
             │       │           │   ├── flags: ∅
             │       │           │   └── arguments: (length: 1)
             │       │           │       └── @ IntegerNode (location: (36,14)-(36,15))
-            │       │           │           └── flags: decimal
+            │       │           │           ├── flags: decimal
+            │       │           │           └── value: 1
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
+            │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (35,0)-(35,4) = "case"

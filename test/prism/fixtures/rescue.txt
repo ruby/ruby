@@ -29,3 +29,7 @@ def a
   a b:
 rescue
 end
+
+foo if bar rescue baz
+
+z = x y rescue c d

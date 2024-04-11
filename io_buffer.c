@@ -854,11 +854,10 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
     if (buffer->base) {
         *base = buffer->base;
         *size = buffer->size;
-
-        return;
+    } else {
+        *base = NULL;
+        *size = 0;
     }
-
-    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
 }
 
 void
@@ -880,11 +879,10 @@ io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, 
     if (buffer->base) {
         *base = buffer->base;
         *size = buffer->size;
-
-        return;
+    } else {
+        *base = NULL;
+        *size = 0;
     }
-
-    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
 }
 
 void

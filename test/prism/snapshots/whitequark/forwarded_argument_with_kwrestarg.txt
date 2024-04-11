@@ -11,6 +11,7 @@
             │   @ ParametersNode (location: (1,8)-(1,20))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,8)-(1,16))
+            │   │       ├── flags: ∅
             │   │       └── name: :argument
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -18,6 +19,7 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,18)-(1,20))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,18)-(1,20) = "**"
@@ -47,8 +49,7 @@
             │           │                   └── operator_loc: (1,37)-(1,39) = "**"
             │           ├── closing_loc: (1,39)-(1,40) = ")"
             │           └── block: ∅
-            ├── locals: [:argument, :**]
-            ├── locals_body_index: 2
+            ├── locals: [:argument]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,7)-(1,8) = "("

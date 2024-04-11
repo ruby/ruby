@@ -25,12 +25,12 @@
             └── block:
                 @ BlockNode (location: (1,4)-(1,18))
                 ├── locals: [:c]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,7)-(1,14))
                 │   ├── parameters: ∅
                 │   ├── locals: (length: 1)
                 │   │   └── @ BlockLocalVariableNode (location: (1,11)-(1,12))
+                │   │       ├── flags: ∅
                 │   │       └── name: :c
                 │   ├── opening_loc: (1,7)-(1,8) = "|"
                 │   └── closing_loc: (1,13)-(1,14) = "|"

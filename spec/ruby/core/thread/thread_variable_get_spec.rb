@@ -13,7 +13,7 @@ describe "Thread#thread_variable_get" do
     @t.thread_variable_get(:a).should be_nil
   end
 
-  it "returns the value previously set by #[]=" do
+  it "returns the value previously set by #thread_variable_set" do
     @t.thread_variable_set :a, 49
     @t.thread_variable_get(:a).should == 49
   end

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr_reader" do
   it "creates a getter for each given attribute name" do
@@ -67,4 +68,6 @@ describe "Module#attr_reader" do
       (attr_reader :foo, 'bar').should == [:foo, :bar]
     end
   end
+
+  it_behaves_like :module_attr_added, :attr_reader
 end

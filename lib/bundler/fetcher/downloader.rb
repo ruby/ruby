@@ -23,7 +23,7 @@ module Bundler
         when Gem::Net::HTTPSuccess, Gem::Net::HTTPNotModified
           response
         when Gem::Net::HTTPRedirection
-          new_uri = Bundler::URI.parse(response["location"])
+          new_uri = Gem::URI.parse(response["location"])
           if new_uri.host == uri.host
             new_uri.user = uri.user
             new_uri.password = uri.password

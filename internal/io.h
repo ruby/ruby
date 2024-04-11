@@ -15,6 +15,9 @@ struct rb_io;
 
 #include "ruby/io.h"            /* for rb_io_t */
 
+#define IO_WITHOUT_GVL(func, arg) rb_thread_call_without_gvl(func, arg, RUBY_UBF_IO, 0)
+#define IO_WITHOUT_GVL_INT(func, arg) (int)(VALUE)IO_WITHOUT_GVL(func, arg)
+
 /** Ruby's IO, metadata and buffers. */
 struct rb_io {
 

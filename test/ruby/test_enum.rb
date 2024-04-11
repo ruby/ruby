@@ -843,6 +843,8 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_callcc
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     assert_raise(RuntimeError) do
       c = nil
       @obj.sort_by {|x| callcc {|c2| c ||= c2 }; x }

@@ -193,8 +193,8 @@ module Spec
 
         stdout_read_thread = Thread.new { stdout.read }
         stderr_read_thread = Thread.new { stderr.read }
-        command_execution.stdout = stdout_read_thread.value.strip
-        command_execution.stderr = stderr_read_thread.value.strip
+        command_execution.original_stdout = stdout_read_thread.value.strip
+        command_execution.original_stderr = stderr_read_thread.value.strip
 
         status = wait_thr.value
         command_execution.exitstatus = if status.exited?

@@ -20,13 +20,13 @@
             └── block:
                 @ BlockNode (location: (1,5)-(1,15))
                 ├── locals: [:c]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,8)-(1,11))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,9)-(1,10))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :c
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

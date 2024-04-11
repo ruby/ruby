@@ -69,6 +69,7 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_has_rest,
     send_iseq_block_arg0_splat,
     send_iseq_kw_call,
+    send_iseq_kw_splat,
     send_iseq_splat,
     send_iseq_has_rest_and_optional,
     send_iseq_arity_error,

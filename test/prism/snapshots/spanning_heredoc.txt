@@ -260,13 +260,13 @@
         │   │           ├── flags: ∅
         │   │           ├── elements: (length: 2)
         │   │           │   ├── @ SymbolNode (location: (41,12)-(41,14))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: forced_us_ascii_encoding
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── value_loc: (41,12)-(41,14) = "n\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "n\n"
         │   │           │   └── @ SymbolNode (location: (44,0)-(44,1))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: forced_us_ascii_encoding
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── value_loc: (44,0)-(44,1) = "n"
         │   │           │       ├── closing_loc: ∅
@@ -298,10 +298,10 @@
         │   │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
-        │   │           │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
+        │   │           │       │   ├── @ StringNode (location: (48,12)-(48,14))
         │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   ├── opening_loc: ∅
-        │   │           │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
+        │   │           │       │   │   ├── content_loc: (48,12)-(48,14) = "p\\"
         │   │           │       │   │   ├── closing_loc: ∅
         │   │           │       │   │   └── unescaped: "p\n"
         │   │           │       │   └── @ StringNode (location: (48,12)-(48,14))

@@ -70,6 +70,7 @@ if /wasi/ !~ target_platform
   assert_equal "foo\n",           %q(`echo foo`)
   assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
 end
+assert_equal "ECHO FOO",        %q(def `(s) s.upcase; end; `echo foo`)
 
 # regexp
 assert_equal '',                '//.source'

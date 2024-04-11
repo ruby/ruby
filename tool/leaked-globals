@@ -1,24 +1,28 @@
 #!/usr/bin/ruby
 require_relative 'lib/colorize'
+require 'shellwords'
 
 until ARGV.empty?
   case ARGV[0]
   when /\A SYMBOL_PREFIX=(.*)/x
     SYMBOL_PREFIX = $1
   when /\A NM=(.*)/x            # may be multiple words
-    NM = $1
+    NM = $1.shellsplit
   when /\A PLATFORM=(.+)?/x
     platform = $1
   when /\A SOEXT=(.+)?/x
     soext = $1
   when /\A SYMBOLS_IN_EMPTYLIB=(.*)/x
     SYMBOLS_IN_EMPTYLIB = $1.split(" ")
+  when /\A EXTSTATIC=(.+)?/x
+    EXTSTATIC = true
   else
     break
   end
   ARGV.shift
 end
 SYMBOLS_IN_EMPTYLIB ||= nil
+EXTSTATIC ||= false
 
 config = ARGV.shift
 count = 0
@@ -44,7 +48,9 @@ if platform and !platform.empty?
 end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
-  unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
+  base = File.basename(n, ".*")
+  next true if REPLACE.include?(base)
+  unless (src = Dir.glob(missing + base + ".[cS]")).empty?
     puts "Ignore #{col.skip(n)} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
     true
   end
@@ -56,9 +62,21 @@ REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
 
 print "Checking leaked global symbols..."
 STDOUT.flush
-soext = /\.#{soext}(?:$|\.)/ if soext
-so = soext =~ ARGV.first if ARGV.size == 1
-IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
+if soext
+  soext = /\.#{soext}(?:$|\.)/
+  if EXTSTATIC
+    ARGV.delete_if {|n| soext =~ n}
+  elsif ARGV.size == 1
+    so = soext =~ ARGV.first
+  end
+end
+
+Pipe = Struct.new(:command) do
+  def open(&block) IO.popen(command, &block) end
+  def each(&block) open {|f| f.each(&block)} end
+end
+
+Pipe.new(NM + ARGV).each do |line|
   line.chomp!
   next so = nil if line.empty?
   if so.nil? and line.chomp!(":")
@@ -70,6 +88,7 @@ IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
   next if !so and n.start_with?("___asan_")
+  next if !so and n.start_with?("__odr_asan_")
   case n
   when /\A(?:Init_|InitVM_|pm_|[Oo]nig|dln_|coroutine_)/
     next

@@ -30,7 +30,7 @@ module Prism
 
     def assert_magic_comment(example)
       expected = Ripper.new(example).tap(&:parse).encoding
-      actual = Prism.parse(example).source.source.encoding
+      actual = Prism.parse(example).encoding
       assert_equal expected, actual
     end
   end

@@ -40,7 +40,7 @@ module Lrama
         current = :production
         lookahead_sym = paths.last.to.item.end_of_rule? ? @conflict_symbol : nil
 
-        paths.reverse.each do |path|
+        paths.reverse_each do |path|
           item = path.to.item
 
           case current
@@ -97,7 +97,7 @@ module Lrama
           if next_sym == sym
             derivation = nil
 
-            sis.reverse.each do |si|
+            sis.reverse_each do |si|
               derivation = Derivation.new(si.item, derivation)
             end
 

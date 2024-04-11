@@ -13,7 +13,7 @@
 #define MMTK_DEFAULT_PLAN "Immix"
 
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
-#define MMTK_ALLOCATION_SEMANTICS_LOS 1
+#define MMTK_ALLOCATION_SEMANTICS_LOS 2
 #define MMTK_MAX_IMMIX_OBJECT_SIZE 16384
 
 // Special imemo data structures.
@@ -98,8 +98,13 @@ rb_mmtk_objbuf_t* rb_mmtk_new_objbuf(size_t capa);
 VALUE* rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf);
 
 // Object pinning
-
+void rb_mmtk_pin_object(VALUE obj);
+void rb_mmtk_assert_is_pinned(VALUE obj);
 void rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot);
+
+// Forking support
+void rb_mmtk_shutdown_gc_threads(void);
+void rb_mmtk_respawn_gc_threads(void);
 
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);

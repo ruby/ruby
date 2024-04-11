@@ -3,7 +3,8 @@ require_relative 'fixtures/classes'
 
 describe "IO#stat" do
   before :each do
-    @io = IO.popen 'cat', "r+"
+    cmd = platform_is(:windows) ? 'rem' : 'cat'
+    @io = IO.popen cmd, "r+"
   end
 
   after :each do

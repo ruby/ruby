@@ -8,6 +8,7 @@ class TestOptionParserAcceptable < TestOptionParser
     @opt.def_option("--integer VAL", Integer) { |v| @integer = v }
     @opt.def_option("--float VAL",   Float)   { |v| @float   = v }
     @opt.def_option("--numeric VAL", Numeric) { |v| @numeric = v }
+    @opt.def_option("--array VAL", Array) { |v| @array = v }
 
     @opt.def_option("--decimal-integer VAL",
                     OptionParser::DecimalInteger) { |i| @decimal_integer = i }
@@ -195,4 +196,8 @@ class TestOptionParserAcceptable < TestOptionParser
     end
   end
 
+  def test_array
+    assert_equal(%w"", no_error {@opt.parse!(%w"--array a,b,c")})
+    assert_equal(%w"a b c", @array)
+  end
 end

@@ -6,13 +6,13 @@
         └── @ UndefNode (location: (1,0)-(1,27))
             ├── names: (length: 3)
             │   ├── @ SymbolNode (location: (1,6)-(1,9))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,6)-(1,9) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   ├── @ SymbolNode (location: (1,11)-(1,15))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: (1,11)-(1,12) = ":"
             │   │   ├── value_loc: (1,12)-(1,15) = "bar"
             │   │   ├── closing_loc: ∅
@@ -32,7 +32,8 @@
             │       │       │   @ StatementsNode (location: (1,24)-(1,25))
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ IntegerNode (location: (1,24)-(1,25))
-            │       │       │           └── flags: decimal
+            │       │       │           ├── flags: decimal
+            │       │       │           └── value: 1
             │       │       └── closing_loc: (1,25)-(1,26) = "}"
             │       └── closing_loc: (1,26)-(1,27) = "\""
             └── keyword_loc: (1,0)-(1,5) = "undef"

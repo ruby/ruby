@@ -73,6 +73,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
       [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
@@ -470,6 +471,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_inspect_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
     end
@@ -716,7 +718,7 @@ class TestRegexp < Test::Unit::TestCase
       h = {}
       ObjectSpace.count_objects(h)
       prev_matches = h[:T_MATCH] || 0
-      md = /[A-Z]/.match('1') # no match
+      _md = /[A-Z]/.match('1') # no match
       ObjectSpace.count_objects(h)
       new_matches = h[:T_MATCH] || 0
       assert_equal prev_matches, new_matches, "Bug [#20104]"
@@ -891,6 +893,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
       assert_equal("h", m.match(:foo))
@@ -1807,6 +1810,23 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_s_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #20228]", rss: true)
+      Regexp.timeout = 0.001
+      regex = /^(a*)*$/
+      str = "a" * 1000000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
+  end
+
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
@@ -1950,7 +1970,7 @@ class TestRegexp < Test::Unit::TestCase
     timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
       Regexp.timeout = timeout
-      assert_nil(/a*z/ =~ "a" * 1000000 + "x")
+      assert_nil(/a+z/ =~ "a" * 1000000 + "xz")
     end;
   end
 
@@ -2009,11 +2029,28 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_bug_20098 # [Bug #20098]
-    assert /a((.|.)|bc){,4}z/.match? 'abcbcbcbcz'
-    assert /a(b+?c*){4,5}z/.match? 'abbbccbbbccbcbcz'
-    assert /a(b+?(.|.)){2,3}z/.match? 'abbbcbbbcbbbcz'
-    assert /a(b*?(.|.)[bc]){2,5}z/.match? 'abcbbbcbcccbcz'
-    assert /^(?:.+){2,4}?b|b/.match? "aaaabaa"
+    assert(/a((.|.)|bc){,4}z/.match? 'abcbcbcbcz')
+    assert(/a(b+?c*){4,5}z/.match? 'abbbccbbbccbcbcz')
+    assert(/a(b+?(.|.)){2,3}z/.match? 'abbbcbbbcbbbcz')
+    assert(/a(b*?(.|.)[bc]){2,5}z/.match? 'abcbbbcbcccbcz')
+    assert(/^(?:.+){2,4}?b|b/.match? "aaaabaa")
+  end
+
+  def test_bug_20207 # [Bug #20207]
+    assert(!'clan'.match?(/(?=.*a)(?!.*n)/))
+  end
+
+  def test_bug_20212 # [Bug #20212]
+    regex = Regexp.new(
+      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+)\Z/x
+    )
+    string = "www.google.com"
+    100.times.each { assert(regex.match?(string)) }
+  end
+
+  def test_bug_20246 # [Bug #20246]
+    assert_equal '1.2.3', '1.2.3'[/(\d+)(\.\g<1>){2}/]
+    assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
   end
 
   def test_linear_time_p

@@ -11,14 +11,15 @@
             │   │   └── @ AssocNode (location: (1,6)-(1,10))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (1,6)-(1,8))
-            │   │       │   ├── flags: ∅
+            │   │       │   ├── flags: forced_us_ascii_encoding
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (1,6)-(1,7) = "a"
             │   │       │   ├── closing_loc: (1,7)-(1,8) = ":"
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (1,9)-(1,10))
-            │   │       │   └── flags: decimal
+            │   │       │   ├── flags: decimal
+            │   │       │   └── value: 1
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (1,10)-(1,11) = "}"
             ├── conditions: (length: 1)
@@ -30,14 +31,15 @@
             │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,4)-(2,6))
-            │       │   │       │   ├── flags: ∅
+            │       │   │       │   ├── flags: forced_us_ascii_encoding
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,4)-(2,5) = "a"
             │       │   │       │   ├── closing_loc: (2,5)-(2,6) = ":"
             │       │   │       │   └── unescaped: "a"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │       │   └── flags: decimal
+            │       │   │       │   ├── flags: decimal
+            │       │   │       │   └── value: 1
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest:
             │       │   │   @ NoKeywordsParameterNode (location: (2,10)-(2,15))

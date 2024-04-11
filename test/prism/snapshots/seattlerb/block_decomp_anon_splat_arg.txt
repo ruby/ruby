@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,14))
                 ├── locals: [:a]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,12))
                 │   ├── parameters:
@@ -29,6 +28,7 @@
                 │   │   │       │   └── expression: ∅
                 │   │   │       ├── rights: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :a
                 │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("
                 │   │   │       └── rparen_loc: (1,10)-(1,11) = ")"

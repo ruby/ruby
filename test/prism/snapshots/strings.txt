@@ -177,7 +177,7 @@
         │   ├── closing_loc: (43,6)-(43,7) = "}"
         │   └── unescaped: "abc"
         ├── @ SymbolNode (location: (45,0)-(45,7))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (45,0)-(45,3) = "%s["
         │   ├── value_loc: (45,3)-(45,6) = "abc"
         │   ├── closing_loc: (45,6)-(45,7) = "]"

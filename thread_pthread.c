@@ -12,6 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "internal/gc.h"
+#include "internal/sanitizers.h"
 #include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -332,6 +333,8 @@ static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
+static void coroutine_transfer0(struct coroutine_context *transfer_from,
+                                struct coroutine_context *transfer_to, bool to_dead);
 
 #define thread_sched_dump(s) thread_sched_dump_(__FILE__, __LINE__, s)
 
@@ -891,7 +894,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                     thread_sched_set_lock_owner(sched, NULL);
                     {
                         rb_ractor_set_current_ec(th->ractor, NULL);
-                        coroutine_transfer(th->sched.context, nt->nt_context);
+                        coroutine_transfer0(th->sched.context, nt->nt_context, false);
                     }
                     thread_sched_set_lock_owner(sched, th);
                 }
@@ -1150,7 +1153,28 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 }
 
 static void
-thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_th, struct rb_native_thread *nt)
+coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_context *transfer_to, bool to_dead)
+{
+#ifdef RUBY_ASAN_ENABLED
+    void **fake_stack = to_dead ? NULL : &transfer_from->fake_stack;
+    __sanitizer_start_switch_fiber(fake_stack, transfer_to->stack_base, transfer_to->stack_size);
+#endif
+
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    struct coroutine_context *returning_from = coroutine_transfer(transfer_from, transfer_to);
+
+    /* if to_dead was passed, the caller is promising that this coroutine is finished and it should
+     * never be resumed! */
+    VM_ASSERT(!to_dead);
+#ifdef RUBY_ASAN_ENABLED
+   __sanitizer_finish_switch_fiber(transfer_from->fake_stack,
+                                   (const void**)&returning_from->stack_base, &returning_from->stack_size);
+#endif
+
+}
+
+static void
+thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_th, struct rb_native_thread *nt, bool to_dead)
 {
     VM_ASSERT(!nt->dedicated);
     VM_ASSERT(next_th->nt == NULL);
@@ -1159,7 +1183,8 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
 
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
-    coroutine_transfer(current_cont, next_th->sched.context);
+
+    coroutine_transfer0(current_cont, next_th->sched.context, to_dead);
 }
 
 static void
@@ -1168,7 +1193,7 @@ thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th)
     struct rb_native_thread *nt = cth->nt;
     native_thread_assign(NULL, cth);
     RUBY_DEBUG_LOG("th:%u->%u on nt:%d", rb_th_serial(cth), rb_th_serial(next_th), nt->serial);
-    thread_sched_switch0(cth->sched.context, next_th, nt);
+    thread_sched_switch0(cth->sched.context, next_th, nt, cth->status == THREAD_KILLED);
 }
 
 #if VM_CHECK_MODE > 0
@@ -1962,11 +1987,13 @@ reserve_stack(volatile char *limit, size_t size)
 # define reserve_stack(limit, size) ((void)(limit), (void)(size))
 #endif
 
-#undef ruby_init_stack
-void
-ruby_init_stack(volatile VALUE *addr)
+static void
+native_thread_init_main_thread_stack(void *addr)
 {
     native_main_thread.id = pthread_self();
+#ifdef RUBY_ASAN_ENABLED
+    addr = asan_get_real_stack_addr((void *)addr);
+#endif
 
 #if MAINSTACKADDR_AVAILABLE
     if (native_main_thread.stack_maxsize) return;
@@ -1986,8 +2013,8 @@ ruby_init_stack(volatile VALUE *addr)
 #else
     if (!native_main_thread.stack_start ||
         STACK_UPPER((VALUE *)(void *)&addr,
-                    native_main_thread.stack_start > addr,
-                    native_main_thread.stack_start < addr)) {
+                    native_main_thread.stack_start > (VALUE *)addr,
+                    native_main_thread.stack_start < (VALUE *)addr)) {
         native_main_thread.stack_start = (VALUE *)addr;
     }
 #endif
@@ -2049,9 +2076,18 @@ ruby_init_stack(volatile VALUE *addr)
     {int err = (expr); if (err) {rb_bug_errno(#expr, err);}}
 
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     rb_nativethread_id_t curr = pthread_self();
+#ifdef RUBY_ASAN_ENABLED
+    local_in_parent_frame = asan_get_real_stack_addr(local_in_parent_frame);
+#endif
+
+    if (!native_main_thread.id) {
+        /* This thread is the first thread, must be the main thread -
+         * configure the native_main_thread object */
+        native_thread_init_main_thread_stack(local_in_parent_frame);
+    }
 
     if (pthread_equal(curr, native_main_thread.id)) {
         th->ec->machine.stack_start = native_main_thread.stack_start;
@@ -2064,8 +2100,8 @@ native_thread_init_stack(rb_thread_t *th)
             size_t size;
 
             if (get_stack(&start, &size) == 0) {
-                uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
-                th->ec->machine.stack_start = (VALUE *)&curr;
+                uintptr_t diff = (uintptr_t)start - (uintptr_t)local_in_parent_frame;
+                th->ec->machine.stack_start = local_in_parent_frame;
                 th->ec->machine.stack_maxsize = size - diff;
             }
         }
@@ -2185,7 +2221,16 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-    native_thread_init_stack(th);
+    /* Capture the address of a local in this stack frame to mark the beginning of the
+       machine stack for this thread. This is required even if we can tell the real
+       stack beginning from the pthread API in native_thread_init_stack, because
+       glibc stores some of its own data on the stack before calling into user code
+       on a new thread, and replacing that data on fiber-switch would break it (see
+       bug #13887) */
+    VALUE stack_start = 0;
+    VALUE *stack_start_addr = asan_get_real_stack_addr(&stack_start);
+
+    native_thread_init_stack(th, stack_start_addr);
     thread_start_func_2(th, th->ec->machine.stack_start);
 }
 
@@ -2247,7 +2292,7 @@ nt_start(void *ptr)
 
                     if (next_th && next_th->nt == NULL) {
                         RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
-                        thread_sched_switch0(nt->nt_context, next_th, nt);
+                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
                     }
                     else {
                         RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
@@ -2257,6 +2302,11 @@ nt_start(void *ptr)
             }
             else {
                 // timeout -> deleted.
+                break;
+            }
+
+            if (nt->dedicated) {
+                // SNT becomes DNT while running
                 break;
             }
         }
@@ -2306,10 +2356,8 @@ rb_threadptr_sched_free(rb_thread_t *th)
         // TODO: how to free nt and nt->altstack?
     }
 
-    if (th->sched.context) {
-        ruby_xfree(th->sched.context);
-        VM_ASSERT((th->sched.context = NULL) == NULL);
-    }
+    ruby_xfree(th->sched.context);
+    VM_ASSERT((th->sched.context = NULL) == NULL);
 #else
     ruby_xfree(th->sched.context_stack);
     native_thread_destroy(th->nt);
@@ -3377,6 +3425,18 @@ rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
     if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
         rb_bug_errno("pthread_rwlock_unlock", r);
     }
+}
+
+// return true if the current thread acquires DNT.
+// return false if the current thread already acquires DNT.
+bool
+rb_thread_lock_native_thread(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    bool is_snt = th->nt->dedicated == 0;
+    native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+
+    return is_snt;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

@@ -2,7 +2,7 @@
 
 require_relative "../../path"
 
-$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gem_path.join("gems/{mustermann,rack,tilt,sinatra,ruby2_keywords}-*/lib")].map(&:to_s))
+$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gem_path.join("gems/{mustermann,rack,tilt,sinatra,ruby2_keywords,base64}-*/lib")].map(&:to_s))
 
 require "sinatra/base"
 

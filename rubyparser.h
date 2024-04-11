@@ -37,12 +37,21 @@
 /*
  * Parser String
  */
+enum rb_parser_string_coderange_type {
+    /** The object's coderange is unclear yet. */
+    RB_PARSER_ENC_CODERANGE_UNKNOWN  = 0,
+    RB_PARSER_ENC_CODERANGE_7BIT     = 1,
+    RB_PARSER_ENC_CODERANGE_VALID    = 2,
+    RB_PARSER_ENC_CODERANGE_BROKEN   = 3
+};
+
 typedef struct rb_parser_string {
+    enum rb_parser_string_coderange_type coderange;
     rb_encoding *enc;
     /* Length of the string, not including terminating NUL character. */
     long len;
     /* Pointer to the contents of the string. */
-    char ptr[FLEX_ARY_LEN];
+    char *ptr;
 } rb_parser_string_t;
 
 /*
@@ -118,6 +127,7 @@ enum node_type {
     NODE_XSTR,
     NODE_DXSTR,
     NODE_EVSTR,
+    NODE_REGX,
     NODE_DREGX,
     NODE_ONCE,
     NODE_ARGS,
@@ -160,8 +170,7 @@ enum node_type {
     NODE_ERROR,
     NODE_LINE,
     NODE_FILE,
-    NODE_RIPPER,
-    NODE_RIPPER_VALUES,
+    NODE_ENCODING,
     NODE_LAST
 };
 
@@ -336,16 +345,15 @@ typedef struct RNode_RESCUE {
 typedef struct RNode_RESBODY {
     NODE node;
 
-    struct RNode *nd_head;
-    struct RNode *nd_body;
     struct RNode *nd_args;
+    struct RNode *nd_body;
+    struct RNode *nd_next;
 } rb_node_resbody_t;
 
 typedef struct RNode_ENSURE {
     NODE node;
 
     struct RNode *nd_head;
-    struct RNode *nd_resq; /* Maybe not used other than reduce_nodes */
     struct RNode *nd_ensr;
 } rb_node_ensure_t;
 
@@ -605,11 +613,12 @@ typedef struct RNode_BACK_REF {
     long nd_nth;
 } rb_node_back_ref_t;
 
-/* RNode_MATCH, RNode_LIT, RNode_STR and RNode_XSTR should be same structure */
+/* RNode_MATCH and RNode_REGX should be same structure */
 typedef struct RNode_MATCH {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
+    int options;
 } rb_node_match_t;
 
 typedef struct RNode_MATCH2 {
@@ -673,17 +682,18 @@ typedef struct RNode_IMAGINARY {
     enum rb_numeric_type type;
 } rb_node_imaginary_t;
 
+/* RNode_STR and RNode_XSTR should be same structure */
 typedef struct RNode_STR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
 } rb_node_str_t;
 
 /* RNode_DSTR, RNode_DXSTR and RNode_DSYM should be same structure */
 typedef struct RNode_DSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     union {
         long nd_alen;
         struct RNode *nd_end; /* Second dstr node has this structure. See also RNode_LIST */
@@ -694,13 +704,13 @@ typedef struct RNode_DSTR {
 typedef struct RNode_XSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
 } rb_node_xstr_t;
 
 typedef struct RNode_DXSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     long nd_alen;
     struct RNode_LIST *nd_next;
 } rb_node_dxstr_t;
@@ -711,10 +721,17 @@ typedef struct RNode_EVSTR {
     struct RNode *nd_body;
 } rb_node_evstr_t;
 
+typedef struct RNode_REGX {
+    NODE node;
+
+    struct rb_parser_string *string;
+    int options;
+} rb_node_regx_t;
+
 typedef struct RNode_DREGX {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     ID nd_cflag;
     struct RNode_LIST *nd_next;
 } rb_node_dregx_t;
@@ -950,7 +967,7 @@ typedef struct RNode_SYM {
 typedef struct RNode_DSYM {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     long nd_alen;
     struct RNode_LIST *nd_next;
 } rb_node_dsym_t;
@@ -1004,6 +1021,11 @@ typedef struct RNode_FILE {
 
     struct rb_parser_string *path;
 } rb_node_file_t;
+
+typedef struct RNode_ENCODING {
+    NODE node;
+    rb_encoding *enc;
+} rb_node_encoding_t;
 
 typedef struct RNode_ERROR {
     NODE node;
@@ -1080,6 +1102,7 @@ typedef struct RNode_ERROR {
 #define RNODE_XSTR(node) ((struct RNode_XSTR *)(node))
 #define RNODE_DXSTR(node) ((struct RNode_DXSTR *)(node))
 #define RNODE_EVSTR(node) ((struct RNode_EVSTR *)(node))
+#define RNODE_REGX(node) ((struct RNode_REGX *)(node))
 #define RNODE_DREGX(node) ((struct RNode_DREGX *)(node))
 #define RNODE_ONCE(node) ((struct RNode_ONCE *)(node))
 #define RNODE_ARGS(node) ((struct RNode_ARGS *)(node))
@@ -1121,27 +1144,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
 #define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 #define RNODE_FILE(node) ((struct RNode_FILE *)(node))
-
-#ifdef RIPPER
-typedef struct RNode_RIPPER {
-    NODE node;
-
-    ID nd_vid;
-    VALUE nd_rval;
-    VALUE nd_cval;
-} rb_node_ripper_t;
-
-typedef struct RNode_RIPPER_VALUES {
-    NODE node;
-
-    VALUE nd_val1;
-    VALUE nd_val2;
-    VALUE nd_val3;
-} rb_node_ripper_values_t;
-
-#define RNODE_RIPPER(node) ((struct RNode_RIPPER *)(node))
-#define RNODE_RIPPER_VALUES(node) ((struct RNode_RIPPER_VALUES *)(node))
-#endif
+#define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
@@ -1194,14 +1197,6 @@ typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
-    /*
-     * Reference counter.
-     *   This is needed because both parser and ast refer
-     *   same config pointer.
-     *   We can remove this, once decuple parser and ast from Ruby GC.
-     */
-    int counter;
-
     /* Memory */
     void *(*malloc)(size_t size);
     void *(*calloc)(size_t number, size_t size);
@@ -1226,8 +1221,6 @@ typedef struct rb_parser_config_struct {
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
     VALUE (*obj_hide)(VALUE obj);
-    int (*obj_frozen)(VALUE obj);
-    int (*type_p)(VALUE, int);
     void (*obj_freeze_raw)(VALUE obj);
 
     int (*fixnum_p)(VALUE);
@@ -1240,20 +1233,14 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_new)(void);
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
-    VALUE (*ary_pop)(VALUE ary);
-    VALUE (*ary_last)(int argc, const VALUE *argv, VALUE ary);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
     VALUE (*ary_new2)(long capa); // ary_new_capa
-    VALUE (*ary_entry)(VALUE ary, long offset);
-    VALUE (*ary_join)(VALUE ary, VALUE sep);
-    VALUE (*ary_reverse)(VALUE ary);
     VALUE (*ary_clear)(VALUE ary);
     void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
 
     /* Symbol */
-    VALUE (*sym_intern_ascii_cstr)(const char *ptr);
     ID (*make_temporary_id)(size_t n);
     int (*is_local_id)(ID);
     int (*is_attrset_id)(ID);
@@ -1266,7 +1253,6 @@ typedef struct rb_parser_config_struct {
     ID (*intern_str)(VALUE str);
     int (*is_notop_id)(ID);
     int (*enc_symname_type)(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
-    VALUE (*str_intern)(VALUE str);
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
@@ -1277,7 +1263,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
     VALUE (*str_subseq)(VALUE str, long beg, long len);
-    VALUE (*str_dup)(VALUE str);
     VALUE (*str_new_frozen)(VALUE orig);
     VALUE (*str_buf_new)(long capa);
     VALUE (*str_buf_cat)(VALUE, const char*, long);
@@ -1287,7 +1272,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_resize)(VALUE str, long len);
     VALUE (*str_new)(const char *ptr, long len);
     VALUE (*str_new_cstr)(const char *ptr);
-    VALUE (*fstring)(VALUE);
+    VALUE (*str_to_interned_str)(VALUE);
     int (*is_ascii_string)(VALUE str);
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
     VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);
@@ -1333,6 +1318,7 @@ typedef struct rb_parser_config_struct {
     int (*enc_isalnum)(OnigCodePoint c, rb_encoding *enc);
     int (*enc_precise_mbclen)(const char *p, const char *e, rb_encoding *enc);
     int (*mbclen_charfound_p)(int len);
+    int (*mbclen_charfound_len)(int len);
     const char *(*enc_name)(rb_encoding *enc);
     char *(*enc_prev_char)(const char *s, const char *p, const char *e, rb_encoding *enc);
     rb_encoding* (*enc_get)(VALUE obj);
@@ -1348,8 +1334,6 @@ typedef struct rb_parser_config_struct {
     rb_encoding *(*enc_from_index)(int idx);
     VALUE (*enc_associate_index)(VALUE obj, int encindex);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
-    int enc_coderange_7bit;
-    int enc_coderange_unknown;
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
     int (*encoding_get)(VALUE obj);
@@ -1388,10 +1372,9 @@ typedef struct rb_parser_config_struct {
     void *(*sized_realloc_n)(void *ptr, size_t new_count, size_t element_size, size_t old_count);
     VALUE (*obj_write)(VALUE, VALUE *, VALUE);
     VALUE (*obj_written)(VALUE, VALUE, VALUE);
-    void (*gc_register_mark_object)(VALUE object);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
-    void (*gc_mark_movable)(VALUE ptr);
+    void (*gc_mark_and_move)(VALUE *ptr);
     VALUE (*gc_location)(VALUE value);
 
     /* Re */
@@ -1425,15 +1408,15 @@ typedef struct rb_parser_config_struct {
     VALUE qtrue;
     VALUE qfalse;
     VALUE qundef;
-    VALUE eArgError;
-    VALUE mRubyVMFrozenCore;
+    VALUE (*eArgError)(void);
+    VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);
-    int (*special_const_p)(VALUE);
-    int (*builtin_type)(VALUE);
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 
     /* For Ripper */
+    int enc_coderange_7bit;
+    int enc_coderange_unknown;
     VALUE (*static_id2sym)(ID id);
     long (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
 } rb_parser_config_t;
@@ -1447,10 +1430,8 @@ void rb_ruby_parser_free(void *ptr);
 rb_ast_t* rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line);
 
 #ifdef UNIVERSAL_PARSER
-rb_parser_config_t *rb_ruby_parser_config_new(void *(*malloc)(size_t size));
-void rb_ruby_parser_config_free(rb_parser_config_t *config);
-rb_parser_t *rb_ruby_parser_allocate(rb_parser_config_t *config);
-rb_parser_t *rb_ruby_parser_new(rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_allocate(const rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_new(const rb_parser_config_t *config);
 #endif
 
 long rb_parser_string_length(rb_parser_string_t *str);

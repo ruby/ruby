@@ -15,13 +15,13 @@
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
             │   │   └── @ RequiredKeywordParameterNode (location: (1,6)-(1,8))
+            │   │       ├── flags: ∅
             │   │       ├── name: :k
             │   │       └── name_loc: (1,6)-(1,8) = "k:"
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:k]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

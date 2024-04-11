@@ -6,7 +6,7 @@ require_relative '../../lib/jit_support'
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
     omit "flaky with RJIT" if JITSupport.rjit_enabled?
-    description = RUBY_DESCRIPTION
+    description = RUBY_DESCRIPTION.sub(/\+PRISM /, '')
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,

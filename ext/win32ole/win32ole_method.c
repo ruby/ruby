@@ -216,9 +216,9 @@ create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name)
 }
 
 /*
- * Document-class: WIN32OLE_METHOD
+ * Document-class: WIN32OLE::Method
  *
- *   <code>WIN32OLE_METHOD</code> objects represent OLE method information.
+ *   +WIN32OLE::Method+ objects represent OLE method information.
  */
 
 static VALUE
@@ -251,16 +251,16 @@ folemethod_s_allocate(VALUE klass)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD.new(ole_type,  method) -> WIN32OLE_METHOD object
+ *     WIN32OLE::Method.new(ole_type,  method) -> WIN32OLE::Method object
  *
- *  Returns a new WIN32OLE_METHOD object which represents the information
+ *  Returns a new WIN32OLE::Method object which represents the information
  *  about OLE method.
- *  The first argument <i>ole_type</i> specifies WIN32OLE_TYPE object.
+ *  The first argument <i>ole_type</i> specifies WIN32OLE::Type object.
  *  The second argument <i>method</i> specifies OLE method name defined OLE class
- *  which represents WIN32OLE_TYPE object.
+ *  which represents WIN32OLE::Type object.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  */
 static VALUE
 folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
@@ -277,19 +277,19 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
         }
     }
     else {
-        rb_raise(rb_eTypeError, "1st argument should be WIN32OLE_TYPE object");
+        rb_raise(rb_eTypeError, "1st argument should be WIN32OLE::Type object");
     }
     return obj;
 }
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#name
+ *     name
  *
  *  Returns the name of the method.
  *
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     puts method.name # => SaveAs
  *
  */
@@ -317,11 +317,11 @@ ole_method_return_type(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#return_type
+ *     return_type
  *
  *  Returns string of return value type of method.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.return_type # => Workbook
  *
  */
@@ -351,11 +351,11 @@ ole_method_return_vtype(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#return_vtype
+ *     return_vtype
  *
  *  Returns number of return value type of method.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.return_vtype # => 26
  *
  */
@@ -385,12 +385,12 @@ ole_method_return_type_detail(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#return_type_detail
+ *     return_type_detail
  *
  *  Returns detail information of return value type of method.
  *  The information is array.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     p method.return_type_detail # => ["PTR", "USERDEFINED", "Workbook"]
  */
 static VALUE
@@ -437,11 +437,11 @@ ole_method_invoke_kind(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *   call-seq:
- *      WIN32OLE_METHOD#invkind
+ *      invkind
  *
  *   Returns the method invoke kind.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.invkind # => 1
  *
  */
@@ -455,13 +455,13 @@ folemethod_invkind(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#invoke_kind
+ *     invoke_kind
  *
  *  Returns the method kind string. The string is "UNKNOWN" or "PROPERTY"
  *  or "PROPERTY" or "PROPERTYGET" or "PROPERTYPUT" or "PROPERTYPPUTREF"
  *  or "FUNC".
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.invoke_kind # => "FUNC"
  */
 static VALUE
@@ -494,11 +494,11 @@ ole_method_visible(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#visible?
+ *     visible?
  *
  *  Returns true if the method is public.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.visible? # => true
  */
 static VALUE
@@ -575,11 +575,11 @@ ole_method_event(ITypeInfo *pTypeInfo, UINT method_index, VALUE method_name)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#event?
+ *     event?
  *
  *  Returns true if the method is event.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SheetActivate')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SheetActivate')
  *     puts method.event? # => true
  *
  */
@@ -597,11 +597,11 @@ folemethod_event(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#event_interface
+ *     event_interface
  *
  *  Returns event interface name if the method is event.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *    method = WIN32OLE_METHOD.new(tobj, 'SheetActivate')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *    method = WIN32OLE::Method.new(tobj, 'SheetActivate')
  *    puts method.event_interface # =>  WorkbookEvents
  */
 static VALUE
@@ -655,12 +655,12 @@ ole_method_helpstring(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#helpstring
+ *     helpstring
  *
  *  Returns help string of OLE method. If the help string is not found,
  *  then the method returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'IWebBrowser')
- *     method = WIN32OLE_METHOD.new(tobj, 'Navigate')
+ *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', 'IWebBrowser')
+ *     method = WIN32OLE::Method.new(tobj, 'Navigate')
  *     puts method.helpstring # => Navigates to a URL or file.
  *
  */
@@ -686,12 +686,12 @@ ole_method_helpfile(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#helpfile
+ *     helpfile
  *
  *  Returns help file. If help file is not found, then
  *  the method returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.helpfile # => C:\...\VBAXL9.CHM
  */
 static VALUE
@@ -717,11 +717,11 @@ ole_method_helpcontext(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#helpcontext
+ *     helpcontext
  *
  *  Returns help context.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.helpcontext # => 65717
  */
 static VALUE
@@ -748,11 +748,11 @@ ole_method_dispid(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#dispid
+ *     dispid
  *
  *  Returns dispatch ID.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.dispid # => 181
  */
 static VALUE
@@ -779,11 +779,11 @@ ole_method_offset_vtbl(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#offset_vtbl
+ *     offset_vtbl
  *
  *  Returns the offset ov VTBL.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
- *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE::Method.new(tobj, 'Add')
  *     puts method.offset_vtbl # => 40
  */
 static VALUE
@@ -810,11 +810,11 @@ ole_method_size_params(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#size_params
+ *     size_params
  *
  *  Returns the size of arguments of the method.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     puts method.size_params # => 11
  *
  */
@@ -842,11 +842,11 @@ ole_method_size_opt_params(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#size_opt_params
+ *     size_opt_params
  *
  *  Returns the size of optional parameters.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     puts method.size_opt_params # => 4
  */
 static VALUE
@@ -892,11 +892,11 @@ ole_method_params(ITypeInfo *pTypeInfo, UINT method_index)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#params
+ *     params
  *
- *  returns array of WIN32OLE_PARAM object corresponding with method parameters.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *  returns array of WIN32OLE::Param object corresponding with method parameters.
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     p method.params # => [Filename, FileFormat, Password, WriteResPassword,
  *                           ReadOnlyRecommended, CreateBackup, AccessMode,
  *                           ConflictResolution, AddToMru, TextCodepage,
@@ -912,7 +912,7 @@ folemethod_params(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_METHOD#inspect -> String
+ *     inspect -> String
  *
  *  Returns the method name with class name.
  *
@@ -920,7 +920,7 @@ folemethod_params(VALUE self)
 static VALUE
 folemethod_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_METHOD");
+    return default_inspect(self, "WIN32OLE::Method");
 }
 
 VALUE cWIN32OLE_METHOD;
@@ -928,6 +928,7 @@ VALUE cWIN32OLE_METHOD;
 void Init_win32ole_method(void)
 {
     cWIN32OLE_METHOD = rb_define_class_under(cWIN32OLE, "Method", rb_cObject);
+    /* Alias of WIN32OLE::Method, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_METHOD", cWIN32OLE_METHOD);
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);
     rb_define_method(cWIN32OLE_METHOD, "initialize", folemethod_initialize, 2);

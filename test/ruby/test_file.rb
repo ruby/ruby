@@ -554,4 +554,250 @@ class TestFile < Test::Unit::TestCase
       assert_file.absolute_path?("/foo/bar\\baz")
     end
   end
+
+  class NewlineConvTests < Test::Unit::TestCase
+    TEST_STRING_WITH_CRLF = "line1\r\nline2\r\n".freeze
+    TEST_STRING_WITH_LF = "line1\nline2\n".freeze
+
+    def setup
+      @tmpdir = Dir.mktmpdir(self.class.name)
+      @read_path_with_crlf = File.join(@tmpdir, "read_path_with_crlf")
+      File.binwrite(@read_path_with_crlf, TEST_STRING_WITH_CRLF)
+      @read_path_with_lf = File.join(@tmpdir, "read_path_with_lf")
+      File.binwrite(@read_path_with_lf, TEST_STRING_WITH_LF)
+      @write_path = File.join(@tmpdir, "write_path")
+      File.binwrite(@write_path, '')
+    end
+
+    def teardown
+      FileUtils.rm_rf @tmpdir
+    end
+
+    def windows?
+      /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
+    end
+
+    def open_file_with(method, filename, mode)
+      read_or_write = mode.include?('w') ? :write : :read
+      binary_or_text = mode.include?('b') ? :binary : :text
+
+      f = case method
+      when :ruby_file_open
+        File.open(filename, mode)
+      when :c_rb_file_open
+        Bug::File::NewlineConv.rb_file_open(filename, read_or_write, binary_or_text)
+      when :c_rb_io_fdopen
+        Bug::File::NewlineConv.rb_io_fdopen(filename, read_or_write, binary_or_text)
+      else
+        raise "Don't know how to open with #{method}"
+      end
+
+      begin
+        yield f
+      ensure
+        f.close
+      end
+    end
+
+    def assert_file_contents_has_lf(f)
+      assert_equal TEST_STRING_WITH_LF, f.read
+    end
+
+    def assert_file_contents_has_crlf(f)
+      assert_equal TEST_STRING_WITH_CRLF, f.read
+    end
+
+    def assert_file_contents_has_lf_on_windows(f)
+      if windows?
+        assert_file_contents_has_lf(f)
+      else
+        assert_file_contents_has_crlf(f)
+      end
+    end
+
+    def assert_file_contents_has_crlf_on_windows(f)
+      if windows?
+        assert_file_contents_has_crlf(f)
+      else
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_ruby_file_open_text_mode_read_crlf
+      open_file_with(:ruby_file_open, @read_path_with_crlf, 'r') { |f| assert_file_contents_has_lf_on_windows(f) }
+    end
+
+    def test_ruby_file_open_bin_mode_read_crlf
+      open_file_with(:ruby_file_open, @read_path_with_crlf, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_ruby_file_open_text_mode_read_lf
+      open_file_with(:ruby_file_open, @read_path_with_lf, 'r') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_ruby_file_open_bin_mode_read_lf
+      open_file_with(:ruby_file_open, @read_path_with_lf, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_ruby_file_open_text_mode_read_crlf_with_utf8_encoding
+      open_file_with(:ruby_file_open, @read_path_with_crlf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf_on_windows(f)
+      end
+    end
+
+    def test_ruby_file_open_bin_mode_read_crlf_with_utf8_encoding
+      open_file_with(:ruby_file_open, @read_path_with_crlf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_crlf(f)
+      end
+    end
+
+    def test_ruby_file_open_text_mode_read_lf_with_utf8_encoding
+      open_file_with(:ruby_file_open, @read_path_with_lf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_ruby_file_open_bin_mode_read_lf_with_utf8_encoding
+      open_file_with(:ruby_file_open, @read_path_with_lf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_ruby_file_open_text_mode_write_lf
+      open_file_with(:ruby_file_open, @write_path, 'w') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf_on_windows(f) }
+    end
+
+    def test_ruby_file_open_bin_mode_write_lf
+      open_file_with(:ruby_file_open, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_ruby_file_open_bin_mode_write_crlf
+      open_file_with(:ruby_file_open, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_CRLF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_c_rb_file_open_text_mode_read_crlf
+      open_file_with(:c_rb_file_open, @read_path_with_crlf, 'r') { |f| assert_file_contents_has_lf_on_windows(f) }
+    end
+
+    def test_c_rb_file_open_bin_mode_read_crlf
+      open_file_with(:c_rb_file_open, @read_path_with_crlf, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_c_rb_file_open_text_mode_read_lf
+      open_file_with(:c_rb_file_open, @read_path_with_lf, 'r') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_file_open_bin_mode_read_lf
+      open_file_with(:c_rb_file_open, @read_path_with_lf, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_file_open_text_mode_write_lf
+      open_file_with(:c_rb_file_open, @write_path, 'w') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf_on_windows(f) }
+    end
+
+    def test_c_rb_file_open_bin_mode_write_lf
+      open_file_with(:c_rb_file_open, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_file_open_bin_mode_write_crlf
+      open_file_with(:c_rb_file_open, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_CRLF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_c_rb_file_open_text_mode_read_crlf_with_utf8_encoding
+      open_file_with(:c_rb_file_open, @read_path_with_crlf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf_on_windows(f)
+      end
+    end
+
+    def test_c_rb_file_open_bin_mode_read_crlf_with_utf8_encoding
+      open_file_with(:c_rb_file_open, @read_path_with_crlf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_crlf(f)
+      end
+    end
+
+    def test_c_rb_file_open_text_mode_read_lf_with_utf8_encoding
+      open_file_with(:c_rb_file_open, @read_path_with_lf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_c_rb_file_open_bin_mode_read_lf_with_utf8_encoding
+      open_file_with(:c_rb_file_open, @read_path_with_lf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_c_rb_io_fdopen_text_mode_read_crlf
+      open_file_with(:c_rb_io_fdopen, @read_path_with_crlf, 'r') { |f| assert_file_contents_has_lf_on_windows(f) }
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_read_crlf
+      open_file_with(:c_rb_io_fdopen, @read_path_with_crlf, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_c_rb_io_fdopen_text_mode_read_lf
+      open_file_with(:c_rb_io_fdopen, @read_path_with_lf, 'r') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_read_lf
+      open_file_with(:c_rb_io_fdopen, @read_path_with_lf, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_io_fdopen_text_mode_write_lf
+      open_file_with(:c_rb_io_fdopen, @write_path, 'w') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf_on_windows(f) }
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_write_lf
+      open_file_with(:c_rb_io_fdopen, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_LF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_lf(f) }
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_write_crlf
+      open_file_with(:c_rb_io_fdopen, @write_path, 'wb') { |f| f.write TEST_STRING_WITH_CRLF }
+      File.open(@write_path, 'rb') { |f| assert_file_contents_has_crlf(f) }
+    end
+
+    def test_c_rb_io_fdopen_text_mode_read_crlf_with_utf8_encoding
+      open_file_with(:c_rb_io_fdopen, @read_path_with_crlf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf_on_windows(f)
+      end
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_read_crlf_with_utf8_encoding
+      open_file_with(:c_rb_io_fdopen, @read_path_with_crlf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_crlf(f)
+      end
+    end
+
+    def test_c_rb_io_fdopen_text_mode_read_lf_with_utf8_encoding
+      open_file_with(:c_rb_io_fdopen, @read_path_with_lf, 'r') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+
+    def test_c_rb_io_fdopen_bin_mode_read_lf_with_utf8_encoding
+      open_file_with(:c_rb_io_fdopen, @read_path_with_lf, 'rb') do |f|
+        f.set_encoding Encoding::UTF_8, '-'
+        assert_file_contents_has_lf(f)
+      end
+    end
+  end
 end

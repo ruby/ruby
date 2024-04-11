@@ -15,15 +15,16 @@
             └── block:
                 @ BlockNode (location: (1,2)-(3,3))
                 ├── locals: [:x, :y]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,5)-(1,11))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,6)-(1,10))
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :x
                 │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :y
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

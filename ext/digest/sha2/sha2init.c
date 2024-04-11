@@ -25,29 +25,50 @@ static const rb_digest_metadata_t sha##bitlen = { \
 FOREACH_BITLEN(DEFINE_ALGO_METADATA)
 
 /*
+ * Document-class: Digest::SHA256 < Digest::Base
+ *
  * Classes for calculating message digests using the SHA-256/384/512
  * Secure Hash Algorithm(s) by NIST (the US' National Institute of
  * Standards and Technology), described in FIPS PUB 180-2.
+ *
+ * See SHA2.
+ */
+/*
+ * Document-class: Digest::SHA384 < Digest::Base
+ *
+ * Classes for calculating message digests using the SHA-256/384/512
+ * Secure Hash Algorithm(s) by NIST (the US' National Institute of
+ * Standards and Technology), described in FIPS PUB 180-2.
+ *
+ * See SHA2.
+ */
+/*
+ * Document-class: Digest::SHA512 < Digest::Base
+ *
+ * Classes for calculating message digests using the SHA-256/384/512
+ * Secure Hash Algorithm(s) by NIST (the US' National Institute of
+ * Standards and Technology), described in FIPS PUB 180-2.
+ *
+ * See SHA2.
  */
 void
 Init_sha2(void)
 {
-    VALUE mDigest, cDigest_Base;
+    VALUE mDigest, cDigest_Base, cDigest_SHA2;
     ID id_metadata = rb_id_metadata();
 
-#define DECLARE_ALGO_CLASS(bitlen) \
-    VALUE cDigest_SHA##bitlen;
-
-    FOREACH_BITLEN(DECLARE_ALGO_CLASS)
-
+#if 0
+    mDigest = rb_define_module("Digest"); /* let rdoc know */
+#endif
     mDigest = rb_digest_namespace();
-    cDigest_Base = rb_path2class("Digest::Base");
+    cDigest_Base = rb_const_get(mDigest, rb_intern_const("Base"));
 
-#define DEFINE_ALGO_CLASS(bitlen) \
-    cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
-\
-    rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
-                rb_digest_make_metadata(&sha##bitlen));
+    cDigest_SHA2 = rb_define_class_under(mDigest, "SHA256", cDigest_Base);
+    rb_ivar_set(cDigest_SHA2, id_metadata, rb_digest_make_metadata(&sha256));
 
-    FOREACH_BITLEN(DEFINE_ALGO_CLASS)
+    cDigest_SHA2 = rb_define_class_under(mDigest, "SHA384", cDigest_Base);
+    rb_ivar_set(cDigest_SHA2, id_metadata, rb_digest_make_metadata(&sha384));
+
+    cDigest_SHA2 = rb_define_class_under(mDigest, "SHA512", cDigest_Base);
+    rb_ivar_set(cDigest_SHA2, id_metadata, rb_digest_make_metadata(&sha512));
 }

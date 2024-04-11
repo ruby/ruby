@@ -1,3 +1,4 @@
+# -*- ruby -*-
 # Configuration file for Ruby >= 2.0 implementations.
 
 class MSpecScript

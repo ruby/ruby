@@ -8,6 +8,29 @@ require 'strscan'
 require 'test/unit'
 
 module StringScannerTests
+  def test_peek_byte
+    s = create_string_scanner('ab')
+    assert_equal 97, s.peek_byte
+    assert_equal 97, s.scan_byte
+    assert_equal 98, s.peek_byte
+    assert_equal 98, s.scan_byte
+    assert_nil s.peek_byte
+    assert_nil s.scan_byte
+  end
+
+  def test_scan_byte
+    s = create_string_scanner('ab')
+    assert_equal 97, s.scan_byte
+    assert_equal 98, s.scan_byte
+    assert_nil s.scan_byte
+
+    str = "\244\242".dup.force_encoding("euc-jp")
+    s = StringScanner.new(str)
+    assert_equal str.getbyte(s.pos), s.scan_byte
+    assert_equal str.getbyte(s.pos), s.scan_byte
+    assert_nil s.scan_byte
+  end
+
   def test_s_new
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
@@ -558,6 +581,16 @@ module StringScannerTests
     assert_nil s.matched_size
   end
 
+  def test_empty_encoding_utf8
+    ss = create_string_scanner('')
+    assert_equal(Encoding::UTF_8, ss.rest.encoding)
+  end
+
+  def test_empty_encoding_ascii_8bit
+    ss = create_string_scanner(''.dup.force_encoding("ASCII-8BIT"))
+    assert_equal(Encoding::ASCII_8BIT, ss.rest.encoding)
+  end
+
   def test_encoding
     ss = create_string_scanner("\xA1\xA2".dup.force_encoding("euc-jp"))
     assert_equal(Encoding::EUC_JP, ss.scan(/./e).encoding)
@@ -737,8 +770,8 @@ module StringScannerTests
   def test_captures
     s = create_string_scanner("Timestamp: Fri Dec 12 1975 14:39")
     s.scan("Timestamp: ")
-    s.scan(/(\w+) (\w+) (\d+) /)
-    assert_equal(["Fri", "Dec", "12"], s.captures)
+    s.scan(/(\w+) (\w+) (\d+) (1980)?/)
+    assert_equal(["Fri", "Dec", "12", nil], s.captures)
     s.scan(/(\w+) (\w+) (\d+) /)
     assert_nil(s.captures)
   end
@@ -830,5 +863,13 @@ class TestStringScannerFixedAnchor < Test::Unit::TestCase
     s = create_string_scanner("ab")
     assert_equal 1, s.skip(/a/)
     assert_nil      s.skip(/^b/)
+  end
+
+  # ruby/strscan#86
+  def test_scan_shared_string
+    s = "hellohello"[5..-1]
+    ss = StringScanner.new(s).scan(/hello/)
+
+    assert_equal "hello", ss
   end
 end

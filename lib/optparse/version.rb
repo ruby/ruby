@@ -2,6 +2,11 @@
 # OptionParser internal utility
 
 class << OptionParser
+  #
+  # Shows version string in packages if Version is defined.
+  #
+  # +pkgs+:: package list
+  #
   def show_version(*pkgs)
     progname = ARGV.options.program_name
     result = false
@@ -47,6 +52,8 @@ class << OptionParser
     result
   end
 
+  # :stopdoc:
+
   def each_const(path, base = ::Object)
     path.split(/::|\//).inject(base) do |klass, name|
       raise NameError, path unless Module === klass
@@ -68,4 +75,6 @@ class << OptionParser
       end
     end
   end
+
+  # :startdoc:
 end

@@ -28,6 +28,13 @@ class PPTest < Test::Unit::TestCase
     end
     assert_equal(%(""\n), PP.pp(o, "".dup))
   end
+
+  def test_range
+    assert_equal("0..1\n", PP.pp(0..1, "".dup))
+    assert_equal("0...1\n", PP.pp(0...1, "".dup))
+    assert_equal("0...\n", PP.pp(0..., "".dup))
+    assert_equal("...1\n", PP.pp(...1, "".dup))
+  end
 end
 
 class HasInspect
@@ -140,15 +147,18 @@ class PPCycleTest < Test::Unit::TestCase
     a = S.new(1,2)
     a.b = a
     assert_equal("#<struct Struct::S a=1, b=#<struct Struct::S:...>>\n", PP.pp(a, ''.dup))
-    assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+    assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup)) unless RUBY_ENGINE == "truffleruby"
   end
 
-  if "3.2" <= RUBY_VERSION
+  if defined?(Data.define)
     D = Data.define(:aaa, :bbb)
     def test_data
       a = D.new("aaa", "bbb")
       assert_equal("#<data PPTestModule::PPCycleTest::D\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
       assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+
+      b = Data.define(:a).new(42)
+      assert_equal("#{b.inspect}\n", PP.pp(b, ''.dup))
     end
   end
 
@@ -164,7 +174,7 @@ class PPCycleTest < Test::Unit::TestCase
   end
 
   def test_withinspect
-    omit if RUBY_ENGINE == "jruby"
+    omit if RUBY_ENGINE == "jruby" or RUBY_ENGINE == "truffleruby"
     a = []
     a << HasInspect.new(a)
     assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''.dup))
@@ -228,9 +238,35 @@ if defined?(RubyVM)
     AST = RubyVM::AbstractSyntaxTree
     def test_lasgn_literal
       ast = AST.parse("_=1")
-      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (INTEGER@1:2-1:3 1)))"
+      integer = RUBY_VERSION >= "3.4." ? "INTEGER" : "LIT"
+      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (#{integer}@1:2-1:3 1)))"
       assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
     end
+  end
+end
+
+class PPInheritedTest < Test::Unit::TestCase
+  class PPSymbolHash < PP
+    def pp_hash_pair(k, v)
+      case k
+      when Symbol
+        text k.inspect.delete_prefix(":")
+        text ":"
+        group(1) {
+          breakable
+          pp v
+        }
+      else
+        super
+      end
+    end
+  end
+
+  def test_hash_override
+    obj = {k: 1, "": :null, "0": :zero, 100 => :ten}
+    assert_equal <<~EXPECT, PPSymbolHash.pp(obj, "".dup)
+    {k: 1, "": :null, "0": :zero, 100=>:ten}
+    EXPECT
   end
 end
 

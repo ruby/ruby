@@ -5,7 +5,7 @@ module Lrama
 
       def initialize(path, text)
         @path = path
-        @text = text
+        @text = text.freeze
       end
 
       def ==(other)

@@ -15,7 +15,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ SymbolNode (location: (1,4)-(1,8))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: forced_us_ascii_encoding
             │       │   ├── opening_loc: (1,4)-(1,5) = ":"
             │       │   ├── value_loc: (1,5)-(1,8) = "bar"
             │       │   ├── closing_loc: ∅
@@ -26,7 +26,7 @@
             │               └── @ AssocNode (location: (1,10)-(1,18))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,10)-(1,14))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,10)-(1,13) = "baz"
             │                   │   ├── closing_loc: (1,13)-(1,14) = ":"

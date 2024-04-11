@@ -5,19 +5,19 @@ rescue LoadError
 end
 require "test/unit"
 
-if defined?(WIN32OLE_VARIABLE)
+if defined?(WIN32OLE::Variable)
   class TestWIN32OLE_VARIABLE < Test::Unit::TestCase
 
     def setup
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "ShellSpecialFolderConstants")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "ShellSpecialFolderConstants")
       @var1 = ole_type.variables.find {|v| v.name == 'ssfDESKTOP'}
 
-      variables = WIN32OLE_TYPE.new("Microsoft Windows Installer Object Library", "Installer").variables
+      variables = WIN32OLE::Type.new("Microsoft Windows Installer Object Library", "Installer").variables
       @var2 = variables.find {|v| v.name == 'UILevel'}
     end
 
     def test_initialize
-      assert_raise(TypeError) {WIN32OLE_VARIABLE.new}
+      assert_raise(TypeError) {WIN32OLE::Variable.new}
     end
 
     def test_name
@@ -58,8 +58,8 @@ if defined?(WIN32OLE_VARIABLE)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_VARIABLE:ssfDESKTOP=0>",  @var1.inspect)
-      assert_equal("#<WIN32OLE_VARIABLE:UILevel=nil>", @var2.inspect)
+      assert_equal("#<WIN32OLE::Variable:ssfDESKTOP=0>",  @var1.inspect)
+      assert_equal("#<WIN32OLE::Variable:UILevel=nil>", @var2.inspect)
     end
 
   end

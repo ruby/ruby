@@ -21,5 +21,6 @@
             ├── name_loc: (7,0)-(7,1) = "d"
             ├── value:
             │   @ IntegerNode (location: (7,4)-(7,6))
-            │   └── flags: decimal
+            │   ├── flags: decimal
+            │   └── value: 42
             └── operator_loc: (7,2)-(7,3) = "="

@@ -953,6 +953,22 @@ class TestStringIO < Test::Unit::TestCase
     $VERBOSE = verbose
   end
 
+  def test_coderange_after_overwrite
+    s = StringIO.new("".b)
+
+    s.write("a=b&c=d")
+    s.rewind
+    assert_predicate(s.string, :ascii_only?)
+    s.write "\u{431 43e 433 443 441}"
+    assert_not_predicate(s.string, :ascii_only?)
+
+    s = StringIO.new("\u{3042}")
+    s.rewind
+    assert_not_predicate(s.string, :ascii_only?)
+    s.write('aaaa')
+    assert_predicate(s.string, :ascii_only?)
+  end
+
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)
   end

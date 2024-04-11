@@ -15,10 +15,9 @@
             └── block:
                 @ BlockNode (location: (1,4)-(9,3))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
-                │   @ BeginNode (location: (2,2)-(9,3))
+                │   @ BeginNode (location: (1,4)-(9,3))
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements:
                 │   │   @ StatementsNode (location: (2,2)-(2,7))
@@ -43,7 +42,7 @@
                 │   │   │   @ StatementsNode (location: (4,2)-(4,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "rescue"
                 │   │   │           ├── closing_loc: ∅
@@ -56,7 +55,7 @@
                 │   │   │   @ StatementsNode (location: (6,2)-(6,7))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (6,2)-(6,7))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (6,2)-(6,3) = ":"
                 │   │   │           ├── value_loc: (6,3)-(6,7) = "else"
                 │   │   │           ├── closing_loc: ∅
@@ -69,7 +68,7 @@
                 │   │   │   @ StatementsNode (location: (8,2)-(8,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (8,2)-(8,9))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (8,2)-(8,3) = ":"
                 │   │   │           ├── value_loc: (8,3)-(8,9) = "ensure"
                 │   │   │           ├── closing_loc: ∅

@@ -1752,6 +1752,7 @@ yybackup:
   *++yyvsp = yylval;
   YY_IGNORE_MAYBE_UNINITIALIZED_END
   *++yylsp = yylloc;
+<%= output.after_shift_function("/* %after-shift code. */") %>
 
   /* Discard the shifted token.  */
   yychar = YYEMPTY;
@@ -1784,6 +1785,7 @@ yyreduce:
      unconditionally makes the parser a bit smaller, and it avoids a
      GCC warning that YYVAL may be used uninitialized.  */
   yyval = yyvsp[1-yylen];
+<%= output.before_reduce_function("/* %before-reduce function. */") %>
 
   /* Default location. */
   YYLLOC_DEFAULT (yyloc, (yylsp - yylen), yylen);
@@ -1809,6 +1811,7 @@ yyreduce:
   YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc<%= output.user_args %>);
 
   YYPOPSTACK (yylen);
+<%= output.after_reduce_function("/* %after-reduce function. */") %>
   yylen = 0;
 
   *++yyvsp = yyval;
@@ -1910,6 +1913,7 @@ yyerrorlab:
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
   YYPOPSTACK (yylen);
+<%= output.after_pop_stack_function("yylen", "/* %after-pop-stack function. */") %>
   yylen = 0;
   YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
   yystate = *yyssp;
@@ -1969,6 +1973,7 @@ yyerrlab1:
       yydestruct ("Error: popping",
                   YY_ACCESSING_SYMBOL (yystate), yyvsp, yylsp<%= output.user_args %>);
       YYPOPSTACK (1);
+<%= output.after_pop_stack_function(1, "/* %after-pop-stack function. */") %>
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
     }
@@ -1983,6 +1988,7 @@ yyerrlab1:
 
   /* Shift the error token.  */
   YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp<%= output.user_args %>);
+<%= output.after_shift_error_token_function("/* %after-shift-error-token code. */") %>
 
   yystate = yyn;
   goto yynewstate;

@@ -16,7 +16,6 @@
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(1,10))
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,5)-(1,6) = "{"
             │           ├── closing_loc: (1,9)-(1,10) = "}"
@@ -25,17 +24,18 @@
             │               @ StatementsNode (location: (1,7)-(1,8))
             │               └── body: (length: 1)
             │                   └── @ IntegerNode (location: (1,7)-(1,8))
-            │                       └── flags: decimal
+            │                       ├── flags: decimal
+            │                       └── value: 1
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,11)-(1,19))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,14)-(1,15))
                 │   └── body: (length: 1)
                 │       └── @ IntegerNode (location: (1,14)-(1,15))
-                │           └── flags: decimal
+                │           ├── flags: decimal
+                │           └── value: 2
                 ├── opening_loc: (1,11)-(1,13) = "do"
                 └── closing_loc: (1,16)-(1,19) = "end"

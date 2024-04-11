@@ -234,6 +234,9 @@ typedef struct pm_lex_mode {
              * a tilde heredoc.
              */
             size_t common_whitespace;
+
+            /** True if the previous token ended with a line continuation. */
+            bool line_continuation;
         } heredoc;
     } as;
 
@@ -259,6 +262,9 @@ typedef struct pm_parser pm_parser_t;
  * token that is understood by a parent context but not by the current context.
  */
 typedef enum {
+    /** a null context, used for returning a value from a function */
+    PM_CONTEXT_NONE = 0,
+
     /** a begin statement */
     PM_CONTEXT_BEGIN,
 
@@ -447,24 +453,31 @@ typedef struct {
  * into their parent scopes, while others cannot.
  */
 typedef struct pm_scope {
-    /** The IDs of the locals in the given scope. */
-    pm_constant_id_list_t locals;
-
     /** A pointer to the previous scope in the linked list. */
     struct pm_scope *previous;
 
-    /**
-     * A boolean indicating whether or not this scope can see into its parent.
-     * If closed is true, then the scope cannot see into its parent.
-     */
-    bool closed;
+    /** The IDs of the locals in the given scope. */
+    pm_constant_id_list_t locals;
 
     /**
-     * A boolean indicating whether or not this scope has explicit parameters.
-     * This is necessary to determine whether or not numbered parameters are
-     * allowed.
+     * This is a bitfield that indicates the parameters that are being used in
+     * this scope. It is a combination of the PM_SCOPE_PARAMS_* constants. There
+     * are three different kinds of parameters that can be used in a scope:
+     *
+     * - Ordinary parameters (e.g., def foo(bar); end)
+     * - Numbered parameters (e.g., def foo; _1; end)
+     * - The it parameter (e.g., def foo; it; end)
+     *
+     * If ordinary parameters are being used, then certain parameters can be
+     * forwarded to another method/structure. Those are indicated by four
+     * additional bits in the params field. For example, some combinations of:
+     *
+     * - def foo(*); end
+     * - def foo(**); end
+     * - def foo(&); end
+     * - def foo(...); end
      */
-    bool explicit_params;
+    uint8_t parameters;
 
     /**
      * An integer indicating the number of numbered parameters on this scope.
@@ -472,8 +485,28 @@ typedef struct pm_scope {
      * numbered parameters, and to pass information to consumers of the AST
      * about how many numbered parameters exist.
      */
-    uint8_t numbered_parameters;
+    int8_t numbered_parameters;
+
+    /**
+     * A boolean indicating whether or not this scope can see into its parent.
+     * If closed is true, then the scope cannot see into its parent.
+     */
+    bool closed;
 } pm_scope_t;
+
+static const uint8_t PM_SCOPE_PARAMETERS_NONE = 0x0;
+static const uint8_t PM_SCOPE_PARAMETERS_ORDINARY = 0x1;
+static const uint8_t PM_SCOPE_PARAMETERS_NUMBERED = 0x2;
+static const uint8_t PM_SCOPE_PARAMETERS_IT = 0x4;
+static const uint8_t PM_SCOPE_PARAMETERS_TYPE_MASK = 0x7;
+
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS = 0x8;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS = 0x10;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_BLOCK = 0x20;
+static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x40;
+
+static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED = -1;
+static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_NONE = 0;
 
 /**
  * This struct represents the overall parser. It contains a reference to the
@@ -605,7 +638,7 @@ struct pm_parser {
      * This is the path of the file being parsed. We use the filepath when
      * constructing SourceFileNodes.
      */
-    pm_string_t filepath_string;
+    pm_string_t filepath;
 
     /**
      * This constant pool keeps all of the constants defined throughout the file
@@ -673,6 +706,9 @@ struct pm_parser {
     /** The version of prism that we should use to parse. */
     pm_options_version_t version;
 
+    /** The command line flags given from the options. */
+    uint8_t command_line;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -708,11 +744,10 @@ struct pm_parser {
     bool frozen_string_literal;
 
     /**
-     * Whether or not we should emit warnings. This will be set to false if the
-     * consumer of the library specified it, usually because they are parsing
-     * when $VERBOSE is nil.
+     * True if the current regular expression being lexed contains only ASCII
+     * characters.
      */
-    bool suppress_warnings;
+    bool current_regular_expression_ascii_only;
 };
 
 #endif

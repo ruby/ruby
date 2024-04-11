@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,23))
                 ├── locals: [:kwargs]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,14))
                 │   ├── parameters:
@@ -27,6 +26,7 @@
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest:
                 │   │   │   @ KeywordRestParameterNode (location: (1,5)-(1,13))
+                │   │   │   ├── flags: ∅
                 │   │   │   ├── name: :kwargs
                 │   │   │   ├── name_loc: (1,7)-(1,13) = "kwargs"
                 │   │   │   └── operator_loc: (1,5)-(1,7) = "**"

@@ -1190,3 +1190,12 @@ assert_equal 'DC', %q{
   test2 o1, [], block
   $result.join
 }
+
+assert_equal 'ok', %q{
+  def foo
+    binding
+    ["ok"].first
+  end
+  foo
+  foo
+}, '[Bug #20178]'

@@ -35,7 +35,6 @@
             │       │   │   │           └── block:
             │       │   │   │               @ BlockNode (location: (1,17)-(4,4))
             │       │   │   │               ├── locals: []
-            │       │   │   │               ├── locals_body_index: 0
             │       │   │   │               ├── parameters: ∅
             │       │   │   │               ├── body:
             │       │   │   │               │   @ StatementsNode (location: (2,0)-(3,3))
@@ -47,7 +46,6 @@
             │       │   │   │               │           ├── parameters: ∅
             │       │   │   │               │           ├── body: ∅
             │       │   │   │               │           ├── locals: []
-            │       │   │   │               │           ├── locals_body_index: 0
             │       │   │   │               │           ├── def_keyword_loc: (2,0)-(2,3) = "def"
             │       │   │   │               │           ├── operator_loc: ∅
             │       │   │   │               │           ├── lparen_loc: ∅
@@ -71,7 +69,7 @@
             │               └── @ AssocNode (location: (4,11)-(4,28))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (4,11)-(4,14))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: (4,11)-(4,12) = ":"
             │                   │   ├── value_loc: (4,12)-(4,14) = "at"
             │                   │   ├── closing_loc: ∅

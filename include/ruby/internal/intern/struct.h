@@ -54,6 +54,8 @@ VALUE rb_struct_new(VALUE klass, ...);
  * @post       Global toplevel constant `name` is defined.
  * @note       `name` is allowed  to be a null pointer.   This function creates
  *             an anonymous struct class then.
+ * @note       The GC does not collect nor move classes returned by this
+ *             function. They are immortal.
  *
  * @internal
  *
@@ -78,6 +80,8 @@ RBIMPL_ATTR_NONNULL((2))
  * @post        `name` is a constant under `space`.
  * @note        In contrast to rb_struct_define(), it doesn't make any sense to
  *              pass  a null pointer to this function.
+ * @note        The GC does not collect nor move classes returned by this
+ *              function. They are immortal.
  */
 VALUE rb_struct_define_under(VALUE space, const char *name, ...);
 
@@ -195,6 +199,8 @@ RBIMPL_ATTR_NONNULL((2))
  * @post        `class_name` is a constant under `outer`.
  * @note        In contrast to  rb_struct_define_without_accessor(), it doesn't
  *              make any sense to pass a null name.
+ * @note        The GC does not collect nor move classes returned by this
+ *              function. They are immortal.
  */
 VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
 
@@ -209,6 +215,8 @@ VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_nam
  *                             NULL.  Each of which are the name of fields.
  * @exception  rb_eArgError    Duplicated field name.
  * @return     The defined class.
+ * @note       The GC does not collect nor move classes returned by this
+ *             function. They are immortal.
  */
 VALUE rb_data_define(VALUE super, ...);
 

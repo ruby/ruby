@@ -115,6 +115,17 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_gets_chomp
+    ssl_pair {|s1, s2|
+      s1 << "line1\r\nline2\r\nline3\r\n"
+      s1.close
+
+      assert_equal("line1", s2.gets("\r\n", chomp: true))
+      assert_equal("line2\r\n", s2.gets("\r\n", chomp: false))
+      assert_equal("line3", s2.gets(chomp: true))
+    }
+  end
+
   def test_gets_eof_limit
     ssl_pair {|s1, s2|
       s1.write("hello")

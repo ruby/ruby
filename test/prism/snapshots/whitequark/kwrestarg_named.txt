@@ -16,13 +16,13 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,6)-(1,11))
+            │   │   ├── flags: ∅
             │   │   ├── name: :foo
             │   │   ├── name_loc: (1,8)-(1,11) = "foo"
             │   │   └── operator_loc: (1,6)-(1,8) = "**"
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:foo]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

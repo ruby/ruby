@@ -1,57 +1,57 @@
-E2BIG
-EACCES
-EADDRINUSE
-EADDRNOTAVAIL
+E2BIG           Argument list too long
+EACCES          Permission denied
+EADDRINUSE      Address in use
+EADDRNOTAVAIL   Address not available
 EADV
-EAFNOSUPPORT
-EAGAIN
-EALREADY
+EAFNOSUPPORT    Address family not supported
+EAGAIN          Resource unavailable, try again (may be the same value as [EWOULDBLOCK])
+EALREADY        Connection already in progress
 EAUTH
 EBADARCH
 EBADE
 EBADEXEC
-EBADF
+EBADF           Bad file descriptor
 EBADFD
 EBADMACHO
-EBADMSG
+EBADMSG         Bad message
 EBADR
 EBADRPC
 EBADRQC
 EBADSLT
 EBFONT
-EBUSY
-ECANCELED
+EBUSY           Device or resource busy
+ECANCELED       Operation canceled
 ECAPMODE
-ECHILD
+ECHILD          No child processes
 ECHRNG
 ECOMM
-ECONNABORTED
-ECONNREFUSED
-ECONNRESET
-EDEADLK
+ECONNABORTED    Connection aborted
+ECONNREFUSED    Connection refused
+ECONNRESET      Connection reset
+EDEADLK         Resource deadlock would occur
 EDEADLOCK
-EDESTADDRREQ
+EDESTADDRREQ    Destination address required
 EDEVERR
-EDOM
+EDOM            Mathematics argument out of domain of function
 EDOOFUS
 EDOTDOT
-EDQUOT
-EEXIST
-EFAULT
-EFBIG
+EDQUOT          Reserved
+EEXIST          File exists
+EFAULT          Bad address
+EFBIG           File too large
 EFTYPE
 EHOSTDOWN
-EHOSTUNREACH
+EHOSTUNREACH    Host is unreachable
 EHWPOISON
-EIDRM
-EILSEQ
-EINPROGRESS
-EINTR
-EINVAL
-EIO
+EIDRM           Identifier removed
+EILSEQ          Illegal byte sequence
+EINPROGRESS     Operation in progress
+EINTR           Interrupted function
+EINVAL          Invalid argument
+EIO             I/O error
 EIPSEC
-EISCONN
-EISDIR
+EISCONN         Socket is connected
+EISDIR          Is a directory
 EISNAM
 EKEYEXPIRED
 EKEYREJECTED
@@ -60,98 +60,98 @@ EL2HLT
 EL2NSYNC
 EL3HLT
 EL3RST
-ELAST
 ELIBACC
 ELIBBAD
 ELIBEXEC
 ELIBMAX
 ELIBSCN
 ELNRNG
-ELOOP
+ELOOP           Too many levels of symbolic links
 EMEDIUMTYPE
-EMFILE
-EMLINK
-EMSGSIZE
-EMULTIHOP
-ENAMETOOLONG
+EMFILE          File descriptor value too large
+EMLINK          Too many links
+EMSGSIZE        Message too large
+EMULTIHOP       Reserved
+ENAMETOOLONG    Filename too long
 ENAVAIL
 ENEEDAUTH
-ENETDOWN
-ENETRESET
-ENETUNREACH
-ENFILE
+ENETDOWN        Network is down
+ENETRESET       Connection aborted by network
+ENETUNREACH     Network unreachable
+ENFILE          Too many files open in system
 ENOANO
 ENOATTR
-ENOBUFS
+ENOBUFS         No buffer space available
 ENOCSI
-ENODATA
-ENODEV
-ENOENT
-ENOEXEC
+ENODATA         [OB XSR] [Option Start] No message is available on the STREAM head read queue [Option End]
+ENODEV          No such device
+ENOENT          No such file or directory
+ENOEXEC         Executable file format error
 ENOKEY
-ENOLCK
-ENOLINK
+ENOLCK          No locks available
+ENOLINK         Reserved
 ENOMEDIUM
-ENOMEM
-ENOMSG
+ENOMEM          Not enough space
+ENOMSG          No message of the desired type
 ENONET
 ENOPKG
 ENOPOLICY
-ENOPROTOOPT
-ENOSPC
-ENOSR
-ENOSTR
-ENOSYS
+ENOPROTOOPT     Protocol not available
+ENOSPC          No space left on device
+ENOSR           [OB XSR] [Option Start] No STREAM resources [Option End]
+ENOSTR          [OB XSR] [Option Start] Not a STREAM [Option End]
+ENOSYS          Functionality not supported
 ENOTBLK
 ENOTCAPABLE
-ENOTCONN
-ENOTDIR
-ENOTEMPTY
+ENOTCONN        The socket is not connected
+ENOTDIR         Not a directory or a symbolic link to a directory
+ENOTEMPTY       Directory not empty
 ENOTNAM
-ENOTRECOVERABLE
-ENOTSOCK
-ENOTSUP
-ENOTTY
+ENOTRECOVERABLE State not recoverable
+ENOTSOCK        Not a socket
+ENOTSUP         Not supported (may be the same value as [EOPNOTSUPP])
+ENOTTY          Inappropriate I/O control operation
 ENOTUNIQ
-ENXIO
-EOPNOTSUPP
-EOVERFLOW
-EOWNERDEAD
-EPERM
+ENXIO           No such device or address
+EOPNOTSUPP      Operation not supported on socket (may be the same value as [ENOTSUP])
+EOVERFLOW       Value too large to be stored in data type
+EOWNERDEAD      Previous owner died
+EPERM           Operation not permitted
 EPFNOSUPPORT
-EPIPE
+EPIPE           Broken pipe
 EPROCLIM
 EPROCUNAVAIL
 EPROGMISMATCH
 EPROGUNAVAIL
-EPROTO
-EPROTONOSUPPORT
-EPROTOTYPE
+EPROTO          Protocol error
+EPROTONOSUPPORT Protocol not supported
+EPROTOTYPE      Protocol wrong type for socket
 EPWROFF
 EQFULL
-ERANGE
+ERANGE          Result too large
 EREMCHG
 EREMOTE
 EREMOTEIO
 ERESTART
 ERFKILL
-EROFS
+EROFS           Read-only file system
 ERPCMISMATCH
 ESHLIBVERS
 ESHUTDOWN
 ESOCKTNOSUPPORT
-ESPIPE
-ESRCH
+ESPIPE          Invalid seek
+ESRCH           No such process
 ESRMNT
-ESTALE
+ESTALE          Reserved
 ESTRPIPE
-ETIME
-ETIMEDOUT
+ETIME           [OB XSR] [Option Start] Stream ioctl() timeout [Option End]
+ETIMEDOUT       Connection timed out
 ETOOMANYREFS
-ETXTBSY
+ETXTBSY         Text file busy
 EUCLEAN
 EUNATCH
 EUSERS
-EWOULDBLOCK
-EXDEV
+EWOULDBLOCK     Operation would block (may be the same value as [EAGAIN])
+EXDEV           Cross-device link
 EXFULL
+ELAST           Largest errno

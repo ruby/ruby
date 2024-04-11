@@ -87,6 +87,7 @@ module Kernel
   #++
   #
   def tap
+    Primitive.attr! :inline_block
     yield(self)
     self
   end
@@ -127,7 +128,8 @@ module Kernel
   #       then {|response| JSON.parse(response) }
   #
   def then
-    unless block_given?
+    Primitive.attr! :inline_block
+    unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -142,7 +144,8 @@ module Kernel
   #     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
   #
   def yield_self
-    unless block_given?
+    Primitive.attr! :inline_block
+    unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -178,8 +181,9 @@ module Kernel
   #      puts enum.next
   #    } #=> :ok
   def loop
-    unless block_given?
-      return enum_for(:loop) { Float::INFINITY }
+    Primitive.attr! :inline_block
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size)'
     end
 
     begin

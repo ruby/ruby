@@ -15,7 +15,7 @@ module TestIRB
     def teardown
       IRB.conf.replace(@conf_backup)
       restore_encodings
-      # Reset Reline configuration overrided by RelineInputMethod.
+      # Reset Reline configuration overridden by RelineInputMethod.
       Reline.instance_variable_set(:@core, nil)
     end
   end
@@ -170,4 +170,3 @@ module TestIRB
     end
   end
 end
-

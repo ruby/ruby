@@ -54,7 +54,10 @@ describe :kernel_at_exit, shared: true do
     result = ruby_exe('{', options: "-r#{script}", args: "2>&1", exit_status: 1)
     $?.should_not.success?
     result.should.include?("handler ran\n")
-    result.should.include?("syntax error")
+
+    # it's tempting not to rely on error message and rely only on exception class name,
+    # but CRuby before 3.2 doesn't print class name for syntax error
+    result.should include_any_of("syntax error", "SyntaxError")
   end
 
   it "calls the nested handler right after the outer one if a handler is nested into another handler" do

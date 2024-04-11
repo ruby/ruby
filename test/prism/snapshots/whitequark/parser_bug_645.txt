@@ -5,7 +5,6 @@
     └── body: (length: 1)
         └── @ LambdaNode (location: (1,0)-(1,14))
             ├── locals: [:arg]
-            ├── locals_body_index: 1
             ├── operator_loc: (1,0)-(1,2) = "->"
             ├── opening_loc: (1,12)-(1,13) = "{"
             ├── closing_loc: (1,13)-(1,14) = "}"
@@ -16,6 +15,7 @@
             │   │   ├── requireds: (length: 0)
             │   │   ├── optionals: (length: 1)
             │   │   │   └── @ OptionalParameterNode (location: (1,4)-(1,10))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── name: :arg
             │   │   │       ├── name_loc: (1,4)-(1,7) = "arg"
             │   │   │       ├── operator_loc: (1,7)-(1,8) = "="

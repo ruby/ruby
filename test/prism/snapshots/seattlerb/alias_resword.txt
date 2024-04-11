@@ -6,14 +6,14 @@
         └── @ AliasMethodNode (location: (1,0)-(1,12))
             ├── new_name:
             │   @ SymbolNode (location: (1,6)-(1,8))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: ∅
             │   ├── value_loc: (1,6)-(1,8) = "in"
             │   ├── closing_loc: ∅
             │   └── unescaped: "in"
             ├── old_name:
             │   @ SymbolNode (location: (1,9)-(1,12))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: ∅
             │   ├── value_loc: (1,9)-(1,12) = "out"
             │   ├── closing_loc: ∅

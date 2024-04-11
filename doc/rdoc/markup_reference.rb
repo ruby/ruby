@@ -641,9 +641,9 @@ require 'rdoc'
 #     The file content is shifted to have the same indentation as the colon
 #     at the start of the directive.
 #
-#     The file is searched for in the directories
-#     given with the <tt>--include</tt> command-line option,
-#     or by default in the current directory.
+#     The file is searched for in the directory containing the current file,
+#     and then in each of the directories given with the <tt>--include</tt>
+#     command-line option.
 #
 #   For C code, the directive may appear in a stand-alone comment
 #

@@ -147,7 +147,7 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     }
     else {
         rb_raise(rb_eRuntimeError,
-                 "invalid RJIT option `%s' (--help will show valid RJIT options)", s);
+                 "invalid RJIT option '%s' (--help will show valid RJIT options)", s);
     }
 }
 

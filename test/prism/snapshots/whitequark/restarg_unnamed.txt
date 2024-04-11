@@ -13,6 +13,7 @@
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,6)-(1,7))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,6)-(1,7) = "*"
@@ -21,8 +22,7 @@
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
-            ├── locals: [:*]
-            ├── locals_body_index: 1
+            ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

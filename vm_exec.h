@@ -167,7 +167,7 @@ default:                        \
 
 // Run the interpreter from the JIT
 #define VM_EXEC(ec, val) do { \
-    if (val == Qundef) { \
+    if (UNDEF_P(val)) { \
         VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
         val = vm_exec(ec); \
     } \
@@ -176,9 +176,9 @@ default:                        \
 // Run the JIT from the interpreter
 #define JIT_EXEC(ec, val) do { \
     rb_jit_func_t func; \
-    if (val == Qundef && (func = jit_compile(ec))) { \
+    /* don't run tailcalls since that breaks FINISH */ \
+    if (UNDEF_P(val) && GET_CFP() != ec->cfp && (func = jit_compile(ec))) { \
         val = func(ec, ec->cfp); \
-        RESTORE_REGS(); /* fix cfp for tailcall */ \
         if (ec->tag->state) THROW_EXCEPTION(val); \
     } \
 } while (0)

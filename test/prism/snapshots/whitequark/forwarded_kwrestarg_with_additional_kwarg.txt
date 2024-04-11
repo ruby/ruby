@@ -16,6 +16,7 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,8)-(1,10))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,8)-(1,10) = "**"
@@ -43,7 +44,7 @@
             │           │               └── @ AssocNode (location: (1,21)-(1,35))
             │           │                   ├── key:
             │           │                   │   @ SymbolNode (location: (1,21)-(1,30))
-            │           │                   │   ├── flags: ∅
+            │           │                   │   ├── flags: forced_us_ascii_encoding
             │           │                   │   ├── opening_loc: ∅
             │           │                   │   ├── value_loc: (1,21)-(1,29) = "from_foo"
             │           │                   │   ├── closing_loc: (1,29)-(1,30) = ":"
@@ -53,8 +54,7 @@
             │           │                   └── operator_loc: ∅
             │           ├── closing_loc: (1,35)-(1,36) = ")"
             │           └── block: ∅
-            ├── locals: [:**]
-            ├── locals_body_index: 1
+            ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,7)-(1,8) = "("

@@ -13,7 +13,8 @@
         │       @ StatementsNode (location: (1,12)-(1,13))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (1,12)-(1,13))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ UntilNode (location: (3,0)-(3,12))
         │   ├── flags: ∅
         │   ├── keyword_loc: (3,2)-(3,7) = "until"
@@ -24,7 +25,8 @@
         │       @ StatementsNode (location: (3,0)-(3,1))
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (3,0)-(3,1))
-        │               └── flags: decimal
+        │               ├── flags: decimal
+        │               └── value: 1
         ├── @ UntilNode (location: (5,0)-(5,16))
         │   ├── flags: ∅
         │   ├── keyword_loc: (5,6)-(5,11) = "until"
@@ -91,13 +93,13 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 2)
         │               │       ├── @ SymbolNode (location: (11,4)-(11,6))
-        │               │       │   ├── flags: ∅
+        │               │       │   ├── flags: forced_us_ascii_encoding
         │               │       │   ├── opening_loc: (11,4)-(11,5) = ":"
         │               │       │   ├── value_loc: (11,5)-(11,6) = "a"
         │               │       │   ├── closing_loc: ∅
         │               │       │   └── unescaped: "a"
         │               │       └── @ SymbolNode (location: (11,8)-(11,10))
-        │               │           ├── flags: ∅
+        │               │           ├── flags: forced_us_ascii_encoding
         │               │           ├── opening_loc: (11,8)-(11,9) = ":"
         │               │           ├── value_loc: (11,9)-(11,10) = "b"
         │               │           ├── closing_loc: ∅

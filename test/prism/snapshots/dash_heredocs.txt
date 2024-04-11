@@ -198,7 +198,8 @@
         │   │           │   │   │   @ StatementsNode (location: (53,4)-(53,5))
         │   │           │   │   │   └── body: (length: 1)
         │   │           │   │   │       └── @ IntegerNode (location: (53,4)-(53,5))
-        │   │           │   │   │           └── flags: decimal
+        │   │           │   │   │           ├── flags: decimal
+        │   │           │   │   │           └── value: 2
         │   │           │   │   └── closing_loc: (54,2)-(54,3) = "}"
         │   │           │   └── @ StringNode (location: (54,3)-(55,0))
         │   │           │       ├── flags: ∅
@@ -241,7 +242,8 @@
             │           │   │   │   @ StatementsNode (location: (62,2)-(62,3))
             │           │   │   │   └── body: (length: 1)
             │           │   │   │       └── @ IntegerNode (location: (62,2)-(62,3))
-            │           │   │   │           └── flags: decimal
+            │           │   │   │           ├── flags: decimal
+            │           │   │   │           └── value: 2
             │           │   │   └── closing_loc: (62,3)-(62,4) = "}"
             │           │   └── @ StringNode (location: (62,4)-(63,0))
             │           │       ├── flags: ∅

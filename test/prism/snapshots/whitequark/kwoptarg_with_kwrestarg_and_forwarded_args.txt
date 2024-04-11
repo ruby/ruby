@@ -15,12 +15,14 @@
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
             │   │   └── @ OptionalKeywordParameterNode (location: (1,6)-(1,12))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ NilNode (location: (1,9)-(1,12))
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,14)-(1,16))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,14)-(1,16) = "**"
@@ -47,8 +49,7 @@
             │           │                   └── operator_loc: (1,21)-(1,23) = "**"
             │           ├── closing_loc: (1,23)-(1,24) = ")"
             │           └── block: ∅
-            ├── locals: [:a, :**]
-            ├── locals_body_index: 2
+            ├── locals: [:a]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

@@ -204,7 +204,8 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 #endif
 
-        slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp, (VALUE)&arg);
+        rb_str_locktmp(str);
+        slen = (long)rb_ensure(recvfrom_locktmp, (VALUE)&arg, rb_str_unlocktmp, str);
 
         if (slen == 0 && !rsock_is_dgram(fptr)) {
             return Qnil;

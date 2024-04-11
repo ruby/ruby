@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,15))
                 ├── locals: [:b, :c]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,13))
                 │   ├── parameters:
@@ -24,12 +23,14 @@
                 │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,12))
                 │   │   │       ├── lefts: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rest:
                 │   │   │       │   @ SplatNode (location: (1,9)-(1,11))
                 │   │   │       │   ├── operator_loc: (1,9)-(1,10) = "*"
                 │   │   │       │   └── expression:
                 │   │   │       │       @ RequiredParameterNode (location: (1,10)-(1,11))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :c
                 │   │   │       ├── rights: (length: 0)
                 │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("

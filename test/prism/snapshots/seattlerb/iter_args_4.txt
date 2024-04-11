@@ -15,22 +15,24 @@
             └── block:
                 @ BlockNode (location: (1,2)-(1,16))
                 ├── locals: [:a, :b, :c]
-                ├── locals_body_index: 3
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,14))
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,13))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :a
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest:
                 │   │   │   @ RestParameterNode (location: (1,8)-(1,10))
+                │   │   │   ├── flags: ∅
                 │   │   │   ├── name: :b
                 │   │   │   ├── name_loc: (1,9)-(1,10) = "b"
                 │   │   │   └── operator_loc: (1,8)-(1,9) = "*"
                 │   │   ├── posts: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :c
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest: ∅

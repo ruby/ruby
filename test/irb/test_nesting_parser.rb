@@ -280,6 +280,44 @@ module TestIRB
       end
     end
 
+    def test_undef_alias
+      codes = [
+        'undef foo',
+        'alias foo bar',
+        'undef !',
+        'alias + -',
+        'alias $a $b',
+        'undef do',
+        'alias do do',
+        'undef :do',
+        'alias :do :do',
+        'undef :"#{alias do do}"',
+        'alias :"#{undef do}" do',
+        'alias do :"#{undef do}"'
+      ]
+      code_with_comment = <<~EOS
+        undef #
+        #
+        do #
+        alias #
+        #
+        do #
+        #
+        do #
+      EOS
+      code_with_heredoc = <<~EOS
+        <<~A; alias
+        A
+        :"#{<<~A}"
+        A
+        do
+      EOS
+      [*codes, code_with_comment, code_with_heredoc].each do |code|
+        opens = IRB::NestingParser.open_tokens(IRB::RubyLex.ripper_lex_without_warning('(' + code + "\nif"))
+        assert_equal(%w[( if], opens.map(&:tok))
+      end
+    end
+
     def test_case_in
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
         pend 'This test requires ruby version that supports case-in syntax'

@@ -15,7 +15,6 @@
             └── block:
                 @ BlockNode (location: (1,3)-(1,33))
                 ├── locals: [:kw, :kw2]
-                ├── locals_body_index: 2
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,5)-(1,28))
                 │   ├── parameters:
@@ -26,21 +25,23 @@
                 │   │   ├── posts: (length: 0)
                 │   │   ├── keywords: (length: 2)
                 │   │   │   ├── @ OptionalKeywordParameterNode (location: (1,6)-(1,14))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   ├── name: :kw
                 │   │   │   │   ├── name_loc: (1,6)-(1,9) = "kw:"
                 │   │   │   │   └── value:
                 │   │   │   │       @ SymbolNode (location: (1,10)-(1,14))
-                │   │   │   │       ├── flags: ∅
+                │   │   │   │       ├── flags: forced_us_ascii_encoding
                 │   │   │   │       ├── opening_loc: (1,10)-(1,11) = ":"
                 │   │   │   │       ├── value_loc: (1,11)-(1,14) = "val"
                 │   │   │   │       ├── closing_loc: ∅
                 │   │   │   │       └── unescaped: "val"
                 │   │   │   └── @ OptionalKeywordParameterNode (location: (1,16)-(1,26))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :kw2
                 │   │   │       ├── name_loc: (1,16)-(1,20) = "kw2:"
                 │   │   │       └── value:
                 │   │   │           @ SymbolNode (location: (1,21)-(1,26))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (1,21)-(1,22) = ":"
                 │   │   │           ├── value_loc: (1,22)-(1,26) = "val2"
                 │   │   │           ├── closing_loc: ∅

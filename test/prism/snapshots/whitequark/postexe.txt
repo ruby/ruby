@@ -8,7 +8,8 @@
             │   @ StatementsNode (location: (1,6)-(1,7))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (1,6)-(1,7))
-            │           └── flags: decimal
+            │           ├── flags: decimal
+            │           └── value: 1
             ├── keyword_loc: (1,0)-(1,3) = "END"
             ├── opening_loc: (1,4)-(1,5) = "{"
             └── closing_loc: (1,8)-(1,9) = "}"

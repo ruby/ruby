@@ -91,13 +91,12 @@
             │           │   @ StatementsNode (location: (14,4)-(14,8))
             │           │   └── body: (length: 1)
             │           │       └── @ SymbolNode (location: (14,4)-(14,8))
-            │           │           ├── flags: ∅
+            │           │           ├── flags: forced_us_ascii_encoding
             │           │           ├── opening_loc: (14,4)-(14,5) = ":"
             │           │           ├── value_loc: (14,5)-(14,8) = "bar"
             │           │           ├── closing_loc: ∅
             │           │           └── unescaped: "bar"
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── def_keyword_loc: (13,2)-(13,5) = "def"
             │           ├── operator_loc: ∅
             │           ├── lparen_loc: ∅

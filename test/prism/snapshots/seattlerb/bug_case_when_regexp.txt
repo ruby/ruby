@@ -6,21 +6,22 @@
         └── @ CaseNode (location: (1,0)-(1,26))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "x"
             │   ├── closing_loc: ∅
             │   └── unescaped: "x"
             ├── conditions: (length: 1)
-            │   └── @ WhenNode (location: (1,9)-(1,17))
+            │   └── @ WhenNode (location: (1,9)-(1,22))
             │       ├── keyword_loc: (1,9)-(1,13) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ RegularExpressionNode (location: (1,14)-(1,17))
-            │       │       ├── flags: ∅
+            │       │       ├── flags: forced_us_ascii_encoding
             │       │       ├── opening_loc: (1,14)-(1,15) = "/"
             │       │       ├── content_loc: (1,15)-(1,16) = "x"
             │       │       ├── closing_loc: (1,16)-(1,17) = "/"
             │       │       └── unescaped: "x"
+            │       ├── then_keyword_loc: (1,18)-(1,22) = "then"
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

@@ -17,11 +17,10 @@
 // The following headers are necessary to read files using demand paging.
 #ifdef _WIN32
 #include <windows.h>
-#else
+#elif defined(_POSIX_MAPPED_FILES)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #endif
 
 /**
@@ -45,8 +44,10 @@ typedef struct {
         /** This string owns its memory, and should be freed using `pm_string_free`. */
         PM_STRING_OWNED,
 
+#ifdef PRISM_HAS_MMAP
         /** This string is a memory-mapped file, and should be freed using `pm_string_free`. */
         PM_STRING_MAPPED
+#endif
     } type;
 } pm_string_t;
 
@@ -109,6 +110,17 @@ void pm_string_constant_init(pm_string_t *string, const char *source, size_t len
 PRISM_EXPORTED_FUNCTION bool pm_string_mapped_init(pm_string_t *string, const char *filepath);
 
 /**
+ * Read the file indicated by the filepath parameter into source and load its
+ * contents and size into the given `pm_string_t`. The given `pm_string_t`
+ * should be freed using `pm_string_free` when it is no longer used.
+ *
+ * @param string The string to initialize.
+ * @param filepath The filepath to read.
+ * @return Whether or not the file was successfully read.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_string_file_init(pm_string_t *string, const char *filepath);
+
+/**
  * Returns the memory size associated with the string.
  *
  * @param string The string to get the memory size of.
@@ -123,6 +135,18 @@ size_t pm_string_memsize(const pm_string_t *string);
  * @param string The string to ensure is owned.
  */
 void pm_string_ensure_owned(pm_string_t *string);
+
+/**
+ * Compare the underlying lengths and bytes of two strings. Returns 0 if the
+ * strings are equal, a negative number if the left string is less than the
+ * right string, and a positive number if the left string is greater than the
+ * right string.
+ *
+ * @param left The left string to compare.
+ * @param right The right string to compare.
+ * @return The comparison result.
+ */
+int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
 
 /**
  * Returns the length associated with the string.

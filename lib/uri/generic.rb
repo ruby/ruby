@@ -1402,19 +1402,6 @@ module URI
       self.component_ary.eql?(oth.component_ary)
     end
 
-=begin
-
---- URI::Generic#===(oth)
-
-=end
-#    def ===(oth)
-#      raise NotImplementedError
-#    end
-
-=begin
-=end
-
-
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
       component.collect do |x|

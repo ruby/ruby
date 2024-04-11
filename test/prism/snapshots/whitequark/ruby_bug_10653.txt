@@ -23,7 +23,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (1,14)-(1,20))
         │   │               ├── locals: []
-        │   │               ├── locals_body_index: 0
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
         │   │               ├── opening_loc: (1,14)-(1,16) = "do"
@@ -46,7 +45,6 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (1,27)-(1,33))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (1,27)-(1,29) = "do"
@@ -73,7 +71,6 @@
         │   │           └── block:
         │   │               @ BlockNode (location: (3,14)-(3,16))
         │   │               ├── locals: []
-        │   │               ├── locals_body_index: 0
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
         │   │               ├── opening_loc: (3,14)-(3,15) = "{"
@@ -96,7 +93,6 @@
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (3,23)-(3,25))
         │   │   │               ├── locals: []
-        │   │   │               ├── locals_body_index: 0
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
         │   │   │               ├── opening_loc: (3,23)-(3,24) = "{"
@@ -115,7 +111,8 @@
             │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ IntegerNode (location: (5,7)-(5,8))
-            │           │   └── flags: decimal
+            │           │   ├── flags: decimal
+            │           │   └── value: 1
             │           ├── call_operator_loc: (5,8)-(5,9) = "."
             │           ├── name: :tap
             │           ├── message_loc: (5,9)-(5,12) = "tap"
@@ -125,13 +122,13 @@
             │           └── block:
             │               @ BlockNode (location: (5,13)-(5,27))
             │               ├── locals: [:n]
-            │               ├── locals_body_index: 1
             │               ├── parameters:
             │               │   @ BlockParametersNode (location: (5,16)-(5,19))
             │               │   ├── parameters:
             │               │   │   @ ParametersNode (location: (5,17)-(5,18))
             │               │   │   ├── requireds: (length: 1)
             │               │   │   │   └── @ RequiredParameterNode (location: (5,17)-(5,18))
+            │               │   │   │       ├── flags: ∅
             │               │   │   │       └── name: :n
             │               │   │   ├── optionals: (length: 0)
             │               │   │   ├── rest: ∅
@@ -170,6 +167,7 @@
             │   │   @ StatementsNode (location: (5,30)-(5,31))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (5,30)-(5,31))
-            │   │           └── flags: decimal
+            │   │           ├── flags: decimal
+            │   │           └── value: 0
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

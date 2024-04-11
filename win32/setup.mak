@@ -129,6 +129,7 @@ vs2022-fp-bug:
 /* compile with -O2 */
 #include <math.h>
 #include <float.h>
+#include <stdio.h>
 
 #define value_finite(d) 'f'
 #define value_infinity() 'i'

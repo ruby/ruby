@@ -3,6 +3,7 @@
 source "https://rubygems.org"
 
 gem "rack", "~> 2.0"
+gem "base64"
 gem "webrick", "1.7.0"
 gem "rack-test", "~> 1.1"
 gem "compact_index", "~> 0.15.0"

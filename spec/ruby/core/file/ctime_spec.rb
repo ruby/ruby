@@ -22,6 +22,9 @@ describe "File.ctime" do
       else
         File.ctime(__FILE__).usec.should == 0
       end
+    rescue Errno::ENOENT => e
+      # Windows don't have stat command.
+      skip e.message
     end
   end
 

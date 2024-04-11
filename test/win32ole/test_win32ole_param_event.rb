@@ -5,7 +5,7 @@ end
 
 require 'test/unit'
 
-if defined?(WIN32OLE_PARAM)
+if defined?(WIN32OLE::Param)
   require_relative 'available_ole'
 
   class TestWIN32OLE_PARAM_EVENT < Test::Unit::TestCase

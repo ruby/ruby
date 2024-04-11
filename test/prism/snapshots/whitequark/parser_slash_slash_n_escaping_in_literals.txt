@@ -13,7 +13,7 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (4,3)-(5,1))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (4,3)-(5,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
@@ -41,7 +41,7 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (13,3)-(14,1))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (13,3)-(14,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
@@ -55,13 +55,13 @@
         │   ├── closing_loc: (17,1)-(17,2) = "}"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (19,0)-(20,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (19,0)-(19,3) = "%r{"
         │   ├── content_loc: (19,3)-(20,1) = "a\\\nb"
         │   ├── closing_loc: (20,1)-(20,2) = "}"
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (22,0)-(23,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (22,0)-(22,3) = "%s{"
         │   ├── value_loc: (22,3)-(23,1) = "a\\\nb"
         │   ├── closing_loc: (23,1)-(23,2) = "}"
@@ -96,19 +96,19 @@
         │   ├── closing_loc: (35,1)-(35,2) = "'"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (37,0)-(38,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (37,0)-(37,1) = "/"
         │   ├── content_loc: (37,1)-(38,1) = "a\\\nb"
         │   ├── closing_loc: (38,1)-(38,2) = "/"
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (40,0)-(41,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (40,0)-(40,2) = ":\""
         │   ├── value_loc: (40,2)-(41,1) = "a\\\nb"
         │   ├── closing_loc: (41,1)-(41,2) = "\""
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (43,0)-(44,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (43,0)-(43,2) = ":'"
         │   ├── value_loc: (43,2)-(44,1) = "a\\\nb"
         │   ├── closing_loc: (44,1)-(44,2) = "'"

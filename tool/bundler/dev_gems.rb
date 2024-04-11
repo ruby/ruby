@@ -13,7 +13,7 @@ gem "parallel", "~> 1.19"
 gem "rspec-core", "~> 3.12"
 gem "rspec-expectations", "~> 3.12"
 gem "rspec-mocks", "~> 3.12"
-gem "uri", "~> 0.12.0"
+gem "uri", "~> 0.13.0"
 
 group :doc do
   gem "nronn", "~> 0.11.1", platform: :ruby

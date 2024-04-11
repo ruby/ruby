@@ -17,17 +17,17 @@ module Psych
       end
     end
 
-    # 'y' and 'n' are kind of ambiguous.  Syck treated y and n literals in
+    # 'y', 'Y', 'n', 'N' are kind of ambiguous.  Syck treated those literals in
     # YAML documents as strings.  But this is not what the YAML 1.1 spec says.
     # YAML 1.1 says they should be treated as booleans.  When we're dumping
     # documents, we know it's a string, so adding quotes will eliminate the
     # "ambiguity" in the emitted document
-    def test_y_is_quoted
-      assert_match(/"y"/, Psych.dump("y"))
-    end
 
-    def test_n_is_quoted
-      assert_match(/"n"/, Psych.dump("n"))
+    def test_all_yaml_1_1_booleans_are_quoted
+      yaml_1_1_booleans = %w[y Y yes Yes YES n N no No NO true True TRUE false False FALSE on On ON off Off OFF] # from https://yaml.org/type/bool.html
+      yaml_1_1_booleans.each do |boolean|
+        assert_match(/"#{boolean}"|'#{boolean}'/, Psych.dump(boolean))
+      end
     end
 
     def test_string_with_newline
