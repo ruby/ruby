@@ -4477,8 +4477,8 @@ id2ref(VALUE objid)
         if (ptr == Qtrue) return Qtrue;
         if (ptr == Qfalse) return Qfalse;
         if (NIL_P(ptr)) return Qnil;
-        if (FIXNUM_P(ptr)) return (VALUE)ptr;
-        if (FLONUM_P(ptr)) return (VALUE)ptr;
+        if (FIXNUM_P(ptr)) return ptr;
+        if (FLONUM_P(ptr)) return ptr;
 
         ptr = obj_id_to_ref(objid);
         if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
