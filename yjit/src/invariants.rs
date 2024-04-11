@@ -416,7 +416,7 @@ pub fn block_assumptions_free(blockref: BlockRef) {
         invariants.constant_state_blocks.shrink_to_fit();
     }
 
-    // Remove tracking for blocks assumping no singleton class
+    // Remove tracking for blocks assuming no singleton class
     for (_, blocks) in invariants.no_singleton_classes.iter_mut() {
         blocks.remove(&blockref);
     }
