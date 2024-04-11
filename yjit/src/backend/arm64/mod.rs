@@ -431,12 +431,33 @@ impl Assembler
                         }
                     }
                 },
-                Insn::And { left, right, .. } |
-                Insn::Or { left, right, .. } |
-                Insn::Xor { left, right, .. } => {
+                Insn::And { left, right, out } |
+                Insn::Or { left, right, out } |
+                Insn::Xor { left, right, out } => {
                     let (opnd0, opnd1) = split_boolean_operands(asm, *left, *right);
                     *left = opnd0;
                     *right = opnd1;
+
+                    // Since these instructions are lowered to an instruction that have 2 input
+                    // registers and an output register, look to merge with an `Insn::Mov` that
+                    // follows which puts the output in another register. For example:
+                    // `Add a, b => out` followed by `Mov c, out` becomes `Add a, b => c`.
+                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek()) {
+                        if live_ranges[index] == index + 1 {
+                            // Check after potentially lowering a stack operand to a register operand
+                            let lowered_dest = if let Opnd::Stack { .. } = dest {
+                                asm.lower_stack_opnd(dest)
+                            } else {
+                                *dest
+                            };
+                            if out == src && matches!(lowered_dest, Opnd::Reg(_)) {
+                                *out = lowered_dest;
+                                iterator.map_insn_index(asm);
+                                iterator.next_unmapped(); // Pop merged Insn::Mov
+                            }
+                        }
+                    }
+
                     asm.push_insn(insn);
                 },
                 Insn::CCall { opnds, fptr, .. } => {
