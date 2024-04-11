@@ -16,6 +16,10 @@
 #include "vm_sync.h"
 #include "stdatomic.h"
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 #ifdef __GNUC__
 #define PREFETCH(addr, write_p) __builtin_prefetch(addr, write_p)
 #define EXPECT(expr, val) __builtin_expect(expr, val)
@@ -218,8 +222,7 @@ rb_mmtk_system_physical_memory(void)
         rb_bug("failed to get system physical memory size");
     }
     return (size_t) physical_pages * (size_t) page_size;
-#elif __APPLE__
-    #include <sys/sysctl.h>
+#elif defined(__APPLE__)
     int mib[2];
     mib[0] = CTL_HW;
     mib[1] = HW_MEMSIZE; // total physical memory
