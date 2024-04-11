@@ -4522,15 +4522,12 @@ os_id2ref(VALUE os, VALUE objid)
 static VALUE
 rb_find_object_id(VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 {
-    if (FLONUM_P(obj)) {
+    if (SPECIAL_CONST_P(obj)) {
 #if SIZEOF_LONG == SIZEOF_VOIDP
         return LONG2NUM((SIGNED_VALUE)obj);
 #else
         return LL2NUM((SIGNED_VALUE)obj);
 #endif
-    }
-    else if (SPECIAL_CONST_P(obj)) {
-        return LONG2NUM((SIGNED_VALUE)obj);
     }
 
     return get_heap_object_id(obj);
