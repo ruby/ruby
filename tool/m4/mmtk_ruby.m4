@@ -1,7 +1,7 @@
 dnl -*- Autoconf -*-
 AC_DEFUN([MMTK_RUBY], [
 
-[MMTK_RUBY_SO_NAME=libmmtk_ruby.so]
+[MMTK_RUBY_SO_NAME=libmmtk_ruby.$SOEXT]
 
 AC_ARG_WITH(mmtk-ruby,
     AS_HELP_STRING([--with-mmtk-ruby=DIR],
@@ -31,7 +31,7 @@ AS_IF([test -n "$with_mmtk_ruby"], [
         AC_MSG_NOTICE([User specified the path to $MMTK_RUBY_SO_NAME: $with_mmtk_ruby_so])
         mmtk_ruby_so_basename=$(basename $with_mmtk_ruby_so)
         AS_IF([test "x$mmtk_ruby_so_basename" != "x$MMTK_RUBY_SO_NAME"],[
-            AC_MSG_ERROR([The base name must be $MMTK_RUBY_SO_NAME  Found: $mmtk_ruby_so_basename])
+            AC_MSG_ERROR([The base name must be $MMTK_RUBY_SO_NAME. Found: $mmtk_ruby_so_basename])
         ])
         mmtk_ruby_so_path="$with_mmtk_ruby_so"
         mmtk_ruby_build_suggestion="Please build it first"
