@@ -546,6 +546,9 @@ ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 	find "$$@" -type d -empty -exec $(RMDIRS) {} + 2> /dev/null || true
 	$(Q) $(RMDIRS) $(@D) 2> /dev/null || true
 
+.bundle/realclean::
+	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
+
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
