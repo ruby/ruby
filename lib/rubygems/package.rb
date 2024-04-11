@@ -527,12 +527,13 @@ EOM
   # Loads a Gem::Specification from the TarEntry +entry+
 
   def load_spec(entry) # :nodoc:
+    limit = 10 * 1024 * 1024
     case entry.full_name
     when "metadata" then
-      @spec = Gem::Specification.from_yaml entry.read
+      @spec = Gem::Specification.from_yaml limit_read(entry, "metadata", limit)
     when "metadata.gz" then
       Zlib::GzipReader.wrap(entry, external_encoding: Encoding::UTF_8) do |gzio|
-        @spec = Gem::Specification.from_yaml gzio.read
+        @spec = Gem::Specification.from_yaml limit_read(gzio, "metadata.gz", limit)
       end
     end
   end
@@ -556,7 +557,7 @@ EOM
 
     @checksums = gem.seek "checksums.yaml.gz" do |entry|
       Zlib::GzipReader.wrap entry do |gz_io|
-        Gem::SafeYAML.safe_load gz_io.read
+        Gem::SafeYAML.safe_load limit_read(gz_io, "checksums.yaml.gz", 10 * 1024 * 1024)
       end
     end
   end
@@ -663,7 +664,7 @@ EOM
 
     case file_name
     when /\.sig$/ then
-      @signatures[$`] = entry.read if @security_policy
+      @signatures[$`] = limit_read(entry, file_name, 1024 * 1024) if @security_policy
       return
     else
       digest entry
@@ -714,7 +715,7 @@ EOM
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
 
-  if RUBY_ENGINE == "truffleruby"
+  if RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23.1.2"
     def copy_stream(src, dst) # :nodoc:
       dst.write src.read
     end
@@ -722,6 +723,12 @@ EOM
     def copy_stream(src, dst) # :nodoc:
       IO.copy_stream(src, dst)
     end
+  end
+
+  def limit_read(io, name, limit)
+    bytes = io.read(limit + 1)
+    raise Gem::Package::FormatError, "#{name} is too big (over #{limit} bytes)" if bytes.size > limit
+    bytes
   end
 end
 
