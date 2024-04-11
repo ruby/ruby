@@ -6356,8 +6356,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE_NOT_POPPED(cast->value);
 
         ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
-        int flags = VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL;
-        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
 
         if (!popped) PUSH_INSN(ret, location, dup);
         PUSH_SETLOCAL(ret, location, local_index.index, local_index.level);
