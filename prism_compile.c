@@ -5791,6 +5791,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_forwarding_super_node_t *cast = (const pm_forwarding_super_node_t *) node;
         const rb_iseq_t *block = NULL;
 
+        const rb_iseq_t *previous_block;
+        LABEL *retry_label;
+        LABEL *retry_end_l;
+
+        if (cast->block != NULL) {
+            previous_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+            ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
+
+            retry_label = NEW_LABEL(location.line);
+            retry_end_l = NEW_LABEL(location.line);
+
+            PUSH_LABEL(ret, retry_label);
+        }
+
         PUSH_INSN(ret, location, putself);
         int flag = VM_CALL_ZSUPER | VM_CALL_SUPER | VM_CALL_FCALL;
 
@@ -5798,7 +5812,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((const pm_node_t *) cast->block, &next_scope_node, scope_node);
 
-            block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
+            ISEQ_COMPILE_DATA(iseq)->current_block = block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
             pm_scope_node_destroy(&next_scope_node);
             RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) block);
         }
@@ -5898,8 +5912,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PUSH_SEQ(ret, args);
         PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
-        if (popped) PUSH_INSN(ret, location, pop);
 
+        if (cast->block != NULL) {
+            PUSH_LABEL(ret, retry_end_l);
+            PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, block, retry_end_l);
+            ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
+        }
+
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE: {
@@ -8271,8 +8291,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         DECL_ANCHOR(args);
         INIT_ANCHOR(args);
-        ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
+        LABEL *retry_label = NEW_LABEL(location.line);
+        LABEL *retry_end_l = NEW_LABEL(location.line);
+
+        const rb_iseq_t *previous_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+        const rb_iseq_t *current_block;
+        ISEQ_COMPILE_DATA(iseq)->current_block = current_block = NULL;
+
+        PUSH_LABEL(ret, retry_label);
         PUSH_INSN(ret, location, putself);
 
         int flags = 0;
@@ -8280,11 +8307,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = pm_setup_args(cast->arguments, cast->block, &flags, &keywords, iseq, ret, scope_node, &location);
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
-        const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
         if (cast->block && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)) {
             pm_scope_node_t next_scope_node;
             pm_scope_node_init(cast->block, &next_scope_node, scope_node);
-            parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+
+            ISEQ_COMPILE_DATA(iseq)->current_block = current_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
             pm_scope_node_destroy(&next_scope_node);
         }
 
@@ -8293,9 +8320,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_SEQ(ret, args);
-        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, parent_block != NULL), parent_block);
-
+        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+        PUSH_LABEL(ret, retry_end_l);
         if (popped) PUSH_INSN(ret, location, pop);
+
+        ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
+        PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, current_block, retry_end_l);
+
         return;
       }
       case PM_SYMBOL_NODE: {
