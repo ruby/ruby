@@ -3460,8 +3460,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 }
 
 
-#define OBJ_ID_INCREMENT (sizeof(RVALUE) / 2)
-#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT * 2)
+#define OBJ_ID_INCREMENT (sizeof(RVALUE))
+#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
 
 static int
 object_id_cmp(st_data_t x, st_data_t y)
@@ -4468,25 +4468,28 @@ id2ref(VALUE objid)
 #define NUM2PTR(x) NUM2ULL(x)
 #endif
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE ptr;
-    void *p0;
 
     objid = rb_to_int(objid);
     if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
-        ptr = NUM2PTR(objid);
-        if (ptr == Qtrue) return Qtrue;
-        if (ptr == Qfalse) return Qfalse;
-        if (NIL_P(ptr)) return Qnil;
-        if (FIXNUM_P(ptr)) return ptr;
-        if (FLONUM_P(ptr)) return ptr;
+        VALUE ptr = NUM2PTR(objid);
+        if (SPECIAL_CONST_P(ptr)) {
+            if (ptr == Qtrue) return Qtrue;
+            if (ptr == Qfalse) return Qfalse;
+            if (NIL_P(ptr)) return Qnil;
+            if (FIXNUM_P(ptr)) return ptr;
+            if (FLONUM_P(ptr)) return ptr;
 
-        ptr = obj_id_to_ref(objid);
-        if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
-            ID symid = ptr / sizeof(RVALUE);
-            p0 = (void *)ptr;
-            if (!rb_static_id_valid_p(symid))
-                rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
-            return ID2SYM(symid);
+            if (SYMBOL_P(ptr)) {
+                // Check that the symbol is valid
+                if (rb_static_id_valid_p(SYM2ID(ptr))) {
+                    return ptr;
+                }
+                else {
+                    rb_raise(rb_eRangeError, "%p is not symbol id value", (void *)ptr);
+                }
+            }
+
+            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_int2str(objid, 10));
         }
     }
 
@@ -4519,10 +4522,7 @@ os_id2ref(VALUE os, VALUE objid)
 static VALUE
 rb_find_object_id(VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 {
-    if (STATIC_SYM_P(obj)) {
-        return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
-    }
-    else if (FLONUM_P(obj)) {
+    if (FLONUM_P(obj)) {
 #if SIZEOF_LONG == SIZEOF_VOIDP
         return LONG2NUM((SIGNED_VALUE)obj);
 #else
