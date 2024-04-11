@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# This is turned off because when we run with --parser=prism we explicitly turn
+# off experimental warnings to make sure the output is consistent.
+MSpec.register(:exclude, "Warning.[] returns default values for categories :deprecated and :experimental")
+
 ## Language
 MSpec.register(:exclude, "The defined? keyword when called with a method name in a void context warns about the void context when parsing it")
 MSpec.register(:exclude, "Hash literal expands an '**{}' or '**obj' element with the last key/value pair taking precedence")
@@ -7,7 +11,6 @@ MSpec.register(:exclude, "Hash literal expands an '**{}' and warns when finding 
 MSpec.register(:exclude, "Hash literal merges multiple nested '**obj' in Hash literals")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used")
-MSpec.register(:exclude, "The next statement in a method is invalid and raises a SyntaxError")
 MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation")
 MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation /o")
 MSpec.register(:exclude, "Regexps with encoding modifiers preserves EUC-JP as /e encoding through interpolation")
@@ -25,11 +28,8 @@ MSpec.register(:exclude, "IO.popen with a leading Array argument accepts an IO m
 MSpec.register(:exclude, "TracePoint#eval_script is the evald source code")
 MSpec.register(:exclude, "TracePoint#event returns the type of event")
 MSpec.register(:exclude, "TracePoint#inspect returns a String showing the event, method, path and line for a :return event")
-MSpec.register(:exclude, "TracePoint#inspect returns a String showing the event, path and line for a :class event")
 MSpec.register(:exclude, "TracePoint.new includes multiple events when multiple event names are passed as params")
 MSpec.register(:exclude, "TracePoint#path equals \"(eval at __FILE__:__LINE__)\" inside an eval for :end event")
-MSpec.register(:exclude, "TracePoint#self return the class object from a class event")
-MSpec.register(:exclude, "Warning.[] returns default values for categories :deprecated and :experimental")
 
 ## Library
 MSpec.register(:exclude, "Coverage.peek_result returns the result so far")

@@ -6799,7 +6799,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (popped) PUSH_INSN(ret, location, pop);
             }
             else {
-                rb_raise(rb_eArgError, "Invalid next");
+                COMPILE_ERROR(ERROR_ARGS "Invalid next");
                 return;
             }
         }

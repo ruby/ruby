@@ -1,4 +1,3 @@
-exclude(:test_disallowed_gloal_variable, "unknown")
 exclude(:test_dynamic_constant_assignment, "unknown")
 exclude(:test_else_without_rescue, "unknown")
 exclude(:test_embedded_rd_error, "unknown")
