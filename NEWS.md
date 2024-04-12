@@ -32,6 +32,10 @@ Note: We're only listing outstanding class updates.
   * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
     `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
 
+* Range
+
+  * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
+
 ## Stdlib updates
 
 The following default gems are updated.
@@ -123,6 +127,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
+[Misc #18984]:    https://bugs.ruby-lang.org/issues/18984
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
 [Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
