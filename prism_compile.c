@@ -8672,15 +8672,6 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     pm_scope_node_init(node, scope_node, NULL);
     scope_node->filepath_encoding = filepath_encoding;
 
-    // If there are errors, raise an appropriate error and free the result.
-    if (parser->error_list.size > 0) {
-        VALUE error = pm_parse_process_error(result);
-
-        // TODO: We need to set the backtrace.
-        // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
-        return error;
-    }
-
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;
     const char *warning_filepath = (const char *) pm_string_source(&parser->filepath);
@@ -8694,6 +8685,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
         else {
             rb_compile_warn(warning_filepath, line, "%s", warning->message);
         }
+    }
+
+    // If there are errors, raise an appropriate error and free the result.
+    if (parser->error_list.size > 0) {
+        VALUE error = pm_parse_process_error(result);
+
+        // TODO: We need to set the backtrace.
+        // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
+        return error;
     }
 
     // Now set up the constant pool and intern all of the various constants into
