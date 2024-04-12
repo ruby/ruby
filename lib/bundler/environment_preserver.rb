@@ -19,14 +19,7 @@ module Bundler
     BUNDLER_PREFIX = "BUNDLER_ORIG_"
 
     def self.from_env
-      new(env_to_hash(ENV), BUNDLER_KEYS)
-    end
-
-    def self.env_to_hash(env)
-      to_hash = env.to_hash
-      return to_hash unless Gem.win_platform?
-
-      to_hash.each_with_object({}) {|(k,v), a| a[k.upcase] = v }
+      new(ENV.to_hash, BUNDLER_KEYS)
     end
 
     # @param env [Hash]
