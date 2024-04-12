@@ -745,7 +745,12 @@ bsock_readable_p(VALUE self)
         RB_IO_POINTER(self, fptr);
 
         char buffer[1];
+#ifdef MSG_DONTWAIT
         int result = recv(fptr->fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+#else
+        rb_io_set_nonblock(fptr);
+        int result = recv(fptr->fd, buffer, 1, MSG_PEEK);
+#endif
 
         if (result > 0) {
             return Qtrue;
