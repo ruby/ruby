@@ -1,7 +1,5 @@
 exclude(:test_dynamic_constant_assignment, "unknown")
 exclude(:test_else_without_rescue, "unknown")
-exclude(:test_embedded_rd_error, "unknown")
-exclude(:test_embedded_rd, "unknown")
 exclude(:test_error_def_in_argument, "unknown")
 exclude(:test_float, "unknown")
 exclude(:test_global_variable, "unknown")
