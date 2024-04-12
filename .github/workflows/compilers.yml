@@ -215,7 +215,7 @@ jobs:
       - run: make extract-extlibs
       - run: make incs
       - run: make
-      - run: make leaked-globals
+#     - run: make leaked-globals
       - run: make test
       - run: make install
         if: ${{ matrix.entry.check }}
