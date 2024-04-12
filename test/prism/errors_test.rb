@@ -411,7 +411,7 @@ module Prism
 
     def test_arguments_binding_power_for_and
       assert_error_messages "foo(*bar and baz)", [
-        "expected a `)` to close the arguments",
+        "unexpected 'and'; expected a `)` to close the arguments",
         "unexpected ')', expecting end-of-input",
         "unexpected ')', ignoring it"
       ]
