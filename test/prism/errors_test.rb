@@ -341,7 +341,7 @@ module Prism
     def test_def_with_expression_receiver_and_no_identifier
       assert_errors expression("def (a); end"), "def (a); end", [
         ["expected a `.` or `::` after the receiver in a method definition", 7..7],
-        ["expected a method name", 7..7]
+        ["unexpected ';'; expected a method name", 7..8]
       ]
     end
 

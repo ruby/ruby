@@ -15281,6 +15281,7 @@ parse_method_definition_name(pm_parser_t *parser) {
             parser_lex(parser);
             return parser->previous;
         default:
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_DEF_NAME, pm_token_type_human(parser->current.type));
             return (pm_token_t) { .type = PM_TOKEN_MISSING, .start = parser->current.start, .end = parser->current.end };
     }
 }
@@ -17722,7 +17723,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_node_t *receiver = NULL;
             pm_token_t operator = not_provided(parser);
-            pm_token_t name = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = def_keyword.end, .end = def_keyword.end };
+            pm_token_t name;
 
             // This context is necessary for lexing `...` in a bare params
             // correctly. It must be pushed before lexing the first param, so it
@@ -17804,7 +17805,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                                 receiver = (pm_node_t *) pm_true_node_create(parser, &identifier);
                                 break;
                             case PM_TOKEN_KEYWORD_FALSE:
-                                receiver = (pm_node_t *)pm_false_node_create(parser, &identifier);
+                                receiver = (pm_node_t *) pm_false_node_create(parser, &identifier);
                                 break;
                             case PM_TOKEN_KEYWORD___FILE__:
                                 receiver = (pm_node_t *) pm_source_file_node_create(parser, &identifier);
@@ -17826,9 +17827,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     break;
                 }
                 case PM_TOKEN_PARENTHESIS_LEFT: {
-                    // The current context is `PM_CONTEXT_DEF_PARAMS`, however the inner expression
-                    // of this parenthesis should not be processed under this context.
-                    // Thus, the context is popped here.
+                    // The current context is `PM_CONTEXT_DEF_PARAMS`, however
+                    // the inner expression of this parenthesis should not be
+                    // processed under this context. Thus, the context is popped
+                    // here.
                     context_pop(parser);
                     parser_lex(parser);
 
@@ -17845,7 +17847,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     operator = parser->previous;
                     receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, expression, &rparen);
 
-                    // To push `PM_CONTEXT_DEF_PARAMS` again is for the same reason as described the above.
+                    // To push `PM_CONTEXT_DEF_PARAMS` again is for the same
+                    // reason as described the above.
                     pm_parser_scope_push(parser, true);
                     context_push(parser, PM_CONTEXT_DEF_PARAMS);
                     name = parse_method_definition_name(parser);
@@ -17855,12 +17858,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_parser_scope_push(parser, true);
                     name = parse_method_definition_name(parser);
                     break;
-            }
-
-            // If, after all that, we were unable to find a method name, add an
-            // error to the error list.
-            if (name.type == PM_TOKEN_MISSING) {
-                pm_parser_err_previous(parser, PM_ERR_DEF_NAME);
             }
 
             pm_token_t lparen;
@@ -19856,7 +19853,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     break;
                 }
                 default: {
-                    pm_parser_err_current(parser, PM_ERR_DEF_NAME);
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_MESSAGE, pm_token_type_human(parser->current.type));
                     message = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
                 }
             }
