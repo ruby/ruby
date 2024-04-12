@@ -2623,6 +2623,20 @@ io_fillbuf(rb_io_t *fptr)
     return 0;
 }
 
+VALUE
+rb_io_readable_p(VALUE io)
+{
+    rb_io_t *fptr;
+    RB_IO_POINTER(io, fptr);
+
+    rb_io_check_char_readable(fptr);
+
+    if (READ_CHAR_PENDING(fptr)) return Qtrue;
+    if (READ_DATA_PENDING(fptr)) return Qtrue;
+
+    return RBOOL(fptr->fd >= 0);
+}
+
 /*
  *  call-seq:
  *    eof -> true or false
@@ -15707,6 +15721,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "rewind", rb_io_rewind, 0);
     rb_define_method(rb_cIO, "pos", rb_io_tell, 0);
     rb_define_method(rb_cIO, "pos=", rb_io_set_pos, 1);
+    rb_define_method(rb_cIO, "readable?", rb_io_readable_p, 0);
     rb_define_method(rb_cIO, "eof", rb_io_eof, 0);
     rb_define_method(rb_cIO, "eof?", rb_io_eof, 0);
 

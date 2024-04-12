@@ -735,6 +735,34 @@ bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
     return val;
 }
 
+static VALUE
+bsock_readable_p(VALUE self)
+{
+    VALUE result = rb_call_super(0, NULL);
+
+    if (RTEST(result)) {
+        rb_io_t *fptr;
+        RB_IO_POINTER(self, fptr);
+
+        char buffer[1];
+        int result = recv(fptr->fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+
+        if (result > 0) {
+            return Qtrue;
+        }
+
+        if (result == 0) {
+            return Qfalse;
+        }
+
+        if (result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            return Qtrue;
+        }
+    } else {
+        return Qfalse;
+    }
+}
+
 void
 rsock_init_basicsocket(void)
 {
@@ -767,6 +795,8 @@ rsock_init_basicsocket(void)
 
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
+
+    rb_define_method(rb_cBasicSocket, "readable?", bsock_readable_p, 0);
 
     /* for ext/socket/lib/socket.rb use only: */
     rb_define_private_method(rb_cBasicSocket,

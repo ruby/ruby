@@ -638,6 +638,14 @@ strio_eof(VALUE self)
     return Qtrue;
 }
 
+static VALUE
+strio_readable_p(VALUE self)
+{
+    if (strio_to_read(self)) return Qtrue;
+    return Qfalse;
+
+}
+
 /* :nodoc: */
 static VALUE
 strio_copy(VALUE copy, VALUE orig)
@@ -1936,6 +1944,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "closed_write?", strio_closed_write, 0);
     rb_define_method(StringIO, "eof", strio_eof, 0);
     rb_define_method(StringIO, "eof?", strio_eof, 0);
+    rb_define_method(StringIO, "readable?", strio_readable_p, 0);
     /* call-seq: strio.fcntl */
     rb_define_method(StringIO, "fcntl", strio_fcntl, -1);
     /* call-seq: strio.flush -> strio */
