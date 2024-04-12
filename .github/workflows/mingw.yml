@@ -124,16 +124,16 @@ jobs:
         timeout-minutes: 5
         run: |
           make test
-        shell: cmd
 
       - name: test-all
         timeout-minutes: 45
         run: |
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          chcp.com 437
           make test-all
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
           BUNDLER_VERSION:
-        shell: cmd
 
       - name: test-spec
         timeout-minutes: 10
