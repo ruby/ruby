@@ -4,7 +4,8 @@ bundle-plugin(1) -- Manage Bundler plugins
 ## SYNOPSIS
 
 `bundle plugin` install PLUGINS [--source=<SOURCE>] [--version=<version>]
-                              [--git=<git-url>] [--branch=<branch>|--ref=<rev>]<br>
+                              [--git=<git-url>] [--branch=<branch>|--ref=<rev>]
+                              [--path=<path>]<br>
 `bundle plugin` uninstall PLUGINS<br>
 `bundle plugin` list<br>
 `bundle plugin` help [COMMAND]
@@ -36,7 +37,10 @@ Install the given plugin(s).
   `/path/to/repo`<br>
   `file:///path/to/repo`
 
-  When you specify `--git`, you can use `--branch` or `--ref` to specify any branch, tag, or commit hash (revision) to use. When you specify both, only the latter is used.
+  When you specify `--git`, you can use `--branch` or `--ref` to specify any branch, tag, or commit hash (revision) to use.
+
+* `bundle plugin install bundler-graph --path ../bundler-graph`:
+  Install bundler-graph gem from a local path.
 
 ### uninstall
 

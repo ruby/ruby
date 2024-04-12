@@ -485,6 +485,16 @@ if you believe they were disclosed to a third party.
     end
   end
 
+  def test_accept_string_key
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "verbose: false"
+    end
+
+    util_config_file
+
+    assert_equal false, @cfg.verbose
+  end
+
   def test_load_ssl_verify_mode_from_config
     File.open @temp_conf, "w" do |fp|
       fp.puts ":ssl_verify_mode: 1"

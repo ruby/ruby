@@ -864,6 +864,90 @@ RSpec.describe "bundle update" do
     expect(exitstatus).to eq(22)
   end
 
+  context "with multiple sources and caching enabled" do
+    before do
+      build_repo2 do
+        build_gem "rack", "1.0.0"
+
+        build_gem "request_store", "1.0.0" do |s|
+          s.add_dependency "rack", "1.0.0"
+        end
+      end
+
+      build_repo4 do
+        # set up repo with no gems
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gem "request_store"
+
+        source "#{file_uri_for(gem_repo4)}" do
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            rack (1.0.0)
+            request_store (1.0.0)
+              rack (= 1.0.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+
+        PLATFORMS
+          #{local_platform}
+
+        DEPENDENCIES
+          request_store
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "works" do
+      bundle :install
+      bundle :cache
+
+      update_repo2 do
+        build_gem "request_store", "1.1.0" do |s|
+          s.add_dependency "rack", "1.0.0"
+        end
+      end
+
+      bundle "update request_store"
+
+      expect(out).to include("Bundle updated!")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            rack (1.0.0)
+            request_store (1.1.0)
+              rack (= 1.0.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+
+        PLATFORMS
+          #{local_platform}
+
+        DEPENDENCIES
+          request_store
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   context "with multiple, duplicated sources, with lockfile in old format", bundler: "< 3" do
     before do
       build_repo2 do
@@ -1420,6 +1504,43 @@ RSpec.describe "bundle update --bundler" do
       # Workaround the bug by forcing the version we know is installed.
       expect(the_bundle).to include_gems "rack 1.0", env: { "BUNDLER_VERSION" => "2.3.9" }
     end
+  end
+
+  it "does not claim to update to Bundler version to a wrong version when cached gems are present" do
+    pristine_system_gems "bundler-2.99.0"
+
+    build_repo4 do
+      build_gem "rack", "3.0.9.1"
+
+      build_bundler "2.99.0"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          rack (3.0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+       rack
+
+      BUNDLED WITH
+         2.99.0
+    L
+
+    bundle :cache, verbose: true
+
+    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+    expect(out).not_to include("Updating bundler to")
   end
 
   it "does not update the bundler version in the lockfile if the latest version is not compatible with current ruby", :ruby_repo do

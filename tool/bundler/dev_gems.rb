@@ -7,7 +7,7 @@ gem "rake", "~> 13.1"
 gem "rb_sys"
 
 gem "webrick", "~> 1.6"
-gem "turbo_tests", "~> 2.1"
+gem "turbo_tests", "= 2.2.0"
 gem "parallel_tests", "< 3.9.0"
 gem "parallel", "~> 1.19"
 gem "rspec-core", "~> 3.12"

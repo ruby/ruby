@@ -92,16 +92,18 @@ RSpec.describe "bundler plugin install" do
     expect(out).to include("Using foo 1.1")
   end
 
-  it "installs when --branch specified" do
-    bundle "plugin install foo --branch main --source #{file_uri_for(gem_repo2)}"
+  it "raises an error when when --branch specified" do
+    bundle "plugin install foo --branch main --source #{file_uri_for(gem_repo2)}", raise_on_error: false
 
-    expect(out).to include("Installed plugin foo")
+    expect(out).not_to include("Installed plugin foo")
+
+    expect(err).to include("--branch can only be used with git sources")
   end
 
-  it "installs when --ref specified" do
-    bundle "plugin install foo --ref v1.2.3 --source #{file_uri_for(gem_repo2)}"
+  it "raises an error when --ref specified" do
+    bundle "plugin install foo --ref v1.2.3 --source #{file_uri_for(gem_repo2)}", raise_on_error: false
 
-    expect(out).to include("Installed plugin foo")
+    expect(err).to include("--ref can only be used with git sources")
   end
 
   it "raises error when both --branch and --ref options are specified" do
@@ -208,6 +210,16 @@ RSpec.describe "bundler plugin install" do
       expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")
     end
+  end
+
+  it "installs from a path source" do
+    build_lib "path_plugin" do |s|
+      s.write "plugins.rb"
+    end
+    bundle "plugin install path_plugin --path #{lib_path("path_plugin-1.0")}"
+
+    expect(out).to include("Installed plugin path_plugin")
+    plugin_should_be_installed("path_plugin")
   end
 
   context "Gemfile eval" do

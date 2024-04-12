@@ -45,17 +45,37 @@ module Bundler
 
     # Given a Resolver::Package and an Array of Specifications of available
     # versions for a gem, this method will return the Array of Specifications
-    # sorted (and possibly truncated if strict is true) in an order to give
-    # preference to the current level (:major, :minor or :patch) when resolution
-    # is deciding what versions best resolve all dependencies in the bundle.
+    # sorted in an order to give preference to the current level (:major, :minor
+    # or :patch) when resolution is deciding what versions best resolve all
+    # dependencies in the bundle.
     # @param package [Resolver::Package] The package being resolved.
     # @param specs [Specification] An array of Specifications for the package.
-    # @return [Specification] A new instance of the Specification Array sorted and
-    #    possibly filtered.
+    # @return [Specification] A new instance of the Specification Array sorted.
     def sort_versions(package, specs)
-      specs = filter_dep_specs(specs, package) if strict
+      locked_version = package.locked_version
 
-      sort_dep_specs(specs, package)
+      result = specs.sort do |a, b|
+        unless package.prerelease_specified? || pre?
+          a_pre = a.prerelease?
+          b_pre = b.prerelease?
+
+          next 1 if a_pre && !b_pre
+          next -1 if b_pre && !a_pre
+        end
+
+        if major? || locked_version.nil?
+          b <=> a
+        elsif either_version_older_than_locked?(a, b, locked_version)
+          b <=> a
+        elsif segments_do_not_match?(a, b, :major)
+          a <=> b
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
+          a <=> b
+        else
+          b <=> a
+        end
+      end
+      post_sort(result, package.unlock?, locked_version)
     end
 
     # @return [bool] Convenience method for testing value of level variable.
@@ -73,9 +93,18 @@ module Bundler
       pre == true
     end
 
-    private
+    # Given a Resolver::Package and an Array of Specifications of available
+    # versions for a gem, this method will truncate the Array if strict
+    # is true. That means filtering out downgrades from the version currently
+    # locked, and filtering out upgrades that go past the selected level (major,
+    # minor, or patch).
+    # @param package [Resolver::Package] The package being resolved.
+    # @param specs [Specification] An array of Specifications for the package.
+    # @return [Specification] A new instance of the Specification Array
+    #   truncated.
+    def filter_versions(package, specs)
+      return specs unless strict
 
-    def filter_dep_specs(specs, package)
       locked_version = package.locked_version
       return specs if locked_version.nil? || major?
 
@@ -89,32 +118,7 @@ module Bundler
       end
     end
 
-    def sort_dep_specs(specs, package)
-      locked_version = package.locked_version
-
-      result = specs.sort do |a, b|
-        unless package.prerelease_specified? || pre?
-          a_pre = a.prerelease?
-          b_pre = b.prerelease?
-
-          next -1 if a_pre && !b_pre
-          next  1 if b_pre && !a_pre
-        end
-
-        if major? || locked_version.nil?
-          a <=> b
-        elsif either_version_older_than_locked?(a, b, locked_version)
-          a <=> b
-        elsif segments_do_not_match?(a, b, :major)
-          b <=> a
-        elsif !minor? && segments_do_not_match?(a, b, :minor)
-          b <=> a
-        else
-          a <=> b
-        end
-      end
-      post_sort(result, package.unlock?, locked_version)
-    end
+    private
 
     def either_version_older_than_locked?(a, b, locked_version)
       a.version < locked_version || b.version < locked_version
@@ -133,13 +137,13 @@ module Bundler
       if unlock || locked_version.nil?
         result
       else
-        move_version_to_end(result, locked_version)
+        move_version_to_beginning(result, locked_version)
       end
     end
 
-    def move_version_to_end(result, version)
+    def move_version_to_beginning(result, version)
       move, keep = result.partition {|s| s.version.to_s == version.to_s }
-      keep.concat(move)
+      move.concat(keep)
     end
   end
 end
