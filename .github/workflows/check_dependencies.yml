@@ -17,7 +17,7 @@ jobs:
         if: "contains(matrix.os, 'ubuntu')"
       - name: Install libraries
         run: |
-          brew upgrade
+          brew update
           brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
         if: "contains(matrix.os, 'macos')"
       - name: git config
