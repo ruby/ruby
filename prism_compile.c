@@ -5791,9 +5791,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_forwarding_super_node_t *cast = (const pm_forwarding_super_node_t *) node;
         const rb_iseq_t *block = NULL;
 
-        const rb_iseq_t *previous_block;
-        LABEL *retry_label;
-        LABEL *retry_end_l;
+        const rb_iseq_t *previous_block = NULL;
+        LABEL *retry_label = NULL;
+        LABEL *retry_end_l = NULL;
 
         if (cast->block != NULL) {
             previous_block = ISEQ_COMPILE_DATA(iseq)->current_block;
