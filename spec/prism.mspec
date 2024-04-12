@@ -5,7 +5,6 @@
 MSpec.register(:exclude, "Warning.[] returns default values for categories :deprecated and :experimental")
 
 ## Language
-MSpec.register(:exclude, "The defined? keyword when called with a method name in a void context warns about the void context when parsing it")
 MSpec.register(:exclude, "Hash literal expands an '**{}' or '**obj' element with the last key/value pair taking precedence")
 MSpec.register(:exclude, "Hash literal expands an '**{}' and warns when finding an additional duplicate key afterwards")
 MSpec.register(:exclude, "Hash literal merges multiple nested '**obj' in Hash literals")
