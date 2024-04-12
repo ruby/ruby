@@ -105,9 +105,14 @@ module Prism
     end
 
     def test_unterminated_embdoc
-      assert_errors expression("1"), "1\n=begin\n", [
-        ["could not find a terminator for the embedded document", 2..9]
-      ]
+      message = "embedded document meets end of file"
+      assert_error_messages "=begin", [message]
+      assert_error_messages "=begin\n", [message]
+
+      refute_error_messages "=begin\n=end"
+      refute_error_messages "=begin\n=end\0"
+      refute_error_messages "=begin\n=end\C-d"
+      refute_error_messages "=begin\n=end\C-z"
     end
 
     def test_unterminated_i_list
@@ -2217,7 +2222,7 @@ module Prism
 
     def refute_error_messages(source)
       assert_valid_syntax(source)
-      assert Prism.parse_success?(source)
+      assert Prism.parse_success?(source), "Expected #{source.inspect} to parse successfully"
     end
 
     def assert_warning_messages(source, warnings)

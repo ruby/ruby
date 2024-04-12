@@ -9605,15 +9605,23 @@ lex_embdoc(pm_parser_t *parser) {
     pm_comment_t *comment = parser_comment(parser, PM_COMMENT_EMBDOC);
     if (comment == NULL) return PM_TOKEN_EOF;
 
-    // Now, loop until we find the end of the embedded documentation or the end of
-    // the file.
+    // Now, loop until we find the end of the embedded documentation or the end
+    // of the file.
     while (parser->current.end + 4 <= parser->end) {
         parser->current.start = parser->current.end;
 
-        // If we've hit the end of the embedded documentation then we'll return that
-        // token here.
-        if (memcmp(parser->current.end, "=end", 4) == 0 &&
-                (parser->current.end + 4 == parser->end || pm_char_is_whitespace(parser->current.end[4]))) {
+        // If we've hit the end of the embedded documentation then we'll return
+        // that token here.
+        if (
+            (memcmp(parser->current.end, "=end", 4) == 0) &&
+            (
+                (parser->current.end + 4 == parser->end) || // end of file
+                pm_char_is_whitespace(parser->current.end[4]) || // whitespace
+                (parser->current.end[4] == '\0') || // NUL or end of script
+                (parser->current.end[4] == '\004') || // ^D
+                (parser->current.end[4] == '\032') // ^Z
+            )
+        ) {
             const uint8_t *newline = next_newline(parser->current.end, parser->end - parser->current.end);
 
             if (newline == NULL) {
@@ -10425,9 +10433,13 @@ parser_lex(pm_parser_t *parser) {
 
                 // = => =~ == === =begin
                 case '=':
-                    if (current_token_starts_line(parser) && (parser->current.end + 5 <= parser->end) && memcmp(parser->current.end, "begin", 5) == 0 && pm_char_is_whitespace(peek_offset(parser, 5))) {
+                    if (
+                        current_token_starts_line(parser) &&
+                        (parser->current.end + 5 <= parser->end) &&
+                        memcmp(parser->current.end, "begin", 5) == 0 &&
+                        (pm_char_is_whitespace(peek_offset(parser, 5)) || (peek_offset(parser, 5) == '\0'))
+                    ) {
                         pm_token_type_t type = lex_embdoc(parser);
-
                         if (type == PM_TOKEN_EOF) {
                             LEX(type);
                         }
