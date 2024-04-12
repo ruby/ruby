@@ -869,7 +869,7 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
     return RBOOL(rb_obj_class(obj) == c);
 }
 
-// Returns whether c is a proper (c != cl) subclass of cl
+// Returns whether c is a proper (c != cl) superclass of cl
 // Both c and cl must be T_CLASS
 static VALUE
 class_search_class_ancestor(VALUE cl, VALUE c)
@@ -882,7 +882,7 @@ class_search_class_ancestor(VALUE cl, VALUE c)
     VALUE *classes = RCLASS_SUPERCLASSES(cl);
 
     // If c's inheritance chain is longer, it cannot be an ancestor
-    // We are checking for a proper subclass so don't check if they are equal
+    // We are checking for a proper superclass so don't check if they are equal
     if (cl_depth <= c_depth)
         return Qfalse;
 
