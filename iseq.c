@@ -292,6 +292,10 @@ static bool
 cc_is_active(const struct rb_callcache *cc, bool reference_updating)
 {
     if (cc) {
+        if (cc == rb_vm_empty_cc() || rb_vm_empty_cc_for_super()) {
+            return false;
+        }
+
         if (reference_updating) {
             cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
         }
