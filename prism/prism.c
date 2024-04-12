@@ -1326,8 +1326,6 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
  */
 static void
 pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node) {
-    if (parser->parsing_eval) return;
-
     assert(node->body.size > 0);
     for (size_t index = 0; index < node->body.size - 1; index++) {
         pm_void_statement_check(parser, node->body.nodes[index]);
