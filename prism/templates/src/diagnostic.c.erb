@@ -317,6 +317,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_TERNARY_EXPRESSION_TRUE]            = { "expected an expression after `?` in the ternary operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNDEF_ARGUMENT]                     = { "invalid argument being passed to `undef`; expected a bare word, constant, or symbol argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNARY_RECEIVER]                     = { "unexpected %s, expected a receiver for unary `%c`", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_UNEXPECTED_BLOCK_ARGUMENT]          = { "block argument should not be given", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT]     = { "unexpected %s, assuming it is closing the parent %s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_TOKEN_IGNORE]            = { "unexpected %s, ignoring it", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNTIL_TERM]                         = { "expected an `end` to close the `until` statement", PM_ERROR_LEVEL_SYNTAX },

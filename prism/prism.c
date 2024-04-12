@@ -17601,6 +17601,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_arguments_t arguments = { 0 };
             parse_arguments_list(parser, &arguments, false, accepts_command_call);
 
+            // It's possible that we've parsed a block argument through our
+            // call to parse_arguments_list. If we found one, we should mark it
+            // as invalid and destroy it, as we don't have a place for it on the
+            // yield node.
+            if (arguments.block != NULL) {
+                pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+                pm_node_destroy(parser, arguments.block);
+                arguments.block = NULL;
+            }
+
             pm_node_t *node = (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
             if (!parser->parsing_eval) parse_yield(parser, node);
 

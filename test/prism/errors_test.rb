@@ -2202,6 +2202,10 @@ module Prism
       refute_error_messages "case (); in [{a:1}, {a:2}]; end"
     end
 
+    def test_unexpected_block
+      assert_error_messages "def foo = yield(&:+)", ["block argument should not be given"]
+    end
+
     private
 
     def assert_errors(expected, source, errors, check_valid_syntax: true)
