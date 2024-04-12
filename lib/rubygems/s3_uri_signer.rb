@@ -140,7 +140,7 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_credentials_json
-    require_relative "net/http"
+    require_relative "vendored_net_http"
     require_relative "request"
     require_relative "request/connection_pools"
     require "json"

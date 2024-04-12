@@ -196,14 +196,14 @@ RSpec.describe "bundler plugin install" do
         s.write "plugins.rb"
       end
 
-      bundle "plugin install foo --local_git #{lib_path("foo-1.0")}"
+      bundle "plugin install foo --git #{lib_path("foo-1.0")}"
 
       expect(out).to include("Installed plugin foo")
       plugin_should_be_installed("foo")
     end
 
-    it "raises an error when both git and local git sources are specified" do
-      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", raise_on_error: false
+    it "raises an error when both git and local git sources are specified", bundler: "< 3" do
+      bundle "plugin install foo --git /phony/path/project --local_git git@gitphony.com:/repo/project", raise_on_error: false
 
       expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")

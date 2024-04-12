@@ -18,8 +18,6 @@ module Bundler
 
         if options[:git]
           install_git(names, version, options)
-        elsif options[:local_git]
-          install_local_git(names, version, options)
         else
           sources = options[:source] || Gem.sources
           install_rubygems(names, version, sources)
@@ -45,17 +43,15 @@ module Bundler
         if options.key?(:git) && options.key?(:local_git)
           raise InvalidOption, "Remote and local plugin git sources can't be both specified"
         end
+        # back-compat; local_git is an alias for git
+        if options.key?(:local_git)
+          Bundler::SharedHelpers.major_deprecation(2, "--local_git is deprecated, use --git")
+          options[:git] = options.delete(:local_git)
+        end
       end
 
       def install_git(names, version, options)
         uri = options.delete(:git)
-        options["uri"] = uri
-
-        install_all_sources(names, version, options, options[:source])
-      end
-
-      def install_local_git(names, version, options)
-        uri = options.delete(:local_git)
         options["uri"] = uri
 
         install_all_sources(names, version, options, options[:source])

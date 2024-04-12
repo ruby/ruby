@@ -421,7 +421,7 @@ module Spec
         build_path = @context.tmp + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
-        Dir.mkdir build_path
+        FileUtils.mkdir_p build_path
 
         @context.shipped_files.each do |shipped_file|
           target_shipped_file = shipped_file

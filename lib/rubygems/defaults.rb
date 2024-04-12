@@ -112,7 +112,7 @@ module Gem
   # The path to standard location of the user's configuration directory.
 
   def self.config_home
-    @config_home ||= (ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, ".config"))
+    @config_home ||= ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, ".config")
   end
 
   ##
@@ -145,21 +145,21 @@ module Gem
   # The path to standard location of the user's cache directory.
 
   def self.cache_home
-    @cache_home ||= (ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, ".cache"))
+    @cache_home ||= ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, ".cache")
   end
 
   ##
   # The path to standard location of the user's data directory.
 
   def self.data_home
-    @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, ".local", "share"))
+    @data_home ||= ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, ".local", "share")
   end
 
   ##
   # The path to standard location of the user's state directory.
 
   def self.state_home
-    @state_home ||= (ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state"))
+    @state_home ||= ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state")
   end
 
   ##

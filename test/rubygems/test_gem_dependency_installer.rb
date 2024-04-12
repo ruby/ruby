@@ -198,7 +198,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
 
@@ -237,7 +237,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     FileUtils.mv a3_gem, @tempdir
 
@@ -621,7 +621,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     env = "/\\S+/env" unless Gem.win_platform?
 
-    assert_match(/\A#!#{env} #{RbConfig::CONFIG['ruby_install_name']}\n/,
+    assert_match(/\A#!#{env} #{RbConfig::CONFIG["ruby_install_name"]}\n/,
                  File.read(File.join(@gemhome, "bin", "a_bin")))
   end
 

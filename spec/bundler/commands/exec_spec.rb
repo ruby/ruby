@@ -831,8 +831,7 @@ RSpec.describe "bundle exec" do
       let(:executable) { super() << "\nraise 'ERROR'" }
       let(:exit_code) { 1 }
       let(:expected_err) do
-        "bundler: failed to load command: #{path} (#{path})" \
-        "\n#{path}:10:in `<top (required)>': ERROR (RuntimeError)"
+        /\Abundler: failed to load command: #{Regexp.quote(path.to_s)} \(#{Regexp.quote(path.to_s)}\)\n#{Regexp.quote(path.to_s)}:10:in [`']<top \(required\)>': ERROR \(RuntimeError\)/
       end
 
       it "runs like a normally executed executable" do
@@ -840,7 +839,7 @@ RSpec.describe "bundle exec" do
 
         subject
         expect(exitstatus).to eq(exit_code)
-        expect(err).to start_with(expected_err)
+        expect(err).to match(expected_err)
         expect(out).to eq(expected)
       end
     end

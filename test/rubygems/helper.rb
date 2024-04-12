@@ -76,6 +76,8 @@ class Gem::TestCase < Test::Unit::TestCase
 
   attr_accessor :uri # :nodoc:
 
+  @@tempdirs = []
+
   def assert_activate(expected, *specs)
     specs.each do |spec|
       case spec
@@ -349,11 +351,16 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir @tempdir
 
     ENV["HOME"] = @userhome
+    # Remove "RUBY_CODESIGN", which is used by mkmf-generated Makefile to
+    # sign extension bundles on macOS, to avoid trying to find the specified key
+    # from the fake $HOME/Library/Keychains directory.
+    ENV.delete "RUBY_CODESIGN"
     Gem.instance_variable_set :@config_file, nil
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@config_home, nil
     Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@state_home, @statehome
+    Gem.instance_variable_set :@state_file, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
     Gem.send :remove_instance_variable, :@ruby_version if
@@ -470,6 +477,13 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     @back_ui.close
+
+    refute_directory_exists @tempdir, "may be still in use"
+    ghosts = @@tempdirs.filter_map do |test_name, tempdir|
+      test_name if File.exist?(tempdir)
+    end
+    @@tempdirs << [method_name, @tempdir]
+    assert_empty ghosts
   end
 
   def credential_setup

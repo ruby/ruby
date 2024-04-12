@@ -9,10 +9,6 @@ rescue LoadError => e
   raise unless e.path == "rake/packagetask"
 end
 
-unless defined?(Rake::PackageTask)
-  warn "Skipping Gem::PackageTask tests.  rake not found."
-end
-
 class TestGemPackageTask < Gem::TestCase
   def test_gem_package
     original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag

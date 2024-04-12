@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "net/http"
+require_relative "vendored_net_http"
 require_relative "user_interaction"
 
 class Gem::Request

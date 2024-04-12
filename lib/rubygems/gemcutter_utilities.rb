@@ -85,7 +85,7 @@ module Gem::GemcutterUtilities
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
   def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, credentials: {}, &block)
-    require_relative "net/http"
+    require_relative "vendored_net_http"
 
     self.host = host if host
     unless self.host
