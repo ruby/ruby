@@ -13297,7 +13297,6 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 if (token_begins_expression_p(parser->current.type)) {
                     expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_EXPECT_ARGUMENT);
                 } else {
-                    // A block forwarding in a method having `...` parameter (e.g. `def foo(...); bar(&); end`) is available.
                     pm_parser_scope_forwarding_block_check(parser, &operator);
                 }
 
