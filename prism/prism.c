@@ -13486,7 +13486,6 @@ parse_parameters(
                     update_parameter_state(parser, &parser->current, &order);
                     parser_lex(parser);
 
-                    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_BLOCK;
                     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_ALL;
 
                     pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);

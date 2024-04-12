@@ -190,6 +190,7 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error("def f(...); g(0, *); end", /no anonymous rest parameter/)
     assert_syntax_error("def f(...); g(**); end", /no anonymous keyword rest parameter/)
     assert_syntax_error("def f(...); g(x: 1, **); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def f(...); g(&); end", /no anonymous block parameter/)
   end
 
   def test_newline_in_block_parameters

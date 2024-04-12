@@ -4263,7 +4263,7 @@ block_arg	: tAMPER arg_value
                     }
                 | tAMPER
                     {
-                        forwarding_arg_check(p, idFWD_BLOCK, 0, "block");
+                        forwarding_arg_check(p, idFWD_BLOCK, idFWD_ALL, "block");
                         $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% ripper: Qnil %*/
                     }

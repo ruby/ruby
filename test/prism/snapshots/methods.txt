@@ -1908,21 +1908,22 @@
         │   │   │   @ ForwardingParameterNode (location: (177,8)-(177,11))
         │   │   └── block: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (178,2)-(178,7))
+        │   │   @ StatementsNode (location: (178,2)-(178,10))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (178,2)-(178,7))
+        │   │       └── @ CallNode (location: (178,2)-(178,10))
         │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
         │   │           ├── message_loc: (178,2)-(178,5) = "bar"
         │   │           ├── opening_loc: (178,5)-(178,6) = "("
-        │   │           ├── arguments: ∅
-        │   │           ├── closing_loc: (178,7)-(178,8) = ")"
-        │   │           └── block:
-        │   │               @ BlockArgumentNode (location: (178,6)-(178,7))
-        │   │               ├── expression: ∅
-        │   │               └── operator_loc: (178,6)-(178,7) = "&"
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (178,6)-(178,9))
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (178,6)-(178,9))
+        │   │           ├── closing_loc: (178,9)-(178,10) = ")"
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (177,0)-(177,3) = "def"
         │   ├── operator_loc: ∅
