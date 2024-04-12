@@ -28,35 +28,6 @@ module TestIRB
       restore_encodings
     end
 
-    def test_last_value
-      assert_nil(@context.last_value)
-      assert_nil(@context.evaluate('_', 1))
-      obj = Object.new
-      @context.set_last_value(obj)
-      assert_same(obj, @context.last_value)
-      assert_same(obj, @context.evaluate('_', 1))
-    end
-
-    def test_evaluate_with_encoding_error_without_lineno
-      if RUBY_ENGINE == 'truffleruby'
-        omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
-      end
-
-      if RUBY_VERSION >= "3.4."
-        omit "Now raises SyntaxError"
-      end
-
-      assert_raise_with_message(EncodingError, /invalid symbol/) {
-        @context.evaluate(%q[:"\xAE"], 1)
-        # The backtrace of this invalid encoding hash doesn't contain lineno.
-      }
-    end
-
-    def test_evaluate_still_emits_warning
-      assert_warning("(irb):1: warning: END in method; use at_exit\n") do
-        @context.evaluate(%q[def foo; END {}; end], 1)
-      end
-    end
 
     def test_eval_input
       verbose, $VERBOSE = $VERBOSE, nil
@@ -382,7 +353,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("=> \n#{value}\n", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
         irb.context.echo = true
@@ -392,7 +363,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\n=> \n#{value}\n", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
         irb.context.echo = true
@@ -402,7 +373,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("=> \n#{value}\n=> \n#{value}\n", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
         irb.context.echo = false
@@ -412,7 +383,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
         irb.context.echo = false
@@ -422,7 +393,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
         irb.context.echo = false
@@ -432,7 +403,7 @@ module TestIRB
         end
         assert_empty err
         assert_equal("", out)
-        irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
       end
     end
 

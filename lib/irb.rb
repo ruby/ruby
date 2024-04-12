@@ -1028,21 +1028,7 @@ module IRB
               return statement.code
             end
 
-            case statement
-            when Statement::EmptyInput
-              # Do nothing
-            when Statement::Expression
-              @context.evaluate(statement.code, line_no)
-            when Statement::Command
-              ret = statement.command_class.execute(@context, statement.arg)
-              # TODO: Remove this output once we have a better way to handle it
-              # This is to notify `debug`'s test framework that the current input has been processed
-              # We also need to have a way to restart/stop threads around command execution
-              # when being used as `debug`'s console.
-              # https://github.com/ruby/debug/blob/master/lib/debug/irb_integration.rb#L8-L13
-              puts "INTERNAL_INFO: {}" if @context.with_debugger && ENV['RUBY_DEBUG_TEST_UI'] == 'terminal'
-              @context.set_last_value(ret)
-            end
+            @context.evaluate(statement, line_no)
 
             if @context.echo? && !statement.suppresses_echo?
               if statement.is_assignment?

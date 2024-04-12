@@ -42,6 +42,56 @@ module TestIRB
       assert_include output, "From: #{@ruby_file.path}:1"
     end
 
+    def test_underscore_stores_last_result
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "1 + 1"
+        type "_ + 10"
+        type "exit!"
+      end
+
+      assert_include output, "=> 12"
+    end
+
+    def test_evaluate_with_encoding_error_without_lineno
+      if RUBY_ENGINE == 'truffleruby'
+        omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
+      end
+
+      if RUBY_VERSION >= "3.4."
+        omit "Now raises SyntaxError"
+      end
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type %q[:"\xAE"]
+        type "exit!"
+      end
+
+      assert_include output, 'invalid symbol in encoding UTF-8 :"\xAE"'
+      # EncodingError would be wrapped with ANSI escape sequences, so we assert it separately
+      assert_include output, "EncodingError"
+    end
+
+    def test_evaluate_still_emits_warning
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type %q[def foo; END {}; end]
+        type "exit!"
+      end
+
+      assert_include output, '(irb):1: warning: END in method; use at_exit'
+    end
+
     def test_symbol_aliases_dont_affect_ruby_syntax
       write_ruby <<~'RUBY'
         $foo = "It's a foo"
