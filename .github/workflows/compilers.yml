@@ -1,17 +1,31 @@
 name: Compilations
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
 # Github actions does not support YAML anchors.  This creative use of
-# environment variables (plus the "echo ::set-env" hack) is to reroute that
+# environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-11
+  default_cc: clang-14
   append_cc: ''
   crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
-  # to optimize binaries.  Also Github Actions runs on a relatively modern CPU
+  # to optimize binaries.  Also Github Actions run on relatively modern CPUs
   # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
   # because compilers tend not understand what the CPU is.
   optflags: '-O1'
@@ -47,32 +61,47 @@ jobs:
       fail-fast: false
       matrix:
         entry:
-          - { key: default_cc, name: gcc-10,    value: gcc-10 }
-#         - { key: default_cc, name: gcc-9,     value: gcc-9 }
-#         - { key: default_cc, name: gcc-8,     value: gcc-8 }
-#         - { key: default_cc, name: gcc-7,     value: gcc-7 }
-#         - { key: default_cc, name: gcc-6,     value: gcc-6 }
-#         - { key: default_cc, name: gcc-5,     value: gcc-5 }
-          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8 }
-          - { key: default_cc, name: clang-12,  value: clang-12 }
-#         - { key: default_cc, name: clang-11,  value: clang-11 }
-#         - { key: default_cc, name: clang-10,  value: clang-10 }
-#         - { key: default_cc, name: clang-9,   value: clang-9 }
-#         - { key: default_cc, name: clang-8,   value: clang-8 }
-#         - { key: default_cc, name: clang-7,   value: clang-7 }
-#         - { key: default_cc, name: clang-6.0, value: clang-6.0 }
-#         - { key: default_cc, name: clang-5.0, value: clang-5.0 }
-#         - { key: default_cc, name: clang-4.0, value: clang-4.0 }
-          - { key: default_cc, name: clang-3.9, value: clang-3.9 }
+          - { key: default_cc, name: gcc-11,    value: gcc-11,    container: gcc-11 }
+          - { key: default_cc, name: gcc-10,    value: gcc-10,    container: gcc-10 }
+          - { key: default_cc, name: gcc-9,     value: gcc-9,     container: gcc-9 }
+          - { key: default_cc, name: gcc-8,     value: gcc-8,     container: gcc-8 }
+          - { key: default_cc, name: gcc-7,     value: gcc-7,     container: gcc-7 }
+          - { key: default_cc, name: gcc-6,     value: gcc-6,     container: gcc-6 }
+          - { key: default_cc, name: gcc-5,     value: gcc-5,     container: gcc-5 }
+          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
+          - key: default_cc
+            name: 'gcc-11 LTO'
+            value: 'gcc-11 -O2 -flto=auto -ffat-lto-objects'
+            container: gcc-11
+            shared: '--disable-shared'
+            # check: true
+          - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
+          - { key: default_cc, name: clang-13,  value: clang-13,  container: clang-13 }
+          - { key: default_cc, name: clang-12,  value: clang-12,  container: clang-12 }
+          - { key: default_cc, name: clang-11,  value: clang-11,  container: clang-11 }
+          - { key: default_cc, name: clang-10,  value: clang-10,  container: clang-10 }
+          - { key: default_cc, name: clang-9,   value: clang-9,   container: clang-9 }
+          - { key: default_cc, name: clang-8,   value: clang-8,   container: clang-8 }
+          - { key: default_cc, name: clang-7,   value: clang-7,   container: clang-7 }
+          - { key: default_cc, name: clang-6.0, value: clang-6.0, container: clang-6.0 }
+          - { key: default_cc, name: clang-5.0, value: clang-5.0, container: clang-5.0 }
+          - { key: default_cc, name: clang-4.0, value: clang-4.0, container: clang-4.0 }
+          - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
+          - key: default_cc
+            name: 'clang-14 LTO'
+            value: 'clang-14 -O2 -flto=auto'
+            container: clang-14
+            shared: '--disable-shared'
+            # check: true
 
-          - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu }
+          - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
 #         - { key: crosshost, name: arm-linux-gnueabihf,   value: arm-linux-gnueabihf }
 #         - { key: crosshost, name: i686-w64-mingw32,      value: i686-w64-mingw32 }
 #         - { key: crosshost, name: powerpc-linux-gnu,     value: powerpc-linux-gnu }
-          - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu }
-          - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu }
-          - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32 }
+          - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
+          - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
+          - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
 
           - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
 #         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
@@ -85,13 +114,13 @@ jobs:
           - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 
           - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
-#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
+#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic', check: true }
 
           - { key: append_configure, name: gmp,                  value: '--with-gmp' }
           - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
           - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
           - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
-          - { key: append_configure, name: 'coroutine=copy',     value: '--with-coroutine=copy' }
+          - { key: append_configure, name: 'coroutine=pthread',  value: '--with-coroutine=pthread' }
           - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
@@ -130,7 +159,7 @@ jobs:
 
           - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
           - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
-          - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
+#         - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
 
           - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
 #         - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
@@ -152,50 +181,50 @@ jobs:
 #         - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
 
           - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
+          - { key: cppflags, name: YJIT_FORCE_ENABLE,              value: '-DYJIT_FORCE_ENABLE' }
 
     name: ${{ matrix.entry.name }}
-    runs-on: ubuntu-20.04
-    container: ghcr.io/ruby/ruby-ci-image:latest
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
+      options: --user root
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
+      - run: id
+        working-directory:
       - run: mkdir build
         working-directory:
       - name: setenv
         run: |
           echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
-          echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+          echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
         with:
           path: src
+      - uses: actions/cache@v3
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: |
-          if [ -n "${crosshost}" ]; then
-            ../src/configure -C \
-              ${default_configure} \
-              ${append_configure} \
-              --host="${crosshost}"
-          else
-            ../src/configure -C \
-              ${default_configure} \
-              ${append_configure} \
-              --with-gcc="${default_cc} ${append_cc}"
-          fi
-      - run: $make extract-extlibs
-      - run: $make incs
-      - run: $make
-      - run: $make test
-      - run: $make install
-        if: "matrix.entry.name == '-O3'"
-      - run: /usr/local/bin/gem install --no-doc timezone tzinfo
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-tool
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-all TESTS='-- ruby -ext-'
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-spec
-        if: "matrix.entry.name == '-O3'"
+        run: >
+          ../src/configure -C ${default_configure} ${append_configure}
+          ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
+          ${{ matrix.entry.shared || '--enable-shared' }}
+      - run: make extract-extlibs
+      - run: make incs
+      - run: make
+      - run: make leaked-globals
+      - run: make test
+      - run: make install
+        if: ${{ matrix.entry.check }}
+      - run: make test-tool
+        if: ${{ matrix.entry.check }}
+      - run: make test-all TESTS='-- ruby -ext-'
+        if: ${{ matrix.entry.check }}
+      - run: make test-spec
+        if: ${{ matrix.entry.check }}
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
@@ -209,7 +238,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:
