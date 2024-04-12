@@ -187,6 +187,20 @@ module Prism
       refute_warning("@foo", compare: false, scopes: [[]])
     end
 
+    def test_unreachable_statement
+      assert_warning("begin; rescue; retry; foo; end", "statement not reached")
+
+      assert_warning("return; foo", "statement not reached")
+
+      assert_warning("tap { break; foo }", "statement not reached")
+      assert_warning("tap { break 1; foo }", "statement not reached")
+
+      assert_warning("tap { next; foo }", "statement not reached")
+      assert_warning("tap { next 1; foo }", "statement not reached")
+
+      assert_warning("tap { redo; foo }", "statement not reached")
+    end
+
     private
 
     def assert_warning(source, message)
