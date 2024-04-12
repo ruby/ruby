@@ -7,6 +7,7 @@
             ├── flags: ∅
             ├── elements: (length: 2)
             │   ├── @ InterpolatedStringNode (location: (1,1)-(1,4))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (1,1)-(1,4) = "<<A"
             │   │   ├── parts: (length: 3)
             │   │   │   ├── @ EmbeddedStatementsNode (location: (2,0)-(2,6))
@@ -22,13 +23,13 @@
             │   │   │   │   │           └── unescaped: "b\n"
             │   │   │   │   └── closing_loc: (2,5)-(2,6) = "}"
             │   │   │   ├── @ StringNode (location: (2,6)-(3,0))
-            │   │   │   │   ├── flags: ∅
+            │   │   │   │   ├── flags: frozen
             │   │   │   │   ├── opening_loc: ∅
             │   │   │   │   ├── content_loc: (2,6)-(3,0) = "\n"
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   └── unescaped: "\n"
             │   │   │   └── @ StringNode (location: (5,0)-(6,0))
-            │   │   │       ├── flags: ∅
+            │   │   │       ├── flags: frozen
             │   │   │       ├── opening_loc: ∅
             │   │   │       ├── content_loc: (5,0)-(6,0) = "a\n"
             │   │   │       ├── closing_loc: ∅

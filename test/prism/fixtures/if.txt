@@ -7,13 +7,13 @@ if true then true elsif false then false elsif nil then nil else self end
 
 1 if true
 
-break if true
+tap { break if true }
 
-next if true
+tap { next if true }
 
 return if true
 
-if exit_loop then break 42 end
+tap { if exit_loop then break 42 end }
 
 if foo
 then bar
@@ -30,10 +30,10 @@ if type in 1
 elsif type in B
 end
 
-if 1
+if f1
   lambda do |_|
   end
-elsif 2
+elsif f2
   lambda do |_|
   end
 else

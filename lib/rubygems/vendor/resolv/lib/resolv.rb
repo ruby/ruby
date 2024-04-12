@@ -37,7 +37,7 @@ end
 
 class Gem::Resolv
 
-  VERSION = "0.3.0"
+  VERSION = "0.4.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -194,17 +194,10 @@ class Gem::Resolv
           File.open(@filename, 'rb') {|f|
             f.each {|line|
               line.sub!(/#.*/, '')
-              addr, hostname, *aliases = line.split(/\s+/)
+              addr, *hostnames = line.split(/\s+/)
               next unless addr
-              @addr2name[addr] = [] unless @addr2name.include? addr
-              @addr2name[addr] << hostname
-              @addr2name[addr].concat(aliases)
-              @name2addr[hostname] = [] unless @name2addr.include? hostname
-              @name2addr[hostname] << addr
-              aliases.each {|n|
-                @name2addr[n] = [] unless @name2addr.include? n
-                @name2addr[n] << addr
-              }
+              (@addr2name[addr] ||= []).concat(hostnames)
+              hostnames.each {|hostname| (@name2addr[hostname] ||= []) << addr}
             }
           }
           @name2addr.each {|name, arr| arr.reverse!}
@@ -2544,8 +2537,70 @@ class Gem::Resolv
         TypeValue = 255 # :nodoc:
       end
 
+      ##
+      # CAA resource record defined in RFC 8659
+      #
+      # These records identify certificate authority allowed to issue
+      # certificates for the given domain.
+
+      class CAA < Resource
+        TypeValue = 257
+
+        ##
+        # Creates a new CAA for +flags+, +tag+ and +value+.
+
+        def initialize(flags, tag, value)
+          unless (0..255) === flags
+            raise ArgumentError.new('flags must be an Integer between 0 and 255')
+          end
+          unless (1..15) === tag.bytesize
+            raise ArgumentError.new('length of tag must be between 1 and 15')
+          end
+
+          @flags = flags
+          @tag = tag
+          @value = value
+        end
+
+        ##
+        # Flags for this proprty:
+        # - Bit 0 : 0 = not critical, 1 = critical
+
+        attr_reader :flags
+
+        ##
+        # Property tag ("issue", "issuewild", "iodef"...).
+
+        attr_reader :tag
+
+        ##
+        # Property value.
+
+        attr_reader :value
+
+        ##
+        # Whether the critical flag is set on this property.
+
+        def critical?
+          flags & 0x80 != 0
+        end
+
+        def encode_rdata(msg) # :nodoc:
+          msg.put_pack('C', @flags)
+          msg.put_string(@tag)
+          msg.put_bytes(@value)
+        end
+
+        def self.decode_rdata(msg) # :nodoc:
+          flags, = msg.get_unpack('C')
+          tag = msg.get_string
+          value = msg.get_bytes
+          self.new flags, tag, value
+        end
+      end
+
       ClassInsensitiveTypes = [ # :nodoc:
-        NS, CNAME, SOA, PTR, HINFO, MINFO, MX, TXT, LOC, ANY
+        NS, CNAME, SOA, PTR, HINFO, MINFO, MX, TXT, LOC, ANY, CAA
       ]
 
       ##

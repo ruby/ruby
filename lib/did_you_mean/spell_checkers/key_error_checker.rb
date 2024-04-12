@@ -14,7 +14,15 @@ module DidYouMean
     private
 
     def exact_matches
-      @exact_matches ||= @keys.select { |word| @key == word.to_s }.map(&:inspect)
+      @exact_matches ||= @keys.select { |word| @key == word.to_s }.map { |obj| format_object(obj) }
+    end
+
+    def format_object(symbol_or_object)
+      if symbol_or_object.is_a?(Symbol)
+        ":#{symbol_or_object}"
+      else
+        symbol_or_object.to_s
+      end
     end
   end
 end

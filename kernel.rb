@@ -58,10 +58,10 @@ module Kernel
   #     a.freeze    #=> ["a", "b", "c"]
   #     a.frozen?   #=> true
   #--
-  # Determines if the object is frozen. Equivalent to \c Object\#frozen? in Ruby.
-  # \param[in] obj  the object to be determines
-  # \retval Qtrue if frozen
-  # \retval Qfalse if not frozen
+  # Determines if the object is frozen. Equivalent to `Object#frozen?` in Ruby.
+  # @param[in] obj  the object to be determines
+  # @retval Qtrue if frozen
+  # @retval Qfalse if not frozen
   #++
   #
   def frozen?

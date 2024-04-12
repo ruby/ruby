@@ -20,6 +20,14 @@ pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capac
 }
 
 /**
+ * Clear out the newlines that have been appended to the list.
+ */
+void
+pm_newline_list_clear(pm_newline_list_t *list) {
+    list->size = 1;
+}
+
+/**
  * Append a new offset to the newline list. Returns true if the reallocation of
  * the offsets succeeds (if one was necessary), otherwise returns false.
  */

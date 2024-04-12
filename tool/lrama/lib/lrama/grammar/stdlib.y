@@ -8,6 +8,9 @@
 
 **********************************************************************/
 
+// -------------------------------------------------------------------
+// Options
+
 /*
  * program: option(number)
  *
@@ -20,6 +23,45 @@
 %rule option(X): /* empty */
                | X
                ;
+
+// -------------------------------------------------------------------
+// Sequences
+
+/*
+ * program: preceded(opening, X)
+ *
+ * =>
+ *
+ * program: preceded_opening_X
+ * preceded_opening_X: opening X
+ */
+%rule preceded(opening, X): opening X { $$ = $2; }
+                          ;
+
+/*
+ * program: terminated(X, closing)
+ *
+ * =>
+ *
+ * program: terminated_X_closing
+ * terminated_X_closing: X closing
+ */
+%rule terminated(X, closing): X closing { $$ = $1; }
+                            ;
+
+/*
+ * program: delimited(opening, X, closing)
+ *
+ * =>
+ *
+ * program: delimited_opening_X_closing
+ * delimited_opening_X_closing: opening X closing
+ */
+%rule delimited(opening, X, closing): opening X closing { $$ = $2; }
+                                     ;
+
+// -------------------------------------------------------------------
+// Lists
 
 /*
  * program: list(number)

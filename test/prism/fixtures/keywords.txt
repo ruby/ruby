@@ -1,6 +1,6 @@
-redo
+tap { redo }
 
-retry
+begin; rescue; retry; end
 
 self
 

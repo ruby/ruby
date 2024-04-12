@@ -92,9 +92,13 @@ struct pty_info {
 
 static void getDevice(int*, int*, char [DEVICELEN], int);
 
+static int start_new_session(char *errbuf, size_t errbuf_len);
+static int obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len);
+static int drop_privilige(char *errbuf, size_t errbuf_len);
+
 struct child_info {
     int master, slave;
-    char *slavename;
+    const char *slavename;
     VALUE execarg_obj;
     struct rb_execarg *eargp;
 };
@@ -102,26 +106,42 @@ struct child_info {
 static int
 chfunc(void *data, char *errbuf, size_t errbuf_len)
 {
-    struct child_info *carg = data;
+    const struct child_info *carg = data;
     int master = carg->master;
     int slave = carg->slave;
+    const char *slavename = carg->slavename;
+
+    if (start_new_session(errbuf, errbuf_len))
+        return -1;
+
+    if (obtain_ctty(master, slave, slavename, errbuf, errbuf_len))
+        return -1;
+
+    if (drop_privilige(errbuf, errbuf_len))
+        return -1;
+
+    return rb_exec_async_signal_safe(carg->eargp, errbuf, errbuf_len);
+}
 
 #define ERROR_EXIT(str) do { \
         strlcpy(errbuf, (str), errbuf_len); \
         return -1; \
     } while (0)
 
-    /*
-     * Set free from process group and controlling terminal
-     */
+/*
+ * Set free from process group and controlling terminal
+ */
+static int
+start_new_session(char *errbuf, size_t errbuf_len)
+{
 #ifdef HAVE_SETSID
     (void) setsid();
 #else /* HAS_SETSID */
 # ifdef HAVE_SETPGRP
-#  ifdef SETGRP_VOID
+#  ifdef SETPGRP_VOID
     if (setpgrp() == -1)
         ERROR_EXIT("setpgrp()");
-#  else /* SETGRP_VOID */
+#  else /* SETPGRP_VOID */
     if (setpgrp(0, getpid()) == -1)
         ERROR_EXIT("setpgrp()");
     {
@@ -132,20 +152,25 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
             ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
     }
-#  endif /* SETGRP_VOID */
+#  endif /* SETPGRP_VOID */
 # endif /* HAVE_SETPGRP */
 #endif /* HAS_SETSID */
+    return 0;
+}
 
-    /*
-     * obtain new controlling terminal
-     */
+/*
+ * obtain new controlling terminal
+ */
+static int
+obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len)
+{
 #if defined(TIOCSCTTY)
     close(master);
     (void) ioctl(slave, TIOCSCTTY, (char *)0);
     /* errors ignored for sun */
 #else
     close(slave);
-    slave = rb_cloexec_open(carg->slavename, O_RDWR, 0);
+    slave = rb_cloexec_open(slavename, O_RDWR, 0);
     if (slave < 0) {
         ERROR_EXIT("open: pty slave");
     }
@@ -156,13 +181,19 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,1);
     dup2(slave,2);
     if (slave < 0 || slave > 2) (void)!close(slave);
+    return 0;
+}
+
+static int
+drop_privilige(char *errbuf, size_t errbuf_len)
+{
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
-
-    return rb_exec_async_signal_safe(carg->eargp, errbuf, sizeof(errbuf_len));
-#undef ERROR_EXIT
+    return 0;
 }
+
+#undef ERROR_EXIT
 
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
@@ -225,7 +256,21 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     RB_GC_GUARD(carg.execarg_obj);
 }
 
-#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME)
+#if defined(HAVE_PTSNAME) && !defined(HAVE_PTSNAME_R)
+/* glibc only, not obsolete interface on Tru64 or HP-UX */
+static int
+ptsname_r(int fd, char *buf, size_t buflen)
+{
+    extern char *ptsname(int);
+    char *name = ptsname(fd);
+    if (!name) return -1;
+    strlcpy(buf, name, buflen);
+    return 0;
+}
+# define HAVE_PTSNAME_R 1
+#endif
+
+#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME_R)
 static int
 no_mesg(char *slavedevice, int nomesg)
 {
@@ -258,13 +303,19 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     /* Unix98 PTY */
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
+    struct sigaction dfl, old;
+
+    dfl.sa_handler = SIG_DFL;
+    dfl.sa_flags = 0;
+    sigemptyset(&dfl.sa_mask);
 
 #if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
-    if (rb_grantpt(masterfd) == -1) goto error;
+    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
+    if (grantpt(masterfd) == -1) goto grantpt_error;
     rb_fd_fix_cloexec(masterfd);
 #else
     {
@@ -278,10 +329,13 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
         if ((masterfd = posix_openpt(flags)) == -1) goto error;
     }
     rb_fd_fix_cloexec(masterfd);
-    if (rb_grantpt(masterfd) == -1) goto error;
+    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
+    if (grantpt(masterfd) == -1) goto grantpt_error;
 #endif
+    if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
     if (unlockpt(masterfd) == -1) goto error;
-    if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -294,9 +348,10 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
+  grantpt_error:
+    sigaction(SIGCHLD, &old, NULL);
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
@@ -346,21 +401,25 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     char *slavedevice;
     void (*s)();
 
-    extern char *ptsname(int);
     extern int unlockpt(int);
+    extern int grantpt(int);
 
 #if defined(__sun)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    if(rb_grantpt(masterfd) == -1) goto error;
+    s = signal(SIGCHLD, SIG_DFL);
+    if(grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(masterfd);
-    if(rb_grantpt(masterfd) == -1) goto error;
+    s = signal(SIGCHLD, SIG_DFL);
+    if(grantpt(masterfd) == -1) goto error;
 #endif
+    signal(SIGCHLD, s);
     if(unlockpt(masterfd) == -1) goto error;
-    if((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -371,7 +430,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #endif
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
   error:

@@ -47,6 +47,10 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 
 #define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
 
+#define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
+#define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
+#define ISEQ_FROZEN_STRING_LITERAL_UNSET -1
+
 static inline rb_snum_t
 ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 {
@@ -172,6 +176,7 @@ void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod);
 int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
+int rb_iseq_opt_frozen_string_literal(void);
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
@@ -226,7 +231,7 @@ struct rb_compile_option_struct {
     unsigned int specialized_instruction: 1;
     unsigned int operands_unification: 1;
     unsigned int instructions_unification: 1;
-    unsigned int frozen_string_literal: 1;
+    signed int frozen_string_literal: 2; /* -1: not specified, 0: false, 1: true */
     unsigned int debug_frozen_string_literal: 1;
     unsigned int coverage_enabled: 1;
     int debug_level;

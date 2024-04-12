@@ -19,10 +19,10 @@ end
 
 describe "String#byteslice on on non ASCII strings" do
   it "returns byteslice of unicode strings" do
-    "\u3042".byteslice(1).should == "\x81".force_encoding("UTF-8")
-    "\u3042".byteslice(1, 2).should == "\x81\x82".force_encoding("UTF-8")
-    "\u3042".byteslice(1..2).should == "\x81\x82".force_encoding("UTF-8")
-    "\u3042".byteslice(-1).should == "\x82".force_encoding("UTF-8")
+    "\u3042".byteslice(1).should == "\x81".dup.force_encoding("UTF-8")
+    "\u3042".byteslice(1, 2).should == "\x81\x82".dup.force_encoding("UTF-8")
+    "\u3042".byteslice(1..2).should == "\x81\x82".dup.force_encoding("UTF-8")
+    "\u3042".byteslice(-1).should == "\x82".dup.force_encoding("UTF-8")
   end
 
   it "returns a String in the same encoding as self" do

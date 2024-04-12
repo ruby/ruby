@@ -107,7 +107,7 @@ end
 
 describe :stringio_each_not_readable, shared: true do
   it "raises an IOError" do
-    io = StringIO.new("a b c d e", "w")
+    io = StringIO.new(+"a b c d e", "w")
     -> { io.send(@method) { |b| b } }.should raise_error(IOError)
 
     io = StringIO.new("a b c d e")

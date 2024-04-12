@@ -23,10 +23,11 @@
             │   │           ├── flags: ∅
             │   │           ├── receiver:
             │   │           │   @ InterpolatedStringNode (location: (1,8)-(1,14))
+            │   │           │   ├── flags: ∅
             │   │           │   ├── opening_loc: (1,8)-(1,14) = "<<~EOF"
             │   │           │   ├── parts: (length: 3)
             │   │           │   │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │           │   │   │   ├── flags: ∅
+            │   │           │   │   │   ├── flags: frozen
             │   │           │   │   │   ├── opening_loc: ∅
             │   │           │   │   │   ├── content_loc: (2,0)-(3,0) = "\n"
             │   │           │   │   │   ├── closing_loc: ∅
@@ -48,7 +49,7 @@
             │   │           │   │   │   │           └── block: ∅
             │   │           │   │   │   └── closing_loc: (3,9)-(3,10) = "}"
             │   │           │   │   └── @ StringNode (location: (3,10)-(4,0))
-            │   │           │   │       ├── flags: ∅
+            │   │           │   │       ├── flags: frozen
             │   │           │   │       ├── opening_loc: ∅
             │   │           │   │       ├── content_loc: (3,10)-(4,0) = "baz\n"
             │   │           │   │       ├── closing_loc: ∅

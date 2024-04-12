@@ -10,6 +10,10 @@ module IRB
   module Command
     class CommandArgumentError < StandardError; end
 
+    def self.extract_ruby_args(*args, **kwargs)
+      throw :EXTRACT_RUBY_ARGS, [args, kwargs]
+    end
+
     class Base
       class << self
         def category(category = nil)
@@ -29,19 +33,13 @@ module IRB
 
         private
 
-        def string_literal?(args)
-          sexp = Ripper.sexp(args)
-          sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
-        end
-
         def highlight(text)
           Color.colorize(text, [:BOLD, :BLUE])
         end
       end
 
-      def self.execute(irb_context, *opts, **kwargs, &block)
-        command = new(irb_context)
-        command.execute(*opts, **kwargs, &block)
+      def self.execute(irb_context, arg)
+        new(irb_context).execute(arg)
       rescue CommandArgumentError => e
         puts e.message
       end
@@ -52,7 +50,26 @@ module IRB
 
       attr_reader :irb_context
 
-      def execute(*opts)
+      def unwrap_string_literal(str)
+        return if str.empty?
+
+        sexp = Ripper.sexp(str)
+        if sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
+          @irb_context.workspace.binding.eval(str).to_s
+        else
+          str
+        end
+      end
+
+      def ruby_args(arg)
+        # Use throw and catch to handle arg that includes `;`
+        # For example: "1, kw: (2; 3); 4" will be parsed to [[1], { kw: 3 }]
+        catch(:EXTRACT_RUBY_ARGS) do
+          @irb_context.workspace.binding.eval "IRB::Command.extract_ruby_args #{arg}"
+        end || [[], {}]
+      end
+
+      def execute(arg)
         #nop
       end
     end

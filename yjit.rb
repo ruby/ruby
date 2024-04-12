@@ -346,6 +346,7 @@ module RubyVM::YJIT
       out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
       out.puts "live_iseq_count:       " + format_number(13, stats[:live_iseq_count])
+      out.puts "iseq_alloc_count:      " + format_number(13, stats[:iseq_alloc_count])
       out.puts "compiled_iseq_entry:   " + format_number(13, stats[:compiled_iseq_entry])
       out.puts "cold_iseq_entry:       " + format_number_pct(13, stats[:cold_iseq_entry], stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])

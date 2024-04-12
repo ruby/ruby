@@ -8,7 +8,7 @@ describe "StringIO#read_nonblock when passed length, buffer" do
 
   it "accepts :exception option" do
     io = StringIO.new("example")
-    io.read_nonblock(3, buffer = "", exception: true)
+    io.read_nonblock(3, buffer = +"", exception: true)
     buffer.should == "exa"
   end
 end
@@ -40,7 +40,7 @@ describe "StringIO#read_nonblock" do
   context "when exception option is set to false" do
     context "when the end is reached" do
       it "returns nil" do
-        stringio = StringIO.new('')
+        stringio = StringIO.new(+'')
         stringio << "hello"
         stringio.rewind
 

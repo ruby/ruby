@@ -4,10 +4,11 @@
     @ StatementsNode (location: (1,0)-(1,4))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,4))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,4) = "<<-A"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2,0)-(3,0) = "a\n"
             │   │   ├── closing_loc: ∅
@@ -29,7 +30,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (3,3)-(3,4) = "}"
             │   └── @ StringNode (location: (3,4)-(4,0))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (3,4)-(4,0) = "\n"
             │       ├── closing_loc: ∅

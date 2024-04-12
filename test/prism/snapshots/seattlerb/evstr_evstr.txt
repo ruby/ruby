@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,10))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,10))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 2)
             │   ├── @ EmbeddedStatementsNode (location: (1,1)-(1,5))

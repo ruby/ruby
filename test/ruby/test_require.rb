@@ -370,6 +370,26 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  def test_public_in_wrapped_load
+    Tempfile.create(["test_public_in_wrapped_load", ".rb"]) do |t|
+      t.puts "def foo; end", "public :foo"
+      t.close
+      assert_warning(/main\.public/) do
+        assert load(t.path, true)
+      end
+    end
+  end
+
+  def test_private_in_wrapped_load
+    Tempfile.create(["test_private_in_wrapped_load", ".rb"]) do |t|
+      t.puts "def foo; end", "private :foo"
+      t.close
+      assert_warning(/main\.private/) do
+        assert load(t.path, true)
+      end
+    end
+  end
+
   def test_load_scope
     bug1982 = '[ruby-core:25039] [Bug #1982]'
     Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
@@ -979,7 +999,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_public_method_missing
     # [Bug #19793]
-    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.stress = true
 
       class Object

@@ -259,6 +259,26 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
 
 /*
  * call-seq:
+ *   categories  -> array
+ *
+ * Returns a list of the supported category symbols.
+ */
+
+static VALUE
+rb_warning_s_categories(VALUE mod)
+{
+    st_index_t num = warning_categories.id2enum->num_entries;
+    ID *ids = ALLOCA_N(ID, num);
+    num = st_keys(warning_categories.id2enum, ids, num);
+    VALUE ary = rb_ary_new_capa(num);
+    for (st_index_t i = 0; i < num; ++i) {
+        rb_ary_push(ary, ID2SYM(ids[i]));
+    }
+    return rb_ary_freeze(ary);
+}
+
+/*
+ * call-seq:
  *    warn(msg, category: nil)  -> nil
  *
  * Writes warning message +msg+ to $stderr. This method is called by
@@ -1835,7 +1855,7 @@ static VALUE
 rb_check_backtrace(VALUE bt)
 {
     long i;
-    static const char err[] = "backtrace must be Array of String";
+    static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {
         if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
@@ -1858,15 +1878,23 @@ rb_check_backtrace(VALUE bt)
  *     exc.set_backtrace(backtrace)   ->  array
  *
  *  Sets the backtrace information associated with +exc+. The +backtrace+ must
- *  be an array of String objects or a single String in the format described
- *  in Exception#backtrace.
+ *  be an array of Thread::Backtrace::Location objects or an array of String objects
+ *  or a single String in the format described in Exception#backtrace.
  *
  */
 
 static VALUE
 exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
+    VALUE btobj = rb_location_ary_to_backtrace(bt);
+    if (RTEST(btobj)) {
+        rb_ivar_set(exc, id_bt, btobj);
+        rb_ivar_set(exc, id_bt_locations, btobj);
+        return bt;
+    }
+    else {
+        return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
+    }
 }
 
 VALUE
@@ -3429,6 +3457,7 @@ Init_Exception(void)
     rb_mWarning = rb_define_module("Warning");
     rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
     rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
+    rb_define_singleton_method(rb_mWarning, "categories", rb_warning_s_categories, 0);
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, -1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
@@ -3847,6 +3876,12 @@ void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
+
+    if (CHILLED_STRING_P(frozen_obj)) {
+        CHILLED_STRING_MUTATED(frozen_obj);
+        return;
+    }
+
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",

@@ -630,7 +630,7 @@ assert_equal "allocator undefined for Thread", %q{
 }
 
 # send shareable and unshareable objects
-assert_equal "ok", %q{
+assert_equal "ok", <<~'RUBY', frozen_string_literal: false
   echo_ractor = Ractor.new do
     loop do
       v = Ractor.receive
@@ -697,10 +697,10 @@ assert_equal "ok", %q{
   else
     results.inspect
   end
-}
+RUBY
 
 # frozen Objects are shareable
-assert_equal [false, true, false].inspect, %q{
+assert_equal [false, true, false].inspect, <<~'RUBY', frozen_string_literal: false
   class C
     def initialize freeze
       @a = 1
@@ -723,11 +723,11 @@ assert_equal [false, true, false].inspect, %q{
   results << check(C.new(true))         # false
   results << check(C.new(true).freeze)  # true
   results << check(C.new(false).freeze) # false
-}
+RUBY
 
 # move example2: String
 # touching moved object causes an error
-assert_equal 'hello world', %q{
+assert_equal 'hello world', <<~'RUBY', frozen_string_literal: false
   # move
   r = Ractor.new do
     obj = Ractor.receive
@@ -745,7 +745,7 @@ assert_equal 'hello world', %q{
   else
     raise 'unreachable'
   end
-}
+RUBY
 
 # move example2: Array
 assert_equal '[0, 1]', %q{
@@ -948,7 +948,7 @@ assert_equal 'ArgumentError', %q{
 }
 
 # ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", %q{
+assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -959,13 +959,12 @@ assert_equal "can not get unshareable values from instance variables of classes/
     end
   end
 
-
   begin
     r.take
   rescue Ractor::RemoteError => e
     e.cause.message
   end
-}
+RUBY
 
 # ivar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
@@ -1152,7 +1151,7 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
 }
 
 # Getting non-shareable objects via constants by other Ractors is not allowed
-assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', %q{
+assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', <<~'RUBY', frozen_string_literal: false
   class C
     CONST = 'str'
   end
@@ -1164,10 +1163,10 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   rescue Ractor::RemoteError => e
     e.cause.message
   end
-}
+  RUBY
 
 # Constant cache should care about non-sharable constants
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", %q{
+assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
   s = str() # fill const cache
@@ -1176,10 +1175,10 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
   rescue Ractor::RemoteError => e
     e.cause.message
   end
-}
+RUBY
 
 # Setting non-shareable objects into constants by other Ractors is not allowed
-assert_equal 'can not set constants with non-shareable objects by non-main Ractors', %q{
+assert_equal 'can not set constants with non-shareable objects by non-main Ractors', <<~'RUBY', frozen_string_literal: false
   class C
   end
   r = Ractor.new do
@@ -1190,7 +1189,7 @@ assert_equal 'can not set constants with non-shareable objects by non-main Racto
   rescue Ractor::RemoteError => e
     e.cause.message
   end
-}
+RUBY
 
 # define_method is not allowed
 assert_equal "defined with an un-shareable Proc in a different Ractor", %q{
@@ -1243,7 +1242,7 @@ assert_equal '0', %q{
 }
 
 # ObjectSpace._id2ref can not handle unshareable objects with Ractors
-assert_equal 'ok', %q{
+assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
   s = 'hello'
 
   Ractor.new s.object_id do |id ;s|
@@ -1253,10 +1252,10 @@ assert_equal 'ok', %q{
       :ok
     end
   end.take
-}
+RUBY
 
 # Ractor.make_shareable(obj)
-assert_equal 'true', %q{
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   class C
     def initialize
       @a = 'foo'
@@ -1327,7 +1326,7 @@ assert_equal 'true', %q{
   }
 
   Ractor.shareable?(a)
-}
+RUBY
 
 # Ractor.make_shareable(obj) doesn't freeze shareable objects
 assert_equal 'true', %q{
@@ -1427,11 +1426,11 @@ assert_equal '[false, false, true, true]', %q{
 assert_equal '[6, 10]', %q{
   rs = []
   TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
-    Ractor.new{ # line 4
+    Ractor.new{ # line 5
       a = 1
       b = 2
     }.take
-    c = 3       # line 8
+    c = 3       # line 9
   end
   rs
 }
@@ -1505,7 +1504,7 @@ assert_equal "#{n}#{n}", %Q{
   2.times.map{
     Ractor.new do
       #{n}.times do
-        obj = ''
+        obj = +''
         obj.instance_variable_set("@a", 1)
         obj.instance_variable_set("@b", 1)
         obj.instance_variable_set("@c", 1)
@@ -1664,7 +1663,7 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
-}
+}, frozen_string_literal: false
 
 # check moved object
 assert_equal 'ok', %q{
@@ -1795,3 +1794,14 @@ assert_equal 'ok', %q{
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
+
+# Chilled strings are not shareable
+assert_equal 'false', %q{
+  Ractor.shareable?("chilled")
+}
+
+# Chilled strings can be made shareable
+assert_equal 'true', %q{
+  shareable = Ractor.make_shareable("chilled")
+  shareable == "chilled" && Ractor.shareable?(shareable)
+}

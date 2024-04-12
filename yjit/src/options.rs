@@ -101,15 +101,15 @@ pub static mut OPTIONS: Options = Options {
 
 /// YJIT option descriptions for `ruby --help`.
 static YJIT_OPTIONS: [(&str, &str); 9] = [
-    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 48)"),
-    ("--yjit-call-threshold=num",          "Number of calls to trigger JIT"),
-    ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)"),
-    ("--yjit-stats",                       "Enable collecting YJIT statistics"),
-    ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable"),
-    ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit"),
-    ("--yjit-perf",                        "Enable frame pointers and perf profiling"),
-    ("--yjit-trace-exits",                 "Record Ruby source location when exiting from generated code"),
-    ("--yjit-trace-exits-sample-rate=num", "Trace exit locations only every Nth occurrence"),
+    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 48)."),
+    ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
+    ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
+    ("--yjit-stats",                       "Enable collecting YJIT statistics."),
+    ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable."),
+    ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit."),
+    ("--yjit-perf",                        "Enable frame pointers and perf profiling."),
+    ("--yjit-trace-exits",                 "Record Ruby source location when exiting from generated code."),
+    ("--yjit-trace-exits-sample-rate=num", "Trace exit locations only every Nth occurrence."),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

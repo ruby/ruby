@@ -621,7 +621,7 @@ HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = YES
 
 # The INTERNAL_DOCS tag determines if documentation that is typed after a
-# \internal command is included. If the tag is set to NO then the documentation
+# @internal command is included. If the tag is set to NO then the documentation
 # will be excluded. Set it to YES to include the internal documentation.
 # The default value is: NO.
 
@@ -2359,10 +2359,6 @@ PREDEFINED            += DEPRECATED(_)=_
 PREDEFINED            += DEPRECATED_BY(__,_)=_
 PREDEFINED            += ENUM_OVER_INT=1
 PREDEFINED            += ERRORFUNC(__,_)=_
-PREDEFINED            += RJIT_FUNC_EXPORTED=
-PREDEFINED            += RJIT_STATIC=extern
-PREDEFINED            += RJIT_SYMBOL_EXPORT_BEGIN=
-PREDEFINED            += RJIT_SYMBOL_EXPORT_END=
 PREDEFINED            += NOINLINE(_)=_
 PREDEFINED            += NORETURN(_)=_
 PREDEFINED            += PACKED_STRUCT_UNALIGNED(_)=_

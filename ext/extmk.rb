@@ -499,26 +499,30 @@ default_exclude_exts =
 mandatory_exts = {}
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-    d ? proc {|c1| d.any?(&c1)} : proc {true}
+    d ? proc {|&c1| d.any?(&c1)} : proc {true}
   elsif (w = w.grep(String)).empty?
     proc {true}
   else
     w = w.collect {|o| o.split(/,/)}.flatten
     w.collect! {|o| o == '+' ? d : o}.flatten!
-    proc {|c1| w.any?(&c1)}
+    proc {|&c1| w.any?(&c1)}
   end
 }
 cond = proc {|ext, *|
-  withes.call(proc {|n|
-                !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))
-              }) and
-    !withouts.call(proc {|n| File.fnmatch(n, ext)})
+  withes.call {|n| !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))} and
+    !withouts.call {|n| File.fnmatch(n, ext)}
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
   incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
     File.dirname(d)
   }.partition {|ext|
+    if @gemname
+      ext = ext[%r[\A[^/]+]] # extract gem name
+      Dir.glob("*.gemspec", base: "#$top_srcdir/#{ext_prefix}/#{ext}") do |g|
+        break ext = g if ext.start_with?("#{g.chomp!(".gemspec")}-")
+      end
+    end
     with_config(ext, &cond)
   }
   incl.sort!

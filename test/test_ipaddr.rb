@@ -263,6 +263,29 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(a.netmask, "255.255.255.0")
   end
 
+  def test_wildcard_mask
+    a = IPAddr.new("192.168.1.2/1")
+    assert_equal(a.wildcard_mask, "127.255.255.255")
+
+    a = IPAddr.new("192.168.1.2/8")
+    assert_equal(a.wildcard_mask, "0.255.255.255")
+
+    a = IPAddr.new("192.168.1.2/16")
+    assert_equal(a.wildcard_mask, "0.0.255.255")
+
+    a = IPAddr.new("192.168.1.2/24")
+    assert_equal(a.wildcard_mask, "0.0.0.255")
+
+    a = IPAddr.new("192.168.1.2/32")
+    assert_equal(a.wildcard_mask, "0.0.0.0")
+
+    a = IPAddr.new("3ffe:505:2::/48")
+    assert_equal(a.wildcard_mask, "0000:0000:0000:ffff:ffff:ffff:ffff:ffff")
+
+    a = IPAddr.new("3ffe:505:2::/128")
+    assert_equal(a.wildcard_mask, "0000:0000:0000:0000:0000:0000:0000:0000")
+  end
+
   def test_zone_id
     a = IPAddr.new("192.168.1.2")
     assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%ab0' }

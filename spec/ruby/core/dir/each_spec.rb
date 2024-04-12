@@ -35,6 +35,17 @@ describe "Dir#each" do
     ls.should include(@dir.read)
   end
 
+  it "returns the same result when called repeatedly" do
+    a = []
+    @dir.each {|dir| a << dir}
+
+    b = []
+    @dir.each {|dir| b << dir}
+
+    a.sort.should == b.sort
+    a.sort.should == DirSpecs.expected_paths
+  end
+
   describe "when no block is given" do
     it "returns an Enumerator" do
       @dir.each.should be_an_instance_of(Enumerator)

@@ -12,7 +12,7 @@ else
 end
 SPEC_TEMP_DIR = spec_temp_dir
 
-SPEC_TEMP_UNIQUIFIER = "0"
+SPEC_TEMP_UNIQUIFIER = +"0"
 
 at_exit do
   begin
@@ -41,6 +41,7 @@ def tmp(name, uniquify = true)
   if uniquify and !name.empty?
     slash = name.rindex "/"
     index = slash ? slash + 1 : 0
+    name = +name
     name.insert index, "#{SPEC_TEMP_UNIQUIFIER.succ!}-"
   end
 

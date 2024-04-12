@@ -23,13 +23,13 @@ VALUE rb_cPrismParseResult;
 
 VALUE rb_cPrismDebugEncoding;
 
-ID rb_option_id_filepath;
-ID rb_option_id_encoding;
-ID rb_option_id_line;
-ID rb_option_id_frozen_string_literal;
-ID rb_option_id_version;
-ID rb_option_id_scopes;
 ID rb_option_id_command_line;
+ID rb_option_id_encoding;
+ID rb_option_id_filepath;
+ID rb_option_id_frozen_string_literal;
+ID rb_option_id_line;
+ID rb_option_id_scopes;
+ID rb_option_id_version;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -139,7 +139,7 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     } else if (key_id == rb_option_id_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
-        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
+        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, RTEST(value));
     } else if (key_id == rb_option_id_version) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
@@ -267,6 +267,8 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
     }
 }
 
+#ifndef PRISM_EXCLUDE_SERIALIZATION
+
 /******************************************************************************/
 /* Serializing the AST                                                        */
 /******************************************************************************/
@@ -308,7 +310,7 @@ dump(int argc, VALUE *argv, VALUE self) {
     pm_options_t options = { 0 };
     string_options(argc, argv, &input, &options);
 
-#ifdef PRISM_DEBUG_MODE_BUILD
+#ifdef PRISM_BUILD_DEBUG
     size_t length = pm_string_length(&input);
     char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
@@ -317,7 +319,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = dump_input(&input, &options);
 
-#ifdef PRISM_DEBUG_MODE_BUILD
+#ifdef PRISM_BUILD_DEBUG
     xfree(dup);
 #endif
 
@@ -347,6 +349,8 @@ dump_file(int argc, VALUE *argv, VALUE self) {
 
     return value;
 }
+
+#endif
 
 /******************************************************************************/
 /* Extracting values for the parse result                                     */
@@ -441,11 +445,14 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE level = Qnil;
         switch (error->level) {
-            case PM_ERROR_LEVEL_FATAL:
-                level = ID2SYM(rb_intern("fatal"));
+            case PM_ERROR_LEVEL_SYNTAX:
+                level = ID2SYM(rb_intern("syntax"));
                 break;
             case PM_ERROR_LEVEL_ARGUMENT:
                 level = ID2SYM(rb_intern("argument"));
+                break;
+            case PM_ERROR_LEVEL_LOAD:
+                level = ID2SYM(rb_intern("load"));
                 break;
             default:
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
@@ -723,7 +730,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
- *       code. By default prism assumes you want to parse with the latest vesion
+ *       code. By default prism assumes you want to parse with the latest version
  *       of Ruby syntax (which you can trigger with `nil` or `"latest"`). You
  *       may also restrict the syntax to a specific version of Ruby. The
  *       supported values are `"3.3.0"` and `"3.4.0"`.
@@ -734,7 +741,7 @@ parse(int argc, VALUE *argv, VALUE self) {
     pm_options_t options = { 0 };
     string_options(argc, argv, &input, &options);
 
-#ifdef PRISM_DEBUG_MODE_BUILD
+#ifdef PRISM_BUILD_DEBUG
     size_t length = pm_string_length(&input);
     char* dup = xmalloc(length);
     memcpy(dup, pm_string_source(&input), length);
@@ -743,7 +750,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_input(&input, &options);
 
-#ifdef PRISM_DEBUG_MODE_BUILD
+#ifdef PRISM_BUILD_DEBUG
     xfree(dup);
 #endif
 
@@ -1126,6 +1133,8 @@ profile_file(VALUE self, VALUE filepath) {
     return Qnil;
 }
 
+#ifndef PRISM_EXCLUDE_PRETTYPRINT
+
 /**
  * call-seq:
  *   Debug::inspect_node(source) -> inspected
@@ -1156,6 +1165,8 @@ inspect_node(VALUE self, VALUE source) {
     return string;
 }
 
+#endif
+
 /**
  * call-seq:
  *   Debug::format_errors(source, colorize) -> String
@@ -1173,7 +1184,7 @@ format_errors(VALUE self, VALUE source, VALUE colorize) {
     pm_node_t *node = pm_parse(&parser);
     pm_buffer_t buffer = { 0 };
 
-    pm_parser_errors_format(&parser, &buffer, RTEST(colorize));
+    pm_parser_errors_format(&parser, &parser.error_list, &buffer, RTEST(colorize), true);
 
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
@@ -1182,6 +1193,40 @@ format_errors(VALUE self, VALUE source, VALUE colorize) {
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
     pm_string_free(&input);
+
+    return result;
+}
+
+/**
+ * call-seq:
+ *   Debug::static_inspect(source) -> String
+ *
+ * Inspect the node as it would be inspected by the warnings used in static
+ * literal sets.
+ */
+static VALUE
+static_inspect(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+
+    pm_node_t *program = pm_parse(&parser);
+    pm_node_t *node = ((pm_program_node_t *) program)->statements->body.nodes[0];
+
+    pm_buffer_t buffer = { 0 };
+    pm_static_literal_inspect(&buffer, &parser, node);
+
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
+
+    pm_buffer_free(&buffer);
+    pm_node_destroy(&parser, program);
+    pm_parser_free(&parser);
+    pm_string_free(&input);
+    pm_options_free(&options);
 
     return result;
 }
@@ -1297,13 +1342,13 @@ Init_prism(void) {
 
     // Intern all of the options that we support so that we don't have to do it
     // every time we parse.
-    rb_option_id_filepath = rb_intern_const("filepath");
-    rb_option_id_encoding = rb_intern_const("encoding");
-    rb_option_id_line = rb_intern_const("line");
-    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
-    rb_option_id_version = rb_intern_const("version");
-    rb_option_id_scopes = rb_intern_const("scopes");
     rb_option_id_command_line = rb_intern_const("command_line");
+    rb_option_id_encoding = rb_intern_const("encoding");
+    rb_option_id_filepath = rb_intern_const("filepath");
+    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
+    rb_option_id_line = rb_intern_const("line");
+    rb_option_id_scopes = rb_intern_const("scopes");
+    rb_option_id_version = rb_intern_const("version");
 
     /**
      * The version of the prism library.
@@ -1311,8 +1356,6 @@ Init_prism(void) {
     rb_define_const(rb_cPrism, "VERSION", rb_str_new2(EXPECTED_PRISM_VERSION));
 
     // First, the functions that have to do with lexing and parsing.
-    rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
-    rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
@@ -1325,6 +1368,11 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "parse_success?", parse_success_p, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file_success?", parse_file_success_p, -1);
 
+#ifndef PRISM_EXCLUDE_SERIALIZATION
+    rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
+    rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
+#endif
+
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
@@ -1332,8 +1380,12 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "integer_parse", integer_parse, 1);
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
+    rb_define_singleton_method(rb_cPrismDebug, "static_inspect", static_inspect, -1);
+
+#ifndef PRISM_EXCLUDE_PRETTYPRINT
+    rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
+#endif
 
     // Next, define the functions that are exposed through the private
     // Debug::Encoding class.

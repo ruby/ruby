@@ -16,6 +16,7 @@ if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
   if have_func("posix_openpt") or
       (util or have_func("openpty")) or
       have_func("_getpty") or
+      have_func("ptsname_r") or
       have_func("ptsname") or
       have_func("ioctl")
     create_makefile('pty')

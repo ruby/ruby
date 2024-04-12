@@ -11,15 +11,11 @@
 #include "prism/util/pm_buffer.h"
 
 /**
- * Attempts to grow the node list to the next size. If there is already
- * capacity in the list, this function does nothing. Otherwise it reallocates
- * the list to be twice as large as it was before. If the reallocation fails,
- * this function returns false, otherwise it returns true.
- *
- * @param list The list to grow.
- * @return True if the list was successfully grown, false otherwise.
+ * Loop through each node in the node list, writing each node to the given
+ * pm_node_t pointer.
  */
-bool pm_node_list_grow(pm_node_list_t *list);
+#define PM_NODE_LIST_FOREACH(list, index, node) \
+    for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
  * Append a new node onto the end of the node list.
@@ -35,8 +31,15 @@ void pm_node_list_append(pm_node_list_t *list, pm_node_t *node);
  * @param list The list to prepend to.
  * @param node The node to prepend.
  */
-void
-pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+void pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+
+/**
+ * Concatenate the given node list onto the end of the other node list.
+ *
+ * @param list The list to concatenate onto.
+ * @param other The list to concatenate.
+ */
+void pm_node_list_concat(pm_node_list_t *list, pm_node_list_t *other);
 
 /**
  * Free the internal memory associated with the given node list.

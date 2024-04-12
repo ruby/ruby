@@ -4,6 +4,7 @@
 #![allow(dead_code)] // Counters are only used with the stats features
 
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::ptr::addr_of_mut;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 use std::collections::HashMap;
@@ -15,9 +16,13 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
-/// A running total of how many ISeqs are in the system.
+/// Running total of how many ISeqs are in the system.
 #[no_mangle]
 pub static mut rb_yjit_live_iseq_count: u64 = 0;
+
+/// Monotonically increasing total of how many ISEQs were allocated
+#[no_mangle]
+pub static mut rb_yjit_iseq_alloc_count: u64 = 0;
 
 /// A middleware to count Rust-allocated bytes as yjit_alloc_size.
 #[global_allocator]
@@ -65,12 +70,14 @@ static mut ISEQ_CALL_COUNT: Option<Vec<u64>> = None;
 
 /// Assign an index to a given cfunc name string
 pub fn get_cfunc_idx(name: &str) -> usize {
-    unsafe { get_method_idx(name, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT) }
+    // SAFETY: We acquire a VM lock and don't create multiple &mut references to these static mut variables.
+    unsafe { get_method_idx(name, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT)) }
 }
 
 /// Assign an index to a given ISEQ name string
 pub fn get_iseq_idx(name: &str) -> usize {
-    unsafe { get_method_idx(name, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT) }
+    // SAFETY: We acquire a VM lock and don't create multiple &mut references to these static mut variables.
+    unsafe { get_method_idx(name, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT)) }
 }
 
 fn get_method_idx(
@@ -261,7 +268,7 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 15] = [
+pub const DEFAULT_COUNTERS: [Counter; 16] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
@@ -278,6 +285,7 @@ pub const DEFAULT_COUNTERS: [Counter; 15] = [
     Counter::invalidate_ractor_spawn,
     Counter::invalidate_constant_state_bump,
     Counter::invalidate_constant_ic_fill,
+    Counter::invalidate_no_singleton_class,
 ];
 
 /// Macro to increase a counter by name and count
@@ -354,12 +362,13 @@ make_counters! {
     send_refined_method,
     send_private_not_fcall,
     send_cfunc_kw_splat_non_nil,
-    send_cfunc_ruby_array_varg,
+    send_cfunc_splat_neg2,
     send_cfunc_argc_mismatch,
     send_cfunc_block_arg,
     send_cfunc_toomany_args,
     send_cfunc_tracing,
     send_cfunc_splat_with_kw,
+    send_cfunc_splat_varg_ruby2_keywords,
     send_attrset_kwargs,
     send_attrset_block_arg,
     send_iseq_tailcall,
@@ -431,7 +440,7 @@ make_counters! {
     guard_send_se_cf_overflow,
     guard_send_se_protected_check_failed,
     guard_send_splatarray_length_not_equal,
-    guard_send_splatarray_last_ruby_2_keywords,
+    guard_send_splatarray_last_ruby2_keywords,
     guard_send_splat_not_array,
     guard_send_send_name_chain,
     guard_send_iseq_has_rest_and_splat_too_few,
@@ -558,6 +567,7 @@ make_counters! {
     invalidate_ractor_spawn,
     invalidate_constant_state_bump,
     invalidate_constant_ic_fill,
+    invalidate_no_singleton_class,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
@@ -745,6 +755,7 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
 
         hash_aset_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
+        hash_aset_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
     }
 
     // If we're not generating stats, put only default counters
@@ -807,12 +818,12 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         // Create a hash for the cfunc call counts
         let cfunc_calls = rb_hash_new();
         rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), cfunc_calls);
-        set_call_counts(cfunc_calls, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT);
+        set_call_counts(cfunc_calls, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT));
 
         // Create a hash for the ISEQ call counts
         let iseq_calls = rb_hash_new();
         rb_hash_aset(hash, rust_str_to_sym("iseq_calls"), iseq_calls);
-        set_call_counts(iseq_calls, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT);
+        set_call_counts(iseq_calls, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT));
     }
 
     hash

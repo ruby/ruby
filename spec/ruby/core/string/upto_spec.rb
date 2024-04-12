@@ -81,8 +81,8 @@ describe "String#upto" do
   end
 
   it "raises Encoding::CompatibilityError when incompatible characters are given" do
-    char1 = 'a'.force_encoding("EUC-JP")
-    char2 = 'b'.force_encoding("ISO-2022-JP")
+    char1 = 'a'.dup.force_encoding("EUC-JP")
+    char2 = 'b'.dup.force_encoding("ISO-2022-JP")
     -> { char1.upto(char2) {} }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: EUC-JP and ISO-2022-JP")
   end
 

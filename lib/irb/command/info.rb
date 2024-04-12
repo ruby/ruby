@@ -7,12 +7,8 @@ module IRB
 
   module Command
     class Info < DebugCommand
-      def self.transform_args(args)
-        args&.dump
-      end
-
-      def execute(*args)
-        super(pre_cmds: ["info", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(pre_cmds: "info #{arg}")
       end
     end
   end

@@ -1,5 +1,5 @@
 require "stringio"
-require "prism/polyfill/string"
+require_relative "polyfill/string"
 
 module Prism
   # A module responsible for deserializing parse results.
@@ -10,7 +10,7 @@ module Prism
 
     # The minor version of prism that we are expecting to find in the serialized
     # strings.
-    MINOR_VERSION = 24
+    MINOR_VERSION = 25
 
     # The patch version of prism that we are expecting to find in the serialized
     # strings.
@@ -131,8 +131,8 @@ module Prism
         comments = load_comments
         magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
         data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[io.getbyte], load_embedded_string, load_location_object, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -296,9 +296,11 @@ module Prism
 
         case level
         when 0
-          :fatal
+          :syntax
         when 1
           :argument
+        when 2
+          :load
         else
           raise "Unknown level: #{level}"
         end

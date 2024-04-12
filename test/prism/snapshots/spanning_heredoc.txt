@@ -36,13 +36,13 @@
         │   │           │       │   ├── opening_loc: (4,13)-(4,14) = "/"
         │   │           │       │   ├── parts: (length: 2)
         │   │           │       │   │   ├── @ StringNode (location: (4,14)-(4,16))
-        │   │           │       │   │   │   ├── flags: ∅
+        │   │           │       │   │   │   ├── flags: frozen
         │   │           │       │   │   │   ├── opening_loc: ∅
         │   │           │       │   │   │   ├── content_loc: (4,14)-(4,16) = "b\\"
         │   │           │       │   │   │   ├── closing_loc: ∅
         │   │           │       │   │   │   └── unescaped: "b"
         │   │           │       │   │   └── @ StringNode (location: (7,0)-(7,1))
-        │   │           │       │   │       ├── flags: ∅
+        │   │           │       │   │       ├── flags: frozen
         │   │           │       │   │       ├── opening_loc: ∅
         │   │           │       │   │       ├── content_loc: (7,0)-(7,1) = "b"
         │   │           │       │   │       ├── closing_loc: ∅
@@ -76,16 +76,17 @@
         │   │       │   ├── closing_loc: (12,0)-(13,0) = "A\n"
         │   │       │   └── unescaped: "c\n"
         │   │       └── @ InterpolatedStringNode (location: (10,9)-(13,2))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (10,9)-(10,10) = "\""
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (10,10)-(10,12))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (10,10)-(10,12) = "d\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "d"
         │   │           │   └── @ StringNode (location: (13,0)-(13,1))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (13,0)-(13,1) = "d"
         │   │           │       ├── closing_loc: ∅
@@ -111,16 +112,17 @@
         │   │       │   ├── closing_loc: (18,0)-(19,0) = "A\n"
         │   │       │   └── unescaped: "e\n"
         │   │       └── @ InterpolatedStringNode (location: (16,9)-(19,2))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (16,9)-(16,12) = "%q["
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (16,12)-(16,14))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (16,12)-(16,14) = "f\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "f\\\n"
         │   │           │   └── @ StringNode (location: (19,0)-(19,1))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (19,0)-(19,1) = "f"
         │   │           │       ├── closing_loc: ∅
@@ -146,16 +148,17 @@
         │   │       │   ├── closing_loc: (24,0)-(25,0) = "A\n"
         │   │       │   └── unescaped: "g\n"
         │   │       └── @ InterpolatedStringNode (location: (22,9)-(25,2))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (22,9)-(22,12) = "%Q["
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (22,12)-(22,14))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (22,12)-(22,14) = "h\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "h"
         │   │           │   └── @ StringNode (location: (25,0)-(25,1))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (25,0)-(25,1) = "h"
         │   │           │       ├── closing_loc: ∅
@@ -220,16 +223,17 @@
         │   │           ├── flags: ∅
         │   │           ├── elements: (length: 1)
         │   │           │   └── @ InterpolatedStringNode (location: (35,12)-(38,1))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
         │   │           │       │   ├── @ StringNode (location: (35,12)-(35,14))
-        │   │           │       │   │   ├── flags: ∅
+        │   │           │       │   │   ├── flags: frozen
         │   │           │       │   │   ├── opening_loc: ∅
         │   │           │       │   │   ├── content_loc: (35,12)-(35,14) = "l\\"
         │   │           │       │   │   ├── closing_loc: ∅
         │   │           │       │   │   └── unescaped: "l\n"
         │   │           │       │   └── @ StringNode (location: (38,0)-(38,1))
-        │   │           │       │       ├── flags: ∅
+        │   │           │       │       ├── flags: frozen
         │   │           │       │       ├── opening_loc: ∅
         │   │           │       │       ├── content_loc: (38,0)-(38,1) = "l"
         │   │           │       │       ├── closing_loc: ∅
@@ -299,13 +303,13 @@
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
         │   │           │       │   ├── @ StringNode (location: (48,12)-(48,14))
-        │   │           │       │   │   ├── flags: ∅
+        │   │           │       │   │   ├── flags: frozen
         │   │           │       │   │   ├── opening_loc: ∅
         │   │           │       │   │   ├── content_loc: (48,12)-(48,14) = "p\\"
         │   │           │       │   │   ├── closing_loc: ∅
         │   │           │       │   │   └── unescaped: "p\n"
         │   │           │       │   └── @ StringNode (location: (48,12)-(48,14))
-        │   │           │       │       ├── flags: ∅
+        │   │           │       │       ├── flags: frozen
         │   │           │       │       ├── opening_loc: ∅
         │   │           │       │       ├── content_loc: (48,12)-(48,14) = "p\\"
         │   │           │       │       ├── closing_loc: ∅
@@ -331,13 +335,13 @@
         │   │   │   ├── opening_loc: (53,5)-(53,6) = "/"
         │   │   │   ├── parts: (length: 2)
         │   │   │   │   ├── @ StringNode (location: (53,6)-(53,7))
-        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── flags: frozen
         │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   ├── content_loc: (53,6)-(53,7) = "\\"
         │   │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   │   └── unescaped: ""
         │   │   │   │   └── @ StringNode (location: (55,0)-(55,6))
-        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── flags: frozen
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (55,0)-(55,6) = "(?<a>)"
         │   │   │   │       ├── closing_loc: ∅
@@ -373,13 +377,13 @@
         │   ├── opening_loc: (57,5)-(57,7) = ":'"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (57,7)-(58,0))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (57,7)-(58,0) = "a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (59,0)-(59,1))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (59,0)-(59,1) = "b"
         │   │       ├── closing_loc: ∅
@@ -395,13 +399,13 @@
             ├── opening_loc: (61,5)-(61,7) = ":\""
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (61,7)-(62,0))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (61,7)-(62,0) = "a\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a\n"
             │   └── @ StringNode (location: (63,0)-(63,1))
-            │       ├── flags: ∅
+            │       ├── flags: frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (63,0)-(63,1) = "b"
             │       ├── closing_loc: ∅

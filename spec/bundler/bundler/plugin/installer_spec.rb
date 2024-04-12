@@ -25,10 +25,10 @@ RSpec.describe Bundler::Plugin::Installer do
       end
 
       it "returns the installed spec after installing local git plugins" do
-        allow(installer).to receive(:install_local_git).
+        allow(installer).to receive(:install_git).
           and_return("new-plugin" => spec)
 
-        expect(installer.install(["new-plugin"], local_git: "/phony/path/repo")).
+        expect(installer.install(["new-plugin"], git: "/phony/path/repo")).
           to eq("new-plugin" => spec)
       end
 
@@ -80,7 +80,7 @@ RSpec.describe Bundler::Plugin::Installer do
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], local_git: lib_path("ga-plugin").to_s)
+          installer.install(["ga-plugin"], git: lib_path("ga-plugin").to_s)
         end
 
         it "returns the installed spec after installing" do

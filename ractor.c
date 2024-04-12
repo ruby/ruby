@@ -590,7 +590,7 @@ ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_clea
         RACTOR_UNLOCK(cr);
         {
             if (cf_func) {
-                int state;
+                enum ruby_tag_type state;
                 EC_PUSH_TAG(ec);
                 if ((state = EC_EXEC_TAG()) == TAG_NONE) {
                     rb_thread_check_ints();
@@ -1319,7 +1319,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
             type = basket_type_will;
         }
         else {
-            int state;
+            enum ruby_tag_type state;
 
             // begin
             EC_PUSH_TAG(ec);
@@ -2985,7 +2985,10 @@ rb_obj_traverse(VALUE obj,
 static int
 frozen_shareable_p(VALUE obj, bool *made_shareable)
 {
-    if (!RB_TYPE_P(obj, T_DATA)) {
+    if (CHILLED_STRING_P(obj)) {
+        return false;
+    }
+    else if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else if (RTYPEDDATA_P(obj)) {
@@ -3013,6 +3016,17 @@ make_shareable_check_shareable(VALUE obj)
 
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
+    }
+    else if (CHILLED_STRING_P(obj)) {
+        rb_funcall(obj, idFreeze, 0);
+
+        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
+            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+        }
+
+        if (RB_OBJ_SHAREABLE_P(obj)) {
+            return traverse_skip;
+        }
     }
     else if (!frozen_shareable_p(obj, &made_shareable)) {
         if (made_shareable) {

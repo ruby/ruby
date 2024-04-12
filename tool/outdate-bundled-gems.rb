@@ -3,34 +3,52 @@ require 'fileutils'
 require 'rubygems'
 
 fu = FileUtils::Verbose
+
 until ARGV.empty?
   case ARGV.first
   when '--'
     ARGV.shift
     break
-  when '-n', '--dryrun'
+  when '-n', '--dry-run', '--dryrun'
+    ## -n, --dry-run  Don't remove
     fu = FileUtils::DryRun
   when /\A--make=/
     # just to run when `make -n`
   when /\A--mflags=(.*)/
     fu = FileUtils::DryRun if /\A-\S*n/ =~ $1
   when /\A--gem[-_]platform=(.*)/im
+    ## --gem-platform=PLATFORM  Platform in RubyGems style
     gem_platform = $1
     ruby_platform = nil
   when /\A--ruby[-_]platform=(.*)/im
+    ## --ruby-platform=PLATFORM  Platform in Ruby style
     ruby_platform = $1
     gem_platform = nil
   when /\A--ruby[-_]version=(.*)/im
+    ## --ruby-version=VERSION  Ruby version to keep
     ruby_version = $1
   when /\A--only=(?:(curdir|srcdir)|all)\z/im
+    ## --only=(curdir|srcdir|all)  Specify directory to remove gems from
     only = $1&.downcase
   when /\A--all\z/im
+    ## --all  Remove all gems not only bundled gems
     all = true
+  when /\A--help\z/im
+    ## --help  Print this message
+    puts "Usage: #$0 [options] [srcdir]"
+    File.foreach(__FILE__) do |line|
+      line.sub!(/^ *## /, "") or next
+      break if line.chomp!.empty?
+      opt, desc = line.split(/ {2,}/, 2)
+      printf "  %-28s  %s\n", opt, desc
+    end
+    exit
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
     break
   end
+  ##
   ARGV.shift
 end
 

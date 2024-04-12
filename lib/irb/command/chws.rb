@@ -14,7 +14,7 @@ module IRB
       category "Workspace"
       description "Show the current workspace."
 
-      def execute(*obj)
+      def execute(_arg)
         irb_context.main
       end
     end
@@ -23,8 +23,13 @@ module IRB
       category "Workspace"
       description "Change the current workspace to an object."
 
-      def execute(*obj)
-        irb_context.change_workspace(*obj)
+      def execute(arg)
+        if arg.empty?
+          irb_context.change_workspace
+        else
+          obj = eval(arg, irb_context.workspace.binding)
+          irb_context.change_workspace(obj)
+        end
         irb_context.main
       end
     end

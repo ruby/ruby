@@ -88,12 +88,12 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
 
-    - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+    - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: downloaded-cache
@@ -164,7 +164,7 @@ runs:
         echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
 
     - name: clean
-      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      uses: gacts/run-and-post-run@7aec950f3b114c4fcf6012070c3709ecff0eb6f8 # v1.4.0
       with:
         working-directory:
         post: |

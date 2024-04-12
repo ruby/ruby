@@ -81,14 +81,6 @@ foo[bar] = baz
 
 %w[\C:]
 
-foo[&bar] = 1
-
-foo.foo[&bar] = 1
-
-def foo(&)
-  bar[&] = 1
-end
-
 foo[] += 1
 
 foo[] ||= 1
@@ -112,18 +104,6 @@ foo.foo[bar] += 1
 foo.foo[bar] ||= 1
 
 foo.foo[bar] &&= 1
-
-foo[bar, &baz] += 1
-
-foo[bar, &baz] ||= 1
-
-foo[bar, &baz] &&= 1
-
-foo.foo[bar, &baz] += 1
-
-foo.foo[bar, &baz] ||= 1
-
-foo.foo[bar, &baz] &&= 1
 
 def f(*); a[*]; end
 

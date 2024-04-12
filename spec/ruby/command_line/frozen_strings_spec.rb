@@ -19,6 +19,50 @@ describe "The --enable-frozen-string-literal flag causes string literals to" do
   end
 end
 
+describe "The --disable-frozen-string-literal flag causes string literals to" do
+
+  it "produce a different object each time" do
+    ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb"), options: "--disable-frozen-string-literal").chomp.should == "false"
+  end
+
+end
+
+describe "With neither --enable-frozen-string-literal nor --disable-frozen-string-literal flag set" do
+  before do
+    # disable --enable-frozen-string-literal and --disable-frozen-string-literal passed in $RUBYOPT
+    @rubyopt = ENV["RUBYOPT"]
+    ENV["RUBYOPT"] = ""
+  end
+
+  after do
+    ENV["RUBYOPT"] = @rubyopt
+  end
+
+  it "produce a different object each time" do
+    ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb")).chomp.should == "false"
+  end
+
+  ruby_version_is "3.4" do
+    it "if file has no frozen_string_literal comment produce different frozen strings each time" do
+      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:true interned:false"
+    end
+  end
+
+  ruby_version_is ""..."3.4" do
+    it "if file has no frozen_string_literal comment produce different mutable strings each time" do
+      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
+    end
+  end
+
+  it "if file has frozen_string_literal:true comment produce same frozen strings each time" do
+    ruby_exe(fixture(__FILE__, "string_literal_frozen_comment.rb")).chomp.should == "frozen:true interned:true"
+  end
+
+  it "if file has frozen_string_literal:false comment produce different mutable strings each time" do
+    ruby_exe(fixture(__FILE__, "string_literal_mutable_comment.rb")).chomp.should == "frozen:false interned:false"
+  end
+end
+
 describe "The --debug flag produces" do
   it "debugging info on attempted frozen string modification" do
     error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '--debug',  args: "2>&1")

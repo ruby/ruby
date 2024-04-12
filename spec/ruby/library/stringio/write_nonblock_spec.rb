@@ -10,7 +10,7 @@ describe "StringIO#write_nonblock when passed [String]" do
   it_behaves_like :stringio_write_string, :write_nonblock
 
   it "accepts :exception option" do
-    io = StringIO.new("12345", "a")
+    io = StringIO.new(+"12345", "a")
     io.write_nonblock("67890", exception: true)
     io.string.should == "1234567890"
   end

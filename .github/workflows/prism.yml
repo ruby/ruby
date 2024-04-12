@@ -47,15 +47,15 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Documentation')
+      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Documentation')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Document')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -92,16 +92,16 @@ jobs:
         timeout-minutes: 40
         env:
           GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="test_regexp.rb" --exclude="error_highlight/test_error_highlight.rb" --exclude="irb/test_context.rb" --exclude="prism/encoding_test.rb" --exclude="prism/unescape_test.rb"'
+          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb" --exclude="prism/locals_test.rb" --exclude="prism/newline_test.rb"'
           RUN_OPTS: ${{ matrix.run_opts }}
 
-      # - name: make test-spec
-      #   run: |
-      #     $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 10
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-prism-spec
+        run: |
+          $SETARCH make -s test-prism-spec SPECOPTS="$SPECOPTS"
+        timeout-minutes: 10
+        env:
+          GNUMAKEFLAGS: ''
+          SPECOPTS: "-T -W:no-experimental -T --parser=prism"
 
       - uses: ./.github/actions/slack
         with:

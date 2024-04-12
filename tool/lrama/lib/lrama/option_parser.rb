@@ -64,9 +64,18 @@ module Lrama
         o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
         o.on('-d', 'also produce a header file') { @options.header = true }
         o.on('-r', '--report=THINGS', Array, 'also produce details on the automaton') {|v| @report = v }
+        o.on_tail ''
+        o.on_tail 'Valid Reports:'
+        o.on_tail "    #{VALID_REPORTS.join(' ')}"
+
         o.on('--report-file=FILE', 'also produce details on the automaton output to a file named FILE') {|v| @options.report_file = v }
         o.on('-o', '--output=FILE', 'leave output to FILE') {|v| @options.outfile = v }
+
         o.on('--trace=THINGS', Array, 'also output trace logs at runtime') {|v| @trace = v }
+        o.on_tail ''
+        o.on_tail 'Valid Traces:'
+        o.on_tail "    #{VALID_TRACES.join(' ')}"
+
         o.on('-v', 'reserved, do nothing') { }
         o.separator ''
         o.separator 'Error Recovery:'
@@ -75,20 +84,22 @@ module Lrama
         o.separator 'Other options:'
         o.on('-V', '--version', "output version information and exit") {|v| puts "lrama #{Lrama::VERSION}"; exit 0 }
         o.on('-h', '--help', "display this help and exit") {|v| puts o; exit 0 }
-        o.separator ''
+        o.on_tail
         o.parse!(argv)
       end
     end
 
+    BISON_REPORTS = %w[states itemsets lookaheads solved counterexamples cex all none]
+    OTHER_REPORTS = %w[verbose]
+    NOT_SUPPORTED_REPORTS = %w[cex none]
+    VALID_REPORTS = BISON_REPORTS + OTHER_REPORTS - NOT_SUPPORTED_REPORTS
+
     def validate_report(report)
-      bison_list = %w[states itemsets lookaheads solved counterexamples cex all none]
-      others = %w[verbose]
-      list = bison_list + others
-      not_supported = %w[cex none]
+      list = VALID_REPORTS
       h = { grammar: true }
 
       report.each do |r|
-        if list.include?(r) && !not_supported.include?(r)
+        if list.include?(r)
           h[r.to_sym] = true
         else
           raise "Invalid report option \"#{r}\"."
@@ -96,7 +107,7 @@ module Lrama
       end
 
       if h[:all]
-        (bison_list - not_supported).each do |r|
+        (BISON_REPORTS - NOT_SUPPORTED_REPORTS).each do |r|
           h[r.to_sym] = true
         end
 
@@ -106,12 +117,14 @@ module Lrama
       return h
     end
 
+    VALID_TRACES = %w[
+      none locations scan parse automaton bitsets
+      closure grammar rules resource sets muscles tools
+      m4-early m4 skeleton time ielr cex all
+    ]
+
     def validate_trace(trace)
-      list = %w[
-        none locations scan parse automaton bitsets
-        closure grammar rules resource sets muscles tools
-        m4-early m4 skeleton time ielr cex all
-      ]
+      list = VALID_TRACES
       h = {}
 
       trace.each do |t|

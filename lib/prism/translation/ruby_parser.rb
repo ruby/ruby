@@ -192,19 +192,19 @@ module Prism
 
           if node.opening == "("
             result.line = node.opening_loc.start_line
-            result.max_line = node.closing_loc.end_line
+            result.line_max = node.closing_loc.end_line
             shadow_loc = false
           end
 
           if node.locals.any?
             shadow = s(node, :shadow).concat(visit_all(node.locals))
             shadow.line = node.locals.first.location.start_line
-            shadow.max_line = node.locals.last.location.end_line
+            shadow.line_max = node.locals.last.location.end_line
             result << shadow
 
             if shadow_loc
               result.line = shadow.line
-              result.max_line = shadow.max_line
+              result.line_max = shadow.line_max
             end
           end
 
@@ -1274,6 +1274,11 @@ module Prism
           s(node, :self)
         end
 
+        # A shareable constant.
+        def visit_shareable_constant_node(node)
+          visit(node.write)
+        end
+
         # class << self; end
         # ^^^^^^^^^^^^^^^^^^
         def visit_singleton_class_node(node)
@@ -1407,7 +1412,7 @@ module Prism
 
           if node.heredoc?
             result.line = node.content_loc.start_line
-            result.max_line = node.content_loc.end_line
+            result.line_max = node.content_loc.end_line
           end
 
           result
@@ -1434,7 +1439,7 @@ module Prism
           result = Sexp.new(*arguments)
           result.file = file
           result.line = node.location.start_line
-          result.max_line = node.location.end_line
+          result.line_max = node.location.end_line
           result
         end
 

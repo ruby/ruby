@@ -4,7 +4,8 @@ bundle-plugin(1) -- Manage Bundler plugins
 ## SYNOPSIS
 
 `bundle plugin` install PLUGINS [--source=<SOURCE>] [--version=<version>]
-                              [--git|--local_git=<git-url>] [--branch=<branch>|--ref=<rev>]<br>
+                              [--git=<git-url>] [--branch=<branch>|--ref=<rev>]
+                              [--path=<path>]<br>
 `bundle plugin` uninstall PLUGINS<br>
 `bundle plugin` list<br>
 `bundle plugin` help [COMMAND]
@@ -29,14 +30,17 @@ Install the given plugin(s).
   You can specify the version of the gem via `--version`.
 
 * `bundle plugin install bundler-graph --git https://github.com/rubygems/bundler-graph`:
-  Install bundler-graph gem from Git repository. `--git` can be replaced with `--local-git`. You cannot use both `--git` and `--local-git`. You can use standard Git URLs like:
+  Install bundler-graph gem from Git repository. You can use standard Git URLs like:
 
   `ssh://[user@]host.xz[:port]/path/to/repo.git`<br>
   `http[s]://host.xz[:port]/path/to/repo.git`<br>
   `/path/to/repo`<br>
   `file:///path/to/repo`
 
-  When you specify `--git`/`--local-git`, you can use `--branch` or `--ref` to specify any branch, tag, or commit hash (revision) to use. When you specify both, only the latter is used.
+  When you specify `--git`, you can use `--branch` or `--ref` to specify any branch, tag, or commit hash (revision) to use.
+
+* `bundle plugin install bundler-graph --path ../bundler-graph`:
+  Install bundler-graph gem from a local path.
 
 ### uninstall
 

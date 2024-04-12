@@ -8,4 +8,4 @@
             ├── opening_loc: (1,0)-(1,7) = "<<'eot'"
             ├── content_loc: (2,0)-(3,0) = "body\r\n"
             ├── closing_loc: (3,0)-(4,0) = "eot\n"
-            └── unescaped: "body\r\n"
+            └── unescaped: "body\n"

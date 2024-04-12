@@ -461,7 +461,7 @@ module SyncDefaultGems
       # \r? needed in the regex in case the commit has windows-style line endings (because e.g. we're running
       # tests on Windows)
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)\r?$"
-      log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
+      log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", "rb", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
@@ -471,7 +471,7 @@ module SyncDefaultGems
         range = "#{range}~1..#{range}"
       end
 
-      IO.popen(%W"git log --format=%H,%s #{range} --") do |f|
+      IO.popen(%W"git log --format=%H,%s #{range} --", "rb") do |f|
         f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
       end
     end
@@ -581,7 +581,7 @@ module SyncDefaultGems
 
   def pickup_commit(gem, sha, edit)
     # Attempt to cherry-pick a commit
-    result = IO.popen(%W"git cherry-pick #{sha}", &:read)
+    result = IO.popen(%W"git cherry-pick #{sha}", "rb", &:read)
     picked = $?.success?
     if result =~ /nothing\ to\ commit/
       `git reset`

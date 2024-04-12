@@ -183,7 +183,7 @@ describe :marshal_load, shared: true do
       describe "when called with a proc" do
         it "call the proc with frozen objects" do
           arr = []
-          s = 'hi'
+          s = +'hi'
           s.instance_variable_set(:@foo, 5)
           st = Struct.new("Brittle", :a).new
           st.instance_variable_set(:@clue, 'none')
@@ -268,7 +268,7 @@ describe :marshal_load, shared: true do
 
       it "loads an Array with proc" do
         arr = []
-        s = 'hi'
+        s = +'hi'
         s.instance_variable_set(:@foo, 5)
         st = Struct.new("Brittle", :a).new
         st.instance_variable_set(:@clue, 'none')
@@ -413,13 +413,13 @@ describe :marshal_load, shared: true do
   end
 
   it "raises a TypeError with bad Marshal version" do
-    marshal_data = '\xff\xff'
+    marshal_data = +'\xff\xff'
     marshal_data[0] = (Marshal::MAJOR_VERSION).chr
     marshal_data[1] = (Marshal::MINOR_VERSION + 1).chr
 
     -> { Marshal.send(@method, marshal_data) }.should raise_error(TypeError)
 
-    marshal_data = '\xff\xff'
+    marshal_data = +'\xff\xff'
     marshal_data[0] = (Marshal::MAJOR_VERSION - 1).chr
     marshal_data[1] = (Marshal::MINOR_VERSION).chr
 
@@ -470,7 +470,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads an array having ivar" do
-      s = 'well'
+      s = +'well'
       s.instance_variable_set(:@foo, 10)
       obj = ['5', s, 'hi'].extend(Meths, MethsMore)
       obj.instance_variable_set(:@mix, s)
@@ -516,7 +516,7 @@ describe :marshal_load, shared: true do
     end
 
     it "preserves hash ivars when hash contains a string having ivar" do
-      s = 'string'
+      s = +'string'
       s.instance_variable_set :@string_ivar, 'string ivar'
       h = { key: s }
       h.instance_variable_set :@hash_ivar, 'hash ivar'
@@ -600,7 +600,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a binary encoded Symbol" do
-      s = "\u2192".force_encoding("binary").to_sym
+      s = "\u2192".dup.force_encoding("binary").to_sym
       sym = Marshal.send(@method, "\x04\b:\b\xE2\x86\x92")
       sym.should == s
       sym.encoding.should == Encoding::BINARY
@@ -614,8 +614,8 @@ describe :marshal_load, shared: true do
       value = Marshal.send(@method, dump)
       value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8]
       expected = [
-        "€a".force_encoding(Encoding::UTF_8).to_sym,
-        "€b".force_encoding(Encoding::UTF_8).to_sym
+        "€a".dup.force_encoding(Encoding::UTF_8).to_sym,
+        "€b".dup.force_encoding(Encoding::UTF_8).to_sym
       ]
       value.should == expected
 
@@ -635,7 +635,7 @@ describe :marshal_load, shared: true do
 
   describe "for a String" do
     it "loads a string having ivar with ref to self" do
-      obj = 'hi'
+      obj = +'hi'
       obj.instance_variable_set(:@self, obj)
       Marshal.send(@method, "\004\bI\"\ahi\006:\n@self@\000").should == obj
     end
@@ -663,7 +663,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a US-ASCII String" do
-      str = "abc".force_encoding("us-ascii")
+      str = "abc".dup.force_encoding("us-ascii")
       data = "\x04\bI\"\babc\x06:\x06EF"
       result = Marshal.send(@method, data)
       result.should == str
@@ -671,7 +671,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a UTF-8 String" do
-      str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
+      str = "\x6d\xc3\xb6\x68\x72\x65".dup.force_encoding("utf-8")
       data = "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
       result = Marshal.send(@method, data)
       result.should == str
@@ -679,7 +679,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a String in another encoding" do
-      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
+      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".dup.force_encoding("utf-16le")
       data = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
       result = Marshal.send(@method, data)
       result.should == str
@@ -687,8 +687,8 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a String as BINARY if no encoding is specified at the end" do
-      str = "\xC3\xB8".force_encoding("BINARY")
-      data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
+      str = "\xC3\xB8".dup.force_encoding("BINARY")
+      data = "\x04\b\"\a\xC3\xB8".dup.force_encoding("UTF-8")
       result = Marshal.send(@method, data)
       result.encoding.should == Encoding::BINARY
       result.should == str
@@ -823,7 +823,7 @@ describe :marshal_load, shared: true do
     end
 
     it "loads an Object with a non-US-ASCII instance variable" do
-      ivar = "@é".force_encoding(Encoding::UTF_8).to_sym
+      ivar = "@é".dup.force_encoding(Encoding::UTF_8).to_sym
       obj = Marshal.send(@method, "\x04\bo:\vObject\x06I:\b@\xC3\xA9\x06:\x06ETi\x06")
       obj.instance_variables.should == [ivar]
       obj.instance_variables[0].encoding.should == Encoding::UTF_8

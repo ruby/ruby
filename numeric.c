@@ -5169,7 +5169,7 @@ fix_rshift(long val, unsigned long i)
  *
  */
 
-static VALUE
+VALUE
 rb_int_rshift(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -5453,11 +5453,12 @@ rb_fix_digits(VALUE fix, long base)
         return rb_ary_new_from_args(1, INT2FIX(0));
 
     digits = rb_ary_new();
-    while (x > 0) {
+    while (x >= base) {
         long q = x % base;
         rb_ary_push(digits, LONG2NUM(q));
         x /= base;
     }
+    rb_ary_push(digits, LONG2NUM(x));
 
     return digits;
 }
@@ -6251,19 +6252,25 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
-    rb_fix_to_s_static[0] = rb_fstring_literal("0");
-    rb_fix_to_s_static[1] = rb_fstring_literal("1");
-    rb_fix_to_s_static[2] = rb_fstring_literal("2");
-    rb_fix_to_s_static[3] = rb_fstring_literal("3");
-    rb_fix_to_s_static[4] = rb_fstring_literal("4");
-    rb_fix_to_s_static[5] = rb_fstring_literal("5");
-    rb_fix_to_s_static[6] = rb_fstring_literal("6");
-    rb_fix_to_s_static[7] = rb_fstring_literal("7");
-    rb_fix_to_s_static[8] = rb_fstring_literal("8");
-    rb_fix_to_s_static[9] = rb_fstring_literal("9");
-    for(int i = 0; i < 10; i++) {
-        rb_vm_register_global_object(rb_fix_to_s_static[i]);
-    }
+#define fix_to_s_static(n) do { \
+        VALUE lit = rb_fstring_literal(#n); \
+        rb_fix_to_s_static[n] = lit; \
+        rb_vm_register_global_object(lit); \
+        RB_GC_GUARD(lit); \
+    } while (0)
+
+    fix_to_s_static(0);
+    fix_to_s_static(1);
+    fix_to_s_static(2);
+    fix_to_s_static(3);
+    fix_to_s_static(4);
+    fix_to_s_static(5);
+    fix_to_s_static(6);
+    fix_to_s_static(7);
+    fix_to_s_static(8);
+    fix_to_s_static(9);
+
+#undef fix_to_s_static
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

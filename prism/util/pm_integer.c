@@ -223,6 +223,10 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
 
 /**
  * The values of a hexadecimal digit, where the index is the ASCII character.
+ * Note that there's an odd exception here where _ is mapped to 0. This is
+ * because it's possible for us to end up trying to parse a number that has
+ * already had an error attached to it, and we want to provide _something_ to
+ * the user.
  */
 static const int8_t pm_integer_parse_digit_values[256] = {
 //   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -231,7 +235,7 @@ static const int8_t pm_integer_parse_digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 2x
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, // 3x
     -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 4x
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 5x
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, // 5x
     -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 6x
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 7x
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 8x

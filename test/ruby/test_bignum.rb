@@ -207,7 +207,7 @@ class TestBignum < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       digits = [["3", 700], ["0", 2700], ["1", 1], ["0", 26599]]
-      num = digits.inject("") {|s,(c,n)|s << c*n}.to_i
+      num = digits.inject(+"") {|s,(c,n)|s << c*n}.to_i
       assert_equal digits.sum {|c,n|n}, num.to_s.size
     end;
   end

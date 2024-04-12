@@ -78,7 +78,6 @@ ruby_setup(void)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
     Init_BareVM();
-    Init_heap();
     rb_vm_encoded_insn_data_table_init();
     Init_vm_objects();
 
@@ -410,11 +409,11 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     return rb_const_list(data);
 }
 
-/*!
- * Asserts that \a klass is not a frozen class.
- * \param[in] klass a \c Module object
- * \exception RuntimeError if \a klass is not a class or frozen.
- * \ingroup class
+/**
+ * Asserts that `klass` is not a frozen class.
+ * @param[in] klass a `Module` object
+ * @exception RuntimeError if `klass` is not a class or frozen.
+ * @ingroup class
  */
 void
 rb_class_modify_check(VALUE klass)
@@ -463,7 +462,7 @@ rb_class_modify_check(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(rb_execution_context_t *, int, volatile VALUE, VALUE));
+NORETURN(static void rb_longjmp(rb_execution_context_t *, enum ruby_tag_type, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
 #define get_ec_errinfo(ec) rb_ec_get_errinfo(ec)
 
@@ -541,7 +540,7 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
 }
 
 static void
-setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause)
+setup_exception(rb_execution_context_t *ec, enum ruby_tag_type tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE e;
     int line;
@@ -645,7 +644,7 @@ rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause)
 }
 
 static void
-rb_longjmp(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause)
+rb_longjmp(rb_execution_context_t *ec, enum ruby_tag_type tag, volatile VALUE mesg, VALUE cause)
 {
     mesg = exc_setup_message(ec, mesg, &cause);
     setup_exception(ec, tag, mesg, cause);
@@ -655,10 +654,10 @@ rb_longjmp(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
-NORETURN(static void rb_exc_exception(VALUE mesg, int tag, VALUE cause));
+NORETURN(static void rb_exc_exception(VALUE mesg, enum ruby_tag_type tag, VALUE cause));
 
 static void
-rb_exc_exception(VALUE mesg, int tag, VALUE cause)
+rb_exc_exception(VALUE mesg, enum ruby_tag_type tag, VALUE cause)
 {
     if (!NIL_P(mesg)) {
         mesg = make_exception(1, &mesg, FALSE);
@@ -666,12 +665,12 @@ rb_exc_exception(VALUE mesg, int tag, VALUE cause)
     rb_longjmp(GET_EC(), tag, mesg, cause);
 }
 
-/*!
+/**
  * Raises an exception in the current thread.
- * \param[in] mesg an Exception class or an \c Exception object.
- * \exception always raises an instance of the given exception class or
- *   the given \c Exception object.
- * \ingroup exception
+ * @param[in] mesg an Exception class or an `Exception` object.
+ * @exception always raises an instance of the given exception class or
+ *   the given `Exception` object.
+ * @ingroup exception
  */
 void
 rb_exc_raise(VALUE mesg)
@@ -761,7 +760,8 @@ rb_f_raise(int argc, VALUE *argv)
  *  object that returns an +Exception+ object when sent an +exception+
  *  message).  The optional second parameter sets the message associated with
  *  the exception (accessible via Exception#message), and the third parameter
- *  is an array of callback information (accessible via Exception#backtrace).
+ *  is an array of callback information (accessible via
+ *  Exception#backtrace_locations or Exception#backtrace).
  *  The +cause+ of the generated exception (accessible via Exception#cause)
  *  is automatically set to the "current" exception (<code>$!</code>), if any.
  *  An alternative value, either an +Exception+ object or +nil+, can be
@@ -771,7 +771,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  <code>begin...end</code> blocks.
  *
  *     raise "Failed to create socket"
- *     raise ArgumentError, "No parameters", caller
+ *     raise ArgumentError, "No parameters", caller_locations
  */
 
 static VALUE
@@ -985,7 +985,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 VALUE
 rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
-    int state;
+    enum ruby_tag_type state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
     rb_execution_context_t * volatile ec = GET_EC();
@@ -1782,6 +1782,16 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
+VALUE
+rb_top_main_class(const char *method)
+{
+    VALUE klass = GET_THREAD()->top_wrapper;
+
+    if (!klass) return rb_cObject;
+    rb_warning("main.%s in the wrapped load is effective only in wrapper module", method);
+    return klass;
+}
+
 /*
  *  call-seq:
  *     include(module, ...)   -> self
@@ -1794,13 +1804,7 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 static VALUE
 top_include(int argc, VALUE *argv, VALUE self)
 {
-    rb_thread_t *th = GET_THREAD();
-
-    if (th->top_wrapper) {
-        rb_warning("main.include in the wrapped load is effective only in wrapper module");
-        return rb_mod_include(argc, argv, th->top_wrapper);
-    }
-    return rb_mod_include(argc, argv, rb_cObject);
+    return rb_mod_include(argc, argv, rb_top_main_class("include"));
 }
 
 /*

@@ -58,4 +58,4 @@ class Reline::Terminfo::Test < Reline::TestCase
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetnum('unknown') }
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetnum(nil) }
   end
-end if Reline::Terminfo.enabled?
+end if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?

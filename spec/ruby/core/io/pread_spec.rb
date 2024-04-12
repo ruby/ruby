@@ -21,19 +21,19 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
     end
 
     it "accepts a length, an offset, and an output buffer" do
-      buffer = "foo"
+      buffer = +"foo"
       @file.pread(3, 4, buffer)
       buffer.should == "567"
     end
 
     it "shrinks the buffer in case of less bytes read" do
-      buffer = "foo"
+      buffer = +"foo"
       @file.pread(1, 0, buffer)
       buffer.should == "1"
     end
 
     it "grows the buffer in case of more bytes read" do
-      buffer = "foo"
+      buffer = +"foo"
       @file.pread(5, 0, buffer)
       buffer.should == "12345"
     end
@@ -57,7 +57,7 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
     end
 
     it "does not reset the buffer when reading with maxlen = 0" do
-      buffer = "foo"
+      buffer = +"foo"
       @file.pread(0, 4, buffer)
       buffer.should == "foo"
 
@@ -79,7 +79,7 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
 
     it "converts a buffer to String using to_str" do
       buffer = mock('buffer')
-      buffer.should_receive(:to_str).at_least(1).and_return("foo")
+      buffer.should_receive(:to_str).at_least(1).and_return(+"foo")
       @file.pread(4, 0, buffer)
       buffer.should_not.is_a?(String)
       buffer.to_str.should == "1234"

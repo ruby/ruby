@@ -375,7 +375,17 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_ec_str_resurrect(ec, str);
+    val = rb_ec_str_resurrect(ec, str, false);
+}
+
+/* put chilled string val. string will be copied but frozen in the future. */
+DEFINE_INSN
+putchilledstring
+(VALUE str)
+()
+(VALUE val)
+{
+    val = rb_ec_str_resurrect(ec, str, true);
 }
 
 /* put concatenate strings */

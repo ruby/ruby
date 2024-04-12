@@ -52,22 +52,18 @@ pub enum Type {
     Flonum,
     ImmSymbol,
 
-    #[allow(unused)]
-    HeapSymbol,
-
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
+    CArray, // An un-subclassed array of type rb_cArray (can have instance vars in some cases)
     THash, // An object with the T_HASH flag set, possibly an rb_cHash
-
-    TProc, // A proc object. Could be an instance of a subclass of ::rb_cProc
+    CHash, // An un-subclassed hash of type rb_cHash (can have instance vars in some cases)
 
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
 
     // The context currently relies on types taking at most 4 bits (max value 15)
-    // to encode, so if we add any more, we will need to refactor the context,
-    // or we could remove HeapSymbol, which is currently unused.
+    // to encode, so if we add any more, we will need to refactor the context.
 }
 
 // Default initialization
@@ -100,8 +96,11 @@ impl Type {
             // Core.rs can't reference rb_cString because it's linked by Rust-only tests.
             // But CString vs TString is only an optimisation and shouldn't affect correctness.
             #[cfg(not(test))]
-            if val.class_of() == unsafe { rb_cString } && val.is_frozen() {
-                return Type::CString;
+            match val.class_of() {
+                class if class == unsafe { rb_cArray }  => return Type::CArray,
+                class if class == unsafe { rb_cHash }   => return Type::CHash,
+                class if class == unsafe { rb_cString } => return Type::CString,
+                _ => {}
             }
             // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
             // we can just treat it as a normal Object.
@@ -113,8 +112,6 @@ impl Type {
                 RUBY_T_ARRAY => Type::TArray,
                 RUBY_T_HASH => Type::THash,
                 RUBY_T_STRING => Type::TString,
-                #[cfg(not(test))]
-                RUBY_T_DATA if unsafe { rb_obj_is_proc(val).test() } => Type::TProc,
                 _ => Type::UnknownHeap,
             }
         }
@@ -154,33 +151,29 @@ impl Type {
         match self {
             Type::UnknownHeap => true,
             Type::TArray => true,
+            Type::CArray => true,
             Type::THash => true,
-            Type::HeapSymbol => true,
+            Type::CHash => true,
             Type::TString => true,
             Type::CString => true,
             Type::BlockParamProxy => true,
-            Type::TProc => true,
             _ => false,
         }
     }
 
     /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
     pub fn is_array(&self) -> bool {
-        matches!(self, Type::TArray)
+        matches!(self, Type::TArray | Type::CArray)
     }
 
-    /// Check if it's a T_HASH object
+    /// Check if it's a T_HASH object (both THash and CHash are T_HASH)
     pub fn is_hash(&self) -> bool {
-        matches!(self, Type::THash)
+        matches!(self, Type::THash | Type::CHash)
     }
 
     /// Check if it's a T_STRING object (both TString and CString are T_STRING)
     pub fn is_string(&self) -> bool {
-        match self {
-            Type::TString => true,
-            Type::CString => true,
-            _ => false,
-        }
+        matches!(self, Type::TString | Type::CString)
     }
 
     /// Returns an Option with the T_ value type if it is known, otherwise None
@@ -191,11 +184,10 @@ impl Type {
             Type::False => Some(RUBY_T_FALSE),
             Type::Fixnum => Some(RUBY_T_FIXNUM),
             Type::Flonum => Some(RUBY_T_FLOAT),
-            Type::TArray => Some(RUBY_T_ARRAY),
-            Type::THash => Some(RUBY_T_HASH),
-            Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
+            Type::TArray | Type::CArray => Some(RUBY_T_ARRAY),
+            Type::THash | Type::CHash => Some(RUBY_T_HASH),
+            Type::ImmSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
-            Type::TProc => Some(RUBY_T_DATA),
             Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
             Type::BlockParamProxy => None,
         }
@@ -210,7 +202,9 @@ impl Type {
                 Type::False => Some(rb_cFalseClass),
                 Type::Fixnum => Some(rb_cInteger),
                 Type::Flonum => Some(rb_cFloat),
-                Type::ImmSymbol | Type::HeapSymbol => Some(rb_cSymbol),
+                Type::ImmSymbol => Some(rb_cSymbol),
+                Type::CArray => Some(rb_cArray),
+                Type::CHash => Some(rb_cHash),
                 Type::CString => Some(rb_cString),
                 _ => None,
             }
@@ -258,6 +252,16 @@ impl Type {
 
         // Any type can flow into an unknown type
         if dst == Type::Unknown {
+            return TypeDiff::Compatible(1);
+        }
+
+        // A CArray is also a TArray.
+        if self == Type::CArray && dst == Type::TArray {
+            return TypeDiff::Compatible(1);
+        }
+
+        // A CHash is also a THash.
+        if self == Type::CHash && dst == Type::THash {
             return TypeDiff::Compatible(1);
         }
 
@@ -1650,6 +1654,9 @@ impl JITState {
         if let Some(idlist) = self.stable_constant_names_assumption {
             track_stable_constant_names_assumption(blockref, idlist);
         }
+        for klass in self.no_singleton_class_assumptions {
+            track_no_singleton_class_assumption(blockref, klass);
+        }
 
         blockref
     }
@@ -1786,8 +1793,8 @@ impl Context {
     }
 
     /// Get an operand for the adjusted stack pointer address
-    pub fn sp_opnd(&self, offset_bytes: i32) -> Opnd {
-        let offset = ((self.sp_offset as i32) * SIZEOF_VALUE_I32) + offset_bytes;
+    pub fn sp_opnd(&self, offset: i32) -> Opnd {
+        let offset = (self.sp_offset as i32 + offset) * SIZEOF_VALUE_I32;
         return Opnd::mem(64, SP, offset);
     }
 

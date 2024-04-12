@@ -93,32 +93,6 @@ dvar_defined(ID id, const void *p)
     return rb_dvar_defined(id, (const rb_iseq_t *)p);
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
-static int
-literal_cmp(VALUE val, VALUE lit)
-{
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
 static int
 is_usascii_enc(void *enc)
 {
@@ -264,18 +238,6 @@ enc_from_encoding(void *enc)
 }
 
 static int
-encoding_get(VALUE obj)
-{
-    return ENCODING_GET(obj);
-}
-
-static void
-encoding_set(VALUE obj, int encindex)
-{
-    ENCODING_SET(obj, encindex);
-}
-
-static int
 encoding_is_ascii8bit(VALUE obj)
 {
     return ENCODING_IS_ASCII8BIT(obj);
@@ -336,12 +298,6 @@ rbool(VALUE v)
 }
 
 static int
-undef_p(VALUE v)
-{
-    return RB_UNDEF_P(v);
-}
-
-static int
 rtest(VALUE obj)
 {
     return (int)RB_TEST(obj);
@@ -363,12 +319,6 @@ static VALUE
 obj_write(VALUE old, VALUE *slot, VALUE young)
 {
     return RB_OBJ_WRITE(old, slot, young);
-}
-
-static VALUE
-obj_written(VALUE old, VALUE slot, VALUE young)
-{
-    return RB_OBJ_WRITTEN(old, slot, young);
 }
 
 static VALUE
@@ -401,18 +351,6 @@ rb_errno_ptr2(void)
     return rb_errno_ptr();
 }
 
-static int
-fixnum_p(VALUE obj)
-{
-    return (int)RB_FIXNUM_P(obj);
-}
-
-static int
-symbol_p(VALUE obj)
-{
-    return (int)RB_SYMBOL_P(obj);
-}
-
 static void *
 zalloc(size_t elemsiz)
 {
@@ -425,22 +363,10 @@ gc_guard(VALUE obj)
     RB_GC_GUARD(obj);
 }
 
-static rb_imemo_tmpbuf_t *
-tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    return rb_imemo_tmpbuf_parser_heap(buf, old_heap, cnt);
-}
-
 static VALUE
 arg_error(void)
 {
     return rb_eArgError;
-}
-
-static VALUE
-ruby_vm_frozen_core(void)
-{
-    return rb_mRubyVMFrozenCore;
 }
 
 static rb_ast_t *
@@ -461,10 +387,29 @@ str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
     return rb_str_coderange_scan_restartable(s, e, (rb_encoding *)enc, cr);
 }
 
+static int
+enc_mbminlen(void *enc)
+{
+    return rb_enc_mbminlen((rb_encoding *)enc);
+}
+
+static bool
+enc_isascii(OnigCodePoint c, void *enc)
+{
+    return rb_enc_isascii(c, (rb_encoding *)enc);
+}
+
+static OnigCodePoint
+enc_mbc_to_codepoint(const char *p, const char *e, void *enc)
+{
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+
+    return ONIGENC_MBC_TO_CODE((rb_encoding *)enc, up, ue);
+}
+
 VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_eArgError;
-extern VALUE rb_mRubyVMFrozenCore;
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
 static const rb_parser_config_t rb_global_parser_config = {
     .malloc = ruby_xmalloc,
@@ -479,18 +424,10 @@ static const rb_parser_config_t rb_global_parser_config = {
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
 
-    .tmpbuf_parser_heap = tmpbuf_parser_heap,
     .ast_new = ast_new,
 
     .compile_callback = rb_suppress_tracing,
     .reg_named_capture_assign = reg_named_capture_assign,
-
-    .obj_freeze = rb_obj_freeze,
-    .obj_hide = rb_obj_hide,
-    .obj_freeze_raw = OBJ_FREEZE_RAW,
-
-    .fixnum_p = fixnum_p,
-    .symbol_p = symbol_p,
 
     .attr_get = rb_attr_get,
 
@@ -498,8 +435,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_push = rb_ary_push,
     .ary_new_from_args = rb_ary_new_from_args,
     .ary_unshift = rb_ary_unshift,
-    .ary_new2 = rb_ary_new2,
-    .ary_clear = rb_ary_clear,
     .ary_modify = rb_ary_modify,
     .array_len = rb_array_len,
     .array_aref = RARRAY_AREF,
@@ -547,14 +482,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .filesystem_str_new_cstr = rb_filesystem_str_new_cstr,
     .obj_as_string = rb_obj_as_string,
 
-    .hash_clear = rb_hash_clear,
-    .hash_new = rb_hash_new,
-    .hash_aset = rb_hash_aset,
-    .hash_delete = rb_hash_delete,
-    .hash_lookup = rb_hash_lookup,
-    .ident_hash_new = rb_ident_hash_new,
-
-    .num2int = rb_num2int_inline,
     .int2num = rb_int2num_inline,
 
     .stderr_tty_p = rb_stderr_tty_p,
@@ -582,8 +509,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
-    .char_to_option_kcode = rb_char_to_option_kcode,
-    .ascii8bit_encindex = rb_ascii8bit_encindex,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
     .enc_associate_index = rb_enc_associate_index,
@@ -592,18 +517,15 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
     .enc_compatible = enc_compatible,
     .enc_from_encoding = enc_from_encoding,
-    .encoding_get = encoding_get,
-    .encoding_set = encoding_set,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
-
-    .ractor_make_shareable = rb_ractor_make_shareable,
+    .enc_coderange_broken = ENC_CODERANGE_BROKEN,
+    .enc_mbminlen = enc_mbminlen,
+    .enc_isascii = enc_isascii,
+    .enc_mbc_to_codepoint = enc_mbc_to_codepoint,
 
     .local_defined = local_defined,
     .dvar_defined = dvar_defined,
-
-    .literal_cmp = literal_cmp,
-    .literal_hash = literal_hash,
 
     .syntax_error_append = syntax_error_append,
     .raise = rb_raise,
@@ -617,11 +539,9 @@ static const rb_parser_config_t rb_global_parser_config = {
     .sized_xfree = ruby_sized_xfree,
     .sized_realloc_n = ruby_sized_realloc_n,
     .obj_write = obj_write,
-    .obj_written = obj_written,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
     .gc_mark_and_move = rb_gc_mark_and_move,
-    .gc_location = rb_gc_location,
 
     .reg_compile = rb_reg_compile,
     .reg_check_preprocess = rb_reg_check_preprocess,
@@ -642,23 +562,24 @@ static const rb_parser_config_t rb_global_parser_config = {
     .strtod = ruby_strtod,
 
     .rbool = rbool,
-    .undef_p = undef_p,
     .rtest = rtest,
     .nil_p = nil_p,
     .qnil = Qnil,
     .qtrue = Qtrue,
     .qfalse = Qfalse,
-    .qundef = Qundef,
     .eArgError = arg_error,
-    .mRubyVMFrozenCore = ruby_vm_frozen_core,
     .long2int = rb_long2int,
-
-    .node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal,
 
     /* For Ripper */
     .static_id2sym = static_id2sym,
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
 };
+
+const rb_parser_config_t *
+rb_ruby_parser_config(void)
+{
+    return &rb_global_parser_config;
+}
 
 rb_parser_t *
 rb_parser_params_allocate(void)
@@ -820,6 +741,14 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
 
 VALUE
 rb_str_new_parser_string(rb_parser_string_t *str)
+{
+    VALUE string = rb_enc_interned_str(str->ptr, str->len, str->enc);
+    rb_enc_str_coderange(string);
+    return string;
+}
+
+VALUE
+rb_str_new_mutable_parser_string(rb_parser_string_t *str)
 {
     return rb_enc_str_new(str->ptr, str->len, str->enc);
 }
@@ -1017,52 +946,14 @@ rb_node_encoding_val(const NODE *node)
 }
 
 VALUE
-rb_node_const_decl_val(const NODE *node)
+rb_script_lines_for(VALUE path)
 {
-    VALUE path;
-    switch (nd_type(node)) {
-      case NODE_CDECL:
-        if (RNODE_CDECL(node)->nd_vid) {
-            path = rb_id2str(RNODE_CDECL(node)->nd_vid);
-            goto end;
-        }
-        else {
-            node = RNODE_CDECL(node)->nd_else;
-        }
-        break;
-      case NODE_COLON2:
-        break;
-      case NODE_COLON3:
-        // ::Const
-        path = rb_str_new_cstr("::");
-        rb_str_append(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
-        goto end;
-      default:
-        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
-        UNREACHABLE_RETURN(0);
-    }
-
-    path = rb_ary_new();
-    if (node) {
-        for (; node && nd_type_p(node, NODE_COLON2); node = RNODE_COLON2(node)->nd_head) {
-            rb_ary_push(path, rb_id2str(RNODE_COLON2(node)->nd_mid));
-        }
-        if (node && nd_type_p(node, NODE_CONST)) {
-            // Const::Name
-            rb_ary_push(path, rb_id2str(RNODE_CONST(node)->nd_vid));
-        }
-        else if (node && nd_type_p(node, NODE_COLON3)) {
-            // ::Const::Name
-            rb_ary_push(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
-            rb_ary_push(path, rb_str_new(0, 0));
-        }
-        else {
-            // expression::Name
-            rb_ary_push(path, rb_str_new_cstr("..."));
-        }
-        path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
-    }
-  end:
-    path = rb_fstring(path);
-    return path;
+    VALUE hash, lines;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
+    rb_hash_aset(hash, path, lines = rb_ary_new());
+    return lines;
 }

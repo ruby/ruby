@@ -191,7 +191,7 @@ Output:
 === RFC 4180 Compliance
 
 By default, \CSV parses data that is compliant with
-{RFC 4180}[https://tools.ietf.org/html/rfc4180]
+{RFC 4180}[https://www.rfc-editor.org/rfc/rfc4180]
 with respect to:
 - Row separator.
 - Column separator.

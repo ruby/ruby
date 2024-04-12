@@ -39,6 +39,42 @@ class TestRDocTokenStream < RDoc::TestCase
     assert_equal '', RDoc::TokenStream.to_html([])
   end
 
+  def test_add_tokens
+    foo = Class.new do
+      include RDoc::TokenStream
+    end.new
+    foo.collect_tokens
+    foo.add_tokens([:token])
+    assert_equal [:token], foo.token_stream
+  end
+
+  def test_add_token
+    foo = Class.new do
+      include RDoc::TokenStream
+    end.new
+    foo.collect_tokens
+    foo.add_token(:token)
+    assert_equal [:token], foo.token_stream
+  end
+
+  def test_collect_tokens
+    foo = Class.new do
+      include RDoc::TokenStream
+    end.new
+    foo.collect_tokens
+    assert_equal [], foo.token_stream
+  end
+
+  def test_pop_token
+    foo = Class.new do
+      include RDoc::TokenStream
+    end.new
+    foo.collect_tokens
+    foo.add_token(:token)
+    foo.pop_token
+    assert_equal [], foo.token_stream
+  end
+
   def test_token_stream
     foo = Class.new do
       include RDoc::TokenStream

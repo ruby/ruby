@@ -9,10 +9,6 @@ module IRB
 
   module Command
     class MultiIRBCommand < Base
-      def execute(*args)
-        extend_irb_context
-      end
-
       private
 
       def print_deprecated_warning
@@ -36,7 +32,12 @@ module IRB
       category "Multi-irb (DEPRECATED)"
       description "Start a child IRB."
 
-      def execute(*obj)
+      def execute(arg)
+        args, kwargs = ruby_args(arg)
+        execute_internal(*args, **kwargs)
+      end
+
+      def execute_internal(*obj)
         print_deprecated_warning
 
         if irb_context.with_debugger
@@ -44,7 +45,7 @@ module IRB
           return
         end
 
-        super
+        extend_irb_context
         IRB.irb(nil, *obj)
       end
     end
@@ -53,7 +54,7 @@ module IRB
       category "Multi-irb (DEPRECATED)"
       description "List of current sessions."
 
-      def execute
+      def execute(_arg)
         print_deprecated_warning
 
         if irb_context.with_debugger
@@ -61,7 +62,7 @@ module IRB
           return
         end
 
-        super
+        extend_irb_context
         IRB.JobManager
       end
     end
@@ -70,7 +71,12 @@ module IRB
       category "Multi-irb (DEPRECATED)"
       description "Switches to the session of the given number."
 
-      def execute(key = nil)
+      def execute(arg)
+        args, kwargs = ruby_args(arg)
+        execute_internal(*args, **kwargs)
+      end
+
+      def execute_internal(key = nil)
         print_deprecated_warning
 
         if irb_context.with_debugger
@@ -78,7 +84,7 @@ module IRB
           return
         end
 
-        super
+        extend_irb_context
 
         raise CommandArgumentError.new("Please specify the id of target IRB job (listed in the `jobs` command).") unless key
         IRB.JobManager.switch(key)
@@ -89,7 +95,12 @@ module IRB
       category "Multi-irb (DEPRECATED)"
       description "Kills the session with the given number."
 
-      def execute(*keys)
+      def execute(arg)
+        args, kwargs = ruby_args(arg)
+        execute_internal(*args, **kwargs)
+      end
+
+      def execute_internal(*keys)
         print_deprecated_warning
 
         if irb_context.with_debugger
@@ -97,7 +108,7 @@ module IRB
           return
         end
 
-        super
+        extend_irb_context
         IRB.JobManager.kill(*keys)
       end
     end

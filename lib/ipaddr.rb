@@ -471,6 +471,20 @@ class IPAddr
     _to_string(@mask_addr)
   end
 
+  # Returns the wildcard mask in string format e.g. 0.0.255.255
+  def wildcard_mask
+    case @family
+    when Socket::AF_INET
+      mask = IN4MASK ^ @mask_addr
+    when Socket::AF_INET6
+      mask = IN6MASK ^ @mask_addr
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+
+    _to_string(mask)
+  end
+
   # Returns the IPv6 zone identifier, if present.
   # Raises InvalidAddressError if not an IPv6 address.
   def zone_id

@@ -76,7 +76,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a binary encoded Symbol" do
-      s = "\u2192".force_encoding("binary").to_sym
+      s = "\u2192".dup.force_encoding("binary").to_sym
       Marshal.dump(s).should == "\x04\b:\b\xE2\x86\x92"
     end
 
@@ -85,8 +85,8 @@ describe "Marshal.dump" do
       symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
       symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
       value = [
-        "€a".force_encoding(Encoding::UTF_8).to_sym,
-        "€b".force_encoding(Encoding::UTF_8).to_sym
+        "€a".dup.force_encoding(Encoding::UTF_8).to_sym,
+        "€b".dup.force_encoding(Encoding::UTF_8).to_sym
       ]
       Marshal.dump(value).should == "\x04\b[\a#{symbol1}#{symbol2}"
 
@@ -150,7 +150,7 @@ describe "Marshal.dump" do
     it "indexes instance variables of a String returned by #_dump at first and then indexes the object itself" do
       class MarshalSpec::M1::A
         def _dump(level)
-          s = "<dump>"
+          s = +"<dump>"
           s.instance_variable_set(:@foo, "bar")
           s
         end
@@ -194,7 +194,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a class with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteぁあぃいClass".force_encoding(Encoding::UTF_8))
+      source_object = eval("MarshalSpec::MultibyteぁあぃいClass".dup.force_encoding(Encoding::UTF_8))
       Marshal.dump(source_object).should == "\x04\bc,MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Class"
     end
 
@@ -217,7 +217,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a module with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteけげこごModule".force_encoding(Encoding::UTF_8))
+      source_object = eval("MarshalSpec::MultibyteけげこごModule".dup.force_encoding(Encoding::UTF_8))
       Marshal.dump(source_object).should == "\x04\bm-MarshalSpec::Multibyte\xE3\x81\x91\xE3\x81\x92\xE3\x81\x93\xE3\x81\x94Module"
     end
 
@@ -285,11 +285,11 @@ describe "Marshal.dump" do
 
   describe "with a String" do
     it "dumps a blank String" do
-      Marshal.dump("".force_encoding("binary")).should == "\004\b\"\000"
+      Marshal.dump("".dup.force_encoding("binary")).should == "\004\b\"\000"
     end
 
     it "dumps a short String" do
-      Marshal.dump("short".force_encoding("binary")).should == "\004\b\"\012short"
+      Marshal.dump("short".dup.force_encoding("binary")).should == "\004\b\"\012short"
     end
 
     it "dumps a long String" do
@@ -297,7 +297,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a String extended with a Module" do
-      Marshal.dump("".extend(Meths).force_encoding("binary")).should == "\004\be:\nMeths\"\000"
+      Marshal.dump("".dup.extend(Meths).force_encoding("binary")).should == "\004\be:\nMeths\"\000"
     end
 
     it "dumps a String subclass" do
@@ -314,23 +314,23 @@ describe "Marshal.dump" do
     end
 
     it "dumps a String with instance variables" do
-      str = ""
+      str = +""
       str.instance_variable_set("@foo", "bar")
       Marshal.dump(str.force_encoding("binary")).should == "\x04\bI\"\x00\x06:\t@foo\"\bbar"
     end
 
     it "dumps a US-ASCII String" do
-      str = "abc".force_encoding("us-ascii")
+      str = "abc".dup.force_encoding("us-ascii")
       Marshal.dump(str).should == "\x04\bI\"\babc\x06:\x06EF"
     end
 
     it "dumps a UTF-8 String" do
-      str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
+      str = "\x6d\xc3\xb6\x68\x72\x65".dup.force_encoding("utf-8")
       Marshal.dump(str).should == "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
     end
 
     it "dumps a String in another encoding" do
-      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
+      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".dup.force_encoding("utf-16le")
       result = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
       Marshal.dump(str).should == result
     end
@@ -364,7 +364,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a binary Regexp" do
-      o = Regexp.new("".force_encoding("binary"), Regexp::FIXEDENCODING)
+      o = Regexp.new("".dup.force_encoding("binary"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\b/\x00\x10"
     end
 
@@ -383,18 +383,18 @@ describe "Marshal.dump" do
     end
 
     it "dumps a UTF-8 Regexp" do
-      o = Regexp.new("".force_encoding("utf-8"), Regexp::FIXEDENCODING)
+      o = Regexp.new("".dup.force_encoding("utf-8"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\x00\x10\x06:\x06ET"
 
-      o = Regexp.new("a".force_encoding("utf-8"), Regexp::FIXEDENCODING)
+      o = Regexp.new("a".dup.force_encoding("utf-8"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\x06a\x10\x06:\x06ET"
 
-      o = Regexp.new("\u3042".force_encoding("utf-8"), Regexp::FIXEDENCODING)
+      o = Regexp.new("\u3042".dup.force_encoding("utf-8"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\b\xE3\x81\x82\x10\x06:\x06ET"
     end
 
     it "dumps a Regexp in another encoding" do
-      o = Regexp.new("".force_encoding("utf-16le"), Regexp::FIXEDENCODING)
+      o = Regexp.new("".dup.force_encoding("utf-16le"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\x00\x10\x06:\rencoding\"\rUTF-16LE"
 
       o = Regexp.new("a".encode("utf-16le"), Regexp::FIXEDENCODING)
@@ -553,7 +553,7 @@ describe "Marshal.dump" do
 
     it "dumps an Object with a non-US-ASCII instance variable" do
       obj = Object.new
-      ivar = "@é".force_encoding(Encoding::UTF_8).to_sym
+      ivar = "@é".dup.force_encoding(Encoding::UTF_8).to_sym
       obj.instance_variable_set(ivar, 1)
       Marshal.dump(obj).should == "\x04\bo:\vObject\x06I:\b@\xC3\xA9\x06:\x06ETi\x06"
     end
@@ -685,7 +685,7 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Time subclass with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteぁあぃいTime".force_encoding(Encoding::UTF_8))
+      source_object = eval("MarshalSpec::MultibyteぁあぃいTime".dup.force_encoding(Encoding::UTF_8))
       Marshal.dump(source_object).should == "\x04\bc+MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Time"
     end
 

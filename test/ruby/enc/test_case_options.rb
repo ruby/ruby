@@ -19,7 +19,7 @@ class TestCaseOptions < Test::Unit::TestCase
 
   def assert_raise_both_types(*options)
     assert_raise_functional_operations 'a', *options
-    assert_raise_bang_operations 'a', *options
+    assert_raise_bang_operations(+'a', *options)
     assert_raise_functional_operations :a, *options
   end
 
@@ -51,7 +51,7 @@ class TestCaseOptions < Test::Unit::TestCase
 
   def assert_okay_both_types(*options)
     assert_okay_functional_operations 'a', *options
-    assert_okay_bang_operations 'a', *options
+    assert_okay_bang_operations(+'a', *options)
     assert_okay_functional_operations :a, *options
   end
 
@@ -69,10 +69,10 @@ class TestCaseOptions < Test::Unit::TestCase
     assert_raise(ArgumentError) { 'a'.upcase :fold }
     assert_raise(ArgumentError) { 'a'.capitalize :fold }
     assert_raise(ArgumentError) { 'a'.swapcase :fold }
-    assert_nothing_raised { 'a'.downcase! :fold }
-    assert_raise(ArgumentError) { 'a'.upcase! :fold }
-    assert_raise(ArgumentError) { 'a'.capitalize! :fold }
-    assert_raise(ArgumentError) { 'a'.swapcase! :fold }
+    assert_nothing_raised { 'a'.dup.downcase! :fold }
+    assert_raise(ArgumentError) { 'a'.dup.upcase! :fold }
+    assert_raise(ArgumentError) { 'a'.dup.capitalize! :fold }
+    assert_raise(ArgumentError) { 'a'.dup.swapcase! :fold }
     assert_nothing_raised { :a.downcase :fold }
     assert_raise(ArgumentError) { :a.upcase :fold }
     assert_raise(ArgumentError) { :a.capitalize :fold }

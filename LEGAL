@@ -58,12 +58,12 @@ mentioned below.
 
 [ccan/list/list.h]
 
-  This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
+  This file is licensed under the {MIT License}[rdoc-ref:@MIT+License].
 
 [coroutine]
 
   Unless otherwise specified, these files are licensed under the
-  {MIT License}[rdoc-label:label-MIT+License].
+  {MIT License}[rdoc-ref:@MIT+License].
 
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
@@ -546,7 +546,7 @@ mentioned below.
 
 [vsnprintf.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright (c) 1990, 1993::
@@ -577,7 +577,7 @@ mentioned below.
 
 [missing/crypt.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright (c) 1989, 1993::
@@ -588,7 +588,7 @@ mentioned below.
 
 [missing/setproctitle.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright 2003:: Damien Miller
@@ -879,7 +879,7 @@ mentioned below.
   >>>
     RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
     Weirich and others.  You can redistribute it and/or modify it under
-    either the terms of the {MIT license}[rdoc-label:label-MIT+License], or the conditions
+    either the terms of the {MIT license}[rdoc-ref:@MIT+License], or the conditions
     below:
 
     1. You may make and give away verbatim copies of the source form of the
@@ -941,7 +941,7 @@ mentioned below.
     Portions copyright (c) 2010:: Andre Arko
     Portions copyright (c) 2009:: Engine Yard
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/thor]
 
@@ -950,16 +950,16 @@ mentioned below.
   >>>
     Copyright (c) 2008 Yehuda Katz, Eric Hodel, et al.
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
-[lib/rubygems/resolver/molinillo]
+[lib/rubygems/vendor/molinillo]
 
   molinillo is under the following license.
 
   >>>
     Copyright (c) 2014 Samuel E. Giddins segiddins@segiddins.me
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/pub_grub]
 
@@ -968,7 +968,7 @@ mentioned below.
   >>>
     Copyright (c) 2018 John Hawthorn
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/connection_pool]
 
@@ -977,7 +977,7 @@ mentioned below.
   >>>
     Copyright (c) 2011 Mike Perham
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/net-http-persistent]
 
@@ -986,7 +986,7 @@ mentioned below.
   >>>
     Copyright (c) Eric Hodel, Aaron Patterson
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
@@ -997,7 +997,7 @@ mentioned below.
   >>>
     Copyright (c) 2014-2016 Yuki Nishijima
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/error_highlight]
 [lib/error_highlight.rb]
@@ -1008,7 +1008,7 @@ mentioned below.
   >>>
     Copyright (c) 2021 Yusuke Endoh
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [benchmark/so_ackermann.rb]
 [benchmark/so_array.rb]

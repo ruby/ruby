@@ -96,21 +96,21 @@ describe "IO#read_nonblock" do
   end
 
   it "reads into the passed buffer" do
-    buffer = ""
+    buffer = +""
     @write.write("1")
     @read.read_nonblock(1, buffer)
     buffer.should == "1"
   end
 
   it "returns the passed buffer" do
-    buffer = ""
+    buffer = +""
     @write.write("1")
     output = @read.read_nonblock(1, buffer)
     output.should equal(buffer)
   end
 
   it "discards the existing buffer content upon successful read" do
-    buffer = "existing content"
+    buffer = +"existing content"
     @write.write("hello world")
     @write.close
     @read.read_nonblock(11, buffer)
@@ -118,7 +118,7 @@ describe "IO#read_nonblock" do
   end
 
   it "discards the existing buffer content upon error" do
-    buffer = "existing content"
+    buffer = +"existing content"
     @write.close
     -> { @read.read_nonblock(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty

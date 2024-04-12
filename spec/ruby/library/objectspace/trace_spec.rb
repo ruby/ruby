@@ -6,8 +6,8 @@ ruby_version_is "3.1" do
       file = fixture(__FILE__ , "trace.rb")
       ruby_exe(file, args: "2>&1").lines(chomp: true).should == [
         "objspace/trace is enabled",
-        "\"foo\" @ #{file}:2",
-        "\"bar\" @ #{file}:3",
+        "\"foo\" @ #{file}:3",
+        "\"bar\" @ #{file}:4",
         "42"
       ]
     end

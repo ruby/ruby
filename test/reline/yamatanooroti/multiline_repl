@@ -9,10 +9,6 @@ require 'optparse'
 require_relative 'termination_checker'
 
 opt = OptionParser.new
-opt.on('--prompt-list-cache-timeout VAL') { |v|
-  Reline::LineEditor.__send__(:remove_const, :PROMPT_LIST_CACHE_TIMEOUT)
-  Reline::LineEditor::PROMPT_LIST_CACHE_TIMEOUT = v.to_f
-}
 opt.on('--dynamic-prompt') {
   Reline.prompt_proc = proc { |lines|
     lines.each_with_index.map { |l, i|
@@ -187,7 +183,7 @@ opt.on('--autocomplete-long') {
 opt.on('--autocomplete-super-long') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    c = 'A'
+    c = +'A'
     2000.times.map{ s = "Str_#{c}"; c.succ!; s }.select{ |c| c.start_with?(target) }
   }
 }

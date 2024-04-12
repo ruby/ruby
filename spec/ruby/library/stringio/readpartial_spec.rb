@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#readpartial" do
   before :each do
-    @string = StringIO.new('Stop, look, listen')
+    @string = StringIO.new(+'Stop, look, listen')
   end
 
   after :each do
@@ -48,7 +48,7 @@ describe "StringIO#readpartial" do
   end
 
   it "discards the existing buffer content upon successful read" do
-    buffer = "existing"
+    buffer = +"existing"
     @string.readpartial(11, buffer)
     buffer.should == "Stop, look,"
   end
@@ -59,7 +59,7 @@ describe "StringIO#readpartial" do
   end
 
   it "discards the existing buffer content upon error" do
-    buffer = 'hello'
+    buffer = +'hello'
     @string.readpartial(100)
     -> { @string.readpartial(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty

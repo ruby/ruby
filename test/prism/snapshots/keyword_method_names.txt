@@ -132,6 +132,7 @@
         │   ├── name_loc: (22,13)-(22,14) = "a"
         │   ├── receiver:
         │   │   @ SourceFileNode (location: (22,4)-(22,12))
+        │   │   ├── flags: ∅
         │   │   └── filepath: "keyword_method_names.txt"
         │   ├── parameters: ∅
         │   ├── body: ∅

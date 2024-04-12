@@ -7,6 +7,9 @@ require "test/unit"
 
 if defined?(WIN32OLE::Type)
   class TestWIN32OLE_TYPE < Test::Unit::TestCase
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::Type, ::WIN32OLE_TYPE)
+    end
 
     def test_s_progids
       progids = WIN32OLE::Type.progids

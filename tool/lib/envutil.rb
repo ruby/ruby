@@ -53,7 +53,9 @@ module EnvUtil
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
       @original_warning =
-        if defined?(Warning.[]) # 2.7+
+        if defined?(Warning.categories)
+          Warning.categories.to_h {|i| [i, Warning[i]]}
+        elsif defined?(Warning.[]) # 2.7+
           %i[deprecated experimental performance].to_h do |i|
             [i, begin Warning[i]; rescue ArgumentError; end]
           end.compact

@@ -5,13 +5,13 @@
 #include "internal/bignum.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
-#include "internal/imemo.h"
 #include "internal/rational.h"
 #include "rubyparser.h"
 #include "vm.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef UNIVERSAL_PARSER
+const rb_parser_config_t *rb_ruby_parser_config(void);
 rb_parser_t *rb_parser_params_allocate(void);
 rb_parser_t *rb_parser_params_new(void);
 #endif
@@ -19,6 +19,7 @@ VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
 VALUE rb_parser_new(void);
 rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
 VALUE rb_str_new_parser_string(rb_parser_string_t *str);
+VALUE rb_str_new_mutable_parser_string(rb_parser_string_t *str);
 
 VALUE rb_node_str_string_val(const NODE *);
 VALUE rb_node_sym_string_val(const NODE *);
@@ -28,7 +29,6 @@ VALUE rb_node_dregx_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
 VALUE rb_node_file_path_val(const NODE *);
 VALUE rb_node_encoding_val(const NODE *);
-VALUE rb_node_const_decl_val(const NODE *node);
 
 VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);

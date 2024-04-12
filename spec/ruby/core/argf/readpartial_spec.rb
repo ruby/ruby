@@ -29,7 +29,7 @@ describe "ARGF.readpartial" do
 
   it "clears output buffer even if EOFError is raised because @argf is at end" do
     begin
-      output = "to be cleared"
+      output = +"to be cleared"
 
       argf [@file1_name] do
         @argf.read

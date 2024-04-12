@@ -119,6 +119,10 @@ class RbInspector(LLDBInterface):
                 self.result.write('T_STRING: %s' % flaginfo)
                 tRString = self.target.FindFirstType("struct RString").GetPointerType()
 
+                chilled = self.ruby_globals["RUBY_FL_USER3"]
+                if (rval.flags & chilled) != 0:
+                    self.result.write("[CHILLED] ")
+
                 rb_enc_mask = self.ruby_globals["RUBY_ENCODING_MASK"]
                 rb_enc_shift = self.ruby_globals["RUBY_ENCODING_SHIFT"]
                 encidx = ((rval.flags & rb_enc_mask) >> rb_enc_shift)
@@ -367,8 +371,6 @@ class RbInspector(LLDBInterface):
                     self._append_expression("*(struct RNode_MATCH2 *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_MATCH3"]:
                     self._append_expression("*(struct RNode_MATCH3 *) %0#x" % val.GetValueAsUnsigned())
-                elif nd_type == self.ruby_globals["NODE_LIT"]:
-                    self._append_expression("*(struct RNode_LIT *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_STR"]:
                     self._append_expression("*(struct RNode_STR *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_DSTR"]:

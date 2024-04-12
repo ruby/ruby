@@ -747,18 +747,26 @@ finish_iseq_build(rb_iseq_t *iseq)
 }
 
 static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
-    OPT_INLINE_CONST_CACHE, /* int inline_const_cache; */
-    OPT_PEEPHOLE_OPTIMIZATION, /* int peephole_optimization; */
-    OPT_TAILCALL_OPTIMIZATION, /* int tailcall_optimization */
-    OPT_SPECIALISED_INSTRUCTION, /* int specialized_instruction; */
-    OPT_OPERANDS_UNIFICATION, /* int operands_unification; */
-    OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
-    OPT_FROZEN_STRING_LITERAL,
-    OPT_DEBUG_FROZEN_STRING_LITERAL,
-    TRUE,			/* coverage_enabled */
+    .inline_const_cache = OPT_INLINE_CONST_CACHE,
+    .peephole_optimization = OPT_PEEPHOLE_OPTIMIZATION,
+    .tailcall_optimization = OPT_TAILCALL_OPTIMIZATION,
+    .specialized_instruction = OPT_SPECIALISED_INSTRUCTION,
+    .operands_unification = OPT_OPERANDS_UNIFICATION,
+    .instructions_unification = OPT_INSTRUCTIONS_UNIFICATION,
+    .frozen_string_literal = OPT_FROZEN_STRING_LITERAL,
+    .debug_frozen_string_literal = OPT_DEBUG_FROZEN_STRING_LITERAL,
+    .coverage_enabled = TRUE,
 };
 
-static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
+static const rb_compile_option_t COMPILE_OPTION_FALSE = {
+    .frozen_string_literal = -1, // unspecified
+};
+
+int
+rb_iseq_opt_frozen_string_literal(void)
+{
+    return COMPILE_OPTION_DEFAULT.frozen_string_literal;
+}
 
 static void
 set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
@@ -791,9 +799,11 @@ set_compile_option_from_ast(rb_compile_option_t *option, const rb_ast_body_t *as
 {
 #define SET_COMPILE_OPTION(o, a, mem) \
     ((a)->mem < 0 ? 0 : ((o)->mem = (a)->mem > 0))
-    SET_COMPILE_OPTION(option, ast, frozen_string_literal);
     SET_COMPILE_OPTION(option, ast, coverage_enabled);
 #undef SET_COMPILE_OPTION
+    if (ast->frozen_string_literal >= 0) {
+        option->frozen_string_literal = ast->frozen_string_literal;
+    }
     return option;
 }
 
@@ -835,13 +845,14 @@ make_compile_option_value(rb_compile_option_t *option)
         SET_COMPILE_OPTION(option, opt, specialized_instruction);
         SET_COMPILE_OPTION(option, opt, operands_unification);
         SET_COMPILE_OPTION(option, opt, instructions_unification);
-        SET_COMPILE_OPTION(option, opt, frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, coverage_enabled);
         SET_COMPILE_OPTION_NUM(option, opt, debug_level);
     }
 #undef SET_COMPILE_OPTION
 #undef SET_COMPILE_OPTION_NUM
+    VALUE frozen_string_literal = option->frozen_string_literal == -1 ? Qnil : RBOOL(option->frozen_string_literal);
+    rb_hash_aset(opt, ID2SYM(rb_intern("frozen_string_literal")), frozen_string_literal);
     return opt;
 }
 
@@ -1171,7 +1182,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
         tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
     }
 
-    if (RTEST(rb_hash_aref(misc, ID2SYM(rb_intern("prism"))))) {
+    if (SYM2ID(rb_hash_aref(misc, ID2SYM(rb_intern("parser")))) == rb_intern("prism")) {
         ISEQ_BODY(iseq)->prism = true;
     }
 
@@ -1400,18 +1411,30 @@ rb_iseq_remove_coverage_all(void)
 static void
 iseqw_mark(void *ptr)
 {
-    rb_gc_mark((VALUE)ptr);
+    rb_gc_mark_movable(*(VALUE *)ptr);
 }
 
 static size_t
 iseqw_memsize(const void *ptr)
 {
-    return rb_iseq_memsize((const rb_iseq_t *)ptr);
+    return rb_iseq_memsize(*(const rb_iseq_t **)ptr);
+}
+
+static void
+iseqw_ref_update(void *ptr)
+{
+    VALUE *vptr = ptr;
+    *vptr = rb_gc_location(*vptr);
 }
 
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
-    {iseqw_mark, NULL, iseqw_memsize,},
+    {
+        iseqw_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        iseqw_memsize,
+        iseqw_ref_update,
+    },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1419,14 +1442,16 @@ static VALUE
 iseqw_new(const rb_iseq_t *iseq)
 {
     if (iseq->wrapper) {
+        if (*(const rb_iseq_t **)rb_check_typeddata(iseq->wrapper, &iseqw_data_type) != iseq) {
+            rb_raise(rb_eTypeError, "wrong iseq wrapper: %" PRIsVALUE " for %p",
+                     iseq->wrapper, (void *)iseq);
+        }
         return iseq->wrapper;
     }
     else {
-        union { const rb_iseq_t *in; void *out; } deconst;
-        VALUE obj;
-        deconst.in = iseq;
-        obj = TypedData_Wrap_Struct(rb_cISeq, &iseqw_data_type, deconst.out);
-        RB_OBJ_WRITTEN(obj, Qundef, iseq);
+        rb_iseq_t **ptr;
+        VALUE obj = TypedData_Make_Struct(rb_cISeq, rb_iseq_t *, &iseqw_data_type, ptr);
+        RB_OBJ_WRITE(obj, ptr, iseq);
 
         /* cache a wrapper object */
         RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
@@ -1439,6 +1464,44 @@ iseqw_new(const rb_iseq_t *iseq)
 VALUE
 rb_iseqw_new(const rb_iseq_t *iseq)
 {
+    return iseqw_new(iseq);
+}
+
+/**
+ * Accept the options given to InstructionSequence.compile and
+ * InstructionSequence.compile_prism and share the logic for creating the
+ * instruction sequence.
+ */
+static VALUE
+iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
+{
+    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
+    int i;
+
+    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
+    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
+    switch (i) {
+      case 5: opt = argv[--i];
+      case 4: line = argv[--i];
+      case 3: path = argv[--i];
+      case 2: file = argv[--i];
+    }
+
+    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
+    if (NIL_P(path)) path = file;
+    if (NIL_P(line)) line = INT2FIX(1);
+
+    Check_Type(path, T_STRING);
+    Check_Type(file, T_STRING);
+
+    rb_iseq_t *iseq;
+    if (prism) {
+        iseq = pm_iseq_compile_with_option(src, file, path, line, opt);
+    }
+    else {
+        iseq = rb_iseq_compile_with_option(src, file, path, line, opt);
+    }
+
     return iseqw_new(iseq);
 }
 
@@ -1482,26 +1545,7 @@ rb_iseqw_new(const rb_iseq_t *iseq)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
-    int i;
-
-    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
-    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
-    switch (i) {
-      case 5: opt = argv[--i];
-      case 4: line = argv[--i];
-      case 3: path = argv[--i];
-      case 2: file = argv[--i];
-    }
-
-    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
-    if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = INT2FIX(1);
-
-    Check_Type(path, T_STRING);
-    Check_Type(file, T_STRING);
-
-    return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
+    return iseqw_s_compile_parser(argc, argv, self, *rb_ruby_prism_ptr());
 }
 
 /*
@@ -1543,26 +1587,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
-    int i;
-
-    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
-    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
-    switch (i) {
-      case 5: opt = argv[--i];
-      case 4: line = argv[--i];
-      case 3: path = argv[--i];
-      case 2: file = argv[--i];
-    }
-
-    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
-    if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = INT2FIX(1);
-
-    Check_Type(path, T_STRING);
-    Check_Type(file, T_STRING);
-
-    return iseqw_new(pm_iseq_compile_with_option(src, file, path, line, opt));
+    return iseqw_s_compile_parser(argc, argv, self, true);
 }
 
 /*
@@ -1750,7 +1775,9 @@ iseqw_s_compile_option_get(VALUE self)
 static const rb_iseq_t *
 iseqw_check(VALUE iseqw)
 {
-    rb_iseq_t *iseq = DATA_PTR(iseqw);
+    rb_iseq_t **iseq_ptr;
+    TypedData_Get_Struct(iseqw, rb_iseq_t *, &iseqw_data_type, iseq_ptr);
+    rb_iseq_t *iseq = *iseq_ptr;
 
     if (!ISEQ_BODY(iseq)) {
         rb_ibf_load_iseq_complete(iseq);

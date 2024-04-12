@@ -746,6 +746,19 @@ dummy
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
+  def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
+    # This test confirms that the bug that previously occurred because of
+    # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
+    # The bug occurred only if SCRIPT_LINES__ included __FILE__ as a key.
+    lines = [
+      "SCRIPT_LINES__ = {__FILE__ => []}",
+      "puts RubyVM::AbstractSyntaxTree.of(->{ 1 + 2 }, keep_script_lines: true).script_lines",
+      "p SCRIPT_LINES__"
+    ]
+    test_stdout = lines + ['{"-e"=>[]}']
+    assert_in_out_err(["-e", lines.join("\n")], "", test_stdout, [])
+  end
+
   def test_source_with_multibyte_characters
     ast = RubyVM::AbstractSyntaxTree.parse(%{a("\u00a7");b("\u00a9")}, keep_script_lines: true)
     a_fcall, b_fcall = ast.children[2].children
@@ -1217,6 +1230,12 @@ dummy
     assert_error_tolerant("\u{feff}nil", <<~EXP)
       (SCOPE@1:0-1:3 tbl: [] args: nil body: (NIL@1:0-1:3))
     EXP
+  end
+
+  def test_unused_block_local_variable
+    assert_warning('') do
+      RubyVM::AbstractSyntaxTree.parse(%{->(; foo) {}})
+    end
   end
 
   def assert_error_tolerant(src, expected, keep_tokens: false)

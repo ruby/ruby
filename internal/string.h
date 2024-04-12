@@ -17,6 +17,7 @@
 
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
+#define STR_CHILLED      FL_USER3
 
 #ifdef rb_fstring_cstr
 # undef rb_fstring_cstr
@@ -81,7 +82,7 @@ VALUE rb_id_quote_unprintable(ID);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
 
 struct rb_execution_context_struct;
-VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str);
+VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chilled);
 
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
 #define rb_fstring_literal(str) rb_fstring_lit(str)
@@ -110,6 +111,26 @@ static inline bool
 STR_SHARED_P(VALUE str)
 {
     return FL_ALL_RAW(str, STR_NOEMBED | STR_SHARED);
+}
+
+static inline bool
+CHILLED_STRING_P(VALUE obj)
+{
+    return RB_TYPE_P(obj, T_STRING) && FL_TEST_RAW(obj, STR_CHILLED);
+}
+
+static inline void
+CHILLED_STRING_MUTATED(VALUE str)
+{
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "literal string will be frozen in the future");
+    FL_UNSET_RAW(str, STR_CHILLED | FL_FREEZE);
+}
+
+static inline void
+STR_CHILL_RAW(VALUE str)
+{
+    // Chilled strings are always also frozen
+    FL_SET_RAW(str, STR_CHILLED | RUBY_FL_FREEZE);
 }
 
 static inline bool

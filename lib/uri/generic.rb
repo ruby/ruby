@@ -945,7 +945,7 @@ module URI
     # == Description
     #
     # URI has components listed in order of decreasing significance from left to right,
-    # see RFC3986 https://tools.ietf.org/html/rfc3986 1.2.3.
+    # see RFC3986 https://www.rfc-editor.org/rfc/rfc3986 1.2.3.
     #
     # == Usage
     #

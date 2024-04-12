@@ -104,22 +104,23 @@ class TestDir < Test::Unit::TestCase
     assert_raise(ArgumentError) { Dir.chdir }
     ENV["HOME"] = pwd
     Dir.chdir do
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+      conflicting = /conflicting chdir during another chdir block\n^#{Regexp.quote(__FILE__)}:#{__LINE__-1}:/
+      assert_warning(conflicting) { Dir.chdir(pwd) }
 
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(@root) }
+      assert_warning(conflicting) { Dir.chdir(@root) }
       assert_equal(@root, Dir.pwd)
 
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+      assert_warning(conflicting) { Dir.chdir(pwd) }
 
       assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; Dir.chdir(@root) }.join }
       assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; Dir.chdir(@root) { } }.join }
 
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+      assert_warning(conflicting) { Dir.chdir(pwd) }
 
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(@root) }
+      assert_warning(conflicting) { Dir.chdir(@root) }
       assert_equal(@root, Dir.pwd)
 
-      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+      assert_warning(conflicting) { Dir.chdir(pwd) }
       Dir.chdir(@root) do
         assert_equal(@root, Dir.pwd)
       end
@@ -142,23 +143,25 @@ class TestDir < Test::Unit::TestCase
 
     ENV["HOME"] = pwd
     ret = root_dir.chdir do |*a|
+      conflicting = /conflicting chdir during another chdir block\n^#{Regexp.quote(__FILE__)}:#{__LINE__-1}:/
+
       assert_empty(a)
 
-      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
-      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+      assert_warning(conflicting) { dir.chdir }
+      assert_warning(conflicting) { root_dir.chdir }
 
       assert_equal(@root, Dir.pwd)
 
       assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir }.join }
       assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir{} }.join }
 
-      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_warning(conflicting) { dir.chdir }
       assert_equal(pwd, Dir.pwd)
 
-      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+      assert_warning(conflicting) { root_dir.chdir }
       assert_equal(@root, Dir.pwd)
 
-      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_warning(conflicting) { dir.chdir }
 
       root_dir.chdir do
         assert_equal(@root, Dir.pwd)
@@ -167,6 +170,26 @@ class TestDir < Test::Unit::TestCase
 
       42
     end
+
+    assert_separately(["-", @root], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      root = ARGV.shift
+
+      $dir_warnings = []
+
+      def Warning.warn(message)
+        $dir_warnings << message
+      end
+
+      line2 = line1 = __LINE__; Dir.chdir(root) do
+        line2 = __LINE__; Dir.chdir
+      end
+
+      message = $dir_warnings.shift
+      assert_include(message, "#{__FILE__}:#{line2}:")
+      assert_include(message, "#{__FILE__}:#{line1}:")
+      assert_empty($dir_warnings)
+    end;
 
     assert_equal(42, ret)
   ensure

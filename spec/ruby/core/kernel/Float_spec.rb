@@ -41,7 +41,7 @@ describe :kernel_float, shared: true do
   end
 
   it "converts Strings to floats without calling #to_f" do
-    string = "10"
+    string = +"10"
     string.should_not_receive(:to_f)
     @object.send(:Float, string).should == 10.0
   end

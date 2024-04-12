@@ -20,6 +20,10 @@ if defined?(WIN32OLE::Method)
       @m_file_name = WIN32OLE::Method.new(ole_type, "name")
     end
 
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::Method, ::WIN32OLE_METHOD)
+    end
+
     def test_initialize
       ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
       assert_raise(TypeError) {

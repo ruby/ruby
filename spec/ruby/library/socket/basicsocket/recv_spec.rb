@@ -100,7 +100,7 @@ describe "BasicSocket#recv" do
     socket.write("data")
 
     client = @server.accept
-    buf = "foo"
+    buf = +"foo"
     begin
       client.recv(4, 0, buf)
     ensure

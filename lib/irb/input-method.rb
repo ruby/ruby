@@ -308,6 +308,20 @@ module IRB
       @completor.doc_namespace(preposing, matched, postposing, bind: bind)
     end
 
+    def rdoc_ri_driver
+      return @rdoc_ri_driver if defined?(@rdoc_ri_driver)
+
+      begin
+        require 'rdoc'
+      rescue LoadError
+        @rdoc_ri_driver = nil
+      else
+        options = {}
+        options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
+        @rdoc_ri_driver = RDoc::RI::Driver.new(options)
+      end
+    end
+
     def show_doc_dialog_proc
       input_method = self # self is changed in the lambda below.
       ->() {
@@ -331,9 +345,7 @@ module IRB
 
         show_easter_egg = name&.match?(/\ARubyVM/) && !ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
 
-        options = {}
-        options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
-        driver = RDoc::RI::Driver.new(options)
+        driver = input_method.rdoc_ri_driver
 
         if key.match?(dialog.name)
           if show_easter_egg
@@ -421,12 +433,9 @@ module IRB
       }
     end
 
-    def display_document(matched, driver: nil)
-      begin
-        require 'rdoc'
-      rescue LoadError
-        return
-      end
+    def display_document(matched)
+      driver = rdoc_ri_driver
+      return unless driver
 
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         IRB.__send__(:easter_egg)
@@ -436,7 +445,6 @@ module IRB
       namespace = retrieve_doc_namespace(matched)
       return unless namespace
 
-      driver ||= RDoc::RI::Driver.new
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
         namespace.each do |m|

@@ -435,7 +435,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
             trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
             const VALUE errinfo = ec->errinfo;
             const VALUE old_recursive = ec->local_storage_recursive_hash;
-            int state = 0;
+            enum ruby_tag_type state = 0;
 
             /* setup */
             ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;

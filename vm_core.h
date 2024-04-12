@@ -628,6 +628,11 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
+struct global_object_list {
+    VALUE *varptr;
+    struct global_object_list *next;
+};
+
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -709,6 +714,7 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
+    struct global_object_list *global_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
@@ -1042,6 +1048,10 @@ struct rb_execution_context_struct {
         VALUE *stack_end;
         size_t stack_maxsize;
         RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
+
+#ifdef RUBY_ASAN_ENABLED
+        void *asan_fake_stack_handle;
+#endif
     } machine;
 };
 
@@ -1162,10 +1172,6 @@ typedef struct rb_thread_struct {
     void **specific_storage;
 
     struct rb_ext_config ext_config;
-
-#ifdef RUBY_ASAN_ENABLED
-    void *asan_fake_stack_handle;
-#endif
 
 #if USE_MMTK
     /* Point to a MMTk Mutator struct allocated by MMTk core. */
@@ -1899,7 +1905,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 #define rb_vm_register_special_exception(sp, e, m) \
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 

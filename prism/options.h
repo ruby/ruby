@@ -14,6 +14,22 @@
 #include <stdint.h>
 
 /**
+ * String literals should be made frozen.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED   ((int8_t) -1)
+
+/**
+ * String literals may be frozen or mutable depending on the implementation
+ * default.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET      ((int8_t)  0)
+
+/**
+ * String literals should be made mutable.
+ */
+#define PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED    ((int8_t)  1)
+
+/**
  * A scope of locals surrounding the code that is being parsed.
  */
 typedef struct pm_options_scope {
@@ -79,8 +95,14 @@ typedef struct {
     /** A bitset of the various options that were set on the command line. */
     uint8_t command_line;
 
-    /** Whether or not the frozen string literal option has been set. */
-    bool frozen_string_literal;
+    /**
+    * Whether or not the frozen string literal option has been set.
+    * May be:
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED
+    *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
+    */
+    int8_t frozen_string_literal;
 } pm_options_t;
 
 /**
@@ -249,14 +271,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `0`   | use the latest version of prism |
  * | `1`   | use the version of prism that is vendored in CRuby 3.3.0 |
  *
- * Each scope is layed out as follows:
+ * Each scope is laid out as follows:
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |
  * | ...     | the locals                 |
  *
- * Each local is layed out as follows:
+ * Each local is laid out as follows:
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |

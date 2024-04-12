@@ -134,7 +134,14 @@ static void
 location_mark(void *ptr)
 {
     struct valued_frame_info *vfi = (struct valued_frame_info *)ptr;
-    rb_gc_mark(vfi->btobj);
+    rb_gc_mark_movable(vfi->btobj);
+}
+
+static void
+location_ref_update(void *ptr)
+{
+    struct valued_frame_info *vfi = ptr;
+    vfi->btobj = rb_gc_location(vfi->btobj);
 }
 
 static void
@@ -150,6 +157,7 @@ static const rb_data_type_t location_data_type = {
         location_mark,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report,
+        location_ref_update,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -287,15 +295,14 @@ location_label(rb_backtrace_location_t *loc)
  *	    1.times do
  *	      puts caller_locations(0).first.label
  *	    end
- *
  *	  end
  *	end
  *
  * The result of calling +foo+ is this:
  *
- *	label: foo
- *	label: block in foo
- *	label: block (2 levels) in foo
+ *	foo
+ *	block in foo
+ *	block (2 levels) in foo
  *
  */
 static VALUE
@@ -315,9 +322,28 @@ location_base_label(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the base label of this frame.
+ * Returns the base label of this frame, which is usually equal to the label,
+ * without decoration.
  *
- * Usually same as #label, without decoration.
+ * Consider the following example:
+ *
+ *	def foo
+ *	  puts caller_locations(0).first.base_label
+ *
+ *	  1.times do
+ *	    puts caller_locations(0).first.base_label
+ *
+ *	    1.times do
+ *	      puts caller_locations(0).first.base_label
+ *	    end
+ *	  end
+ *	end
+ *
+ * The result of calling +foo+ is this:
+ *
+ *	foo
+ *	foo
+ *	foo
  */
 static VALUE
 location_base_label_m(VALUE self)
@@ -514,7 +540,10 @@ static const rb_data_type_t backtrace_data_type = {
         NULL, // No external memory to report,
         backtrace_update,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    /* Cannot set the RUBY_TYPED_EMBEDDABLE flag because the loc of frame_info
+     * points elements in the backtrace array. This can cause the loc to become
+     * incorrect if this backtrace object is moved by compaction. */
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -530,6 +559,16 @@ backtrace_alloc(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
     return obj;
 }
+
+static VALUE
+backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
+{
+    size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
+    VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, *backtrace);
+    return btobj;
+}
+
 
 static long
 backtrace_size(const rb_execution_context_t *ec)
@@ -561,6 +600,13 @@ is_internal_location(const rb_control_frame_t *cfp)
     return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
 }
 
+static bool
+is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
+{
+    enum rb_iseq_type type = ISEQ_BODY(cfp->iseq)->type;
+    return type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE;
+}
+
 static void
 bt_update_cfunc_loc(unsigned long cfunc_counter, rb_backtrace_location_t *cfunc_loc, const rb_iseq_t *iseq, const VALUE *pc)
 {
@@ -590,6 +636,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     VALUE btobj = Qnil;
     rb_backtrace_location_t *loc = NULL;
     unsigned long cfunc_counter = 0;
+    bool skip_next_frame = FALSE;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
     if (end_cfp == NULL) {
@@ -617,9 +664,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         }
     }
 
-    size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
-    btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
-    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
+    btobj = backtrace_alloc_capa(num_frames, &bt);
 
     bt->backtrace_size = 0;
     if (num_frames == 0) {
@@ -633,18 +678,21 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 if (start_frame > 0) {
                     start_frame--;
                 }
-                else if (!skip_internal || !is_internal_location(cfp)) {
-                    const rb_iseq_t *iseq = cfp->iseq;
-                    const VALUE *pc = cfp->pc;
-                    loc = &bt->backtrace[bt->backtrace_size++];
-                    RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                    RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                    loc->pc = pc;
-                    bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
-                    if (do_yield) {
-                        bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                else if (!(skip_internal && is_internal_location(cfp))) {
+                    if (!skip_next_frame) {
+                        const rb_iseq_t *iseq = cfp->iseq;
+                        const VALUE *pc = cfp->pc;
+                        loc = &bt->backtrace[bt->backtrace_size++];
+                        RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
+                        RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                        loc->pc = pc;
+                        bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                        if (do_yield) {
+                            bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                        }
+                        cfunc_counter = 0;
                     }
-                    cfunc_counter = 0;
+                    skip_next_frame = is_rescue_or_ensure_frame(cfp);
                 }
             }
         }
@@ -663,9 +711,12 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         }
     }
 
+    // When a backtrace entry corresponds to a method defined in C (e.g. rb_define_method), the reported file:line
+    // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
     if (cfunc_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && cfp->pc && (!skip_internal || !is_internal_location(cfp))) {
+            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp))) {
+                VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
                 bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
                 RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
@@ -781,6 +832,40 @@ rb_backtrace_to_location_ary(VALUE self)
         RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
     }
     return bt->locary;
+}
+
+VALUE
+rb_location_ary_to_backtrace(VALUE ary)
+{
+    if (!RB_TYPE_P(ary, T_ARRAY) || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
+        return Qfalse;
+    }
+
+    rb_backtrace_t *new_backtrace;
+    long num_frames = RARRAY_LEN(ary);
+    VALUE btobj = backtrace_alloc_capa(num_frames, &new_backtrace);
+
+    for (long index = 0; index < RARRAY_LEN(ary); index++) {
+        VALUE locobj = RARRAY_AREF(ary, index);
+
+        if (!rb_frame_info_p(locobj)) {
+            return Qfalse;
+        }
+
+        struct valued_frame_info *src_vloc;
+        TypedData_Get_Struct(locobj, struct valued_frame_info, &location_data_type, src_vloc);
+
+        rb_backtrace_location_t *dst_location = &new_backtrace->backtrace[index];
+        RB_OBJ_WRITE(btobj, &dst_location->cme, src_vloc->loc->cme);
+        RB_OBJ_WRITE(btobj, &dst_location->iseq, src_vloc->loc->iseq);
+        dst_location->pc = src_vloc->loc->pc;
+
+        new_backtrace->backtrace_size++;
+
+        RB_GC_GUARD(locobj);
+    }
+
+    return btobj;
 }
 
 static VALUE

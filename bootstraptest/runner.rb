@@ -6,7 +6,6 @@
 # Never use optparse in this file.
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
-# Maintain Ruby 1.8 compatibility for now
 
 $start_time = Time.now
 
@@ -428,7 +427,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def initialize(*args)
     super
     self.class.add self
-    @category = self.path.match(/test_(.+)\.rb/)[1]
+    @category = self.path[/\Atest_(.+)\.rb\z/, 1]
   end
 
   def call
@@ -551,7 +550,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def make_srcfile(frozen_string_literal: nil)
     filename = "bootstraptest.#{self.path}_#{self.lineno}_#{self.id}.rb"
     File.open(filename, 'w') {|f|
-      f.puts "#frozen_string_literal:true" if frozen_string_literal
+      f.puts "#frozen_string_literal:#{frozen_string_literal}" unless frozen_string_literal.nil?
       if $stress
         f.puts "GC.stress = true" if $stress
       else
@@ -572,9 +571,9 @@ def add_assertion src, pr
   Assertion.new(src, path, lineno, pr)
 end
 
-def assert_equal(expected, testsrc, message = '', opt = '', **argh)
+def assert_equal(expected, testsrc, message = '', opt = '', **kwargs)
   add_assertion testsrc, -> as do
-    as.assert_check(message, opt, **argh) {|result|
+    as.assert_check(message, opt, **kwargs) {|result|
       if expected == result
         nil
       else
@@ -585,9 +584,9 @@ def assert_equal(expected, testsrc, message = '', opt = '', **argh)
   end
 end
 
-def assert_match(expected_pattern, testsrc, message = '')
+def assert_match(expected_pattern, testsrc, message = '', **argh)
   add_assertion testsrc, -> as do
-    as.assert_check(message) {|result|
+    as.assert_check(message, **argh) {|result|
       if expected_pattern =~ result
         nil
       else

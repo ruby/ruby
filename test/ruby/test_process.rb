@@ -199,58 +199,67 @@ class TestProcess < Test::Unit::TestCase
 
     max = Process.getrlimit(:CORE).last
 
+    # When running under ASAN, we need to set disable_coredump=0 for this test; by default
+    # the ASAN runtime library sets RLIMIT_CORE to 0, "to avoid dumping a 16T+ core file", and
+    # that inteferes with this test.
+    asan_options = ENV['ASAN_OPTIONS'] || ''
+    asan_options  << ':' unless asan_options.empty?
+    env = {
+      'ASAN_OPTIONS' => "#{asan_options}disable_coredump=0"
+    }
+
     n = max
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
              "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
       assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = 0
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
              "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
       assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = max
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
              "puts Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
       assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     m, n = 0, max
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
              "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
       assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     m, n = 0, 0
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
              "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
       assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     n = max
-    IO.popen([RUBY, "-e",
+    IO.popen([env, RUBY, "-e",
       "puts Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
       assert_equal("#{n}\n#{n}\n""3600\n3600\n", io.read)
     }
 
     assert_raise(ArgumentError) do
-      system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
+      system(env, RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
+    assert_separately([env],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
     BUG = "[ruby-core:82033] [Bug #13744]"
     begin;
       assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
     end;
 
     assert_raise_with_message(ArgumentError, /bogus/) do
-      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+      system(env, RUBY, '-e', 'exit', :rlimit_bogus => 123)
     end
 
     assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
-      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+      system(env, RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
 
@@ -2828,5 +2837,26 @@ EOS
     [t1, t2, t3].each { _1&.kill rescue nil }
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
+  end if defined?(fork)
+
+  def test_handle_interrupt_with_fork
+    Thread.handle_interrupt(RuntimeError => :never) do
+      Thread.current.raise(RuntimeError, "Queued error")
+
+      assert_predicate Thread, :pending_interrupt?
+
+      pid = Process.fork do
+        if Thread.pending_interrupt?
+          exit 1
+        end
+      end
+
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+
+      assert_predicate Thread, :pending_interrupt?
+    end
+  rescue RuntimeError
+    # Ignore.
   end if defined?(fork)
 end

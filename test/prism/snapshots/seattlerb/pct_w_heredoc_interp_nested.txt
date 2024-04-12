@@ -13,6 +13,7 @@
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "1"
             │   ├── @ InterpolatedStringNode (location: (1,6)-(1,12))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── parts: (length: 1)
             │   │   │   └── @ EmbeddedStatementsNode (location: (1,6)-(1,12))

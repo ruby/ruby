@@ -8,7 +8,7 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
-  def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+  def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
@@ -46,7 +46,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
       assert_operator(r.size, :<=, 25)
-      longer = r[1..-1].select {|x| x.size > 80}
+      longer = r[1..-1].select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -112,7 +112,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
 
-    categories = {"deprecated"=>1, "experimental"=>0, "performance"=>2}
+    categories = {deprecated: 1, experimental: 0, performance: 2}
+    assert_equal categories.keys.sort, Warning.categories.sort
 
     categories.each do |category, level|
       assert_in_out_err(["-W:#{category}", "-e", "p Warning[:#{category}]"], "", %w(true), [])
@@ -858,18 +859,22 @@ class TestRubyOptions < Test::Unit::TestCase
     KILL_SELF = "Process.kill :SEGV, $$"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt)
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if self.class.yjit_enabled?
     env.update({'RUBY_ON_BUG' => nil})
+    # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
+    # catching sigsegv; we don't expect that output, so suppress it.
+    env.update({'ASAN_OPTIONS' => 'handle_segv=0'})
     args.unshift(env)
 
     test_stdin = ""
+    tests = [//, list] unless block
 
-    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt)
+    assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test
@@ -897,7 +902,7 @@ class TestRubyOptions < Test::Unit::TestCase
     }
   end
 
-  def assert_crash_report(path, cmd = nil)
+  def assert_crash_report(path, cmd = nil, &block)
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd
@@ -908,7 +913,8 @@ class TestRubyOptions < Test::Unit::TestCase
       else
         cmd = ['-e', SEGVTest::KILL_SELF]
       end
-      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir)
+      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir, &block)
+      next if block
       reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
       assert_equal(1, reports.size)
       assert_pattern_list(list, File.read(File.join(dir, reports.first)))
@@ -945,12 +951,8 @@ class TestRubyOptions < Test::Unit::TestCase
     else
       omit "/bin/echo not found"
     end
-    env = {"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p", "RUBY_ON_BUG"=>nil}
-    assert_in_out_err([env], SEGVTest::KILL_SELF,
-                      encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions) do |stdout, stderr, status|
-      assert_empty(stderr)
-      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-:#{status.pid}"], stdout)
+    assert_crash_report("| #{echo} %e:%f:%p") do |stdin, stdout, status|
+      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-e:#{status.pid}"], stdin)
     end
   end
 
@@ -1136,17 +1138,17 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(['-p', '-e', 'sub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
   end
 
-  def assert_norun_with_rflag(*opt)
+  def assert_norun_with_rflag(*opt, test_stderr: [])
     bug10435 = "[ruby-dev:48712] [Bug #10435]: should not run with #{opt} option"
     stderr = []
     Tempfile.create(%w"bug10435- .rb") do |script|
       dir, base = File.split(script.path)
       File.write(script, "abort ':run'\n")
       opts = ['-C', dir, '-r', "./#{base}", *opt]
-      _, e = assert_in_out_err([*opts, '-ep'], "", //)
+      _, e = assert_in_out_err([*opts, '-ep'], "", //, test_stderr)
       stderr.concat(e) if e
       stderr << "---"
-      _, e = assert_in_out_err([*opts, base], "", //)
+      _, e = assert_in_out_err([*opts, base], "", //, test_stderr)
       stderr.concat(e) if e
     end
     assert_not_include(stderr, ":run", bug10435)
@@ -1167,6 +1169,15 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
     assert_norun_with_rflag('--dump=parsetree+error_tolerant')
     assert_norun_with_rflag('--dump=parse+error_tolerant')
+  end
+
+  def test_dump_parsetree_error_tolerant
+    assert_in_out_err(['--dump=parse', '-e', 'begin'],
+                      "", [], /unexpected end-of-input/, success: false)
+    assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],
+                      "", /^# @/, /unexpected end-of-input/, success: true)
+    assert_in_out_err(['--dump=+error_tolerant', '-e', 'begin p :run'],
+                      "", [], /unexpected end-of-input/, success: false)
   end
 
   def test_dump_insns_with_rflag
@@ -1197,13 +1208,16 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_frozen_string_literal_debug
+    default_frozen = eval("'test'").frozen?
+
     with_debug_pat = /created at/
     wo_debug_pat = /can\'t modify frozen String: "\w+" \(FrozenError\)\n\z/
     frozen = [
       ["--enable-frozen-string-literal", true],
       ["--disable-frozen-string-literal", false],
-      [nil, false],
     ]
+    frozen << [nil, false] unless default_frozen
+
     debugs = [
       ["--debug-frozen-string-literal", true],
       ["--debug=frozen-string-literal", true],

@@ -161,6 +161,11 @@ module Prism
       Location.new(source, start_offset, length)
     end
 
+    # Returns a new location that is the result of chopping off the last byte.
+    def chop
+      copy(length: length == 0 ? length : length - 1)
+    end
+
     # Returns a string representation of this location.
     def inspect
       "#<Prism::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"

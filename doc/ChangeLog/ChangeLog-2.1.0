@@ -659,7 +659,7 @@ Mon Dec  9 02:10:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/responses.rb:
 	  Add `HTTPIMUsed`, as it is also supported by rack/rails.
-	  RFC - http://tools.ietf.org/html/rfc3229
+	  RFC - https://www.rfc-editor.org/rfc/rfc3229
 	  by Vipul A M <vipulnsward@gmail.com>
 	  https://github.com/ruby/ruby/pull/447 fix GH-447
 

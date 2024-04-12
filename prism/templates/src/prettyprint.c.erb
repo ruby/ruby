@@ -1,6 +1,15 @@
 <%# encoding: ASCII -%>
 #include "prism/prettyprint.h"
 
+// We optionally support pretty printing nodes. For systems that don't want or
+// need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_PRETTYPRINT define.
+#ifdef PRISM_EXCLUDE_PRETTYPRINT
+
+void pm_prettyprint(void) {}
+
+#else
+
 static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_newline_list_line_column(&parser->newline_list, location->start, parser->start_line);
@@ -154,3 +163,5 @@ pm_prettyprint(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_n
     prettyprint_node(output_buffer, parser, node, &prefix_buffer);
     pm_buffer_free(&prefix_buffer);
 }
+
+#endif

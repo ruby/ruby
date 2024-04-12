@@ -734,7 +734,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    assert_warning(/3: #{w}/m) {
       eval %q{
         case 1
         when __LINE__, __LINE__
@@ -743,7 +743,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    assert_warning(/3: #{w}/m) {
       eval %q{
         case 1
         when __FILE__, __FILE__
@@ -2152,6 +2152,13 @@ eom
 
     exp = eval("-> (a: nil) {a...1}")
     assert_equal 0...1, exp.call(a: 0)
+  end
+
+  def test_argument_forwarding_with_super
+    assert_valid_syntax('def foo(...) super {}; end')
+    assert_valid_syntax('def foo(...) super() {}; end')
+    assert_syntax_error('def foo(...) super(...) {}; end', /both block arg and actual block/)
+    assert_syntax_error('def foo(...) super(1, ...) {}; end', /both block arg and actual block/)
   end
 
   def test_class_module_Object_ancestors

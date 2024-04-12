@@ -39,7 +39,7 @@ describe :string_times, shared: true do
   end
 
   it "returns a String in the same encoding as self" do
-    str = "\xE3\x81\x82".force_encoding Encoding::UTF_8
+    str = "\xE3\x81\x82".dup.force_encoding Encoding::UTF_8
     result = @object.call(str, 2)
     result.encoding.should equal(Encoding::UTF_8)
   end

@@ -138,9 +138,8 @@ rb_class_allocate_instance(VALUE klass)
 
     RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
 
-    // Set the shape to the specific T_OBJECT shape which is always
-    // SIZE_POOL_COUNT away from the root shape.
-    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
+    // Set the shape to the specific T_OBJECT shape.
+    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_size_pool_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
@@ -401,16 +400,8 @@ init_copy(VALUE dest, VALUE obj)
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
-#if USE_MMTK
-    if (!rb_mmtk_enabled_p()) {
-#endif
-        rb_copy_wb_protected_attribute(dest, obj);
-#if USE_MMTK
-    }
-#endif
+    rb_gc_copy_attributes(dest, obj);
     rb_copy_generic_ivar(dest, obj);
-    rb_gc_copy_finalizer(dest, obj);
-
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
     }
@@ -513,7 +504,10 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
       case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
-        if (RB_OBJ_FROZEN(obj)) {
+        if (CHILLED_STRING_P(obj)) {
+            STR_CHILL_RAW(clone);
+        }
+        else if (RB_OBJ_FROZEN(obj)) {
             rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                 rb_evict_ivars_to_hash(clone);
@@ -668,9 +662,9 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 /**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_copy
- * \param[in,out] obj the receiver being initialized
- * \param[in] orig    the object to be copied from.
+ * Default implementation of `#initialize_copy`
+ * @param[in,out] obj the receiver being initialized
+ * @param[in] orig    the object to be copied from.
  *++
  */
 VALUE
@@ -684,13 +678,13 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
-/*!
+/**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_dup
+ * Default implementation of `#initialize_dup`
  *
- * \param[in,out] obj the receiver being initialized
- * \param[in] orig    the object to be dup from.
+ * @param[in,out] obj the receiver being initialized
+ * @param[in] orig    the object to be dup from.
  *++
  **/
 VALUE
@@ -700,14 +694,14 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
     return obj;
 }
 
-/*!
+/**
  * :nodoc:
  *--
- * Default implementation of \c #initialize_clone
+ * Default implementation of `#initialize_clone`
  *
- * \param[in] The number of arguments
- * \param[in] The array of arguments
- * \param[in] obj the receiver being initialized
+ * @param[in] The number of arguments
+ * @param[in] The array of arguments
+ * @param[in] obj the receiver being initialized
  *++
  **/
 static VALUE
@@ -2221,12 +2215,12 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
  *     BasicObject.superclass   #=> nil
  *
  *--
- * Returns the superclass of \a klass. Equivalent to \c Class\#superclass in Ruby.
+ * Returns the superclass of `klass`. Equivalent to `Class#superclass` in Ruby.
  *
  * It skips modules.
- * \param[in] klass a Class object
- * \return the superclass, or \c Qnil if \a klass does not have a parent class.
- * \sa rb_class_get_superclass
+ * @param[in] klass a Class object
+ * @return the superclass, or `Qnil` if `klass` does not have a parent class.
+ * @sa rb_class_get_superclass
  *++
  */
 
@@ -4104,7 +4098,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *      end
  *
  *      def respond_to_missing?(name, include_private = false)
- *        DELEGATE.include?(name) or super
+ *        DELEGATE.include?(name)
  *      end
  *    end
  *

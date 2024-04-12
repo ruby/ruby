@@ -29,12 +29,19 @@ module Reline
       else
         encoding = Encoding::UTF_8
       end
+      @original_get_screen_size = IOGate.method(:get_screen_size)
+      IOGate.singleton_class.remove_method(:get_screen_size)
+      def IOGate.get_screen_size
+        [24, 80]
+      end
       Reline::GeneralIO.reset(encoding: encoding) unless ansi
       core.config.instance_variable_set(:@test_mode, true)
       core.config.reset
     end
 
     def test_reset
+      IOGate.singleton_class.remove_method(:get_screen_size)
+      IOGate.define_singleton_method(:get_screen_size, @original_get_screen_size)
       remove_const('IOGate')
       const_set('IOGate', @original_iogate)
       Reline::GeneralIO.reset
@@ -69,14 +76,6 @@ module Reline
       end
     end
   end
-end
-
-def start_pasting
-  Reline::GeneralIO.start_pasting
-end
-
-def finish_pasting
-  Reline::GeneralIO.finish_pasting
 end
 
 class Reline::TestCase < Test::Unit::TestCase
@@ -129,9 +128,14 @@ class Reline::TestCase < Test::Unit::TestCase
     end
   end
 
-  def assert_line(expected)
-    expected = convert_str(expected)
-    assert_equal(expected, @line_editor.line)
+  def assert_line_around_cursor(before, after)
+    before = convert_str(before)
+    after = convert_str(after)
+    line = @line_editor.line
+    byte_pointer = @line_editor.instance_variable_get(:@byte_pointer)
+    actual_before = line.byteslice(0, byte_pointer)
+    actual_after = line.byteslice(byte_pointer..)
+    assert_equal([before, after], [actual_before, actual_after])
   end
 
   def assert_byte_pointer_size(expected)
@@ -144,14 +148,6 @@ class Reline::TestCase < Test::Unit::TestCase
         <#{expected.inspect} (#{expected.encoding.inspect})> expected but was
         <#{chunk.inspect} (#{chunk.encoding.inspect})> in <Terminal #{Reline::GeneralIO.encoding.inspect}>
       EOM
-  end
-
-  def assert_cursor(expected)
-    assert_equal(expected, @line_editor.instance_variable_get(:@cursor))
-  end
-
-  def assert_cursor_max(expected)
-    assert_equal(expected, @line_editor.instance_variable_get(:@cursor_max))
   end
 
   def assert_line_index(expected)

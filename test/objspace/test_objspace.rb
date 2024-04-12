@@ -673,7 +673,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal("TEST2", entry_hash["value"], "value is wrong")
     assert_equal("UTF-8", entry_hash["encoding"], "encoding is wrong")
     assert_equal("-", entry_hash["file"], "file is wrong")
-    assert_equal(4, entry_hash["line"], "line is wrong")
+    assert_equal(5, entry_hash["line"], "line is wrong")
     assert_equal("dump_my_heap_please", entry_hash["method"], "method is wrong")
     assert_not_nil(entry_hash["generation"])
   end
@@ -682,6 +682,7 @@ class TestObjSpace < Test::Unit::TestCase
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
 
     assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
+      # frozen_string_literal: false
       begin;
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
@@ -698,6 +699,7 @@ class TestObjSpace < Test::Unit::TestCase
 
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |(output), (error)|
       begin;
+        # frozen_string_literal: false
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
@@ -828,6 +830,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_objspace_trace
     assert_in_out_err(%w[-robjspace/trace], "#{<<-"begin;"}\n#{<<-'end;'}") do |out, err|
       begin;
+        # frozen_string_literal: false
         a = "foo"
         b = "b" + "a" + "r"
         c = 42
@@ -835,8 +838,8 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_equal ["objspace/trace is enabled"], err
       assert_equal 3, out.size
-      assert_equal '"foo" @ -:2', out[0]
-      assert_equal '"bar" @ -:3', out[1]
+      assert_equal '"foo" @ -:3', out[0]
+      assert_equal '"bar" @ -:4', out[1]
       assert_equal '42', out[2]
     end
   end

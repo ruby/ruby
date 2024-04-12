@@ -827,7 +827,12 @@ sym_each_i(VALUE v, VALUE arg)
  *    (1..4).size      # => 4
  *    (1...4).size     # => 3
  *    (1..).size       # => Infinity
- *    ('a'..'z').size  #=> nil
+ *    ('a'..'z').size  # => nil
+ *
+ *  If +self+ is not iterable, raises an exception:
+ *
+ *    (0.5..2.5).size  # TypeError
+ *    (..1).size       # TypeError
  *
  *  Related: Range#count.
  */
@@ -836,7 +841,8 @@ static VALUE
 range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
-    if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+
+    if (RB_INTEGER_TYPE_P(b)) {
         if (rb_obj_is_kind_of(e, rb_cNumeric)) {
             return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
         }
@@ -844,10 +850,10 @@ range_size(VALUE range)
             return DBL2NUM(HUGE_VAL);
         }
     }
-    else if (NIL_P(b)) {
-        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
-            return DBL2NUM(HUGE_VAL);
-        }
+
+    if (!discrete_object_p(b)) {
+        rb_raise(rb_eTypeError, "can't iterate from %s",
+                 rb_obj_classname(b));
     }
 
     return Qnil;

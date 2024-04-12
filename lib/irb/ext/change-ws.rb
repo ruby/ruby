@@ -29,11 +29,9 @@ module IRB # :nodoc:
         return main
       end
 
-      replace_workspace(WorkSpace.new(_main[0]))
-
-      if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
-        main.extend ExtendCommandBundle
-      end
+      workspace = WorkSpace.new(_main[0])
+      replace_workspace(workspace)
+      workspace.load_helper_methods_to_main
     end
   end
 end

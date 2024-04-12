@@ -22,14 +22,14 @@ end
 RSpec.describe Mock, ".replaced_name" do
   it "returns the name for a method that is being replaced by a mock method" do
     m = double('a fake id')
-    expect(Mock.replaced_name(m, :method_call)).to eq(:"__mspec_#{m.object_id}_method_call__")
+    expect(Mock.replaced_name(Mock.replaced_key(m, :method_call))).to eq(:"__mspec_method_call__")
   end
 end
 
 RSpec.describe Mock, ".replaced_key" do
   it "returns a key used internally by Mock" do
     m = double('a fake id')
-    expect(Mock.replaced_key(m, :method_call)).to eq([:"__mspec_#{m.object_id}_method_call__", :method_call])
+    expect(Mock.replaced_key(m, :method_call)).to eq([m.object_id, :method_call])
   end
 end
 
@@ -42,16 +42,16 @@ RSpec.describe Mock, ".replaced?" do
 
   it "returns true if a method has been stubbed on an object" do
     Mock.install_method @mock, :method_call
-    expect(Mock.replaced?(Mock.replaced_name(@mock, :method_call))).to be_truthy
+    expect(Mock.replaced?(Mock.replaced_key(@mock, :method_call))).to be_truthy
   end
 
   it "returns true if a method has been mocked on an object" do
     Mock.install_method @mock, :method_call, :stub
-    expect(Mock.replaced?(Mock.replaced_name(@mock, :method_call))).to be_truthy
+    expect(Mock.replaced?(Mock.replaced_key(@mock, :method_call))).to be_truthy
   end
 
   it "returns false if a method has not been stubbed or mocked" do
-    expect(Mock.replaced?(Mock.replaced_name(@mock, :method_call))).to be_falsey
+    expect(Mock.replaced?(Mock.replaced_key(@mock, :method_call))).to be_falsey
   end
 end
 
@@ -197,11 +197,11 @@ RSpec.describe Mock, ".install_method" do
 
     Mock.install_method @mock, :method_call
     expect(@mock).to respond_to(:method_call)
-    expect(@mock).not_to respond_to(Mock.replaced_name(@mock, :method_call))
+    expect(@mock).not_to respond_to(Mock.replaced_name(Mock.replaced_key(@mock, :method_call)))
 
     Mock.install_method @mock, :method_call, :stub
     expect(@mock).to respond_to(:method_call)
-    expect(@mock).not_to respond_to(Mock.replaced_name(@mock, :method_call))
+    expect(@mock).not_to respond_to(Mock.replaced_name(Mock.replaced_key(@mock, :method_call)))
   end
 end
 
@@ -493,7 +493,7 @@ RSpec.describe Mock, ".cleanup" do
   it "removes the replaced method if the mock method overrides an existing method" do
     def @mock.already_here() :hey end
     expect(@mock).to respond_to(:already_here)
-    replaced_name = Mock.replaced_name(@mock, :already_here)
+    replaced_name = Mock.replaced_name(Mock.replaced_key(@mock, :already_here))
     Mock.install_method @mock, :already_here
     expect(@mock).to respond_to(replaced_name)
 
@@ -521,10 +521,9 @@ RSpec.describe Mock, ".cleanup" do
     replaced_key = Mock.replaced_key(@mock, :method_call)
     expect(Mock).to receive(:clear_replaced).with(replaced_key)
 
-    replaced_name = Mock.replaced_name(@mock, :method_call)
-    expect(Mock.replaced?(replaced_name)).to be_truthy
+    expect(Mock.replaced?(replaced_key)).to be_truthy
 
     Mock.cleanup
-    expect(Mock.replaced?(replaced_name)).to be_falsey
+    expect(Mock.replaced?(replaced_key)).to be_falsey
   end
 end

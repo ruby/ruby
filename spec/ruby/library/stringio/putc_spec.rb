@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#putc when passed [String]" do
   before :each do
-    @io = StringIO.new('example')
+    @io = StringIO.new(+'example')
   end
 
   it "overwrites the character at the current position" do
@@ -54,7 +54,7 @@ end
 
 describe "StringIO#putc when passed [Object]" do
   before :each do
-    @io = StringIO.new('example')
+    @io = StringIO.new(+'example')
   end
 
   it "it writes the passed Integer % 256 to self" do
@@ -85,7 +85,7 @@ end
 
 describe "StringIO#putc when in append mode" do
   it "appends to the end of self" do
-    io = StringIO.new("test", "a")
+    io = StringIO.new(+"test", "a")
     io.putc(?t)
     io.string.should == "testt"
   end
@@ -93,10 +93,10 @@ end
 
 describe "StringIO#putc when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.putc(?a) }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.putc("t") }.should raise_error(IOError)
   end

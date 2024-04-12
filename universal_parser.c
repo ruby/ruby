@@ -54,18 +54,12 @@
 #define st_delete rb_parser_st_delete
 #undef st_is_member
 #define st_is_member parser_st_is_member
+#undef st_init_table
+#define st_init_table rb_parser_st_init_table
+#undef st_lookup
+#define st_lookup rb_parser_st_lookup
 
 #define rb_encoding void
-
-#ifndef INTERNAL_IMEMO_H
-struct rb_imemo_tmpbuf_struct {
-    VALUE flags;
-    VALUE reserved;
-    VALUE *ptr; /* malloc'ed buffer */
-    struct rb_imemo_tmpbuf_struct *next; /* next imemo */
-    size_t cnt; /* buffer size in VALUE */
-};
-#endif
 
 #undef xmalloc
 #define xmalloc p->config->malloc
@@ -91,20 +85,8 @@ struct rb_imemo_tmpbuf_struct {
 #undef MEMCPY
 #define MEMCPY(p1,p2,type,n) (p->config->nonempty_memcpy((p1), (p2), sizeof(type), (n)))
 
-#define rb_imemo_tmpbuf_parser_heap p->config->tmpbuf_parser_heap
-
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
-
-#define rb_obj_freeze p->config->obj_freeze
-#define rb_obj_hide p->config->obj_hide
-#undef OBJ_FREEZE_RAW
-#define OBJ_FREEZE_RAW p->config->obj_freeze_raw
-
-#undef FIXNUM_P
-#define FIXNUM_P p->config->fixnum_p
-#undef SYMBOL_P
-#define SYMBOL_P p->config->symbol_p
 
 #define rb_attr_get p->config->attr_get
 
@@ -113,9 +95,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
-#undef rb_ary_new2
-#define rb_ary_new2          p->config->ary_new2
-#define rb_ary_clear         p->config->ary_clear
 #define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
@@ -175,14 +154,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_filesystem_str_new_cstr        p->config->filesystem_str_new_cstr
 #define rb_obj_as_string                  p->config->obj_as_string
 
-#define rb_hash_clear     p->config->hash_clear
-#define rb_hash_new       p->config->hash_new
-#define rb_hash_aset      p->config->hash_aset
-#define rb_hash_lookup    p->config->hash_lookup
-#define rb_ident_hash_new p->config->ident_hash_new
-
-#undef NUM2INT
-#define NUM2INT             p->config->num2int
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
 
@@ -211,8 +182,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
-#define rb_char_to_option_kcode p->config->char_to_option_kcode
-#define rb_ascii8bit_encindex   p->config->ascii8bit_encindex
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
 #define rb_enc_associate_index  p->config->enc_associate_index
@@ -221,18 +190,11 @@ struct rb_imemo_tmpbuf_struct {
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
 #define rb_enc_compatible       p->config->enc_compatible
 #define rb_enc_from_encoding    p->config->enc_from_encoding
-#define ENCODING_GET            p->config->encoding_get
-#define ENCODING_SET            p->config->encoding_set
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
 
-#define rb_ractor_make_shareable p->config->ractor_make_shareable
-
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
-
-#define literal_cmp  p->config->literal_cmp
-#define literal_hash p->config->literal_hash
 
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise
@@ -247,8 +209,6 @@ struct rb_imemo_tmpbuf_struct {
 #define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)p->config->sized_realloc_n((void *)(v), (m), sizeof(T), (n)))
 #undef RB_OBJ_WRITE
 #define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
-#undef RB_OBJ_WRITTEN
-#define RB_OBJ_WRITTEN(old, oldv, young) p->config->obj_written((VALUE)(old), (VALUE)(oldv), (VALUE)(young))
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
@@ -275,8 +235,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #undef RBOOL
 #define RBOOL p->config->rbool
-#undef UNDEF_P
-#define UNDEF_P p->config->undef_p
 #undef RTEST
 #define RTEST p->config->rtest
 #undef NIL_P
@@ -287,17 +245,12 @@ struct rb_imemo_tmpbuf_struct {
 #define Qtrue p->config->qtrue
 #undef Qfalse
 #define Qfalse p->config->qfalse
-#undef Qundef
-#define Qundef p->config->qundef
 #define rb_eArgError p->config->eArgError()
-#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
-
-#define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
-
-#undef st_init_table_with_size
-#define st_init_table_with_size rb_parser_st_init_table_with_size
+#define rb_enc_mbminlen p->config->enc_mbminlen
+#define rb_enc_isascii p->config->enc_isascii
+#define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint
 
 #define rb_ast_new() \
     rb_ast_new(p->config)

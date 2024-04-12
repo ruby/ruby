@@ -1,5 +1,6 @@
 errors:
   - ALIAS_ARGUMENT
+  - ALIAS_ARGUMENT_NUMBERED_REFERENCE
   - AMPAMPEQ_MULTI_ASSIGN
   - ARGUMENT_AFTER_BLOCK
   - ARGUMENT_AFTER_FORWARDING_ELLIPSES
@@ -15,6 +16,7 @@ errors:
   - ARGUMENT_NO_FORWARDING_AMP
   - ARGUMENT_NO_FORWARDING_ELLIPSES
   - ARGUMENT_NO_FORWARDING_STAR
+  - ARGUMENT_NO_FORWARDING_STAR_STAR
   - ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT
   - ARGUMENT_SPLAT_AFTER_SPLAT
   - ARGUMENT_TERM_PAREN
@@ -45,6 +47,7 @@ errors:
   - CLASS_SUPERCLASS
   - CLASS_TERM
   - CLASS_UNEXPECTED_END
+  - CLASS_VARIABLE_BARE
   - CONDITIONAL_ELSIF_PREDICATE
   - CONDITIONAL_IF_PREDICATE
   - CONDITIONAL_PREDICATE_TERM
@@ -106,6 +109,7 @@ errors:
   - FOR_IN
   - FOR_INDEX
   - FOR_TERM
+  - GLOBAL_VARIABLE_BARE
   - HASH_EXPRESSION_AFTER_LABEL
   - HASH_KEY
   - HASH_ROCKET
@@ -117,6 +121,8 @@ errors:
   - INCOMPLETE_VARIABLE_CLASS_3_3_0
   - INCOMPLETE_VARIABLE_INSTANCE
   - INCOMPLETE_VARIABLE_INSTANCE_3_3_0
+  - INSTANCE_VARIABLE_BARE
+  - INVALID_BLOCK_EXIT
   - INVALID_CHARACTER
   - INVALID_ENCODING_MAGIC_COMMENT
   - INVALID_FLOAT_EXPONENT
@@ -130,8 +136,12 @@ errors:
   - INVALID_NUMBER_UNDERSCORE
   - INVALID_PERCENT
   - INVALID_PRINTABLE_CHARACTER
+  - INVALID_RETRY_AFTER_ELSE
+  - INVALID_RETRY_AFTER_ENSURE
+  - INVALID_RETRY_WITHOUT_RESCUE
   - INVALID_VARIABLE_GLOBAL
   - INVALID_VARIABLE_GLOBAL_3_3_0
+  - INVALID_YIELD
   - IT_NOT_ALLOWED_NUMBERED
   - IT_NOT_ALLOWED_ORDINARY
   - LAMBDA_OPEN
@@ -165,7 +175,7 @@ errors:
   - PARAMETER_BLOCK_MULTI
   - PARAMETER_CIRCULAR
   - PARAMETER_METHOD_NAME
-  - PARAMETER_NAME_REPEAT
+  - PARAMETER_NAME_DUPLICATED
   - PARAMETER_NO_DEFAULT
   - PARAMETER_NO_DEFAULT_KW
   - PARAMETER_NUMBERED_RESERVED
@@ -174,6 +184,7 @@ errors:
   - PARAMETER_STAR
   - PARAMETER_UNEXPECTED_FWD
   - PARAMETER_WILD_LOOSE_COMMA
+  - PATTERN_CAPTURE_DUPLICATE
   - PATTERN_EXPRESSION_AFTER_BRACKET
   - PATTERN_EXPRESSION_AFTER_COMMA
   - PATTERN_EXPRESSION_AFTER_HROCKET
@@ -185,6 +196,7 @@ errors:
   - PATTERN_EXPRESSION_AFTER_RANGE
   - PATTERN_EXPRESSION_AFTER_REST
   - PATTERN_HASH_KEY
+  - PATTERN_HASH_KEY_DUPLICATE
   - PATTERN_HASH_KEY_LABEL
   - PATTERN_IDENT_AFTER_HROCKET
   - PATTERN_LABEL_AFTER_COMMA
@@ -198,12 +210,14 @@ errors:
   - REGEXP_INVALID_UNICODE_RANGE
   - REGEXP_NON_ESCAPED_MBC
   - REGEXP_TERM
+  - REGEXP_UNKNOWN_OPTIONS
   - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
   - RESCUE_EXPRESSION
   - RESCUE_MODIFIER_VALUE
   - RESCUE_TERM
   - RESCUE_VARIABLE
   - RETURN_INVALID
+  - SCRIPT_NOT_FOUND
   - SINGLETON_FOR_LITERALS
   - STATEMENT_ALIAS
   - STATEMENT_POSTEXE_END
@@ -233,16 +247,29 @@ errors:
 warnings:
   - AMBIGUOUS_FIRST_ARGUMENT_MINUS
   - AMBIGUOUS_FIRST_ARGUMENT_PLUS
+  - AMBIGUOUS_PREFIX_AMPERSAND
   - AMBIGUOUS_PREFIX_STAR
+  - AMBIGUOUS_PREFIX_STAR_STAR
   - AMBIGUOUS_SLASH
+  - COMPARISON_AFTER_COMPARISON
   - DOT_DOT_DOT_EOL
   - EQUAL_IN_CONDITIONAL
+  - EQUAL_IN_CONDITIONAL_3_3_0
   - END_IN_METHOD
   - DUPLICATED_HASH_KEY
   - DUPLICATED_WHEN_CLAUSE
   - FLOAT_OUT_OF_RANGE
+  - IGNORED_FROZEN_STRING_LITERAL
   - INTEGER_IN_FLIP_FLOP
+  - INVALID_CHARACTER
+  - INVALID_NUMBERED_REFERENCE
+  - INVALID_SHAREABLE_CONSTANT_VALUE
   - KEYWORD_EOL
+  - LITERAL_IN_CONDITION_DEFAULT
+  - LITERAL_IN_CONDITION_VERBOSE
+  - SHEBANG_CARRIAGE_RETURN
+  - UNEXPECTED_CARRIAGE_RETURN
+  - UNUSED_LOCAL_VARIABLE
 tokens:
   - name: EOF
     value: 1
@@ -613,6 +640,13 @@ flags:
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: InterpolatedStringNodeFlags
+    values:
+      - name: FROZEN
+        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`; only for adjacent string literals like `'a' 'b'`"
+      - name: MUTABLE
+        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`; only for adjacent string literals like `'a' 'b'`"
+    comment: Flags for interpolated string nodes that indicated mutability if they are also marked as literals.
   - name: KeywordHashNodeFlags
     values:
       - name: SYMBOL_KEYS
@@ -658,6 +692,15 @@ flags:
       - name: FORCED_US_ASCII_ENCODING
         comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
+  - name: ShareableConstantNodeFlags
+    values:
+      - name: LITERAL
+        comment: "constant writes that should be modified with shareable constant value literal"
+      - name: EXPERIMENTAL_EVERYTHING
+        comment: "constant writes that should be modified with shareable constant value experimental everything"
+      - name: EXPERIMENTAL_COPY
+        comment: "constant writes that should be modified with shareable constant value experimental copy"
+    comment: Flags for shareable constant nodes.
   - name: StringFlags
     values:
       - name: FORCED_UTF8_ENCODING
@@ -665,7 +708,9 @@ flags:
       - name: FORCED_BINARY_ENCODING
         comment: "internal bytes forced the encoding to binary"
       - name: FROZEN
-        comment: "frozen by virtue of a `frozen_string_literal` comment"
+        comment: "frozen by virtue of a `frozen_string_literal: true` comment or `--enable-frozen-string-literal`"
+      - name: MUTABLE
+        comment: "mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`"
     comment: Flags for string nodes.
   - name: SymbolFlags
     values:
@@ -1302,12 +1347,37 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @@abc = 123     # name `@@abc`
+
+              @@_test = :test # name `@@_test`
       - name: name_loc
         type: location
+        comment: |
+          The location of the variable name.
+
+              @@foo = :bar
+              ^^^^^
       - name: value
         type: node
+        comment: |
+          The value to assign to the class variable. Can be any node that
+          represents a non-void expression.
+
+              @@foo = :bar
+                      ^^^^
+
+              @@_xyz = 123
+                       ^^^
       - name: operator_loc
-        type: location?
+        type: location
+        comment: |
+          The location of the `=` operator.
+
+              @@foo = :bar
+                    ^
     comment: |
       Represents writing to a class variable.
 
@@ -2118,12 +2188,37 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the instance variable, which is a `@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @x = :y       # name `:@x`
+
+              @_foo = "bar" # name `@_foo`
       - name: name_loc
         type: location
+        comment: |
+          The location of the variable name.
+
+              @_x = 1
+              ^^^
       - name: value
         type: node
+        comment: |
+          The value to assign to the instance variable. Can be any node that
+          represents a non-void expression.
+
+              @foo = :bar
+                     ^^^^
+
+              @_x = 1234
+                    ^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              @x = y
+                 ^
     comment: |
       Represents writing to an instance variable.
 
@@ -2186,6 +2281,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: InterpolatedStringNode
     fields:
+      - name: flags
+        type: flags
+        kind: InterpolatedStringNodeFlags
       - name: opening_loc
         type: location?
       - name: parts
@@ -2617,13 +2715,13 @@ nodes:
       - name: number
         type: uint32
         comment: |
-          The (1-indexed, from the left) number of the capture group. Numbered references that would overflow a `uint32`  result in a `number` of exactly `2**32 - 1`.
+          The (1-indexed, from the left) number of the capture group. Numbered references that are too large result in this value being `0`.
 
               $1          # number `1`
 
               $5432       # number `5432`
 
-              $4294967296 # number `4294967295`
+              $4294967296 # number `0`
     comment: |
       Represents reading a numbered reference to a capture in the previous match.
 
@@ -3002,6 +3100,29 @@ nodes:
 
           self
           ^^^^
+  - name: ShareableConstantNode
+    fields:
+      - name: flags
+        type: flags
+        kind: ShareableConstantNodeFlags
+      - name: write
+        type: node
+        kind:
+          - ConstantWriteNode
+          - ConstantAndWriteNode
+          - ConstantOrWriteNode
+          - ConstantOperatorWriteNode
+          - ConstantPathWriteNode
+          - ConstantPathAndWriteNode
+          - ConstantPathOrWriteNode
+          - ConstantPathOperatorWriteNode
+        comment: The constant write that should be modified with the shareability state.
+    comment: |
+      This node wraps a constant write to indicate that when the value is written, it should have its shareability state modified.
+
+          # shareable_constant_value: literal
+          C = { a: 1 }
+          ^^^^^^^^^^^^
   - name: SingletonClassNode
     fields:
       - name: locals
@@ -3029,6 +3150,9 @@ nodes:
           ^^^^^^^^^^^^
   - name: SourceFileNode
     fields:
+      - name: flags
+        type: flags
+        kind: StringFlags
       - name: filepath
         type: string
     comment: |

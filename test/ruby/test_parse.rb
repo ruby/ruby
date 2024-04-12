@@ -498,6 +498,10 @@ class TestParse < Test::Unit::TestCase
     t = Object.new
     a = []
     blk = proc {|x| a << x }
+
+    # Prevent an "assigned but unused variable" warning
+    _ = blk
+
     def t.[](_)
       yield(:aref)
       nil
@@ -507,16 +511,16 @@ class TestParse < Test::Unit::TestCase
     end
     def t.dummy(_)
     end
-    eval <<-END, nil, __FILE__, __LINE__+1
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
       t[42, &blk] ||= 42
-    END
-    assert_equal([:aref, :aset], a)
-    a.clear
-    eval <<-END, nil, __FILE__, __LINE__+1
-    t[42, &blk] ||= t.dummy 42 # command_asgn test
-    END
-    assert_equal([:aref, :aset], a)
-    blk
+    end;
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
+      t[42, &blk] ||= t.dummy 42 # command_asgn test
+    end;
   end
 
   def test_backquote
@@ -803,14 +807,20 @@ x = __ENCODING__
 # coding: foo
       END
     end
-    assert_include(e.message, "# coding: foo\n          ^~~")
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding: foo\n")
+    assert_include(message, "          ^")
 
     e = assert_raise(ArgumentError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = foo
       END
     end
-    assert_include(e.message, "# coding = foo\n           ^~~")
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding = foo\n")
+    assert_include(message, "           ^")
   end
 
   def test_utf8_bom
@@ -914,20 +924,6 @@ x = __ENCODING__
 
   def test_set_backref
     assert_syntax_error("$& = 1", /Can't set variable/)
-  end
-
-  def test_arg_concat
-    o = Object.new
-    class << o; self; end.instance_eval do
-      define_method(:[]=) {|*r, &b| b.call(r) }
-    end
-    r = nil
-    assert_nothing_raised do
-      eval <<-END, nil, __FILE__, __LINE__+1
-        o[&proc{|x| r = x }] = 1
-      END
-    end
-    assert_equal([1], r)
   end
 
   def test_void_expr_stmts_value
@@ -1111,9 +1107,13 @@ x = __ENCODING__
 
   def test_parsing_begin_statement_inside_method_definition
     assert_equal :bug_20234, eval("def (begin;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;rescue;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;ensure;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
     assert_equal :bug_20234, eval("def (begin;rescue;else;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
 
     assert_raise(SyntaxError) { eval("def (begin;else;end).bug_20234; end") }
     assert_raise(SyntaxError) { eval("def (begin;ensure;else;end).bug_20234; end") }
@@ -1540,6 +1540,24 @@ x = __ENCODING__
     assert_not_ractor_shareable(obj)
     assert_equal obj, a
     assert !obj.equal?(a)
+
+    bug_20339 = '[ruby-core:117186] [Bug #20339]'
+    bug_20341 = '[ruby-core:117197] [Bug #20341]'
+    a, b = eval_separately(<<~'end;')
+      # shareable_constant_value: literal
+      foo = 1
+      bar = 2
+      A = { foo => bar }
+      B = [foo, bar]
+      [A, B]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal([1], a.keys, bug_20339)
+    assert_equal([2], a.values, bug_20339)
+    assert_equal(1, b[0], bug_20341)
+    assert_equal(2, b[1], bug_20341)
   end
 
   def test_shareable_constant_value_nested

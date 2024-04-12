@@ -210,22 +210,6 @@ void rb_gc_mark_movable(VALUE obj);
 VALUE rb_gc_location(VALUE obj);
 
 /**
- * Asserts  that the  passed  object is  no longer  needed.   Such objects  are
- * reclaimed sooner or later so this  function is not mandatory.  But sometimes
- * you can know  from your application knowledge that an  object is surely dead
- * at some point.  Calling this as a hint can be a polite way.
- *
- * @param[out]  obj  Object, dead.
- * @pre         `obj` have never been passed to this function before.
- * @post        `obj` could be invalidated.
- * @warning     It  is a  failure  to pass  an object  multiple  times to  this
- *              function.
- * @deprecated  This is now a no-op function.
- */
-RBIMPL_ATTR_DEPRECATED(("this is now a no-op function"))
-void rb_gc_force_recycle(VALUE obj);
-
-/**
  * Triggers a GC process.  This was the only  GC entry point that we had at the
  * beginning.  Over time our GC evolved.  Now what this function does is just a
  * very  simplified  variation  of  the  entire GC  algorithms.   A  series  of
@@ -838,5 +822,8 @@ rb_obj_write(
     rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
     return a;
 }
+
+RBIMPL_ATTR_DEPRECATED(("Will be removed soon"))
+static inline void rb_gc_force_recycle(VALUE obj){}
 
 #endif /* RBIMPL_GC_H */

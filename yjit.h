@@ -28,6 +28,7 @@
 extern uint64_t rb_yjit_call_threshold;
 extern uint64_t rb_yjit_cold_threshold;
 extern uint64_t rb_yjit_live_iseq_count;
+extern uint64_t rb_yjit_iseq_alloc_count;
 extern bool rb_yjit_enabled_p;
 void rb_yjit_incr_counter(const char *counter_name);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
@@ -46,6 +47,7 @@ void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned ins
 void rb_yjit_tracing_invalidate_all(void);
 void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 void rb_yjit_lazy_push_frame(const VALUE *pc);
+void rb_yjit_invalidate_no_singleton_class(VALUE klass);
 
 #else
 // !USE_YJIT
@@ -68,6 +70,7 @@ static inline void rb_yjit_before_ractor_spawn(void) {}
 static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
 static inline void rb_yjit_lazy_push_frame(const VALUE *pc) {}
+static inline void rb_yjit_invalidate_no_singleton_class(VALUE klass) {}
 
 #endif // #if USE_YJIT
 

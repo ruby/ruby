@@ -189,6 +189,26 @@ void pm_buffer_clear(pm_buffer_t *buffer);
 void pm_buffer_rstrip(pm_buffer_t *buffer);
 
 /**
+ * Checks if the buffer includes the given value.
+ *
+ * @param buffer The buffer to check.
+ * @param value The value to check for.
+ * @returns The index of the first occurrence of the value in the buffer, or
+ *   SIZE_MAX if the value is not found.
+ */
+size_t pm_buffer_index(const pm_buffer_t *buffer, char value);
+
+/**
+ * Insert the given string into the buffer at the given index.
+ *
+ * @param buffer The buffer to insert into.
+ * @param index The index to insert at.
+ * @param value The string to insert.
+ * @param length The length of the string to insert.
+ */
+void pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length);
+
+/**
  * Free the memory associated with the buffer.
  *
  * @param buffer The buffer to free.

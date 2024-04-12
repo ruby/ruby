@@ -5648,7 +5648,7 @@ Wed Aug  6 04:16:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/requests.rb (Net::HTTP::Options::RESPONSE_HAS_BODY):
 	  OPTIONS requests may have response bodies. [Feature #8429]
-	  http://tools.ietf.org/html/rfc7231#section-4.3.7
+	  https://www.rfc-editor.org/rfc/rfc7231#section-4.3.7
 
 Wed Aug  6 03:18:04 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 

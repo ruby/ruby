@@ -554,10 +554,12 @@ for one byte in the input or output string.
 
 - <tt>'u'</tt> - UU-encoded string:
 
-    [0].pack("U")          # => "\u0000"
-    [0x3fffffff].pack("U") # => "\xFC\xBF\xBF\xBF\xBF\xBF"
-    [0x40000000].pack("U") # => "\xFD\x80\x80\x80\x80\x80"
-    [0x7fffffff].pack("U") # => "\xFD\xBF\xBF\xBF\xBF\xBF"
+    [""].pack("u")        # => ""
+    ["a"].pack("u")       # => "!80``\n"
+    ["aaa"].pack("u")     # => "#86%A\n"
+
+    "".unpack("u")        # => [""]
+    "#86)C\n".unpack("u") # => ["abc"]
 
 == Offset Directives
 

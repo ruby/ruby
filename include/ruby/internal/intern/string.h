@@ -454,7 +454,7 @@ VALUE rb_interned_str(const char *ptr, long len);
 RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to  rb_interned_str(), except it  assumes the passed pointer  is a
- * pointer to a C's  string.  It can also be seen as a  routine identical to to
+ * pointer to a C's  string.  It can also be seen as a  routine identical to
  * rb_str_to_interned_str(), except  it takes a  C's string instead  of Ruby's.
  * Or it can  also be seen as a routine  identical to rb_str_new_cstr(), except
  * it returns an infamous "f"string.
@@ -600,6 +600,21 @@ VALUE rb_str_dup(VALUE str);
  * @return     A duplicated new instance of ::rb_cString.
  */
 VALUE rb_str_resurrect(VALUE str);
+
+/**
+ * Returns whether a string is chilled or not.
+ *
+ * This function is temporary and users must check for its presence using
+ * #ifdef HAVE_RB_STR_CHILLED_P. If HAVE_RB_STR_CHILLED_P is not defined, then
+ * strings can't be chilled.
+ *
+ * @param[in]  str  A string.
+ * @retval     1    The string is chilled.
+ * @retval     0    Otherwise.
+ */
+bool rb_str_chilled_p(VALUE str);
+
+#define HAVE_RB_STR_CHILLED_P 1
 
 /**
  * Obtains a "temporary  lock" of the string.  This  advisory locking mechanism

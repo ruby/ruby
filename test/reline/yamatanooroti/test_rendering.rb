@@ -197,9 +197,12 @@ begin
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n\C-[k")
+      write("i\n:a")
+      write("\C-[h")
       close
       assert_screen(<<~EOC)
-        Multiline REPL.
+        (ins)prompt> :a
+        => :a
         (ins)prompt> :a
         => :a
         (cmd)prompt> :a
@@ -464,6 +467,9 @@ begin
       write("def a\n  8\nend\ndef b\n  3\nend\C-s8")
       close
       assert_screen(<<~EOC)
+        prompt>   8
+        prompt> end
+        => :a
         (i-search)`8'def a
         (i-search)`8'  8
         (i-search)`8'end
@@ -475,6 +481,9 @@ begin
       write("def a\n  8\nend\ndef b\n  3\nend\C-r8\C-j")
       close
       assert_screen(<<~EOC)
+        prompt>   8
+        prompt> end
+        => :a
         prompt> def a
         prompt>   8
         prompt> end
@@ -492,18 +501,6 @@ begin
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt> :01234
-      EOC
-    end
-
-    def test_prompt_list_caching
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --prompt-list-cache-timeout 10 --dynamic-prompt}, startup_message: 'Multiline REPL.')
-      write("def hoge\n  3\nend")
-      close
-      assert_screen(<<~EOC)
-        Multiline REPL.
-        [0000]> def hoge
-        [0001]>   3
-        [0002]> end
       EOC
     end
 
@@ -834,6 +831,20 @@ begin
       EOC
     end
 
+    def test_auto_indent_with_various_spaces
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write "(\n\C-v"
+      write "\C-k\n\C-v"
+      write "\C-k)"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> (
+        prompt> ^K
+        prompt> )
+      EOC
+    end
+
     def test_autowrap_in_the_middle_of_a_line
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def abcdefg; end\C-b\C-b\C-b\C-b\C-b")
@@ -1026,8 +1037,8 @@ begin
       iterate_over_face_configs do |config_name, config_file|
         start_terminal(10, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
         write("\n" * 10)
-        write("if 1\n  sSt\nend")
-        write("\C-p\C-h\C-e")
+        write("if 1\n  sSts\nend")
+        write("\C-p\C-h\C-e\C-h")
         close
         assert_screen(<<~'EOC')
           prompt>
@@ -1054,8 +1065,8 @@ begin
           prompt>   2
           prompt>   3#
           prompt>   4
-          prompt>   5
-          prompt>   6 Ruby is...
+          prompt>   5 Ruby is...
+          prompt>   6 A dynamic, open source programming
         EOC
       end
     end
@@ -1108,6 +1119,19 @@ begin
         prompt>           St
         r             String
                       Struct
+      EOC
+    end
+
+    def test_force_insert_before_autocomplete
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('Sy')
+      write(";St\t\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Sy;Struct
+                   String
+                   Struct
       EOC
     end
 
@@ -1662,6 +1686,23 @@ begin
       end
       assert_screen(<<~EOC)
         Multiline REPL.
+        prompt>
+      EOC
+    end
+
+    def test_thread_safe
+      start_terminal(6, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("[Thread.new{Reline.readline'>'},Thread.new{Reline.readmultiline('>'){true}}].map(&:join).size\n")
+      write("exit\n")
+      write("exit\n")
+      write("42\n")
+      close
+      assert_screen(<<~EOC)
+        >exit
+        >exit
+        => 2
+        prompt> 42
+        => 42
         prompt>
       EOC
     end

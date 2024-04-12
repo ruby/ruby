@@ -53,34 +53,24 @@ end
 
 def prelude(f, out)
   @exprs = {}
-  lex_state_def = false
   while line = f.gets
     case line
     when /\A%%/
       out << "%%\n"
       return
-    when /\A%token/, /\A%type/, /\A} <node(?>_\w+)?>/
-      # types in %union which have corresponding set_yylval_* macro.
-      out << line
-    when /^enum lex_state_(?:bits|e) \{/
-      lex_state_def = true
-      out << line
-    when /^\}/
-      lex_state_def = false
-      out << line
     else
-      out << line
-    end
-    if lex_state_def
-      case line
-      when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
-        @exprs[$1.chomp("_bit")] = $2.strip
-      when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
-        name = $1
-        val = $2.chomp(",")
-        @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
+      if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
+        case line
+        when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
+          @exprs[$1.chomp("_bit")] = $2.strip
+        when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
+          name = $1
+          val = $2.chomp(",")
+          @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
+        end
       end
     end
+    out << line
   end
 end
 

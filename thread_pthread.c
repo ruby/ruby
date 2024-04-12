@@ -305,7 +305,7 @@ event_name(rb_event_flag_t event)
 
 static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
-#if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
+#if defined(SIGVTALRM) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
 
@@ -2081,6 +2081,7 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
     rb_nativethread_id_t curr = pthread_self();
 #ifdef RUBY_ASAN_ENABLED
     local_in_parent_frame = asan_get_real_stack_addr(local_in_parent_frame);
+    th->ec->machine.asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
 #endif
 
     if (!native_main_thread.id) {

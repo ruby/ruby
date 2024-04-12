@@ -31,11 +31,6 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_generate
     # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
     # size of q according to the size of p
-    key1024 = OpenSSL::PKey::DSA.generate(1024)
-    assert_predicate key1024, :private?
-    assert_equal 1024, key1024.p.num_bits
-    assert_equal 160, key1024.q.num_bits
-
     key2048 = OpenSSL::PKey::DSA.generate(2048)
     assert_equal 2048, key2048.p.num_bits
     assert_equal 256, key2048.q.num_bits
@@ -47,28 +42,41 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_generate_on_non_fips
+    # DSA with 1024 bits is invalid on FIPS 186-4.
+    # https://github.com/openssl/openssl/commit/49ed5ba8f62875074f04417189147fd3dda072ab
+    omit_on_fips
+
+    key1024 = OpenSSL::PKey::DSA.generate(1024)
+    assert_predicate key1024, :private?
+    assert_equal 1024, key1024.p.num_bits
+    assert_equal 160, key1024.q.num_bits
+  end
+
   def test_sign_verify
-    dsa512 = Fixtures.pkey("dsa512")
+    # The DSA valid size is 2048 or 3072 on FIPS.
+    # https://github.com/openssl/openssl/blob/7649b5548e5c0352b91d9d3ed695e42a2ac1e99c/providers/common/securitycheck.c#L185-L188
+    dsa = Fixtures.pkey("dsa2048")
     data = "Sign me!"
     if defined?(OpenSSL::Digest::DSS1)
-      signature = dsa512.sign(OpenSSL::Digest.new('DSS1'), data)
-      assert_equal true, dsa512.verify(OpenSSL::Digest.new('DSS1'), signature, data)
+      signature = dsa.sign(OpenSSL::Digest.new('DSS1'), data)
+      assert_equal true, dsa.verify(OpenSSL::Digest.new('DSS1'), signature, data)
     end
 
-    signature = dsa512.sign("SHA256", data)
-    assert_equal true, dsa512.verify("SHA256", signature, data)
+    signature = dsa.sign("SHA256", data)
+    assert_equal true, dsa.verify("SHA256", signature, data)
 
     signature0 = (<<~'end;').unpack1("m")
-      MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
-      6g==
+      MD4CHQC0zmRkVOAHJTm28fS5PVUv+4LtBeNaKqr/yfmVAh0AsTcLqofWHoW8X5oWu8AOvngOcFVZ
+      cLTvhY3XNw==
     end;
-    assert_equal true, dsa512.verify("SHA256", signature0, data)
+    assert_equal true, dsa.verify("SHA256", signature0, data)
     signature1 = signature0.succ
-    assert_equal false, dsa512.verify("SHA256", signature1, data)
+    assert_equal false, dsa.verify("SHA256", signature1, data)
   end
 
   def test_sign_verify_raw
-    key = Fixtures.pkey("dsa512")
+    key = Fixtures.pkey("dsa2048")
     data = 'Sign me!'
     digest = OpenSSL::Digest.digest('SHA1', data)
 
@@ -127,6 +135,8 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   end
 
   def test_DSAPrivateKey_encrypted
+    omit_on_fips
+
     # key = abcdef
     dsa512 = Fixtures.pkey("dsa512")
     pem = <<~EOF

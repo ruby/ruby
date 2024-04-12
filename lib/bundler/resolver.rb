@@ -50,25 +50,25 @@ module Bundler
         specs[name] = matches.sort_by {|s| [s.version, s.platform.to_s] }
       end
 
-      @sorted_versions = Hash.new do |candidates, package|
-        candidates[package] = if package.root?
-          [root_version]
-        else
-          all_versions_for(package).sort
-        end
+      @all_versions = Hash.new do |candidates, package|
+        candidates[package] = all_versions_for(package)
       end
+
+      @sorted_versions = Hash.new do |candidates, package|
+        candidates[package] = filtered_versions_for(package).sort
+      end
+
+      @sorted_versions[root] = [root_version]
 
       root_dependencies = prepare_dependencies(@requirements, @packages)
 
       @cached_dependencies = Hash.new do |dependencies, package|
-        dependencies[package] = if package.root?
-          { root_version => root_dependencies }
-        else
-          Hash.new do |versions, version|
-            versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
-          end
+        dependencies[package] = Hash.new do |versions, version|
+          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
         end
       end
+
+      @cached_dependencies[root] = { root_version => root_dependencies }
 
       logger = Bundler::UI::Shell.new
       logger.level = debug? ? "debug" : "warn"
@@ -156,9 +156,15 @@ module Bundler
     end
 
     def versions_for(package, range=VersionRange.any)
-      versions = range.select_versions(@sorted_versions[package])
+      versions = select_sorted_versions(package, range)
 
-      sort_versions(package, versions)
+      # Conditional avoids (among other things) calling
+      # sort_versions_by_preferred with the root package
+      if versions.size > 1
+        sort_versions_by_preferred(package, versions)
+      else
+        versions
+      end
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
@@ -247,7 +253,7 @@ module Bundler
       locked_requirement = base_requirements[name]
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
-      versions = results.group_by(&:version).reduce([]) do |groups, (version, specs)|
+      results.group_by(&:version).reduce([]) do |groups, (version, specs)|
         platform_specs = package.platforms.map {|platform| select_best_platform_match(specs, platform) }
 
         # If package is a top-level dependency,
@@ -274,8 +280,6 @@ module Bundler
 
         groups
       end
-
-      sort_versions(package, versions)
     end
 
     def source_for(name)
@@ -334,6 +338,21 @@ module Bundler
 
     private
 
+    def filtered_versions_for(package)
+      @gem_version_promoter.filter_versions(package, @all_versions[package])
+    end
+
+    def raise_all_versions_filtered_out!(package)
+      level = @gem_version_promoter.level
+      name = package.name
+      locked_version = package.locked_version
+      requirement = package.dependency
+
+      raise GemNotFound,
+        "#{name} is locked to #{locked_version}, while Gemfile is requesting #{requirement}. " \
+        "--strict --#{level} was specified, but there are no #{level} level upgrades from #{locked_version} satisfying #{requirement}, so version solving has failed"
+    end
+
     def filter_matching_specs(specs, requirements)
       Array(requirements).flat_map do |requirement|
         specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
@@ -357,12 +376,8 @@ module Bundler
       requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
     end
 
-    def sort_versions(package, versions)
-      if versions.size > 1
-        @gem_version_promoter.sort_versions(package, versions).reverse
-      else
-        versions
-      end
+    def sort_versions_by_preferred(package, versions)
+      @gem_version_promoter.sort_versions(package, versions)
     end
 
     def repository_for(package)
@@ -379,18 +394,33 @@ module Bundler
 
         next [dep_package, dep_constraint] if name == "bundler"
 
-        versions = versions_for(dep_package, dep_constraint.range)
+        dep_range = dep_constraint.range
+        versions = select_sorted_versions(dep_package, dep_range)
         if versions.empty? && dep_package.ignores_prereleases?
+          @all_versions.delete(dep_package)
           @sorted_versions.delete(dep_package)
           dep_package.consider_prereleases!
-          versions = versions_for(dep_package, dep_constraint.range)
+          versions = select_sorted_versions(dep_package, dep_range)
         end
+
+        if versions.empty? && select_all_versions(dep_package, dep_range).any?
+          raise_all_versions_filtered_out!(dep_package)
+        end
+
         next [dep_package, dep_constraint] unless versions.empty?
 
         next unless dep_package.current_platform?
 
         raise_not_found!(dep_package)
       end.compact.to_h
+    end
+
+    def select_sorted_versions(package, range)
+      range.select_versions(@sorted_versions[package])
+    end
+
+    def select_all_versions(package, range)
+      range.select_versions(@all_versions[package])
     end
 
     def other_specs_matching_message(specs, requirement)

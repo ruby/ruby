@@ -12,7 +12,7 @@ describe :dir_glob, shared: true do
   end
 
   it "raises an Encoding::CompatibilityError if the argument encoding is not compatible with US-ASCII" do
-    pattern = "file*".force_encoding Encoding::UTF_16BE
+    pattern = "file*".dup.force_encoding Encoding::UTF_16BE
     -> { Dir.send(@method, pattern) }.should raise_error(Encoding::CompatibilityError)
   end
 

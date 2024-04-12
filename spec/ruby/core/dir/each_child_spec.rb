@@ -86,6 +86,19 @@ describe "Dir#each_child" do
     @dir.each_child { |f| f }.should == @dir
   end
 
+  it "returns the same result when called repeatedly" do
+    @dir = Dir.open DirSpecs.mock_dir
+
+    a = []
+    @dir.each {|dir| a << dir}
+
+    b = []
+    @dir.each {|dir| b << dir}
+
+    a.sort.should == b.sort
+    a.sort.should == DirSpecs.expected_paths
+  end
+
   describe "when no block is given" do
     it "returns an Enumerator" do
       @dir = Dir.new(DirSpecs.mock_dir)

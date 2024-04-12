@@ -362,110 +362,6 @@ module Prism
       assert_prism_eval("$pit = 1")
     end
 
-    def test_IndexAndWriteNode
-      assert_prism_eval("[0][0] &&= 1")
-      assert_prism_eval("[nil][0] &&= 1")
-
-      # Testing `[]` with a block passed in
-      assert_prism_eval(<<-CODE)
-        class CustomHash < Hash
-          def []=(key, value, &block)
-            block ? super(block.call(key), value) : super(key, value)
-          end
-        end
-
-        hash = CustomHash.new
-
-        # Call the custom method with a block that modifies
-        # the key before assignment
-        hash["KEY"] = "test"
-        hash["key", &(Proc.new { _1.upcase })] &&= "value"
-        hash
-      CODE
-
-      # Test with keyword arguments
-      assert_prism_eval(<<~RUBY)
-        h = Object.new
-        def h.[](**b) = 0
-        def h.[]=(*a, **b); end
-
-        h[foo: 1] &&= 2
-      RUBY
-
-      # Test with keyword splat
-      assert_prism_eval(<<~RUBY)
-        h = Object.new
-        def h.[](**b) = 1
-        def h.[]=(*a, **b); end
-
-        h[**{}] &&= 2
-      RUBY
-    end
-
-    def test_IndexOrWriteNode
-      assert_prism_eval("[0][0] ||= 1")
-      assert_prism_eval("[nil][0] ||= 1")
-
-      # Testing `[]` with a block passed in
-      assert_prism_eval(<<-CODE)
-        class CustomHash < Hash
-          def []=(key, value, &block)
-            super(block.call(key), value)
-          end
-        end
-
-        hash = CustomHash.new
-
-        # Call the custom method with a block that modifies
-        # the key before assignment
-        hash["key", &(Proc.new { _1.upcase })] ||= "value"
-        hash
-      CODE
-
-      # Test with keyword arguments
-      assert_prism_eval(<<~RUBY)
-        h = Object.new
-        def h.[](**b) = 0
-        def h.[]=(*a, **b); end
-
-        h[foo: 1] ||= 2
-      RUBY
-
-      # Test with keyword splat
-      assert_prism_eval(<<~RUBY)
-        h = Object.new
-        def h.[](**b) = nil
-        def h.[]=(*a, **b); end
-
-        h[**{}] ||= 2
-      RUBY
-    end
-
-    def test_IndexOperatorWriteNode
-      assert_prism_eval("[0][0] += 1")
-
-      # Testing `[]` with a block passed in
-      assert_prism_eval(<<-CODE)
-        class CustomHash < Hash
-          def [](key, &block)
-            block ? super(block.call(key)) : super(key)
-          end
-
-          def []=(key, value, &block)
-            block ? super(block.call(key), value) : super(key, value)
-          end
-        end
-
-        hash = CustomHash.new
-
-        # Call the custom method with a block that modifies
-        # the key before assignment
-        hash["KEY"] = "test"
-        hash["key", &(Proc.new { _1.upcase })] &&= "value"
-        hash
-      CODE
-    end
-
     def test_InstanceVariableAndWriteNode
       assert_prism_eval("@pit = 0; @pit &&= 1")
     end
@@ -696,22 +592,16 @@ module Prism
       assert_prism_eval('$pit = 1; "1 #$pit 1"')
       assert_prism_eval('"1 #{1 + 2} 1"')
       assert_prism_eval('"Prism" "::" "TestCompilePrism"')
-      assert_prism_eval('("a""b").frozen?')
-      assert_prism_eval(<<-CODE)
+      assert_prism_eval(<<-'RUBY')
         # frozen_string_literal: true
 
-        ("a""b").frozen?
-      CODE
-      assert_prism_eval(<<-CODE)
+        !("a""b""#{1}").frozen?
+      RUBY
+      assert_prism_eval(<<-'RUBY')
         # frozen_string_literal: true
 
-        ("a""b""#{1}").frozen?
-      CODE
-      assert_prism_eval(<<-CODE)
-        # frozen_string_literal: true
-
-        ("a""#{1}""b").frozen?
-      CODE
+        !("a""#{1}""b").frozen?
+      RUBY
 
       # Test encoding of interpolated strings
       assert_prism_eval(<<~'RUBY')
@@ -722,6 +612,15 @@ module Prism
         b = "#{a}" << "Bar"
         [a, b, b.encoding]
       RUBY
+    end
+
+    def test_concatenated_StringNode
+      assert_prism_eval('("a""b").frozen?')
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b").frozen?
+      CODE
     end
 
     def test_InterpolatedSymbolNode
@@ -777,7 +676,9 @@ module Prism
     def test_StringNode
       assert_prism_eval('"pit"')
       assert_prism_eval('"a".frozen?')
+    end
 
+    def test_StringNode_frozen_string_literal_true
       [
         # Test that string literal is frozen
         <<~RUBY,
@@ -792,6 +693,31 @@ module Prism
       ].each do |src|
         assert_prism_eval(src, raw: true)
       end
+    end
+
+    def test_StringNode_frozen_string_literal_false
+      [
+        # Test that string literal is frozen
+        <<~RUBY,
+          # frozen_string_literal: false
+          !"a".frozen?
+        RUBY
+        # Test that two string literals with the same contents are the same string
+        <<~RUBY,
+          # frozen_string_literal: false
+          !"hello".equal?("hello")
+        RUBY
+      ].each do |src|
+        assert_prism_eval(src, raw: true)
+      end
+    end
+
+    def test_StringNode_frozen_string_literal_default
+      # Test that string literal is chilled
+      assert_prism_eval('"a".frozen?')
+
+      # Test that two identical chilled string literals aren't the same object
+      assert_prism_eval('!"hello".equal?("hello")')
     end
 
     def test_SymbolNode
@@ -2012,24 +1938,6 @@ end
         obj[*[1]] = 3
       RUBY
 
-      # Test passing block inside of []=
-      assert_prism_eval(<<~RUBY)
-        obj = Object.new
-        def obj.[]=(a); end
-
-        p = proc {}
-        obj[&p] = 4
-      RUBY
-
-      # Test splat and block inside of []=
-      assert_prism_eval(<<~RUBY)
-        obj = Object.new
-        def obj.[]=(a, b); end
-
-        p = proc {}
-        obj[*[1], &p] = 4
-      RUBY
-
       assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
         prism_opt_var_trail_hash("a")
@@ -2742,27 +2650,28 @@ end
 
     private
 
-    def compare_eval(source, raw:)
+    def compare_eval(source, raw:, location:)
       source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
       ruby_eval = RubyVM::InstructionSequence.compile(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
 
       if ruby_eval.is_a? Proc
-        assert_equal ruby_eval.class, prism_eval.class
+        assert_equal ruby_eval.class, prism_eval.class, "@#{location.path}:#{location.lineno}"
       else
-        assert_equal ruby_eval, prism_eval
+        assert_equal ruby_eval, prism_eval, "@#{location.path}:#{location.lineno}"
       end
     end
 
     def assert_prism_eval(source, raw: false)
+      location = caller_locations(1, 1).first
       $VERBOSE, verbose_bak = nil, $VERBOSE
 
       begin
-        compare_eval(source, raw:)
+        compare_eval(source, raw:, location:)
 
         # Test "popped" functionality
-        compare_eval("#{source}; 1", raw:)
+        compare_eval("#{source}; 1", raw:, location:)
       ensure
         $VERBOSE = verbose_bak
       end

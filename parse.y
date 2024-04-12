@@ -19,8 +19,6 @@
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
 #define YYSTACK_USE_ALLOCA 0
-#define YYLTYPE rb_code_location_t
-#define YYLTYPE_IS_DECLARED 1
 
 /* For Ripper */
 #ifdef RUBY_EXTCONF_H
@@ -51,7 +49,6 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
-#include "internal/imemo.h"
 #include "internal/io.h"
 #include "internal/numeric.h"
 #include "internal/parse.h"
@@ -74,6 +71,19 @@
 #include "symbol.h"
 
 #ifndef RIPPER
+static VALUE
+syntax_error_new(void)
+{
+    return rb_class_new_instance(0, 0, rb_eSyntaxError);
+}
+#endif
+
+static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
+
+#define compile_callback rb_suppress_tracing
+VALUE rb_io_gets_internal(VALUE io);
+#endif /* !UNIVERSAL_PARSER */
+
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
 
 static int
@@ -117,15 +127,8 @@ rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
             rb_parser_string_hash_cmp(n1->string, n2->string));
 }
 
-static int
-node_integer_line_cmp(const NODE *node_i, const NODE *line)
-{
-    VALUE num = rb_node_integer_literal_val(node_i);
-
-    return !(FIXNUM_P(num) && line->nd_loc.beg_pos.lineno == FIX2INT(num));
-}
-
 static st_index_t rb_parser_str_hash(rb_parser_string_t *str);
+static st_index_t rb_char_p_hash(const char *c);
 
 static int
 literal_cmp(st_data_t val, st_data_t lit)
@@ -136,22 +139,6 @@ literal_cmp(st_data_t val, st_data_t lit)
     NODE *node_lit = RNODE(lit);
     enum node_type type_val = nd_type(node_val);
     enum node_type type_lit = nd_type(node_lit);
-
-    /* Special case for Integer and __LINE__ */
-    if (type_val == NODE_INTEGER && type_lit == NODE_LINE) {
-        return node_integer_line_cmp(node_val, node_lit);
-    }
-    if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
-        return node_integer_line_cmp(node_lit, node_val);
-    }
-
-    /* Special case for String and __FILE__ */
-    if (type_val == NODE_STR && type_lit == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
-    }
-    if (type_lit == NODE_STR && type_val == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
-    }
 
     if (type_val != type_lit) {
         return -1;
@@ -179,7 +166,11 @@ literal_cmp(st_data_t val, st_data_t lit)
       case NODE_ENCODING:
         return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
       default:
+#ifdef UNIVERSAL_PARSER
+        abort();
+#else
         rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
+#endif
     }
 }
 
@@ -187,23 +178,17 @@ static st_index_t
 literal_hash(st_data_t a)
 {
     NODE *node = (NODE *)a;
-    VALUE val;
     enum node_type type = nd_type(node);
 
     switch (type) {
       case NODE_INTEGER:
-        val = rb_node_integer_literal_val(node);
-        if (!FIXNUM_P(val)) val = rb_big_hash(val);
-        return FIX2LONG(val);
+        return rb_char_p_hash(RNODE_INTEGER(node)->val);
       case NODE_FLOAT:
-        val = rb_node_float_literal_val(node);
-        return rb_dbl_long_hash(RFLOAT_VALUE(val));
+        return rb_char_p_hash(RNODE_FLOAT(node)->val);
       case NODE_RATIONAL:
-        val = rb_node_rational_literal_val(node);
-        return rb_rational_hash(val);
+        return rb_char_p_hash(RNODE_RATIONAL(node)->val);
       case NODE_IMAGINARY:
-        val = rb_node_imaginary_literal_val(node);
-        return rb_complex_hash(val);
+        return rb_char_p_hash(RNODE_IMAGINARY(node)->val);
       case NODE_STR:
         return rb_parser_str_hash(RNODE_STR(node)->string);
       case NODE_SYM:
@@ -211,32 +196,19 @@ literal_hash(st_data_t a)
       case NODE_REGX:
         return rb_parser_str_hash(RNODE_REGX(node)->string);
       case NODE_LINE:
-        /* Same with NODE_INTEGER FIXNUM case */
         return (st_index_t)node->nd_loc.beg_pos.lineno;
       case NODE_FILE:
-        /* Same with NODE_STR */
         return rb_parser_str_hash(RNODE_FILE(node)->path);
       case NODE_ENCODING:
         return (st_index_t)RNODE_ENCODING(node)->enc;
       default:
+#ifdef UNIVERSAL_PARSER
+        abort();
+#else
         rb_bug("unexpected node: %s", ruby_node_name(type));
+#endif
     }
 }
-
-static VALUE
-syntax_error_new(void)
-{
-    return rb_class_new_instance(0, 0, rb_eSyntaxError);
-}
-#endif
-
-static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
-
-#define compile_callback rb_suppress_tracing
-VALUE rb_io_gets_internal(VALUE io);
-
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
-#endif /* !UNIVERSAL_PARSER */
 
 static inline int
 parse_isascii(int c)
@@ -326,13 +298,6 @@ VALUE rb_ripper_none;
 #include "ripper_init.h"
 #endif
 
-enum shareability {
-    shareable_none,
-    shareable_literal,
-    shareable_copy,
-    shareable_everything,
-};
-
 enum rescue_context {
     before_rescue,
     after_rescue,
@@ -346,7 +311,7 @@ struct lex_context {
     unsigned int in_argdef: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
-    BITFIELD(enum shareability, shareable_constant_value, 2);
+    BITFIELD(enum rb_parser_shareability, shareable_constant_value, 2);
     BITFIELD(enum rescue_context, in_rescue, 2);
 };
 
@@ -367,8 +332,6 @@ RBIMPL_WARNING_POP()
 
 #define NO_LEX_CTXT (struct lex_context){0}
 
-#define AREF(ary, i) RARRAY_AREF(ary, i)
-
 #ifndef WARN_PAST_SCOPE
 # define WARN_PAST_SCOPE 0
 #endif
@@ -377,10 +340,6 @@ RBIMPL_WARNING_POP()
 
 #define yydebug (p->debug)	/* disable the global variable definition */
 
-#define YYMALLOC(size)		rb_parser_malloc(p, (size))
-#define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
-#define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
-#define YYFREE(ptr)		rb_parser_free(p, (ptr))
 #define YYFPRINTF(out, ...)	rb_parser_printf(p, __VA_ARGS__)
 #define YY_LOCATION_PRINT(File, loc, p) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
@@ -522,8 +481,6 @@ typedef struct parser_string_buffer {
                      token
 */
 struct parser_params {
-    rb_imemo_tmpbuf_t *heap;
-
     YYSTYPE *lval;
     YYLTYPE *yylloc;
 
@@ -567,7 +524,7 @@ struct parser_params {
     VALUE ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
-    VALUE case_labels;
+    st_table *case_labels;
     rb_node_exits_t *exits;
 
     VALUE debug_buffer;
@@ -634,7 +591,7 @@ struct parser_params {
     /* id for terms */
     int token_id;
     /* Array for term tokens */
-    VALUE tokens;
+    rb_parser_ary_t *tokens;
 #else
     /* Ripper only */
 
@@ -875,170 +832,170 @@ peek_end_expect_token_locations(struct parser_params *p)
     return p->end_expect_token_locations;
 }
 
-static ID
-parser_token2id(struct parser_params *p, enum yytokentype tok)
+static const char *
+parser_token2char(struct parser_params *p, enum yytokentype tok)
 {
     switch ((int) tok) {
-#define TOKEN2ID(tok) case tok: return rb_intern(#tok);
-#define TOKEN2ID2(tok, name) case tok: return rb_intern(name);
-      TOKEN2ID2(' ', "words_sep")
-      TOKEN2ID2('!', "!")
-      TOKEN2ID2('%', "%");
-      TOKEN2ID2('&', "&");
-      TOKEN2ID2('*', "*");
-      TOKEN2ID2('+', "+");
-      TOKEN2ID2('-', "-");
-      TOKEN2ID2('/', "/");
-      TOKEN2ID2('<', "<");
-      TOKEN2ID2('=', "=");
-      TOKEN2ID2('>', ">");
-      TOKEN2ID2('?', "?");
-      TOKEN2ID2('^', "^");
-      TOKEN2ID2('|', "|");
-      TOKEN2ID2('~', "~");
-      TOKEN2ID2(':', ":");
-      TOKEN2ID2(',', ",");
-      TOKEN2ID2('.', ".");
-      TOKEN2ID2(';', ";");
-      TOKEN2ID2('`', "`");
-      TOKEN2ID2('\n', "nl");
-      TOKEN2ID2('{', "{");
-      TOKEN2ID2('}', "}");
-      TOKEN2ID2('[', "[");
-      TOKEN2ID2(']', "]");
-      TOKEN2ID2('(', "(");
-      TOKEN2ID2(')', ")");
-      TOKEN2ID2('\\', "backslash");
-      TOKEN2ID(keyword_class);
-      TOKEN2ID(keyword_module);
-      TOKEN2ID(keyword_def);
-      TOKEN2ID(keyword_undef);
-      TOKEN2ID(keyword_begin);
-      TOKEN2ID(keyword_rescue);
-      TOKEN2ID(keyword_ensure);
-      TOKEN2ID(keyword_end);
-      TOKEN2ID(keyword_if);
-      TOKEN2ID(keyword_unless);
-      TOKEN2ID(keyword_then);
-      TOKEN2ID(keyword_elsif);
-      TOKEN2ID(keyword_else);
-      TOKEN2ID(keyword_case);
-      TOKEN2ID(keyword_when);
-      TOKEN2ID(keyword_while);
-      TOKEN2ID(keyword_until);
-      TOKEN2ID(keyword_for);
-      TOKEN2ID(keyword_break);
-      TOKEN2ID(keyword_next);
-      TOKEN2ID(keyword_redo);
-      TOKEN2ID(keyword_retry);
-      TOKEN2ID(keyword_in);
-      TOKEN2ID(keyword_do);
-      TOKEN2ID(keyword_do_cond);
-      TOKEN2ID(keyword_do_block);
-      TOKEN2ID(keyword_do_LAMBDA);
-      TOKEN2ID(keyword_return);
-      TOKEN2ID(keyword_yield);
-      TOKEN2ID(keyword_super);
-      TOKEN2ID(keyword_self);
-      TOKEN2ID(keyword_nil);
-      TOKEN2ID(keyword_true);
-      TOKEN2ID(keyword_false);
-      TOKEN2ID(keyword_and);
-      TOKEN2ID(keyword_or);
-      TOKEN2ID(keyword_not);
-      TOKEN2ID(modifier_if);
-      TOKEN2ID(modifier_unless);
-      TOKEN2ID(modifier_while);
-      TOKEN2ID(modifier_until);
-      TOKEN2ID(modifier_rescue);
-      TOKEN2ID(keyword_alias);
-      TOKEN2ID(keyword_defined);
-      TOKEN2ID(keyword_BEGIN);
-      TOKEN2ID(keyword_END);
-      TOKEN2ID(keyword__LINE__);
-      TOKEN2ID(keyword__FILE__);
-      TOKEN2ID(keyword__ENCODING__);
-      TOKEN2ID(tIDENTIFIER);
-      TOKEN2ID(tFID);
-      TOKEN2ID(tGVAR);
-      TOKEN2ID(tIVAR);
-      TOKEN2ID(tCONSTANT);
-      TOKEN2ID(tCVAR);
-      TOKEN2ID(tLABEL);
-      TOKEN2ID(tINTEGER);
-      TOKEN2ID(tFLOAT);
-      TOKEN2ID(tRATIONAL);
-      TOKEN2ID(tIMAGINARY);
-      TOKEN2ID(tCHAR);
-      TOKEN2ID(tNTH_REF);
-      TOKEN2ID(tBACK_REF);
-      TOKEN2ID(tSTRING_CONTENT);
-      TOKEN2ID(tREGEXP_END);
-      TOKEN2ID(tDUMNY_END);
-      TOKEN2ID(tSP);
-      TOKEN2ID(tUPLUS);
-      TOKEN2ID(tUMINUS);
-      TOKEN2ID(tPOW);
-      TOKEN2ID(tCMP);
-      TOKEN2ID(tEQ);
-      TOKEN2ID(tEQQ);
-      TOKEN2ID(tNEQ);
-      TOKEN2ID(tGEQ);
-      TOKEN2ID(tLEQ);
-      TOKEN2ID(tANDOP);
-      TOKEN2ID(tOROP);
-      TOKEN2ID(tMATCH);
-      TOKEN2ID(tNMATCH);
-      TOKEN2ID(tDOT2);
-      TOKEN2ID(tDOT3);
-      TOKEN2ID(tBDOT2);
-      TOKEN2ID(tBDOT3);
-      TOKEN2ID(tAREF);
-      TOKEN2ID(tASET);
-      TOKEN2ID(tLSHFT);
-      TOKEN2ID(tRSHFT);
-      TOKEN2ID(tANDDOT);
-      TOKEN2ID(tCOLON2);
-      TOKEN2ID(tCOLON3);
-      TOKEN2ID(tOP_ASGN);
-      TOKEN2ID(tASSOC);
-      TOKEN2ID(tLPAREN);
-      TOKEN2ID(tLPAREN_ARG);
-      TOKEN2ID(tRPAREN);
-      TOKEN2ID(tLBRACK);
-      TOKEN2ID(tLBRACE);
-      TOKEN2ID(tLBRACE_ARG);
-      TOKEN2ID(tSTAR);
-      TOKEN2ID(tDSTAR);
-      TOKEN2ID(tAMPER);
-      TOKEN2ID(tLAMBDA);
-      TOKEN2ID(tSYMBEG);
-      TOKEN2ID(tSTRING_BEG);
-      TOKEN2ID(tXSTRING_BEG);
-      TOKEN2ID(tREGEXP_BEG);
-      TOKEN2ID(tWORDS_BEG);
-      TOKEN2ID(tQWORDS_BEG);
-      TOKEN2ID(tSYMBOLS_BEG);
-      TOKEN2ID(tQSYMBOLS_BEG);
-      TOKEN2ID(tSTRING_END);
-      TOKEN2ID(tSTRING_DEND);
-      TOKEN2ID(tSTRING_DBEG);
-      TOKEN2ID(tSTRING_DVAR);
-      TOKEN2ID(tLAMBEG);
-      TOKEN2ID(tLABEL_END);
-      TOKEN2ID(tIGNORED_NL);
-      TOKEN2ID(tCOMMENT);
-      TOKEN2ID(tEMBDOC_BEG);
-      TOKEN2ID(tEMBDOC);
-      TOKEN2ID(tEMBDOC_END);
-      TOKEN2ID(tHEREDOC_BEG);
-      TOKEN2ID(tHEREDOC_END);
-      TOKEN2ID(k__END__);
-      TOKEN2ID(tLOWEST);
-      TOKEN2ID(tUMINUS_NUM);
-      TOKEN2ID(tLAST_TOKEN);
-#undef TOKEN2ID
-#undef TOKEN2ID2
+#define TOKEN2CHAR(tok) case tok: return (#tok);
+#define TOKEN2CHAR2(tok, name) case tok: return (name);
+      TOKEN2CHAR2(' ', "word_sep");
+      TOKEN2CHAR2('!', "!")
+      TOKEN2CHAR2('%', "%");
+      TOKEN2CHAR2('&', "&");
+      TOKEN2CHAR2('*', "*");
+      TOKEN2CHAR2('+', "+");
+      TOKEN2CHAR2('-', "-");
+      TOKEN2CHAR2('/', "/");
+      TOKEN2CHAR2('<', "<");
+      TOKEN2CHAR2('=', "=");
+      TOKEN2CHAR2('>', ">");
+      TOKEN2CHAR2('?', "?");
+      TOKEN2CHAR2('^', "^");
+      TOKEN2CHAR2('|', "|");
+      TOKEN2CHAR2('~', "~");
+      TOKEN2CHAR2(':', ":");
+      TOKEN2CHAR2(',', ",");
+      TOKEN2CHAR2('.', ".");
+      TOKEN2CHAR2(';', ";");
+      TOKEN2CHAR2('`', "`");
+      TOKEN2CHAR2('\n', "nl");
+      TOKEN2CHAR2('{', "\"{\"");
+      TOKEN2CHAR2('}', "\"}\"");
+      TOKEN2CHAR2('[', "\"[\"");
+      TOKEN2CHAR2(']', "\"]\"");
+      TOKEN2CHAR2('(', "\"(\"");
+      TOKEN2CHAR2(')', "\")\"");
+      TOKEN2CHAR2('\\', "backslash");
+      TOKEN2CHAR(keyword_class);
+      TOKEN2CHAR(keyword_module);
+      TOKEN2CHAR(keyword_def);
+      TOKEN2CHAR(keyword_undef);
+      TOKEN2CHAR(keyword_begin);
+      TOKEN2CHAR(keyword_rescue);
+      TOKEN2CHAR(keyword_ensure);
+      TOKEN2CHAR(keyword_end);
+      TOKEN2CHAR(keyword_if);
+      TOKEN2CHAR(keyword_unless);
+      TOKEN2CHAR(keyword_then);
+      TOKEN2CHAR(keyword_elsif);
+      TOKEN2CHAR(keyword_else);
+      TOKEN2CHAR(keyword_case);
+      TOKEN2CHAR(keyword_when);
+      TOKEN2CHAR(keyword_while);
+      TOKEN2CHAR(keyword_until);
+      TOKEN2CHAR(keyword_for);
+      TOKEN2CHAR(keyword_break);
+      TOKEN2CHAR(keyword_next);
+      TOKEN2CHAR(keyword_redo);
+      TOKEN2CHAR(keyword_retry);
+      TOKEN2CHAR(keyword_in);
+      TOKEN2CHAR(keyword_do);
+      TOKEN2CHAR(keyword_do_cond);
+      TOKEN2CHAR(keyword_do_block);
+      TOKEN2CHAR(keyword_do_LAMBDA);
+      TOKEN2CHAR(keyword_return);
+      TOKEN2CHAR(keyword_yield);
+      TOKEN2CHAR(keyword_super);
+      TOKEN2CHAR(keyword_self);
+      TOKEN2CHAR(keyword_nil);
+      TOKEN2CHAR(keyword_true);
+      TOKEN2CHAR(keyword_false);
+      TOKEN2CHAR(keyword_and);
+      TOKEN2CHAR(keyword_or);
+      TOKEN2CHAR(keyword_not);
+      TOKEN2CHAR(modifier_if);
+      TOKEN2CHAR(modifier_unless);
+      TOKEN2CHAR(modifier_while);
+      TOKEN2CHAR(modifier_until);
+      TOKEN2CHAR(modifier_rescue);
+      TOKEN2CHAR(keyword_alias);
+      TOKEN2CHAR(keyword_defined);
+      TOKEN2CHAR(keyword_BEGIN);
+      TOKEN2CHAR(keyword_END);
+      TOKEN2CHAR(keyword__LINE__);
+      TOKEN2CHAR(keyword__FILE__);
+      TOKEN2CHAR(keyword__ENCODING__);
+      TOKEN2CHAR(tIDENTIFIER);
+      TOKEN2CHAR(tFID);
+      TOKEN2CHAR(tGVAR);
+      TOKEN2CHAR(tIVAR);
+      TOKEN2CHAR(tCONSTANT);
+      TOKEN2CHAR(tCVAR);
+      TOKEN2CHAR(tLABEL);
+      TOKEN2CHAR(tINTEGER);
+      TOKEN2CHAR(tFLOAT);
+      TOKEN2CHAR(tRATIONAL);
+      TOKEN2CHAR(tIMAGINARY);
+      TOKEN2CHAR(tCHAR);
+      TOKEN2CHAR(tNTH_REF);
+      TOKEN2CHAR(tBACK_REF);
+      TOKEN2CHAR(tSTRING_CONTENT);
+      TOKEN2CHAR(tREGEXP_END);
+      TOKEN2CHAR(tDUMNY_END);
+      TOKEN2CHAR(tSP);
+      TOKEN2CHAR(tUPLUS);
+      TOKEN2CHAR(tUMINUS);
+      TOKEN2CHAR(tPOW);
+      TOKEN2CHAR(tCMP);
+      TOKEN2CHAR(tEQ);
+      TOKEN2CHAR(tEQQ);
+      TOKEN2CHAR(tNEQ);
+      TOKEN2CHAR(tGEQ);
+      TOKEN2CHAR(tLEQ);
+      TOKEN2CHAR(tANDOP);
+      TOKEN2CHAR(tOROP);
+      TOKEN2CHAR(tMATCH);
+      TOKEN2CHAR(tNMATCH);
+      TOKEN2CHAR(tDOT2);
+      TOKEN2CHAR(tDOT3);
+      TOKEN2CHAR(tBDOT2);
+      TOKEN2CHAR(tBDOT3);
+      TOKEN2CHAR(tAREF);
+      TOKEN2CHAR(tASET);
+      TOKEN2CHAR(tLSHFT);
+      TOKEN2CHAR(tRSHFT);
+      TOKEN2CHAR(tANDDOT);
+      TOKEN2CHAR(tCOLON2);
+      TOKEN2CHAR(tCOLON3);
+      TOKEN2CHAR(tOP_ASGN);
+      TOKEN2CHAR(tASSOC);
+      TOKEN2CHAR(tLPAREN);
+      TOKEN2CHAR(tLPAREN_ARG);
+      TOKEN2CHAR(tRPAREN);
+      TOKEN2CHAR(tLBRACK);
+      TOKEN2CHAR(tLBRACE);
+      TOKEN2CHAR(tLBRACE_ARG);
+      TOKEN2CHAR(tSTAR);
+      TOKEN2CHAR(tDSTAR);
+      TOKEN2CHAR(tAMPER);
+      TOKEN2CHAR(tLAMBDA);
+      TOKEN2CHAR(tSYMBEG);
+      TOKEN2CHAR(tSTRING_BEG);
+      TOKEN2CHAR(tXSTRING_BEG);
+      TOKEN2CHAR(tREGEXP_BEG);
+      TOKEN2CHAR(tWORDS_BEG);
+      TOKEN2CHAR(tQWORDS_BEG);
+      TOKEN2CHAR(tSYMBOLS_BEG);
+      TOKEN2CHAR(tQSYMBOLS_BEG);
+      TOKEN2CHAR(tSTRING_END);
+      TOKEN2CHAR(tSTRING_DEND);
+      TOKEN2CHAR(tSTRING_DBEG);
+      TOKEN2CHAR(tSTRING_DVAR);
+      TOKEN2CHAR(tLAMBEG);
+      TOKEN2CHAR(tLABEL_END);
+      TOKEN2CHAR(tIGNORED_NL);
+      TOKEN2CHAR(tCOMMENT);
+      TOKEN2CHAR(tEMBDOC_BEG);
+      TOKEN2CHAR(tEMBDOC);
+      TOKEN2CHAR(tEMBDOC_END);
+      TOKEN2CHAR(tHEREDOC_BEG);
+      TOKEN2CHAR(tHEREDOC_END);
+      TOKEN2CHAR(k__END__);
+      TOKEN2CHAR(tLOWEST);
+      TOKEN2CHAR(tUMINUS_NUM);
+      TOKEN2CHAR(tLAST_TOKEN);
+#undef TOKEN2CHAR
+#undef TOKEN2CHAR2
     }
 
     rb_bug("parser_token2id: unknown token %d", tok);
@@ -1125,13 +1082,13 @@ static rb_node_lasgn_t *rb_node_lasgn_new(struct parser_params *p, ID nd_vid, NO
 static rb_node_dasgn_t *rb_node_dasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_gasgn_t *rb_node_gasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_iasgn_t *rb_node_iasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
-static rb_node_cdecl_t *rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc);
+static rb_node_cdecl_t *rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, enum rb_parser_shareability shareability, const YYLTYPE *loc);
 static rb_node_cvasgn_t *rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_asgn1_t *rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *index, NODE *rvalue, const YYLTYPE *loc);
 static rb_node_op_asgn2_t *rb_node_op_asgn2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, ID nd_vid, ID nd_mid, bool nd_aid, const YYLTYPE *loc);
 static rb_node_op_asgn_or_t *rb_node_op_asgn_or_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_asgn_and_t *rb_node_op_asgn_and_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
-static rb_node_op_cdecl_t *rb_node_op_cdecl_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, ID nd_aid, const YYLTYPE *loc);
+static rb_node_op_cdecl_t *rb_node_op_cdecl_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, ID nd_aid, enum rb_parser_shareability shareability, const YYLTYPE *loc);
 static rb_node_call_t *rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_opcall_t *rb_node_opcall_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_fcall_t *rb_node_fcall_new(struct parser_params *p, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
@@ -1155,7 +1112,6 @@ static rb_node_nth_ref_t *rb_node_nth_ref_new(struct parser_params *p, long nd_n
 static rb_node_back_ref_t *rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc);
 static rb_node_match2_t *rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_match3_t *rb_node_match3_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
-static rb_node_lit_t *rb_node_lit_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
 static rb_node_integer_t * rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc);
 static rb_node_float_t * rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc);
 static rb_node_rational_t * rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_point, const YYLTYPE *loc);
@@ -1169,7 +1125,7 @@ static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body
 static rb_node_regx_t *rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc);
+static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLTYPE *loc);
 static rb_node_opt_arg_t *rb_node_opt_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_kw_arg_t *rb_node_kw_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_postarg_t *rb_node_postarg_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
@@ -1234,13 +1190,13 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
 #define NEW_GASGN(v,val,loc) (NODE *)rb_node_gasgn_new(p,v,val,loc)
 #define NEW_IASGN(v,val,loc) (NODE *)rb_node_iasgn_new(p,v,val,loc)
-#define NEW_CDECL(v,val,path,loc) (NODE *)rb_node_cdecl_new(p,v,val,path,loc)
+#define NEW_CDECL(v,val,path,share,loc) (NODE *)rb_node_cdecl_new(p,v,val,path,share,loc)
 #define NEW_CVASGN(v,val,loc) (NODE *)rb_node_cvasgn_new(p,v,val,loc)
 #define NEW_OP_ASGN1(r,id,idx,rval,loc) (NODE *)rb_node_op_asgn1_new(p,r,id,idx,rval,loc)
 #define NEW_OP_ASGN2(r,t,i,o,val,loc) (NODE *)rb_node_op_asgn2_new(p,r,val,i,o,t,loc)
 #define NEW_OP_ASGN_OR(i,val,loc) (NODE *)rb_node_op_asgn_or_new(p,i,val,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) (NODE *)rb_node_op_asgn_and_new(p,i,val,loc)
-#define NEW_OP_CDECL(v,op,val,loc) (NODE *)rb_node_op_cdecl_new(p,v,val,op,loc)
+#define NEW_OP_CDECL(v,op,val,share,loc) (NODE *)rb_node_op_cdecl_new(p,v,val,op,share,loc)
 #define NEW_CALL(r,m,a,loc) (NODE *)rb_node_call_new(p,r,m,a,loc)
 #define NEW_OPCALL(r,m,a,loc) (NODE *)rb_node_opcall_new(p,r,m,a,loc)
 #define NEW_FCALL(m,a,loc) rb_node_fcall_new(p,m,a,loc)
@@ -1264,7 +1220,6 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_BACK_REF(n,loc) (NODE *)rb_node_back_ref_new(p,n,loc)
 #define NEW_MATCH2(n1,n2,loc) (NODE *)rb_node_match2_new(p,n1,n2,loc)
 #define NEW_MATCH3(r,n2,loc) (NODE *)rb_node_match3_new(p,r,n2,loc)
-#define NEW_LIT(l,loc) (NODE *)rb_node_lit_new(p,l,loc)
 #define NEW_INTEGER(val, base,loc) (NODE *)rb_node_integer_new(p,val,base,loc)
 #define NEW_FLOAT(val,loc) (NODE *)rb_node_float_new(p,val,loc)
 #define NEW_RATIONAL(val,base,seen_point,loc) (NODE *)rb_node_rational_new(p,val,base,seen_point,loc)
@@ -1615,6 +1570,9 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define RE_OPTION_MASK  0xff
 #define RE_OPTION_ARG_ENCODING_NONE 32
 
+#define CHECK_LITERAL_WHEN (st_table *)1
+#define CASE_LABELS_ENABLED_P(case_labels) (case_labels && case_labels != CHECK_LITERAL_WHEN)
+
 #define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(p, yyres, yystr)
 size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
 
@@ -1847,7 +1805,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
 # define WARN_ID(i) rb_id2str(i)
-# define WARN_IVAL(i) i
 # define PRIsWARN PRIsVALUE
 # define rb_warn0L_experimental(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
@@ -1870,7 +1827,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S(s) s
 # define WARN_I(i) i
 # define WARN_ID(i) rb_id2name(i)
-# define WARN_IVAL(i) NUM2INT(i)
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
@@ -2063,8 +2019,9 @@ get_nd_args(struct parser_params *p, NODE *node)
         return RNODE_FCALL(node)->nd_args;
       case NODE_QCALL:
         return RNODE_QCALL(node)->nd_args;
-      case NODE_VCALL:
       case NODE_SUPER:
+        return RNODE_SUPER(node)->nd_args;
+      case NODE_VCALL:
       case NODE_ZSUPER:
       case NODE_YIELD:
       case NODE_RETURN:
@@ -2077,8 +2034,6 @@ get_nd_args(struct parser_params *p, NODE *node)
     }
 }
 
-#ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
 static st_index_t
 djb2(const uint8_t *str, size_t len)
 {
@@ -2096,8 +2051,6 @@ parser_memhash(const void *ptr, long len)
 {
     return djb2(ptr, len);
 }
-#endif
-#endif
 
 #define PARSER_STRING_PTR(str) (str->ptr)
 #define PARSER_STRING_LEN(str) (str->len)
@@ -2161,15 +2114,17 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
     xfree(str);
 }
 
-#ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)
 {
     return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
 }
-#endif
-#endif
+
+static st_index_t
+rb_char_p_hash(const char *c)
+{
+    return parser_memhash((const void *)c, strlen(c));
+}
 
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
@@ -2565,8 +2520,6 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
     return str;
 }
 
-#ifndef UNIVERSAL_PARSER
-#ifndef RIPPER
 # define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len,                            \
@@ -2586,8 +2539,68 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
             enc1 != enc2 ||
             memcmp(ptr1, ptr2, len1) != 0);
 }
-#endif
-#endif
+
+#ifndef RIPPER
+static void
+rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
+{
+    long i;
+    if (ary->capa < len) {
+        ary->capa = len;
+        ary->data = xrealloc(ary->data, sizeof(void *) * len);
+        for (i = ary->len; i < len; i++) {
+            ary->data[i] = 0;
+        }
+    }
+}
+
+static rb_parser_ary_t *
+rb_parser_ary_new_capa(rb_parser_t *p, long len)
+{
+    if (len < 0) {
+        rb_bug("negative array size (or size too big): %ld", len);
+    }
+    rb_parser_ary_t *ary = xcalloc(1, sizeof(rb_parser_ary_t));
+    ary->len = 0;
+    ary->capa = len;
+    if (0 < len) {
+        ary->data = (rb_parser_ast_token_t **)xcalloc(len, sizeof(rb_parser_ast_token_t *));
+    }
+    else {
+        ary->data = NULL;
+    }
+    return ary;
+}
+#define rb_parser_ary_new2 rb_parser_ary_new_capa
+
+static rb_parser_ary_t *
+rb_parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
+{
+    if (ary->len == ary->capa) {
+        rb_parser_ary_extend(p, ary, ary->len == 0 ? 1 : ary->len * 2);
+    }
+    ary->data[ary->len++] = val;
+    return ary;
+}
+
+static void
+rb_parser_ast_token_free(rb_parser_t *p, rb_parser_ast_token_t *token)
+{
+    if (!token) return;
+    rb_parser_string_free(p, token->str);
+    xfree(token);
+}
+
+static void
+rb_parser_tokens_free(rb_parser_t *p, rb_parser_ary_t *tokens)
+{
+    for (long i = 0; i < tokens->len; i++) {
+        rb_parser_ast_token_free(p, tokens->data[i]);
+    }
+    xfree(tokens);
+}
+
+#endif /* !RIPPER */
 %}
 
 %expect 0
@@ -2619,9 +2632,6 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
       case NODE_IMAGINARY:
         rb_parser_printf(p, "%+"PRIsVALUE, rb_node_imaginary_literal_val($$));
         break;
-      case NODE_LIT:
-        rb_parser_printf(p, "%+"PRIsVALUE, RNODE_LIT($$)->nd_lit);
-        break;
       default:
         break;
     }
@@ -2632,6 +2642,10 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 %printer {
     rb_parser_printf(p, "$%c", (int)RNODE_BACK_REF($$)->nd_nth);
 } tBACK_REF
+
+%destructor {
+    if (CASE_LABELS_ENABLED_P($$)) st_free_table($$);
+} <labels>
 
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
@@ -2646,7 +2660,6 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 %after-pop-stack after_pop_stack
 
 %union {
-    VALUE val;
     NODE *node;
     rb_node_fcall_t *node_fcall;
     rb_node_args_t *node_args;
@@ -2660,6 +2673,7 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
     ID id;
     int num;
     st_table *tbl;
+    st_table *labels;
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
     struct lex_context ctxt;
@@ -3431,7 +3445,7 @@ command		: fcall command_args       %prec tLOWEST
                     {
                         set_embraced_location($5, &@4, &@6);
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, Qnull, $5, &@3, &@$);
-                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qundef), $:5) %*/
+                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
                 | keyword_super command_args
                     {
@@ -4475,28 +4489,28 @@ primary		: literal
                     }
                 | k_case expr_value terms?
                     {
-                        $<val>$ = p->case_labels;
-                        p->case_labels = Qnil;
-                    }
+                        $$ = p->case_labels;
+                        p->case_labels = CHECK_LITERAL_WHEN;
+                    }<labels>
                   case_body
                   k_end
                     {
-                        if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
-                        p->case_labels = $<val>4;
+                        if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
+                        p->case_labels = $<labels>4;
                         $$ = NEW_CASE($2, $5, &@$);
                         fixpos($$, $2);
                     /*% ripper: case!($:2, $:5) %*/
                     }
                 | k_case terms?
                     {
-                        $<val>$ = p->case_labels;
+                        $$ = p->case_labels;
                         p->case_labels = 0;
-                    }
+                    }<labels>
                   case_body
                   k_end
                     {
-                        if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
-                        p->case_labels = $<val>3;
+                        if (p->case_labels) st_free_table(p->case_labels);
+                        p->case_labels = $<labels>3;
                         $$ = NEW_CASE2($4, &@$);
                     /*% ripper: case!(Qnil, $:4) %*/
                     }
@@ -6821,7 +6835,6 @@ singleton	: var_ref
                           case NODE_DXSTR:
                           case NODE_REGX:
                           case NODE_DREGX:
-                          case NODE_LIT:
                           case NODE_SYM:
                           case NODE_LINE:
                           case NODE_FILE:
@@ -7035,35 +7048,100 @@ parser_has_token(struct parser_params *p)
     return pcur > ptok;
 }
 
-static VALUE
-code_loc_to_ary(struct parser_params *p, const rb_code_location_t *loc)
+static const char *
+escaped_char(int c)
 {
-    VALUE ary = rb_ary_new_from_args(4,
-        INT2NUM(loc->beg_pos.lineno), INT2NUM(loc->beg_pos.column),
-        INT2NUM(loc->end_pos.lineno), INT2NUM(loc->end_pos.column));
-    rb_obj_freeze(ary);
+    switch (c) {
+      case '"': return "\\\"";
+      case '\\': return "\\\\";
+      case '\0': return "\\0";
+      case '\n': return "\\n";
+      case '\r': return "\\r";
+      case '\t': return "\\t";
+      case '\f': return "\\f";
+      case '\013': return "\\v";
+      case '\010': return "\\b";
+      case '\007': return "\\a";
+      case '\033': return "\\e";
+      case '\x7f': return "\\c?";
+    }
+    return NULL;
+}
 
-    return ary;
+static rb_parser_string_t *
+rb_parser_str_escape(struct parser_params *p, rb_parser_string_t *str)
+{
+    rb_encoding *enc = p->enc;
+    const char *ptr = str->ptr;
+    const char *pend = ptr + str->len;
+    const char *prev = ptr;
+    char charbuf[5] = {'\\', 'x', 0, 0, 0};
+    rb_parser_string_t * result = rb_parser_string_new(p, 0, 0);
+    int asciicompat = rb_enc_asciicompat(enc);
+
+    while (ptr < pend) {
+        unsigned int c;
+        const char *cc;
+        int n = rb_enc_precise_mbclen(ptr, pend, enc);
+        if (!MBCLEN_CHARFOUND_P(n)) {
+            if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            n = rb_enc_mbminlen(enc);
+            if (pend < ptr + n)
+                n = (int)(pend - ptr);
+            while (n--) {
+                c = *ptr & 0xf0 >> 4;
+                charbuf[2] = (c < 10) ? '0' + c : 'A' + c - 10;
+                c = *ptr & 0x0f;
+                charbuf[3] = (c < 10) ? '0' + c : 'A' + c - 10;
+                rb_parser_str_buf_cat(p, result, charbuf, 4);
+                prev = ++ptr;
+            }
+            continue;
+        }
+        n = MBCLEN_CHARFOUND_LEN(n);
+        c = rb_enc_mbc_to_codepoint(ptr, pend, enc);
+        ptr += n;
+        cc = escaped_char(c);
+        if (cc) {
+            if (ptr - n > prev) rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
+            rb_parser_str_buf_cat(p, result, cc, strlen(cc));
+            prev = ptr;
+        }
+        else if (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c)) {
+        }
+        else {
+            if (ptr - n > prev) {
+                rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
+                prev = ptr - n;
+            }
+            rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            prev = ptr;
+        }
+    }
+    if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+
+    return result;
 }
 
 static void
-parser_append_tokens(struct parser_params *p, VALUE str, enum yytokentype t, int line)
+parser_append_tokens(struct parser_params *p, rb_parser_string_t *str, enum yytokentype t, int line)
 {
-    VALUE ary;
-    int token_id;
-
-    ary = rb_ary_new2(4);
-    token_id = p->token_id;
-    rb_ary_push(ary, INT2FIX(token_id));
-    rb_ary_push(ary, ID2SYM(parser_token2id(p, t)));
-    rb_ary_push(ary, str);
-    rb_ary_push(ary, code_loc_to_ary(p, p->yylloc));
-    rb_obj_freeze(ary);
-    rb_ary_push(p->tokens, ary);
+    rb_parser_ast_token_t *token = xcalloc(1, sizeof(rb_parser_ast_token_t));
+    token->id = p->token_id;
+    token->type_name = parser_token2char(p, t);
+    token->str = str;
+    token->loc.beg_pos = p->yylloc->beg_pos;
+    token->loc.end_pos = p->yylloc->end_pos;
+    rb_parser_ary_push(p, p->tokens, token);
     p->token_id++;
 
     if (p->debug) {
-        rb_parser_printf(p, "Append tokens (line: %d) %"PRIsVALUE"\n", line, ary);
+        rb_parser_string_t *str_escaped = rb_parser_str_escape(p, str);
+        rb_parser_printf(p, "Append tokens (line: %d) [%d, :%s, \"%s\", [%d, %d, %d, %d]]\n",
+                            line, token->id, token->type_name, str_escaped->ptr,
+                            token->loc.beg_pos.lineno, token->loc.beg_pos.column,
+                            token->loc.end_pos.lineno, token->loc.end_pos.column);
+        rb_parser_string_free(p, str_escaped);
     }
 }
 
@@ -7077,7 +7155,7 @@ parser_dispatch_scan_event(struct parser_params *p, enum yytokentype t, int line
     RUBY_SET_YYLLOC(*p->yylloc);
 
     if (p->keep_tokens) {
-        VALUE str = STR_NEW(p->lex.ptok, p->lex.pcur - p->lex.ptok);
+        rb_parser_string_t *str = rb_parser_encoding_string_new(p, p->lex.ptok, p->lex.pcur - p->lex.ptok, p->enc);
         parser_append_tokens(p, str, t, line);
     }
 
@@ -7095,7 +7173,8 @@ parser_dispatch_delayed_token(struct parser_params *p, enum yytokentype t, int l
     RUBY_SET_YYLLOC_OF_DELAYED_TOKEN(*p->yylloc);
 
     if (p->keep_tokens) {
-        parser_append_tokens(p, p->delayed.token, t, line);
+        rb_parser_string_t *str = rb_str_to_parser_string(p, p->delayed.token);
+        parser_append_tokens(p, str, t, line);
     }
 
     p->delayed.token = Qnil;
@@ -7607,7 +7686,7 @@ yycompile0(VALUE arg)
         tree = NEW_NIL(&NULL_LOC);
     }
     else {
-        VALUE tokens = p->tokens;
+        rb_parser_ary_t *tokens = p->tokens;
         NODE *prelude;
         NODE *body = parser_append_options(p, RNODE_SCOPE(tree)->nd_body);
         prelude = block_append(p, p->eval_tree_begin, body);
@@ -7615,8 +7694,8 @@ yycompile0(VALUE arg)
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
         p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
-            rb_obj_freeze(tokens);
-            rb_ast_set_tokens(p->ast, tokens);
+            p->ast->node_buffer->tokens = tokens;
+            p->tokens = NULL;
         }
     }
     p->ast->body.root = tree;
@@ -7796,7 +7875,7 @@ parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *
 static int
 strterm_is_heredoc(rb_strterm_t *strterm)
 {
-    return strterm->flags & STRTERM_HEREDOC;
+    return strterm->heredoc;
 }
 
 static rb_strterm_t *
@@ -7813,7 +7892,7 @@ static rb_strterm_t *
 new_heredoc(struct parser_params *p)
 {
     rb_strterm_t *strterm = ZALLOC(rb_strterm_t);
-    strterm->flags |= STRTERM_HEREDOC;
+    strterm->heredoc = true;
     return strterm;
 }
 
@@ -7880,7 +7959,7 @@ nextline(struct parser_params *p, int set_encoding)
         }
 #ifndef RIPPER
         if (p->debug_lines) {
-            VALUE v = rb_str_new_parser_string(str);
+            VALUE v = rb_str_new_mutable_parser_string(str);
             if (set_encoding) rb_enc_associate(v, p->enc);
             rb_ary_push(p->debug_lines, v);
         }
@@ -8042,7 +8121,7 @@ escaped_control_code(int c)
 }
 
 #define WARN_SPACE_CHAR(c, prefix) \
-    rb_warn1("invalid character syntax; use "prefix"\\%c", WARN_I(c2))
+    rb_warn1("invalid character syntax; use "prefix"\\%c", WARN_I(c))
 
 static int
 tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
@@ -9230,7 +9309,7 @@ parser_dispatch_heredoc_end(struct parser_params *p, int line)
         dispatch_delayed_token(p, tSTRING_CONTENT);
 
     if (p->keep_tokens) {
-        VALUE str = STR_NEW(p->lex.ptok, p->lex.pend - p->lex.ptok);
+        rb_parser_string_t *str = rb_parser_encoding_string_new(p, p->lex.ptok, p->lex.pend - p->lex.ptok, p->enc);
         RUBY_SET_YYLLOC_OF_HEREDOC_END(*p->yylloc);
         parser_append_tokens(p, str, tHEREDOC_END, line);
     }
@@ -9649,23 +9728,23 @@ parser_set_shareable_constant_value(struct parser_params *p, const char *name, c
     switch (*val) {
       case 'n': case 'N':
         if (STRCASECMP(val, "none") == 0) {
-            p->ctxt.shareable_constant_value = shareable_none;
+            p->ctxt.shareable_constant_value = rb_parser_shareable_none;
             return;
         }
         break;
       case 'l': case 'L':
         if (STRCASECMP(val, "literal") == 0) {
-            p->ctxt.shareable_constant_value = shareable_literal;
+            p->ctxt.shareable_constant_value = rb_parser_shareable_literal;
             return;
         }
         break;
       case 'e': case 'E':
         if (STRCASECMP(val, "experimental_copy") == 0) {
-            p->ctxt.shareable_constant_value = shareable_copy;
+            p->ctxt.shareable_constant_value = rb_parser_shareable_copy;
             return;
         }
         if (STRCASECMP(val, "experimental_everything") == 0) {
-            p->ctxt.shareable_constant_value = shareable_everything;
+            p->ctxt.shareable_constant_value = rb_parser_shareable_everything;
             return;
         }
         break;
@@ -10037,6 +10116,7 @@ parse_numeric(struct parser_params *p, int c)
             /* prefixed octal */
             c = nextc(p);
             if (c == -1 || c == '_' || !ISDIGIT(c)) {
+                tokfix(p);
                 return no_digits(p);
             }
         }
@@ -11440,7 +11520,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
     enum yytokentype t;
 
     p->lval = lval;
-    lval->val = Qundef;
+    lval->node = 0;
     p->yylloc = yylloc;
 
     t = parser_yylex(p);
@@ -12130,15 +12210,6 @@ rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc)
     return n;
 }
 
-static rb_node_lit_t *
-rb_node_lit_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
-{
-    rb_node_lit_t *n = NODE_NEWNODE(NODE_LIT, rb_node_lit_t, loc);
-    n->nd_lit = nd_lit;
-
-    return n;
-}
-
 static rb_node_integer_t *
 rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc)
 {
@@ -12342,7 +12413,7 @@ rb_node_args_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_args_aux_t *
-rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc)
+rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLTYPE *loc)
 {
     rb_node_args_aux_t *n = NODE_NEWNODE(NODE_ARGS_AUX, rb_node_args_aux_t, loc);
     n->nd_pid = nd_pid;
@@ -12549,23 +12620,25 @@ rb_node_encoding_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_cdecl_t *
-rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc)
+rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, enum rb_parser_shareability shareability, const YYLTYPE *loc)
 {
     rb_node_cdecl_t *n = NODE_NEWNODE(NODE_CDECL, rb_node_cdecl_t, loc);
     n->nd_vid = nd_vid;
     n->nd_value = nd_value;
     n->nd_else = nd_else;
+    n->shareability = shareability;
 
     return n;
 }
 
 static rb_node_op_cdecl_t *
-rb_node_op_cdecl_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, ID nd_aid, const YYLTYPE *loc)
+rb_node_op_cdecl_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, ID nd_aid, enum rb_parser_shareability shareability, const YYLTYPE *loc)
 {
     rb_node_op_cdecl_t *n = NODE_NEWNODE(NODE_OP_CDECL, rb_node_op_cdecl_t, loc);
     n->nd_head = nd_head;
     n->nd_value = nd_value;
     n->nd_aid = nd_aid;
+    n->shareability = shareability;
 
     return n;
 }
@@ -13358,36 +13431,33 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return node;
 }
 
-#ifndef RIPPER
-VALUE
-rb_parser_node_case_when_optimizable_literal(struct parser_params *p, const NODE *const node)
-{
-    return rb_node_case_when_optimizable_literal(node);
-}
-#endif
+static const
+struct st_hash_type literal_type = {
+    literal_cmp,
+    literal_hash,
+};
+
+static int nd_type_st_key_enable_p(NODE *node);
 
 static void
 check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
 {
-    VALUE lit;
-
+    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     if (!arg || !p->case_labels) return;
+    if (!nd_type_st_key_enable_p(arg)) return;
 
-    lit = rb_parser_node_case_when_optimizable_literal(p, arg);
-    if (UNDEF_P(lit)) return;
-
-    if (NIL_P(p->case_labels)) {
-        p->case_labels = rb_obj_hide(rb_hash_new());
+    if (p->case_labels == CHECK_LITERAL_WHEN) {
+        p->case_labels = st_init_table(&literal_type);
     }
     else {
-        VALUE line = rb_hash_lookup(p->case_labels, lit);
-        if (!NIL_P(line)) {
+        st_data_t line;
+        if (st_lookup(p->case_labels, (st_data_t)arg, &line)) {
             rb_warning1("duplicated 'when' clause with line %d is ignored",
-                        WARN_IVAL(line));
+                        WARN_I((int)line));
             return;
         }
     }
-    rb_hash_aset(p->case_labels, lit, INT2NUM(p->ruby_sourceline));
+    st_insert(p->case_labels, (st_data_t)arg, (st_data_t)p->ruby_sourceline);
 }
 
 #ifdef RIPPER
@@ -13670,7 +13740,7 @@ assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
       case NODE_LASGN: return NEW_LASGN(id, val, loc);
       case NODE_GASGN: return NEW_GASGN(id, val, loc);
       case NODE_IASGN: return NEW_IASGN(id, val, loc);
-      case NODE_CDECL: return NEW_CDECL(id, val, 0, loc);
+      case NODE_CDECL: return NEW_CDECL(id, val, 0, p->ctxt.shareable_constant_value, loc);
       case NODE_CVASGN: return NEW_CVASGN(id, val, loc);
     }
 /* TODO: FIXME */
@@ -13744,11 +13814,44 @@ new_bv(struct parser_params *p, ID name)
     }
     if (!shadowing_lvar_0(p, name)) return;
     dyna_var(p, name);
+    ID *vidp = 0;
+    if (dvar_defined_ref(p, name, &vidp)) {
+        if (vidp) *vidp |= LVAR_USED;
+    }
+}
+
+static void
+aryset_check(struct parser_params *p, NODE *args)
+{
+    NODE *block = 0, *kwds = 0;
+    if (args && nd_type_p(args, NODE_BLOCK_PASS)) {
+        block = RNODE_BLOCK_PASS(args)->nd_body;
+        args = RNODE_BLOCK_PASS(args)->nd_head;
+    }
+    if (args && nd_type_p(args, NODE_ARGSCAT)) {
+        args = RNODE_ARGSCAT(args)->nd_body;
+    }
+    if (args && nd_type_p(args, NODE_ARGSPUSH)) {
+        kwds = RNODE_ARGSPUSH(args)->nd_body;
+    }
+    else {
+        for (NODE *next = args; next && nd_type_p(next, NODE_LIST);
+             next = RNODE_LIST(next)->nd_next) {
+            kwds = RNODE_LIST(next)->nd_head;
+        }
+    }
+    if (kwds && nd_type_p(kwds, NODE_HASH) && !RNODE_HASH(kwds)->nd_brace) {
+        yyerror1(&kwds->nd_loc, "keyword arg given in index");
+    }
+    if (block) {
+        yyerror1(&block->nd_loc, "block arg given in index");
+    }
 }
 
 static NODE *
 aryset(struct parser_params *p, NODE *recv, NODE *idx, const YYLTYPE *loc)
 {
+    aryset_check(p, idx);
     return NEW_ATTRASGN(recv, tASET, idx, loc);
 }
 
@@ -13912,255 +14015,7 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
     }
 }
 
-static NODE *
-const_decl_path(struct parser_params *p, NODE **dest)
-{
-    NODE *n = *dest;
-    if (!nd_type_p(n, NODE_CALL)) {
-        const YYLTYPE *loc = &n->nd_loc;
-        VALUE path = rb_node_const_decl_val(n);
-        *dest = n = NEW_LIT(path, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
-    }
-    return n;
-}
-
-static NODE *
-make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
-{
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
-
-    if (copy) {
-        return NEW_CALL(fcore, rb_intern("make_shareable_copy"),
-                        NEW_LIST(value, loc), loc);
-    }
-    else {
-        return NEW_CALL(fcore, rb_intern("make_shareable"),
-                        NEW_LIST(value, loc), loc);
-    }
-}
-
-static NODE *
-ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
-{
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
-    NODE *args = NEW_LIST(value, loc);
-    args = list_append(p, args, const_decl_path(p, dest));
-    return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
-}
-
 static int is_static_content(NODE *node);
-
-static VALUE
-shareable_literal_value(struct parser_params *p, NODE *node)
-{
-    if (!node) return Qnil;
-    enum node_type type = nd_type(node);
-    switch (type) {
-      case NODE_TRUE:
-        return Qtrue;
-      case NODE_FALSE:
-        return Qfalse;
-      case NODE_NIL:
-        return Qnil;
-      case NODE_SYM:
-        return rb_node_sym_string_val(node);
-      case NODE_LINE:
-        return rb_node_line_lineno_val(node);
-      case NODE_INTEGER:
-        return rb_node_integer_literal_val(node);
-      case NODE_FLOAT:
-        return rb_node_float_literal_val(node);
-      case NODE_RATIONAL:
-        return rb_node_rational_literal_val(node);
-      case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(node);
-      case NODE_ENCODING:
-        return rb_node_encoding_val(node);
-      case NODE_REGX:
-        return rb_node_regx_string_val(node);
-      case NODE_LIT:
-        return RNODE_LIT(node)->nd_lit;
-      default:
-        return Qundef;
-    }
-}
-
-#ifndef SHAREABLE_BARE_EXPRESSION
-#define SHAREABLE_BARE_EXPRESSION 1
-#endif
-
-static NODE *
-shareable_literal_constant(struct parser_params *p, enum shareability shareable,
-                           NODE **dest, NODE *value, const YYLTYPE *loc, size_t level)
-{
-# define shareable_literal_constant_next(n) \
-    shareable_literal_constant(p, shareable, dest, (n), &(n)->nd_loc, level+1)
-    VALUE lit = Qnil;
-
-    if (!value) return 0;
-    enum node_type type = nd_type(value);
-    switch (type) {
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_NIL:
-      case NODE_LIT:
-      case NODE_SYM:
-      case NODE_REGX:
-      case NODE_LINE:
-      case NODE_INTEGER:
-      case NODE_FLOAT:
-      case NODE_RATIONAL:
-      case NODE_IMAGINARY:
-      case NODE_ENCODING:
-        return value;
-
-      case NODE_DSTR:
-        if (shareable == shareable_literal) {
-            value = NEW_CALL(value, idUMinus, 0, loc);
-        }
-        return value;
-
-      case NODE_STR:
-        lit = rb_str_to_interned_str(rb_node_str_string_val(value));
-        value = NEW_LIT(lit, loc);
-        RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
-        return value;
-
-      case NODE_FILE:
-        lit = rb_str_to_interned_str(rb_node_file_path_val(value));
-        value = NEW_LIT(lit, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(value)->nd_lit);
-        return value;
-
-      case NODE_ZLIST:
-        lit = rb_ary_new();
-        OBJ_FREEZE_RAW(lit);
-        NODE *n = NEW_LIT(lit, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
-        return n;
-
-      case NODE_LIST:
-        lit = rb_ary_new();
-        for (NODE *n = value; n; n = RNODE_LIST(n)->nd_next) {
-            NODE *elt = RNODE_LIST(n)->nd_head;
-            if (elt) {
-                elt = shareable_literal_constant_next(elt);
-                if (elt) {
-                    RNODE_LIST(n)->nd_head = elt;
-                }
-                else if (RTEST(lit)) {
-                    rb_ary_clear(lit);
-                    lit = Qfalse;
-                }
-            }
-            if (RTEST(lit)) {
-                VALUE e = shareable_literal_value(p, elt);
-                if (!UNDEF_P(e)) {
-                    rb_ary_push(lit, e);
-                }
-                else {
-                    rb_ary_clear(lit);
-                    lit = Qnil;	/* make shareable at runtime */
-                }
-            }
-        }
-        break;
-
-      case NODE_HASH:
-        if (!RNODE_HASH(value)->nd_brace) return 0;
-        lit = rb_hash_new();
-        for (NODE *n = RNODE_HASH(value)->nd_head; n; n = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_next) {
-            NODE *key = RNODE_LIST(n)->nd_head;
-            NODE *val = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_head;
-            if (key) {
-                key = shareable_literal_constant_next(key);
-                if (key) {
-                    RNODE_LIST(n)->nd_head = key;
-                }
-                else if (RTEST(lit)) {
-                    rb_hash_clear(lit);
-                    lit = Qfalse;
-                }
-            }
-            if (val) {
-                val = shareable_literal_constant_next(val);
-                if (val) {
-                    RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_head = val;
-                }
-                else if (RTEST(lit)) {
-                    rb_hash_clear(lit);
-                    lit = Qfalse;
-                }
-            }
-            if (RTEST(lit)) {
-                VALUE k = shareable_literal_value(p, key);
-                VALUE v = shareable_literal_value(p, val);
-                if (!UNDEF_P(k) && !UNDEF_P(v)) {
-                    rb_hash_aset(lit, k, v);
-                }
-                else {
-                    rb_hash_clear(lit);
-                    lit = Qnil;	/* make shareable at runtime */
-                }
-            }
-        }
-        break;
-
-      default:
-        if (shareable == shareable_literal &&
-            (SHAREABLE_BARE_EXPRESSION || level > 0)) {
-            return ensure_shareable_node(p, dest, value, loc);
-        }
-        return 0;
-    }
-
-    /* Array or Hash */
-    if (!lit) return 0;
-    if (NIL_P(lit)) {
-        // if shareable_literal, all elements should have been ensured
-        // as shareable
-        value = make_shareable_node(p, value, false, loc);
-    }
-    else {
-        value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(value)->nd_lit);
-    }
-
-    return value;
-# undef shareable_literal_constant_next
-}
-
-static NODE *
-shareable_constant_value(struct parser_params *p, enum shareability shareable,
-                         NODE *lhs, NODE *value, const YYLTYPE *loc)
-{
-    if (!value) return 0;
-    switch (shareable) {
-      case shareable_none:
-        return value;
-
-      case shareable_literal:
-        {
-            NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
-            if (lit) return lit;
-            return value;
-        }
-        break;
-
-      case shareable_copy:
-      case shareable_everything:
-        {
-            NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
-            if (lit) return lit;
-            return make_shareable_node(p, value, shareable == shareable_copy, loc);
-        }
-        break;
-
-      default:
-        UNREACHABLE_RETURN(0);
-    }
-}
 
 static NODE *
 node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, struct lex_context ctxt, const YYLTYPE *loc)
@@ -14169,9 +14024,6 @@ node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, struct lex_context ct
 
     switch (nd_type(lhs)) {
       case NODE_CDECL:
-        rhs = shareable_constant_value(p, ctxt.shareable_constant_value, lhs, rhs, loc);
-        /* fallthru */
-
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_LASGN:
@@ -14358,7 +14210,6 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_CONST:
         useless = "a constant";
         break;
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
@@ -14504,7 +14355,6 @@ is_static_content(NODE *node)
         do {
             if (!is_static_content(RNODE_LIST(node)->nd_head)) return 0;
         } while ((node = RNODE_LIST(node)->nd_next) != 0);
-      case NODE_LIT:
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
@@ -14639,21 +14489,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
       case NODE_SYM:
       case NODE_DSYM:
-      warn_symbol:
         SWITCH_BY_COND_TYPE(type, warning, "symbol ");
-        break;
-
-      case NODE_LIT:
-        if (RNODE_LIT(node)->nd_lit == Qtrue ||
-            RNODE_LIT(node)->nd_lit == Qfalse) {
-            /* booleans are OK, e.g., while true */
-        }
-        else if (SYMBOL_P(RNODE_LIT(node)->nd_lit)) {
-            goto warn_symbol;
-        }
-        else {
-            SWITCH_BY_COND_TYPE(type, warning, "");
-        }
         break;
 
       case NODE_LINE:
@@ -14827,10 +14663,10 @@ new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_
         rest_arg = idFWD_REST;
     }
 
-    args->pre_args_num   = pre_args ? rb_long2int(pre_args->nd_plen) : 0;
+    args->pre_args_num   = pre_args ? pre_args->nd_plen : 0;
     args->pre_init       = pre_args ? pre_args->nd_next : 0;
 
-    args->post_args_num  = post_args ? rb_long2int(post_args->nd_plen) : 0;
+    args->post_args_num  = post_args ? post_args->nd_plen : 0;
     args->post_init      = post_args ? post_args->nd_next : 0;
     args->first_post_arg = post_args ? post_args->nd_pid : 0;
 
@@ -15018,7 +14854,6 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return node;
 }
 
-#ifndef RIPPER
 static int
 nd_type_st_key_enable_p(NODE *node)
 {
@@ -15039,6 +14874,7 @@ nd_type_st_key_enable_p(NODE *node)
     }
 }
 
+#ifndef RIPPER
 static VALUE
 nd_value(struct parser_params *p, NODE *node)
 {
@@ -15072,14 +14908,7 @@ nd_value(struct parser_params *p, NODE *node)
 void
 rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
-#ifndef UNIVERSAL_PARSER
-    static const
-#endif
-    struct st_hash_type literal_type = {
-        literal_cmp,
-        literal_hash,
-    };
-
+    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
     st_table *literal_keys = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
     while (hash && RNODE_LIST(hash)->nd_next) {
         NODE *head = RNODE_LIST(hash)->nd_head;
@@ -15157,28 +14986,12 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
     if (lhs) {
         ID vid = get_nd_vid(p, lhs);
         YYLTYPE lhs_loc = lhs->nd_loc;
-        int shareable = ctxt.shareable_constant_value;
-        if (shareable) {
-            switch (nd_type(lhs)) {
-              case NODE_CDECL:
-              case NODE_COLON2:
-              case NODE_COLON3:
-                break;
-              default:
-                shareable = 0;
-                break;
-            }
-        }
         if (op == tOROP) {
-            rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
             asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
         }
         else if (op == tANDOP) {
-            if (shareable) {
-                rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
-            }
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
             asgn = NEW_OP_ASGN_AND(gettable(p, vid, &lhs_loc), lhs, loc);
@@ -15186,9 +14999,6 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
         else {
             asgn = lhs;
             rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
-            if (shareable) {
-                rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
-            }
             set_nd_value(p, asgn, rhs);
             nd_set_loc(asgn, loc);
         }
@@ -15205,6 +15015,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
 {
     NODE *asgn;
 
+    aryset_check(p, args);
     args = make_list(args, args_loc);
     asgn = NEW_OP_ASGN1(ary, op, args, rhs, loc);
     fixpos(asgn, ary);
@@ -15228,8 +15039,7 @@ new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct
     NODE *asgn;
 
     if (lhs) {
-        rhs = shareable_constant_value(p, ctxt.shareable_constant_value, lhs, rhs, loc);
-        asgn = NEW_OP_CDECL(lhs, op, rhs, loc);
+        asgn = NEW_OP_CDECL(lhs, op, rhs, ctxt.shareable_constant_value, loc);
     }
     else {
         asgn = NEW_ERROR(loc);
@@ -15244,7 +15054,7 @@ const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
     if (p->ctxt.in_def) {
         yyerror1(loc, "dynamic constant assignment");
     }
-    return NEW_CDECL(0, 0, (path), loc);
+    return NEW_CDECL(0, 0, (path), p->ctxt.shareable_constant_value, loc);
 }
 #ifdef RIPPER
 static VALUE
@@ -15973,7 +15783,7 @@ parser_initialize(struct parser_params *p)
     p->error_buffer = Qfalse;
     p->end_expect_token_locations = NULL;
     p->token_id = 0;
-    p->tokens = Qnil;
+    p->tokens = NULL;
 #else
     p->result = Qnil;
     p->parsing_thread = Qnil;
@@ -16001,12 +15811,10 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->lex.input);
     rb_gc_mark(p->ruby_sourcefile_string);
     rb_gc_mark((VALUE)p->ast);
-    rb_gc_mark(p->case_labels);
     rb_gc_mark(p->delayed.token);
 #ifndef RIPPER
     rb_gc_mark(p->debug_lines);
     rb_gc_mark(p->error_buffer);
-    rb_gc_mark(p->tokens);
 #else
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
@@ -16017,9 +15825,6 @@ rb_ruby_parser_mark(void *ptr)
 #endif
     rb_gc_mark(p->debug_buffer);
     rb_gc_mark(p->debug_output);
-#ifdef YYMALLOC
-    rb_gc_mark((VALUE)p->heap);
-#endif
 }
 
 void
@@ -16027,6 +15832,12 @@ rb_ruby_parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
+
+#ifndef RIPPER
+    if (p->tokens) {
+        rb_parser_tokens_free(p, p->tokens);
+    }
+#endif
 
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
@@ -16048,6 +15859,10 @@ rb_ruby_parser_free(void *ptr)
 
     if (p->pvtbl) {
         st_free_table(p->pvtbl);
+    }
+
+    if (CASE_LABELS_ENABLED_P(p->case_labels)) {
+        st_free_table(p->case_labels);
     }
 
     xfree(ptr);
@@ -16145,8 +15960,7 @@ void
 rb_ruby_parser_keep_tokens(rb_parser_t *p)
 {
     p->keep_tokens = 1;
-    // TODO
-    p->tokens = rb_ary_new();
+    p->tokens = rb_parser_ary_new_capa(p, 10);
 }
 
 #ifndef UNIVERSAL_PARSER
@@ -16453,6 +16267,16 @@ rb_ruby_ripper_lex_state_name(struct parser_params *p, int state)
     return rb_parser_lex_state_name(p, (enum lex_state_e)state);
 }
 
+#ifdef UNIVERSAL_PARSER
+rb_parser_t *
+rb_ripper_parser_params_allocate(const rb_parser_config_t *config)
+{
+    rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
+    p->config = config;
+    return p;
+}
+#endif
+
 struct parser_params*
 rb_ruby_ripper_parser_allocate(void)
 {
@@ -16461,69 +16285,6 @@ rb_ruby_ripper_parser_allocate(void)
 #endif /* RIPPER */
 
 #ifndef RIPPER
-#ifdef YYMALLOC
-#define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-/* Keep the order; NEWHEAP then xmalloc and ADD2HEAP to get rid of
- * potential memory leak */
-#define NEWHEAP() rb_imemo_tmpbuf_parser_heap(0, p->heap, 0)
-#define ADD2HEAP(new, cnt, ptr) ((p->heap = (new))->ptr = (ptr), \
-                           (new)->cnt = (cnt), (ptr))
-
-void *
-rb_parser_malloc(struct parser_params *p, size_t size)
-{
-    size_t cnt = HEAPCNT(1, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xmalloc(size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
-{
-    size_t cnt = HEAPCNT(nelem, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xcalloc(nelem, size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
-{
-    rb_imemo_tmpbuf_t *n;
-    size_t cnt = HEAPCNT(1, size);
-
-    if (ptr && (n = p->heap) != NULL) {
-        do {
-            if (n->ptr == ptr) {
-                n->ptr = ptr = xrealloc(ptr, size);
-                if (n->cnt) n->cnt = cnt;
-                return ptr;
-            }
-        } while ((n = n->next) != NULL);
-    }
-    n = NEWHEAP();
-    ptr = xrealloc(ptr, size);
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void
-rb_parser_free(struct parser_params *p, void *ptr)
-{
-    rb_imemo_tmpbuf_t **prev = &p->heap, *n;
-
-    while ((n = *prev) != NULL) {
-        if (n->ptr == ptr) {
-            *prev = n->next;
-            break;
-        }
-        prev = &n->next;
-    }
-}
-#endif
-
 void
 rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 {

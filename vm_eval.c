@@ -505,21 +505,21 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc)
     return gccct_method_search_slowpath(vm, klass, mid, argc, index);
 }
 
-/*!
- * \internal
+/**
+ * @internal
  * calls the specified method.
  *
  * This function is called by functions in rb_call* family.
- * \param ec     current execution context
- * \param recv   receiver of the method
- * \param mid    an ID that represents the name of the method
- * \param argc   the number of method arguments
- * \param argv   a pointer to an array of method arguments
- * \param scope
- * \param self   self in the caller. Qundef means no self is considered and
+ * @param ec     current execution context
+ * @param recv   receiver of the method
+ * @param mid    an ID that represents the name of the method
+ * @param argc   the number of method arguments
+ * @param argv   a pointer to an array of method arguments
+ * @param scope
+ * @param self   self in the caller. Qundef means no self is considered and
  *               protected methods cannot be called
  *
- * \note \a self is used in order to controlling access to protected methods.
+ * @note `self` is used in order to controlling access to protected methods.
  */
 static inline VALUE
 rb_call0(rb_execution_context_t *ec,
@@ -881,16 +881,16 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
 }
 
 
-/*!
- * \internal
+/**
+ * @internal
  * calls the specified method.
  *
  * This function is called by functions in rb_call* family.
- * \param recv   receiver
- * \param mid    an ID that represents the name of the method
- * \param argc   the number of method arguments
- * \param argv   a pointer to an array of method arguments
- * \param scope
+ * @param recv   receiver
+ * @param mid    an ID that represents the name of the method
+ * @param argc   the number of method arguments
+ * @param argv   a pointer to an array of method arguments
+ * @param scope
  */
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
@@ -1141,15 +1141,15 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     return rb_funcallv(recv, mid, n, argv);
 }
 
-/*!
+/**
  * Calls a method only if it is the basic method of `ancestor`
  * otherwise returns Qundef;
- * \param recv   receiver of the method
- * \param mid    an ID that represents the name of the method
- * \param ancestor the Class that defined the basic method
- * \param argc   the number of arguments
- * \param argv   pointer to an array of method arguments
- * \param kw_splat bool
+ * @param recv   receiver of the method
+ * @param mid    an ID that represents the name of the method
+ * @param ancestor the Class that defined the basic method
+ * @param argc   the number of arguments
+ * @param argv   pointer to an array of method arguments
+ * @param kw_splat bool
  */
 VALUE
 rb_check_funcall_basic_kw(VALUE recv, ID mid, VALUE ancestor, int argc, const VALUE *argv, int kw_splat)
@@ -1682,8 +1682,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             pm_string_t *scope_local = &options_scope->locals[local_index];
-            const char *name = rb_id2name(ISEQ_BODY(iseq)->local_table[local_index]);
-            if (name) pm_string_constant_init(scope_local, name, strlen(name));
+            ID local = ISEQ_BODY(iseq)->local_table[local_index];
+
+            if (rb_is_local_id(local)) {
+                const char *name = rb_id2name(local);
+                size_t length = strlen(name);
+
+                // Explicitly skip numbered parameters. These should not be sent
+                // into the eval.
+                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
+                    continue;
+                }
+
+                pm_string_constant_init(scope_local, name, strlen(name));
+            }
         }
 
         iseq = ISEQ_BODY(iseq)->parent_iseq;
@@ -1744,7 +1756,9 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         ruby_xfree(prev);
         prev = next;
     }
+
     pm_parse_result_free(&result);
+    rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
 
     return iseq;
 }

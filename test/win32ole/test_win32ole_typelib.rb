@@ -7,6 +7,10 @@ require "test/unit"
 
 if defined?(WIN32OLE::TypeLib)
   class TestWIN32OLE_TYPELIB < Test::Unit::TestCase
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::TypeLib, ::WIN32OLE_TYPELIB)
+    end
+
     def test_s_typelibs
       tlibs = WIN32OLE::TypeLib.typelibs
       assert_instance_of(Array, tlibs)

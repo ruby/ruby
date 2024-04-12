@@ -276,6 +276,9 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
 
             DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
         },
+        (A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            DataImm::cmp(rn.reg_no, (imm12 as u64).try_into().unwrap(), rn.num_bits).into()
+        },
         (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), rn.num_bits).into()
         },

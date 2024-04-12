@@ -27,7 +27,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-17
+  default_cc: clang-18
   append_cc: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
@@ -81,6 +81,7 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
+          - { name: clang-19,  env: { default_cc: clang-19 } }
           - { name: clang-18,  env: { default_cc: clang-18 } }
           - { name: clang-17,  env: { default_cc: clang-17 } }
           - { name: clang-16,  env: { default_cc: clang-16 } }
@@ -213,16 +214,16 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-17' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-18' }}
       options: --user root
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Documentation')
+      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Documentation')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Document')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
@@ -232,7 +233,7 @@ jobs:
       - run: id
         working-directory:
 
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -265,7 +266,7 @@ jobs:
         if: ${{ (matrix.entry.static-exts || '') != '' }}
 
       - name: Clean up ext/Setup
-        uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+        uses: gacts/run-and-post-run@7aec950f3b114c4fcf6012070c3709ecff0eb6f8 # v1.4.0
         with:
           shell: bash
           working-directory: build

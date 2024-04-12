@@ -135,7 +135,14 @@ extern const uint8_t pm_encoding_unicode_table[256];
  */
 typedef enum {
     PM_ENCODING_UTF_8 = 0,
+    PM_ENCODING_US_ASCII,
     PM_ENCODING_ASCII_8BIT,
+    PM_ENCODING_EUC_JP,
+    PM_ENCODING_WINDOWS_31J,
+
+// We optionally support excluding the full set of encodings to only support the
+// minimum necessary to process Ruby code without encoding comments.
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
     PM_ENCODING_BIG5,
     PM_ENCODING_BIG5_HKSCS,
     PM_ENCODING_BIG5_UAO,
@@ -148,7 +155,6 @@ typedef enum {
     PM_ENCODING_CP950,
     PM_ENCODING_CP951,
     PM_ENCODING_EMACS_MULE,
-    PM_ENCODING_EUC_JP,
     PM_ENCODING_EUC_JP_MS,
     PM_ENCODING_EUC_JIS_2004,
     PM_ENCODING_EUC_KR,
@@ -208,7 +214,6 @@ typedef enum {
     PM_ENCODING_STATELESS_ISO_2022_JP,
     PM_ENCODING_STATELESS_ISO_2022_JP_KDDI,
     PM_ENCODING_TIS_620,
-    PM_ENCODING_US_ASCII,
     PM_ENCODING_UTF8_MAC,
     PM_ENCODING_UTF8_DOCOMO,
     PM_ENCODING_UTF8_KDDI,
@@ -222,8 +227,9 @@ typedef enum {
     PM_ENCODING_WINDOWS_1256,
     PM_ENCODING_WINDOWS_1257,
     PM_ENCODING_WINDOWS_1258,
-    PM_ENCODING_WINDOWS_31J,
     PM_ENCODING_WINDOWS_874,
+#endif
+
     PM_ENCODING_MAXIMUM
 } pm_encoding_type_t;
 

@@ -64,6 +64,50 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  def with_udp_and_tcp(host, port)
+    if port == 0
+      # Automatic port; we might need to retry until we find a port which is free on both UDP _and_ TCP.
+      retries_remaining = 5
+      t = nil
+      u = nil
+      begin
+        begin
+          u = UDPSocket.new
+          u.bind(host, 0)
+          _, udp_port, _, _ = u.addr
+          t = TCPServer.new(host, udp_port)
+          t.listen(1)
+        rescue Errno::EADDRINUSE, Errno::EACCES
+          # ADDRINUSE is what should get thrown if we try and bind a port which is already bound on UNIXen,
+          # but windows can sometimes throw EACCESS.
+          # See: https://stackoverflow.com/questions/48478869/cannot-bind-to-some-ports-due-to-permission-denied
+          retries_remaining -= 1
+          if retries_remaining > 0
+            t&.close
+            t = nil
+            u&.close
+            u = nil
+            retry
+          end
+          raise
+        end
+
+        # If we get to this point, we have a valid t & u socket
+        yield u, t
+      ensure
+        t&.close
+        u&.close
+      end
+    else
+      # Explicitly specified port, don't retry the bind.
+      with_udp(host, port) do |u|
+        with_tcp(host, port) do |t|
+          yield u, t
+        end
+      end
+    end
+  end
+
   # [ruby-core:65836]
   def test_resolve_with_2_ndots
     conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
@@ -176,156 +220,154 @@ class TestResolvDNS < Test::Unit::TestCase
 
     num_records = 50
 
-    with_udp('127.0.0.1', 0) {|u|
+    with_udp_and_tcp('127.0.0.1', 0) {|u, t|
       _, server_port, _, server_address = u.addr
-      with_tcp('127.0.0.1', server_port) {|t|
-        client_thread = Thread.new {
-          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]]) {|dns|
-            dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
-          }
+      client_thread = Thread.new {
+        Resolv::DNS.open(:nameserver_port => [[server_address, server_port]]) {|dns|
+          dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
         }
-        udp_server_thread = Thread.new {
-          msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
-          id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
-          qr =     (word2 & 0x8000) >> 15
-          opcode = (word2 & 0x7800) >> 11
-          aa =     (word2 & 0x0400) >> 10
-          tc =     (word2 & 0x0200) >> 9
-          rd =     (word2 & 0x0100) >> 8
-          ra =     (word2 & 0x0080) >> 7
-          z =      (word2 & 0x0070) >> 4
-          rcode =   word2 & 0x000f
-          rest = msg[12..-1]
-          assert_equal(0, qr) # 0:query 1:response
-          assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
-          assert_equal(0, aa) # Authoritative Answer
-          assert_equal(0, tc) # TrunCation
-          assert_equal(1, rd) # Recursion Desired
-          assert_equal(0, ra) # Recursion Available
-          assert_equal(0, z) # Reserved for future use
-          assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
-          assert_equal(1, qdcount) # number of entries in the question section.
-          assert_equal(0, ancount) # number of entries in the answer section.
-          assert_equal(0, nscount) # number of entries in the authority records section.
-          assert_equal(0, arcount) # number of entries in the additional records section.
-          name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
-          assert_operator(rest, :start_with?, name)
-          rest = rest[name.length..-1]
-          assert_equal(4, rest.length)
-          qtype, _ = rest.unpack("nn")
-          assert_equal(1, qtype) # A
-          assert_equal(1, qtype) # IN
-          id = id
-          qr = 1
-          opcode = opcode
-          aa = 0
-          tc = 1
-          rd = rd
-          ra = 1
-          z = 0
-          rcode = 0
-          qdcount = 0
-          ancount = num_records
-          nscount = 0
-          arcount = 0
-          word2 = (qr << 15) |
-                  (opcode << 11) |
-                  (aa << 10) |
-                  (tc << 9) |
-                  (rd << 8) |
-                  (ra << 7) |
-                  (z << 4) |
-                  rcode
-          msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
-          type = 1
-          klass = 1
-          ttl = 3600
-          rdlength = 4
-          num_records.times do |i|
-            rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
-            rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
-            msg << rr
-          end
-          u.send(msg[0...512], 0, client_address, client_port)
-        }
-        tcp_server_thread = Thread.new {
-          ct = t.accept
-          msg = ct.recv(512)
-          msg.slice!(0..1) # Size (only for TCP)
-          id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
-          qr =     (word2 & 0x8000) >> 15
-          opcode = (word2 & 0x7800) >> 11
-          aa =     (word2 & 0x0400) >> 10
-          tc =     (word2 & 0x0200) >> 9
-          rd =     (word2 & 0x0100) >> 8
-          ra =     (word2 & 0x0080) >> 7
-          z =      (word2 & 0x0070) >> 4
-          rcode =   word2 & 0x000f
-          rest = msg[12..-1]
-          assert_equal(0, qr) # 0:query 1:response
-          assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
-          assert_equal(0, aa) # Authoritative Answer
-          assert_equal(0, tc) # TrunCation
-          assert_equal(1, rd) # Recursion Desired
-          assert_equal(0, ra) # Recursion Available
-          assert_equal(0, z) # Reserved for future use
-          assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
-          assert_equal(1, qdcount) # number of entries in the question section.
-          assert_equal(0, ancount) # number of entries in the answer section.
-          assert_equal(0, nscount) # number of entries in the authority records section.
-          assert_equal(0, arcount) # number of entries in the additional records section.
-          name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
-          assert_operator(rest, :start_with?, name)
-          rest = rest[name.length..-1]
-          assert_equal(4, rest.length)
-          qtype, _ = rest.unpack("nn")
-          assert_equal(1, qtype) # A
-          assert_equal(1, qtype) # IN
-          id = id
-          qr = 1
-          opcode = opcode
-          aa = 0
-          tc = 0
-          rd = rd
-          ra = 1
-          z = 0
-          rcode = 0
-          qdcount = 0
-          ancount = num_records
-          nscount = 0
-          arcount = 0
-          word2 = (qr << 15) |
-                  (opcode << 11) |
-                  (aa << 10) |
-                  (tc << 9) |
-                  (rd << 8) |
-                  (ra << 7) |
-                  (z << 4) |
-                  rcode
-          msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
-          type = 1
-          klass = 1
-          ttl = 3600
-          rdlength = 4
-          num_records.times do |i|
-            rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
-            rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
-            msg << rr
-          end
-          msg = "#{[msg.bytesize].pack("n")}#{msg}" # Prefix with size
-          ct.send(msg, 0)
-          ct.close
-        }
-        result, _ = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
-        assert_instance_of(Array, result)
-        assert_equal(50, result.length)
-        result.each_with_index do |rr, i|
-          assert_instance_of(Resolv::DNS::Resource::IN::A, rr)
-          assert_instance_of(Resolv::IPv4, rr.address)
-          assert_equal("192.0.2.#{i}", rr.address.to_s)
-          assert_equal(3600, rr.ttl)
-        end
       }
+      udp_server_thread = Thread.new {
+        msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
+        id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
+        qr =     (word2 & 0x8000) >> 15
+        opcode = (word2 & 0x7800) >> 11
+        aa =     (word2 & 0x0400) >> 10
+        tc =     (word2 & 0x0200) >> 9
+        rd =     (word2 & 0x0100) >> 8
+        ra =     (word2 & 0x0080) >> 7
+        z =      (word2 & 0x0070) >> 4
+        rcode =   word2 & 0x000f
+        rest = msg[12..-1]
+        assert_equal(0, qr) # 0:query 1:response
+        assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
+        assert_equal(0, aa) # Authoritative Answer
+        assert_equal(0, tc) # TrunCation
+        assert_equal(1, rd) # Recursion Desired
+        assert_equal(0, ra) # Recursion Available
+        assert_equal(0, z) # Reserved for future use
+        assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
+        assert_equal(1, qdcount) # number of entries in the question section.
+        assert_equal(0, ancount) # number of entries in the answer section.
+        assert_equal(0, nscount) # number of entries in the authority records section.
+        assert_equal(0, arcount) # number of entries in the additional records section.
+        name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
+        assert_operator(rest, :start_with?, name)
+        rest = rest[name.length..-1]
+        assert_equal(4, rest.length)
+        qtype, _ = rest.unpack("nn")
+        assert_equal(1, qtype) # A
+        assert_equal(1, qtype) # IN
+        id = id
+        qr = 1
+        opcode = opcode
+        aa = 0
+        tc = 1
+        rd = rd
+        ra = 1
+        z = 0
+        rcode = 0
+        qdcount = 0
+        ancount = num_records
+        nscount = 0
+        arcount = 0
+        word2 = (qr << 15) |
+                (opcode << 11) |
+                (aa << 10) |
+                (tc << 9) |
+                (rd << 8) |
+                (ra << 7) |
+                (z << 4) |
+                rcode
+        msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+        type = 1
+        klass = 1
+        ttl = 3600
+        rdlength = 4
+        num_records.times do |i|
+          rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
+          rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
+          msg << rr
+        end
+        u.send(msg[0...512], 0, client_address, client_port)
+      }
+      tcp_server_thread = Thread.new {
+        ct = t.accept
+        msg = ct.recv(512)
+        msg.slice!(0..1) # Size (only for TCP)
+        id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
+        qr =     (word2 & 0x8000) >> 15
+        opcode = (word2 & 0x7800) >> 11
+        aa =     (word2 & 0x0400) >> 10
+        tc =     (word2 & 0x0200) >> 9
+        rd =     (word2 & 0x0100) >> 8
+        ra =     (word2 & 0x0080) >> 7
+        z =      (word2 & 0x0070) >> 4
+        rcode =   word2 & 0x000f
+        rest = msg[12..-1]
+        assert_equal(0, qr) # 0:query 1:response
+        assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
+        assert_equal(0, aa) # Authoritative Answer
+        assert_equal(0, tc) # TrunCation
+        assert_equal(1, rd) # Recursion Desired
+        assert_equal(0, ra) # Recursion Available
+        assert_equal(0, z) # Reserved for future use
+        assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
+        assert_equal(1, qdcount) # number of entries in the question section.
+        assert_equal(0, ancount) # number of entries in the answer section.
+        assert_equal(0, nscount) # number of entries in the authority records section.
+        assert_equal(0, arcount) # number of entries in the additional records section.
+        name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
+        assert_operator(rest, :start_with?, name)
+        rest = rest[name.length..-1]
+        assert_equal(4, rest.length)
+        qtype, _ = rest.unpack("nn")
+        assert_equal(1, qtype) # A
+        assert_equal(1, qtype) # IN
+        id = id
+        qr = 1
+        opcode = opcode
+        aa = 0
+        tc = 0
+        rd = rd
+        ra = 1
+        z = 0
+        rcode = 0
+        qdcount = 0
+        ancount = num_records
+        nscount = 0
+        arcount = 0
+        word2 = (qr << 15) |
+                (opcode << 11) |
+                (aa << 10) |
+                (tc << 9) |
+                (rd << 8) |
+                (ra << 7) |
+                (z << 4) |
+                rcode
+        msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+        type = 1
+        klass = 1
+        ttl = 3600
+        rdlength = 4
+        num_records.times do |i|
+          rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
+          rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
+          msg << rr
+        end
+        msg = "#{[msg.bytesize].pack("n")}#{msg}" # Prefix with size
+        ct.send(msg, 0)
+        ct.close
+      }
+      result, _ = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_instance_of(Array, result)
+      assert_equal(50, result.length)
+      result.each_with_index do |rr, i|
+        assert_instance_of(Resolv::DNS::Resource::IN::A, rr)
+        assert_instance_of(Resolv::IPv4, rr.address)
+        assert_equal("192.0.2.#{i}", rr.address.to_s)
+        assert_equal(3600, rr.ttl)
+      end
     }
   end
 

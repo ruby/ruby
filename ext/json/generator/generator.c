@@ -892,7 +892,6 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     struct hash_foreach_arg arg;
 
     if (max_nesting != 0 && depth > max_nesting) {
-        fbuffer_free(buffer);
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
     fbuffer_append_char(buffer, '{');
@@ -927,7 +926,6 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     long depth = ++state->depth;
     int i, j;
     if (max_nesting != 0 && depth > max_nesting) {
-        fbuffer_free(buffer);
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
     fbuffer_append_char(buffer, '[');
@@ -1020,10 +1018,8 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     if (!allow_nan) {
         if (isinf(value)) {
-            fbuffer_free(buffer);
             rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         } else if (isnan(value)) {
-            fbuffer_free(buffer);
             rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         }
     }
@@ -1096,11 +1092,45 @@ static FBuffer *cState_prepare_buffer(VALUE self)
     return buffer;
 }
 
+struct generate_json_data {
+    FBuffer *buffer;
+    VALUE vstate;
+    JSON_Generator_State *state;
+    VALUE obj;
+};
+
+static VALUE generate_json_try(VALUE d)
+{
+    struct generate_json_data *data = (struct generate_json_data *)d;
+
+    generate_json(data->buffer, data->vstate, data->state, data->obj);
+
+    return Qnil;
+}
+
+static VALUE generate_json_rescue(VALUE d, VALUE exc)
+{
+    struct generate_json_data *data = (struct generate_json_data *)d;
+    fbuffer_free(data->buffer);
+
+    rb_exc_raise(exc);
+
+    return Qundef;
+}
+
 static VALUE cState_partial_generate(VALUE self, VALUE obj)
 {
     FBuffer *buffer = cState_prepare_buffer(self);
     GET_STATE(self);
-    generate_json(buffer, self, state, obj);
+
+    struct generate_json_data data = {
+        .buffer = buffer,
+        .vstate = self,
+        .state = state,
+        .obj = obj
+    };
+    rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
+
     return fbuffer_to_s(buffer);
 }
 

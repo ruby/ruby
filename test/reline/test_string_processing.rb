@@ -30,10 +30,7 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
 
     @line_editor.instance_variable_set(:@is_multiline, true)
     @line_editor.instance_variable_set(:@buffer_of_lines, buf)
-    @line_editor.instance_variable_set(:@line, buf[1])
     @line_editor.instance_variable_set(:@byte_pointer, 3)
-    @line_editor.instance_variable_set(:@cursor, 3)
-    @line_editor.instance_variable_set(:@cursor_max, 11)
     @line_editor.instance_variable_set(:@line_index, 1)
     @line_editor.instance_variable_set(:@completion_proc, proc { |target|
       assert_equal('p', target)
@@ -42,10 +39,7 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
 
     @line_editor.instance_variable_set(:@is_multiline, true)
     @line_editor.instance_variable_set(:@buffer_of_lines, buf)
-    @line_editor.instance_variable_set(:@line, buf[1])
     @line_editor.instance_variable_set(:@byte_pointer, 6)
-    @line_editor.instance_variable_set(:@cursor, 6)
-    @line_editor.instance_variable_set(:@cursor_max, 11)
     @line_editor.instance_variable_set(:@line_index, 1)
     @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
       assert_equal('puts', target)
@@ -54,10 +48,7 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
     })
     @line_editor.__send__(:call_completion_proc)
 
-    @line_editor.instance_variable_set(:@line, buf[0])
     @line_editor.instance_variable_set(:@byte_pointer, 6)
-    @line_editor.instance_variable_set(:@cursor, 6)
-    @line_editor.instance_variable_set(:@cursor_max, 8)
     @line_editor.instance_variable_set(:@line_index, 0)
     @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
       assert_equal('ho', target)
@@ -66,10 +57,7 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
     })
     @line_editor.__send__(:call_completion_proc)
 
-    @line_editor.instance_variable_set(:@line, buf[2])
     @line_editor.instance_variable_set(:@byte_pointer, 1)
-    @line_editor.instance_variable_set(:@cursor, 1)
-    @line_editor.instance_variable_set(:@cursor_max, 3)
     @line_editor.instance_variable_set(:@line_index, 2)
     @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
       assert_equal('e', target)

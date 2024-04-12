@@ -121,6 +121,7 @@ matrix:
   fast_finish: true
 
 before_script:
+  - lscpu
   - ./autogen.sh
   - mkdir build
   - cd build

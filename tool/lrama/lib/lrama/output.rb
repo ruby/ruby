@@ -150,6 +150,25 @@ module Lrama
       str
     end
 
+    def symbol_actions_for_destructor
+      str = ""
+
+      @grammar.symbols.each do |sym|
+        next unless sym.destructor
+
+        str << <<-STR
+    case #{sym.enum_name}: /* #{sym.comment}  */
+#line #{sym.destructor.lineno} "#{@grammar_file_path}"
+         {#{sym.destructor.translated_code(sym.tag)}}
+#line [@oline@] [@ofile@]
+        break;
+
+        STR
+      end
+
+      str
+    end
+
     # b4_user_initial_action
     def user_initial_action(comment = "")
       return "" unless @grammar.initial_action

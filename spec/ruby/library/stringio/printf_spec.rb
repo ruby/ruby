@@ -41,7 +41,7 @@ end
 
 describe "StringIO#printf when in read-write mode" do
   before :each do
-    @io = StringIO.new("example", "r+")
+    @io = StringIO.new(+"example", "r+")
   end
 
   it "starts from the beginning" do
@@ -62,7 +62,7 @@ end
 
 describe "StringIO#printf when in append mode" do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self" do
@@ -81,10 +81,10 @@ end
 
 describe "StringIO#printf when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.printf("test") }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.printf("test") }.should raise_error(IOError)
   end

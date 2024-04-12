@@ -150,7 +150,7 @@ static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 static const char *thread_status_name(rb_thread_t *th, int detail);
 static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
-static int consume_communication_pipe(int fd);
+MAYBE_UNUSED(static int consume_communication_pipe(int fd));
 
 static volatile int system_working = 1;
 static rb_internal_thread_specific_key_t specific_key_count;
@@ -263,6 +263,8 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
 }
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
+MAYBE_UNUSED(static bool th_has_dedicated_nt(const rb_thread_t *th));
+MAYBE_UNUSED(static int waitfd_to_waiting_flag(int wfd_event));
 
 #include THREAD_IMPL_SRC
 
@@ -529,9 +531,6 @@ void
 ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     native_thread_init_stack(th, local_in_parent_frame);
-#ifdef RUBY_ASAN_ENABLED
-    th->asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
-#endif
 }
 
 const VALUE *
@@ -4387,7 +4386,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
-    int state;
+    enum ruby_tag_type state;
     volatile int lerrno;
 
     rb_execution_context_t *ec = GET_EC();
@@ -4749,6 +4748,7 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
     rb_fiber_atfork(th);
@@ -5122,12 +5122,12 @@ recursive_list_access(VALUE sym)
 }
 
 /*
- * Returns Qtrue if and only if obj (or the pair <obj, paired_obj>) is already
+ * Returns true if and only if obj (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
 
-static VALUE
+static bool
 recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -5139,18 +5139,18 @@ recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 
     VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
     if (UNDEF_P(pair_list))
-        return Qfalse;
+        return false;
     if (paired_obj_id) {
         if (!RB_TYPE_P(pair_list, T_HASH)) {
             if (!OBJ_ID_EQL(paired_obj_id, pair_list))
-                return Qfalse;
+                return false;
         }
         else {
             if (NIL_P(rb_hash_lookup(pair_list, paired_obj_id)))
-                return Qfalse;
+                return false;
         }
     }
-    return Qtrue;
+    return true;
 }
 
 /*
@@ -5230,7 +5230,7 @@ exec_recursive_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, data))
  * Calls func(obj, arg, recursive), where recursive is non-zero if the
  * current method is called recursively on obj, or on the pair <obj, pairid>
  * If outer is 0, then the innermost func will be called with recursive set
- * to Qtrue, otherwise the outermost func will be called. In the latter case,
+ * to true, otherwise the outermost func will be called. In the latter case,
  * all inner func are short-circuited by throw.
  * Implementation details: the value thrown is the recursive list which is
  * proper to the current method and unlikely to be caught anywhere else.
@@ -5321,7 +5321,7 @@ rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pai
 
 /*
  * If recursion is detected on the current method and obj, the outermost
- * func will be called with (obj, arg, Qtrue). All inner func will be
+ * func will be called with (obj, arg, true). All inner func will be
  * short-circuited using throw.
  */
 
@@ -5339,7 +5339,7 @@ rb_exec_recursive_outer_mid(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE 
 
 /*
  * If recursion is detected on the current method, obj and paired_obj,
- * the outermost func will be called with (obj, arg, Qtrue). All inner
+ * the outermost func will be called with (obj, arg, true). All inner
  * func will be short-circuited using throw.
  */
 

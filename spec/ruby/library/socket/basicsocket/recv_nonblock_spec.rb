@@ -52,7 +52,7 @@ describe "Socket::BasicSocket#recv_nonblock" do
       @s2.send("data", 0, @s1.getsockname)
       IO.select([@s1], nil, nil, 2)
 
-      buf = "foo"
+      buf = +"foo"
       @s1.recv_nonblock(5, 0, buf)
       buf.should == "data"
     end

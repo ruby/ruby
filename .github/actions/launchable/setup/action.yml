@@ -38,11 +38,6 @@ inputs:
       Directory to (re-)checkout source codes. Launchable retrives the commit information
       from the directory.
 
-outputs:
-  enable-launchable:
-    description: "The boolean value indicating whether Launchable is enabled or not"
-    value: ${{ steps.enable-launchable.outputs.enable-launchable }}
-
 runs:
   using: composite
 
@@ -96,7 +91,7 @@ runs:
         PATH=$PATH:$(python -msite --user-base)/bin
         echo "PATH=$PATH" >> $GITHUB_ENV
         pip install --user launchable
-        launchable verify
+        launchable verify || true
         : # The build name cannot include a slash, so we replace the string here.
         github_ref="${{ github.ref }}"
         github_ref="${github_ref//\//_}"

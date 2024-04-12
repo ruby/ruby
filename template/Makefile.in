@@ -518,9 +518,9 @@ ext/realclean:: ext/realclean.sub
 .bundle/distclean:: .bundle/distclean.sub
 .bundle/realclean:: .bundle/realclean.sub
 
-ext/clean.sub .bundle/clean.sub:: ext/clean.mk
-ext/distclean.sub .bundle/distclean.sub:: ext/distclean.mk
-ext/realclean.sub .bundle/realclean.sub:: ext/realclean.mk
+ext/clean.sub:: ext/clean.mk
+ext/distclean.sub:: ext/distclean.mk
+ext/realclean.sub:: ext/realclean.mk
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
@@ -545,6 +545,9 @@ ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 	cd $(@D) 2>/dev/null && \
 	find "$$@" -type d -empty -exec $(RMDIRS) {} + 2> /dev/null || true
 	$(Q) $(RMDIRS) $(@D) 2> /dev/null || true
+
+.bundle/realclean::
+	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \

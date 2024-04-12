@@ -190,7 +190,6 @@ RBIMPL_ATTR_NONNULL(())
  */
 void rb_error_frozen(const char *what);
 
-RBIMPL_ATTR_NORETURN()
 /**
  * Identical  to  rb_error_frozen(),  except  it takes  arbitrary  Ruby  object
  * instead of C's string.

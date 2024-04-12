@@ -1044,7 +1044,7 @@ class TestRefinement < Test::Unit::TestCase
       end
       using Test
       def t
-        'Refinements are broken!'.chop!
+        'Refinements are broken!'.dup.chop!
       end
       t
       module Test

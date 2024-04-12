@@ -145,7 +145,8 @@ rb_ec_tag_state(const rb_execution_context_t *ec)
     enum ruby_tag_type state = tag->state;
     tag->state = TAG_NONE;
     rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
-    RBIMPL_ASSUME(state != TAG_NONE);
+    RBIMPL_ASSUME(state > TAG_NONE);
+    RBIMPL_ASSUME(state <= TAG_FATAL);
     return state;
 }
 
@@ -153,7 +154,7 @@ NORETURN(static inline void rb_ec_tag_jump(const rb_execution_context_t *ec, enu
 static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
-    RUBY_ASSERT(st != TAG_NONE);
+    RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
     ec->tag->state = st;
     ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);
 }
@@ -289,9 +290,9 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-NORETURN(void rb_vm_jump_tag_but_local_jump(int));
+NORETURN(void rb_vm_jump_tag_but_local_jump(enum ruby_tag_type));
 
-VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
+VALUE rb_vm_make_jump_tag_but_local_jump(enum ruby_tag_type state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
@@ -318,18 +319,6 @@ rb_char_next(const char *p)
 # else
 #  define CharNext(p) ((p) + 1)
 # endif
-#endif
-
-#if defined DOSISH || defined __CYGWIN__
-static inline void
-translit_char(char *p, int from, int to)
-{
-    while (*p) {
-        if ((unsigned char)*p == from)
-            *p = to;
-        p = CharNext(p);
-    }
-}
 #endif
 
 #endif /* RUBY_EVAL_INTERN_H */

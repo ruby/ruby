@@ -398,6 +398,9 @@ const struct st_hash_type rb_hashtype_ident = {
     rb_ident_hash,
 };
 
+#define RHASH_IDENTHASH_P(hash) (RHASH_TYPE(hash) == &identhash)
+#define RHASH_STRING_KEY_P(hash, key) (!RHASH_IDENTHASH_P(hash) && (rb_obj_class(key) == rb_cString))
+
 typedef st_index_t st_hash_t;
 
 /*
@@ -2960,7 +2963,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     rb_hash_modify(hash);
 
-    if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
+    if (!RHASH_STRING_KEY_P(hash, key)) {
         RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
     }
     else {
@@ -3907,18 +3910,9 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
-rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
-{
-    *value = arg->arg;
-    return ST_CONTINUE;
-}
-
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
-
-static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
-    RHASH_UPDATE(hash, key, rb_hash_update_callback, value);
+    rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
 
@@ -3929,6 +3923,9 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
 
     if (existing) {
         newvalue = (st_data_t)rb_yield_values(3, (VALUE)*key, (VALUE)*value, (VALUE)newvalue);
+    }
+    else if (RHASH_STRING_KEY_P(arg->hash, *key) && !RB_OBJ_FROZEN(*key)) {
+        *key = rb_hash_key_str(*key);
     }
     *value = newvalue;
     return ST_CONTINUE;
@@ -4166,7 +4163,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
 
     if (RHASH_EMPTY_P(hash)) return Qnil;
 
-    if (RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type != &identhash) {
+    if (RHASH_ST_TABLE_P(hash) && !RHASH_IDENTHASH_P(hash)) {
         VALUE value = Qundef;
         st_table assoctable = *RHASH_ST_TABLE(hash);
         assoctable.type = &(struct st_hash_type){
@@ -4449,7 +4446,7 @@ rb_hash_compare_by_id(VALUE hash)
 VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
-    return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);
+    return RBOOL(RHASH_IDENTHASH_P(hash));
 }
 
 VALUE

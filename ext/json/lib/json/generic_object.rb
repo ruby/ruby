@@ -2,6 +2,7 @@
 begin
   require 'ostruct'
 rescue LoadError
+  warn "JSON::GenericObject requires 'ostruct'. Please install it with `gem install ostruct`."
 end
 
 module JSON

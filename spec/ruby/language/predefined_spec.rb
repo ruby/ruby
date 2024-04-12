@@ -133,7 +133,7 @@ describe "Predefined global $&" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $&.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -146,12 +146,12 @@ describe "Predefined global $`" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $`.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /a/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /a/
     $`.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -164,12 +164,12 @@ describe "Predefined global $'" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $'.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /c/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /c/
     $'.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -187,7 +187,7 @@ describe "Predefined global $+" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $+.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -214,7 +214,7 @@ describe "Predefined globals $1..N" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $1.encoding.should equal(Encoding::EUC_JP)
   end
 end

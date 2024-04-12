@@ -9,11 +9,9 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
  */
 static size_t
 pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
-    size_t size = sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
-    for (size_t index = 0; index < node_list->size; index++) {
-        pm_node_memsize_node(node_list->nodes[index], memsize);
-    }
-    return size;
+    pm_node_t *node;
+    PM_NODE_LIST_FOREACH(node_list, index, node) pm_node_memsize_node(node, memsize);
+    return sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
 }
 
 /**
@@ -22,13 +20,36 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
  * the list to be twice as large as it was before. If the reallocation fails,
  * this function returns false, otherwise it returns true.
  */
-bool
-pm_node_list_grow(pm_node_list_t *list) {
-    if (list->size == list->capacity) {
-        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
-        list->nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
-        return list->nodes != NULL;
+static bool
+pm_node_list_grow(pm_node_list_t *list, size_t size) {
+    size_t requested_size = list->size + size;
+
+    // If the requested size caused overflow, return false.
+    if (requested_size < list->size) return false;
+
+    // If the requested size is within the existing capacity, return true.
+    if (requested_size < list->capacity) return true;
+
+    // Otherwise, reallocate the list to be twice as large as it was before.
+    size_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+
+    // If multiplying by 2 caused overflow, return false.
+    if (next_capacity < list->capacity) return false;
+
+    // If we didn't get enough by doubling, keep doubling until we do.
+    while (requested_size > next_capacity) {
+        size_t double_capacity = next_capacity * 2;
+
+        // Ensure we didn't overflow by multiplying by 2.
+        if (double_capacity < next_capacity) return false;
+        next_capacity = double_capacity;
     }
+
+    pm_node_t **nodes = (pm_node_t **) xrealloc(list->nodes, sizeof(pm_node_t *) * next_capacity);
+    if (nodes == NULL) return false;
+
+    list->nodes = nodes;
+    list->capacity = next_capacity;
     return true;
 }
 
@@ -37,7 +58,7 @@ pm_node_list_grow(pm_node_list_t *list) {
  */
 void
 pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
-    if (pm_node_list_grow(list)) {
+    if (pm_node_list_grow(list, 1)) {
         list->nodes[list->size++] = node;
     }
 }
@@ -47,10 +68,21 @@ pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
  */
 void
 pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node) {
-    if (pm_node_list_grow(list)) {
+    if (pm_node_list_grow(list, 1)) {
         memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
         list->nodes[0] = node;
         list->size++;
+    }
+}
+
+/**
+ * Concatenate the given node list onto the end of the other node list.
+ */
+void
+pm_node_list_concat(pm_node_list_t *list, pm_node_list_t *other) {
+    if (other->size > 0 && pm_node_list_grow(list, other->size)) {
+        memcpy(list->nodes + list->size, other->nodes, other->size * sizeof(pm_node_t *));
+        list->size += other->size;
     }
 }
 
@@ -73,10 +105,8 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
  */
 static void
 pm_node_list_destroy(pm_parser_t *parser, pm_node_list_t *list) {
-    for (size_t index = 0; index < list->size; index++) {
-        pm_node_destroy(parser, list->nodes[index]);
-    }
-
+    pm_node_t *node;
+    PM_NODE_LIST_FOREACH(list, index, node) pm_node_destroy(parser, node);
     pm_node_list_free(list);
 }
 
@@ -247,6 +277,10 @@ pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *nod
     }
 }
 
+// We optionally support dumping to JSON. For systems that don't want or need
+// this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
+#ifndef PRISM_EXCLUDE_JSON
+
 static void
 pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
     const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
@@ -360,3 +394,5 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             break;
     }
 }
+
+#endif

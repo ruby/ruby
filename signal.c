@@ -867,16 +867,19 @@ check_stack_overflow(int sig, const void *addr)
     }
 }
 # endif
+
 # ifdef _WIN32
 #   define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, 0)
 # else
 #   define FAULT_ADDRESS info->si_addr
 #   ifdef USE_UCONTEXT_REG
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
+#     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
 #   else
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, FAULT_ADDRESS)
+#     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
 #   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
+#   define SIGNAL_FROM_USER_P() ((info)->si_code == SI_USER)
+#   define CHECK_STACK_OVERFLOW() (SIGNAL_FROM_USER_P() ? (void)0 : CHECK_STACK_OVERFLOW_())
 # endif
 #else
 # define CHECK_STACK_OVERFLOW() (void)0
@@ -1544,22 +1547,4 @@ Init_signal(void)
 #endif
 
     rb_enable_interrupt();
-}
-
-#if defined(HAVE_GRANTPT)
-extern int grantpt(int);
-#else
-static int
-fake_grantfd(int masterfd)
-{
-    errno = ENOSYS;
-    return -1;
-}
-#define grantpt(fd) fake_grantfd(fd)
-#endif
-
-int
-rb_grantpt(int masterfd)
-{
-    return grantpt(masterfd);
 }

@@ -33,7 +33,7 @@ describe "Hash literal" do
   end
 
   it "freezes string keys on initialization" do
-    key = "foo"
+    key = +"foo"
     h = {key => "bar"}
     key.reverse!
     h["foo"].should == "bar"

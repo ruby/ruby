@@ -25,7 +25,7 @@ describe "Net::HTTPResponse#read_body" do
   describe "when passed a buffer" do
     it "reads the body to the passed buffer" do
       @res.reading_body(@socket, true) do
-        buffer = ""
+        buffer = +""
         @res.read_body(buffer)
         buffer.should == "test body"
       end
@@ -33,15 +33,15 @@ describe "Net::HTTPResponse#read_body" do
 
     it "returns the passed buffer" do
       @res.reading_body(@socket, true) do
-        buffer = ""
+        buffer = +""
         @res.read_body(buffer).should equal(buffer)
       end
     end
 
     it "raises an IOError if called a second time" do
       @res.reading_body(@socket, true) do
-        @res.read_body("")
-        -> { @res.read_body("") }.should raise_error(IOError)
+        @res.read_body(+"")
+        -> { @res.read_body(+"") }.should raise_error(IOError)
       end
     end
   end
@@ -51,7 +51,7 @@ describe "Net::HTTPResponse#read_body" do
       @res.reading_body(@socket, true) do
         yielded = false
 
-        buffer = ""
+        buffer = +""
         @res.read_body do |body|
           yielded = true
           buffer << body
@@ -79,7 +79,7 @@ describe "Net::HTTPResponse#read_body" do
   describe "when passed buffer and block" do
     it "raises an ArgumentError" do
       @res.reading_body(@socket, true) do
-        -> { @res.read_body("") {} }.should raise_error(ArgumentError)
+        -> { @res.read_body(+"") {} }.should raise_error(ArgumentError)
       end
     end
   end

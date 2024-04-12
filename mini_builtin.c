@@ -28,16 +28,16 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     }
     vm->builtin_function_table = table;
     static const rb_compile_option_t optimization = {
-        TRUE, /* unsigned int inline_const_cache; */
-        TRUE, /* unsigned int peephole_optimization; */
-        FALSE,/* unsigned int tailcall_optimization; */
-        TRUE, /* unsigned int specialized_instruction; */
-        TRUE, /* unsigned int operands_unification; */
-        TRUE, /* unsigned int instructions_unification; */
-        TRUE, /* unsigned int frozen_string_literal; */
-        FALSE, /* unsigned int debug_frozen_string_literal; */
-        FALSE, /* unsigned int coverage_enabled; */
-        0, /* int debug_level; */
+        .inline_const_cache = TRUE,
+        .peephole_optimization = TRUE,
+        .tailcall_optimization = FALSE,
+        .specialized_instruction = TRUE,
+        .operands_unification = TRUE,
+        .instructions_unification = TRUE,
+        .frozen_string_literal = TRUE,
+        .debug_frozen_string_literal = FALSE,
+        .coverage_enabled = FALSE,
+        .debug_level = 0,
     };
     const rb_iseq_t *iseq = rb_iseq_new_with_opt(&ast->body, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
     GET_VM()->builtin_function_table = NULL;

@@ -416,7 +416,7 @@ class TestException < Test::Unit::TestCase
 
     assert_in_out_err([], "$@ = 1", [], /\$! not set \(ArgumentError\)$/)
 
-    assert_in_out_err([], <<-INPUT, [], /backtrace must be Array of String \(TypeError\)$/)
+    assert_in_out_err([], <<-INPUT, [], /backtrace must be an Array of String or an Array of Thread::Backtrace::Location \(TypeError\)$/)
       begin
         raise
       rescue
@@ -508,6 +508,16 @@ end.join
 
     assert_raise(TypeError) { e.set_backtrace(1) }
     assert_raise(TypeError) { e.set_backtrace([1]) }
+
+    error = assert_raise(TypeError) do
+      e.set_backtrace(caller_locations(1, 1) + ["foo"])
+    end
+    assert_include error.message, "backtrace must be an Array of String or an Array of Thread::Backtrace::Location"
+
+    error = assert_raise(TypeError) do
+      e.set_backtrace(["foo"] + caller_locations(1, 1))
+    end
+    assert_include error.message, "backtrace must be an Array of String or an Array of Thread::Backtrace::Location"
   end
 
   def test_exit_success_p
@@ -1054,8 +1064,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def capture_warning_warn(category: false)
     verbose = $VERBOSE
-    deprecated = Warning[:deprecated]
-    experimental = Warning[:experimental]
+    categories = Warning.categories.to_h {|cat| [cat, Warning[cat]]}
     warning = []
 
     ::Warning.class_eval do
@@ -1074,15 +1083,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
 
     $VERBOSE = true
-    Warning[:deprecated] = true
-    Warning[:experimental] = true
+    Warning.categories.each {|cat| Warning[cat] = true}
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
-    Warning[:deprecated] = deprecated
-    Warning[:experimental] = experimental
+    categories.each {|cat, flag| Warning[cat] = flag}
 
     ::Warning.class_eval do
       remove_method :warn
@@ -1101,19 +1108,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_warn_deprecated_backwards_compatibility_category
-    omit "no method to test"
+    (message, category), = capture_warning_warn(category: true) do
+      $; = "www"
+      $; = nil
+    end
 
-    warning = capture_warning_warn { }
-
-    assert_match(/deprecated/, warning[0])
-  end
-
-  def test_warn_deprecated_category
-    omit "no method to test"
-
-    warning = capture_warning_warn(category: true) { }
-
-    assert_equal :deprecated, warning[0][1]
+    assert_include message, 'deprecated'
+    assert_equal :deprecated, category
   end
 
   def test_kernel_warn_uplevel
@@ -1185,48 +1186,24 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def test_warning_category
     assert_raise(TypeError) {Warning[nil]}
     assert_raise(ArgumentError) {Warning[:XXXX]}
-    assert_include([true, false], Warning[:deprecated])
-    assert_include([true, false], Warning[:experimental])
-  end
 
-  def test_warning_category_deprecated
-    warning = EnvUtil.verbose_warning do
-      deprecated = Warning[:deprecated]
-      Warning[:deprecated] = true
-      Warning.warn "deprecated feature", category: :deprecated
-    ensure
-      Warning[:deprecated] = deprecated
-    end
-    assert_equal "deprecated feature", warning
+    all_assertions_foreach("categories", *Warning.categories) do |cat|
+      value = Warning[cat]
+      assert_include([true, false], value)
 
-    warning = EnvUtil.verbose_warning do
-      deprecated = Warning[:deprecated]
-      Warning[:deprecated] = false
-      Warning.warn "deprecated feature", category: :deprecated
+      enabled = EnvUtil.verbose_warning do
+        Warning[cat] = true
+        Warning.warn "#{cat} feature", category: cat
+      end
+      disabled = EnvUtil.verbose_warning do
+        Warning[cat] = false
+        Warning.warn "#{cat} feature", category: cat
+      end
     ensure
-      Warning[:deprecated] = deprecated
+      Warning[cat] = value
+      assert_equal "#{cat} feature", enabled
+      assert_empty disabled
     end
-    assert_empty warning
-  end
-
-  def test_warning_category_experimental
-    warning = EnvUtil.verbose_warning do
-      experimental = Warning[:experimental]
-      Warning[:experimental] = true
-      Warning.warn "experimental feature", category: :experimental
-    ensure
-      Warning[:experimental] = experimental
-    end
-    assert_equal "experimental feature", warning
-
-    warning = EnvUtil.verbose_warning do
-      experimental = Warning[:experimental]
-      Warning[:experimental] = false
-      Warning.warn "experimental feature", category: :experimental
-    ensure
-      Warning[:experimental] = experimental
-    end
-    assert_empty warning
   end
 
   def test_undef_Warning_warn
@@ -1421,11 +1398,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_marshal_circular_cause
-    begin
-      raise RuntimeError, "err", [], cause: Exception.new
-    rescue => e
-    end
-    dump = Marshal.dump(e).sub(/o:\x0EException\x08;.0;.0;.0/, "@\x05")
+    dump = "\x04\bo:\x11RuntimeError\b:\tmesgI\"\berr\x06:\x06ET:\abt[\x00:\ncause@\x05"
     assert_raise_with_message(ArgumentError, /circular cause/, ->{dump.inspect}) do
       e = Marshal.load(dump)
       assert_same(e, e.cause)

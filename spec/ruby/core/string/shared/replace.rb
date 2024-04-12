@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 describe :string_replace, shared: true do
   it "returns self" do
     a = "a"

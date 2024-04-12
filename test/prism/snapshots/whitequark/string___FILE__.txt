@@ -4,4 +4,5 @@
     @ StatementsNode (location: (1,0)-(1,8))
     └── body: (length: 1)
         └── @ SourceFileNode (location: (1,0)-(1,8))
+            ├── flags: ∅
             └── filepath: "whitequark/string___FILE__.txt"

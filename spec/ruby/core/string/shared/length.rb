@@ -18,7 +18,7 @@ describe :string_length, shared: true do
   end
 
   it "returns the length of the new self after encoding is changed" do
-    str = 'こにちわ'
+    str = +'こにちわ'
     str.send(@method)
 
     str.force_encoding('BINARY').send(@method).should == 12
@@ -44,12 +44,12 @@ describe :string_length, shared: true do
   end
 
   it "adds 1 (and not 2) for a incomplete surrogate in UTF-16" do
-    "\x00\xd8".force_encoding("UTF-16LE").send(@method).should == 1
-    "\xd8\x00".force_encoding("UTF-16BE").send(@method).should == 1
+    "\x00\xd8".dup.force_encoding("UTF-16LE").send(@method).should == 1
+    "\xd8\x00".dup.force_encoding("UTF-16BE").send(@method).should == 1
   end
 
   it "adds 1 for a broken sequence in UTF-32" do
-    "\x04\x03\x02\x01".force_encoding("UTF-32LE").send(@method).should == 1
-    "\x01\x02\x03\x04".force_encoding("UTF-32BE").send(@method).should == 1
+    "\x04\x03\x02\x01".dup.force_encoding("UTF-32LE").send(@method).should == 1
+    "\x01\x02\x03\x04".dup.force_encoding("UTF-32BE").send(@method).should == 1
   end
 end

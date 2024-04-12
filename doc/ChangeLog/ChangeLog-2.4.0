@@ -7356,7 +7356,7 @@ Thu Mar 17 11:51:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 	  Note: CryptGenRandom function is PRNG and doesn't check its entropy,
 	  so it won't block. [Bug #12139]
 	  https://msdn.microsoft.com/ja-jp/library/windows/desktop/aa379942.aspx
-	  https://tools.ietf.org/html/rfc4086#section-7.1.3
+	  https://www.rfc-editor.org/rfc/rfc4086#section-7.1.3
 	  https://eprint.iacr.org/2007/419.pdf
 	  http://www.cs.huji.ac.il/~dolev/pubs/thesis/msc-thesis-leo.pdf
 

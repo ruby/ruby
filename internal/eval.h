@@ -21,6 +21,7 @@ extern ID ruby_static_id_status;
 VALUE rb_refinement_module_get_refined_class(VALUE module);
 void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
+VALUE rb_top_main_class(const char *method);
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);

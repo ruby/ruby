@@ -1367,12 +1367,12 @@ Also, a list:
   #
   # Yields the +specification+ to the block, if given
 
-  def vendor_gem(name = "a", version = 1)
+  def vendor_gem(name = "a", version = 1, &block)
     directory = File.join "vendor", name
 
     FileUtils.mkdir_p directory
 
-    save_gemspec name, version, directory
+    save_gemspec name, version, directory, &block
   end
 
   ##

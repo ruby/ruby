@@ -14,7 +14,7 @@ ruby_version_is "3.2" do
     end
 
     it "supports String with invalid encoding" do
-      string = "\xC0\<\<".force_encoding("UTF-8")
+      string = "\xC0\<\<".dup.force_encoding("UTF-8")
       CGI.escapeURIComponent(string).should == "%C0%3C%3C"
     end
 

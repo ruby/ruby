@@ -1154,10 +1154,11 @@
         │   │   @ StatementsNode (location: (127,2)-(127,12))
         │   │   └── body: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (127,2)-(127,12))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (127,2)-(127,12) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (128,0)-(128,4))
-        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── flags: frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (128,0)-(128,4) = "    "
         │   │           │   │   ├── closing_loc: ∅
@@ -1167,7 +1168,7 @@
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (128,6)-(128,7) = "}"
         │   │           │   └── @ StringNode (location: (128,7)-(129,0))
-        │   │           │       ├── flags: ∅
+        │   │           │       ├── flags: frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (128,7)-(129,0) = "\n"
         │   │           │       ├── closing_loc: ∅

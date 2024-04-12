@@ -17,51 +17,11 @@ require_relative "test_helper"
 
 module Prism
   class LocalsTest < TestCase
-    invalid = []
-    todos = []
-
-    # Invalid break
-    invalid << "break.txt"
-    invalid << "if.txt"
-    invalid << "rescue.txt"
-    invalid << "seattlerb/block_break.txt"
-    invalid << "unless.txt"
-    invalid << "whitequark/break.txt"
-    invalid << "whitequark/break_block.txt"
-
-    # Invalid next
-    invalid << "next.txt"
-    invalid << "seattlerb/block_next.txt"
-    invalid << "unparser/corpus/literal/control.txt"
-    invalid << "whitequark/next.txt"
-    invalid << "whitequark/next_block.txt"
-
-    # Invalid redo
-    invalid << "keywords.txt"
-    invalid << "whitequark/redo.txt"
-
-    # Invalid retry
-    invalid << "whitequark/retry.txt"
-
-    # Invalid yield
-    invalid << "seattlerb/dasgn_icky2.txt"
-    invalid << "seattlerb/yield_arg.txt"
-    invalid << "seattlerb/yield_call_assocs.txt"
-    invalid << "seattlerb/yield_empty_parens.txt"
-    invalid << "unparser/corpus/literal/yield.txt"
-    invalid << "whitequark/args_assocs.txt"
-    invalid << "whitequark/args_assocs_legacy.txt"
-    invalid << "whitequark/yield.txt"
-    invalid << "yield.txt"
-
-    # Dead code eliminated
-    invalid << "whitequark/ruby_bug_10653.txt"
-
     base = File.join(__dir__, "fixtures")
-    skips = invalid | todos
-
     Dir["**/*.txt", base: base].each do |relative|
-      next if skips.include?(relative)
+      # Skip this fixture because it has a different number of locals because
+      # CRuby is eliminating dead code.
+      next if relative == "whitequark/ruby_bug_10653.txt"
 
       filepath = File.join(base, relative)
       define_method("test_#{relative}") { assert_locals(filepath) }

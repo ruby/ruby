@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -56,6 +56,13 @@ jobs:
         run: |
           ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems >> $GITHUB_OUTPUT
 
+      - name: Update spec/bundler/support/builders.rb
+        run: |
+          #!ruby
+          rake_version = File.read("gems/bundled_gems")[/^rake\s+(\S+)/, 1]
+          print ARGF.read.sub(/^ *def rake_version\s*\K".*?"/) {rake_version.dump}
+        shell: ruby -i~ {0} spec/bundler/support/builders.rb
+
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb bundled
@@ -69,6 +76,7 @@ jobs:
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- gems/bundled_gems ||
           gems=true
           git add -- NEWS.md gems/bundled_gems
+          git add -- spec/bundler/support/builders.rb
           echo news=$news >> $GITHUB_OUTPUT
           echo gems=$gems >> $GITHUB_OUTPUT
           echo update=${news:-$gems} >> $GITHUB_OUTPUT

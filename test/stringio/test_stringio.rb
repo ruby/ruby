@@ -22,10 +22,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
     assert_kind_of StringIO, StringIO.new('str', 'r+')
+    assert_kind_of StringIO, StringIO.new(nil)
     assert_raise(ArgumentError) { StringIO.new('', 'x') }
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
-    assert_raise(TypeError) { StringIO.new(nil) }
+    assert_raise(TypeError) { StringIO.new(Object) }
 
     o = Object.new
     def o.to_str
@@ -38,6 +39,13 @@ class TestStringIO < Test::Unit::TestCase
       'str'
     end
     assert_kind_of StringIO, StringIO.new(o)
+  end
+
+  def test_null
+    io = StringIO.new(nil)
+    assert_nil io.gets
+    io.puts "abc"
+    assert_nil io.string
   end
 
   def test_truncate
@@ -237,7 +245,7 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_write_integer_overflow
     f = StringIO.new
-    f.pos = RbConfig::LIMITS["LONG_MAX"]
+    f.pos = StringIO::MAX_LENGTH
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -899,8 +907,9 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    return if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
+    intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
+    return if intptr_max > StringIO::MAX_LENGTH
+    limit = intptr_max - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
@@ -968,6 +977,27 @@ class TestStringIO < Test::Unit::TestCase
     s.write('aaaa')
     assert_predicate(s.string, :ascii_only?)
   end
+
+  if eval(%{ "test".frozen? && !"test".equal?("test") }) # Ruby 3.4+ chilled strings
+    def test_chilled_string
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+
+    def test_chilled_string_string_set
+      io = StringIO.new
+      chilled_string = eval(%{""})
+      io.string = chilled_string
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+  end
+
+  private
 
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)

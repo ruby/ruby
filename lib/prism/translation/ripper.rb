@@ -583,11 +583,21 @@ module Prism
       # foo => bar | baz
       #        ^^^^^^^^^
       def visit_alternation_pattern_node(node)
-        left = visit(node.left)
-        right = visit(node.right)
+        left = visit_pattern_node(node.left)
+        right = visit_pattern_node(node.right)
 
         bounds(node.location)
         on_binary(left, :|, right)
+      end
+
+      # Visit a pattern within a pattern match. This is used to bypass the
+      # parenthesis node that can be used to wrap patterns.
+      private def visit_pattern_node(node)
+        if node.is_a?(ParenthesesNode)
+          visit(node.body)
+        else
+          visit(node)
+        end
       end
 
       # a and b
@@ -1952,7 +1962,7 @@ module Prism
         # This is a special case where we're not going to call on_in directly
         # because we don't have access to the consequent. Instead, we'll return
         # the component parts and let the parent node handle it.
-        pattern = visit(node.pattern)
+        pattern = visit_pattern_node(node.pattern)
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -2389,7 +2399,7 @@ module Prism
       # ^^^^^^^^^^
       def visit_match_predicate_node(node)
         value = visit(node.value)
-        pattern = on_in(visit(node.pattern), nil, nil)
+        pattern = on_in(visit_pattern_node(node.pattern), nil, nil)
 
         on_case(value, pattern)
       end
@@ -2398,7 +2408,7 @@ module Prism
       # ^^^^^^^^^^
       def visit_match_required_node(node)
         value = visit(node.value)
-        pattern = on_in(visit(node.pattern), nil, nil)
+        pattern = on_in(visit_pattern_node(node.pattern), nil, nil)
 
         on_case(value, pattern)
       end
@@ -2846,6 +2856,11 @@ module Prism
       def visit_self_node(node)
         bounds(node.location)
         on_var_ref(on_kw("self"))
+      end
+
+      # A shareable constant.
+      def visit_shareable_constant_node(node)
+        visit(node.write)
       end
 
       # class << self; end

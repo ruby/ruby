@@ -18,8 +18,6 @@
 
 struct rb_iseq_struct;          /* in vm_core.h */
 
-#define STRTERM_HEREDOC IMEMO_FL_USER0
-
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
     long nest;
@@ -40,7 +38,7 @@ typedef struct rb_strterm_heredoc_struct {
 #define HERETERM_LENGTH_MAX UINT_MAX
 
 typedef struct rb_strterm_struct {
-    VALUE flags;
+    bool heredoc;
     union {
         rb_strterm_literal_t literal;
         rb_strterm_heredoc_t heredoc;
@@ -70,7 +68,6 @@ rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
 void rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash);
 int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);
-VALUE rb_parser_node_case_when_optimizable_literal(struct parser_params *p, const NODE *const node);
 int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc);
 int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq_struct *iseq);
@@ -105,6 +102,9 @@ long rb_ruby_ripper_column(rb_parser_t *p);
 long rb_ruby_ripper_token_len(rb_parser_t *p);
 rb_parser_string_t *rb_ruby_ripper_lex_lastline(rb_parser_t *p);
 VALUE rb_ruby_ripper_lex_state_name(struct parser_params *p, int state);
+#ifdef UNIVERSAL_PARSER
+rb_parser_t *rb_ripper_parser_params_allocate(const rb_parser_config_t *config);
+#endif
 struct parser_params *rb_ruby_ripper_parser_allocate(void);
 #endif
 

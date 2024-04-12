@@ -34,6 +34,18 @@
 #endif
 #endif
 
+#if defined(__GNUC__)
+# if defined(__MINGW_PRINTF_FORMAT)
+#   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, argument_index)))
+# else
+#   define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
+# endif
+#elif defined(__clang__)
+# define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((__format__(__printf__, string_index, argument_index)))
+#else
+# define RUBYPARSER_ATTRIBUTE_FORMAT(string_index, argument_index)
+#endif
+
 /*
  * Parser String
  */
@@ -53,6 +65,13 @@ typedef struct rb_parser_string {
     /* Pointer to the contents of the string. */
     char *ptr;
 } rb_parser_string_t;
+
+enum rb_parser_shareability {
+    rb_parser_shareable_none,
+    rb_parser_shareable_literal,
+    rb_parser_shareable_copy,
+    rb_parser_shareable_everything,
+};
 
 /*
  * AST Node
@@ -117,7 +136,6 @@ enum node_type {
     NODE_MATCH,
     NODE_MATCH2,
     NODE_MATCH3,
-    NODE_LIT,
     NODE_INTEGER,
     NODE_FLOAT,
     NODE_RATIONAL,
@@ -188,6 +206,24 @@ typedef struct rb_code_location_struct {
     rb_code_position_t beg_pos;
     rb_code_position_t end_pos;
 } rb_code_location_t;
+#define YYLTYPE rb_code_location_t
+#define YYLTYPE_IS_DECLARED 1
+
+typedef struct rb_parser_ast_token {
+    int id;
+    const char *type_name;
+    rb_parser_string_t *str;
+    rb_code_location_t loc;
+} rb_parser_ast_token_t;
+
+/*
+ * Array-like object for parser
+ */
+typedef struct rb_parser_ary {
+    rb_parser_ast_token_t **data;
+    long len;  // current size
+    long capa; // capacity
+} rb_parser_ary_t;
 
 /* Header part of AST Node */
 typedef struct RNode {
@@ -414,6 +450,7 @@ typedef struct RNode_CDECL {
     ID nd_vid;
     struct RNode *nd_value;
     struct RNode *nd_else;
+    enum rb_parser_shareability shareability;
 } rb_node_cdecl_t;
 
 typedef struct RNode_CVASGN {
@@ -462,6 +499,7 @@ typedef struct RNode_OP_CDECL {
     struct RNode *nd_head;
     struct RNode *nd_value;
     ID nd_aid;
+    enum rb_parser_shareability shareability;
 } rb_node_op_cdecl_t;
 
 typedef struct RNode_CALL {
@@ -636,16 +674,10 @@ typedef struct RNode_MATCH3 {
     struct RNode *nd_value;
 } rb_node_match3_t;
 
-typedef struct RNode_LIT {
-    NODE node;
-
-    VALUE nd_lit;
-} rb_node_lit_t;
-
 typedef struct RNode_INTEGER {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
 } rb_node_integer_t;
@@ -653,14 +685,14 @@ typedef struct RNode_INTEGER {
 typedef struct RNode_FLOAT {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -675,7 +707,7 @@ enum rb_numeric_type {
 typedef struct RNode_IMAGINARY {
     NODE node;
 
-    char* val;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -773,7 +805,7 @@ typedef struct RNode_ARGS_AUX {
     NODE node;
 
     ID nd_pid;
-    long nd_plen;
+    int nd_plen;
     struct RNode *nd_next;
 } rb_node_args_aux_t;
 
@@ -1092,7 +1124,6 @@ typedef struct RNode_ERROR {
 #define RNODE_MATCH(node) ((struct RNode_MATCH *)(node))
 #define RNODE_MATCH2(node) ((struct RNode_MATCH2 *)(node))
 #define RNODE_MATCH3(node) ((struct RNode_MATCH3 *)(node))
-#define RNODE_LIT(node) ((struct RNode_LIT *)(node))
 #define RNODE_INTEGER(node) ((struct RNode_INTEGER *)(node))
 #define RNODE_FLOAT(node) ((struct RNode_FLOAT *)(node))
 #define RNODE_RATIONAL(node) ((struct RNode_RATIONAL *)(node))
@@ -1147,7 +1178,7 @@ typedef struct RNode_ERROR {
 #define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
-/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
+/* NODE_FL: 0..4: UNUSED,  5: UNUSED,  6: UNUSED,   7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
  */
@@ -1211,20 +1242,11 @@ typedef struct rb_parser_config_struct {
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
     /* imemo */
-    rb_imemo_tmpbuf_t *(*tmpbuf_parser_heap)(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
     rb_ast_t *(*ast_new)(VALUE nb);
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
-
-    /* Object */
-    VALUE (*obj_freeze)(VALUE obj);
-    VALUE (*obj_hide)(VALUE obj);
-    void (*obj_freeze_raw)(VALUE obj);
-
-    int (*fixnum_p)(VALUE);
-    int (*symbol_p)(VALUE);
 
     /* Variable */
     VALUE (*attr_get)(VALUE obj, ID id);
@@ -1234,8 +1256,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
-    VALUE (*ary_new2)(long capa); // ary_new_capa
-    VALUE (*ary_clear)(VALUE ary);
     void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
@@ -1288,16 +1308,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*filesystem_str_new_cstr)(const char *ptr);
     VALUE (*obj_as_string)(VALUE);
 
-    /* Hash */
-    VALUE (*hash_clear)(VALUE hash);
-    VALUE (*hash_new)(void);
-    VALUE (*hash_aset)(VALUE hash, VALUE key, VALUE val);
-    VALUE (*hash_delete)(VALUE hash, VALUE key);
-    VALUE (*hash_lookup)(VALUE hash, VALUE key);
-    VALUE (*ident_hash_new)(void);
-
     /* Numeric */
-    int (*num2int)(VALUE val);
     VALUE (*int2num)(int v);
 
     /* IO */
@@ -1328,31 +1339,24 @@ typedef struct rb_parser_config_struct {
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
-    int (*char_to_option_kcode)(int c, int *option, int *kcode);
-    int (*ascii8bit_encindex)(void);
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
     VALUE (*enc_associate_index)(VALUE obj, int encindex);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
-    int (*encoding_get)(VALUE obj);
-    void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
-
-    /* Ractor */
-    VALUE (*ractor_make_shareable)(VALUE obj);
+    int enc_coderange_broken;
+    int (*enc_mbminlen)(rb_encoding *enc);
+    bool (*enc_isascii)(OnigCodePoint c, rb_encoding *enc);
+    OnigCodePoint (*enc_mbc_to_codepoint)(const char *p, const char *e, rb_encoding *enc);
 
     /* Compile */
     // int rb_local_defined(ID id, const rb_iseq_t *iseq);
     int (*local_defined)(ID, const void*);
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
     int (*dvar_defined)(ID, const void*);
-
-    /* Compile (parse.y) */
-    int (*literal_cmp)(VALUE val, VALUE lit);
-    parser_st_index_t (*literal_hash)(VALUE a);
 
     /* Error (Exception) */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
@@ -1371,11 +1375,9 @@ typedef struct rb_parser_config_struct {
     void (*sized_xfree)(void *x, size_t size);
     void *(*sized_realloc_n)(void *ptr, size_t new_count, size_t element_size, size_t old_count);
     VALUE (*obj_write)(VALUE, VALUE *, VALUE);
-    VALUE (*obj_written)(VALUE, VALUE, VALUE);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
     void (*gc_mark_and_move)(VALUE *ptr);
-    VALUE (*gc_location)(VALUE value);
 
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);
@@ -1383,10 +1385,10 @@ typedef struct rb_parser_config_struct {
     int (*memcicmp)(const void *x, const void *y, long len);
 
     /* Error */
-    void (*compile_warn)(const char *file, int line, const char *fmt, ...);
-    void (*compile_warning)(const char *file, int line, const char *fmt, ...);
-    void (*bug)(const char *fmt, ...);
-    void (*fatal)(const char *fmt, ...);
+    void (*compile_warn)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
+    void (*compile_warning)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
+    void (*bug)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
+    void (*fatal)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
     VALUE (*verbose)(void);
     int *(*errno_ptr)(void);
 
@@ -1401,18 +1403,13 @@ typedef struct rb_parser_config_struct {
 
     /* Misc */
     VALUE (*rbool)(VALUE);
-    int (*undef_p)(VALUE);
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
     VALUE qnil;
     VALUE qtrue;
     VALUE qfalse;
-    VALUE qundef;
     VALUE (*eArgError)(void);
-    VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);
-
-    VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 
     /* For Ripper */
     int enc_coderange_7bit;

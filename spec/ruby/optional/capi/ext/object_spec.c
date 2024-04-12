@@ -179,11 +179,7 @@ static VALUE object_spec_rb_method_boundp(VALUE self, VALUE obj, VALUE method, V
 }
 
 static VALUE object_spec_rb_special_const_p(VALUE self, VALUE value) {
-  if (rb_special_const_p(value)) {
-    return Qtrue;
-  } else {
-    return Qfalse;
-  }
+  return rb_special_const_p(value);
 }
 
 static VALUE so_to_id(VALUE self, VALUE obj) {
@@ -388,16 +384,8 @@ static VALUE object_spec_rb_ivar_foreach(VALUE self, VALUE obj) {
 }
 
 static VALUE speced_allocator(VALUE klass) {
-  VALUE flags = 0;
-  VALUE instance;
-  if (RTEST(rb_class_inherited_p(klass, rb_cString))) {
-    flags = T_STRING;
-  } else if (RTEST(rb_class_inherited_p(klass, rb_cArray))) {
-    flags = T_ARRAY;
-  } else {
-    flags = T_OBJECT;
-  }
-  instance = rb_newobj_of(klass, flags);
+  VALUE super = rb_class_get_superclass(klass);
+  VALUE instance = rb_get_alloc_func(super)(klass);
   rb_iv_set(instance, "@from_custom_allocator", Qtrue);
   return instance;
 }

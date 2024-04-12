@@ -133,7 +133,7 @@ class TestGem < Gem::TestCase
 
   def test_self_install_permissions_umask_077
     umask = File.umask(0o077)
-    assert_self_install_permissions
+    assert_self_install_permissions(data_mode: 0o600)
   ensure
     File.umask(umask)
   end
@@ -151,12 +151,12 @@ class TestGem < Gem::TestCase
     Gem::Installer.exec_format = nil
   end
 
-  def assert_self_install_permissions(format_executable: false)
+  def assert_self_install_permissions(format_executable: false, data_mode: 0o640)
     mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
       dir_mode: 0o500,
       prog_mode: Gem.win_platform? ? 0o410 : 0o510,
-      data_mode: 0o640,
+      data_mode: data_mode,
       wrappers: true,
       format_executable: format_executable,
     }

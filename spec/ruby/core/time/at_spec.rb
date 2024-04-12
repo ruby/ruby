@@ -196,7 +196,7 @@ describe "Time.at" do
       end
 
       it "does not try to convert format to Symbol with #to_sym" do
-        format = "usec"
+        format = +"usec"
         format.should_not_receive(:to_sym)
         -> { Time.at(0, 123456, format) }.should raise_error(ArgumentError)
       end

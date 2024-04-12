@@ -183,29 +183,6 @@ node_find(VALUE self, const int node_id)
 
 extern VALUE rb_e_script;
 
-VALUE
-rb_script_lines_for(VALUE path, bool add)
-{
-    VALUE hash, lines;
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
-    hash = rb_const_get_at(rb_cObject, script_lines);
-    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
-    if (add) {
-        rb_hash_aset(hash, path, lines = rb_ary_new());
-    }
-    else if (!RB_TYPE_P((lines = rb_hash_lookup(hash, path)), T_ARRAY)) {
-        return Qnil;
-    }
-    return lines;
-}
-static VALUE
-script_lines(VALUE path)
-{
-    return rb_script_lines_for(path, false);
-}
-
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
 {
@@ -267,7 +244,7 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
         rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
     }
 
-    if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
+    if (!NIL_P(lines)) {
         node = rb_ast_parse_array(lines, keep_script_lines, error_tolerant, keep_tokens);
     }
     else if (e_option) {
@@ -551,6 +528,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         name[1] = (char)RNODE_BACK_REF(node)->nd_nth;
         name[2] = '\0';
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
+      case NODE_MATCH:
+        return rb_ary_new_from_args(1, rb_node_regx_string_val(node));
       case NODE_MATCH2:
         if (RNODE_MATCH2(node)->nd_args) {
             return rb_ary_new_from_node_args(ast, 3, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value, RNODE_MATCH2(node)->nd_args);
@@ -558,9 +537,6 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value);
       case NODE_MATCH3:
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH3(node)->nd_recv, RNODE_MATCH3(node)->nd_value);
-      case NODE_MATCH:
-      case NODE_LIT:
-        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_STR:
       case NODE_XSTR:
         return rb_ary_new_from_args(1, rb_node_str_string_val(node));
@@ -774,10 +750,35 @@ ast_node_last_column(rb_execution_context_t *ec, VALUE self)
 static VALUE
 ast_node_all_tokens(rb_execution_context_t *ec, VALUE self)
 {
+    long i;
     struct ASTNodeData *data;
+    rb_parser_ary_t *parser_tokens;
+    rb_parser_ast_token_t *parser_token;
+    VALUE str, loc, token, all_tokens;
+
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_ast_tokens(data->ast);
+    parser_tokens = data->ast->node_buffer->tokens;
+    if (parser_tokens == NULL) {
+        return Qnil;
+    }
+
+    all_tokens = rb_ary_new2(parser_tokens->len);
+    for (i = 0; i < parser_tokens->len; i++) {
+        parser_token = parser_tokens->data[i];
+        str = rb_str_new(parser_token->str->ptr, parser_token->str->len);
+        loc = rb_ary_new_from_args(4,
+            INT2FIX(parser_token->loc.beg_pos.lineno),
+            INT2FIX(parser_token->loc.beg_pos.column),
+            INT2FIX(parser_token->loc.end_pos.lineno),
+            INT2FIX(parser_token->loc.end_pos.column)
+        );
+        token = rb_ary_new_from_args(4, INT2FIX(parser_token->id), ID2SYM(rb_intern(parser_token->type_name)), str, loc);
+        rb_ary_push(all_tokens, token);
+    }
+    rb_obj_freeze(all_tokens);
+
+    return all_tokens;
 }
 
 static VALUE

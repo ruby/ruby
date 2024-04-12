@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 describe :string_concat, shared: true do
   it "concatenates the given argument to self and returns self" do
     str = 'hello '

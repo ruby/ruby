@@ -79,6 +79,9 @@ class Downloader
       require 'rubygems'
       options = options.dup
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
+      if Gem::Version.new(name[/-\K[^-]*(?=\.gem\z)/]).prerelease?
+        options[:ignore_http_client_errors] = true
+      end
       super("https://rubygems.org/downloads/#{name}", name, dir, since, options)
     end
   end
@@ -237,6 +240,7 @@ class Downloader
       $stdout.flush
     end
     mtime = nil
+    ignore_http_client_errors = options.delete(:ignore_http_client_errors)
     options = options.merge(http_options(file, since.nil? ? true : since))
     begin
       data = with_retry(10) do
@@ -247,12 +251,18 @@ class Downloader
         data
       end
     rescue OpenURI::HTTPError => http_error
-      if http_error.message =~ /^304 / # 304 Not Modified
+      case http_error.message
+      when /^304 / # 304 Not Modified
         if $VERBOSE
           $stdout.puts "#{name} not modified"
           $stdout.flush
         end
         return file.to_path
+      when /^40/ # Net::HTTPClientError: 403 Forbidden, 404 Not Found
+        if ignore_http_client_errors
+          puts "Ignore #{url}: #{http_error.message}"
+          return file.to_path
+        end
       end
       raise
     rescue Timeout::Error
@@ -407,26 +417,42 @@ if $0 == __FILE__
 
     case ARGV[0]
     when '-d', '--destdir'
+      ## -d, --destdir DIRECTORY  Download into the directory
       destdir = ARGV[1]
       ARGV.shift
     when '-p', '--prefix'
-      # strip directory names from the name to download, and add the
-      # prefix instead.
+      ## -p, --prefix  Strip directory names from the name to download,
+      ##   and add the prefix instead.
       prefix = ARGV[1]
       ARGV.shift
     when '-e', '--exist', '--non-existent-only'
+      ## -e, --exist, --non-existent-only  Skip already existent files.
       since = nil
     when '-a', '--always'
+      ## -a, --always  Download all files.
       since = false
     when '-u', '--update', '--if-modified'
+      ## -u, --update, --if-modified  Download newer files only.
       since = true
-    when '-n', '--dryrun'
+    when '-n', '--dry-run', '--dryrun'
+      ## -n, --dry-run  Do not download actually.
       options[:dryrun] = true
     when '--cache-dir'
+      ## --cache-dir DIRECTORY  Cache downloaded files in the directory.
       options[:cache_dir] = ARGV[1]
       ARGV.shift
     when /\A--cache-dir=(.*)/m
       options[:cache_dir] = $1
+    when /\A--help\z/
+      ## --help  Print this message
+      puts "Usage: #$0 [options] relative-url..."
+      File.foreach(__FILE__) do |line|
+        line.sub!(/^ *## /, "") or next
+        break if line.chomp!.empty?
+        opt, desc = line.split(/ {2,}/, 2)
+        printf "  %-28s  %s\n", opt, desc
+      end
+      exit
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else

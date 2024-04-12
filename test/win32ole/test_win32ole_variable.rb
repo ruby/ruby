@@ -16,6 +16,10 @@ if defined?(WIN32OLE::Variable)
       @var2 = variables.find {|v| v.name == 'UILevel'}
     end
 
+    def test_toplevel_constants_backward_compatibility
+      assert_equal(WIN32OLE::Variable, ::WIN32OLE_VARIABLE)
+    end
+
     def test_initialize
       assert_raise(TypeError) {WIN32OLE::Variable.new}
     end

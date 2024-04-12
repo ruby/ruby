@@ -15,11 +15,11 @@ class TestApp < WEBrick::CGI
         }.join(", ")
       }.join(", ")
     elsif %r{/$} =~ req.request_uri.to_s
-      res.body = ""
+      res.body = +""
       res.body << req.request_uri.to_s  << "\n"
       res.body << req.script_name
     elsif !req.cookies.empty?
-      res.body = req.cookies.inject(""){|result, cookie|
+      res.body = req.cookies.inject(+""){|result, cookie|
         result << "%s=%s\n" % [cookie.name, cookie.value]
       }
       res.cookies << WEBrick::Cookie.new("Customer", "WILE_E_COYOTE")

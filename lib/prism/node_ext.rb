@@ -55,6 +55,7 @@ module Prism
     def to_interpolated
       InterpolatedStringNode.new(
         source,
+        frozen? ? InterpolatedStringNodeFlags::FROZEN : 0,
         opening_loc,
         [copy(opening_loc: nil, closing_loc: nil, location: content_loc)],
         closing_loc,

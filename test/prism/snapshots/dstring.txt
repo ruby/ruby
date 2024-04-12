@@ -1,0 +1,85 @@
+@ ProgramNode (location: (1,0)-(29,1))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(29,1))
+    └── body: (length: 8)
+        ├── @ StringNode (location: (1,0)-(2,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1,0)-(1,1) = "\""
+        │   ├── content_loc: (1,1)-(2,5) = "foo\n  bar"
+        │   ├── closing_loc: (2,5)-(2,6) = "\""
+        │   └── unescaped: "foo\n  bar"
+        ├── @ InterpolatedStringNode (location: (4,0)-(5,9))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (4,0)-(4,1) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (4,1)-(5,2))
+        │   │   │   ├── flags: frozen
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (4,1)-(5,2) = "foo\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo\n  "
+        │   │   └── @ EmbeddedStatementsNode (location: (5,2)-(5,8))
+        │   │       ├── opening_loc: (5,2)-(5,4) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (5,4)-(5,7))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ CallNode (location: (5,4)-(5,7))
+        │   │       │           ├── flags: variable_call, ignore_visibility
+        │   │       │           ├── receiver: ∅
+        │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── name: :bar
+        │   │       │           ├── message_loc: (5,4)-(5,7) = "bar"
+        │   │       │           ├── opening_loc: ∅
+        │   │       │           ├── arguments: ∅
+        │   │       │           ├── closing_loc: ∅
+        │   │       │           └── block: ∅
+        │   │       └── closing_loc: (5,7)-(5,8) = "}"
+        │   └── closing_loc: (5,8)-(5,9) = "\""
+        ├── @ InterpolatedStringNode (location: (7,0)-(9,2))
+        │   ├── flags: ∅
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (7,0)-(8,2))
+        │   │   │   ├── flags: frozen
+        │   │   │   ├── opening_loc: (7,0)-(7,1) = "\""
+        │   │   │   ├── content_loc: (7,1)-(8,1) = "fo\no"
+        │   │   │   ├── closing_loc: (8,1)-(8,2) = "\""
+        │   │   │   └── unescaped: "fo\no"
+        │   │   └── @ StringNode (location: (8,3)-(9,2))
+        │   │       ├── flags: frozen
+        │   │       ├── opening_loc: (8,3)-(8,4) = "\""
+        │   │       ├── content_loc: (8,4)-(9,1) = "ba\nr"
+        │   │       ├── closing_loc: (9,1)-(9,2) = "\""
+        │   │       └── unescaped: "ba\nr"
+        │   └── closing_loc: ∅
+        ├── @ StringNode (location: (11,0)-(13,1))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (11,0)-(11,1) = "\""
+        │   ├── content_loc: (11,1)-(13,0) = "\nfoo\\\n"
+        │   ├── closing_loc: (13,0)-(13,1) = "\""
+        │   └── unescaped: "\nfoo"
+        ├── @ StringNode (location: (15,0)-(17,1))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (15,0)-(15,1) = "\""
+        │   ├── content_loc: (15,1)-(17,0) = "\nfoo\\\\\n"
+        │   ├── closing_loc: (17,0)-(17,1) = "\""
+        │   └── unescaped: "\nfoo\\\n"
+        ├── @ StringNode (location: (19,0)-(21,1))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (19,0)-(19,1) = "\""
+        │   ├── content_loc: (19,1)-(21,0) = "\nfoo\\\\\\\n"
+        │   ├── closing_loc: (21,0)-(21,1) = "\""
+        │   └── unescaped: "\nfoo\\"
+        ├── @ StringNode (location: (23,0)-(25,1))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (23,0)-(23,1) = "\""
+        │   ├── content_loc: (23,1)-(25,0) = "\nfoo\\\\\\\\\n"
+        │   ├── closing_loc: (25,0)-(25,1) = "\""
+        │   └── unescaped: "\nfoo\\\\\n"
+        └── @ StringNode (location: (27,0)-(29,1))
+            ├── flags: ∅
+            ├── opening_loc: (27,0)-(27,1) = "\""
+            ├── content_loc: (27,1)-(29,0) = "\nfoo\\\\\\\\\\\n"
+            ├── closing_loc: (29,0)-(29,1) = "\""
+            └── unescaped: "\nfoo\\\\"

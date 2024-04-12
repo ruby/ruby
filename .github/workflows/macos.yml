@@ -24,39 +24,35 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check']
-        test_opts: ['']
-        os:
-          - macos-12
-          - macos-13
-          - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
+          - test_task: check
           - test_task: test-all
             test_opts: --repeat-count=2
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundler-parallel
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundled-gems
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          - test_task: check
+            os: macos-12
+          - test_task: check
+            os: macos-13
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Documentation')
+      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Documentation')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Document')
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -90,14 +86,14 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
-        id: enable-launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os }}
+          os: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
           test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+        continue-on-error: true
 
       - name: Set extra test options
         run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
@@ -109,7 +105,7 @@ jobs:
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests

@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,6))
+    └── body: (length: 1)
+        └── @ XStringNode (location: (1,0)-(1,6))
+            ├── flags: ∅
+            ├── opening_loc: (1,0)-(1,1) = "`"
+            ├── content_loc: (1,1)-(1,5) = "f\\oo"
+            ├── closing_loc: (1,5)-(1,6) = "`"
+            └── unescaped: "foo"

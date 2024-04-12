@@ -11,13 +11,15 @@ PATH_SEPARATOR = ;
 TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
 empty =
+tooldir = $(srcdir)/tool
 
 !ifndef MFLAGS
 MFLAGS=-l
 !endif
 
 !if "$(BASERUBY)" == ""
-! if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
+! if [ruby $(tooldir)/missing-baseruby.bat 2> nul]
+! else if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
 ! else
 !   include baseruby.mk
 ! endif
@@ -27,7 +29,7 @@ MFLAGS=-l
 BASERUBY =
 !endif
 !if "$(BASERUBY)" == ""
-BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+BASERUBY = $(tooldir:/=\)\missing-baseruby.bat
 HAVE_BASERUBY = no
 !else
 HAVE_BASERUBY = yes
@@ -338,7 +340,9 @@ ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
-!if $(MSC_VER) >= 1400
+!if $(MSC_VER) >= 1800
+LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
+!elseif $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
 LDSHARED_0 = @if exist $(@).manifest $(MINIRUBY) -run -e wait_writable -- -n 10 $@
@@ -483,7 +487,6 @@ EXTOBJS = dmyext.$(OBJEXT)
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
-tooldir = $(srcdir)/tool
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
 !ifndef GIT
@@ -1074,7 +1077,7 @@ s,@LIBPATHFLAG@, -libpath:%s,;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) -link $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
-!if $(MSC_VER) >= 1400
+!if $(MSC_VER) >= 1400 && $(MSC_VER) < 1800
 s,@LINK_SO@,@if exist $$(@).manifest $$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
 s,@LINK_SO@,@if exist $$(@).manifest $(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
 s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
@@ -1154,9 +1157,11 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+! if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
+! endif
 !endif
 
 !if "$(WPROGRAM)" != ""
@@ -1165,9 +1170,11 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+! if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
+! endif
 !endif
 
 !if "$(STUBPROGRAM)" != ""
@@ -1175,9 +1182,11 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) rubystub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+! if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
+! endif
 !endif
 
 !if "$(LIBRUBY_SO_UPDATE)" == ""
@@ -1207,10 +1216,12 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
+!if defined(LDSHARED_0)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
 # | findstr -v -c:LNK4049 -c:LNK4217
+!endif
 
 $(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
@@ -1416,8 +1427,10 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(Q)echo> $*.def EXPORTS
 	$(Q)echo>> $*.def Init_$(*F)
 	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+!if defined(LDSHARED_0)
 	$(Q)$(LDSHARED_0)
 	$(Q)$(LDSHARED_1)
 	$(Q)$(LDSHARED_2)
+!endif
 
 exts: rubyspec-capiext

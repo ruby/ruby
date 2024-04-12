@@ -70,7 +70,7 @@ describe "A singleton class" do
   end
 
   it "has class String as the superclass of a String instance" do
-    "blah".singleton_class.superclass.should == String
+    "blah".dup.singleton_class.superclass.should == String
   end
 
   it "doesn't have singleton class" do

@@ -7,8 +7,8 @@ module IRB
 
   module Command
     class Step < DebugCommand
-      def execute(*args)
-        super(do_cmds: ["step", *args].join(" "))
+      def execute(arg)
+        execute_debug_command(do_cmds: "step #{arg}")
       end
     end
   end

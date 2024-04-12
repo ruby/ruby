@@ -123,9 +123,9 @@ rb_mod_name0(VALUE klass, bool *permanent)
 
 /*
  *  call-seq:
- *     mod.name    -> string
+ *     mod.name    -> string or nil
  *
- *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
+ *  Returns the name of the module <i>mod</i>.  Returns +nil+ for anonymous modules.
  */
 
 VALUE
@@ -135,7 +135,7 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
-// Similar to logic in rb_mod_const_get()
+// Similar to logic in rb_mod_const_get().
 static bool
 is_constant_path(VALUE name)
 {
@@ -176,8 +176,8 @@ is_constant_path(VALUE name)
  *  introspection of the module and the values that are related to it, such
  *  as instances, constants, and methods.
  *
- *  The name should be +nil+ or non-empty string that is not a valid constant
- *  name (to avoid confusing between permanent and temporary names).
+ *  The name should be +nil+ or a non-empty string that is not a valid constant
+ *  path (to avoid confusing between permanent and temporary names).
  *
  *  The method can be useful to distinguish dynamically generated classes and
  *  modules without assigning them to constants.
@@ -275,19 +275,19 @@ rb_tmp_class_path(VALUE klass, bool *permanent, fallback_func fallback)
     if (!NIL_P(path)) {
         return path;
     }
-    else {
-        if (RB_TYPE_P(klass, T_MODULE)) {
-            if (rb_obj_class(klass) == rb_cModule) {
-                path = Qfalse;
-            }
-            else {
-                bool perm;
-                path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
-            }
+
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        if (rb_obj_class(klass) == rb_cModule) {
+            path = Qfalse;
         }
-        *permanent = false;
-        return fallback(klass, path);
+        else {
+            bool perm;
+            path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
+        }
     }
+
+    *permanent = false;
+    return fallback(klass, path);
 }
 
 VALUE
@@ -1994,6 +1994,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
+      case SHAPE_T_OBJECT:
         return false;
       case SHAPE_IVAR:
         ASSUME(callback);
@@ -2027,7 +2028,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         }
         return false;
       case SHAPE_FROZEN:
-      case SHAPE_T_OBJECT:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
       default:
@@ -2293,8 +2293,7 @@ check_id_type(VALUE obj, VALUE *pname,
  *     obj.remove_instance_variable(string)    -> obj
  *
  *  Removes the named instance variable from <i>obj</i>, returning that
- *  variable's value.
- *  String arguments are converted to symbols.
+ *  variable's value. The name can be passed as a symbol or as a string.
  *
  *     class Dummy
  *       attr_reader :var
@@ -2358,8 +2357,7 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  * Invoked when a reference is made to an undefined constant in
  * <i>mod</i>. It is passed a symbol for the undefined constant, and
- * returns a value to be used for that constant. The
- * following code is an example of the same:
+ * returns a value to be used for that constant. For example, consider:
  *
  *   def Foo.const_missing(name)
  *     name # return the constant name as Symbol
@@ -2367,23 +2365,28 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  *   Foo::UNDEFINED_CONST    #=> :UNDEFINED_CONST: symbol returned
  *
- * In the next example when a reference is made to an undefined constant,
- * it attempts to load a file whose name is the lowercase version of the
- * constant (thus class <code>Fred</code> is assumed to be in file
- * <code>fred.rb</code>).  If found, it returns the loaded class. It
- * therefore implements an autoload feature similar to Kernel#autoload and
- * Module#autoload.
+ * As the example above shows, +const_missing+ is not required to create the
+ * missing constant in <i>mod</i>, though that is often a side-effect. The
+ * caller gets its return value when triggered. If the constant is also defined,
+ * further lookups won't hit +const_missing+ and will return the value stored in
+ * the constant as usual. Otherwise, +const_missing+ will be invoked again.
+ *
+ * In the next example, when a reference is made to an undefined constant,
+ * +const_missing+ attempts to load a file whose path is the lowercase version
+ * of the constant name (thus class <code>Fred</code> is assumed to be in file
+ * <code>fred.rb</code>). If defined as a side-effect of loading the file, the
+ * method returns the value stored in the constant. This implements an autoload
+ * feature similar to Kernel#autoload and Module#autoload, though it differs in
+ * important ways.
  *
  *   def Object.const_missing(name)
  *     @looked_for ||= {}
  *     str_name = name.to_s
- *     raise "Class not found: #{name}" if @looked_for[str_name]
+ *     raise "Constant not found: #{name}" if @looked_for[str_name]
  *     @looked_for[str_name] = 1
  *     file = str_name.downcase
  *     require file
- *     klass = const_get(name)
- *     return klass if klass
- *     raise "Class not found: #{name}"
+ *     const_get(name, false)
  *   end
  *
  */
@@ -3254,6 +3257,19 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
+
+            if (UNDEF_P(ce->value)) { // autoload
+                VALUE autoload_const_value = autoload_data(klass, id);
+                if (RTEST(autoload_const_value)) {
+                    struct autoload_const *autoload_const;
+                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+
+                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
+                    }
+                }
+            }
+
             if (NIL_P(ce->file)) return rb_ary_new();
             return rb_assoc_new(ce->file, INT2NUM(ce->line));
         }

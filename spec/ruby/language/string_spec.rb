@@ -231,8 +231,16 @@ describe "Ruby String literals" do
       ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files.rb")).chomp.should == "true"
     end
 
-    it "produce different objects for literals with the same content in different files if the other file doesn't have the comment" do
-      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == "true"
+    guard -> { !(eval("'test'").frozen? && "test".equal?("test")) } do
+      it "produces different objects for literals with the same content in different files if the other file doesn't have the comment and String literals aren't frozen by default" do
+        ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == "true"
+      end
+    end
+
+    guard -> { eval("'test'").frozen? && "test".equal?("test") } do
+      it "produces the same objects for literals with the same content in different files if the other file doesn't have the comment and String literals are frozen by default" do
+        ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == "false"
+      end
     end
 
     it "produce different objects for literals with the same content in different files if they have different encodings" do
@@ -251,12 +259,12 @@ describe "Ruby String interpolation" do
 
   it "returns a string with the source encoding by default" do
     "a#{"b"}c".encoding.should == Encoding::BINARY
-    eval('"a#{"b"}c"'.force_encoding("us-ascii")).encoding.should == Encoding::US_ASCII
+    eval('"a#{"b"}c"'.dup.force_encoding("us-ascii")).encoding.should == Encoding::US_ASCII
     eval("# coding: US-ASCII \n 'a#{"b"}c'").encoding.should == Encoding::US_ASCII
   end
 
   it "returns a string with the source encoding, even if the components have another encoding" do
-    a = "abc".force_encoding("euc-jp")
+    a = "abc".dup.force_encoding("euc-jp")
     "#{a}".encoding.should == Encoding::BINARY
 
     b = "abc".encode("utf-8")
@@ -265,7 +273,7 @@ describe "Ruby String interpolation" do
 
   it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
     a = "\u3042"
-    b = "\xff".force_encoding "binary"
+    b = "\xff".dup.force_encoding "binary"
 
     -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
   end

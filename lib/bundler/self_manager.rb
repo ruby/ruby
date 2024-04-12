@@ -113,7 +113,7 @@ module Bundler
     end
 
     def local_specs
-      @local_specs ||= Bundler::Source::Rubygems.new("allow_local" => true).specs.select {|spec| spec.name == "bundler" }
+      @local_specs ||= Bundler::Source::Rubygems.new("allow_local" => true, "allow_cached" => true).specs.select {|spec| spec.name == "bundler" }
     end
 
     def remote_specs

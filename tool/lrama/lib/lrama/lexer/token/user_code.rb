@@ -4,6 +4,8 @@ module Lrama
   class Lexer
     class Token
       class UserCode < Token
+        attr_accessor :tag
+
         def references
           @references ||= _references
         end

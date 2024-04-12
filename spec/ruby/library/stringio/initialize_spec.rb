@@ -13,99 +13,99 @@ describe "StringIO#initialize when passed [Object, mode]" do
 
   it "sets the mode based on the passed mode" do
     io = StringIO.allocate
-    io.send(:initialize, "example", "r")
+    io.send(:initialize, +"example", "r")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "rb")
+    io.send(:initialize, +"example", "rb")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "r+")
+    io.send(:initialize, +"example", "r+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "rb+")
+    io.send(:initialize, +"example", "rb+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "w")
+    io.send(:initialize, +"example", "w")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "wb")
+    io.send(:initialize, +"example", "wb")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "w+")
+    io.send(:initialize, +"example", "w+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "wb+")
+    io.send(:initialize, +"example", "wb+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "a")
+    io.send(:initialize, +"example", "a")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "ab")
+    io.send(:initialize, +"example", "ab")
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "a+")
+    io.send(:initialize, +"example", "a+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", "ab+")
+    io.send(:initialize, +"example", "ab+")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
 
   it "allows passing the mode as an Integer" do
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::RDONLY)
+    io.send(:initialize, +"example", IO::RDONLY)
     io.closed_read?.should be_false
     io.closed_write?.should be_true
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::RDWR)
+    io.send(:initialize, +"example", IO::RDWR)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::WRONLY)
+    io.send(:initialize, +"example", IO::WRONLY)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::WRONLY | IO::TRUNC)
+    io.send(:initialize, +"example", IO::WRONLY | IO::TRUNC)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::RDWR | IO::TRUNC)
+    io.send(:initialize, +"example", IO::RDWR | IO::TRUNC)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::WRONLY | IO::APPEND)
+    io.send(:initialize, +"example", IO::WRONLY | IO::APPEND)
     io.closed_read?.should be_true
     io.closed_write?.should be_false
 
     io = StringIO.allocate
-    io.send(:initialize, "example", IO::RDWR | IO::APPEND)
+    io.send(:initialize, +"example", IO::RDWR | IO::APPEND)
     io.closed_read?.should be_false
     io.closed_write?.should be_false
   end
@@ -118,7 +118,7 @@ describe "StringIO#initialize when passed [Object, mode]" do
   it "tries to convert the passed mode to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("r")
-    @io.send(:initialize, "example", obj)
+    @io.send(:initialize, +"example", obj)
 
     @io.closed_read?.should be_false
     @io.closed_write?.should be_true
@@ -142,10 +142,16 @@ describe "StringIO#initialize when passed [Object]" do
     @io.string.should equal(str)
   end
 
-  it "sets the mode to read-write" do
-    @io.send(:initialize, "example")
+  it "sets the mode to read-write if the string is mutable" do
+    @io.send(:initialize, +"example")
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
+  end
+
+  it "sets the mode to read if the string is frozen" do
+    @io.send(:initialize, -"example")
+    @io.closed_read?.should be_false
+    @io.closed_write?.should be_true
   end
 
   it "tries to convert the passed Object to a String using #to_str" do
@@ -172,22 +178,22 @@ describe "StringIO#initialize when passed keyword arguments" do
   end
 
   it "accepts a mode argument set to nil with a valid :mode option" do
-    @io = StringIO.new('', nil, mode: "w")
+    @io = StringIO.new(+'', nil, mode: "w")
     @io.write("foo").should == 3
   end
 
   it "accepts a mode argument with a :mode option set to nil" do
-    @io = StringIO.new('', "w", mode: nil)
+    @io = StringIO.new(+'', "w", mode: nil)
     @io.write("foo").should == 3
   end
 
   it "sets binmode from :binmode option" do
-    @io = StringIO.new('', 'w', binmode: true)
+    @io = StringIO.new(+'', 'w', binmode: true)
     @io.external_encoding.to_s.should == "ASCII-8BIT" # #binmode? isn't implemented in StringIO
   end
 
   it "does not set binmode from false :binmode" do
-    @io = StringIO.new('', 'w', binmode: false)
+    @io = StringIO.new(+'', 'w', binmode: false)
     @io.external_encoding.to_s.should == "UTF-8" # #binmode? isn't implemented in StringIO
   end
 end
@@ -196,54 +202,54 @@ end
 describe "StringIO#initialize when passed keyword arguments and error happens" do
   it "raises an error if passed encodings two ways" do
     -> {
-      @io = StringIO.new('', 'w:ISO-8859-1', encoding: 'ISO-8859-1')
+      @io = StringIO.new(+'', 'w:ISO-8859-1', encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
+      @io = StringIO.new(+'', 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')
+      @io = StringIO.new(+'', 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed matching binary/text mode two ways" do
     -> {
-      @io = StringIO.new('', "wb", binmode: true)
+      @io = StringIO.new(+'', "wb", binmode: true)
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', "wt", textmode: true)
+      @io = StringIO.new(+'', "wt", textmode: true)
     }.should raise_error(ArgumentError)
 
     -> {
-      @io = StringIO.new('', "wb", textmode: false)
+      @io = StringIO.new(+'', "wb", textmode: false)
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', "wt", binmode: false)
+      @io = StringIO.new(+'', "wt", binmode: false)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed conflicting binary/text mode two ways" do
     -> {
-      @io = StringIO.new('', "wb", binmode: false)
+      @io = StringIO.new(+'', "wb", binmode: false)
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', "wt", textmode: false)
+      @io = StringIO.new(+'', "wt", textmode: false)
     }.should raise_error(ArgumentError)
 
     -> {
-      @io = StringIO.new('', "wb", textmode: true)
+      @io = StringIO.new(+'', "wb", textmode: true)
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', "wt", binmode: true)
+      @io = StringIO.new(+'', "wt", binmode: true)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error when trying to set both binmode and textmode" do
     -> {
-      @io = StringIO.new('', "w", textmode: true, binmode: true)
+      @io = StringIO.new(+'', "w", textmode: true, binmode: true)
     }.should raise_error(ArgumentError)
     -> {
-      @io = StringIO.new('', File::Constants::WRONLY, textmode: true, binmode: true)
+      @io = StringIO.new(+'', File::Constants::WRONLY, textmode: true, binmode: true)
     }.should raise_error(ArgumentError)
   end
 end
@@ -258,7 +264,7 @@ describe "StringIO#initialize when passed no arguments" do
   end
 
   it "sets the mode to read-write" do
-    @io.send(:initialize, "example")
+    @io.send(:initialize)
     @io.closed_read?.should be_false
     @io.closed_write?.should be_false
   end
@@ -289,13 +295,13 @@ describe "StringIO#initialize sets" do
   end
 
   it "the encoding to the encoding of the String when passed a String" do
-    s = ''.force_encoding(Encoding::EUC_JP)
+    s = ''.dup.force_encoding(Encoding::EUC_JP)
     io = StringIO.new(s)
     io.string.encoding.should == Encoding::EUC_JP
   end
 
   it "the #external_encoding to the encoding of the String when passed a String" do
-    s = ''.force_encoding(Encoding::EUC_JP)
+    s = ''.dup.force_encoding(Encoding::EUC_JP)
     io = StringIO.new(s)
     io.external_encoding.should == Encoding::EUC_JP
   end

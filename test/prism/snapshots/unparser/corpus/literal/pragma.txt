@@ -5,6 +5,7 @@
     └── body: (length: 4)
         ├── @ SourceEncodingNode (location: (1,0)-(1,12))
         ├── @ SourceFileNode (location: (2,0)-(2,8))
+        │   ├── flags: ∅
         │   └── filepath: "unparser/corpus/literal/pragma.txt"
         ├── @ SourceLineNode (location: (3,0)-(3,8))
         └── @ CallNode (location: (4,0)-(4,7))

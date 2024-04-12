@@ -3,144 +3,306 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(25,23))
     └── body: (length: 11)
-        ├── @ BreakNode (location: (1,0)-(1,5))
+        ├── @ CallNode (location: (1,0)-(1,13))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (1,0)-(1,3) = "tap"
+        │   ├── opening_loc: ∅
         │   ├── arguments: ∅
-        │   └── keyword_loc: (1,0)-(1,5) = "break"
-        ├── @ BreakNode (location: (3,0)-(3,19))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (3,6)-(3,19))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 3)
-        │   │       ├── @ ParenthesesNode (location: (3,6)-(3,9))
-        │   │       │   ├── body:
-        │   │       │   │   @ StatementsNode (location: (3,7)-(3,8))
-        │   │       │   │   └── body: (length: 1)
-        │   │       │   │       └── @ IntegerNode (location: (3,7)-(3,8))
-        │   │       │   │           ├── flags: decimal
-        │   │       │   │           └── value: 1
-        │   │       │   ├── opening_loc: (3,6)-(3,7) = "("
-        │   │       │   └── closing_loc: (3,8)-(3,9) = ")"
-        │   │       ├── @ ParenthesesNode (location: (3,11)-(3,14))
-        │   │       │   ├── body:
-        │   │       │   │   @ StatementsNode (location: (3,12)-(3,13))
-        │   │       │   │   └── body: (length: 1)
-        │   │       │   │       └── @ IntegerNode (location: (3,12)-(3,13))
-        │   │       │   │           ├── flags: decimal
-        │   │       │   │           └── value: 2
-        │   │       │   ├── opening_loc: (3,11)-(3,12) = "("
-        │   │       │   └── closing_loc: (3,13)-(3,14) = ")"
-        │   │       └── @ ParenthesesNode (location: (3,16)-(3,19))
-        │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (3,17)-(3,18))
-        │   │           │   └── body: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (3,17)-(3,18))
-        │   │           │           ├── flags: decimal
-        │   │           │           └── value: 3
-        │   │           ├── opening_loc: (3,16)-(3,17) = "("
-        │   │           └── closing_loc: (3,18)-(3,19) = ")"
-        │   └── keyword_loc: (3,0)-(3,5) = "break"
-        ├── @ BreakNode (location: (5,0)-(5,7))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (5,6)-(5,7))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (5,6)-(5,7))
-        │   │           ├── flags: decimal
-        │   │           └── value: 1
-        │   └── keyword_loc: (5,0)-(5,5) = "break"
-        ├── @ BreakNode (location: (7,0)-(8,1))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (7,6)-(8,1))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 3)
-        │   │       ├── @ IntegerNode (location: (7,6)-(7,7))
-        │   │       │   ├── flags: decimal
-        │   │       │   └── value: 1
-        │   │       ├── @ IntegerNode (location: (7,9)-(7,10))
-        │   │       │   ├── flags: decimal
-        │   │       │   └── value: 2
-        │   │       └── @ IntegerNode (location: (8,0)-(8,1))
-        │   │           ├── flags: decimal
-        │   │           └── value: 3
-        │   └── keyword_loc: (7,0)-(7,5) = "break"
-        ├── @ BreakNode (location: (10,0)-(10,13))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (10,6)-(10,13))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 3)
-        │   │       ├── @ IntegerNode (location: (10,6)-(10,7))
-        │   │       │   ├── flags: decimal
-        │   │       │   └── value: 1
-        │   │       ├── @ IntegerNode (location: (10,9)-(10,10))
-        │   │       │   ├── flags: decimal
-        │   │       │   └── value: 2
-        │   │       └── @ IntegerNode (location: (10,12)-(10,13))
-        │   │           ├── flags: decimal
-        │   │           └── value: 3
-        │   └── keyword_loc: (10,0)-(10,5) = "break"
-        ├── @ BreakNode (location: (12,0)-(12,15))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (12,6)-(12,15))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ArrayNode (location: (12,6)-(12,15))
-        │   │           ├── flags: ∅
-        │   │           ├── elements: (length: 3)
-        │   │           │   ├── @ IntegerNode (location: (12,7)-(12,8))
-        │   │           │   │   ├── flags: decimal
-        │   │           │   │   └── value: 1
-        │   │           │   ├── @ IntegerNode (location: (12,10)-(12,11))
-        │   │           │   │   ├── flags: decimal
-        │   │           │   │   └── value: 2
-        │   │           │   └── @ IntegerNode (location: (12,13)-(12,14))
-        │   │           │       ├── flags: decimal
-        │   │           │       └── value: 3
-        │   │           ├── opening_loc: (12,6)-(12,7) = "["
-        │   │           └── closing_loc: (12,14)-(12,15) = "]"
-        │   └── keyword_loc: (12,0)-(12,5) = "break"
-        ├── @ BreakNode (location: (14,0)-(17,1))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (14,5)-(17,1))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (14,5)-(17,1))
-        │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (15,2)-(16,3))
-        │   │           │   └── body: (length: 2)
-        │   │           │       ├── @ IntegerNode (location: (15,2)-(15,3))
-        │   │           │       │   ├── flags: decimal
-        │   │           │       │   └── value: 1
-        │   │           │       └── @ IntegerNode (location: (16,2)-(16,3))
-        │   │           │           ├── flags: decimal
-        │   │           │           └── value: 2
-        │   │           ├── opening_loc: (14,5)-(14,6) = "("
-        │   │           └── closing_loc: (17,0)-(17,1) = ")"
-        │   └── keyword_loc: (14,0)-(14,5) = "break"
-        ├── @ BreakNode (location: (19,0)-(19,7))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (19,5)-(19,7))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (19,5)-(19,7))
-        │   │           ├── body: ∅
-        │   │           ├── opening_loc: (19,5)-(19,6) = "("
-        │   │           └── closing_loc: (19,6)-(19,7) = ")"
-        │   └── keyword_loc: (19,0)-(19,5) = "break"
-        ├── @ BreakNode (location: (21,0)-(21,8))
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (21,5)-(21,8))
-        │   │   ├── flags: ∅
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (21,5)-(21,8))
-        │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (21,6)-(21,7))
-        │   │           │   └── body: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (21,6)-(21,7))
-        │   │           │           ├── flags: decimal
-        │   │           │           └── value: 1
-        │   │           ├── opening_loc: (21,5)-(21,6) = "("
-        │   │           └── closing_loc: (21,7)-(21,8) = ")"
-        │   └── keyword_loc: (21,0)-(21,5) = "break"
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (1,4)-(1,13))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (1,6)-(1,11))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (1,6)-(1,11))
+        │       │           ├── arguments: ∅
+        │       │           └── keyword_loc: (1,6)-(1,11) = "break"
+        │       ├── opening_loc: (1,4)-(1,5) = "{"
+        │       └── closing_loc: (1,12)-(1,13) = "}"
+        ├── @ CallNode (location: (3,0)-(3,27))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (3,0)-(3,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (3,4)-(3,27))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (3,6)-(3,25))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (3,6)-(3,25))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (3,12)-(3,25))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 3)
+        │       │           │       ├── @ ParenthesesNode (location: (3,12)-(3,15))
+        │       │           │       │   ├── body:
+        │       │           │       │   │   @ StatementsNode (location: (3,13)-(3,14))
+        │       │           │       │   │   └── body: (length: 1)
+        │       │           │       │   │       └── @ IntegerNode (location: (3,13)-(3,14))
+        │       │           │       │   │           ├── flags: decimal
+        │       │           │       │   │           └── value: 1
+        │       │           │       │   ├── opening_loc: (3,12)-(3,13) = "("
+        │       │           │       │   └── closing_loc: (3,14)-(3,15) = ")"
+        │       │           │       ├── @ ParenthesesNode (location: (3,17)-(3,20))
+        │       │           │       │   ├── body:
+        │       │           │       │   │   @ StatementsNode (location: (3,18)-(3,19))
+        │       │           │       │   │   └── body: (length: 1)
+        │       │           │       │   │       └── @ IntegerNode (location: (3,18)-(3,19))
+        │       │           │       │   │           ├── flags: decimal
+        │       │           │       │   │           └── value: 2
+        │       │           │       │   ├── opening_loc: (3,17)-(3,18) = "("
+        │       │           │       │   └── closing_loc: (3,19)-(3,20) = ")"
+        │       │           │       └── @ ParenthesesNode (location: (3,22)-(3,25))
+        │       │           │           ├── body:
+        │       │           │           │   @ StatementsNode (location: (3,23)-(3,24))
+        │       │           │           │   └── body: (length: 1)
+        │       │           │           │       └── @ IntegerNode (location: (3,23)-(3,24))
+        │       │           │           │           ├── flags: decimal
+        │       │           │           │           └── value: 3
+        │       │           │           ├── opening_loc: (3,22)-(3,23) = "("
+        │       │           │           └── closing_loc: (3,24)-(3,25) = ")"
+        │       │           └── keyword_loc: (3,6)-(3,11) = "break"
+        │       ├── opening_loc: (3,4)-(3,5) = "{"
+        │       └── closing_loc: (3,26)-(3,27) = "}"
+        ├── @ CallNode (location: (5,0)-(5,15))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (5,0)-(5,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (5,4)-(5,15))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (5,6)-(5,13))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (5,6)-(5,13))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (5,12)-(5,13))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 1)
+        │       │           │       └── @ IntegerNode (location: (5,12)-(5,13))
+        │       │           │           ├── flags: decimal
+        │       │           │           └── value: 1
+        │       │           └── keyword_loc: (5,6)-(5,11) = "break"
+        │       ├── opening_loc: (5,4)-(5,5) = "{"
+        │       └── closing_loc: (5,14)-(5,15) = "}"
+        ├── @ CallNode (location: (7,0)-(8,3))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (7,0)-(7,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (7,4)-(8,3))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (7,6)-(8,1))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (7,6)-(8,1))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (7,12)-(8,1))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 3)
+        │       │           │       ├── @ IntegerNode (location: (7,12)-(7,13))
+        │       │           │       │   ├── flags: decimal
+        │       │           │       │   └── value: 1
+        │       │           │       ├── @ IntegerNode (location: (7,15)-(7,16))
+        │       │           │       │   ├── flags: decimal
+        │       │           │       │   └── value: 2
+        │       │           │       └── @ IntegerNode (location: (8,0)-(8,1))
+        │       │           │           ├── flags: decimal
+        │       │           │           └── value: 3
+        │       │           └── keyword_loc: (7,6)-(7,11) = "break"
+        │       ├── opening_loc: (7,4)-(7,5) = "{"
+        │       └── closing_loc: (8,2)-(8,3) = "}"
+        ├── @ CallNode (location: (10,0)-(10,21))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (10,0)-(10,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (10,4)-(10,21))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (10,6)-(10,19))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (10,6)-(10,19))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (10,12)-(10,19))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 3)
+        │       │           │       ├── @ IntegerNode (location: (10,12)-(10,13))
+        │       │           │       │   ├── flags: decimal
+        │       │           │       │   └── value: 1
+        │       │           │       ├── @ IntegerNode (location: (10,15)-(10,16))
+        │       │           │       │   ├── flags: decimal
+        │       │           │       │   └── value: 2
+        │       │           │       └── @ IntegerNode (location: (10,18)-(10,19))
+        │       │           │           ├── flags: decimal
+        │       │           │           └── value: 3
+        │       │           └── keyword_loc: (10,6)-(10,11) = "break"
+        │       ├── opening_loc: (10,4)-(10,5) = "{"
+        │       └── closing_loc: (10,20)-(10,21) = "}"
+        ├── @ CallNode (location: (12,0)-(12,23))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (12,0)-(12,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (12,4)-(12,23))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (12,6)-(12,21))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (12,6)-(12,21))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (12,12)-(12,21))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 1)
+        │       │           │       └── @ ArrayNode (location: (12,12)-(12,21))
+        │       │           │           ├── flags: ∅
+        │       │           │           ├── elements: (length: 3)
+        │       │           │           │   ├── @ IntegerNode (location: (12,13)-(12,14))
+        │       │           │           │   │   ├── flags: decimal
+        │       │           │           │   │   └── value: 1
+        │       │           │           │   ├── @ IntegerNode (location: (12,16)-(12,17))
+        │       │           │           │   │   ├── flags: decimal
+        │       │           │           │   │   └── value: 2
+        │       │           │           │   └── @ IntegerNode (location: (12,19)-(12,20))
+        │       │           │           │       ├── flags: decimal
+        │       │           │           │       └── value: 3
+        │       │           │           ├── opening_loc: (12,12)-(12,13) = "["
+        │       │           │           └── closing_loc: (12,20)-(12,21) = "]"
+        │       │           └── keyword_loc: (12,6)-(12,11) = "break"
+        │       ├── opening_loc: (12,4)-(12,5) = "{"
+        │       └── closing_loc: (12,22)-(12,23) = "}"
+        ├── @ CallNode (location: (14,0)-(17,3))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (14,0)-(14,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (14,4)-(17,3))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (14,6)-(17,1))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (14,6)-(17,1))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (14,11)-(17,1))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 1)
+        │       │           │       └── @ ParenthesesNode (location: (14,11)-(17,1))
+        │       │           │           ├── body:
+        │       │           │           │   @ StatementsNode (location: (15,2)-(16,3))
+        │       │           │           │   └── body: (length: 2)
+        │       │           │           │       ├── @ IntegerNode (location: (15,2)-(15,3))
+        │       │           │           │       │   ├── flags: decimal
+        │       │           │           │       │   └── value: 1
+        │       │           │           │       └── @ IntegerNode (location: (16,2)-(16,3))
+        │       │           │           │           ├── flags: decimal
+        │       │           │           │           └── value: 2
+        │       │           │           ├── opening_loc: (14,11)-(14,12) = "("
+        │       │           │           └── closing_loc: (17,0)-(17,1) = ")"
+        │       │           └── keyword_loc: (14,6)-(14,11) = "break"
+        │       ├── opening_loc: (14,4)-(14,5) = "{"
+        │       └── closing_loc: (17,2)-(17,3) = "}"
+        ├── @ CallNode (location: (19,0)-(19,15))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (19,0)-(19,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (19,4)-(19,15))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (19,6)-(19,13))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (19,6)-(19,13))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (19,11)-(19,13))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 1)
+        │       │           │       └── @ ParenthesesNode (location: (19,11)-(19,13))
+        │       │           │           ├── body: ∅
+        │       │           │           ├── opening_loc: (19,11)-(19,12) = "("
+        │       │           │           └── closing_loc: (19,12)-(19,13) = ")"
+        │       │           └── keyword_loc: (19,6)-(19,11) = "break"
+        │       ├── opening_loc: (19,4)-(19,5) = "{"
+        │       └── closing_loc: (19,14)-(19,15) = "}"
+        ├── @ CallNode (location: (21,0)-(21,16))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (21,0)-(21,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (21,4)-(21,16))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (21,6)-(21,14))
+        │       │   └── body: (length: 1)
+        │       │       └── @ BreakNode (location: (21,6)-(21,14))
+        │       │           ├── arguments:
+        │       │           │   @ ArgumentsNode (location: (21,11)-(21,14))
+        │       │           │   ├── flags: ∅
+        │       │           │   └── arguments: (length: 1)
+        │       │           │       └── @ ParenthesesNode (location: (21,11)-(21,14))
+        │       │           │           ├── body:
+        │       │           │           │   @ StatementsNode (location: (21,12)-(21,13))
+        │       │           │           │   └── body: (length: 1)
+        │       │           │           │       └── @ IntegerNode (location: (21,12)-(21,13))
+        │       │           │           │           ├── flags: decimal
+        │       │           │           │           └── value: 1
+        │       │           │           ├── opening_loc: (21,11)-(21,12) = "("
+        │       │           │           └── closing_loc: (21,13)-(21,14) = ")"
+        │       │           └── keyword_loc: (21,6)-(21,11) = "break"
+        │       ├── opening_loc: (21,4)-(21,5) = "{"
+        │       └── closing_loc: (21,15)-(21,16) = "}"
         ├── @ CallNode (location: (23,0)-(23,22))
         │   ├── flags: ∅
         │   ├── receiver:

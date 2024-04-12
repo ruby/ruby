@@ -18,8 +18,8 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of UTF-8" do
@@ -28,9 +28,9 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_true
-      "\u3042".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_true
+      "\u3042".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of UTF-16BE" do
@@ -39,9 +39,9 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_false
-      "\x30\x42".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_false
+      "\x30\x42".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of ISO-2022-JP" do
@@ -61,7 +61,7 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      s = "abc".force_encoding(e)
+      s = "abc".dup.force_encoding(e)
       s.encoding.should == e
       s.encoding.name.should == name
     end

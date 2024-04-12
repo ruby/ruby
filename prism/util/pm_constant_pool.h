@@ -52,6 +52,14 @@ typedef struct {
 void pm_constant_id_list_init(pm_constant_id_list_t *list);
 
 /**
+ * Initialize a list of constant ids with a given capacity.
+ *
+ * @param list The list to initialize.
+ * @param capacity The initial capacity of the list.
+ */
+void pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity);
+
+/**
  * Append a constant id to a list of constant ids. Returns false if any
  * potential reallocations fail.
  *
@@ -60,6 +68,15 @@ void pm_constant_id_list_init(pm_constant_id_list_t *list);
  * @return Whether the append succeeded.
  */
 bool pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id);
+
+/**
+ * Insert a constant id into a list of constant ids at the specified index.
+ *
+ * @param list The list to insert into.
+ * @param index The index at which to insert.
+ * @param id The id to insert.
+ */
+void pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id);
 
 /**
  * Checks if the current constant id list includes the given constant id.
