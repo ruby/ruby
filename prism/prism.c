@@ -12946,6 +12946,32 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 }
 
 /**
+ * Certain expressions are not writable, but in order to provide a better
+ * experience we give a specific error message. In order to maintain as much
+ * information in the tree as possible, we replace them with local variable
+ * writes.
+ */
+static pm_node_t *
+parse_unwriteable_write(pm_parser_t *parser, pm_node_t *target, const pm_token_t *equals, pm_node_t *value) {
+    switch (PM_NODE_TYPE(target)) {
+        case PM_SOURCE_ENCODING_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_ENCODING); break;
+        case PM_FALSE_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_FALSE); break;
+        case PM_SOURCE_FILE_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_FILE); break;
+        case PM_SOURCE_LINE_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_LINE); break;
+        case PM_NIL_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_NIL); break;
+        case PM_SELF_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_SELF); break;
+        case PM_TRUE_NODE: pm_parser_err_token(parser, equals, PM_ERR_EXPRESSION_NOT_WRITABLE_TRUE); break;
+        default: break;
+    }
+
+    pm_constant_id_t name = pm_parser_constant_id_location(parser, target->location.start, target->location.end);
+    pm_local_variable_write_node_t *result = pm_local_variable_write_node_create(parser, name, 0, value, &target->location, equals);
+
+    pm_node_destroy(parser, target);
+    return (pm_node_t *) result;
+}
+
+/**
  * Parse a list of targets for assignment. This is used in the case of a for
  * loop or a multi-assignment. For example, in the following code:
  *
@@ -19357,13 +19383,25 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
                     return parse_write(parser, (pm_node_t *) multi_target, &token, value);
                 }
-                default:
+                case PM_SOURCE_ENCODING_NODE:
+                case PM_FALSE_NODE:
+                case PM_SOURCE_FILE_NODE:
+                case PM_SOURCE_LINE_NODE:
+                case PM_NIL_NODE:
+                case PM_SELF_NODE:
+                case PM_TRUE_NODE: {
+                    // In these special cases, we have specific error messages
+                    // and we will replace them with local variable writes.
                     parser_lex(parser);
-
-                    // In this case we have an = sign, but we don't know what it's for. We
-                    // need to treat it as an error. For now, we'll mark it as an error
-                    // and just skip right past it.
-                    pm_parser_err_token(parser, &token, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+                    return parse_unwriteable_write(parser, node, &token, value);
+                }
+                default:
+                    // In this case we have an = sign, but we don't know what
+                    // it's for. We need to treat it as an error. We'll mark it
+                    // as an error and skip past it.
+                    parser_lex(parser);
+                    pm_parser_err_token(parser, &token, PM_ERR_EXPRESSION_NOT_WRITABLE);
                     return node;
             }
         }
