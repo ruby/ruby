@@ -195,12 +195,6 @@ enc_codelen(int c, void *enc)
     return rb_enc_codelen(c, (rb_encoding *)enc);
 }
 
-static VALUE
-enc_str_buf_cat(VALUE str, const char *ptr, long len, void *enc)
-{
-    return rb_enc_str_buf_cat(str, ptr, len, (rb_encoding *)enc);
-}
-
 static int
 enc_mbcput(unsigned int c, void *buf, void *enc)
 {
@@ -460,8 +454,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_cat_cstr = rb_str_cat_cstr,
     .str_subseq = rb_str_subseq,
     .str_new_frozen = rb_str_new_frozen,
-    .str_buf_new = rb_str_buf_new,
-    .str_buf_cat = rb_str_buf_cat,
     .str_modify = rb_str_modify,
     .str_set_len = rb_str_set_len,
     .str_cat = rb_str_cat,
@@ -471,8 +463,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_to_interned_str = rb_str_to_interned_str,
     .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
-    .enc_str_buf_cat = enc_str_buf_cat,
-    .str_buf_append = rb_str_buf_append,
     .str_vcatf = rb_str_vcatf,
     .string_value_cstr = rb_string_value_cstr,
     .rb_sprintf = rb_sprintf,
