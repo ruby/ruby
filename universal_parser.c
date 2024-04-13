@@ -125,9 +125,6 @@
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
 #define rb_str_subseq                     p->config->str_subseq
 #define rb_str_new_frozen                 p->config->str_new_frozen
-#define rb_str_buf_new                    p->config->str_buf_new
-#undef rb_str_buf_cat
-#define rb_str_buf_cat                    p->config->str_buf_cat
 #define rb_str_modify                     p->config->str_modify
 #define rb_str_set_len                    p->config->str_set_len
 #define rb_str_cat                        p->config->str_cat
@@ -139,8 +136,6 @@
 #define rb_str_to_interned_str            p->config->str_to_interned_str
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
-#define rb_enc_str_buf_cat                p->config->enc_str_buf_cat
-#define rb_str_buf_append                 p->config->str_buf_append
 #define rb_str_vcatf                      p->config->str_vcatf
 #undef StringValueCStr
 #define StringValueCStr(v)                p->config->string_value_cstr(&(v))

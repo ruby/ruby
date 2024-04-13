@@ -1284,8 +1284,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
     VALUE (*str_subseq)(VALUE str, long beg, long len);
     VALUE (*str_new_frozen)(VALUE orig);
-    VALUE (*str_buf_new)(long capa);
-    VALUE (*str_buf_cat)(VALUE, const char*, long);
     void (*str_modify)(VALUE str);
     void (*str_set_len)(VALUE str, long len);
     VALUE (*str_cat)(VALUE str, const char *ptr, long len);
@@ -1295,8 +1293,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_to_interned_str)(VALUE);
     int (*is_ascii_string)(VALUE str);
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
-    VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);
-    VALUE (*str_buf_append)(VALUE str, VALUE str2);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
     char *(*string_value_cstr)(volatile VALUE *ptr);
