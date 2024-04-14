@@ -13,11 +13,13 @@ if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
     have_header("util.h") # OpenBSD openpty
     util = have_library("util", "openpty")
   end
-  if have_func("posix_openpt") or
+  openpt = have_func("posix_openpt")
+  if openpt
+    have_func("ptsname_r") or have_func("ptsname")
+  end
+  if openpt
       (util or have_func("openpty")) or
       have_func("_getpty") or
-      have_func("ptsname_r") or
-      have_func("ptsname") or
       have_func("ioctl")
     create_makefile('pty')
   end

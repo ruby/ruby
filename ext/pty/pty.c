@@ -256,7 +256,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     RB_GC_GUARD(carg.execarg_obj);
 }
 
-#if defined(HAVE_PTSNAME) && !defined(HAVE_PTSNAME_R)
+#if (defined(HAVE_POSIX_OPENPT) || defined(HAVE_PTSNAME)) && !defined(HAVE_PTSNAME_R)
 /* glibc only, not obsolete interface on Tru64 or HP-UX */
 static int
 ptsname_r(int fd, char *buf, size_t buflen)
