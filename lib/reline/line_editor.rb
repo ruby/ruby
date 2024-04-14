@@ -229,8 +229,8 @@ class Reline::LineEditor
     @vi_clipboard = ''
     @vi_arg = nil
     @waiting_proc = nil
-    @waiting_operator_proc = nil
-    @waiting_operator_vi_arg = nil
+    @vi_waiting_operator = nil
+    @vi_waiting_operator_arg = nil
     @completion_journey_state = nil
     @completion_state = CompletionState::NORMAL
     @completion_occurs = false
@@ -936,37 +936,23 @@ class Reline::LineEditor
   end
 
   private def run_for_operators(key, method_symbol, &block)
-    if @waiting_operator_proc
+    if @vi_waiting_operator
       if VI_MOTIONS.include?(method_symbol)
         old_byte_pointer = @byte_pointer
-        @vi_arg = @waiting_operator_vi_arg if @waiting_operator_vi_arg&.> 1
+        @vi_arg = (@vi_arg || 1) * @vi_waiting_operator_arg
         block.(true)
         unless @waiting_proc
           byte_pointer_diff = @byte_pointer - old_byte_pointer
           @byte_pointer = old_byte_pointer
-          @waiting_operator_proc.(byte_pointer_diff)
-        else
-          old_waiting_proc = @waiting_proc
-          old_waiting_operator_proc = @waiting_operator_proc
-          current_waiting_operator_proc = @waiting_operator_proc
-          @waiting_proc = proc { |k|
-            old_byte_pointer = @byte_pointer
-            old_waiting_proc.(k)
-            byte_pointer_diff = @byte_pointer - old_byte_pointer
-            @byte_pointer = old_byte_pointer
-            current_waiting_operator_proc.(byte_pointer_diff)
-            @waiting_operator_proc = old_waiting_operator_proc
-          }
+          send(@vi_waiting_operator, byte_pointer_diff)
+          cleanup_waiting
         end
       else
         # Ignores operator when not motion is given.
         block.(false)
+        cleanup_waiting
       end
-      @waiting_operator_proc = nil
-      @waiting_operator_vi_arg = nil
-      if @vi_arg
-        @vi_arg = nil
-      end
+      @vi_arg = nil
     else
       block.(false)
     end
@@ -983,7 +969,7 @@ class Reline::LineEditor
   end
 
   def wrap_method_call(method_symbol, method_obj, key, with_operator = false)
-    if @config.editing_mode_is?(:emacs, :vi_insert) and @waiting_proc.nil? and @waiting_operator_proc.nil?
+    if @config.editing_mode_is?(:emacs, :vi_insert) and @vi_waiting_operator.nil?
       not_insertion = method_symbol != :ed_insert
       process_insert(force: not_insertion)
     end
@@ -1002,11 +988,32 @@ class Reline::LineEditor
     end
   end
 
+  private def cleanup_waiting
+    @waiting_proc = nil
+    @vi_waiting_operator = nil
+    @vi_waiting_operator_arg = nil
+    @searching_prompt = nil
+    @drop_terminate_spaces = false
+  end
+
   private def process_key(key, method_symbol)
+    if key.is_a?(Symbol)
+      cleanup_waiting
+    elsif @waiting_proc
+      old_byte_pointer = @byte_pointer
+      @waiting_proc.call(key)
+      if @vi_waiting_operator
+        byte_pointer_diff = @byte_pointer - old_byte_pointer
+        @byte_pointer = old_byte_pointer
+        send(@vi_waiting_operator, byte_pointer_diff)
+        cleanup_waiting
+      end
+      @kill_ring.process
+      return
+    end
+
     if method_symbol and respond_to?(method_symbol, true)
       method_obj = method(method_symbol)
-    else
-      method_obj = nil
     end
     if method_symbol and key.is_a?(Symbol)
       if @vi_arg and argumentable?(method_obj)
@@ -1028,8 +1035,6 @@ class Reline::LineEditor
           run_for_operators(key, method_symbol) do |with_operator|
             wrap_method_call(method_symbol, method_obj, key, with_operator)
           end
-        elsif @waiting_proc
-          @waiting_proc.(key)
         elsif method_obj
           wrap_method_call(method_symbol, method_obj, key)
         else
@@ -1040,9 +1045,6 @@ class Reline::LineEditor
           @vi_arg = nil
         end
       end
-    elsif @waiting_proc
-      @waiting_proc.(key)
-      @kill_ring.process
     elsif method_obj
       if method_symbol == :ed_argument_digit
         wrap_method_call(method_symbol, method_obj, key)
@@ -2325,46 +2327,63 @@ class Reline::LineEditor
     @byte_pointer = 0
   end
 
-  private def vi_change_meta(key, arg: 1)
-    @drop_terminate_spaces = true
-    @waiting_operator_proc = proc { |byte_pointer_diff|
-      if byte_pointer_diff > 0
-        line, cut = byteslice!(current_line, @byte_pointer, byte_pointer_diff)
-      elsif byte_pointer_diff < 0
-        line, cut = byteslice!(current_line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
-      end
-      set_current_line(line)
-      copy_for_vi(cut)
-      @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
-      @config.editing_mode = :vi_insert
-      @drop_terminate_spaces = false
-    }
-    @waiting_operator_vi_arg = arg
+  private def vi_change_meta(key, arg: nil)
+    if @vi_waiting_operator
+      set_current_line('', 0) if @vi_waiting_operator == :vi_change_meta_confirm && arg.nil?
+      @vi_waiting_operator = nil
+      @vi_waiting_operator_arg = nil
+    else
+      @drop_terminate_spaces = true
+      @vi_waiting_operator = :vi_change_meta_confirm
+      @vi_waiting_operator_arg = arg || 1
+    end
   end
 
-  private def vi_delete_meta(key, arg: 1)
-    @waiting_operator_proc = proc { |byte_pointer_diff|
-      if byte_pointer_diff > 0
-        line, cut = byteslice!(current_line, @byte_pointer, byte_pointer_diff)
-      elsif byte_pointer_diff < 0
-        line, cut = byteslice!(current_line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
-      end
-      copy_for_vi(cut)
-      set_current_line(line || '', @byte_pointer + (byte_pointer_diff < 0 ? byte_pointer_diff : 0))
-    }
-    @waiting_operator_vi_arg = arg
+  private def vi_change_meta_confirm(byte_pointer_diff)
+    vi_delete_meta_confirm(byte_pointer_diff)
+    @config.editing_mode = :vi_insert
+    @drop_terminate_spaces = false
   end
 
-  private def vi_yank(key, arg: 1)
-    @waiting_operator_proc = proc { |byte_pointer_diff|
-      if byte_pointer_diff > 0
-        cut = current_line.byteslice(@byte_pointer, byte_pointer_diff)
-      elsif byte_pointer_diff < 0
-        cut = current_line.byteslice(@byte_pointer + byte_pointer_diff, -byte_pointer_diff)
-      end
-      copy_for_vi(cut)
-    }
-    @waiting_operator_vi_arg = arg
+  private def vi_delete_meta(key, arg: nil)
+    if @vi_waiting_operator
+      set_current_line('', 0) if @vi_waiting_operator == :vi_delete_meta_confirm && arg.nil?
+      @vi_waiting_operator = nil
+      @vi_waiting_operator_arg = nil
+    else
+      @vi_waiting_operator = :vi_delete_meta_confirm
+      @vi_waiting_operator_arg = arg || 1
+    end
+  end
+
+  private def vi_delete_meta_confirm(byte_pointer_diff)
+    if byte_pointer_diff > 0
+      line, cut = byteslice!(current_line, @byte_pointer, byte_pointer_diff)
+    elsif byte_pointer_diff < 0
+      line, cut = byteslice!(current_line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+    end
+    copy_for_vi(cut)
+    set_current_line(line || '', @byte_pointer + (byte_pointer_diff < 0 ? byte_pointer_diff : 0))
+  end
+
+  private def vi_yank(key, arg: nil)
+    if @vi_waiting_operator
+      copy_for_vi(current_line) if @vi_waiting_operator == :vi_yank_confirm && arg.nil?
+      @vi_waiting_operator = nil
+      @vi_waiting_operator_arg = nil
+    else
+      @vi_waiting_operator = :vi_yank_confirm
+      @vi_waiting_operator_arg = arg || 1
+    end
+  end
+
+  private def vi_yank_confirm(byte_pointer_diff)
+    if byte_pointer_diff > 0
+      cut = current_line.byteslice(@byte_pointer, byte_pointer_diff)
+    elsif byte_pointer_diff < 0
+      cut = current_line.byteslice(@byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+    end
+    copy_for_vi(cut)
   end
 
   private def vi_list_or_eof(key)
