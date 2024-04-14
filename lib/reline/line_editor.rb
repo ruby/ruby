@@ -233,6 +233,7 @@ class Reline::LineEditor
     @waiting_operator_vi_arg = nil
     @completion_journey_state = nil
     @completion_state = CompletionState::NORMAL
+    @completion_occurs = false
     @perfect_matched = nil
     @menu_info = nil
     @searching_prompt = nil
@@ -1118,42 +1119,35 @@ class Reline::LineEditor
     end
     old_lines = @buffer_of_lines.dup
     @first_char = false
-    completion_occurs = false
+    @completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
       if !@config.disable_completion
         process_insert(force: true)
         if @config.autocompletion
           @completion_state = CompletionState::NORMAL
-          completion_occurs = move_completed_list(:down)
+          @completion_occurs = move_completed_list(:down)
         else
           @completion_journey_state = nil
           result = call_completion_proc
           if result.is_a?(Array)
-            completion_occurs = true
+            @completion_occurs = true
             complete(result, false)
           end
         end
-      end
-    elsif @config.editing_mode_is?(:emacs, :vi_insert) and key.char == :completion_journey_up
-      if not @config.disable_completion and @config.autocompletion
-        process_insert(force: true)
-        @completion_state = CompletionState::NORMAL
-        completion_occurs = move_completed_list(:up)
       end
     elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
       # In vi mode, move completed list even if autocompletion is off
       if not @config.disable_completion
         process_insert(force: true)
         @completion_state = CompletionState::NORMAL
-        completion_occurs = move_completed_list("\C-p".ord == key.char ? :up : :down)
+        @completion_occurs = move_completed_list("\C-p".ord == key.char ? :up : :down)
       end
     elsif Symbol === key.char and respond_to?(key.char, true)
       process_key(key.char, key.char)
     else
       normal_char(key)
     end
-
-    unless completion_occurs
+    unless @completion_occurs
       @completion_state = CompletionState::NORMAL
       @completion_journey_state = nil
     end
@@ -1164,7 +1158,7 @@ class Reline::LineEditor
     end
 
     modified = old_lines != @buffer_of_lines
-    if !completion_occurs && modified && !@config.disable_completion && @config.autocompletion
+    if !@completion_occurs && modified && !@config.disable_completion && @config.autocompletion
       # Auto complete starts only when edited
       process_insert(force: true)
       @completion_journey_state = retrieve_completion_journey_state
@@ -1432,6 +1426,14 @@ class Reline::LineEditor
       insert_new_line(cursor_line, next_line)
     end
   end
+
+  private def completion_journey_up(key)
+    if not @config.disable_completion and @config.autocompletion
+      @completion_state = CompletionState::NORMAL
+      @completion_occurs = move_completed_list(:up)
+    end
+  end
+  alias_method :menu_complete_backward, :completion_journey_up
 
   # Editline:: +ed-unassigned+ This  editor command always results in an error.
   # GNU Readline:: There is no corresponding macro.

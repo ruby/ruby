@@ -627,6 +627,52 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line_around_cursor('foo_bar', '')
   end
 
+  def test_autocompletion_with_upward_navigation
+    @config.autocompletion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        Readline
+        Regexp
+        RegexpError
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('Re')
+    assert_line_around_cursor('Re', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Readline', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Regexp', '')
+    @line_editor.input_key(Reline::Key.new(:completion_journey_up, :completion_journey_up, false))
+    assert_line_around_cursor('Readline', '')
+  ensure
+    @config.autocompletion = false
+  end
+
+  def test_autocompletion_with_upward_navigation_and_menu_complete_backward
+    @config.autocompletion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        Readline
+        Regexp
+        RegexpError
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('Re')
+    assert_line_around_cursor('Re', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Readline', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Regexp', '')
+    @line_editor.input_key(Reline::Key.new(:menu_complete_backward, :menu_complete_backward, false))
+    assert_line_around_cursor('Readline', '')
+  ensure
+    @config.autocompletion = false
+  end
+
   def test_completion_with_disable_completion
     @config.disable_completion = true
     @line_editor.completion_proc = proc { |word|
