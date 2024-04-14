@@ -4215,50 +4215,30 @@ rb_fork_async_signal_safe(int *status,
     return result;
 }
 
-static rb_pid_t
-rb_fork_ruby2(struct rb_process_status *status)
+rb_pid_t
+rb_fork_ruby(int *status)
 {
+    struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
     int try_gc = 1, err;
     struct child_handler_disabler_state old;
 
-    if (status) status->status = 0;
-
-    while (1) {
+    do {
         prefork();
 
         before_fork_ruby();
         disable_child_handler_before_fork(&old);
-        {
-            pid = rb_fork();
-            err = errno;
-            if (status) {
-                status->pid = pid;
-                status->error = err;
-            }
-        }
+
+        child.pid = pid = rb_fork();
+        child.error = err = errno;
+
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         after_fork_ruby(pid);
 
-        if (pid >= 0) { /* fork succeed */
-            return pid;
-        }
+        /* repeat while fork failed but retryable */
+    } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
 
-        /* fork failed */
-        if (handle_fork_error(err, status, NULL, &try_gc)) {
-            return -1;
-        }
-    }
-}
-
-rb_pid_t
-rb_fork_ruby(int *status)
-{
-    struct rb_process_status process_status = {0};
-
-    rb_pid_t pid = rb_fork_ruby2(&process_status);
-
-    if (status) *status = process_status.status;
+    if (status) *status = child.status;
 
     return pid;
 }
