@@ -49,7 +49,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #  23 ^W
     :em_kill_region,
     #  24 ^X
-    :ed_sequence_lead_in,
+    :ed_unassigned,
     #  25 ^Y
     :em_yank,
     #  26 ^Z
@@ -319,9 +319,9 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 158 M-^^
     :ed_unassigned,
     # 159 M-^_
-    :em_copy_prev_word,
-    # 160 M-SPACE
     :ed_unassigned,
+    # 160 M-SPACE
+    :em_set_mark,
     # 161 M-!
     :ed_unassigned,
     # 162 M-"
@@ -415,7 +415,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 206 M-N
     :vi_search_next,
     # 207 M-O
-    :ed_sequence_lead_in,
+    :ed_unassigned,
     # 208 M-P
     :vi_search_prev,
     # 209 M-Q
@@ -431,15 +431,15 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 214 M-V
     :ed_unassigned,
     # 215 M-W
-    :em_copy_region,
-    # 216 M-X
-    :ed_command,
-    # 217 M-Y
     :ed_unassigned,
+    # 216 M-X
+    :ed_unassigned,
+    # 217 M-Y
+    :em_yank_pop,
     # 218 M-Z
     :ed_unassigned,
     # 219 M-[
-    :ed_sequence_lead_in,
+    :ed_unassigned,
     # 220 M-\
     :ed_unassigned,
     # 221 M-]
@@ -495,9 +495,9 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 246 M-v
     :ed_unassigned,
     # 247 M-w
-    :em_copy_region,
+    :ed_unassigned,
     # 248 M-x
-    :ed_command,
+    :ed_unassigned,
     # 249 M-y
     :ed_unassigned,
     # 250 M-z
