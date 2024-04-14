@@ -1,5 +1,6 @@
 require 'shellwords'
 
+require_relative "../color"
 require_relative "../source_finder"
 
 module IRB
