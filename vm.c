@@ -2132,6 +2132,12 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
+                rb_category_warn(
+                    RB_WARN_CATEGORY_PERFORMANCE,
+                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                    rb_class2name(me->owner),
+                    rb_id2name(me->called_id)
+                );
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_rjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
