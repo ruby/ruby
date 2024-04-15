@@ -1532,10 +1532,22 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
  *     autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
- *  +autoload+.
+ *  +autoload+ in the current namespae or one of its ancestors.
  *
  *     autoload(:B, "b")
  *     autoload?(:B)            #=> "b"
+ *
+ *     module C
+ *       autoload(:D, "d")
+ *       autoload?(:D)          #=> "d"
+ *       autoload?(:B)          #=> nil
+ *     end
+ *
+ *     class E
+ *       autoload(:F, "f")
+ *       autoload?(:F)          #=> "f"
+ *       autoload?(:B)          #=> "b"
+ *     end
  */
 
 static VALUE
