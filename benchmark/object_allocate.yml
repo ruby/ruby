@@ -11,6 +11,26 @@ prelude: |
   class OneTwentyEight
     128.times { include(Module.new) }
   end
+  class OnePositional
+    def initialize a; end
+  end
+  class TwoPositional
+    def initialize a, b; end
+  end
+  class ThreePositional
+    def initialize a, b, c; end
+  end
+  class FourPositional
+    def initialize a, b, c, d; end
+  end
+  class KWArg
+    def initialize a:, b:, c:, d:
+    end
+  end
+  class Mixed
+    def initialize a, b, c:, d:
+    end
+  end
   # Disable GC to see raw throughput:
   GC.disable
 benchmark:
@@ -18,4 +38,11 @@ benchmark:
   allocate_32_deep: ThirtyTwo.new
   allocate_64_deep: SixtyFour.new
   allocate_128_deep: OneTwentyEight.new
+  allocate_1_positional_params: OnePositional.new(1)
+  allocate_2_positional_params: TwoPositional.new(1, 2)
+  allocate_3_positional_params: ThreePositional.new(1, 2, 3)
+  allocate_4_positional_params: FourPositional.new(1, 2, 3, 4)
+  allocate_kwarg_params: "KWArg.new(a: 1, b: 2, c: 3, d: 4)"
+  allocate_mixed_params: "Mixed.new(1, 2, c: 3, d: 4)"
+  allocate_no_params: "Object.new"
 loop_count: 100000
