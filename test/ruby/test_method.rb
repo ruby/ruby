@@ -1663,28 +1663,34 @@ class TestMethod < Test::Unit::TestCase
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
       class C0
-        def foo = nil
-        def bar = nil
-        def baz = nil
-        def qux = nil
+        def f1 = nil
+        def f2 = nil
+        def f3 = nil
+        def f4 = nil
+        def f5 = nil
+        def f6 = nil
       end
 
       class C1 < C0
-        def foo = super
-        def bar = super()
-        def baz(&_) = super(&_)
-        def qux = super(&nil)
+        def f1 = super         # zsuper / use
+        def f2 = super()       # super  / use
+        def f3(&_) = super(&_) # super  / use
+        def f4 = super(&nil)   # super  / unuse
+        def f5 = super(){}     # super  / unuse
+        def f6 = super{}       # zsuper / unuse
       end
 
-      C1.new.foo{} # no warning
-      C1.new.bar{} # no warning
-      C1.new.baz{} # no warning
-      # C1.new.qux{} # TODO: warning line:16 but not supported yet.
+      C1.new.f1{} # no warning
+      C1.new.f2{} # no warning
+      C1.new.f3{} # no warning
+      C1.new.f4{} # warning
+      C1.new.f5{} # warning
+      C1.new.f6{} # warning
     RUBY
-      assert_equal 0, err.size
-      # TODO
-      # assert_equal 1, err.size
-      # assert_match(/-:16: warning.+qux/, err.join)
+      assert_equal 3, err.size, err.join("\n")
+      assert_match(/-:22: warning.+f4/, err.join)
+      assert_match(/-:23: warning.+f5/, err.join)
+      assert_match(/-:24: warning.+f6/, err.join)
     end
   end
 end
