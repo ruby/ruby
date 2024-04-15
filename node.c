@@ -81,7 +81,6 @@ rb_node_buffer_new(void)
 #define xfree ast->node_buffer->config->free
 #define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
 #define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
-#define rb_gc_mark_and_move ast->node_buffer->config->gc_mark_and_move
 #endif
 
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
