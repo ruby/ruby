@@ -3356,7 +3356,11 @@ CODE
     assert_same(str, +str)
     assert_not_same(str, -str)
 
+    require 'objspace'
+
     str = "bar".freeze
+    assert_includes ObjectSpace.dump(str), '"fstring":true'
+
     assert_predicate(str, :frozen?)
     assert_not_predicate(+str, :frozen?)
     assert_predicate(-str, :frozen?)
@@ -3364,8 +3368,8 @@ CODE
     assert_not_same(str, +str)
     assert_same(str, -str)
 
-    bar = %w(b a r).join('')
-    assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+    bar = -%w(b a r).join('')
+    assert_same(str, bar, "uminus deduplicates [Feature #13077] #{ObjectSpace.dump(bar)}")
   end
 
   def test_uminus_frozen
