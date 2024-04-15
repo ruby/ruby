@@ -1532,7 +1532,7 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
  *     autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
- *  +autoload+ in the current namespae or one of its ancestors.
+ *  +autoload+ in the current namespace or one of its ancestors.
  *
  *     autoload(:B, "b")
  *     autoload?(:B)            #=> "b"
