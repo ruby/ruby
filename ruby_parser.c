@@ -309,18 +309,6 @@ syntax_error_new(void)
     return rb_class_new_instance(0, 0, rb_eSyntaxError);
 }
 
-static VALUE
-obj_write(VALUE old, VALUE *slot, VALUE young)
-{
-    return RB_OBJ_WRITE(old, slot, young);
-}
-
-static VALUE
-default_rs(void)
-{
-    return rb_default_rs;
-}
-
 static void *
 memmove2(void *dest, const void *src, size_t t, size_t n)
 {
@@ -429,7 +417,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_push = rb_ary_push,
     .ary_new_from_args = rb_ary_new_from_args,
     .ary_unshift = rb_ary_unshift,
-    .ary_modify = rb_ary_modify,
     .array_len = rb_array_len,
     .array_aref = RARRAY_AREF,
 
@@ -476,7 +463,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .stderr_tty_p = rb_stderr_tty_p,
     .write_error_str = rb_write_error_str,
-    .default_rs = default_rs,
     .io_write = rb_io_write,
     .io_flush = rb_io_flush,
     .io_puts = rb_io_puts,
@@ -501,7 +487,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_mbcput = enc_mbcput,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
-    .enc_associate_index = rb_enc_associate_index,
     .enc_isspace = enc_isspace,
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
@@ -528,10 +513,8 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .sized_xfree = ruby_sized_xfree,
     .sized_realloc_n = ruby_sized_realloc_n,
-    .obj_write = obj_write,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
-    .gc_mark_and_move = rb_gc_mark_and_move,
 
     .reg_compile = rb_reg_compile,
     .reg_check_preprocess = rb_reg_check_preprocess,

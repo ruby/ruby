@@ -1264,7 +1264,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
-    void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
 
@@ -1318,7 +1317,6 @@ typedef struct rb_parser_config_struct {
     /* IO */
     int (*stderr_tty_p)(void);
     void (*write_error_str)(VALUE mesg);
-    VALUE (*default_rs)(void);
     VALUE (*io_write)(VALUE io, VALUE str);
     VALUE (*io_flush)(VALUE io);
     VALUE (*io_puts)(int argc, const VALUE *argv, VALUE out);
@@ -1345,7 +1343,6 @@ typedef struct rb_parser_config_struct {
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
-    VALUE (*enc_associate_index)(VALUE obj, int encindex);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
@@ -1378,10 +1375,8 @@ typedef struct rb_parser_config_struct {
     /* GC */
     void (*sized_xfree)(void *x, size_t size);
     void *(*sized_realloc_n)(void *ptr, size_t new_count, size_t element_size, size_t old_count);
-    VALUE (*obj_write)(VALUE, VALUE *, VALUE);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
-    void (*gc_mark_and_move)(VALUE *ptr);
 
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);

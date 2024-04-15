@@ -95,7 +95,6 @@
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
-#define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
 #define RARRAY_AREF          p->config->array_aref
@@ -154,7 +153,6 @@
 
 #define rb_stderr_tty_p    p->config->stderr_tty_p
 #define rb_write_error_str p->config->write_error_str
-#define rb_default_rs      p->config->default_rs()
 #define rb_io_write        p->config->io_write
 #define rb_io_flush        p->config->io_flush
 #define rb_io_puts         p->config->io_puts
@@ -179,7 +177,6 @@
 #define rb_enc_mbcput           p->config->enc_mbcput
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
-#define rb_enc_associate_index  p->config->enc_associate_index
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
@@ -202,8 +199,6 @@
 
 #define ruby_sized_xfree p->config->sized_xfree
 #define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)p->config->sized_realloc_n((void *)(v), (m), sizeof(T), (n)))
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
