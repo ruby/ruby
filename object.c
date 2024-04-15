@@ -44,10 +44,6 @@
 #include "shape.h"
 #include "yjit.h"
 
-#if USE_MMTK
-#include "internal/mmtk_support.h"
-#endif
-
 /* Flags of RObject
  *
  * 1:    ROBJECT_EMBED
