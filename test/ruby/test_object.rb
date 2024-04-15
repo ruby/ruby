@@ -994,6 +994,23 @@ class TestObject < Test::Unit::TestCase
     assert_predicate(ys, :frozen?, '[Bug #19169]')
   end
 
+  def test_singleton_class_of_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class.singleton_class
+    xxs = xs.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?, '[Bug #20319]')
+    assert_predicate(xxs, :frozen?, '[Bug #20319]')
+
+    y = Object.new
+    ys = y.singleton_class.singleton_class
+    yys = ys.singleton_class
+    ys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #20319]')
+    assert_predicate(yys, :frozen?, '[Bug #20319]')
+  end
+
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
