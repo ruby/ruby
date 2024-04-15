@@ -12253,6 +12253,7 @@ static rb_node_block_pass_t *
 rb_node_block_pass_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_block_pass_t *n = NODE_NEWNODE(NODE_BLOCK_PASS, rb_node_block_pass_t, loc);
+    n->forwarding = 0;
     n->nd_head = 0;
     n->nd_body = nd_body;
 
@@ -15084,6 +15085,7 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
 #endif
     rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
+    block->forwarding = TRUE;
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
 #endif

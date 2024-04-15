@@ -701,6 +701,12 @@ rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
     return iseq->body->param.flags.accepts_no_kwarg;
 }
 
+bool
+rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.forwardable;
+}
+
 const rb_seq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {

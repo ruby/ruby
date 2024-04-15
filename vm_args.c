@@ -1057,3 +1057,56 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
         }
     }
 }
+
+static void vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, CALL_INFO callers_info, VALUE splat);
+
+static VALUE
+vm_caller_setup_args(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                    CALL_DATA *cd, const rb_iseq_t *blockiseq, const int is_super,
+                    struct rb_forwarding_call_data *adjusted_cd, struct rb_callinfo *adjusted_ci)
+{
+    CALL_INFO site_ci = (*cd)->ci;
+    VALUE bh = Qundef;
+
+    if (vm_ci_flag(site_ci) & VM_CALL_FORWARDING) {
+        RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+        CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
+
+        unsigned int forwarding_argc = vm_ci_argc(site_ci);
+        VALUE splat = Qfalse;
+
+        if (vm_ci_flag(site_ci) & VM_CALL_ARGS_SPLAT) {
+            // If we're called with args_splat, the top 1 should be an array
+            splat = TOPN(1);
+            forwarding_argc += (RARRAY_LEN(splat) - 1);
+        }
+
+        // Need to setup the block in case of e.g. `super { :block }`
+        if (is_super && blockiseq) {
+            bh = vm_caller_setup_arg_block(ec, GET_CFP(), site_ci, blockiseq, is_super);
+        }
+        else {
+            bh = VM_ENV_BLOCK_HANDLER(GET_LEP());
+        }
+
+        vm_adjust_stack_forwarding(ec, GET_CFP(), caller_ci, splat);
+
+        *adjusted_ci = VM_CI_ON_STACK(
+            vm_ci_mid(site_ci),
+            (vm_ci_flag(caller_ci) | (vm_ci_flag(site_ci) & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            forwarding_argc + vm_ci_argc(caller_ci),
+            vm_ci_kwarg(caller_ci)
+        );
+
+        adjusted_cd->cd.ci = adjusted_ci;
+        adjusted_cd->cd.cc = (*cd)->cc;
+        adjusted_cd->caller_ci = caller_ci;
+
+        *cd = &adjusted_cd->cd;
+    }
+    else {
+        bh = vm_caller_setup_arg_block(ec, GET_CFP(), site_ci, blockiseq, is_super);
+    }
+
+    return bh;
+}

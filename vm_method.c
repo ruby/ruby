@@ -1187,6 +1187,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
 {
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
+        (!(vm_ci_flag(ci) & VM_CALL_FORWARDING)) &&
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
         VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ); // iseq_overload is marked only on ISEQ methods
 

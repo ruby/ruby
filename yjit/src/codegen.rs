@@ -7118,6 +7118,8 @@ fn gen_send_iseq(
     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
     let splat_call = flags & VM_CALL_ARGS_SPLAT != 0;
 
+    let forwarding_call = unsafe { rb_get_iseq_flags_forwardable(iseq) };
+
     // For computing offsets to callee locals
     let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 };
@@ -7160,9 +7162,15 @@ fn gen_send_iseq(
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, doing_kw_call)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
-    exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
+    if !forwarding_call {
+        exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
+    }
     exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
     exit_if_has_rest_and_optional_and_block(asm, iseq_has_rest, opt_num, iseq, block_arg)?;
+    if forwarding_call && flags & VM_CALL_OPT_SEND != 0 {
+        gen_counter_incr(asm, Counter::send_iseq_send_forwarding);
+        return None;
+    }
     let block_arg_type = exit_if_unsupported_block_arg_type(jit, asm, block_arg)?;
 
     // Bail if we can't drop extra arguments for a yield by just popping them
@@ -7671,25 +7679,26 @@ fn gen_send_iseq(
         }
     }
 
-    // Nil-initialize missing optional parameters
-    nil_fill(
-        "nil-initialize missing optionals",
-        {
-            let begin = -argc + required_num + opts_filled;
-            let end   = -argc + required_num + opt_num;
+    if !forwarding_call {
+        // Nil-initialize missing optional parameters
+        nil_fill(
+            "nil-initialize missing optionals",
+            {
+                let begin = -argc + required_num + opts_filled;
+                let end   = -argc + required_num + opt_num;
 
-            begin..end
-        },
-        asm
-    );
-    // Nil-initialize the block parameter. It's the last parameter local
-    if iseq_has_block_param {
-        let block_param = asm.ctx.sp_opnd(-argc + num_params - 1);
-        asm.store(block_param, Qnil.into());
-    }
-    // Nil-initialize non-parameter locals
-    nil_fill(
-        "nil-initialize locals",
+                begin..end
+            },
+            asm
+        );
+        // Nil-initialize the block parameter. It's the last parameter local
+        if iseq_has_block_param {
+            let block_param = asm.ctx.sp_opnd(-argc + num_params - 1);
+            asm.store(block_param, Qnil.into());
+        }
+        // Nil-initialize non-parameter locals
+        nil_fill(
+            "nil-initialize locals",
         {
             let begin = -argc + num_params;
             let end   = -argc + num_locals;
@@ -7697,7 +7706,13 @@ fn gen_send_iseq(
             begin..end
         },
         asm
-    );
+        );
+    }
+
+    if forwarding_call {
+        assert_eq!(1, num_params);
+        asm.mov(asm.stack_opnd(-1), VALUE(ci as usize).into());
+    }
 
     // Points to the receiver operand on the stack unless a captured environment is used
     let recv = match captured_opnd {
@@ -7716,7 +7731,13 @@ fn gen_send_iseq(
     jit_save_pc(jit, asm);
 
     // Adjust the callee's stack pointer
-    let callee_sp = asm.lea(asm.ctx.sp_opnd(-argc + num_locals + VM_ENV_DATA_SIZE as i32));
+    let callee_sp = if forwarding_call {
+        let offs = num_locals + VM_ENV_DATA_SIZE as i32;
+        asm.lea(asm.ctx.sp_opnd(offs))
+    } else {
+        let offs = -argc + num_locals + VM_ENV_DATA_SIZE as i32;
+        asm.lea(asm.ctx.sp_opnd(offs))
+    };
 
     let specval = if let Some(prev_ep) = prev_ep {
         // We've already side-exited if the callee expects a block, so we
@@ -8519,6 +8540,14 @@ fn gen_send_general(
         return Some(EndBlock);
     }
 
+    let ci_flags = unsafe { vm_ci_flag(ci) };
+
+    // Dynamic stack layout. No good way to support without inlining.
+    if ci_flags & VM_CALL_FORWARDING != 0 {
+        gen_counter_incr(asm, Counter::send_iseq_forwarding);
+        return None;
+    }
+
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
     let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
@@ -9284,6 +9313,10 @@ fn gen_invokesuper_specialized(
     }
     if ci_flags & VM_CALL_KW_SPLAT != 0 {
         gen_counter_incr(asm, Counter::invokesuper_kw_splat);
+        return None;
+    }
+    if ci_flags & VM_CALL_FORWARDING != 0 {
+        gen_counter_incr(asm, Counter::invokesuper_forwarding);
         return None;
     }
 

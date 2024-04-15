@@ -675,7 +675,8 @@ pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 9;
 pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
 pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
 pub const VM_CALL_ARGS_SPLAT_MUT_bit: vm_call_flag_bits = 12;
-pub const VM_CALL__END: vm_call_flag_bits = 13;
+pub const VM_CALL_FORWARDING_bit: vm_call_flag_bits = 13;
+pub const VM_CALL__END: vm_call_flag_bits = 14;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {
@@ -1184,6 +1185,7 @@ extern "C" {
     pub fn rb_get_iseq_flags_has_block(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_ambiguous_param0(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
+    pub fn rb_get_iseq_flags_forwardable(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_body_param_keyword(
         iseq: *const rb_iseq_t,
     ) -> *const rb_seq_param_keyword_struct;

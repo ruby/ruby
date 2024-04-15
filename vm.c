@@ -961,7 +961,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         local_size = VM_ENV_DATA_SIZE;
     }
     else {
-        local_size = ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
+        local_size = ISEQ_BODY(cfp->iseq)->local_table_size;
+        if (ISEQ_BODY(cfp->iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
+            int ci_offset = local_size - ISEQ_BODY(cfp->iseq)->param.size + VM_ENV_DATA_SIZE;
+
+            CALL_INFO ci = (CALL_INFO)VM_CF_LEP(cfp)[-ci_offset];
+            local_size += vm_ci_argc(ci);
+        }
+        local_size += VM_ENV_DATA_SIZE;
     }
 
     /*
