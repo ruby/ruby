@@ -22,7 +22,8 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir["{doc,lib,misc}/**/*"] + %w[README.md ChangeLog COPYING]
+  spec.files         = Dir["{doc,lib,misc}/**/{*,.document}"] +
+                       %w[README.md ChangeLog COPYING .document .rdoc_options"]
   spec.rdoc_options  = ["--main=README.md", "--op=rdoc", "--page-dir=doc"]
   spec.bindir        = "exe"
   spec.executables   = []
