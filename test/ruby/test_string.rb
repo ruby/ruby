@@ -3369,7 +3369,7 @@ CODE
     assert_same(str, -str)
 
     bar = -%w(b a r).join('')
-    assert_same(str, bar, "uminus deduplicates [Feature #13077] #{ObjectSpace.dump(bar)}")
+    assert_same(str, bar, "uminus deduplicates [Feature #13077] str: #{ObjectSpace.dump(str)} bar: #{ObjectSpace.dump(bar)}")
   end
 
   def test_uminus_frozen
