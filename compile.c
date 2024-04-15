@@ -9372,6 +9372,8 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
     INIT_ANCHOR(args);
     ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
+    ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
+
     if (type == NODE_SUPER) {
         VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, &flag, &keywords);
         CHECK(!NIL_P(vargc));
@@ -9382,8 +9384,6 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
     else {
         /* NODE_ZSUPER */
-        ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
-
         int i;
         const rb_iseq_t *liseq = body->local_iseq;
         const struct rb_iseq_constant_body *const local_body = ISEQ_BODY(liseq);

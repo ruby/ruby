@@ -1666,20 +1666,25 @@ class TestMethod < Test::Unit::TestCase
         def foo = nil
         def bar = nil
         def baz = nil
+        def qux = nil
       end
 
       class C1 < C0
         def foo = super
         def bar = super()
         def baz(&_) = super(&_)
+        def qux = super(&nil)
       end
 
       C1.new.foo{} # no warning
-      C1.new.bar{} # warning
+      C1.new.bar{} # no warning
       C1.new.baz{} # no warning
+      # C1.new.qux{} # TODO: warning line:16 but not supported yet.
     RUBY
-      assert_equal 1, err.size
-      assert_match(/-:14: warning.+bar/, err.join)
+      assert_equal 0, err.size
+      # TODO
+      # assert_equal 1, err.size
+      # assert_match(/-:16: warning.+qux/, err.join)
     end
   end
 end
