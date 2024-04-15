@@ -487,7 +487,7 @@ static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
-static int iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl);
+static int iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *const node_args);
 static int iseq_set_exception_local_table(rb_iseq_t *iseq);
 static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, const NODE *const node);
 
@@ -869,12 +869,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 
     if (node == 0) {
         NO_CHECK(COMPILE(ret, "nil", node));
-        iseq_set_local_table(iseq, 0);
+        iseq_set_local_table(iseq, 0, 0);
     }
     /* assume node is T_NODE */
     else if (nd_type_p(node, NODE_SCOPE)) {
         /* iseq type of top, method, class, block */
-        iseq_set_local_table(iseq, RNODE_SCOPE(node)->nd_tbl);
+        iseq_set_local_table(iseq, RNODE_SCOPE(node)->nd_tbl, (NODE *)RNODE_SCOPE(node)->nd_args);
         iseq_set_arguments(iseq, ret, (NODE *)RNODE_SCOPE(node)->nd_args);
 
         switch (ISEQ_BODY(iseq)->type) {
@@ -1439,7 +1439,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 {
     VM_ASSERT(argc >= 0);
 
-    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT)) &&
+    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
         kw_arg == NULL && !has_blockiseq) {
         flag |= VM_CALL_ARGS_SIMPLE;
     }
@@ -2034,6 +2034,13 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         }
         block_id = args->block_arg;
 
+        bool optimized_forward = (args->forwarding && args->pre_args_num == 0 && !args->opt_args);
+
+        if (optimized_forward) {
+            rest_id = 0;
+            block_id = 0;
+        }
+
         if (args->opt_args) {
             const rb_node_opt_arg_t *node = args->opt_args;
             LABEL *label;
@@ -2090,7 +2097,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         if (args->kw_args) {
             arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
         }
-        else if (args->kw_rest_arg) {
+        else if (args->kw_rest_arg && !optimized_forward) {
             ID kw_id = iseq->body->local_table[arg_size];
             struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
             keyword->rest_start = arg_size++;
@@ -2109,6 +2116,13 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
             iseq_set_use_block(iseq);
+        }
+
+        // Only optimize specifically methods like this: `foo(...)`
+        if (optimized_forward) {
+            body->param.flags.use_block = 1;
+            body->param.flags.forwardable = TRUE;
+            arg_size = 1;
         }
 
         iseq_calc_param_size(iseq);
@@ -2140,13 +2154,26 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 }
 
 static int
-iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl)
+iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *const node_args)
 {
     unsigned int size = tbl ? tbl->size : 0;
+    unsigned int offset = 0;
+
+    if (node_args) {
+        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
+
+        // If we have a function that only has `...` as the parameter,
+        // then its local table should only be `...`
+        // FIXME: I think this should be fixed in the AST rather than special case here.
+        if (args->forwarding && args->pre_args_num == 0 && !args->opt_args) {
+            size -= 3;
+            offset += 3;
+        }
+    }
 
     if (size > 0) {
         ID *ids = (ID *)ALLOC_N(ID, size);
-        MEMCPY(ids, tbl->ids, ID, size);
+        MEMCPY(ids, tbl->ids + offset, ID, size);
         ISEQ_BODY(iseq)->local_table = ids;
     }
     ISEQ_BODY(iseq)->local_table_size = size;
@@ -4146,7 +4173,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
             }
         }
 
-        if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
+        if ((vm_ci_flag(ci) & (VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING)) == 0 && blockiseq == NULL) {
             iobj->insn_id = BIN(opt_send_without_block);
             iobj->operand_size = insn_len(iobj->insn_id) - 1;
         }
@@ -6319,9 +6346,33 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         unsigned int dup_rest = 1;
         DECL_ANCHOR(arg_block);
         INIT_ANCHOR(arg_block);
-        NO_CHECK(COMPILE(arg_block, "block", RNODE_BLOCK_PASS(argn)->nd_body));
 
-        *flag |= VM_CALL_ARGS_BLOCKARG;
+        if (RNODE_BLOCK_PASS(argn)->forwarding && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+            int idx = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size;// - get_local_var_idx(iseq, idDot3);
+
+            RUBY_ASSERT(nd_type_p(RNODE_BLOCK_PASS(argn)->nd_head, NODE_ARGSPUSH));
+            const NODE * arg_node =
+                RNODE_ARGSPUSH(RNODE_BLOCK_PASS(argn)->nd_head)->nd_head;
+
+            int argc = 0;
+
+            // Only compile leading args:
+            //   foo(x, y, ...)
+            //       ^^^^
+            if (nd_type_p(arg_node, NODE_ARGSCAT)) {
+                argc += setup_args_core(iseq, args, RNODE_ARGSCAT(arg_node)->nd_head, dup_rest, flag, keywords);
+            }
+
+            *flag |= VM_CALL_FORWARDING;
+
+            ADD_GETLOCAL(args, argn, idx, get_lvar_level(iseq));
+            return INT2FIX(argc);
+        }
+        else {
+            *flag |= VM_CALL_ARGS_BLOCKARG;
+
+            NO_CHECK(COMPILE(arg_block, "block", RNODE_BLOCK_PASS(argn)->nd_body));
+        }
 
         if (LIST_INSN_SIZE_ONE(arg_block)) {
             LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
@@ -6353,7 +6404,7 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *ptr)
     ADD_INSN1(ret, body, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_CALL_WITH_BLOCK(ret, body, id_core_set_postexe, argc, block);
     RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
-    iseq_set_local_table(iseq, 0);
+    iseq_set_local_table(iseq, 0, 0);
 }
 
 static void
@@ -9462,6 +9513,13 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         /* normal arguments */
         for (i = 0; i < local_body->param.lead_num; i++) {
             int idx = local_body->local_table_size - i;
+            ADD_GETLOCAL(args, node, idx, lvar_level);
+        }
+
+        /* forward ... */
+        if (local_body->param.flags.forwardable) {
+            flag |= VM_CALL_FORWARDING;
+            int idx = local_body->local_table_size - get_local_var_idx(liseq, idDot3);
             ADD_GETLOCAL(args, node, idx, lvar_level);
         }
 
@@ -13030,7 +13088,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.ruby2_keywords   << 9) |
         (body->param.flags.anon_rest        << 10) |
         (body->param.flags.anon_kwrest      << 11) |
-        (body->param.flags.use_block        << 12);
+        (body->param.flags.use_block        << 12) |
+        (body->param.flags.forwardable      << 13) ;
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -13247,6 +13306,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.anon_rest = (param_flags >> 10) & 1;
     load_body->param.flags.anon_kwrest = (param_flags >> 11) & 1;
     load_body->param.flags.use_block = (param_flags >> 12) & 1;
+    load_body->param.flags.forwardable = (param_flags >> 13) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;

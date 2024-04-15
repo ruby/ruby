@@ -26,6 +26,7 @@ enum vm_call_flag_bits {
     VM_CALL_OPT_SEND_bit,       // internal flag
     VM_CALL_KW_SPLAT_MUT_bit,   // kw splat hash can be modified (to avoid allocating a new one)
     VM_CALL_ARGS_SPLAT_MUT_bit, // args splat can be modified (to avoid allocating a new one)
+    VM_CALL_FORWARDING_bit,     // m(...)
     VM_CALL__END
 };
 
@@ -42,6 +43,7 @@ enum vm_call_flag_bits {
 #define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
 #define VM_CALL_KW_SPLAT_MUT    (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
 #define VM_CALL_ARGS_SPLAT_MUT  (0x01 << VM_CALL_ARGS_SPLAT_MUT_bit)
+#define VM_CALL_FORWARDING      (0x01 << VM_CALL_FORWARDING_bit)
 
 struct rb_callinfo_kwarg {
     int keyword_len;
@@ -240,6 +242,21 @@ vm_ci_new_runtime_(ID mid, unsigned int flag, unsigned int argc, const struct rb
 
 #define VM_CALLINFO_NOT_UNDER_GC IMEMO_FL_USER0
 
+static inline bool
+vm_ci_markable(const struct rb_callinfo *ci)
+{
+    if (! ci) {
+        return false; /* or true? This is Qfalse... */
+    }
+    else if (vm_ci_packed_p(ci)) {
+        return true;
+    }
+    else {
+        VM_ASSERT(IMEMO_TYPE_P(ci, imemo_callinfo));
+        return ! FL_ANY_RAW((VALUE)ci, VM_CALLINFO_NOT_UNDER_GC);
+    }
+}
+
 #define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
     (struct rb_callinfo) {                          \
         .flags = T_IMEMO |                          \
@@ -317,6 +334,8 @@ vm_cc_new(VALUE klass,
     struct rb_callcache *cc = IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
+
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
 
     switch (type) {
       case cc_type_normal:

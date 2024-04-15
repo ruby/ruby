@@ -2526,6 +2526,15 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 
     if (cfp->iseq && VM_FRAME_RUBYFRAME_P(cfp)) {
         VALUE *bp = prev_cfp->sp + ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
+
+        if (ISEQ_BODY(cfp->iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
+            int lts = ISEQ_BODY(cfp->iseq)->local_table_size;
+            int params = ISEQ_BODY(cfp->iseq)->param.size;
+
+            CALL_INFO ci = (CALL_INFO)cfp->ep[-(VM_ENV_DATA_SIZE + (lts - params))]; // skip EP stuff, CI should be last local
+            bp += vm_ci_argc(ci);
+        }
+
         if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD || VM_FRAME_BMETHOD_P(cfp)) {
             /* adjust `self' */
             bp += 1;
@@ -2594,6 +2603,7 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_kw == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
            ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
@@ -2606,6 +2616,7 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_kw == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
            ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
@@ -2617,6 +2628,7 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_post == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_kw == TRUE &&
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
@@ -3053,7 +3065,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 argument_arity_error(ec, iseq, calling->argc, lead_num, lead_num);
             }
 
-            VM_ASSERT(ci == calling->cd->ci);
+            //VM_ASSERT(ci == calling->cd->ci);
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
@@ -3140,7 +3152,123 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         }
     }
 
+    // Called iseq is using ... param
+    // def foo(...) # <- iseq for foo will have "forwardable"
+    //
+    // We want to set the `...` local to the caller's CI
+    //   foo(1, 2) # <- the ci for this should end up as `...`
+    //
+    // So hopefully the stack looks like:
+    //
+    //   => 1
+    //   => 2
+    //   => *
+    //   => **
+    //   => &
+    //   => ... # <- points at `foo`s CI
+    //   => cref_or_me
+    //   => specval
+    //   => type
+    //
+    if (ISEQ_BODY(iseq)->param.flags.forwardable) {
+        if ((vm_ci_flag(ci) & VM_CALL_FORWARDING)) {
+            struct rb_forwarding_call_data * forward_cd = (struct rb_forwarding_call_data *)calling->cd;
+            if (vm_ci_argc(ci) != vm_ci_argc(forward_cd->caller_ci)) {
+                ci = vm_ci_new_runtime(
+                        vm_ci_mid(ci),
+                        vm_ci_flag(ci),
+                        vm_ci_argc(ci),
+                        vm_ci_kwarg(ci));
+            } else {
+                ci = forward_cd->caller_ci;
+            }
+        }
+        // C functions calling iseqs will stack allocate a CI,
+        // so we need to convert it to heap allocated
+        if (!vm_ci_markable(ci)) {
+            ci = vm_ci_new_runtime(
+                    vm_ci_mid(ci),
+                    vm_ci_flag(ci),
+                    vm_ci_argc(ci),
+                    vm_ci_kwarg(ci));
+        }
+        argv[param_size - 1] = (VALUE)ci;
+        return 0;
+    }
+
     return setup_parameters_complex(ec, iseq, calling, ci, argv, arg_setup_method);
+}
+
+static void
+vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, CALL_INFO callers_info, VALUE splat)
+{
+    // This case is when the caller is using a ... parameter.
+    // For example `bar(...)`. The call info will have VM_CALL_FORWARDING
+    // In this case the caller's caller's CI will be on the stack.
+    //
+    // For example:
+    //
+    // def bar(a, b); a + b; end
+    // def foo(...); bar(...); end
+    // foo(1, 2) # <- this CI will be on the stack when we call `bar(...)`
+    //
+    // Stack layout will be:
+    //
+    // > 1
+    // > 2
+    // > CI for foo(1, 2)
+    // > cref_or_me
+    // > specval
+    // > type
+    // > receiver
+    // > CI for foo(1, 2), via `getlocal ...`
+    // >      ( SP points here )
+    const VALUE * lep = VM_CF_LEP(cfp);
+
+    // We'll need to copy argc args to this SP
+    int argc = vm_ci_argc(callers_info);
+
+    const rb_iseq_t *iseq;
+
+    // If we're in an escaped environment (lambda for example), get the iseq
+    // from the captured env.
+    if (VM_ENV_FLAGS(lep, VM_ENV_FLAG_ESCAPED)) {
+        rb_env_t * env = (rb_env_t *)lep[VM_ENV_DATA_INDEX_ENV];
+        iseq = env->iseq;
+    }
+    else { // Otherwise use the lep to find the caller
+        iseq = rb_vm_search_cf_from_ep(ec, cfp, lep)->iseq;
+    }
+
+    // Our local storage is below the args we need to copy
+    int local_size = ISEQ_BODY(iseq)->local_table_size + argc;
+
+    const VALUE * from = lep - (local_size + VM_ENV_DATA_SIZE - 1); // 2 for EP values
+    VALUE * to = cfp->sp - 1; // clobber the CI
+
+    if (RTEST(splat)) {
+        to -= 1; // clobber the splat array
+        CHECK_VM_STACK_OVERFLOW0(cfp, to, RARRAY_LEN(splat));
+        MEMCPY(to, RARRAY_CONST_PTR(splat), VALUE, RARRAY_LEN(splat));
+        to += RARRAY_LEN(splat);
+    }
+
+    CHECK_VM_STACK_OVERFLOW0(cfp, to, argc);
+    MEMCPY(to, from, VALUE, argc);
+    cfp->sp = to + argc;
+
+    // Stack layout should now be:
+    //
+    // > 1
+    // > 2
+    // > CI for foo(1, 2)
+    // > cref_or_me
+    // > specval
+    // > type
+    // > receiver
+    // > 1
+    // > 2
+    // >      ( SP points here )
 }
 
 static VALUE
@@ -3150,8 +3278,15 @@ vm_call_iseq_setup(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct r
 
     const struct rb_callcache *cc = calling->cc;
     const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
-    const int param_size = ISEQ_BODY(iseq)->param.size;
-    const int local_size = ISEQ_BODY(iseq)->local_table_size;
+    int param_size = ISEQ_BODY(iseq)->param.size;
+    int local_size = ISEQ_BODY(iseq)->local_table_size;
+
+    // Setting up local size and param size
+    if (ISEQ_BODY(iseq)->param.flags.forwardable) {
+        local_size = local_size + vm_ci_argc(calling->cd->ci);
+        param_size = param_size + vm_ci_argc(calling->cd->ci);
+    }
+
     const int opt_pc = vm_callee_setup_arg(ec, calling, iseq, cfp->sp - calling->argc, param_size, local_size);
     return vm_call_iseq_setup_2(ec, cfp, calling, opt_pc, param_size, local_size);
 }
@@ -3661,7 +3796,7 @@ vm_call_cfunc_other(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, str
         return vm_call_cfunc_with_frame_(ec, reg_cfp, calling, argc, argv, stack_bottom);
     }
     else {
-        CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat);
+        CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat && !(vm_ci_flag(ci) & VM_CALL_FORWARDING));
 
         return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
     }
@@ -4543,7 +4678,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
         rb_check_arity(calling->argc, 1, 1);
 
-        const unsigned int aset_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG);
+        const unsigned int aset_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_FORWARDING);
 
         if (vm_cc_markable(cc)) {
             vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
@@ -4577,7 +4712,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         CALLER_SETUP_ARG(cfp, calling, ci, 0);
         rb_check_arity(calling->argc, 0, 0);
         vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
-        const unsigned int ivar_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT);
+        const unsigned int ivar_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING);
         VM_CALL_METHOD_ATTR(v,
                             vm_call_ivar(ec, cfp, calling),
                             CC_SET_FASTPATH(cc, vm_call_ivar, !(vm_ci_flag(ci) & ivar_mask)));
@@ -4796,13 +4931,18 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     ID mid = me->def->original_id;
 
-    // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(mid,
-                               vm_ci_flag(cd->ci),
-                               vm_ci_argc(cd->ci),
-                               vm_ci_kwarg(cd->ci));
+    if (!vm_ci_markable(cd->ci)) {
+        VM_FORCE_WRITE((const VALUE *)&cd->ci->mid, (VALUE)mid);
+    }
+    else {
+        // update iseq. really? (TODO)
+        cd->ci = vm_ci_new_runtime(mid,
+                                   vm_ci_flag(cd->ci),
+                                   vm_ci_argc(cd->ci),
+                                   vm_ci_kwarg(cd->ci));
 
-    RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
+        RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
+    }
 
     const struct rb_callcache *cc;
 
@@ -5737,8 +5877,20 @@ VALUE
 rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {
     stack_check(ec);
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+    CALL_DATA _cd = cd;
+
+    VALUE bh = vm_caller_setup_args(ec, GET_CFP(), &cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
     VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+
+    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
+      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
+          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
+      }
+    }
+
     VM_EXEC(ec, val);
     return val;
 }
@@ -5757,8 +5909,19 @@ VALUE
 rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {
     stack_check(ec);
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+    CALL_DATA _cd = cd;
+
+    VALUE bh = vm_caller_setup_args(ec, GET_CFP(), &cd, blockiseq, true, &adjusted_cd, &adjusted_ci);
     VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+
+    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
+      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
+          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
+      }
+    }
+
     VM_EXEC(ec, val);
     return val;
 }

@@ -420,6 +420,7 @@ module RubyVM::RJIT # :nodoc: all
   C::VM_CALL_ARGS_BLOCKARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_BLOCKARG) }
   C::VM_CALL_ARGS_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_SPLAT) }
   C::VM_CALL_FCALL = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FCALL) }
+  C::VM_CALL_FORWARDING = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FORWARDING) }
   C::VM_CALL_KWARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KWARG) }
   C::VM_CALL_KW_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT) }
   C::VM_CALL_KW_SPLAT_MUT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT_MUT) }
@@ -1098,6 +1099,7 @@ module RubyVM::RJIT # :nodoc: all
           anon_rest: [CType::BitField.new(1, 2), 10],
           anon_kwrest: [CType::BitField.new(1, 3), 11],
           use_block: [CType::BitField.new(1, 4), 12],
+          forwardable: [CType::BitField.new(1, 5), 13],
         ), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, flags)")],
         size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, size)")],
         lead_num: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, lead_num)")],

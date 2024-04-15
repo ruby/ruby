@@ -95,6 +95,16 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
   end
 
+  def test_forwardable
+    iseq = compile(<<~EOF, __LINE__+1)
+      Class.new {
+        def bar(a, b); a + b; end
+        def foo(...); bar(...); end
+      }
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval.new.foo(40, 2))
+  end
+
   def test_super_with_block
     iseq = compile(<<~EOF, __LINE__+1)
       def (Object.new).touch(*) # :nodoc:

@@ -431,6 +431,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_ambiguous_param0")
         .allowlist_function("rb_get_iseq_flags_accepts_no_kwarg")
         .allowlist_function("rb_get_iseq_flags_ruby2_keywords")
+        .allowlist_function("rb_get_iseq_flags_forwardable")
         .allowlist_function("rb_get_iseq_body_local_table_size")
         .allowlist_function("rb_get_iseq_body_param_keyword")
         .allowlist_function("rb_get_iseq_body_param_size")

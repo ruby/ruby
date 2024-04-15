@@ -1624,6 +1624,20 @@ class TestMethod < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_with_splat
+    c = Class.new {
+      attr_reader :x
+
+      def initialize(*args)
+        @x, _ = args
+      end
+    }
+    b = Class.new(c) { def initialize(...) = super }
+    a = Class.new(b) { def initialize(*args) = super }
+    obj = a.new(1, 2, 3)
+    assert_equal 1, obj.x
+  end
+
   def test_warn_unused_block
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
       def foo = nil

@@ -1561,7 +1561,17 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: {
+                if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+                    *flags |= VM_CALL_FORWARDING;
+
+                    pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
+                    PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
+
+                    break;
+                }
+
                 orig_argc += 2;
+
                 *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
 
                 // Forwarding arguments nodes are treated as foo(*, **, &)
@@ -6693,6 +6703,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = 0;
         int depth = get_lvar_level(iseq);
 
+        if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+            flag |= VM_CALL_FORWARDING;
+            pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
+            PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
+            PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+            if (popped) PUSH_INSN(ret, location, pop);
+            return;
+        }
+
         if (local_body->param.flags.has_lead) {
             /* required arguments */
             for (int i = 0; i < local_body->param.lead_num; i++) {
@@ -8300,7 +8319,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
                 // we need to leave space for 4 locals: *, **, &, ...
                 if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
-                    table_size += 4;
+                    // Only optimize specifically methods like this: `foo(...)`
+                    if (requireds_list->size == 0 && optionals_list->size == 0 && keywords_list->size == 0) {
+                        ISEQ_BODY(iseq)->param.flags.forwardable = TRUE;
+                        table_size += 1;
+                    }
+                    else {
+                        table_size += 4;
+                    }
                 }
                 else {
                     const pm_keyword_rest_parameter_node_t *kw_rest = (const pm_keyword_rest_parameter_node_t *) parameters_node->keyword_rest;
@@ -8654,29 +8680,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(...)
                   //         ^^^
                   case PM_FORWARDING_PARAMETER_NODE: {
-                    body->param.rest_start = local_index;
-                    body->param.flags.has_rest = true;
+                    if (!ISEQ_BODY(iseq)->param.flags.forwardable) {
+                        body->param.rest_start = local_index;
+                        body->param.flags.has_rest = true;
 
-                    // Add the leading *
-                    pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
+                        // Add the leading *
+                        pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
 
-                    // Add the kwrest **
-                    RUBY_ASSERT(!body->param.flags.has_kw);
+                        // Add the kwrest **
+                        RUBY_ASSERT(!body->param.flags.has_kw);
 
-                    // There are no keywords declared (in the text of the program)
-                    // but the forwarding node implies we support kwrest (**)
-                    body->param.flags.has_kw = false;
-                    body->param.flags.has_kwrest = true;
-                    body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                        // There are no keywords declared (in the text of the program)
+                        // but the forwarding node implies we support kwrest (**)
+                        body->param.flags.has_kw = false;
+                        body->param.flags.has_kwrest = true;
+                        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
 
-                    keyword->rest_start = local_index;
+                        keyword->rest_start = local_index;
 
-                    pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
+                        pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
 
-                    body->param.block_start = local_index;
-                    body->param.flags.has_block = true;
+                        body->param.block_start = local_index;
+                        body->param.flags.has_block = true;
 
-                    pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                        pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                    }
                     pm_insert_local_special(idDot3, local_index++, index_lookup_table, local_table_for_iseq);
                     break;
                   }
@@ -8820,7 +8848,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         scope_node->index_lookup_table = index_lookup_table;
         iseq_calc_param_size(iseq);
-        iseq_set_local_table(iseq, local_table_for_iseq);
+
+        if (ISEQ_BODY(iseq)->param.flags.forwardable) {
+            // We're treating `...` as a parameter so that frame
+            // pushing won't clobber it.
+            ISEQ_BODY(iseq)->param.size += 1;
+        }
+
+        // FIXME: args?
+        iseq_set_local_table(iseq, local_table_for_iseq, 0);
         scope_node->local_table_for_iseq_size = local_table_for_iseq->size;
 
         //********STEP 5************
