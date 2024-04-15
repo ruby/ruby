@@ -16,6 +16,18 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  def assert_performance_warning(klass, method)
+    assert_in_out_err([], "#{<<-"begin;"}\n#{<<~"end;"}", [], ["-:4: warning: Redefining '#{klass}##{method}' disables interpreter and JIT optimizations"])
+    begin;
+      Warning[:performance] = true
+      class #{klass}
+        undef #{method}
+        def #{method}
+        end
+      end
+    end;
+  end
+
   def disasm(name)
     RubyVM::InstructionSequence.of(method(name)).disasm
   end
@@ -23,102 +35,122 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_fixnum_plus
     assert_equal 21, 10 + 11
     assert_redefine_method('Integer', '+', 'assert_equal 11, 10 + 11')
+    assert_performance_warning('Integer', '+')
   end
 
   def test_fixnum_minus
     assert_equal 5, 8 - 3
     assert_redefine_method('Integer', '-', 'assert_equal 3, 8 - 3')
+    assert_performance_warning('Integer', '-')
   end
 
   def test_fixnum_mul
     assert_equal 15, 3 * 5
     assert_redefine_method('Integer', '*', 'assert_equal 5, 3 * 5')
+    assert_performance_warning('Integer', '*')
   end
 
   def test_fixnum_div
     assert_equal 3, 15 / 5
     assert_redefine_method('Integer', '/', 'assert_equal 5, 15 / 5')
+    assert_performance_warning('Integer', '/')
   end
 
   def test_fixnum_mod
     assert_equal 1, 8 % 7
     assert_redefine_method('Integer', '%', 'assert_equal 7, 8 % 7')
+    assert_performance_warning('Integer', '%')
   end
 
   def test_fixnum_lt
     assert_equal true, 1 < 2
     assert_redefine_method('Integer', '<', 'assert_equal 2, 1 < 2')
+    assert_performance_warning('Integer', '<')
   end
 
   def test_fixnum_le
     assert_equal true, 1 <= 2
     assert_redefine_method('Integer', '<=', 'assert_equal 2, 1 <= 2')
+    assert_performance_warning('Integer', '<=')
   end
 
   def test_fixnum_gt
     assert_equal false, 1 > 2
     assert_redefine_method('Integer', '>', 'assert_equal 2, 1 > 2')
+    assert_performance_warning('Integer', '>')
   end
 
   def test_fixnum_ge
     assert_equal false, 1 >= 2
     assert_redefine_method('Integer', '>=', 'assert_equal 2, 1 >= 2')
+    assert_performance_warning('Integer', '>=')
   end
 
   def test_float_plus
     assert_equal 4.0, 2.0 + 2.0
     assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
+    assert_performance_warning('Float', '+')
   end
 
   def test_float_minus
     assert_equal 4.0, 2.0 + 2.0
-    assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
+    assert_redefine_method('Float', '-', 'assert_equal 2.0, 4.0 - 2.0')
+    assert_performance_warning('Float', '-')
   end
 
   def test_float_mul
     assert_equal 29.25, 4.5 * 6.5
     assert_redefine_method('Float', '*', 'assert_equal 6.5, 4.5 * 6.5')
+    assert_performance_warning('Float', '*')
   end
 
   def test_float_div
     assert_in_delta 0.63063063063063063, 4.2 / 6.66
     assert_redefine_method('Float', '/', 'assert_equal 6.66, 4.2 / 6.66', "[Bug #9238]")
+    assert_performance_warning('Float', '/')
   end
 
   def test_float_lt
     assert_equal true, 1.1 < 2.2
     assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
+    assert_performance_warning('Float', '<')
   end
 
   def test_float_le
     assert_equal true, 1.1 <= 2.2
     assert_redefine_method('Float', '<=', 'assert_equal 2.2, 1.1 <= 2.2')
+    assert_performance_warning('Float', '<=')
   end
 
   def test_float_gt
     assert_equal false, 1.1 > 2.2
     assert_redefine_method('Float', '>', 'assert_equal 2.2, 1.1 > 2.2')
+    assert_performance_warning('Float', '>')
   end
 
   def test_float_ge
     assert_equal false, 1.1 >= 2.2
     assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
+    assert_performance_warning('Float', '>=')
   end
 
   def test_string_length
     assert_equal 6, "string".length
     assert_redefine_method('String', 'length', 'assert_nil "string".length')
+    assert_performance_warning('String', 'length')
   end
 
   def test_string_size
     assert_equal 6, "string".size
     assert_redefine_method('String', 'size', 'assert_nil "string".size')
+    assert_performance_warning('String', 'size')
   end
 
   def test_string_empty?
     assert_equal true, "".empty?
     assert_equal false, "string".empty?
     assert_redefine_method('String', 'empty?', 'assert_nil "string".empty?')
+    assert_performance_warning('String', 'empty?')
   end
 
   def test_string_plus
@@ -127,39 +159,50 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "x", "" + "x"
     assert_equal "ab", "a" + "b"
     assert_redefine_method('String', '+', 'assert_equal "b", "a" + "b"')
+    assert_performance_warning('String', '+')
   end
 
   def test_string_succ
     assert_equal 'b', 'a'.succ
     assert_equal 'B', 'A'.succ
+    assert_performance_warning('String', 'succ')
   end
 
   def test_string_format
     assert_equal '2', '%d' % 2
     assert_redefine_method('String', '%', 'assert_equal 2, "%d" % 2')
+    assert_performance_warning('String', '%')
   end
 
   def test_string_freeze
     assert_equal "foo", "foo".freeze
     assert_equal "foo".freeze.object_id, "foo".freeze.object_id
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
+    assert_performance_warning('String', 'freeze')
   end
 
   def test_string_uminus
     assert_same "foo".freeze, -"foo"
     assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
+    assert_performance_warning('String', '-@')
   end
 
   def test_array_min
     assert_equal 1, [1, 2, 4].min
     assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
     assert_redefine_method('Array', 'min', 'assert_nil([1 + 0, 2, 4].min)')
+    assert_performance_warning('Array', 'min')
   end
 
   def test_array_max
     assert_equal 4, [1, 2, 4].max
     assert_redefine_method('Array', 'max', 'assert_nil([1, 2, 4].max)')
     assert_redefine_method('Array', 'max', 'assert_nil([1 + 0, 2, 4].max)')
+    assert_performance_warning('Array', 'max')
+  end
+
+  def test_array_hash
+    assert_performance_warning('Array', 'hash')
   end
 
   def test_trace_optimized_methods
@@ -235,6 +278,8 @@ class TestRubyOptimization < Test::Unit::TestCase
         assert_equal :b, (b #{m} "b").to_sym
       end
     end
+
+    assert_performance_warning('String', '==')
   end
 
   def test_string_ltlt
@@ -243,50 +288,59 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "x", "" << "x"
     assert_equal "ab", "a" << "b"
     assert_redefine_method('String', '<<', 'assert_equal "b", "a" << "b"')
+    assert_performance_warning('String', '<<')
   end
 
   def test_fixnum_and
     assert_equal 1, 1&3
     assert_redefine_method('Integer', '&', 'assert_equal 3, 1&3')
+    assert_performance_warning('Integer', '&')
   end
 
   def test_fixnum_or
     assert_equal 3, 1|3
     assert_redefine_method('Integer', '|', 'assert_equal 1, 3|1')
+    assert_performance_warning('Integer', '|')
   end
 
   def test_array_plus
     assert_equal [1,2], [1]+[2]
     assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')
+    assert_performance_warning('Array', '+')
   end
 
   def test_array_minus
     assert_equal [2], [1,2] - [1]
     assert_redefine_method('Array', '-', 'assert_equal [1], [1,2]-[1]')
+    assert_performance_warning('Array', '-')
   end
 
   def test_array_length
     assert_equal 0, [].length
     assert_equal 3, [1,2,3].length
     assert_redefine_method('Array', 'length', 'assert_nil([].length); assert_nil([1,2,3].length)')
+    assert_performance_warning('Array', 'length')
   end
 
   def test_array_empty?
     assert_equal true, [].empty?
     assert_equal false, [1,2,3].empty?
     assert_redefine_method('Array', 'empty?', 'assert_nil([].empty?); assert_nil([1,2,3].empty?)')
+    assert_performance_warning('Array', 'empty?')
   end
 
   def test_hash_length
     assert_equal 0, {}.length
     assert_equal 1, {1=>1}.length
     assert_redefine_method('Hash', 'length', 'assert_nil({}.length); assert_nil({1=>1}.length)')
+    assert_performance_warning('Hash', 'length')
   end
 
   def test_hash_empty?
     assert_equal true, {}.empty?
     assert_equal false, {1=>1}.empty?
     assert_redefine_method('Hash', 'empty?', 'assert_nil({}.empty?); assert_nil({1=>1}.empty?)')
+    assert_performance_warning('Hash', 'empty?')
   end
 
   def test_hash_aref_with
@@ -297,6 +351,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       h = { "foo" => 1 }
       assert_equal "foo", h["foo"]
     end;
+    assert_performance_warning('Hash', '[]')
   end
 
   def test_hash_aset_with
@@ -308,6 +363,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal 1, h["foo"] = 1, "assignment always returns value set"
       assert_nil h["foo"]
     end;
+    assert_performance_warning('Hash', '[]=')
   end
 
   class MyObj
@@ -639,6 +695,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     [ nil, true, false, 0.1, :sym, 'str', 0xffffffffffffffff ].each do |v|
       k = v.class.to_s
       assert_redefine_method(k, '===', "assert_equal(#{v.inspect} === 0, 0)")
+      assert_performance_warning(k, '===')
     end
   end
 
