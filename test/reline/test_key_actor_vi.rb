@@ -711,6 +711,20 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line_around_cursor('', '   abcde  ABCDE  ')
   end
 
+  def test_vi_to_column
+    input_keys("a一二三\C-[0")
+    input_keys('1|')
+    assert_line_around_cursor('', 'a一二三')
+    input_keys('2|')
+    assert_line_around_cursor('a', '一二三')
+    input_keys('3|')
+    assert_line_around_cursor('a', '一二三')
+    input_keys('4|')
+    assert_line_around_cursor('a一', '二三')
+    input_keys('9|')
+    assert_line_around_cursor('a一二', '三')
+  end
+
   def test_vi_delete_meta
     input_keys("aaa bbb ccc ddd eee\C-[02w")
     assert_line_around_cursor('aaa bbb ', 'ccc ddd eee')

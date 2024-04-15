@@ -540,10 +540,6 @@ class Reline::LineEditor
     new_lines.size - y
   end
 
-  def current_row
-    wrapped_lines.flatten[wrapped_cursor_y]
-  end
-
   def upper_space_height(wrapped_cursor_y)
     wrapped_cursor_y - screen_scroll_top
   end
@@ -2483,18 +2479,11 @@ class Reline::LineEditor
   end
 
   private def vi_to_column(key, arg: 0)
-    current_row_width = calculate_width(current_row)
-    @byte_pointer, = current_line.grapheme_clusters.inject([0, 0]) { |total, gc|
-      # total has [byte_size, cursor]
+    # Implementing behavior of vi, not Readline's vi-mode.
+    @byte_pointer, = current_line.grapheme_clusters.inject([0, 0]) { |(total_byte_size, total_width), gc|
       mbchar_width = Reline::Unicode.get_mbchar_width(gc)
-      if (total.last + mbchar_width) >= arg
-        break total
-      elsif (total.last + mbchar_width) >= current_row_width
-        break total
-      else
-        total = [total.first + gc.bytesize, total.last + mbchar_width]
-        total
-      end
+      break [total_byte_size, total_width] if (total_width + mbchar_width) >= arg
+      [total_byte_size + gc.bytesize, total_width + mbchar_width]
     }
   end
 
