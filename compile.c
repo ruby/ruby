@@ -9369,10 +9369,10 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     unsigned int flag = 0;
     struct rb_callinfo_kwarg *keywords = NULL;
     const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+    int use_block = 1;
 
     INIT_ANCHOR(args);
     ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
-    ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
 
     if (type == NODE_SUPER) {
         VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, &flag, &keywords);
@@ -9380,6 +9380,10 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         argc = FIX2INT(vargc);
         if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
             ADD_INSN(args, node, splatkw);
+        }
+
+        if (flag & VM_CALL_ARGS_BLOCKARG) {
+            use_block = 0;
         }
     }
     else {
@@ -9472,6 +9476,10 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
             argc++;
             flag |= VM_CALL_KW_SPLAT;
         }
+    }
+
+    if (use_block && parent_block == NULL) {
+        ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.use_block = 1;
     }
 
     flag |= VM_CALL_SUPER | VM_CALL_FCALL;
