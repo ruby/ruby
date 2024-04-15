@@ -176,6 +176,19 @@ End
     end;
   end
 
+  def test_exception_in_warning_in_finalizer
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w(ok), [])
+    begin;
+      module Warning
+        def warn(str) = raise
+      end
+
+      obj = Object.new
+      ObjectSpace.define_finalizer(obj) { raise }
+      ObjectSpace.define_finalizer(obj) { puts "ok" }
+    end;
+  end
+
   def test_finalizer_thread_raise
     GC.disable
     fzer = proc do |id|
