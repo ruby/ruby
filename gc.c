@@ -9468,7 +9468,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NONE:
-      case T_NIL:
       case T_MOVED:
       case T_ZOMBIE:
         return FALSE;
