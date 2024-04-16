@@ -3536,10 +3536,19 @@ static VALUE
 enum_product_total_size(VALUE enums)
 {
     VALUE total = INT2FIX(1);
+    VALUE sizes = rb_ary_hidden_new(RARRAY_LEN(enums));
     long i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
+        if (size == INT2FIX(0)) {
+            rb_ary_resize(sizes, 0);
+            return size;
+        }
+        rb_ary_push(sizes, size);
+    }
+    for (i = 0; i < RARRAY_LEN(sizes); i++) {
+        VALUE size = RARRAY_AREF(sizes, i);
 
         if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
             return size;
