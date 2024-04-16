@@ -1436,4 +1436,9 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     input_keys("\C-f\C-u", false)
     assert_line_around_cursor('', '')
   end
+
+  def test_vi_editing_mode
+    @line_editor.__send__(:vi_editing_mode, nil)
+    assert(@config.editing_mode_is?(:vi_insert))
+  end
 end

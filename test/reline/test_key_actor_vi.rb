@@ -911,4 +911,9 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       input_keys("test = { foo: bar }\C-[BBBldt}b")
     end
   end
+
+  def test_emacs_editing_mode
+    @line_editor.__send__(:emacs_editing_mode, nil)
+    assert(@config.editing_mode_is?(:emacs))
+  end
 end

@@ -2630,4 +2630,12 @@ class Reline::LineEditor
     @mark_pointer = new_pointer
   end
   alias_method :exchange_point_and_mark, :em_exchange_mark
+
+  private def emacs_editing_mode(key)
+    @config.editing_mode = :emacs
+  end
+
+  private def vi_editing_mode(key)
+    @config.editing_mode = :vi_insert
+  end
 end
