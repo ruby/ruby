@@ -1753,6 +1753,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line,
     const VALUE parser = rb_parser_new();
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     rb_iseq_t *iseq = NULL;
+    VALUE vast;
     rb_ast_t *ast;
     int isolated_depth = 0;
 
@@ -1790,10 +1791,13 @@ eval_make_iseq(VALUE src, VALUE fname, int line,
 
     rb_parser_set_context(parser, parent, FALSE);
     if (ruby_vm_keep_script_lines) rb_parser_set_script_lines(parser);
-    ast = rb_parser_compile_string_path(parser, fname, src, line);
+    vast = rb_parser_compile_string_path(parser, fname, src, line);
+
+    ast = rb_ruby_ast_data_get(vast);
+
     if (ast->body.root) {
         ast->body.coverage_enabled = coverage_enabled;
-        iseq = rb_iseq_new_eval(&ast->body,
+        iseq = rb_iseq_new_eval(vast,
                                 ISEQ_BODY(parent)->location.label,
                                 fname, Qnil, line,
                                 parent, isolated_depth);

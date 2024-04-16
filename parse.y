@@ -15809,7 +15809,6 @@ rb_ruby_parser_mark(void *ptr)
     struct parser_params *p = (struct parser_params*)ptr;
 
     rb_gc_mark(p->ruby_sourcefile_string);
-    rb_gc_mark((VALUE)p->ast);
 #ifndef RIPPER
     rb_gc_mark(p->error_buffer);
 #else
