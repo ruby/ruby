@@ -293,7 +293,7 @@ EOF
 
     case var_name
     # On windows, it is assumed that mkmf has setup an exports file for the
-    # extension, so we have to to create one ourselves.
+    # extension, so we have to create one ourselves.
     when "DEFFILE"
       write_deffile(dest_dir, crate_name)
     else

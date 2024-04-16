@@ -3,7 +3,7 @@
 require "bundler/fetcher"
 
 RSpec.describe Bundler::Fetcher do
-  let(:uri) { Bundler::URI("https://example.com") }
+  let(:uri) { Gem::URI("https://example.com") }
   let(:remote) { double("remote", uri: uri, original_uri: nil) }
 
   subject(:fetcher) { Bundler::Fetcher.new(remote) }
@@ -45,7 +45,7 @@ RSpec.describe Bundler::Fetcher do
     end
 
     context "when a rubygems source mirror is set" do
-      let(:orig_uri) { Bundler::URI("http://zombo.com") }
+      let(:orig_uri) { Gem::URI("http://zombo.com") }
       let(:remote_with_mirror) do
         double("remote", uri: uri, original_uri: orig_uri, anonymized_uri: uri)
       end

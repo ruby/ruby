@@ -341,7 +341,7 @@ class Gem::Specification < Gem::BasicSpecification
   # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
-  # GitHub also provides a license picker at http://choosealicense.com/.
+  # GitHub also provides a license picker at https://choosealicense.com/.
   #
   # You can also use a custom license file along with your gemspec and specify
   # a LicenseRef-<idstring>, where idstring is the name of the file containing
@@ -1003,8 +1003,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_all_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
 
-    # TODO: maybe try: find_all { |s| spec === dep }
-
     Gem::Dependency.new(name, *requirements).matching_specs
   end
 
@@ -1021,8 +1019,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
-
-    # TODO: maybe try: find { |s| spec === dep }
 
     Gem::Dependency.new(name, *requirements).to_spec
   end
@@ -2079,7 +2075,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Duplicates array_attributes from +other_spec+ so state isn't shared.
+  # Duplicates Array and Gem::Requirement attributes from +other_spec+ so state isn't shared.
+  #
 
   def initialize_copy(other_spec)
     self.class.array_attributes.each do |name|
@@ -2101,6 +2098,9 @@ class Gem::Specification < Gem::BasicSpecification
         raise e
       end
     end
+
+    @required_ruby_version = other_spec.required_ruby_version.dup
+    @required_rubygems_version = other_spec.required_rubygems_version.dup
   end
 
   def base_dir

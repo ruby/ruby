@@ -11,7 +11,7 @@ module Bundler
         return uri if File.exist?(uri)
 
         require_relative "vendored_uri"
-        uri = Bundler::URI(uri)
+        uri = Gem::URI(uri)
       end
 
       if uri.userinfo
@@ -25,7 +25,7 @@ module Bundler
       end
       return uri.to_s if uri_to_anonymize.is_a?(String)
       uri
-    rescue Bundler::URI::InvalidURIError # uri is not canonical uri scheme
+    rescue Gem::URI::InvalidURIError # uri is not canonical uri scheme
       uri
     end
 

@@ -485,6 +485,16 @@ if you believe they were disclosed to a third party.
     end
   end
 
+  def test_accept_string_key
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "verbose: false"
+    end
+
+    util_config_file
+
+    assert_equal false, @cfg.verbose
+  end
+
   def test_load_ssl_verify_mode_from_config
     File.open @temp_conf, "w" do |fp|
       fp.puts ":ssl_verify_mode: 1"
@@ -547,5 +557,15 @@ if you believe they were disclosed to a third party.
     actual = Gem::ConfigFile.dump_with_rubygems_yaml(symbol_key_hash)
 
     assert_equal("---\n:foo: \"bar\"\n", actual)
+  end
+
+  def test_handle_comment
+    yaml = <<~YAML
+      ---
+      :foo: bar # buzz
+    YAML
+
+    actual = Gem::ConfigFile.load_with_rubygems_config_hash(yaml)
+    assert_equal("bar", actual[:foo])
   end
 end

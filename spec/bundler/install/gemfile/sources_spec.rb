@@ -520,7 +520,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       it "fails" do
         bundle :install, artifice: "compact_index", raise_on_error: false
-        expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository https://gem.repo2/ or installed locally.")
+        expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository https://gem.repo2/, cached gems or installed locally.")
       end
     end
 
@@ -611,7 +611,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             Could not find compatible versions
 
             Because every version of depends_on_rack depends on rack >= 0
-              and rack >= 0 could not be found in rubygems repository https://gem.repo2/ or installed locally,
+              and rack >= 0 could not be found in rubygems repository https://gem.repo2/, cached gems or installed locally,
               depends_on_rack cannot be used.
             So, because Gemfile depends on depends_on_rack >= 0,
               version solving has failed.

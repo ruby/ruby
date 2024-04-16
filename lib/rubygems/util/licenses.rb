@@ -28,6 +28,7 @@ class Gem::Licenses
     AGPL-3.0-or-later
     AMDPLPA
     AML
+    AML-glslang
     AMPAS
     ANTLR-PD
     ANTLR-PD-fallback
@@ -42,6 +43,7 @@ class Gem::Licenses
     Abstyles
     AdaCore-doc
     Adobe-2006
+    Adobe-Display-PostScript
     Adobe-Glyph
     Adobe-Utopia
     Afmparse
@@ -57,6 +59,7 @@ class Gem::Licenses
     Artistic-2.0
     BSD-1-Clause
     BSD-2-Clause
+    BSD-2-Clause-Darwin
     BSD-2-Clause-Patent
     BSD-2-Clause-Views
     BSD-3-Clause
@@ -71,6 +74,7 @@ class Gem::Licenses
     BSD-3-Clause-No-Nuclear-Warranty
     BSD-3-Clause-Open-MPI
     BSD-3-Clause-Sun
+    BSD-3-Clause-acpica
     BSD-3-Clause-flex
     BSD-4-Clause
     BSD-4-Clause-Shortened
@@ -82,7 +86,9 @@ class Gem::Licenses
     BSD-Inferno-Nettverk
     BSD-Protection
     BSD-Source-Code
+    BSD-Source-beginning-file
     BSD-Systemics
+    BSD-Systemics-W3Works
     BSL-1.0
     BUSL-1.1
     Baekmuk
@@ -96,6 +102,7 @@ class Gem::Licenses
     BlueOak-1.0.0
     Boehm-GC
     Borceux
+    Brian-Gladman-2-Clause
     Brian-Gladman-3-Clause
     C-UDA-1.0
     CAL-1.0
@@ -107,6 +114,7 @@ class Gem::Licenses
     CC-BY-2.5-AU
     CC-BY-3.0
     CC-BY-3.0-AT
+    CC-BY-3.0-AU
     CC-BY-3.0-DE
     CC-BY-3.0-IGO
     CC-BY-3.0-NL
@@ -172,6 +180,7 @@ class Gem::Licenses
     CERN-OHL-W-2.0
     CFITSIO
     CMU-Mach
+    CMU-Mach-nodoc
     CNRI-Jython
     CNRI-Python
     CNRI-Python-GPL-Compatible
@@ -181,6 +190,7 @@ class Gem::Licenses
     CPOL-1.02
     CUA-OPL-1.0
     Caldera
+    Caldera-no-preamble
     ClArtistic
     Clips
     Community-Spec-1.0
@@ -191,10 +201,12 @@ class Gem::Licenses
     CrystalStacker
     Cube
     D-FSL-1.0
+    DEC-3-Clause
     DL-DE-BY-2.0
     DL-DE-ZERO-2.0
     DOC
     DRL-1.0
+    DRL-1.1
     DSDP
     Dotseqn
     ECL-1.0
@@ -215,6 +227,7 @@ class Gem::Licenses
     FBM
     FDK-AAC
     FSFAP
+    FSFAP-no-warranty-disclaimer
     FSFUL
     FSFULLR
     FSFULLRWD
@@ -225,6 +238,7 @@ class Gem::Licenses
     FreeBSD-DOC
     FreeImage
     Furuseth
+    GCR-docs
     GD
     GFDL-1.1-invariants-only
     GFDL-1.1-invariants-or-later
@@ -260,6 +274,10 @@ class Gem::Licenses
     HP-1989
     HPND
     HPND-DEC
+    HPND-Fenneberg-Livingston
+    HPND-INRIA-IMAG
+    HPND-Kevlin-Henney
+    HPND-MIT-disclaimer
     HPND-Markus-Kuhn
     HPND-Pbmplus
     HPND-UC
@@ -267,6 +285,7 @@ class Gem::Licenses
     HPND-doc-sell
     HPND-export-US
     HPND-export-US-modify
+    HPND-sell-MIT-disclaimer-xserver
     HPND-sell-regexpr
     HPND-sell-variant
     HPND-sell-variant-MIT-disclaimer
@@ -281,6 +300,7 @@ class Gem::Licenses
     IPA
     IPL-1.0
     ISC
+    ISC-Veillard
     ImageMagick
     Imlib2
     Info-ZIP
@@ -306,6 +326,7 @@ class Gem::Licenses
     LGPL-3.0-or-later
     LGPLLR
     LOOP
+    LPD-document
     LPL-1.0
     LPL-1.02
     LPPL-1.0
@@ -350,6 +371,8 @@ class Gem::Licenses
     MS-PL
     MS-RL
     MTLL
+    Mackerras-3-Clause
+    Mackerras-3-Clause-acknowledgment
     MakeIndex
     Martin-Birgmeier
     McPhee-slideshow
@@ -434,6 +457,8 @@ class Gem::Licenses
     OSL-3.0
     OpenPBS-2.3
     OpenSSL
+    OpenSSL-standalone
+    OpenVision
     PADL
     PDDL-1.0
     PHP-3.0
@@ -441,6 +466,7 @@ class Gem::Licenses
     PSF-2.0
     Parity-6.0.0
     Parity-7.0.0
+    Pixar
     Plexus
     PolyForm-Noncommercial-1.0.0
     PolyForm-Small-Business-1.0.0
@@ -459,6 +485,7 @@ class Gem::Licenses
     Rdisc
     Ruby
     SAX-PD
+    SAX-PD-2.0
     SCEA
     SGI-B-1.0
     SGI-B-1.1
@@ -476,6 +503,7 @@ class Gem::Licenses
     SPL-1.0
     SSH-OpenSSH
     SSH-short
+    SSLeay-standalone
     SSPL-1.0
     SWL
     Saxpath
@@ -489,11 +517,13 @@ class Gem::Licenses
     Spencer-94
     Spencer-99
     SugarCRM-1.1.3
+    Sun-PPP
     SunPro
     Symlinks
     TAPR-OHL-1.0
     TCL
     TCP-wrappers
+    TGPPL-1.0
     TMate
     TORQUE-1.1
     TOSL
@@ -506,8 +536,10 @@ class Gem::Licenses
     TermReadKey
     UCAR
     UCL-1.0
+    UMich-Merit
     UPL-1.0
     URT-RLE
+    Unicode-3.0
     Unicode-DFS-2015
     Unicode-DFS-2016
     Unicode-TOU
@@ -542,6 +574,7 @@ class Gem::Licenses
     Zimbra-1.3
     Zimbra-1.4
     Zlib
+    bcrypt-Solar-Designer
     blessing
     bzip2-1.0.6
     check-cvs
@@ -557,6 +590,8 @@ class Gem::Licenses
     fwlw
     gSOAP-1.3b
     gnuplot
+    gtkbook
+    hdparm
     iMatix
     libpng-2.0
     libselinux-1.0
@@ -564,6 +599,7 @@ class Gem::Licenses
     libutil-David-Nugent
     lsof
     magaz
+    mailprio
     metamail
     mpi-permissive
     mpich2
@@ -572,12 +608,15 @@ class Gem::Licenses
     psfrag
     psutils
     python-ldap
+    radvd
     snprintf
+    softSurfer
     ssh-keyscan
     swrule
     ulem
     w3m
     xinetd
+    xkeyboard-config-Zinoviev
     xlock
     xpp
     zlib-acknowledgement
@@ -626,6 +665,7 @@ class Gem::Licenses
     Autoconf-exception-generic
     Autoconf-exception-generic-3.0
     Autoconf-exception-macro
+    Bison-exception-1.24
     Bison-exception-2.2
     Bootloader-exception
     CLISP-exception-2.0
@@ -638,6 +678,7 @@ class Gem::Licenses
     GCC-exception-2.0-note
     GCC-exception-3.1
     GNAT-exception
+    GNOME-examples-exception
     GNU-compiler-exception
     GPL-3.0-interface-exception
     GPL-3.0-linking-exception
@@ -645,6 +686,7 @@ class Gem::Licenses
     GPL-CC-1.0
     GStreamer-exception-2005
     GStreamer-exception-2008
+    Gmsh-exception
     KiCad-libraries-exception
     LGPL-3.0-linking-exception
     LLGPL
@@ -671,6 +713,7 @@ class Gem::Licenses
     WxWindows-exception-3.1
     cryptsetup-OpenSSL-exception
     eCos-exception-2.0
+    fmt-exception
     freertos-exception-2.0
     gnu-javamail-exception
     i2p-gpl-java-exception

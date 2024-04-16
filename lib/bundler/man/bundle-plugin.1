@@ -1,10 +1,10 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-PLUGIN" "1" "December 2023" ""
+.TH "BUNDLE\-PLUGIN" "1" "March 2024" ""
 .SH "NAME"
 \fBbundle\-plugin\fR \- Manage Bundler plugins
 .SH "SYNOPSIS"
-\fBbundle plugin\fR install PLUGINS [\-\-source=\fISOURCE\fR] [\-\-version=\fIversion\fR] [\-\-git|\-\-local_git=\fIgit\-url\fR] [\-\-branch=\fIbranch\fR|\-\-ref=\fIrev\fR]
+\fBbundle plugin\fR install PLUGINS [\-\-source=\fISOURCE\fR] [\-\-version=\fIversion\fR] [\-\-git=\fIgit\-url\fR] [\-\-branch=\fIbranch\fR|\-\-ref=\fIrev\fR] [\-\-path=\fIpath\fR]
 .br
 \fBbundle plugin\fR uninstall PLUGINS
 .br
@@ -27,7 +27,7 @@ Install bundler\-graph gem from example\.com\. The global source, specified in s
 You can specify the version of the gem via \fB\-\-version\fR\.
 .TP
 \fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR
-Install bundler\-graph gem from Git repository\. \fB\-\-git\fR can be replaced with \fB\-\-local\-git\fR\. You cannot use both \fB\-\-git\fR and \fB\-\-local\-git\fR\. You can use standard Git URLs like:
+Install bundler\-graph gem from Git repository\. You can use standard Git URLs like:
 .IP
 \fBssh://[user@]host\.xz[:port]/path/to/repo\.git\fR
 .br
@@ -37,7 +37,10 @@ Install bundler\-graph gem from Git repository\. \fB\-\-git\fR can be replaced w
 .br
 \fBfile:///path/to/repo\fR
 .IP
-When you specify \fB\-\-git\fR/\fB\-\-local\-git\fR, you can use \fB\-\-branch\fR or \fB\-\-ref\fR to specify any branch, tag, or commit hash (revision) to use\. When you specify both, only the latter is used\.
+When you specify \fB\-\-git\fR, you can use \fB\-\-branch\fR or \fB\-\-ref\fR to specify any branch, tag, or commit hash (revision) to use\.
+.TP
+\fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
+Install bundler\-graph gem from a local path\.
 .SS "uninstall"
 Uninstall the plugin(s) specified in PLUGINS\.
 .SS "list"

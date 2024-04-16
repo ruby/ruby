@@ -17,7 +17,7 @@ require "pp"
 require "rubygems/package"
 require "shellwords"
 require "tmpdir"
-require "uri"
+require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require "benchmark" # stdlib
 require_relative "mock_gem_ui"
@@ -349,6 +349,10 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir @tempdir
 
     ENV["HOME"] = @userhome
+    # Remove "RUBY_CODESIGN", which is used by mkmf-generated Makefile to
+    # sign extension bundles on macOS, to avoid trying to find the specified key
+    # from the fake $HOME/Library/Keychains directory.
+    ENV.delete "RUBY_CODESIGN"
     Gem.instance_variable_set :@config_file, nil
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@config_home, nil
@@ -395,7 +399,7 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::RemoteFetcher.fetcher = Gem::FakeFetcher.new
 
     @gem_repo = "http://gems.example.com/"
-    @uri = URI.parse @gem_repo
+    @uri = Gem::URI.parse @gem_repo
     Gem.sources.replace [@gem_repo]
 
     Gem.searcher = nil
@@ -1353,12 +1357,12 @@ Also, a list:
   #
   # Yields the +specification+ to the block, if given
 
-  def vendor_gem(name = "a", version = 1)
+  def vendor_gem(name = "a", version = 1, &block)
     directory = File.join "vendor", name
 
     FileUtils.mkdir_p directory
 
-    save_gemspec name, version, directory
+    save_gemspec name, version, directory, &block
   end
 
   ##
