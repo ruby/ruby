@@ -13,7 +13,6 @@
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
 #include "prism/util/pm_newline_list.h"
-#include "prism/util/pm_state_stack.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
@@ -611,6 +610,11 @@ static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x40;
 
 static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED = -1;
 static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_NONE = 0;
+
+/**
+ * A struct that represents a stack of boolean values.
+ */
+typedef uint32_t pm_state_stack_t;
 
 /**
  * This struct represents the overall parser. It contains a reference to the
