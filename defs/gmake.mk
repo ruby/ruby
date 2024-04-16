@@ -193,7 +193,7 @@ $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
 .PHONY: commit
-COMMIT_PREPARE := $(filter-out commit do-commit,$(MAKECMDGOALS)) up
+COMMIT_PREPARE := $(subst :,\:,$(filter-out commit do-commit,$(MAKECMDGOALS))) up
 
 commit: pre-commit $(DOT_WAIT) do-commit $(DOT_WAIT) post_commit
 pre-commit: $(COMMIT_PREPARE)
