@@ -818,7 +818,7 @@ typedef struct rb_objspace {
     } flags;
 
     rb_event_flag_t hook_events;
-    VALUE next_object_id;
+    unsigned long long next_object_id;
 
     rb_size_pool_t size_pools[SIZE_POOL_COUNT];
 
@@ -3575,7 +3575,7 @@ Alloc_GC_impl(void)
     heap_page_alloc_use_mmap = INIT_HEAP_PAGE_ALLOC_USE_MMAP;
 #endif
 
-    objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
+    objspace->next_object_id = OBJ_ID_INITIAL;
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
 
@@ -4553,7 +4553,7 @@ id2ref(VALUE objid)
         }
     }
 
-    if (rb_int_ge(objid, objspace->next_object_id)) {
+    if (rb_int_ge(objid, ULL2NUM(objspace->next_object_id))) {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_int2str(objid, 10));
     }
     else {
@@ -4595,8 +4595,8 @@ cached_object_id(VALUE obj)
     else {
         GC_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
 
-        id = objspace->next_object_id;
-        objspace->next_object_id = rb_int_plus(id, INT2FIX(OBJ_ID_INCREMENT));
+        id = ULL2NUM(objspace->next_object_id);
+        objspace->next_object_id += OBJ_ID_INCREMENT;
 
         VALUE already_disabled = rb_gc_disable_no_rest();
         st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
@@ -7228,7 +7228,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     rb_gc_mark_global_tbl();
 
     MARK_CHECKPOINT("object_id");
-    rb_gc_mark(objspace->next_object_id);
     mark_tbl_no_pin(objspace, objspace->obj_to_id_tbl); /* Only mark ids */
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
