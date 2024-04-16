@@ -10009,7 +10009,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
 
       case NODE_ZLIST:{
         VALUE lit = rb_ary_new();
-        OBJ_FREEZE_RAW(lit);
+        OBJ_FREEZE(lit);
         ADD_INSN1(ret, node, putobject, lit);
         RB_OBJ_WRITTEN(iseq, Qundef, lit);
         *value_p = lit;
