@@ -2774,6 +2774,7 @@ pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *me
     if (arguments->closing_loc.start != NULL) {
         node->base.location.end = arguments->closing_loc.end;
     } else {
+        assert(receiver != NULL);
         node->base.location.end = receiver->location.end;
     }
 
@@ -21229,6 +21230,8 @@ pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, 
 
         if (inline_messages) {
             pm_buffer_append_byte(buffer, ' ');
+            assert(error->error != NULL);
+
             const char *message = error->error->message;
             pm_buffer_append_string(buffer, message, strlen(message));
         }
