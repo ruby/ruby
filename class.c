@@ -2273,7 +2273,7 @@ rb_freeze_singleton_class(VALUE x)
         VALUE klass = RBASIC_CLASS(x);
         if (klass && // no class when hidden from ObjectSpace
             FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
-            OBJ_FREEZE_RAW(klass);
+            OBJ_FREEZE(klass);
         }
     }
 }

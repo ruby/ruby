@@ -1021,7 +1021,7 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                     VALUE callback_arg = rb_ary_hidden_new(2);
                     rb_ary_push(callback_arg, block_code);
                     rb_ary_push(callback_arg, ref);
-                    OBJ_FREEZE_RAW(callback_arg);
+                    OBJ_FREEZE(callback_arg);
                     func = rb_func_lambda_new(refine_sym_proc_call, callback_arg, 1, UNLIMITED_ARGUMENTS);
                     rb_hash_aset(ref, block_code, func);
                 }

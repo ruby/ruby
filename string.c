@@ -379,7 +379,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                                      RSTRING(str)->len,
                                      ENCODING_GET(str));
             }
-            OBJ_FREEZE_RAW(str);
+            OBJ_FREEZE(str);
         }
         else {
             if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
@@ -415,7 +415,7 @@ rb_fstring(VALUE str)
     bare = BARE_STRING_P(str);
     if (!bare) {
         if (STR_EMBED_P(str)) {
-            OBJ_FREEZE_RAW(str);
+            OBJ_FREEZE(str);
             return str;
         }
 
@@ -432,7 +432,7 @@ rb_fstring(VALUE str)
 
     if (!bare) {
         str_replace_shared_without_enc(str, fstr);
-        OBJ_FREEZE_RAW(str);
+        OBJ_FREEZE(str);
         return str;
     }
     return fstr;

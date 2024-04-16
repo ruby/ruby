@@ -2281,7 +2281,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
         mask = mask_arg;
     }
     else if (RB_TYPE_P(mask, T_HASH)) {
-        OBJ_FREEZE_RAW(mask);
+        OBJ_FREEZE(mask);
     }
 
     rb_ary_push(th->pending_interrupt_mask_stack, mask);
@@ -5846,7 +5846,7 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
     rb_thread_t *cur_th = GET_THREAD();
 
     rb_hash_aset(interrupt_mask, rb_cObject, sym_never);
-    OBJ_FREEZE_RAW(interrupt_mask);
+    OBJ_FREEZE(interrupt_mask);
     rb_ary_push(cur_th->pending_interrupt_mask_stack, interrupt_mask);
 
     VALUE ret = rb_ensure(b_proc, data, uninterruptible_exit, Qnil);
