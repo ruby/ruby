@@ -8223,6 +8223,7 @@ fn gen_struct_aset(
 fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     jit: &mut JITState,
     asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
     cd: *const rb_call_data,
     sp_pops: usize,
     vm_sendish: F,
@@ -8262,7 +8263,10 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     gen_counter_incr(asm, Counter::num_send_dynamic);
 
     jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
-    Some(KeepCompiling)
+
+    // End the current block for invalidationg and sharing the same successor
+    jump_to_next_insn(jit, asm, ocb);
+    Some(EndBlock)
 }
 
 fn gen_send_general(
@@ -8776,7 +8780,7 @@ fn gen_opt_send_without_block(
     }
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, ocb, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
         }
@@ -8801,7 +8805,7 @@ fn gen_send(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, ocb, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }
@@ -8824,7 +8828,7 @@ fn gen_invokeblock(
     }
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_invokeblock_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, ocb, cd, unsafe { rb_yjit_invokeblock_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_invokeblock(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
         }
@@ -8984,7 +8988,7 @@ fn gen_invokesuper(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, ocb, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }
