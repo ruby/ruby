@@ -905,6 +905,10 @@ RB_OBJ_FROZEN(VALUE obj)
     }
 }
 
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_obj_freeze_inline(VALUE obj);
+RUBY_SYMBOL_EXPORT_END
+
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * This is an  implementation detail of RB_OBJ_FREEZE().  3rd  parties need not
@@ -915,14 +919,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
-    RB_FL_SET_RAW(obj, RUBY_FL_FREEZE);
-    if (TYPE(obj) == T_STRING) {
-        RB_FL_UNSET_RAW(obj, FL_USER3); // STR_CHILLED
-    }
+    rb_obj_freeze_inline(obj);
 }
-
-RUBY_SYMBOL_EXPORT_BEGIN
-void rb_obj_freeze_inline(VALUE obj);
-RUBY_SYMBOL_EXPORT_END
 
 #endif /* RBIMPL_FL_TYPE_H */

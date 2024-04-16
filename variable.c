@@ -1815,7 +1815,10 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
 void rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
-        RB_OBJ_FREEZE_RAW(x);
+        RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
+        if (TYPE(x) == T_STRING) {
+            RB_FL_UNSET_RAW(x, FL_USER3); // STR_CHILLED
+        }
 
         rb_shape_t * next_shape = rb_shape_transition_shape_frozen(x);
 
