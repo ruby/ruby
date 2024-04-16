@@ -1577,7 +1577,7 @@ tick(void)
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
-static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
+static void rgengc_mark_and_rememberset_clear(rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static int
@@ -4288,7 +4288,7 @@ gc_abort(rb_objspace_t *objspace)
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-        rgengc_mark_and_rememberset_clear(objspace, heap);
+        rgengc_mark_and_rememberset_clear(heap);
     }
 
     gc_mode_set(objspace, gc_mode_none);
@@ -7892,7 +7892,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
             rb_size_pool_t *size_pool = &size_pools[i];
             rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-            rgengc_mark_and_rememberset_clear(objspace, heap);
+            rgengc_mark_and_rememberset_clear(heap);
             heap_move_pooled_pages_to_free_pages(heap);
 
             if (objspace->flags.during_compacting) {
@@ -8582,7 +8582,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void
-rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
+rgengc_mark_and_rememberset_clear(rb_heap_t *heap)
 {
     struct heap_page *page = 0;
 
