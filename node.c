@@ -304,14 +304,16 @@ rb_ast_t *
 rb_ast_new(const rb_parser_config_t *config)
 {
     node_buffer_t *nb = rb_node_buffer_new(config);
-    return config->ast_new((VALUE)nb);
+    return config->ast_new(nb);
 }
 #else
 rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    return IMEMO_NEW(rb_ast_t, imemo_ast, (VALUE)nb);
+    rb_ast_t *ast = ruby_xcalloc(1, sizeof(rb_ast_t));
+    ast->node_buffer = nb;
+    return ast;
 }
 #endif
 
@@ -348,14 +350,26 @@ script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 void
 rb_ast_free(rb_ast_t *ast)
 {
-    if (ast->node_buffer) {
+    /* TODO
+     * The current impl. of rb_ast_free() and rb_ast_dispose() is complicated.
+     * Upcoming task of changing `ast->node_buffer->config` to `ast->config`,
+     * that is based on "deIMEMO" of `rb_ast_t *`, will let us simplify the code.
+     */
+#ifdef UNIVERSAL_PARSER
+    if (ast && ast->node_buffer) {
+        void (*free_func)(void *) = xfree;
         if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
             script_lines_free(ast, ast->body.script_lines);
             ast->body.script_lines = NULL;
         }
         rb_node_buffer_free(ast, ast->node_buffer);
         ast->node_buffer = 0;
+        free_func(ast);
     }
+#else
+    rb_ast_dispose(ast);
+    xfree(ast);
+#endif
 }
 
 static size_t
@@ -373,20 +387,63 @@ buffer_list_size(node_buffer_list_t *nb)
 size_t
 rb_ast_memsize(const rb_ast_t *ast)
 {
-    size_t size = 0;
+    size_t size = sizeof(rb_ast_t);
     node_buffer_t *nb = ast->node_buffer;
+    rb_parser_ary_t *tokens = NULL;
+    struct rb_ast_local_table_link *link = NULL;
+    rb_parser_ary_t *script_lines = ast->body.script_lines;
+
+    long i;
 
     if (nb) {
         size += sizeof(node_buffer_t);
         size += buffer_list_size(&nb->buffer_list);
+        link = nb->local_tables;
+        tokens = nb->tokens;
     }
+
+    while (link) {
+        size += sizeof(struct rb_ast_local_table_link);
+        size += link->size * sizeof(ID);
+        link = link->next;
+    }
+
+    if (tokens) {
+        size += sizeof(rb_parser_ary_t);
+        for (i = 0; i < tokens->len; i++) {
+            size += sizeof(rb_parser_ast_token_t);
+            rb_parser_ast_token_t *token = tokens->data[i];
+            size += sizeof(rb_parser_string_t);
+            size += token->str->len + 1;
+        }
+    }
+
+    if (script_lines && !FIXNUM_P((VALUE)script_lines)) {
+        size += sizeof(rb_parser_ary_t);
+        for (i = 0; i < script_lines->len; i++) {
+            size += sizeof(rb_parser_string_t);
+            size += ((rb_parser_string_t *)script_lines->data[i])->len + 1;
+        }
+    }
+
     return size;
 }
 
 void
 rb_ast_dispose(rb_ast_t *ast)
 {
-    rb_ast_free(ast);
+#ifdef UNIVERSAL_PARSER
+    // noop. See the comment in rb_ast_free().
+#else
+    if (ast && ast->node_buffer) {
+        if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
+            script_lines_free(ast, ast->body.script_lines);
+            ast->body.script_lines = NULL;
+        }
+        rb_node_buffer_free(ast, ast->node_buffer);
+        ast->node_buffer = 0;
+    }
+#endif
 }
 
 VALUE

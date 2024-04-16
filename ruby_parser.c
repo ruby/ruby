@@ -299,9 +299,11 @@ arg_error(void)
 }
 
 static rb_ast_t *
-ast_new(VALUE nb)
+ast_new(node_buffer_t *nb)
 {
-    return IMEMO_NEW(rb_ast_t, imemo_ast, nb);
+    rb_ast_t *ast = ruby_xcalloc(1, sizeof(rb_ast_t));
+    ast->node_buffer = nb;
+    return ast;
 }
 
 static VALUE
@@ -749,69 +751,95 @@ parser_compile_generic(struct ruby_parser *parser, rb_parser_lex_gets_func *lex_
     return rb_parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
 }
 
-rb_ast_t*
+static void
+ast_free(void *ptr)
+{
+    rb_ast_t *ast = (rb_ast_t *)ptr;
+    if (ast) {
+        rb_ast_free(ast);
+    }
+}
+
+static const rb_data_type_t ast_data_type = {
+    "AST",
+    {
+        NULL,
+        ast_free,
+        NULL, // No dsize() because this object does not appear in ObjectSpace.
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+ast_alloc(void)
+{
+    rb_ast_t *ast;
+    return TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+}
+
+VALUE
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE vast = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_file_path(parser, fname, file, start);
+    DATA_PTR(vast) = parser_compile_file_path(parser, fname, file, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return vast;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE vast = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_array(parser, fname, array, start);
+    DATA_PTR(vast) = parser_compile_array(parser, fname, array, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return vast;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE vast = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_generic(parser, lex_gets, fname, input, start);
+    DATA_PTR(vast) = parser_compile_generic(parser, lex_gets, fname, input, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return vast;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE vast = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_string(parser, f, s, line);
+    DATA_PTR(vast) = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return vast;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE vast = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_string_path(parser, f, s, line);
+    DATA_PTR(vast) = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return vast;
 }
 
 VALUE
@@ -1092,4 +1120,27 @@ rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
     if (rb_hash_lookup(hash, path) == Qnil) return;
     script_lines = rb_parser_build_script_lines_from(lines);
     rb_hash_aset(hash, path, script_lines);
+}
+
+VALUE
+rb_ruby_ast_new(const NODE *const root, rb_parser_ary_t *script_lines)
+{
+    VALUE vast = ast_alloc();
+    rb_ast_t *ast = DATA_PTR(vast);
+    ast->body = (rb_ast_body_t){
+        .root = root,
+        .frozen_string_literal = -1,
+        .coverage_enabled = -1,
+        .script_lines = script_lines
+    };
+    return vast;
+}
+
+rb_ast_t *
+rb_ruby_ast_data_get(VALUE vast)
+{
+    rb_ast_t *ast;
+    if (NIL_P(vast)) return NULL;
+    TypedData_Get_Struct(vast, rb_ast_t, &ast_data_type, ast);
+    return ast;
 }

@@ -130,7 +130,7 @@ rb_imemo_memsize(VALUE obj)
     size_t size = 0;
     switch (imemo_type(obj)) {
       case imemo_ast:
-        size += rb_ast_memsize((rb_ast_t *)obj);
+        rb_bug("imemo_ast is obsolete");
 
         break;
       case imemo_callcache:
@@ -273,7 +273,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 {
     switch (imemo_type(obj)) {
       case imemo_ast:
-        // TODO: Make AST decoupled from IMEMO
+        rb_bug("imemo_ast is obsolete");
 
         break;
       case imemo_callcache: {
@@ -513,8 +513,7 @@ rb_imemo_free(VALUE obj)
 {
     switch (imemo_type(obj)) {
       case imemo_ast:
-        rb_ast_free((rb_ast_t *)obj);
-        RB_DEBUG_COUNTER_INC(obj_imemo_ast);
+        rb_bug("imemo_ast is obsolete");
 
         break;
       case imemo_callcache:

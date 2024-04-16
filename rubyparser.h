@@ -1208,7 +1208,7 @@ typedef struct RNode_ERROR {
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 typedef struct node_buffer_struct node_buffer_t;
-/* T_IMEMO/ast */
+
 typedef struct rb_ast_body_struct {
     const NODE *root;
     rb_parser_ary_t *script_lines;
@@ -1219,7 +1219,6 @@ typedef struct rb_ast_body_struct {
     signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
-    VALUE flags;
     node_buffer_t *node_buffer;
     rb_ast_body_t body;
 } rb_ast_t;
@@ -1251,8 +1250,7 @@ typedef struct rb_parser_config_struct {
     void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
-    /* imemo */
-    rb_ast_t *(*ast_new)(VALUE nb);
+    rb_ast_t *(*ast_new)(node_buffer_t *nb);
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);

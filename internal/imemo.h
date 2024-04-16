@@ -39,7 +39,7 @@ enum imemo_type {
     imemo_ment           =  6,
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
-    imemo_ast            =  9,
+    imemo_ast            =  9, // Obsolete due to the universal parser
     imemo_parser_strterm = 10,
     imemo_callinfo       = 11,
     imemo_callcache      = 12,

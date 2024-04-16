@@ -225,7 +225,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static rb_ast_t *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+static VALUE load_file(VALUE parser, VALUE fname, VALUE f, int script,
                        ruby_cmdline_options_t *opt);
 static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
@@ -2056,10 +2056,11 @@ show_help(const char *progname, int help)
     usage(progname, help, tty, columns);
 }
 
-static rb_ast_t *
+static VALUE
 process_script(ruby_cmdline_options_t *opt)
 {
     rb_ast_t *ast;
+    VALUE vast;
     VALUE parser = rb_parser_new();
     const unsigned int dump = opt->dump;
 
@@ -2079,7 +2080,7 @@ process_script(ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
         rb_parser_set_options(parser, opt->do_print, opt->do_loop,
                               opt->do_line, opt->do_split);
-        ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+        vast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
         VALUE f;
@@ -2087,13 +2088,14 @@ process_script(ruby_cmdline_options_t *opt)
         f = open_load_file(opt->script_name, &xflag);
         opt->xflag = xflag != 0;
         rb_parser_set_context(parser, 0, f == rb_stdin);
-        ast = load_file(parser, opt->script_name, f, 1, opt);
+        vast = load_file(parser, opt->script_name, f, 1, opt);
     }
+    ast = rb_ruby_ast_data_get(vast);
     if (!ast->body.root) {
         rb_ast_dispose(ast);
-        return NULL;
+        return Qnil;
     }
-    return ast;
+    return vast;
 }
 
 /**
@@ -2237,6 +2239,7 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
+    VALUE vast = Qnil;
     struct {
         rb_ast_t *ast;
         pm_parse_result_t prism;
@@ -2471,7 +2474,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (!(*rb_ruby_prism_ptr())) {
-        if (!(result.ast = process_script(opt))) return Qfalse;
+        vast = process_script(opt);
+        if (!(result.ast = rb_ruby_ast_data_get(vast))) return Qfalse;
     }
     else {
         prism_script(opt, &result.prism);
@@ -2553,7 +2557,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
         else {
             rb_ast_t *ast = result.ast;
-            iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, parent, optimize);
+            iseq = rb_iseq_new_main(vast, opt->script_name, path, parent, optimize);
             rb_ast_dispose(ast);
         }
     }
@@ -2604,7 +2608,7 @@ load_file_internal(VALUE argp_v)
     ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
-    rb_ast_t *ast = 0;
+    VALUE vast = Qnil;
     rb_encoding *enc;
     ID set_encoding;
 
@@ -2702,10 +2706,10 @@ load_file_internal(VALUE argp_v)
     if (NIL_P(f)) {
         f = rb_str_new(0, 0);
         rb_enc_associate(f, enc);
-        return (VALUE)rb_parser_compile_string_path(parser, orig_fname, f, line_start);
+        return rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    ast = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
+    vast = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
         /*
@@ -2723,7 +2727,7 @@ load_file_internal(VALUE argp_v)
         rb_define_global_const("DATA", f);
         argp->f = Qnil;
     }
-    return (VALUE)ast;
+    return vast;
 }
 
 /* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
@@ -2832,7 +2836,7 @@ restore_load_file(VALUE arg)
     return Qnil;
 }
 
-static rb_ast_t *
+static VALUE
 load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
@@ -2841,7 +2845,7 @@ load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t
     arg.script = script;
     arg.opt = opt;
     arg.f = f;
-    return (rb_ast_t *)rb_ensure(load_file_internal, (VALUE)&arg,
+    return rb_ensure(load_file_internal, (VALUE)&arg,
                               restore_load_file, (VALUE)&arg);
 }
 
@@ -2855,10 +2859,12 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    return rb_parser_load_file(rb_parser_new(), fname_v);
+    VALUE vast;
+    vast = rb_parser_load_file(rb_parser_new(), fname_v);
+    return (void *)rb_ruby_ast_data_get(vast);
 }
 
-void *
+VALUE
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
     ruby_cmdline_options_t opt;
