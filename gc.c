@@ -9473,7 +9473,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_ZOMBIE:
         return FALSE;
       case T_SYMBOL:
-        if (DYNAMIC_SYM_P(obj) && (RSYMBOL(obj)->id & ~ID_SCOPE_MASK)) {
+        if (RSYMBOL(obj)->id & ~ID_SCOPE_MASK) {
             return FALSE;
         }
         /* fall through */
