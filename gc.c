@@ -5462,10 +5462,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     sweep_page->size_pool->total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
-        rb_thread_t *th = GET_THREAD();
-        if (th) {
-            gc_finalize_deferred_register(objspace);
-        }
+        gc_finalize_deferred_register(objspace);
     }
 
 #if RGENGC_CHECK_MODE
