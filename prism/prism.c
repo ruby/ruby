@@ -7632,6 +7632,30 @@ pm_parser_scope_pop(pm_parser_t *parser) {
 /* Stack helpers                                                              */
 /******************************************************************************/
 
+/**
+ * Pushes a value onto the stack.
+ */
+static inline void
+pm_state_stack_push(pm_state_stack_t *stack, bool value) {
+    *stack = (*stack << 1) | (value & 1);
+}
+
+/**
+ * Pops a value off the stack.
+ */
+static inline void
+pm_state_stack_pop(pm_state_stack_t *stack) {
+    *stack >>= 1;
+}
+
+/**
+ * Returns the value at the top of the stack.
+ */
+static inline bool
+pm_state_stack_p(const pm_state_stack_t *stack) {
+    return *stack & 1;
+}
+
 static inline void
 pm_accepts_block_stack_push(pm_parser_t *parser, bool value) {
     // Use the negation of the value to prevent stack overflow.
