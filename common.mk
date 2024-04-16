@@ -957,12 +957,16 @@ PRECHECK_TEST_ALL = yes-test-all-precheck
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: $(PRECHECK_TEST_ALL)
 	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" \
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) -r$(tooldir)/lib/_tmpdir \
+	"$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" \
 	$(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 	$(ACTIONS_ENDGROUP)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
-	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(TESTSDIR)/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
+	$(ACTIONS_GROUP)
+	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" -r$(tooldir)/lib/_tmpdir \
+	"$(TESTSDIR)/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
+	$(ACTIONS_ENDGROUP)
 
 test-almost: test-all
 yes-test-almost: yes-test-all
@@ -1004,7 +1008,7 @@ test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: yes-test-spec-precheck
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
+	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
 		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT) $(SPECOPTS)
 	$(ACTIONS_ENDGROUP)
 no-test-spec:
@@ -1013,7 +1017,7 @@ test-prism-spec: $(TEST_RUNNABLE)-test-prism-spec
 yes-test-prism-spec: yes-test-spec-precheck
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
+	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
 		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec -B $(srcdir)/spec/prism.mspec $(MSPECOPT) $(SPECOPTS)
 	$(ACTIONS_ENDGROUP)
 no-test-prism-spec:
@@ -1606,7 +1610,7 @@ test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
+	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
 		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/bundled_gems.mspec $(MSPECOPT) $(SPECOPTS)
 	$(ACTIONS_ENDGROUP)
 no-test-bundled-gems-spec:

@@ -1,14 +1,20 @@
 require "tmpdir"
 require "fileutils"
 
-template = "rubyspec_temp."
-if (tmpdir = Dir.mktmpdir(template)).size > 80
+template = "rubytest."
+if (tmpdir = Dir.mktmpdir(template)).size > 50
   # On macOS, the default TMPDIR is very long, inspite of UNIX socket
   # path length is limited.
   Dir.rmdir(tmpdir)
   tmpdir = Dir.mktmpdir(template, "/tmp")
 end
 # warn "tmpdir(#{tmpdir.size}) = #{tmpdir}"
-END {FileUtils.rm_rf(tmpdir)}
 
-ENV["TMPDIR"] = ENV["SPEC_TEMP_DIR"] = tmpdir
+pid = $$
+END {
+  if pid == $$
+    FileUtils.rm_rf(tmpdir)
+  end
+}
+
+ENV["TMPDIR"] = ENV["SPEC_TEMP_DIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
