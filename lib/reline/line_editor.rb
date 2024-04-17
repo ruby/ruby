@@ -1720,7 +1720,6 @@ class Reline::LineEditor
     return if @history_pointer.nil?
 
     history_range = @history_pointer + 1...Reline::HISTORY.size
-    history = Reline::HISTORY.slice((@history_pointer + 1)..-1)
     h_pointer, line_index = search_history(substr, history_range)
     return if h_pointer.nil? and not substr.empty?
 
