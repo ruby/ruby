@@ -215,6 +215,9 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
     imm_fits_bits(offset, 19)
 }
 
+/// CBZ and CBNZ also have a limit of 19 bits for the branch offset.
+pub use bcond_offset_fits_bits as cmp_branch_offset_fits_bits;
+
 /// B.cond - branch to target if condition is true
 pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
     assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
