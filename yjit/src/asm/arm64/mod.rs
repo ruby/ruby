@@ -1117,7 +1117,7 @@ pub fn cbnz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
     let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
         cbz_cbnz(rt.num_bits, true, offset, rt.reg_no)
     } else {
-        panic!("Invalid operand combination to cbz instruction.")
+        panic!("Invalid operand combination to cbnz instruction.")
     };
 
     cb.write_bytes(&bytes);
