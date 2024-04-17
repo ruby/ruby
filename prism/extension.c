@@ -969,7 +969,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse_success?(source, **options) -> Array
+ *   Prism::parse_success?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses without errors. For
  * supported options, see Prism::parse.
@@ -989,7 +989,19 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_success?(filepath, **options) -> Array
+ *   Prism::parse_failure?(source, **options) -> bool
+ *
+ * Parse the given string and return true if it parses with errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_failure_p(int argc, VALUE *argv, VALUE self) {
+    return RTEST(parse_success_p(argc, argv, self)) ? Qfalse : Qtrue;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_success?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses without errors. For
  * supported options, see Prism::parse.
@@ -1006,6 +1018,18 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_options_free(&options);
 
     return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_failure?(filepath, **options) -> bool
+ *
+ * Parse the given file and return true if it parses with errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
+    return RTEST(parse_file_success_p(argc, argv, self)) ? Qfalse : Qtrue;
 }
 
 /******************************************************************************/
@@ -1366,7 +1390,9 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse_success?", parse_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_failure?", parse_failure_p, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file_success?", parse_file_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_failure?", parse_file_failure_p, -1);
 
 #ifndef PRISM_EXCLUDE_SERIALIZATION
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);

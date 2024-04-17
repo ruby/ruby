@@ -60,6 +60,17 @@ module Prism
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
 
+    # Returns a list of the fields that exist for this node class. Fields
+    # describe the structure of the node. This kind of reflection is useful for
+    # things like recursively visiting each node _and_ field in the tree.
+    def self.fields
+      # This method should only be called on subclasses of Node, not Node
+      # itself.
+      raise NoMethodError, "undefined method `fields' for #{inspect}" if self == Node
+
+      Reflection.fields_for(self)
+    end
+
     # --------------------------------------------------------------------------
     # :section: Node interface
     # These methods are effectively abstract methods that must be implemented by
@@ -101,6 +112,11 @@ module Prism
     # Returns a string representation of the node.
     def inspect(inspector = NodeInspector.new)
       raise NoMethodError, "undefined method `inspect' for #{inspect}"
+    end
+
+    # Returns the type of the node as a symbol.
+    def self.type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
     end
   end
   <%- nodes.each do |node| -%>
