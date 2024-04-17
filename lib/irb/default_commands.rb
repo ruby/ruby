@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "command"
+require_relative "command/internal_helpers"
 require_relative "command/context"
 require_relative "command/exit"
 require_relative "command/force_exit"

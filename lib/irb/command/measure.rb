@@ -3,6 +3,8 @@ module IRB
 
   module Command
     class Measure < Base
+      include RubyArgsExtractor
+
       category "Misc"
       description "`measure` enables the mode to measure processing time. `measure :off` disables it."
 

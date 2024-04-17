@@ -7,6 +7,8 @@ require_relative "../color"
 module IRB
   module Command
     class ShowSource < Base
+      include RubyArgsExtractor
+
       category "Context"
       description "Show the source code of a given method, class/module, or constant."
 
