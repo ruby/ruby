@@ -2023,7 +2023,8 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
     VM_ASSERT(ccs->len < ccs->capa);
 
     const int pos = ccs->len++;
-    RB_OBJ_WRITE(klass, &ccs->entries[pos].ci, ci);
+    ccs->entries[pos].argc = vm_ci_argc(ci);
+    ccs->entries[pos].flag = vm_ci_flag(ci);
     RB_OBJ_WRITE(klass, &ccs->entries[pos].cc, cc);
 
     if (RB_DEBUG_COUNTER_SETMAX(ccs_maxlen, ccs->len)) {
@@ -2038,7 +2039,9 @@ rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
     ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
-        vm_ci_dump(ccs->entries[i].ci);
+        ruby_debug_printf("CCS CI ID:flag:%x argc:%u\n",
+                ccs->entries[i].flag,
+                ccs->entries[i].argc);
         rp(ccs->entries[i].cc);
     }
 }
@@ -2050,11 +2053,8 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
     VM_ASSERT(ccs->len <= ccs->capa);
 
     for (int i=0; i<ccs->len; i++) {
-        const struct rb_callinfo  *ci = ccs->entries[i].ci;
         const struct rb_callcache *cc = ccs->entries[i].cc;
 
-        VM_ASSERT(vm_ci_p(ci));
-        VM_ASSERT(vm_ci_mid(ci) == mid);
         VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
         VM_ASSERT(vm_cc_class_check(cc, klass));
         VM_ASSERT(vm_cc_check_cme(cc, ccs->cme));
@@ -2076,6 +2076,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     VALUE ccs_data;
 
     if (cc_tbl) {
+        // CCS data is keyed on method id, so we don't need the method id
+        // for doing comparisons in the `for` loop below.
         if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
             ccs = (struct rb_class_cc_entries *)ccs_data;
             const int ccs_len = ccs->len;
@@ -2088,14 +2090,20 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
             else {
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
+                // We already know the method id is correct because we had
+                // to look up the ccs_data by method id.  All we need to
+                // compare is argc and flag
+                unsigned int argc = vm_ci_argc(ci);
+                unsigned int flag = vm_ci_flag(ci);
+
                 for (int i=0; i<ccs_len; i++) {
-                    const struct rb_callinfo  *ccs_ci = ccs->entries[i].ci;
+                    unsigned int ccs_ci_argc = ccs->entries[i].argc;
+                    unsigned int ccs_ci_flag = ccs->entries[i].flag;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
-                    VM_ASSERT(vm_ci_p(ccs_ci));
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci == ci) { // TODO: equality
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
                         RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);

@@ -196,7 +196,6 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data)
             VM_ASSERT((VALUE)data == ccs->entries[i].cc->klass);
             VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
 
-            rb_gc_mark_movable((VALUE)ccs->entries[i].ci);
             rb_gc_mark_movable((VALUE)ccs->entries[i].cc);
         }
         return ID_TABLE_CONTINUE;
