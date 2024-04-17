@@ -9297,7 +9297,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 
     gc_enter_count(event);
     if (UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
-    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
+    if (RGENGC_CHECK_MODE >= 3 && (dont_gc_val() == 0)) gc_verify_internal_consistency(objspace);
 
     during_gc = TRUE;
     RUBY_DEBUG_LOG("%s (%s)",gc_enter_event_cstr(event), gc_current_status(objspace));
