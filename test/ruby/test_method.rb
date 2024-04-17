@@ -1692,5 +1692,19 @@ class TestMethod < Test::Unit::TestCase
       assert_match(/-:23: warning.+f5/, err.join)
       assert_match(/-:24: warning.+f6/, err.join)
     end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def f = yield
+      end
+
+      class C1 < C0
+        def f = nil
+      end
+
+      C1.new.f{} # do not warn on duck typing
+    RUBY
+      assert_equal 0, err.size, err.join("\n")
+    end
   end
 end

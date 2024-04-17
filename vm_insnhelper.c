@@ -2971,9 +2971,9 @@ VALUE rb_gen_method_name(VALUE owner, VALUE name); // in vm_backtrace.c
 static void
 warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, void *pc)
 {
-    static st_table *dup_check_table = NULL;
+    rb_vm_t *vm = GET_VM();
+    st_table *dup_check_table = vm->unused_block_warning_table;
 
-    st_data_t key = 0;
     union {
         VALUE v;
         unsigned char b[SIZEOF_VALUE];
@@ -2983,6 +2983,14 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
         .v = (VALUE)cme->def,
     };
 
+    // relax check
+    st_data_t key = (st_data_t)cme->def->original_id;
+
+    if (st_lookup(dup_check_table, key, NULL)) {
+        return;
+    }
+
+    // strict check
     // make unique key from pc and me->def pointer
     for (int i=0; i<SIZEOF_VALUE; i++) {
         // fprintf(stderr, "k1:%3d k2:%3d\n", k1.b[i], k2.b[SIZEOF_VALUE-1-i]);
@@ -2993,10 +3001,6 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
         fprintf(stderr, "SIZEOF_VALUE:%d\n", SIZEOF_VALUE);
         fprintf(stderr, "pc:%p def:%p\n", pc, cme->def);
         fprintf(stderr, "key:%p\n", (void *)key);
-    }
-
-    if (!dup_check_table) {
-        dup_check_table = st_init_numtable();
     }
 
     // duplication check
