@@ -215,6 +215,9 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
     imm_fits_bits(offset, 19)
 }
 
+/// CBZ and CBNZ also have a limit of 19 bits for the branch offset.
+pub use bcond_offset_fits_bits as cmp_branch_offset_fits_bits;
+
 /// B.cond - branch to target if condition is true
 pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
     assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
@@ -1096,6 +1099,48 @@ pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// CBZ - branch if a register is zero
+pub fn cbz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+    assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
+    let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
+        cbz_cbnz(rt.num_bits, false, offset, rt.reg_no)
+    } else {
+        panic!("Invalid operand combination to cbz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// CBNZ - branch if a register is non-zero
+pub fn cbnz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+    assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
+    let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
+        cbz_cbnz(rt.num_bits, true, offset, rt.reg_no)
+    } else {
+        panic!("Invalid operand combination to cbnz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// Encode Compare and Branch on Zero (CBZ) with `op=0` or Compare and Branch on Nonzero (CBNZ)
+/// with `op=1`.
+///
+/// <https://developer.arm.com/documentation/ddi0602/2024-03/Base-Instructions/CBZ--Compare-and-Branch-on-Zero->
+///
+/// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
+/// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
+/// | sf  0  1  1    0  1  0 op                                                                                     |
+/// |                             imm19........................................................... Rt.............. |
+/// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
+fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4] {
+    ((Sf::from(num_bits) as u32) << 31 |
+          0b11010 << 25 |
+          u32::from(op) << 24 |
+          truncate_imm::<_, 19>(offset) << 5 |
+          rt as u32).to_le_bytes()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1268,6 +1313,24 @@ mod tests {
     #[test]
     fn test_br() {
         check_bytes("80021fd6", |cb| br(cb, X20));
+    }
+
+    #[test]
+    fn test_cbz() {
+        let offset = InstructionOffset::from_insns(-1);
+        check_bytes("e0ffffb4e0ffff34", |cb| {
+            cbz(cb, X0, offset);
+            cbz(cb, W0, offset);
+        });
+    }
+
+    #[test]
+    fn test_cbnz() {
+        let offset = InstructionOffset::from_insns(2);
+        check_bytes("540000b554000035", |cb| {
+            cbnz(cb, X20, offset);
+            cbnz(cb, W20, offset);
+        });
     }
 
     #[test]

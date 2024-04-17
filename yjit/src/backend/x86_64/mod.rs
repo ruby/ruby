@@ -796,6 +796,8 @@ impl Assembler
                     }
                 }
 
+                Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
+
                 // Atomically increment a counter at a given memory location
                 Insn::IncrCounter { mem, value } => {
                     assert!(matches!(mem, Opnd::Mem(_)));
