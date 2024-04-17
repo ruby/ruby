@@ -47,29 +47,40 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
  */
 PRISM_EXPORTED_FUNCTION bool
 pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
-    if (version == NULL && length == 0) {
-        options->version = PM_OPTIONS_VERSION_LATEST;
-        return true;
+    switch (length) {
+        case 0:
+            if (version == NULL) {
+                options->version = PM_OPTIONS_VERSION_LATEST;
+                return true;
+            }
+
+            return false;
+        case 5:
+            assert(version != NULL);
+
+            if (strncmp(version, "3.3.0", length) == 0) {
+                options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
+                return true;
+            }
+
+            if (strncmp(version, "3.4.0", length) == 0) {
+                options->version = PM_OPTIONS_VERSION_LATEST;
+                return true;
+            }
+
+            return false;
+        case 6:
+            assert(version != NULL);
+
+            if (strncmp(version, "latest", length) == 0) {
+                options->version = PM_OPTIONS_VERSION_LATEST;
+                return true;
+            }
+
+            return false;
+        default:
+            return false;
     }
-
-    if (length == 5) {
-        if (strncmp(version, "3.3.0", length) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
-            return true;
-        }
-
-        if (strncmp(version, "3.4.0", length) == 0) {
-            options->version = PM_OPTIONS_VERSION_LATEST;
-            return true;
-        }
-    }
-
-    if (length == 6 && strncmp(version, "latest", length) == 0) {
-        options->version = PM_OPTIONS_VERSION_LATEST;
-        return true;
-    }
-
-    return false;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and

@@ -194,7 +194,11 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
 
     size_t length = left_length + right_length;
     uint32_t *values = (uint32_t*) xcalloc(length, sizeof(uint32_t));
+
+    assert(z0.values != NULL);
     memcpy(values, z0.values, sizeof(uint32_t) * z0.length);
+
+    assert(z2.values != NULL);
     memcpy(values + 2 * half, z2.values, sizeof(uint32_t) * z2.length);
 
     uint32_t carry = 0;
