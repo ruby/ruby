@@ -155,6 +155,10 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_each_backtrace_location
+    assert_nil(Thread.each_caller_location {})
+
+    assert_raise(LocalJumpError) {Thread.each_caller_location}
+
     i = 0
     cl = caller_locations(1, 1)[0]; ecl = Thread.each_caller_location{|x| i+=1; break x if i == 1}
     assert_equal(cl.to_s, ecl.to_s)
@@ -181,6 +185,10 @@ class TestBacktrace < Test::Unit::TestCase
     assert_raise(StopIteration) {
       ecl.next
     }
+
+    ary = []
+    cl = caller_locations(1, 2); Thread.each_caller_location(1, 2) {|x| ary << x}
+    assert_equal(cl.map(&:to_s), ary.map(&:to_s))
   end
 
   def test_caller_locations_first_label

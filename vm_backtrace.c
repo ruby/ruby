@@ -1170,17 +1170,17 @@ rb_make_backtrace(void)
     return rb_ec_backtrace_str_ary(GET_EC(), BACKTRACE_START, ALL_BACKTRACE_LINES);
 }
 
-static VALUE
-ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
+static long
+ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, long *len_ptr)
 {
-    VALUE level, vn;
+    VALUE level, vn, opts;
     long lev, n;
-    VALUE btval;
-    VALUE r;
-    int too_large;
 
-    rb_scan_args(argc, argv, "02", &level, &vn);
+    rb_scan_args(argc, argv, "02:", &level, &vn, &opts);
 
+    if (!NIL_P(opts)) {
+        rb_get_kwargs(opts, (ID []){0}, 0, 0, NULL);
+    }
     if (argc == 2 && NIL_P(vn)) argc--;
 
     switch (argc) {
@@ -1201,7 +1201,7 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
                 n = ALL_BACKTRACE_LINES;
                 break;
               case Qnil:
-                return Qnil;
+                return -1;
               default:
                 lev = beg + lev_plus;
                 n = len;
@@ -1224,6 +1224,20 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
         lev = n = 0; /* to avoid warning */
         break;
     }
+
+    *len_ptr = n;
+    return lev;
+}
+
+static VALUE
+ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
+{
+    long lev, n;
+    VALUE btval, r;
+    int too_large;
+
+    lev = ec_backtrace_range(ec, argc, argv, lev_default, lev_plus, &n);
+    if (lev < 0) return Qnil;
 
     if (n == 0) {
         return rb_ary_new();
@@ -1354,15 +1368,19 @@ rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     Thread.each_caller_location{ |loc| ... } -> nil
+ *     Thread.each_caller_location(...) { |loc| ... } -> nil
  *
  *  Yields each frame of the current execution stack as a
  *  backtrace location object.
  */
 static VALUE
-each_caller_location(VALUE unused)
+each_caller_location(int argc, VALUE *argv, VALUE _)
 {
-    rb_ec_partial_backtrace_object(GET_EC(), 2, ALL_BACKTRACE_LINES, NULL, FALSE, TRUE);
+    rb_execution_context_t *ec = GET_EC();
+    long n, lev = ec_backtrace_range(ec, argc, argv, 1, 1, &n);
+    if (lev >= 0 && n != 0) {
+        rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE, TRUE);
+    }
     return Qnil;
 }
 
@@ -1442,7 +1460,7 @@ Init_vm_backtrace(void)
     rb_define_global_function("caller", rb_f_caller, -1);
     rb_define_global_function("caller_locations", rb_f_caller_locations, -1);
 
-    rb_define_singleton_method(rb_cThread, "each_caller_location", each_caller_location, 0);
+    rb_define_singleton_method(rb_cThread, "each_caller_location", each_caller_location, -1);
 }
 
 /* debugger API */

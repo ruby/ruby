@@ -40,10 +40,10 @@ describe "Thread.each_caller_location" do
       }.should raise_error(LocalJumpError, "no block given")
     end
 
-    it "doesn't accept positional and keyword arguments" do
+    it "doesn't accept keyword arguments" do
       -> {
         Thread.each_caller_location(12, foo: 10) {}
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 0)")
+      }.should raise_error(ArgumentError);
     end
   end
 end
