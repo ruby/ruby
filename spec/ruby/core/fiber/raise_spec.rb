@@ -103,6 +103,27 @@ describe "Fiber#raise" do
         f2.raise(RuntimeError, "Expected error")
       end.should raise_error(RuntimeError, "Expected error")
     end
+
+    it "raises on itself" do
+      -> do
+        Fiber.current.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+
+    it "should raise on parent fiber" do
+      f2 = nil
+      f1 = Fiber.new do
+        # This is equivalent to Kernel#raise:
+        f2.raise(RuntimeError, "Expected error")
+      end
+      f2 = Fiber.new do
+        f1.resume
+      end
+
+      -> do
+        f2.resume
+      end.should raise_error(RuntimeError, "Expected error")
+    end
   end
 end
 
