@@ -309,6 +309,21 @@ begin
       EOC
     end
 
+    def test_readline_with_multiline_input
+      start_terminal(5, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt}, startup_message: 'Multiline REPL.')
+      write("def foo\n  bar\nend\n")
+      write("Reline.readline('prompt> ')\n")
+      write("\C-p\C-p")
+      close
+      assert_screen(<<~EOC)
+        => :foo
+        [0000]> Reline.readline('prompt> ')
+        prompt> def foo
+          bar
+        end
+      EOC
+    end
+
     def test_multiline_and_autowrap
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaaaaaa\n  33333333\n           end\C-a\C-pputs\C-e\e\C-m888888888888888")

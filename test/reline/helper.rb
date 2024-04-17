@@ -131,7 +131,7 @@ class Reline::TestCase < Test::Unit::TestCase
   def assert_line_around_cursor(before, after)
     before = convert_str(before)
     after = convert_str(after)
-    line = @line_editor.line
+    line = @line_editor.current_line
     byte_pointer = @line_editor.instance_variable_get(:@byte_pointer)
     actual_before = line.byteslice(0, byte_pointer)
     actual_after = line.byteslice(byte_pointer..)
