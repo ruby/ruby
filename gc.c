@@ -2694,12 +2694,6 @@ size_pool_slot_size(unsigned char pool_id)
     return slot_size;
 }
 
-size_t
-rb_size_pool_slot_size(unsigned char pool_id)
-{
-    return size_pool_slot_size(pool_id);
-}
-
 bool
 rb_gc_size_allocatable_p(size_t size)
 {
@@ -2713,7 +2707,7 @@ rb_gc_size_pool_sizes(void)
 {
     if (size_pool_sizes[0] == 0) {
         for (unsigned char i = 0; i < SIZE_POOL_COUNT; i++) {
-            size_pool_sizes[i] = rb_size_pool_slot_size(i);
+            size_pool_sizes[i] = size_pool_slot_size(i);
         }
     }
 
