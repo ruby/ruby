@@ -1292,6 +1292,7 @@ total_freed_objects(rb_objspace_t *objspace)
 
 #define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
 #define gc_mode_set(objspace, m)         ((objspace)->flags.mode = (unsigned int)gc_mode_verify(m))
+#define gc_needs_major_flags             objspace->rgengc.need_major_gc
 
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
@@ -2550,7 +2551,7 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
              * sweeping and still don't have a free page, then
              * gc_sweep_finish_size_pool should allow us to create a new page. */
             if (heap->free_pages == NULL && !heap_increment(objspace, size_pool, heap)) {
-                if (objspace->rgengc.need_major_gc == GPR_FLAG_NONE) {
+                if (gc_needs_major_flags == GPR_FLAG_NONE) {
                     rb_bug("cannot create a new page after GC");
                 }
                 else { // Major GC is required, which will allow us to create new page
@@ -5632,7 +5633,7 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
                 grow_heap = TRUE;
             }
             else if (is_growth_heap) { /* Only growth heaps are allowed to start a major GC. */
-                objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_NOFREE;
+                gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 size_pool->force_major_gc_count++;
             }
         }
@@ -8071,7 +8072,7 @@ gc_marks_finish(rb_objspace_t *objspace)
                 }
                 else {
                     gc_report(1, objspace, "gc_marks_finish: next is full GC!!)\n");
-                    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_NOFREE;
+                    gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 }
             }
         }
@@ -8087,20 +8088,20 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
 
         if (objspace->rgengc.uncollectible_wb_unprotected_objects > objspace->rgengc.uncollectible_wb_unprotected_objects_limit) {
-            objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_SHADY;
+            gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_SHADY;
         }
         if (objspace->rgengc.old_objects > objspace->rgengc.old_objects_limit) {
-            objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDGEN;
+            gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_OLDGEN;
         }
         if (RGENGC_FORCE_MAJOR_GC) {
-            objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_FORCE;
+            gc_needs_major_flags = GPR_FLAG_MAJOR_BY_FORCE;
         }
 
         gc_report(1, objspace, "gc_marks_finish (marks %"PRIdSIZE" objects, "
                   "old %"PRIdSIZE" objects, total %"PRIdSIZE" slots, "
                   "sweep %"PRIdSIZE" slots, increment: %"PRIdSIZE", next GC: %s)\n",
                   objspace->marked_slots, objspace->rgengc.old_objects, heap_eden_total_slots(objspace), sweep_slots, heap_allocatable_pages(objspace),
-                  objspace->rgengc.need_major_gc ? "major" : "minor");
+                  gc_needs_major_flags ? "major" : "minor");
     }
 
     rb_ractor_finish_marking();
@@ -8942,7 +8943,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (!full_mark) {
         if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
-            objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
+            gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
             objspace->rgengc.oldmalloc_increase_limit =
               (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
 
@@ -8953,7 +8954,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 
         if (0) fprintf(stderr, "%"PRIdSIZE"\t%d\t%"PRIuSIZE"\t%"PRIuSIZE"\t%"PRIdSIZE"\n",
                        rb_gc_count(),
-                       objspace->rgengc.need_major_gc,
+                       gc_needs_major_flags,
                        objspace->rgengc.oldmalloc_increase,
                        objspace->rgengc.oldmalloc_increase_limit,
                        gc_params.oldmalloc_limit_max);
@@ -9029,8 +9030,8 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         objspace->flags.immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
     }
 
-    if (objspace->rgengc.need_major_gc) {
-        reason |= objspace->rgengc.need_major_gc;
+    if (gc_needs_major_flags) {
+        reason |= gc_needs_major_flags;
         do_full_mark = TRUE;
     }
     else if (RGENGC_FORCE_MAJOR_GC) {
@@ -9038,7 +9039,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         do_full_mark = TRUE;
     }
 
-    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
+    gc_needs_major_flags = GPR_FLAG_NONE;
 
     if (do_full_mark && (reason & GPR_FLAG_MAJOR_MASK) == 0) {
         reason |= GPR_FLAG_MAJOR_BY_FORCE; /* GC by CAPI, METHOD, and so on. */
@@ -10766,7 +10767,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
     SET(major_by, major_by);
 
     if (orig_flags == 0) { /* set need_major_by only if flags not set explicitly */
-        unsigned int need_major_flags = objspace->rgengc.need_major_gc;
+        unsigned int need_major_flags = gc_needs_major_flags;
         need_major_by =
             (need_major_flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
             (need_major_flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
