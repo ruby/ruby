@@ -11761,6 +11761,10 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
         ISEQ_BODY(iseq)->param.flags.ambiguous_param0 = TRUE;
     }
 
+    if (Qtrue == rb_hash_aref(params, SYM(use_block))) {
+        ISEQ_BODY(iseq)->param.flags.use_block = TRUE;
+    }
+
     if (int_param(&i, params, SYM(kwrest))) {
         struct rb_iseq_param_keyword *keyword = (struct rb_iseq_param_keyword *)ISEQ_BODY(iseq)->param.keyword;
         if (keyword == NULL) {

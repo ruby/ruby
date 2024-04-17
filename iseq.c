@@ -3200,6 +3200,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
         }
         if (iseq_body->param.flags.has_kwrest) rb_hash_aset(params, ID2SYM(rb_intern("kwrest")), INT2FIX(keyword->rest_start));
         if (iseq_body->param.flags.ambiguous_param0) rb_hash_aset(params, ID2SYM(rb_intern("ambiguous_param0")), Qtrue);
+        if (iseq_body->param.flags.use_block) rb_hash_aset(params, ID2SYM(rb_intern("use_block")), Qtrue);
     }
 
     /* body */
