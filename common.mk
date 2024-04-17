@@ -226,6 +226,11 @@ srcs: $(srcdir)/lib/prism/node.rb
 $(srcdir)/lib/prism/node.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/node.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/node.rb $(srcdir)/lib/prism/node.rb
 
+main: $(srcdir)/lib/prism/reflection.rb
+srcs: $(srcdir)/lib/prism/reflection.rb
+$(srcdir)/lib/prism/reflection.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/reflection.rb.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/reflection.rb $(srcdir)/lib/prism/reflection.rb
+
 main: $(srcdir)/lib/prism/serialize.rb
 srcs: $(srcdir)/lib/prism/serialize.rb
 $(srcdir)/lib/prism/serialize.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/serialize.rb.erb
