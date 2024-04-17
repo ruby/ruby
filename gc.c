@@ -21,8 +21,6 @@
 
 #include <signal.h>
 
-#define sighandler_t ruby_sighandler_t
-
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/mman.h>
