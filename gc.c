@@ -9125,10 +9125,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 static void
 gc_rest(rb_objspace_t *objspace)
 {
-    int marking = is_incremental_marking(objspace);
-    int sweeping = is_lazy_sweeping(objspace);
-
-    if (marking || sweeping) {
+    if (is_incremental_marking(objspace) || is_lazy_sweeping(objspace)) {
         unsigned int lock_lev;
         gc_enter(objspace, gc_enter_event_rest, &lock_lev);
 
