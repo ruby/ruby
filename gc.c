@@ -9978,9 +9978,6 @@ update_cc_tbl_i(VALUE ccs_ptr, void *data)
     }
 
     for (int i=0; i<ccs->len; i++) {
-        if (gc_object_moved_p(objspace, (VALUE)ccs->entries[i].ci)) {
-            ccs->entries[i].ci = (struct rb_callinfo *)rb_gc_location((VALUE)ccs->entries[i].ci);
-        }
         if (gc_object_moved_p(objspace, (VALUE)ccs->entries[i].cc)) {
             ccs->entries[i].cc = (struct rb_callcache *)rb_gc_location((VALUE)ccs->entries[i].cc);
         }

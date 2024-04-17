@@ -31,7 +31,6 @@ vm_ccs_dump_i(ID mid, VALUE val, void *data)
     rp(ccs->cme);
 
     for (int i=0; i<ccs->len; i++) {
-        fprintf(stderr, "  | [%d]\t", i); vm_ci_dump(ccs->entries[i].ci);
         rp_m(           "  |   \t", ccs->entries[i].cc);
     }
 

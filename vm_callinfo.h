@@ -575,7 +575,8 @@ struct rb_class_cc_entries {
     int len;
     const struct rb_callable_method_entry_struct *cme;
     struct rb_class_cc_entries_entry {
-        const struct rb_callinfo *ci;
+        unsigned int argc;
+        unsigned int flag;
         const struct rb_callcache *cc;
     } *entries;
 };
