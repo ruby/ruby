@@ -1,0 +1,151 @@
+module Prism
+  # The Reflection module provides the ability to reflect on the structure of
+  # the syntax tree itself, as opposed to looking at a single syntax tree. This
+  # is useful in metaprogramming contexts.
+  module Reflection
+    # A field represents a single piece of data on a node. It is the base class
+    # for all other field types.
+    class Field
+      # The name of the field.
+      attr_reader :name
+
+      # Initializes the field with the given name.
+      def initialize(name)
+        @name = name
+      end
+    end
+
+    # A node field represents a single child node in the syntax tree. It
+    # resolves to a Prism::Node in Ruby.
+    class NodeField < Field
+    end
+
+    # An optional node field represents a single child node in the syntax tree
+    # that may or may not be present. It resolves to either a Prism::Node or nil
+    # in Ruby.
+    class OptionalNodeField < Field
+    end
+
+    # A node list field represents a list of child nodes in the syntax tree. It
+    # resolves to an array of Prism::Node instances in Ruby.
+    class NodeListField < Field
+    end
+
+    # A constant field represents a constant value on a node. Effectively, it
+    # represents an identifier found within the source. It resolves to a symbol
+    # in Ruby.
+    class ConstantField < Field
+    end
+
+    # An optional constant field represents a constant value on a node that may
+    # or may not be present. It resolves to either a symbol or nil in Ruby.
+    class OptionalConstantField < Field
+    end
+
+    # A constant list field represents a list of constant values on a node. It
+    # resolves to an array of symbols in Ruby.
+    class ConstantListField < Field
+    end
+
+    # A string field represents a string value on a node. It almost always
+    # represents the unescaped value of a string-like literal. It resolves to a
+    # string in Ruby.
+    class StringField < Field
+    end
+
+    # A location field represents the location of some part of the node in the
+    # source code. For example, the location of a keyword or an operator. It
+    # resolves to a Prism::Location in Ruby.
+    class LocationField < Field
+    end
+
+    # An optional location field represents the location of some part of the
+    # node in the source code that may or may not be present. It resolves to
+    # either a Prism::Location or nil in Ruby.
+    class OptionalLocationField < Field
+    end
+
+    # A uint8 field represents an unsigned 8-bit integer value on a node. It
+    # resolves to an Integer in Ruby.
+    class UInt8Field < Field
+    end
+
+    # A uint32 field represents an unsigned 32-bit integer value on a node. It
+    # resolves to an Integer in Ruby.
+    class UInt32Field < Field
+    end
+
+    # A flags field represents a bitset of flags on a node. It resolves to an
+    # integer in Ruby. Note that the flags cannot be accessed directly on the
+    # node because the integer is kept private. Instead, the various flags in
+    # the bitset should be accessed through their query methods.
+    class FlagsField < Field
+      # The names of the flags in the bitset.
+      attr_reader :flags
+
+      # Initializes the flags field with the given name and flags.
+      def initialize(name, flags)
+        super(name)
+        @flags = flags
+      end
+    end
+
+    # An integer field represents an arbitrarily-sized integer value. It is used
+    # exclusively to represent the value of an integer literal. It resolves to
+    # an Integer in Ruby.
+    class IntegerField < Field
+    end
+
+    # A double field represents a double-precision floating point value. It is
+    # used exclusively to represent the value of a floating point literal. It
+    # resolves to a Float in Ruby.
+    class DoubleField < Field
+    end
+
+    # Returns the fields for the given node.
+    def self.fields_for(node)
+      case node.type
+      <%- nodes.each do |node| -%>
+      when :<%= node.human %>
+        [<%= node.fields.map { |field|
+          case field
+          when Prism::Template::NodeField
+            "NodeField.new(:#{field.name})"
+          when Prism::Template::OptionalNodeField
+            "OptionalNodeField.new(:#{field.name})"
+          when Prism::Template::NodeListField
+            "NodeListField.new(:#{field.name})"
+          when Prism::Template::ConstantField
+            "ConstantField.new(:#{field.name})"
+          when Prism::Template::OptionalConstantField
+            "OptionalConstantField.new(:#{field.name})"
+          when Prism::Template::ConstantListField
+            "ConstantListField.new(:#{field.name})"
+          when Prism::Template::StringField
+            "StringField.new(:#{field.name})"
+          when Prism::Template::LocationField
+            "LocationField.new(:#{field.name})"
+          when Prism::Template::OptionalLocationField
+            "OptionalLocationField.new(:#{field.name})"
+          when Prism::Template::UInt8Field
+            "UInt8Field.new(:#{field.name})"
+          when Prism::Template::UInt32Field
+            "UInt32Field.new(:#{field.name})"
+          when Prism::Template::FlagsField
+            found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found }
+            "FlagsField.new(:#{field.name}, [#{found.values.map { |value| ":#{value.name.downcase}?" }.join(", ")}])"
+          when Prism::Template::IntegerField
+            "IntegerField.new(:#{field.name})"
+          when Prism::Template::DoubleField
+            "DoubleField.new(:#{field.name})"
+          else
+            raise field.class.name
+          end
+        }.join(", ") %>]
+      <%- end -%>
+      else
+        raise "Unknown node type: #{node.type.inspect}"
+      end
+    end
+  end
+end
