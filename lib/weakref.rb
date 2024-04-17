@@ -41,7 +41,7 @@ class WeakRef < Delegator
     super
   end
 
-  def __getobj__ # :nodoc:
+  def __getobj__(&_) # :nodoc:
     @@__map[self] or defined?(@delegate_sd_obj) ? @delegate_sd_obj :
       Kernel::raise(RefError, "Invalid Reference - probably recycled", Kernel::caller(2))
   end
