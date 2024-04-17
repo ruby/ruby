@@ -3008,7 +3008,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
         VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
 
         if (!NIL_P(m_loc)) {
-            rb_warning("the passed block for '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
+            rb_warning("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
                        name, RARRAY_AREF(m_loc, 0), RARRAY_AREF(m_loc, 1));
         }
         else {
