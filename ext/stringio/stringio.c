@@ -1623,10 +1623,9 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	if (len > rest) len = rest;
 	rb_str_resize(str, len);
 	MEMCPY(RSTRING_PTR(str), RSTRING_PTR(ptr->string) + ptr->pos, char, len);
-	if (binary)
-	    rb_enc_associate(str, rb_ascii8bit_encoding());
-	else
+	if (!binary) {
 	    rb_enc_copy(str, ptr->string);
+	}
     }
     ptr->pos += RSTRING_LEN(str);
     return str;
