@@ -274,11 +274,7 @@ class Gem::Installer
     run_pre_install_hooks
 
     # Set loaded_from to ensure extension_dir is correct
-    if @options[:install_as_default]
-      spec.loaded_from = default_spec_file
-    else
-      spec.loaded_from = spec_file
-    end
+    spec.loaded_from = spec_file
 
     # Completely remove any previous gem files
     FileUtils.rm_rf gem_dir
@@ -287,24 +283,17 @@ class Gem::Installer
     dir_mode = options[:dir_mode]
     FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
 
-    if @options[:install_as_default]
-      extract_bin
-      write_default_spec
-    else
-      extract_files
+    extract_files
 
-      build_extensions
-      write_build_info_file
-      run_post_build_hooks
-    end
+    build_extensions
+    write_build_info_file
+    run_post_build_hooks
 
     generate_bin
     generate_plugins
 
-    unless @options[:install_as_default]
-      write_spec
-      write_cache_file
-    end
+    write_spec
+    write_cache_file
 
     File.chmod(dir_mode, gem_dir) if dir_mode
 
@@ -889,11 +878,7 @@ class Gem::Installer
 
     ensure_loadable_spec
 
-    if options[:install_as_default]
-      Gem.ensure_default_gem_subdirectories gem_home
-    else
-      Gem.ensure_gem_subdirectories gem_home
-    end
+    Gem.ensure_gem_subdirectories gem_home
 
     return true if @force
 

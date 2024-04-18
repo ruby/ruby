@@ -161,7 +161,6 @@ module Gem::InstallUpdateOptions
     add_option(:Deprecated, "--default",
                "Add the gem's full specification to",
                "specifications/default and extract only its bin") do |v,_o|
-      options[:install_as_default] = v
     end
 
     add_option(:"Install/Update", "--explain",

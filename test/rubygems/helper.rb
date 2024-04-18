@@ -811,7 +811,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def install_default_gems(*specs)
     specs.each do |spec|
-      installer = Gem::Installer.for_spec(spec, install_as_default: true)
+      installer = Gem::Installer.for_spec(spec)
       installer.install
       Gem.register_default_spec(spec)
     end

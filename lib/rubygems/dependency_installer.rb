@@ -28,7 +28,6 @@ class Gem::DependencyInstaller
     wrappers: true,
     build_args: nil,
     build_docs_in_background: false,
-    install_as_default: false,
   }.freeze
 
   ##
@@ -87,7 +86,6 @@ class Gem::DependencyInstaller
     @wrappers            = options[:wrappers]
     @build_args          = options[:build_args]
     @build_docs_in_background = options[:build_docs_in_background]
-    @install_as_default = options[:install_as_default]
     @dir_mode = options[:dir_mode]
     @data_mode = options[:data_mode]
     @prog_mode = options[:prog_mode]
@@ -240,7 +238,6 @@ class Gem::DependencyInstaller
       user_install: @user_install,
       wrappers: @wrappers,
       build_root: @build_root,
-      install_as_default: @install_as_default,
       dir_mode: @dir_mode,
       data_mode: @data_mode,
       prog_mode: @prog_mode,

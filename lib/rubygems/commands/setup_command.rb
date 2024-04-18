@@ -398,7 +398,6 @@ By default, this RubyGems will install gem as:
           env_shebang: options[:env_shebang],
           format_executable: options[:format_executable],
           force: options[:force],
-          install_as_default: true,
           bin_dir: bin_dir,
           install_dir: default_dir,
           wrappers: true
