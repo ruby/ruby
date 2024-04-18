@@ -200,8 +200,8 @@ RSpec.describe "hook plugins" do
       gem "rack"
     G
 
-    ruby! <<-RUBY
-      require "#{lib}/bundler"
+    ruby <<-RUBY
+      require "bundler"
       Bundler.require
     RUBY
   end

@@ -574,6 +574,7 @@ module Bundler
         raise Gem::InvalidSpecificationException, error_message
       end.flatten
       Bundler.rubygems.load_plugin_files(path_plugin_files)
+      Bundler.rubygems.load_env_plugins
       @load_plugins_ran = true
     end
 

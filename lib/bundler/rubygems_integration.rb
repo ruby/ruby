@@ -156,6 +156,18 @@ module Bundler
       loaded_gem_paths.flatten
     end
 
+    def load_plugins
+      Gem.load_plugins
+    end
+
+    def load_plugin_files(plugin_files)
+      Gem.load_plugin_files(plugin_files)
+    end
+
+    def load_env_plugins
+      Gem.load_env_plugins
+    end
+
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
