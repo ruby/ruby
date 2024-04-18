@@ -662,6 +662,14 @@ module TestIRB
       assert_equal("irb(!ArgumentError)>", irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
+    def test_prompt_format
+      main = 'main'
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal('%% main %m %main %%m >', irb.send(:format_prompt, '%%%% %m %%m %%%m %%%%m %l', '>', 1, 1))
+      assert_equal('42,%i, 42,%3i,042,%03i', irb.send(:format_prompt, '%i,%%i,%3i,%%3i,%03i,%%03i', nil, 42, 1))
+      assert_equal('42,%n, 42,%3n,042,%03n', irb.send(:format_prompt, '%n,%%n,%3n,%%3n,%03n,%%03n', nil, 1, 42))
+    end
+
     def test_lineno
       input = TestInputMethod.new([
         "\n",

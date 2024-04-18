@@ -1457,7 +1457,7 @@ module IRB
     end
 
     def format_prompt(format, ltype, indent, line_no) # :nodoc:
-      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
+      format.gsub(/%([0-9]+)?([a-zA-Z%])/) do
         case $2
         when "N"
           @context.irb_name
@@ -1490,7 +1490,7 @@ module IRB
             line_no.to_s
           end
         when "%"
-          "%"
+          "%" unless $1
         end
       end
     end
