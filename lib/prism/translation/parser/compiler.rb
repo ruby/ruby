@@ -1535,19 +1535,29 @@ module Prism
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
           else
-            parts = if node.content.lines.count <= 1 || node.unescaped.lines.count <= 1
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
-            else
-              start_offset = node.content_loc.start_offset
+            content_lines = node.content.lines
+            unescaped_lines = node.unescaped.lines
 
-              [node.content.lines, node.unescaped.lines].transpose.map do |content_line, unescaped_line|
-                end_offset = start_offset + content_line.length
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
+            parts =
+              if content_lines.length <= 1 || unescaped_lines.length <= 1
+                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+              elsif content_lines.length != unescaped_lines.length
+                # This occurs when we have line continuations in the string. We
+                # need to come back and fix this, but for now this stops the
+                # code from breaking when we encounter it because of trying to
+                # transpose arrays of different lengths.
+                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+              else
+                start_offset = node.content_loc.start_offset
 
-                builder.string_internal([unescaped_line, offsets])
+                [content_lines, unescaped_lines].transpose.map do |content_line, unescaped_line|
+                  end_offset = start_offset + content_line.length
+                  offsets = srange_offsets(start_offset, end_offset)
+                  start_offset = end_offset
+
+                  builder.string_internal([unescaped_line, offsets])
+                end
               end
-            end
 
             builder.string_compose(
               token(node.opening_loc),
