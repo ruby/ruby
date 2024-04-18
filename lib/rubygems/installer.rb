@@ -398,12 +398,18 @@ class Gem::Installer
     File.join gem_home, "specifications", "#{spec.full_name}.gemspec"
   end
 
+  def default_spec_dir
+    dir = File.join(gem_home, "specifications", "default")
+    FileUtils.mkdir_p dir
+    dir
+  end
+
   ##
   # The location of the default spec file for default gems.
   #
 
   def default_spec_file
-    File.join gem_home, "specifications", "default", "#{spec.full_name}.gemspec"
+    File.join default_spec_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
