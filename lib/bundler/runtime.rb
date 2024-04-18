@@ -86,6 +86,8 @@ module Bundler
       end
 
       Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE_ALL, dependencies)
+
+      dependencies
     end
 
     def self.definition_method(meth)
