@@ -99,7 +99,7 @@ module TestIRB
         "foo %i[bar]" => "foo #{YELLOW}%i[#{CLEAR}#{YELLOW}bar#{CLEAR}#{YELLOW}]#{CLEAR}",
         "foo :@bar, baz, :@@qux, :$quux" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz, #{YELLOW}:#{CLEAR}#{YELLOW}@@qux#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}$quux#{CLEAR}",
         "`echo`" => "#{RED}#{BOLD}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}#{BOLD}`#{CLEAR}",
-        "\t" => "\t", # not ^I
+        "\t" => Reline::Unicode.escape_for_print("\t") == '  ' ? '  ' : "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
         "__END__" => "#{GREEN}__END__#{CLEAR}",
