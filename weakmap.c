@@ -586,7 +586,7 @@ wmap_size(VALUE self)
  * the key and the object as the value. This means that the key is of the type
  * `VALUE *` while the value is of the type `VALUE`.
  *
- * The object is not not directly stored as keys in the table because
+ * The object is not directly stored as keys in the table because
  * `rb_gc_mark_weak` requires a pointer to the memory location to overwrite
  * when the object is reclaimed. Using a pointer into the ST table entry is not
  * safe because the pointer can change when the ST table is resized.

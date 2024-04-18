@@ -1418,7 +1418,7 @@ fn gen_putobject(
     Some(KeepCompiling)
 }
 
-/// Combine `putobject` and and `opt_ltlt` together if profitable, for example when
+/// Combine `putobject` and `opt_ltlt` together if profitable, for example when
 /// left shifting an integer by a constant amount.
 fn fuse_putobject_opt_ltlt(
     jit: &mut JITState,
