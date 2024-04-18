@@ -184,7 +184,7 @@ module Bundler
     #    Bundler.require(:test)   # requires second_gem
     #
     def require(*groups)
-      Bundler.load_plugins
+      load_plugins
       setup(*groups).require(*groups)
     end
 
