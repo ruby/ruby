@@ -60,6 +60,44 @@ class Gem::Command
   end
 end
 
+class Gem::Installer
+  # Copy from Gem::Installer#install with install_as_default option from old version
+  def install_default_gem
+    pre_install_checks
+
+    run_pre_install_hooks
+
+    spec.loaded_from = default_spec_file
+
+    FileUtils.rm_rf gem_dir
+    FileUtils.rm_rf spec.extension_dir
+
+    dir_mode = options[:dir_mode]
+    FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
+
+    extract_bin
+    write_default_spec
+
+    generate_bin
+    generate_plugins
+
+    File.chmod(dir_mode, gem_dir) if dir_mode
+
+    say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+
+    Gem::Specification.add_spec(spec)
+
+    load_plugin
+
+    run_post_install_hooks
+
+    spec
+  rescue Errno::EACCES => e
+    # Permission denied - /path/to/foo
+    raise Gem::FilePermissionError, e.message.split(" - ").last
+  end
+end
+
 ##
 # RubyGemTestCase provides a variety of methods for testing rubygems and
 # gem-related behavior in a sandbox.  Through RubyGemTestCase you can install
@@ -812,7 +850,7 @@ class Gem::TestCase < Test::Unit::TestCase
   def install_default_gems(*specs)
     specs.each do |spec|
       installer = Gem::Installer.for_spec(spec)
-      installer.install
+      installer.install_default_gem
       Gem.register_default_spec(spec)
     end
   end
