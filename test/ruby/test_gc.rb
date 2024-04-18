@@ -70,7 +70,7 @@ class TestGc < Test::Unit::TestCase
     assert_operator(minor_count, :<=, GC.stat[:minor_gc_count])
     assert_nil(GC.start)
   ensure
-    GC.enable
+    GC.enable_major
     GC.start
   end
 

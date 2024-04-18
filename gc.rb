@@ -83,6 +83,20 @@ module GC
   end
 
   #  call-seq:
+  #     GC.enable_major    -> true or false
+  #
+  #  Enables major garbage collection, returning +true+ if garbage
+  #  collection was previously disabled.
+  #
+  #     GC.disable_major   #=> false
+  #     GC.enable_major    #=> true
+  #     GC.enable_major    #=> false
+  #
+  def self.enable_major
+    Primitive.gc_enable_major
+  end
+
+  #  call-seq:
   #     GC.needs_major?    -> true or false, nil
   #
   #  Used in conjunction with `GC.disable_major`. If Major GC's are disabled,
