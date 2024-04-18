@@ -2006,9 +2006,6 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
     if (! vm_cc_markable(cc)) {
         return;
     }
-    else if (! vm_ci_markable(ci)) {
-        return;
-    }
 
     if (UNLIKELY(ccs->len == ccs->capa)) {
         if (ccs->capa == 0) {
