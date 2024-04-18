@@ -717,7 +717,6 @@ enum {
     BITS_SIZE = sizeof(bits_t),
     BITS_BITLENGTH = ( BITS_SIZE * CHAR_BIT )
 };
-#define popcount_bits rb_popcount_intptr
 
 struct heap_page_header {
     struct heap_page *page;
