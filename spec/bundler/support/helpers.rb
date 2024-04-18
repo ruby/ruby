@@ -333,9 +333,20 @@ module Spec
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
       args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
-      args += " --default" if default
 
       gem_command "install #{args} '#{path}'"
+
+      if default
+        gem = Pathname.new(path).basename.to_s.match(/(.*)\.gem/)[1]
+
+        # Revert Gem::Installer#write_spec and apply Gem::Installer#write_default_spec
+        FileUtils.mkdir_p File.join(install_dir, "specifications", "default")
+        File.rename File.join(install_dir, "specifications", gem + ".gemspec"),
+          File.join(install_dir, "specifications", "default", gem + ".gemspec")
+
+        # Revert Gem::Installer#write_cache_file
+        File.delete File.join(install_dir, "cache", gem + ".gem")
+      end
     end
 
     def with_built_bundler(version = nil, opts = {}, &block)
