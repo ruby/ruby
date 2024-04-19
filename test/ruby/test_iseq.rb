@@ -850,4 +850,11 @@ class TestISeq < Test::Unit::TestCase
       RubyVM::InstructionSequence.compile_prism(Object.new)
     end
   end
+
+  def test_load_from_binary_only_accepts_string_param
+    assert_raise(TypeError) do
+      var_0 = 0
+      RubyVM::InstructionSequence.load_from_binary(var_0)
+    end
+  end
 end
