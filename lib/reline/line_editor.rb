@@ -880,10 +880,12 @@ class Reline::LineEditor
           @completion_state = CompletionState::PERFECT_MATCH
         else
           @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
+          complete(list, true) if @config.show_all_if_ambiguous
         end
         @perfect_matched = completed
       else
         @completion_state = CompletionState::MENU
+        complete(list, true) if @config.show_all_if_ambiguous
       end
       if not just_show_list and target < completed
         @buffer_of_lines[@line_index] = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: @encoding)

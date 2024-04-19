@@ -1006,6 +1006,47 @@ begin
       EOC
     end
 
+    def test_completion_menu_is_displayed_horizontally
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("S\t\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+        ScriptError  String
+        Signal       SyntaxError
+      EOC
+    end
+
+    def test_show_all_if_ambiguous_on
+      write_inputrc <<~LINES
+        set show-all-if-ambiguous on
+      LINES
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("S\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+        ScriptError  String
+        Signal       SyntaxError
+      EOC
+    end
+
+    def test_show_all_if_ambiguous_on_and_menu_with_perfect_match
+      write_inputrc <<~LINES
+        set show-all-if-ambiguous on
+      LINES
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete-menu-with-perfect-match}, startup_message: 'Multiline REPL.')
+      write("a\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> abs
+        abs   abs2
+      EOC
+    end
+
     def test_simple_dialog
       iterate_over_face_configs do |config_name, config_file|
         start_terminal(20, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
