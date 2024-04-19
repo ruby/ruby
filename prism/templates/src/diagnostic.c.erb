@@ -216,6 +216,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_INSTANCE_VARIABLE_BARE]             = { "'@' without identifiers is not allowed as an instance variable name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_BLOCK_EXIT]                 = { "Invalid %s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_INVALID_LOCAL_VARIABLE_READ]        = { "identifier %.*s is not valid to get", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_INVALID_LOCAL_VARIABLE_WRITE]       = { "identifier %.*s is not valid to set", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_NUMBER_DECIMAL]             = { "invalid decimal number", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_NUMBER_HEXADECIMAL]         = { "invalid hexadecimal number", PM_ERROR_LEVEL_SYNTAX },
@@ -289,6 +291,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PATTERN_HASH_KEY]                   = { "expected a key in the hash pattern", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY_DUPLICATE]         = { "duplicated key name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_HASH_KEY_LABEL]             = { "expected a label as the key in the hash pattern", PM_ERROR_LEVEL_SYNTAX }, // TODO // THIS // AND // ABOVE // IS WEIRD
+    [PM_ERR_PATTERN_HASH_KEY_LOCALS]            = { "key must be valid as local variables", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_IDENT_AFTER_HROCKET]        = { "expected an identifier after the `=>` operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_LABEL_AFTER_COMMA]          = { "expected a label after the `,` in the hash pattern", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PATTERN_REST]                       = { "unexpected rest pattern", PM_ERROR_LEVEL_SYNTAX },

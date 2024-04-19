@@ -13234,8 +13234,14 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
                         pm_token_t constant = { .type = PM_TOKEN_CONSTANT, .start = label.start, .end = label.end - 1 };
                         value = (pm_node_t *) pm_constant_read_node_create(parser, &constant);
                     } else {
-                        int depth = pm_parser_local_depth(parser, &((pm_token_t) { .type = PM_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 }));
+                        int depth = -1;
                         pm_token_t identifier = { .type = PM_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 };
+
+                        if (identifier.end[-1] == '!' || identifier.end[-1] == '?') {
+                            PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, identifier, PM_ERR_INVALID_LOCAL_VARIABLE_READ);
+                        } else {
+                            depth = pm_parser_local_depth(parser, &identifier);
+                        }
 
                         if (depth == -1) {
                             value = (pm_node_t *) pm_call_node_variable_call_create(parser, &identifier);
@@ -15643,8 +15649,15 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
     const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
     pm_constant_id_t constant_id = pm_parser_constant_id_location(parser, value_loc->start, value_loc->end);
 
-    int depth;
-    if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
+    int depth = -1;
+    if (value_loc->end[-1] == '!' || value_loc->end[-1] == '?') {
+        pm_parser_err(parser, key->base.location.start, key->base.location.end, PM_ERR_PATTERN_HASH_KEY_LOCALS);
+        PM_PARSER_ERR_LOCATION_FORMAT(parser, value_loc, PM_ERR_INVALID_LOCAL_VARIABLE_WRITE, (int) (value_loc->end - value_loc->start), (const char *) value_loc->start);
+    } else {
+        depth = pm_parser_local_depth_constant_id(parser, constant_id);
+    }
+
+    if (depth == -1) {
         pm_parser_local_add(parser, constant_id, value_loc->start, value_loc->end, 0);
     }
 
