@@ -6104,11 +6104,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words_sep	: ' ' {}
-                | words_sep ' '
-                ;
-
-words		: tWORDS_BEG words_sep word_list tSTRING_END
+words		: tWORDS_BEG ' '+ word_list tSTRING_END
                     {
                         $$ = make_list($3, &@$);
                     /*% ripper: array!($:3) %*/
@@ -6120,7 +6116,7 @@ word_list	: /* none */
                         $$ = 0;
                     /*% ripper: words_new! %*/
                     }
-                | word_list word words_sep
+                | word_list word ' '+
                     {
                         $$ = list_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: words_add!($:1, $:2) %*/
@@ -6136,7 +6132,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG words_sep symbol_list tSTRING_END
+symbols 	: tSYMBOLS_BEG ' '+ symbol_list tSTRING_END
                     {
                         $$ = make_list($3, &@$);
                     /*% ripper: array!($:3) %*/
@@ -6148,21 +6144,21 @@ symbol_list	: /* none */
                         $$ = 0;
                     /*% ripper: symbols_new! %*/
                     }
-                | symbol_list word words_sep
+                | symbol_list word ' '+
                     {
                         $$ = symbol_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
                 ;
 
-qwords		: tQWORDS_BEG words_sep qword_list tSTRING_END
+qwords		: tQWORDS_BEG ' '+ qword_list tSTRING_END
                     {
                         $$ = make_list($3, &@$);
                     /*% ripper: array!($:3) %*/
                     }
                 ;
 
-qsymbols	: tQSYMBOLS_BEG words_sep qsym_list tSTRING_END
+qsymbols	: tQSYMBOLS_BEG ' '+ qsym_list tSTRING_END
                     {
                         $$ = make_list($3, &@$);
                     /*% ripper: array!($:3) %*/
@@ -6174,7 +6170,7 @@ qword_list	: /* none */
                         $$ = 0;
                     /*% ripper: qwords_new! %*/
                     }
-                | qword_list tSTRING_CONTENT words_sep
+                | qword_list tSTRING_CONTENT ' '+
                     {
                         $$ = list_append(p, $1, $2);
                     /*% ripper: qwords_add!($:1, $:2) %*/
@@ -6186,7 +6182,7 @@ qsym_list	: /* none */
                         $$ = 0;
                     /*% ripper: qsymbols_new! %*/
                     }
-                | qsym_list tSTRING_CONTENT words_sep
+                | qsym_list tSTRING_CONTENT ' '+
                     {
                         $$ = symbol_append(p, $1, $2);
                     /*% ripper: qsymbols_add!($:1, $:2) %*/
