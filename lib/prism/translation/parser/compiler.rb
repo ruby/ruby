@@ -1030,6 +1030,12 @@ module Prism
           end
         end
 
+        # -> { it }
+        # ^^^^^^^^^
+        def visit_it_parameters_node(node)
+          builder.args(nil, [], nil, false)
+        end
+
         # foo(bar: baz)
         #     ^^^^^^^^
         def visit_keyword_hash_node(node)
@@ -1052,13 +1058,14 @@ module Prism
         # ^^^^^
         def visit_lambda_node(node)
           parameters = node.parameters
+          implicit_parameters = parameters.is_a?(NumberedParametersNode) || parameters.is_a?(ItParametersNode)
 
           builder.block(
             builder.call_lambda(token(node.operator_loc)),
             [node.opening, srange(node.opening_loc)],
             if parameters.nil?
               builder.args(nil, [], nil, false)
-            elsif node.parameters.is_a?(NumberedParametersNode)
+            elsif implicit_parameters
               visit(node.parameters)
             else
               builder.args(
@@ -1068,7 +1075,7 @@ module Prism
                 false
               )
             end,
-            node.body&.accept(copy_compiler(forwarding: parameters.is_a?(NumberedParametersNode) ? [] : find_forwarding(parameters&.parameters))),
+            node.body&.accept(copy_compiler(forwarding: implicit_parameters ? [] : find_forwarding(parameters&.parameters))),
             [node.closing, srange(node.closing_loc)]
           )
         end
@@ -1076,7 +1083,14 @@ module Prism
         # foo
         # ^^^
         def visit_local_variable_read_node(node)
-          builder.ident([node.name, srange(node.location)]).updated(:lvar)
+          name = node.name
+
+          # This is just a guess. parser doesn't have support for the implicit
+          # `it` variable yet, so we'll probably have to visit this once it
+          # does.
+          name = :it if name == :"0it"
+
+          builder.ident([name, srange(node.location)]).updated(:lvar)
         end
 
         # foo = 1
@@ -1875,13 +1889,14 @@ module Prism
         def visit_block(call, block)
           if block
             parameters = block.parameters
+            implicit_parameters = parameters.is_a?(NumberedParametersNode) || parameters.is_a?(ItParametersNode)
 
             builder.block(
               call,
               token(block.opening_loc),
               if parameters.nil?
                 builder.args(nil, [], nil, false)
-              elsif parameters.is_a?(NumberedParametersNode)
+              elsif implicit_parameters
                 visit(parameters)
               else
                 builder.args(
@@ -1896,7 +1911,7 @@ module Prism
                   false
                 )
               end,
-              block.body&.accept(copy_compiler(forwarding: parameters.is_a?(NumberedParametersNode) ? [] : find_forwarding(parameters&.parameters))),
+              block.body&.accept(copy_compiler(forwarding: implicit_parameters ? [] : find_forwarding(parameters&.parameters))),
               token(block.closing_loc)
             )
           else
