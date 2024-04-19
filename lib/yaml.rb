@@ -2,7 +2,12 @@
 
 begin
   require 'psych'
-rescue LoadError
+rescue LoadError => ex
+  # Skip warning message concerning missing yaml dependency as LoadError wasn't
+  # triggered due to a missing dependency but because of a conflicting version
+  # which was already activated.
+  raise if ex.message.match?(/already activated/)
+
   case RUBY_ENGINE
   when 'jruby'
     warn "The Psych YAML extension failed to load.\n" \
