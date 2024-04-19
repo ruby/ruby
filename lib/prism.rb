@@ -37,7 +37,7 @@ module Prism
   private_constant :LexRipper
 
   # :call-seq:
-  #   Prism::lex_compat(source, **options) -> ParseResult
+  #   Prism::lex_compat(source, **options) -> LexCompat::Result
   #
   # Returns a parse result whose value is an array of tokens that closely
   # resembles the return value of Ripper::lex. The main difference is that the

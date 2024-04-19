@@ -143,7 +143,7 @@ module Prism
           length = load_varuint
           lex_state = load_varuint
           location = Location.new(@source, start, length)
-          tokens << [Prism::Token.new(source, type, location.slice, location), lex_state]
+          tokens << [Token.new(source, type, location.slice, location), lex_state]
         end
 
         tokens
@@ -158,7 +158,7 @@ module Prism
         tokens.each { |token,| token.value.force_encoding(encoding) }
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        Prism::ParseResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
+        LexResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       def load_nodes
@@ -177,7 +177,7 @@ module Prism
 
       def load_result
         node, comments, magic_comments, data_loc, errors, warnings = load_nodes
-        Prism::ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
+        ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       private
