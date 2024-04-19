@@ -4261,6 +4261,12 @@ Init_BareVM(void)
     vm->constant_cache = rb_id_table_create(0);
     vm->unused_block_warning_table = st_init_numtable();
 
+    // TODO: remove before Ruby 3.4.0 release
+    const char *s = getenv("RUBY_TRY_UNUSED_BLOCK_WARNING_STRICT");
+    if (s && strcmp(s, "1") == 0) {
+        vm->unused_block_warning_strict = true;
+    }
+
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
     th->vm = vm;
