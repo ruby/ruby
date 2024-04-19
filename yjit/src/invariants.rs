@@ -59,11 +59,6 @@ pub struct Invariants {
     /// there has been a singleton class for the class after boot, so you cannot
     /// assume no singleton class going forward.
     no_singleton_classes: HashMap<VALUE, HashSet<BlockRef>>,
-
-    /// A map from an ISEQ to a set of blocks that assume base pointer is equal
-    /// to environment pointer. When the set is empty, it means that EP has been
-    /// escaped in the ISEQ.
-    no_ep_escape_iseqs: HashMap<IseqPtr, HashSet<BlockRef>>,
 }
 
 /// Private singleton instance of the invariants global struct.
@@ -81,7 +76,6 @@ impl Invariants {
                 constant_state_blocks: HashMap::new(),
                 block_constant_states: HashMap::new(),
                 no_singleton_classes: HashMap::new(),
-                no_ep_escape_iseqs: HashMap::new(),
             });
         }
     }
@@ -157,23 +151,6 @@ pub fn has_singleton_class_of(klass: VALUE) -> bool {
     Invariants::get_instance()
         .no_singleton_classes
         .get(&klass)
-        .map_or(false, |blocks| blocks.is_empty())
-}
-
-/// Track that a block will assume that base pointer is equal to environment pointer.
-pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
-    Invariants::get_instance()
-        .no_ep_escape_iseqs
-        .entry(iseq)
-        .or_default()
-        .insert(uninit_block);
-}
-
-/// Returns true if a given ISEQ has previously escaped an environment.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
-    Invariants::get_instance()
-        .no_ep_escape_iseqs
-        .get(&iseq)
         .map_or(false, |blocks| blocks.is_empty())
 }
 
@@ -443,10 +420,6 @@ pub fn block_assumptions_free(blockref: BlockRef) {
     for (_, blocks) in invariants.no_singleton_classes.iter_mut() {
         blocks.remove(&blockref);
     }
-    // Remove tracking for blocks assuming EP doesn't escape
-    for (_, blocks) in invariants.no_ep_escape_iseqs.iter_mut() {
-        blocks.remove(&blockref);
-    }
 }
 
 /// Callback from the opt_setinlinecache instruction in the interpreter.
@@ -538,34 +511,6 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
                 // Let has_singleton_class_of() return true for this class
                 no_singleton_classes.insert(klass, HashSet::new());
             }
-        }
-    }
-}
-
-/// Invalidate blocks for a given ISEQ that assumes environment pointer is
-/// equal to base pointer.
-#[no_mangle]
-pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
-    // Skip tracking EP escapes on boot. We don't need to invalidate anything during boot.
-    if unsafe { INVARIANTS.is_none() } {
-        return;
-    }
-
-    // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
-    // associated to the ISEQ.
-    let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
-    match no_ep_escape_iseqs.get_mut(&iseq) {
-        Some(blocks) => {
-            // Invalidate existing blocks and let jit.ep_is_bp()
-            // return true when they are compiled again
-            for block in mem::take(blocks) {
-                invalidate_block_version(&block);
-                incr_counter!(invalidate_no_singleton_class);
-            }
-        }
-        None => {
-            // Let jit.ep_is_bp() return false for this ISEQ
-            no_ep_escape_iseqs.insert(iseq, HashSet::new());
         }
     }
 }

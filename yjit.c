@@ -629,12 +629,6 @@ rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
     return iseq->body->stack_max;
 }
 
-enum rb_iseq_type
-rb_get_iseq_body_type(const rb_iseq_t *iseq)
-{
-    return iseq->body->type;
-}
-
 bool
 rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
 {
