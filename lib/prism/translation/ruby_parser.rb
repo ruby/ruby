@@ -805,17 +805,29 @@ module Prism
         # if /foo #{bar}/ then end
         #    ^^^^^^^^^^^^
         def visit_interpolated_match_last_line_node(node)
-          s(node, :match, s(node, :dregx).concat(visit_interpolated_parts(node.parts)))
+          parts = visit_interpolated_parts(node.parts)
+          regexp =
+            if parts.length == 1
+              s(node, :lit, Regexp.new(parts.first, node.options))
+            else
+              s(node, :dregx).concat(parts).tap do |result|
+                options = node.options
+                result << options if options != 0
+              end
+            end
+
+          s(node, :match, regexp)
         end
 
         # /foo #{bar}/
         # ^^^^^^^^^^^^
         def visit_interpolated_regular_expression_node(node)
-          if node.parts.all? { |part| part.is_a?(StringNode) || (part.is_a?(EmbeddedStatementsNode) && part.statements&.body&.length == 1 && part.statements.body.first.is_a?(StringNode)) }
-            unescaped = node.parts.map { |part| part.is_a?(StringNode) ? part.unescaped : part.statements.body.first.unescaped }.join
-            s(node, :lit, Regexp.new(unescaped, node.options))
+          parts = visit_interpolated_parts(node.parts)
+
+          if parts.length == 1
+            s(node, :lit, Regexp.new(parts.first, node.options))
           else
-            s(node, :dregx).concat(visit_interpolated_parts(node.parts)).tap do |result|
+            s(node, :dregx).concat(parts).tap do |result|
               options = node.options
               result << options if options != 0
             end
@@ -825,45 +837,71 @@ module Prism
         # "foo #{bar}"
         # ^^^^^^^^^^^^
         def visit_interpolated_string_node(node)
-          if (node.parts.all? { |part| part.is_a?(StringNode) || (part.is_a?(EmbeddedStatementsNode) && part.statements&.body&.length == 1 && part.statements.body.first.is_a?(StringNode)) }) ||
-             (node.opening.nil? && node.parts.all? { |part| part.is_a?(StringNode) && !part.opening_loc.nil? })
-             unescaped = node.parts.map { |part| part.is_a?(StringNode) ? part.unescaped : part.statements.body.first.unescaped }.join
-            s(node, :str, unescaped)
-          else
-            s(node, :dstr).concat(visit_interpolated_parts(node.parts))
-          end
+          parts = visit_interpolated_parts(node.parts)
+          parts.length == 1 ? s(node, :str, parts.first) : s(node, :dstr).concat(parts)
         end
 
         # :"foo #{bar}"
         # ^^^^^^^^^^^^^
         def visit_interpolated_symbol_node(node)
-          if node.parts.all? { |part| part.is_a?(StringNode) || (part.is_a?(EmbeddedStatementsNode) && part.statements&.body&.length == 1 && part.statements.body.first.is_a?(StringNode)) }
-            unescaped = node.parts.map { |part| part.is_a?(StringNode) ? part.unescaped : part.statements.body.first.unescaped }.join
-            s(node, :lit, unescaped.to_sym)
-          else
-            s(node, :dsym).concat(visit_interpolated_parts(node.parts))
-          end
+          parts = visit_interpolated_parts(node.parts)
+          parts.length == 1 ? s(node, :lit, parts.first.to_sym) : s(node, :dsym).concat(parts)
         end
 
         # `foo #{bar}`
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
-          children = visit_interpolated_parts(node.parts)
-          s(node.heredoc? ? node.parts.first : node, :dxstr).concat(children)
+          source = node.heredoc? ? node.parts.first : node
+          parts = visit_interpolated_parts(node.parts)
+          parts.length == 1 ? s(source, :xstr, parts.first) : s(source, :dxstr).concat(parts)
         end
 
         # Visit the interpolated content of the string-like node.
         private def visit_interpolated_parts(parts)
-          parts.each_with_object([]).with_index do |(part, results), index|
-            if index == 0
-              if part.is_a?(StringNode)
-                results << part.unescaped
+          visited = []
+          parts.each do |part|
+            result = visit(part)
+
+            if result[0] == :evstr && result[1]
+              if result[1][0] == :str
+                visited << result[1]
+              elsif result[1][0] == :dstr
+                visited.concat(result[1][1..-1])
               else
-                results << ""
-                results << visit(part)
+                visited << result
               end
             else
-              results << visit(part)
+              visited << result
+            end
+          end
+
+          state = :beginning #: :beginning | :string_content | :interpolated_content
+
+          visited.each_with_object([]) do |result, results|
+            case state
+            when :beginning
+              if result.is_a?(String)
+                results << result
+                state = :string_content
+              elsif result.is_a?(Array) && result[0] == :str
+                results << result[1]
+                state = :string_content
+              else
+                results << ""
+                results << result
+                state = :interpolated_content
+              end
+            when :string_content
+              if result.is_a?(String)
+                results[0] << result
+              elsif result.is_a?(Array) && result[0] == :str
+                results[0] << result[1]
+              else
+                results << result
+                state = :interpolated_content
+              end
+            else
+              results << result
             end
           end
         end
@@ -1297,7 +1335,7 @@ module Prism
         # __FILE__
         # ^^^^^^^^
         def visit_source_file_node(node)
-          s(node, :str, file)
+          s(node, :str, node.filepath)
         end
 
         # __LINE__
@@ -1498,7 +1536,7 @@ module Prism
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source), filepath)
+        translate(Prism.parse(source, filepath: filepath), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
