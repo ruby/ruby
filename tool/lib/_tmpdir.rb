@@ -31,23 +31,29 @@ END {
       filecolor = ->(st) {
         st.directory? ? "bold;blue" : st.symlink? ? "bold;cyan" : st.executable? ? "bold;green" : nil
       }
+      list_tree = ->(parent, indent = "  ") {
+        Dir.children(parent).each do |child|
+          path = File.join(parent, child)
+          st = File.lstat(path)
+          m = st.mode
+          m = [
+            (st.file? ? ?- : st.ftype[0]),
+            mode_inspect[m >> 6, (?s unless m & 04000 == 0)],
+            mode_inspect[m >> 3, (?s unless m & 02000 == 0)],
+            mode_inspect[m,      (?t unless m & 01000 == 0)],
+          ].join("")
+          warn [
+            indent, m, st.nlink, st.size, st.mtime,
+            colorize.decorate(child,  filecolor[st]),
+            (["->", colorize.cyan(File.readlink(path))] if st.symlink?),
+          ].compact.join(" ")
+          if st.directory?
+            list_tree[File.join(parent, child), indent + "  "]
+          end
+        end
+      }
       warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
-      Dir.children(tmpdir).each do |child|
-        path = File.join(tmpdir, child)
-        st = File.lstat(path)
-        m = st.mode
-        m = [
-          (st.file? ? ?- : st.ftype[0]),
-          mode_inspect[m >> 6, (?s unless m & 04000 == 0)],
-          mode_inspect[m >> 3, (?s unless m & 02000 == 0)],
-          mode_inspect[m,      (?t unless m & 01000 == 0)],
-        ].join("")
-        warn [
-          " ", m, st.nlink, st.size, st.mtime,
-          colorize.decorate(child,  filecolor[st]),
-          (["->", colorize.cyan(File.readlink(path))] if st.symlink?),
-        ].compact.join(" ")
-      end
+      list_tree[tmpdir]
       FileUtils.rm_rf(tmpdir)
     end
   end
