@@ -4,10 +4,15 @@ require_relative 'colorize'
 class Output
   attr_reader :path, :vpath
 
-  def initialize
-    @path = @timestamp = @ifchange = @color = nil
-    @overwrite = @create_only = false
-    @vpath = VPath.new
+  def initialize(path: nil, timestamp: nil, ifchange: nil, color: nil,
+                 overwrite: false, create_only: false, vpath: VPath.new)
+    @path = path
+    @timestamp = timestamp
+    @ifchange = ifchange
+    @color = color
+    @overwrite = overwrite
+    @create_only = create_only
+    @vpath = vpath
   end
 
   COLOR_WHEN = {
