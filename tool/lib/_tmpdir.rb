@@ -27,7 +27,7 @@ END {
         ]
       }
       filecolor = ->(st) {
-        st.directory? ? "bold;blue" : st.link? ? "bold;cyan" : st.executable? ? "bold;green" : nil
+        st.directory? ? "bold;blue" : st.symlink? ? "bold;cyan" : st.executable? ? "bold;green" : nil
       }
       warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
       Dir.children(tmpdir).each do |child|
