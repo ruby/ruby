@@ -2643,6 +2643,12 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
         branch.get_target_address(1).map(|addr| Target::CodePtr(addr)),
     );
 
+    // If the entire block is the branch and the block could be invalidated,
+    // we need to pad to ensure there is room for invalidation patching.
+    if branch.start_addr == block.start_addr && branch_terminates_block && block.entry_exit.is_some() {
+        asm.pad_inval_patch();
+    }
+
     // Rewrite the branch
     let old_write_pos = cb.get_write_pos();
     let old_dropped_bytes = cb.has_dropped_bytes();
