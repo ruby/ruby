@@ -411,7 +411,7 @@ configure-ext: $(EXTS_MK)
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(mflags) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
 	    EXTENCS="$(ENCOBJS)" BASERUBY="$(BASERUBY)" MINIRUBY="$(MINIRUBY)" \
-	    UPDATE_LIBRARIES=no $(EXTSTATIC)
+	    $(EXTSTATIC)
 	$(Q)$(MAKE) $(EXTS_NOTE)
 
 exts-note: $(EXTS_MK)
