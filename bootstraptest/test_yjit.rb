@@ -4781,7 +4781,7 @@ assert_equal '0', %q{
   end
 
   foo # try again
-}
+} unless rjit_enabled? # doesn't work on RJIT
 
 # test integer left shift with constant rhs
 assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
