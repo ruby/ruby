@@ -147,10 +147,6 @@ if MODULE_TYPE == :static
     Dir.mkdir 'enc'
   rescue Errno::EEXIST
   end
-  File.open("enc/encinit.c", "w") {|f|
-    f.puts "/* Automatically generated from enc/encinit.c.erb"
-    f.puts " * Do not edit."
-    f.puts " */"
-    f.puts tmp
-  }
+  require 'tool/lib/output'
+  Output.new(path: "enc/encinit.c", ifchange: true).write(tmp)
 end
