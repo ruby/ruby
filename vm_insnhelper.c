@@ -2973,6 +2973,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
 {
     rb_vm_t *vm = GET_VM();
     st_table *dup_check_table = vm->unused_block_warning_table;
+    st_data_t key;
 
     union {
         VALUE v;
@@ -2984,14 +2985,17 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     };
 
     // relax check
-    st_data_t key = (st_data_t)cme->def->original_id;
+    if (!vm->unused_block_warning_strict) {
+        key = (st_data_t)cme->def->original_id;
 
-    if (st_lookup(dup_check_table, key, NULL)) {
-        return;
+        if (st_lookup(dup_check_table, key, NULL)) {
+            return;
+        }
     }
 
     // strict check
     // make unique key from pc and me->def pointer
+    key = 0;
     for (int i=0; i<SIZEOF_VALUE; i++) {
         // fprintf(stderr, "k1:%3d k2:%3d\n", k1.b[i], k2.b[SIZEOF_VALUE-1-i]);
         key |= (st_data_t)(k1.b[i] ^ k2.b[SIZEOF_VALUE-1-i]) << (8 * i);
