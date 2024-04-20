@@ -1,5 +1,6 @@
 /* This is a wrapper for parse.y */
 
+#include "internal/parse.h"
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
 
@@ -18,7 +19,6 @@
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
-#include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
 #include "internal/string.h"
@@ -31,41 +31,6 @@
 #include "internal.h"
 #include "vm_core.h"
 #include "symbol.h"
-
-struct ruby_parser {
-    rb_parser_t *parser_params;
-};
-
-static void
-parser_mark(void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    rb_ruby_parser_mark(parser->parser_params);
-}
-
-static void
-parser_free(void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    rb_ruby_parser_free(parser->parser_params);
-}
-
-static size_t
-parser_memsize(const void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    return rb_ruby_parser_memsize(parser->parser_params);
-}
-
-static const rb_data_type_t ruby_parser_data_type = {
-    "parser",
-    {
-        parser_mark,
-        parser_free,
-        parser_memsize,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
 
 static int
 is_ascii_string2(VALUE str)
@@ -547,7 +512,44 @@ static const rb_parser_config_t rb_global_parser_config = {
     .static_id2sym = static_id2sym,
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
 };
+#endif
 
+struct ruby_parser {
+    rb_parser_t *parser_params;
+};
+
+static void
+parser_mark(void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    rb_ruby_parser_mark(parser->parser_params);
+}
+
+static void
+parser_free(void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    rb_ruby_parser_free(parser->parser_params);
+}
+
+static size_t
+parser_memsize(const void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    return rb_ruby_parser_memsize(parser->parser_params);
+}
+
+static const rb_data_type_t ruby_parser_data_type = {
+    "parser",
+    {
+        parser_mark,
+        parser_free,
+        parser_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+#ifdef UNIVERSAL_PARSER
 const rb_parser_config_t *
 rb_ruby_parser_config(void)
 {
@@ -565,6 +567,13 @@ rb_parser_params_new(void)
 {
     return rb_ruby_parser_new(&rb_global_parser_config);
 }
+#else
+rb_parser_t *
+rb_parser_params_new(void)
+{
+    return rb_ruby_parser_new();
+}
+#endif /* UNIVERSAL_PARSER */
 
 VALUE
 rb_parser_new(void)
@@ -726,7 +735,6 @@ rb_set_script_lines_for(VALUE vparser, VALUE path)
         rb_ruby_parser_set_script_lines(parser->parser_params);
     }
 }
-#endif
 
 VALUE
 rb_parser_build_script_lines_from(rb_parser_ary_t *lines)

@@ -16208,6 +16208,7 @@ ruby_parser.$(OBJEXT): $(top_srcdir)/internal/error.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/parse.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/re.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
