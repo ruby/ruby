@@ -88,7 +88,7 @@ module IRB
 
     def command_completions(preposing, target)
       if preposing.empty? && !target.empty?
-        IRB::ExtendCommandBundle.command_names.select { _1.start_with?(target) }
+        IRB::Command.command_names.select { _1.start_with?(target) }
       else
         []
       end

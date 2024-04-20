@@ -1120,7 +1120,7 @@ module IRB
 
       code.force_encoding(@context.io.encoding)
       if (command, arg = parse_command(code))
-        command_class = ExtendCommandBundle.load_command(command)
+        command_class = Command.load_command(command)
         Statement::Command.new(code, command_class, arg)
       else
         is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
@@ -1142,7 +1142,7 @@ module IRB
       # Check visibility
       public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
       private_method = !public_method && !!Kernel.instance_method(:method).bind_call(@context.main, command) rescue false
-      if ExtendCommandBundle.execute_as_command?(command, public_method: public_method, private_method: private_method)
+      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
         [command, arg]
       end
     end

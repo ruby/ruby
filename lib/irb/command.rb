@@ -18,12 +18,6 @@ module IRB # :nodoc:
       def register(name, command_class)
         @commands[name] = [command_class, []]
       end
-
-      # This API is for IRB's internal use only and may change at any time.
-      # Please do NOT use it.
-      def _register_with_aliases(name, command_class, *aliases)
-        @commands[name] = [command_class, aliases]
-      end
     end
   end
 end

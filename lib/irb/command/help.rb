@@ -11,7 +11,7 @@ module IRB
           if command_name.empty?
             help_message
           else
-            if command_class = ExtendCommandBundle.load_command(command_name)
+            if command_class = Command.load_command(command_name)
               command_class.help_message || command_class.description
             else
               "Can't find command `#{command_name}`. Please check the command name and try again.\n\n"
@@ -23,7 +23,7 @@ module IRB
       private
 
       def help_message
-        commands_info = IRB::ExtendCommandBundle.all_commands_info
+        commands_info = IRB::Command.all_commands_info
         commands_grouped_by_categories = commands_info.group_by { |cmd| cmd[:category] }
 
         user_aliases = irb_context.instance_variable_get(:@user_aliases)
