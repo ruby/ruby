@@ -1401,7 +1401,6 @@ typedef struct rb_parser_config_struct {
     double (*strtod)(const char *s00, char **se);
 
     /* Misc */
-    VALUE (*rbool)(VALUE);
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
     VALUE qnil;
