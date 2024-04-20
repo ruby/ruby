@@ -8,10 +8,8 @@ module IRB
       category "IRB"
       description "Exit the current process."
 
-      def execute(*)
+      def execute(_arg)
         throw :IRB_EXIT, true
-      rescue UncaughtThrowError
-        Kernel.exit!
       end
     end
   end

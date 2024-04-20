@@ -8,10 +8,8 @@ module IRB
       category "IRB"
       description "Exit the current irb session."
 
-      def execute(*)
+      def execute(_arg)
         IRB.irb_exit
-      rescue UncaughtThrowError
-        Kernel.exit
       end
     end
   end

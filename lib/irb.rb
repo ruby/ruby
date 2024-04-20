@@ -962,19 +962,25 @@ module IRB
       #
       # Irb#eval_input will simply return the input, and we need to pass it to the
       # debugger.
-      input = if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
-        # Previous IRB session's history has been saved when `Irb#run` is exited We need
-        # to make sure the saved history is not saved again by resetting the counter
-        context.io.reset_history_counter
+      input = nil
+      forced_exit = catch(:IRB_EXIT) do
+        if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
+          # Previous IRB session's history has been saved when `Irb#run` is exited We need
+          # to make sure the saved history is not saved again by resetting the counter
+          context.io.reset_history_counter
 
-        begin
-          eval_input
-        ensure
-          context.io.save_history
+          begin
+            input = eval_input
+          ensure
+            context.io.save_history
+          end
+        else
+          input = eval_input
         end
-      else
-        eval_input
+        false
       end
+
+      Kernel.exit if forced_exit
 
       if input&.include?("\n")
         @line_no += input.count("\n") - 1
