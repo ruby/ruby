@@ -250,12 +250,6 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     return RNODE_BLOCK(arg.succ_block)->nd_next;
 }
 
-static VALUE
-rbool(VALUE v)
-{
-    return RBOOL(v);
-}
-
 static int
 rtest(VALUE obj)
 {
@@ -499,7 +493,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .scan_digits = ruby_scan_digits,
     .strtod = ruby_strtod,
 
-    .rbool = rbool,
     .rtest = rtest,
     .nil_p = nil_p,
     .qnil = Qnil,

@@ -223,8 +223,6 @@
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
-#undef RBOOL
-#define RBOOL p->config->rbool
 #undef RTEST
 #define RTEST p->config->rtest
 #undef NIL_P
