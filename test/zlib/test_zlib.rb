@@ -801,7 +801,8 @@ if defined? Zlib
         gz.write "hi"
         gz.close
 
-        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+        tmpdir = Dir.mktmpdir("zlib_file_tmpfile")
+        File.open(tmpdir, File::RDWR | File::TMPFILE) do |io|
           io.write sio.string
           io.rewind
 
@@ -825,6 +826,8 @@ if defined? Zlib
         omit 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
         omit 'O_TMPFILE not supported (EOPNOTSUPP)'
+      ensure
+        Dir.rmdir(tmpdir) if tmpdir
       end
     end
   end
