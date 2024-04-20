@@ -29,15 +29,6 @@ static VALUE rb_eUncaughtThrow;
 static ID id_result, id_tag, id_value;
 #define id_mesg idMesg
 
-typedef enum call_type {
-    CALL_PUBLIC,
-    CALL_FCALL,
-    CALL_VCALL,
-    CALL_PUBLIC_KW,
-    CALL_FCALL_KW,
-    CALL_TYPE_MAX
-} call_type;
-
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const VALUE *argv);
 
@@ -403,61 +394,46 @@ NORETURN(static void uncallable_object(VALUE recv, ID mid));
 static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
-static const struct rb_callcache *
-cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
-{
-    const struct rb_callcache *cc = NULL;
-
-    RB_VM_LOCK_ENTER();
-    {
-        struct rb_class_cc_entries *ccs;
-        struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
-        VALUE ccs_data;
-
-        if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
-            // ok
-            ccs = (struct rb_class_cc_entries *)ccs_data;
-        }
-        else {
-            ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
-        }
-
-        for (int i=0; i<ccs->len; i++) {
-            cc = ccs->entries[i].cc;
-            if (vm_cc_cme(cc) == cme) {
-                break;
-            }
-            cc = NULL;
-        }
-
-        if (cc == NULL) {
-            const struct rb_callinfo *ci = vm_ci_new(mid, 0, argc, NULL); // TODO: proper ci
-            cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
-            METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
-            vm_ccs_push(klass, ccs, ci, cc);
-        }
-    }
-    RB_VM_LOCK_LEAVE();
-
-    return cc;
-}
-
 static VALUE
 gccct_hash(VALUE klass, ID mid)
 {
     return (klass >> 3) ^ (VALUE)mid;
 }
 
-NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index));
+NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index, call_type scope));
 
 static const struct rb_callcache *
-gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index)
+gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index, call_type scope)
 {
     const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
     const struct rb_callcache *cc;
+    int flags = 0;
+
+    switch(scope) {
+      case CALL_PUBLIC:
+        break;
+      case CALL_FCALL:
+        flags |= VM_CALL_FCALL;
+        break;
+      case CALL_VCALL:
+        flags |= VM_CALL_VCALL;
+        break;
+      case CALL_PUBLIC_KW:
+        flags |= VM_CALL_KWARG;
+        break;
+      case CALL_FCALL_KW:
+        flags |= (VM_CALL_KWARG | VM_CALL_FCALL);
+        break;
+    }
+
+    struct rb_call_data cd = {
+            .ci = &VM_CI_ON_STACK(mid, flags, argc, NULL),
+            .cc = NULL
+    };
 
     if (cme != NULL) {
-        cc = cc_new(klass, mid, argc, cme);
+        vm_search_method_slowpath0(vm->self, &cd, klass);
+        cc = cd.cc;
     }
     else {
         cc = NULL;
@@ -467,7 +443,7 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigne
 }
 
 static inline const struct rb_callcache *
-gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc)
+gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, call_type call_scope)
 {
     VALUE klass;
 
@@ -502,7 +478,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc)
     }
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
-    return gccct_method_search_slowpath(vm, klass, mid, argc, index);
+    return gccct_method_search_slowpath(vm, klass, mid, argc, index, call_scope);
 }
 
 /**
@@ -543,7 +519,7 @@ rb_call0(rb_execution_context_t *ec,
         break;
     }
 
-    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc);
+    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc, scope);
 
     if (scope == CALL_PUBLIC) {
         RB_DEBUG_COUNTER_INC(call0_public);
@@ -1060,7 +1036,7 @@ static inline VALUE
 rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
     rb_execution_context_t *ec = GET_EC();
-    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc);
+    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc, scope);
     VALUE self = ec->cfp->self;
 
     if (LIKELY(cc) &&

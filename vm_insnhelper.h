@@ -58,6 +58,14 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
     VM_REG_CFP = ec->cfp; \
 } while (0)
 
+typedef enum call_type {
+    CALL_PUBLIC,
+    CALL_FCALL,
+    CALL_VCALL,
+    CALL_PUBLIC_KW,
+    CALL_FCALL_KW
+} call_type;
+
 #if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
     VM_REGAN_PC = 0,

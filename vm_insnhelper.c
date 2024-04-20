@@ -2421,13 +2421,13 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 
 #undef EQ_UNREDEFINED_P
 
-static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc); // vm_eval.c
+static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, call_type scope); // vm_eval.c
 NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
 
 static VALUE
 opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
 {
-    const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, 1);
+    const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, 1, CALL_PUBLIC);
 
     if (cc && check_cfunc(vm_cc_cme(cc), rb_obj_equal)) {
         return RBOOL(recv == obj);
