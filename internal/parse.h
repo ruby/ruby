@@ -73,6 +73,11 @@ int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq
 
 RUBY_SYMBOL_EXPORT_END
 
+#ifndef UNIVERSAL_PARSER
+rb_parser_t *rb_ruby_parser_allocate(void);
+rb_parser_t *rb_ruby_parser_new(void);
+#endif
+
 #ifdef RIPPER
 void ripper_parser_mark(void *ptr);
 void ripper_parser_free(void *ptr);
