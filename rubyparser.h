@@ -1264,8 +1264,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
-    long (*array_len)(VALUE a);
-    VALUE (*array_aref)(VALUE, long);
 
     /* Symbol */
     ID (*make_temporary_id)(size_t n);
@@ -1404,7 +1402,6 @@ typedef struct rb_parser_config_struct {
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
     VALUE qnil;
-    VALUE qtrue;
     VALUE qfalse;
     VALUE (*eArgError)(void);
     int (*long2int)(long);

@@ -376,8 +376,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_push = rb_ary_push,
     .ary_new_from_args = rb_ary_new_from_args,
     .ary_unshift = rb_ary_unshift,
-    .array_len = rb_array_len,
-    .array_aref = RARRAY_AREF,
 
     .make_temporary_id = rb_make_temporary_id,
     .is_local_id = is_local_id2,
@@ -496,7 +494,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .rtest = rtest,
     .nil_p = nil_p,
     .qnil = Qnil,
-    .qtrue = Qtrue,
     .qfalse = Qfalse,
     .eArgError = arg_error,
     .long2int = rb_long2int,

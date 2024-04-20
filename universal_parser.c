@@ -95,9 +95,6 @@
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
-#undef RARRAY_LEN
-#define RARRAY_LEN           p->config->array_len
-#define RARRAY_AREF          p->config->array_aref
 
 #define rb_make_temporary_id     p->config->make_temporary_id
 #define is_local_id              p->config->is_local_id
@@ -229,8 +226,6 @@
 #define NIL_P p->config->nil_p
 #undef Qnil
 #define Qnil  p->config->qnil
-#undef Qtrue
-#define Qtrue p->config->qtrue
 #undef Qfalse
 #define Qfalse p->config->qfalse
 #define rb_eArgError p->config->eArgError()
