@@ -550,12 +550,6 @@ rb_ruby_parser_config(void)
 }
 
 rb_parser_t *
-rb_parser_params_allocate(void)
-{
-    return rb_ruby_parser_allocate(&rb_global_parser_config);
-}
-
-rb_parser_t *
 rb_parser_params_new(void)
 {
     return rb_ruby_parser_new(&rb_global_parser_config);
