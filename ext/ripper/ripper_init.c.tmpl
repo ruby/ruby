@@ -17,15 +17,40 @@
 
 ID id_warn, id_warning, id_gets, id_assoc;
 
+enum lex_type {
+    lex_type_str,
+    lex_type_io,
+    lex_type_generic,
+};
+
 struct ripper {
     rb_parser_t *p;
+    enum lex_type type;
+    union {
+       struct lex_pointer_string ptr_str;
+       VALUE val;
+    } data;
 };
 
 static void
 ripper_parser_mark2(void *ptr)
 {
     struct ripper *r = (struct ripper*)ptr;
-    if (r->p) ripper_parser_mark(r->p);
+    if (r->p) {
+        ripper_parser_mark(r->p);
+
+        switch (r->type) {
+            case lex_type_str:
+              rb_gc_mark(r->data.ptr_str.str);
+              break;
+            case lex_type_io:
+              rb_gc_mark(r->data.val);
+              break;
+            case lex_type_generic:
+              rb_gc_mark(r->data.val);
+              break;
+        }
+    }
 }
 
 static void
@@ -54,8 +79,9 @@ static const rb_data_type_t parser_data_type = {
 };
 
 static VALUE
-ripper_lex_get_generic(struct parser_params *p, VALUE src)
+ripper_lex_get_generic(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
+    VALUE src = (VALUE)input;
     VALUE line = rb_funcallv_public(src, id_gets, 0, 0);
     if (!NIL_P(line) && !RB_TYPE_P(line, T_STRING)) {
         rb_raise(rb_eTypeError,
@@ -79,9 +105,16 @@ ripper_compile_error(struct parser_params *p, const char *fmt, ...)
 }
 
 static VALUE
-ripper_lex_io_get(struct parser_params *p, VALUE src)
+ripper_lex_io_get(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
+    VALUE src = (VALUE)input;
     return rb_io_gets(src);
+}
+
+static VALUE
+ripper_lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
+{
+    return rb_parser_lex_get_str((struct lex_pointer_string *)input);
 }
 
 static VALUE
@@ -294,26 +327,38 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 static VALUE
 ripper_initialize(int argc, VALUE *argv, VALUE self)
 {
+    struct ripper *r;
     struct parser_params *p;
     VALUE src, fname, lineno;
-    VALUE (*gets)(struct parser_params*,VALUE);
-    VALUE input, sourcefile_string;
+    rb_parser_lex_gets_func *gets;
+    VALUE sourcefile_string;
     const char *sourcefile;
     int sourceline;
+    rb_parser_input_data input;
 
     p = ripper_parser_params(self, false);
+    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
     if (RB_TYPE_P(src, T_FILE)) {
         gets = ripper_lex_io_get;
+        r->type = lex_type_io;
+        r->data.val = src;
+        input = (rb_parser_input_data)src;
     }
     else if (rb_respond_to(src, id_gets)) {
         gets = ripper_lex_get_generic;
+        r->type = lex_type_generic;
+        r->data.val = src;
+        input = (rb_parser_input_data)src;
     }
     else {
         StringValue(src);
-        gets = rb_ruby_ripper_lex_get_str;
+        gets = ripper_lex_get_str;
+        r->type = lex_type_str;
+        r->data.ptr_str.str = src;
+        r->data.ptr_str.ptr = 0;
+        input = (rb_parser_input_data)&r->data.ptr_str;
     }
-    input = src;
     if (NIL_P(fname)) {
         fname = STR_NEW2("(ripper)");
         OBJ_FREEZE(fname);

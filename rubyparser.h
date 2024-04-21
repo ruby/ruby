@@ -73,6 +73,8 @@ enum rb_parser_shareability {
     rb_parser_shareable_everything,
 };
 
+typedef void* rb_parser_input_data;
+
 /*
  * AST Node
  */
@@ -1419,7 +1421,6 @@ typedef struct rb_parser_config_struct {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 void rb_ruby_parser_free(void *ptr);
-rb_ast_t* rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line);
 
 #ifdef UNIVERSAL_PARSER
 rb_parser_t *rb_ruby_parser_allocate(const rb_parser_config_t *config);
