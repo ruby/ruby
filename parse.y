@@ -1775,9 +1775,6 @@ endless_method_name(struct parser_params *p, ID mid, const YYLTYPE *loc)
         local_push(p, 0); \
     } while (0)
 
-#define Qnone 0
-#define Qnull 0
-
 #ifndef RIPPER
 # define ifndef_ripper(x) (x)
 #else
@@ -3492,7 +3489,7 @@ command		: fcall command_args       %prec tLOWEST
                     }
                 | primary_value call_op operation2 command_args	%prec tLOWEST
                     {
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, Qnull, &@3, &@$);
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, 0, &@3, &@$);
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value call_op operation2 command_args cmd_brace_block
@@ -3502,7 +3499,7 @@ command		: fcall command_args       %prec tLOWEST
                     }
                 | primary_value tCOLON2 operation2 command_args	%prec tLOWEST
                     {
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, Qnull, &@3, &@$);
+                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, 0, &@3, &@$);
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args cmd_brace_block
@@ -3513,7 +3510,7 @@ command		: fcall command_args       %prec tLOWEST
                 | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
                     {
                         set_embraced_location($5, &@4, &@6);
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, Qnull, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $5, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
                 | keyword_super command_args
@@ -4219,7 +4216,7 @@ paren_args	: '(' opt_call_args rparen
                 | '(' args ',' args_forward rparen
                     {
                         if (!check_forwarding_args(p)) {
-                            $$ = Qnone;
+                            $$ = 0;
                         }
                         else {
                             $$ = new_args_forward_call(p, $2, &@4, &@$);
@@ -4229,7 +4226,7 @@ paren_args	: '(' opt_call_args rparen
                 | '(' args_forward rparen
                     {
                         if (!check_forwarding_args(p)) {
-                            $$ = Qnone;
+                            $$ = 0;
                         }
                         else {
                             $$ = new_args_forward_call(p, 0, &@2, &@$);
@@ -5034,17 +5031,17 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
                     }
                 | f_block_kwarg opt_f_block_arg
                     {
-                        $$ = new_args_tail(p, $1, Qnone, $2, &@1);
+                        $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
                     }
                 | f_any_kwrest opt_f_block_arg
                     {
-                        $$ = new_args_tail(p, Qnone, $1, $2, &@1);
+                        $$ = new_args_tail(p, 0, $1, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, get_value($:1), get_value($:2)); %*/
                     }
                 | f_block_arg
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
+                        $$ = new_args_tail(p, 0, 0, $1, &@1);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, get_value($:1)); %*/
                     }
                 ;
@@ -5056,7 +5053,7 @@ opt_block_args_tail : ',' block_args_tail
                     }
                 | /* none */
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@0);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
                     }
                 ;
@@ -5071,7 +5068,7 @@ excessed_comma	: ','
 
 block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, $3, $5, Qnone, $6, &@$);
+                        $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), Qnil, get_value($:6)) %*/
                     }
                 | f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
@@ -5081,68 +5078,68 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
                     }
                 | f_arg ',' f_block_optarg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, $3, Qnone, Qnone, $4, &@$);
+                        $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, Qnil, get_value($:4)) %*/
                     }
                 | f_arg ',' f_block_optarg ',' f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, $3, Qnone, $5, $6, &@$);
+                        $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, get_value($:5), get_value($:6)) %*/
                     }
                 | f_arg ',' f_rest_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, $3, Qnone, $4, &@$);
+                        $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), Qnil, get_value($:4)) %*/
                     }
                 | f_arg excessed_comma
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, Qnone, &@2);
-                        $$ = new_args(p, $1, Qnone, $2, Qnone, $$, &@$);
+                        $$ = new_args_tail(p, 0, 0, 0, &@2);
+                        $$ = new_args(p, $1, 0, $2, 0, $$, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:2), Qnil, rb_ary_new_from_args(3, Qnil, Qnil, Qnil)) %*/
                     }
                 | f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, $3, $5, $6, &@$);
+                        $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
                 | f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, Qnone, Qnone, $2, &@$);
+                        $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, Qnil, Qnil, get_value($:2)) %*/
                     }
                 | f_block_optarg ',' f_rest_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, $3, Qnone, $4, &@$);
+                        $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), Qnil, get_value($:4)) %*/
                     }
                 | f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, $3, $5, $6, &@$);
+                        $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
                 | f_block_optarg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, Qnone, Qnone, $2, &@$);
+                        $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, Qnil, get_value($:2)) %*/
                     }
                 | f_block_optarg ',' f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, Qnone, $3, $4, &@$);
+                        $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, get_value($:3), get_value($:4)) %*/
                     }
                 | f_rest_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, $1, Qnone, $2, &@$);
+                        $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), Qnil, get_value($:2)) %*/
                     }
                 | f_rest_arg ',' f_arg opt_block_args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, $1, $3, $4, &@$);
+                        $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), get_value($:3), get_value($:4)) %*/
                     }
                 | block_args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $1, &@$);
+                        $$ = new_args(p, 0, 0, 0, 0, $1, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, get_value($:1)) %*/
                     }
                 ;
@@ -5350,7 +5347,7 @@ method_call	: fcall paren_args
                     }
                 | primary_value tCOLON2 operation3
                     {
-                        $$ = new_qcall(p, idCOLON2, $1, $3, Qnull, &@3, &@$);
+                        $$ = new_qcall(p, idCOLON2, $1, $3, 0, &@3, &@$);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                     }
                 | primary_value call_op paren_args
@@ -5522,29 +5519,29 @@ p_top_expr	: p_top_expr_body
 p_top_expr_body : p_expr
                 | p_expr ','
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 1, Qnone, Qnone, &@$);
-                        $$ = new_array_pattern(p, Qnone, $1, $$, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 1, 0, 0, &@$);
+                        $$ = new_array_pattern(p, 0, $1, $$, &@$);
                     /*% ripper: ripper_new_array_pattern(p, Qnil, get_value($:1), rb_ary_new()); %*/
                     }
                 | p_expr ',' p_args
                     {
-                        $$ = new_array_pattern(p, Qnone, $1, $3, &@$);
+                        $$ = new_array_pattern(p, 0, $1, $3, &@$);
                         nd_set_first_loc($$, @1.beg_pos);
                     /*% ripper: ripper_new_array_pattern(p, Qnil, get_value($:1), get_value($:3)); %*/
                     }
                 | p_find
                     {
-                        $$ = new_find_pattern(p, Qnone, $1, &@$);
+                        $$ = new_find_pattern(p, 0, $1, &@$);
                     /*% ripper: ripper_new_find_pattern(p, Qnil, get_value($:1)); %*/
                     }
                 | p_args_tail
                     {
-                        $$ = new_array_pattern(p, Qnone, Qnone, $1, &@$);
+                        $$ = new_array_pattern(p, 0, 0, $1, &@$);
                     /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, get_value($:1)); %*/
                     }
                 | p_kwargs
                     {
-                        $$ = new_hash_pattern(p, Qnone, $1, &@$);
+                        $$ = new_hash_pattern(p, 0, $1, &@$);
                     /*% ripper: ripper_new_hash_pattern(p, Qnil, get_value($:1)); %*/
                     }
                 ;
@@ -5589,7 +5586,7 @@ p_expr_basic	: p_value
                 | p_const p_lparen[p_pktbl] p_args rparen
                     {
                         pop_pktbl(p, $p_pktbl);
-                        $$ = new_array_pattern(p, $p_const, Qnone, $p_args, &@$);
+                        $$ = new_array_pattern(p, $p_const, 0, $p_args, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
                     /*% ripper: ripper_new_array_pattern(p, get_value($:p_const), Qnil, get_value($:p_args)); %*/
                     }
@@ -5609,14 +5606,14 @@ p_expr_basic	: p_value
                     }
                 | p_const '(' rparen
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 0, Qnone, Qnone, &@$);
-                        $$ = new_array_pattern(p, $p_const, Qnone, $$, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
+                        $$ = new_array_pattern(p, $p_const, 0, $$, &@$);
                         /*% ripper: ripper_new_array_pattern(p, get_value($:p_const), Qnil, rb_ary_new()); %*/
                     }
                 | p_const p_lbracket[p_pktbl] p_args rbracket
                     {
                         pop_pktbl(p, $p_pktbl);
-                        $$ = new_array_pattern(p, $p_const, Qnone, $p_args, &@$);
+                        $$ = new_array_pattern(p, $p_const, 0, $p_args, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
                     /*% ripper: ripper_new_array_pattern(p, get_value($:p_const), Qnil, get_value($:p_args)); %*/
                     }
@@ -5636,24 +5633,24 @@ p_expr_basic	: p_value
                     }
                 | p_const '[' rbracket
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 0, Qnone, Qnone, &@$);
-                        $$ = new_array_pattern(p, $1, Qnone, $$, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
+                        $$ = new_array_pattern(p, $1, 0, $$, &@$);
                     /*% ripper: ripper_new_array_pattern(p, get_value($:1), Qnil, rb_ary_new()); %*/
                     }
                 | tLBRACK p_args rbracket
                     {
-                        $$ = new_array_pattern(p, Qnone, Qnone, $p_args, &@$);
+                        $$ = new_array_pattern(p, 0, 0, $p_args, &@$);
                     /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, get_value($:p_args)); %*/
                     }
                 | tLBRACK p_find rbracket
                     {
-                        $$ = new_find_pattern(p, Qnone, $p_find, &@$);
+                        $$ = new_find_pattern(p, 0, $p_find, &@$);
                     /*% ripper: ripper_new_find_pattern(p, Qnil, get_value($:p_find)); %*/
                     }
                 | tLBRACK rbracket
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 0, Qnone, Qnone, &@$);
-                        $$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
+                        $$ = new_array_pattern(p, 0, 0, $$, &@$);
                     /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, rb_ary_new()); %*/
                     }
                 | tLBRACE p_pktbl lex_ctxt[ctxt]
@@ -5664,13 +5661,13 @@ p_expr_basic	: p_value
                     {
                         pop_pktbl(p, $p_pktbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
-                        $$ = new_hash_pattern(p, Qnone, $p_kwargs, &@$);
+                        $$ = new_hash_pattern(p, 0, $p_kwargs, &@$);
                     /*% ripper: ripper_new_hash_pattern(p, Qnil, get_value($:p_kwargs)); %*/
                     }
                 | tLBRACE rbrace
                     {
-                        $$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
-                        $$ = new_hash_pattern(p, Qnone, $$, &@$);
+                        $$ = new_hash_pattern_tail(p, 0, 0, &@$);
+                        $$ = new_hash_pattern(p, 0, $$, &@$);
                     /*%%%*/
                     /*%
                         VALUE val = ripper_new_hash_pattern_tail(p, Qnil, 0);
@@ -5689,7 +5686,7 @@ p_expr_basic	: p_value
 p_args		: p_expr
                     {
                         NODE *pre_args = NEW_LIST($1, &@$);
-                        $$ = new_array_pattern_tail(p, pre_args, 0, Qnone, Qnone, &@$);
+                        $$ = new_array_pattern_tail(p, pre_args, 0, 0, 0, &@$);
                     /*%%%*/
                     /*%
                         VALUE ary = rb_ary_new_from_args(1, get_value($:1));
@@ -5698,7 +5695,7 @@ p_args		: p_expr
                     }
                 | p_args_head
                     {
-                        $$ = new_array_pattern_tail(p, $1, 1, Qnone, Qnone, &@$);
+                        $$ = new_array_pattern_tail(p, $1, 1, 0, 0, &@$);
                     /*%%%*/
                     /*%
                         set_value(rb_ary_new_from_args(3, get_value($:1), Qnil, Qnil));
@@ -5706,7 +5703,7 @@ p_args		: p_expr
                     }
                 | p_args_head p_arg
                     {
-                        $$ = new_array_pattern_tail(p, list_concat($1, $2), 0, Qnone, Qnone, &@$);
+                        $$ = new_array_pattern_tail(p, list_concat($1, $2), 0, 0, 0, &@$);
                     /*%%%*/
                     /*%
                         VALUE pre_args = rb_ary_concat(get_value($:1), get_value($:2));
@@ -5715,7 +5712,7 @@ p_args		: p_expr
                     }
                 | p_args_head p_rest
                     {
-                        $$ = new_array_pattern_tail(p, $1, 1, $2, Qnone, &@$);
+                        $$ = new_array_pattern_tail(p, $1, 1, $2, 0, &@$);
                     /*%%%*/
                     /*%
                         set_value(rb_ary_new_from_args(3, get_value($:1), get_value($:2), Qnil));
@@ -5745,12 +5742,12 @@ p_args_head	: p_arg ','
 
 p_args_tail	: p_rest
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 1, $1, Qnone, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 1, $1, 0, &@$);
                     /*% ripper: ripper_new_array_pattern_tail(p, Qnil, get_value($:1), Qnil); %*/
                     }
                 | p_rest ',' p_args_post
                     {
-                        $$ = new_array_pattern_tail(p, Qnone, 1, $1, $3, &@$);
+                        $$ = new_array_pattern_tail(p, 0, 1, $1, $3, &@$);
                     /*% ripper: ripper_new_array_pattern_tail(p, Qnil, get_value($:1), get_value($:3)); %*/
                     }
                 ;
@@ -5808,7 +5805,7 @@ p_kwargs	: p_kwarg ',' p_any_kwrest
                     }
                 | p_any_kwrest
                     {
-                        $$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), $1, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_hash(p, 0, &@$), $1, &@$);
                     /*% ripper: ripper_new_hash_pattern_tail(p, rb_ary_new(), get_value($:1)) %*/
                     }
                 ;
@@ -6444,8 +6441,8 @@ f_opt_paren_args: f_paren_args
                 | none
                     {
                         p->ctxt.in_argdef = 0;
-                        $$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
-                        $$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@0);
+                        $$ = new_args(p, 0, 0, 0, 0, $$, &@0);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, rb_ary_new_from_args(3, Qnil, Qnil, Qnil)) %*/
                     }
                 ;
@@ -6485,23 +6482,23 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
                     }
                 | f_kwarg opt_f_block_arg
                     {
-                        $$ = new_args_tail(p, $1, Qnone, $2, &@1);
+                        $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
                     }
                 | f_any_kwrest opt_f_block_arg
                     {
-                        $$ = new_args_tail(p, Qnone, $1, $2, &@1);
+                        $$ = new_args_tail(p, 0, $1, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, get_value($:1), get_value($:2)); %*/
                     }
                 | f_block_arg
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
+                        $$ = new_args_tail(p, 0, 0, $1, &@1);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, get_value($:1)); %*/
                     }
                 | args_forward
                     {
                         add_forwarding_args(p);
-                        $$ = new_args_tail(p, Qnone, $1, arg_FWD_BLOCK, &@1);
+                        $$ = new_args_tail(p, 0, $1, arg_FWD_BLOCK, &@1);
                         $$->nd_ainfo.forwarding = 1;
                     /*% ripper: rb_ary_new_from_args(3, Qnil, get_value($:1), Qnil); %*/
                     }
@@ -6514,14 +6511,14 @@ opt_args_tail	: ',' args_tail
                     }
                 | /* none */
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@0);
                     /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
                     }
                 ;
 
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
                     {
-                        $$ = new_args(p, $1, $3, $5, Qnone, $6, &@$);
+                        $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), Qnil, get_value($:6)) %*/
                     }
                 | f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
@@ -6531,68 +6528,68 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
                     }
                 | f_arg ',' f_optarg opt_args_tail
                     {
-                        $$ = new_args(p, $1, $3, Qnone, Qnone, $4, &@$);
+                        $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, Qnil, get_value($:4)) %*/
                     }
                 | f_arg ',' f_optarg ',' f_arg opt_args_tail
                     {
-                        $$ = new_args(p, $1, $3, Qnone, $5, $6, &@$);
+                        $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, get_value($:5), get_value($:6)) %*/
                     }
                 | f_arg ',' f_rest_arg opt_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, $3, Qnone, $4, &@$);
+                        $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), Qnil, get_value($:4)) %*/
                     }
                 | f_arg ',' f_rest_arg ',' f_arg opt_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, $3, $5, $6, &@$);
+                        $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
                 | f_arg opt_args_tail
                     {
-                        $$ = new_args(p, $1, Qnone, Qnone, Qnone, $2, &@$);
+                        $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, Qnil, Qnil, get_value($:2)) %*/
                     }
                 | f_optarg ',' f_rest_arg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, $3, Qnone, $4, &@$);
+                        $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), Qnil, get_value($:4)) %*/
                     }
                 | f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, $3, $5, $6, &@$);
+                        $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
                 | f_optarg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, Qnone, Qnone, $2, &@$);
+                        $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, Qnil, get_value($:2)) %*/
                     }
                 | f_optarg ',' f_arg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, $1, Qnone, $3, $4, &@$);
+                        $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, get_value($:3), get_value($:4)) %*/
                     }
                 | f_rest_arg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, $1, Qnone, $2, &@$);
+                        $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), Qnil, get_value($:2)) %*/
                     }
                 | f_rest_arg ',' f_arg opt_args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, $1, $3, $4, &@$);
+                        $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), get_value($:3), get_value($:4)) %*/
                     }
                 | args_tail
                     {
-                        $$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $1, &@$);
+                        $$ = new_args(p, 0, 0, 0, 0, $1, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, get_value($:1)) %*/
                     }
                 | /* none */
                     {
-                        $$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
-                        $$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@0);
+                        $$ = new_args(p, 0, 0, 0, 0, $$, &@0);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, rb_ary_new_from_args(3, Qnil, Qnil, Qnil)) %*/
                     }
                 ;
@@ -6884,7 +6881,7 @@ opt_f_block_arg	: ',' f_block_arg
                     }
                 | none
                     {
-                        $$ = Qnull;
+                        $$ = 0;
                     /*% ripper: Qnil; %*/
                     }
                 ;
@@ -7051,7 +7048,7 @@ terms		: term
 
 none		: /* none */
                     {
-                        $$ = Qnull;
+                        $$ = 0;
                     /*%%%*/
                     /*%
                         set_value(rb_ripper_none);
