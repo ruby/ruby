@@ -10,19 +10,10 @@
 **********************************************************************/
 
 #ifdef UNIVERSAL_PARSER
-
 #include <stddef.h>
 #include "node.h"
 #include "rubyparser.h"
 #include "internal/parse.h"
-
-#else
-
-#include "internal.h"
-#include "internal/hash.h"
-#include "ruby/ruby.h"
-#include "vm_core.h"
-
 #endif
 
 #include "internal/variable.h"
