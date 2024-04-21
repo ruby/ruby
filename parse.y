@@ -81,7 +81,6 @@ syntax_error_new(void)
 static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
 #define compile_callback rb_suppress_tracing
-VALUE rb_io_gets_internal(VALUE io);
 #endif /* !UNIVERSAL_PARSER */
 
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
@@ -490,8 +489,8 @@ struct parser_params {
 
     struct {
         rb_strterm_t *strterm;
-        VALUE (*gets)(struct parser_params*,VALUE);
-        VALUE input;
+        VALUE (*gets)(struct parser_params*,rb_parser_input_data,int);
+        rb_parser_input_data input;
         parser_string_buffer_t string_buffer;
         rb_parser_string_t *lastline;
         rb_parser_string_t *nextline;
@@ -499,10 +498,6 @@ struct parser_params {
         const char *pcur;
         const char *pend;
         const char *ptok;
-        union {
-            long ptr;
-            VALUE (*call)(VALUE, int);
-        } gets_;
         enum lex_state_e state;
         /* track the nest level of any parens "()[]{}" */
         int paren_nest;
@@ -7806,31 +7801,11 @@ must_be_ascii_compatible(struct parser_params *p, VALUE s)
     return enc;
 }
 
-static VALUE
-lex_get_str(struct parser_params *p, VALUE s)
-{
-    char *beg, *end, *start;
-    long len;
-
-    beg = RSTRING_PTR(s);
-    len = RSTRING_LEN(s);
-    start = beg;
-    if (p->lex.gets_.ptr) {
-        if (len == p->lex.gets_.ptr) return Qnil;
-        beg += p->lex.gets_.ptr;
-        len -= p->lex.gets_.ptr;
-    }
-    end = memchr(beg, '\n', len);
-    if (end) len = ++end - beg;
-    p->lex.gets_.ptr += len;
-    return rb_str_subseq(s, beg - start, len);
-}
-
 static rb_parser_string_t *
 lex_getline(struct parser_params *p)
 {
     rb_parser_string_t *str;
-    VALUE line = (*p->lex.gets)(p, p->lex.input);
+    VALUE line = (*p->lex.gets)(p, p->lex.input, p->line_count);
     if (NIL_P(line)) return 0;
     must_be_ascii_compatible(p, line);
     p->line_count++;
@@ -7840,61 +7815,14 @@ lex_getline(struct parser_params *p)
 }
 
 #ifndef RIPPER
-static rb_ast_t*
-parser_compile_string(rb_parser_t *p, VALUE fname, VALUE s, int line)
-{
-    p->lex.gets = lex_get_str;
-    p->lex.gets_.ptr = 0;
-    p->lex.input = rb_str_new_frozen(s);
-    p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
-
-    return yycompile(p, fname, line);
-}
-
 rb_ast_t*
-rb_ruby_parser_compile_string_path(rb_parser_t *p, VALUE f, VALUE s, int line)
+rb_parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
 {
-    must_be_ascii_compatible(p, s);
-    return parser_compile_string(p, f, s, line);
-}
-
-rb_ast_t*
-rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line)
-{
-    return rb_ruby_parser_compile_string_path(p, rb_filesystem_str_new_cstr(f), s, line);
-}
-
-static VALUE
-lex_io_gets(struct parser_params *p, VALUE io)
-{
-    return rb_io_gets_internal(io);
-}
-
-rb_ast_t*
-rb_ruby_parser_compile_file_path(rb_parser_t *p, VALUE fname, VALUE file, int start)
-{
-    p->lex.gets = lex_io_gets;
-    p->lex.input = file;
-    p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
-
-    return yycompile(p, fname, start);
-}
-
-static VALUE
-lex_generic_gets(struct parser_params *p, VALUE input)
-{
-    return (*p->lex.gets_.call)(input, p->line_count);
-}
-
-rb_ast_t*
-rb_ruby_parser_compile_generic(rb_parser_t *p, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
-{
-    p->lex.gets = lex_generic_gets;
-    p->lex.gets_.call = lex_gets;
+    p->lex.gets = gets;
     p->lex.input = input;
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
-    return yycompile(p, fname, start);
+    return yycompile(p, fname, line);
 }
 #endif  /* !RIPPER */
 
@@ -15883,7 +15811,6 @@ rb_ruby_parser_mark(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
-    rb_gc_mark(p->lex.input);
     rb_gc_mark(p->ruby_sourcefile_string);
     rb_gc_mark((VALUE)p->ast);
 #ifndef RIPPER
@@ -16093,7 +16020,7 @@ rb_ruby_parser_set_parsing_thread(rb_parser_t *p, VALUE parsing_thread)
 }
 
 void
-rb_ruby_parser_ripper_initialize(rb_parser_t *p, VALUE (*gets)(struct parser_params*,VALUE), VALUE input, VALUE sourcefile_string, const char *sourcefile, int sourceline)
+rb_ruby_parser_ripper_initialize(rb_parser_t *p, rb_parser_lex_gets_func *gets, rb_parser_input_data input, VALUE sourcefile_string, const char *sourcefile, int sourceline)
 {
     p->lex.gets = gets;
     p->lex.input = input;
@@ -16163,12 +16090,6 @@ rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
     MEMMOVE(str, str + i, char, len - i);
     rb_str_set_len(string, len - i);
     return i;
-}
-
-VALUE
-rb_ruby_ripper_lex_get_str(rb_parser_t *p, VALUE s)
-{
-    return lex_get_str(p, s);
 }
 
 int

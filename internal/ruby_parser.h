@@ -5,9 +5,15 @@
 #include "internal/bignum.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
+#include "internal/parse.h"
 #include "internal/rational.h"
 #include "rubyparser.h"
 #include "vm.h"
+
+struct lex_pointer_string {
+    VALUE str;
+    long ptr;
+};
 
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef UNIVERSAL_PARSER
@@ -19,6 +25,7 @@ VALUE rb_parser_new(void);
 rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
 VALUE rb_str_new_parser_string(rb_parser_string_t *str);
 VALUE rb_str_new_mutable_parser_string(rb_parser_string_t *str);
+VALUE rb_parser_lex_get_str(struct lex_pointer_string *ptr_str);
 
 VALUE rb_node_str_string_val(const NODE *);
 VALUE rb_node_sym_string_val(const NODE *);
@@ -48,7 +55,8 @@ void rb_parser_keep_tokens(VALUE vparser);
 
 rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
 rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
-rb_ast_t *rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start);
 
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */

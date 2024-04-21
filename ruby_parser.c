@@ -504,8 +504,25 @@ static const rb_parser_config_t rb_global_parser_config = {
 };
 #endif
 
+enum lex_type {
+    lex_type_str,
+    lex_type_io,
+    lex_type_array,
+    lex_type_generic,
+};
+
 struct ruby_parser {
     rb_parser_t *parser_params;
+    enum lex_type type;
+    union {
+        struct lex_pointer_string lex_str;
+        struct {
+            VALUE file;
+        } lex_io;
+        struct {
+            VALUE ary;
+        } lex_array;
+    } data;
 };
 
 static void
@@ -513,6 +530,21 @@ parser_mark(void *ptr)
 {
     struct ruby_parser *parser = (struct ruby_parser*)ptr;
     rb_ruby_parser_mark(parser->parser_params);
+
+    switch (parser->type) {
+      case lex_type_str:
+        rb_gc_mark(parser->data.lex_str.str);
+        break;
+      case lex_type_io:
+        rb_gc_mark(parser->data.lex_io.file);
+        break;
+      case lex_type_array:
+        rb_gc_mark(parser->data.lex_array.ary);
+        break;
+      case lex_type_generic:
+        /* noop. Caller of rb_parser_compile_generic should mark the objects. */
+        break;
+    }
 }
 
 static void
@@ -615,19 +647,6 @@ rb_parser_error_tolerant(VALUE vparser)
     rb_ruby_parser_error_tolerant(parser->parser_params);
 }
 
-rb_ast_t*
-rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
-{
-    struct ruby_parser *parser;
-    rb_ast_t *ast;
-
-    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_file_path(parser->parser_params, fname, file, start);
-    RB_GC_GUARD(vparser);
-
-    return ast;
-}
-
 void
 rb_parser_keep_tokens(VALUE vparser)
 {
@@ -637,14 +656,152 @@ rb_parser_keep_tokens(VALUE vparser)
     rb_ruby_parser_keep_tokens(parser->parser_params);
 }
 
+VALUE
+rb_parser_lex_get_str(struct lex_pointer_string *ptr_str)
+{
+    char *beg, *end, *start;
+    long len;
+    VALUE s = ptr_str->str;
+
+    beg = RSTRING_PTR(s);
+    len = RSTRING_LEN(s);
+    start = beg;
+    if (ptr_str->ptr) {
+        if (len == ptr_str->ptr) return Qnil;
+        beg += ptr_str->ptr;
+        len -= ptr_str->ptr;
+    }
+    end = memchr(beg, '\n', len);
+    if (end) len = ++end - beg;
+    ptr_str->ptr += len;
+    return rb_str_subseq(s, beg - start, len);
+}
+
+static VALUE
+lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
+{
+    return rb_parser_lex_get_str((struct lex_pointer_string *)input);
+}
+
+static rb_ast_t*
+parser_compile_string0(struct ruby_parser *parser, VALUE fname, VALUE s, int line)
+{
+    VALUE str = rb_str_new_frozen(s);
+
+    parser->type = lex_type_str;
+    parser->data.lex_str.str = str;
+    parser->data.lex_str.ptr = 0;
+
+    return rb_parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
+}
+
+static rb_encoding *
+must_be_ascii_compatible(VALUE s)
+{
+    rb_encoding *enc = rb_enc_get(s);
+    if (!rb_enc_asciicompat(enc)) {
+        rb_raise(rb_eArgError, "invalid source encoding");
+    }
+    return enc;
+}
+
+static rb_ast_t*
+parser_compile_string_path(struct ruby_parser *parser, VALUE f, VALUE s, int line)
+{
+    must_be_ascii_compatible(s);
+    return parser_compile_string0(parser, f, s, line);
+}
+
+static rb_ast_t*
+parser_compile_string(struct ruby_parser *parser, const char *f, VALUE s, int line)
+{
+    return parser_compile_string_path(parser, rb_filesystem_str_new_cstr(f), s, line);
+}
+
+VALUE rb_io_gets_internal(VALUE io);
+
+static VALUE
+lex_io_gets(struct parser_params *p, rb_parser_input_data input, int line_count)
+{
+    VALUE io = (VALUE)input;
+
+    return rb_io_gets_internal(io);
+}
+
+static VALUE
+lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
+{
+    VALUE array = (VALUE)data;
+    VALUE str = rb_ary_entry(array, index);
+    if (!NIL_P(str)) {
+        StringValue(str);
+        if (!rb_enc_asciicompat(rb_enc_get(str))) {
+            rb_raise(rb_eArgError, "invalid source encoding");
+        }
+    }
+    return str;
+}
+
+static rb_ast_t*
+parser_compile_file_path(struct ruby_parser *parser, VALUE fname, VALUE file, int start)
+{
+    parser->type = lex_type_io;
+    parser->data.lex_io.file = file;
+
+    return rb_parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
+}
+
+static rb_ast_t*
+parser_compile_array(struct ruby_parser *parser, VALUE fname, VALUE array, int start)
+{
+    parser->type = lex_type_array;
+    parser->data.lex_array.ary = array;
+
+    return rb_parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
+}
+
+static rb_ast_t*
+parser_compile_generic(struct ruby_parser *parser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
+{
+    parser->type = lex_type_generic;
+
+    return rb_parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
+}
+
 rb_ast_t*
-rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
+rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct ruby_parser *parser;
     rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_generic(parser->parser_params, lex_gets, fname, input, start);
+    ast = parser_compile_file_path(parser, fname, file, start);
+    RB_GC_GUARD(vparser);
+
+    return ast;
+}
+
+rb_ast_t*
+rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
+{
+    struct ruby_parser *parser;
+    rb_ast_t *ast;
+
+    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+    ast = parser_compile_array(parser, fname, array, start);
+    RB_GC_GUARD(vparser);
+
+    return ast;
+}
+
+rb_ast_t*
+rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
+{
+    struct ruby_parser *parser;
+    rb_ast_t *ast;
+
+    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+    ast = parser_compile_generic(parser, lex_gets, fname, input, start);
     RB_GC_GUARD(vparser);
 
     return ast;
@@ -657,7 +814,7 @@ rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
     rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_string(parser->parser_params, f, s, line);
+    ast = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
     return ast;
@@ -670,7 +827,7 @@ rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
     rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_string_path(parser->parser_params, f, s, line);
+    ast = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
     return ast;

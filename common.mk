@@ -3316,6 +3316,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 compile.$(OBJEXT): $(top_srcdir)/internal/io.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
+compile.$(OBJEXT): $(top_srcdir)/internal/parse.h
 compile.$(OBJEXT): $(top_srcdir)/internal/rational.h
 compile.$(OBJEXT): $(top_srcdir)/internal/re.h
 compile.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
@@ -7494,6 +7495,7 @@ goruby.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/rational.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
@@ -10361,6 +10363,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/parse.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/rational.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
@@ -10820,6 +10823,7 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/parse.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/rational.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h

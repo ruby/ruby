@@ -129,19 +129,6 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VAL
 }
 
 static VALUE
-lex_array(VALUE array, int index)
-{
-    VALUE str = rb_ary_entry(array, index);
-    if (!NIL_P(str)) {
-        StringValue(str);
-        if (!rb_enc_asciicompat(rb_enc_get(str))) {
-            rb_raise(rb_eArgError, "invalid source encoding");
-        }
-    }
-    return str;
-}
-
-static VALUE
 rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     rb_ast_t *ast = 0;
@@ -151,7 +138,7 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
     if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
-    ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
+    ast = rb_parser_compile_array(vparser, Qnil, array, 1);
     return ast_parse_done(ast);
 }
 
