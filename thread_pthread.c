@@ -2569,10 +2569,7 @@ ubf_wakeup_thread(rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u thread_id:%p", rb_th_serial(th), (void *)th->nt->thread_id);
 
-    int r = pthread_kill(th->nt->thread_id, SIGVTALRM);
-    if (r != 0) {
-        rb_bug_errno("pthread_kill", r);
-    }
+    pthread_kill(th->nt->thread_id, SIGVTALRM);
 }
 
 static void
