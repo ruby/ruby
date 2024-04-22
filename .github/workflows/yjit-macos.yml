@@ -60,11 +60,13 @@ jobs:
           - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+            specopts: '-T --yjit-call-threshold=1 -T --yjit-verify-ctx -T --yjit-code-gc'
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
+      SPECOPTS: ${{ matrix.specopts }}
 
     runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
@@ -128,6 +130,7 @@ jobs:
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS"
+          SPECOPTS="$SPECOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
