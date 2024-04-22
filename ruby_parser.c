@@ -349,7 +349,6 @@ enc_mbc_to_codepoint(const char *p, const char *e, void *enc)
     return ONIGENC_MBC_TO_CODE((rb_encoding *)enc, up, ue);
 }
 
-VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_eArgError;
 
 static const rb_parser_config_t rb_global_parser_config = {
@@ -396,8 +395,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .str_catf = rb_str_catf,
     .str_cat_cstr = rb_str_cat_cstr,
-    .str_subseq = rb_str_subseq,
-    .str_new_frozen = rb_str_new_frozen,
     .str_modify = rb_str_modify,
     .str_set_len = rb_str_set_len,
     .str_cat = rb_str_cat,
@@ -413,7 +410,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .rstring_ptr = RSTRING_PTR,
     .rstring_end = RSTRING_END,
     .rstring_len = RSTRING_LEN,
-    .filesystem_str_new_cstr = rb_filesystem_str_new_cstr,
     .obj_as_string = rb_obj_as_string,
 
     .int2num = rb_int2num_inline,
@@ -423,7 +419,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .io_write = rb_io_write,
     .io_flush = rb_io_flush,
     .io_puts = rb_io_puts,
-    .io_gets_internal = rb_io_gets_internal,
 
     .debug_output_stdout = rb_ractor_stdout,
     .debug_output_stderr = rb_ractor_stderr,
