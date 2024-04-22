@@ -459,6 +459,17 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         nil
       end
 
+      # Close the stream for reading.
+      def close_read
+        # Unsupported and ignored.
+        # Just don't read any more.
+      end
+
+      # Close the stream for writing.
+      def close_write
+        stop
+      end
+
       private
 
       def using_anon_cipher?
