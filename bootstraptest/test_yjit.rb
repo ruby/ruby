@@ -4799,3 +4799,20 @@ assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
 
   tests
 }
+
+# test String#stebyte with arguments that need conversion
+assert_equal "abc", %q{
+  str = +"a00"
+  def change_bytes(str, one, two)
+    str.setbyte(one, "b".ord)
+    str.setbyte(2, two)
+  end
+
+  to_int_1 = Object.new
+  to_int_99 = Object.new
+  def to_int_1.to_int = 1
+  def to_int_99.to_int = 99
+
+  change_bytes(str, to_int_1, to_int_99)
+  str
+}

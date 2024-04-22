@@ -3236,15 +3236,22 @@ ALWAYS_INLINE(static VALUE rb_to_integer_with_id_exception(VALUE val, const char
 static inline VALUE
 rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise)
 {
+    // We need to pop the lazily pushed frame when not raising an exception.
+    rb_control_frame_t *current_cfp;
     VALUE v;
 
     if (RB_INTEGER_TYPE_P(val)) return val;
+    current_cfp = GET_EC()->cfp;
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
     v = try_to_int(val, mid, raise);
-    if (!raise && NIL_P(v)) return Qnil;
+    if (!raise && NIL_P(v)) {
+        GET_EC()->cfp = current_cfp;
+        return Qnil;
+    }
     if (!RB_INTEGER_TYPE_P(v)) {
         conversion_mismatch(val, "Integer", method, v);
     }
+    GET_EC()->cfp = current_cfp;
     return v;
 }
 #define rb_to_integer(val, method, mid) \
