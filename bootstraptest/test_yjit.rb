@@ -4770,6 +4770,19 @@ assert_equal '[:ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for invalidating an empty block
+assert_equal '0', %q{
+  def foo = (* = 1).pred
+
+  foo # compile it
+
+  class Integer
+    def to_ary = [] # invalidate
+  end
+
+  foo # try again
+} unless rjit_enabled? # doesn't work on RJIT
+
 # test integer left shift with constant rhs
 assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
   def shift(val) = val << 43
