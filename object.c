@@ -3236,7 +3236,7 @@ ALWAYS_INLINE(static VALUE rb_to_integer_with_id_exception(VALUE val, const char
 static inline VALUE
 rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise)
 {
-    // when !raise, we need to pop the lazily pushed frame.
+    // We need to pop the lazily pushed frame when not raising an exception.
     rb_control_frame_t *current_cfp;
     VALUE v;
 
