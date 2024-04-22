@@ -114,6 +114,8 @@ module Bundler
     class_option "verbose", type: :boolean, desc: "Enable verbose output mode", aliases: "-V"
 
     def help(cli = nil)
+      cli = self.class.all_aliases[cli] if self.class.all_aliases[cli]
+
       case cli
       when "gemfile" then command = "gemfile"
       when nil       then command = "bundle"
@@ -683,7 +685,6 @@ module Bundler
       exec_used = args.index {|a| exec_commands.include? a }
 
       command = args.find {|a| bundler_commands.include? a }
-      command = all_aliases[command] if all_aliases[command]
 
       if exec_used && help_used
         if exec_used + help_used == 1
