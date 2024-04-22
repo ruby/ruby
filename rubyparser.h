@@ -1289,8 +1289,6 @@ typedef struct rb_parser_config_struct {
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
-    VALUE (*str_subseq)(VALUE str, long beg, long len);
-    VALUE (*str_new_frozen)(VALUE orig);
     void (*str_modify)(VALUE str);
     void (*str_set_len)(VALUE str, long len);
     VALUE (*str_cat)(VALUE str, const char *ptr, long len);
@@ -1308,7 +1306,6 @@ typedef struct rb_parser_config_struct {
     char *(*rstring_ptr)(VALUE str);
     char *(*rstring_end)(VALUE str);
     long (*rstring_len)(VALUE str);
-    VALUE (*filesystem_str_new_cstr)(const char *ptr);
     VALUE (*obj_as_string)(VALUE);
 
     /* Numeric */
@@ -1320,7 +1317,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*io_write)(VALUE io, VALUE str);
     VALUE (*io_flush)(VALUE io);
     VALUE (*io_puts)(int argc, const VALUE *argv, VALUE out);
-    VALUE (*io_gets_internal)(VALUE io);
 
     /* IO (Ractor) */
     VALUE (*debug_output_stdout)(void);
