@@ -5,8 +5,8 @@ template = "rubytest."
 if (tmpdir = Dir.mktmpdir(template)).size > 50 and File.directory?("/tmp")
   # On macOS, the default TMPDIR is very long, inspite of UNIX socket
   # path length is limited.
-  # On Windows, UNIX socket is not available and no need to shorten
-  # TMPDIR, otherwise assume "/tmp" always exists.
+  # Assume "/tmp" always exists on UNIX-like systems where UNIX socket
+  # is available, otherwise no need to shorten TMPDIR.
   Dir.rmdir(tmpdir)
   tmpdir = Dir.mktmpdir(template, "/tmp")
 end
