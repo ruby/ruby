@@ -65,14 +65,16 @@ module Prism
     class OptionalLocationField < Field
     end
 
-    # A uint8 field represents an unsigned 8-bit integer value on a node. It
-    # resolves to an Integer in Ruby.
-    class UInt8Field < Field
+    # An integer field represents an integer value. It is used to represent the
+    # value of an integer literal, the depth of local variables, and the number
+    # of a numbered reference. It resolves to an Integer in Ruby.
+    class IntegerField < Field
     end
 
-    # A uint32 field represents an unsigned 32-bit integer value on a node. It
-    # resolves to an Integer in Ruby.
-    class UInt32Field < Field
+    # A float field represents a double-precision floating point value. It is
+    # used exclusively to represent the value of a floating point literal. It
+    # resolves to a Float in Ruby.
+    class FloatField < Field
     end
 
     # A flags field represents a bitset of flags on a node. It resolves to an
@@ -88,18 +90,6 @@ module Prism
         super(name)
         @flags = flags
       end
-    end
-
-    # An integer field represents an arbitrarily-sized integer value. It is used
-    # exclusively to represent the value of an integer literal. It resolves to
-    # an Integer in Ruby.
-    class IntegerField < Field
-    end
-
-    # A double field represents a double-precision floating point value. It is
-    # used exclusively to represent the value of a floating point literal. It
-    # resolves to a Float in Ruby.
-    class DoubleField < Field
     end
 
     # Returns the fields for the given node.
@@ -127,17 +117,13 @@ module Prism
             "LocationField.new(:#{field.name})"
           when Prism::Template::OptionalLocationField
             "OptionalLocationField.new(:#{field.name})"
-          when Prism::Template::UInt8Field
-            "UInt8Field.new(:#{field.name})"
-          when Prism::Template::UInt32Field
-            "UInt32Field.new(:#{field.name})"
+          when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField
+            "Integer.new(:#{field.name})"
+          when Prism::Template::DoubleField
+            "FloatField.new(:#{field.name})"
           when Prism::Template::FlagsField
             found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found }
             "FlagsField.new(:#{field.name}, [#{found.values.map { |value| ":#{value.name.downcase}?" }.join(", ")}])"
-          when Prism::Template::IntegerField
-            "IntegerField.new(:#{field.name})"
-          when Prism::Template::DoubleField
-            "DoubleField.new(:#{field.name})"
           else
             raise field.class.name
           end
