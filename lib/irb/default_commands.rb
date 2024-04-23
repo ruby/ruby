@@ -98,10 +98,7 @@ module IRB
     end
 
     _register_with_aliases(:irb_context, Command::Context,
-      [
-        [:context, NO_OVERRIDE],
-        [:conf, NO_OVERRIDE],
-      ],
+      [:context, NO_OVERRIDE]
     )
 
     _register_with_aliases(:irb_exit, Command::Exit,

@@ -62,5 +62,14 @@ module TestIRB
       assert_match(/\$\s+Alias for `show_source`/, out)
       assert_match(/@\s+Alias for `whereami`/, out)
     end
+
+    def test_help_lists_helper_methods
+      out = run_ruby_file do
+        type "help"
+        type "exit"
+      end
+
+      assert_match(/Helper methods\s+conf\s+Returns the current context/, out)
+    end
   end
 end
