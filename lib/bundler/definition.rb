@@ -92,11 +92,12 @@ module Bundler
         @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
+        @originally_locked_deps = @locked_gems.dependencies
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
         @locked_checksums = @locked_gems.checksums
 
         if unlock != true
-          @locked_deps    = @locked_gems.dependencies
+          @locked_deps    = @originally_locked_deps
           @locked_specs   = @originally_locked_specs
           @locked_sources = @locked_gems.sources
         else
@@ -111,6 +112,7 @@ module Bundler
         @locked_gems    = nil
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
+        @originally_locked_deps = {}
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_platforms = []
@@ -835,9 +837,7 @@ module Bundler
           dep.source = sources.get(dep.source)
         end
 
-        next if unlocking?
-
-        unless locked_dep = @locked_deps[dep.name]
+        unless locked_dep = @originally_locked_deps[dep.name]
           changes = true
           next
         end
