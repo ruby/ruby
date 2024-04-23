@@ -474,8 +474,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       end
     end
 
-    parser = DummyParser.new("a::b").extend(hook)
-    assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', parser.parse.to_s
+    assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', DummyParser.new("a::b").extend(hook).parse.to_s
+    assert_equal '[assign(field(vcall((ident: "a")),(op: "::"),(ident: "b")),1)]', DummyParser.new("a::b = 1").extend(hook).parse.to_s
   end
 
   def test_excessed_comma
