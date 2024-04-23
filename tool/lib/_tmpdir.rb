@@ -82,11 +82,13 @@ END {
         end
       end.new(colorize)
       warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
-      ls.list_tree(tmpdir) do |path, st|
-        if st.directory?
-          Dir.rmdir(path)
-        else
-          File.unlink(path)
+      Dir.chdir(tmpdir) do
+        ls.list_tree(".") do |path, st|
+          if st.directory?
+            Dir.rmdir(path)
+          else
+            File.unlink(path)
+          end
         end
       end
       require "fileutils"
