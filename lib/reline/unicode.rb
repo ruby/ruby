@@ -128,10 +128,10 @@ class Reline::Unicode
     end
   end
 
-  def self.split_by_width(str, max_width, encoding = str.encoding)
+  def self.split_by_width(str, max_width, encoding = str.encoding, offset: 0)
     lines = [String.new(encoding: encoding)]
     height = 1
-    width = 0
+    width = offset
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
     seq = String.new(encoding: encoding)
