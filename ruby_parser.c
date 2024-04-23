@@ -184,12 +184,6 @@ intern3(const char *name, long len, void *enc)
     return rb_intern3(name, len, (rb_encoding *)enc);
 }
 
-static int
-encoding_is_ascii8bit(VALUE obj)
-{
-    return ENCODING_IS_ASCII8BIT(obj);
-}
-
 static void *
 usascii_encoding(void)
 {
@@ -430,7 +424,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isspace = enc_isspace,
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
-    .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
     .enc_coderange_broken = ENC_CODERANGE_BROKEN,
     .enc_mbminlen = enc_mbminlen,
