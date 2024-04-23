@@ -173,7 +173,6 @@
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
-#define rb_enc_compatible       p->config->enc_compatible
 #define rb_enc_from_encoding    p->config->enc_from_encoding
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding

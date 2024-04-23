@@ -184,12 +184,6 @@ intern3(const char *name, long len, void *enc)
     return rb_intern3(name, len, (rb_encoding *)enc);
 }
 
-static void *
-enc_compatible(VALUE str1, VALUE str2)
-{
-    return (void *)rb_enc_compatible(str1, str2);
-}
-
 static VALUE
 enc_from_encoding(void *enc)
 {
@@ -442,7 +436,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isspace = enc_isspace,
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
-    .enc_compatible = enc_compatible,
     .enc_from_encoding = enc_from_encoding,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
