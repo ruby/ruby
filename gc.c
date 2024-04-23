@@ -1900,20 +1900,15 @@ ruby_external_gc_init()
         return;
     }
 
-    void *h = dln_open(gc_so_path);
+    const char *error = NULL;
+    void *h = dln_open(gc_so_path, &error);
     if (!h) {
-        rb_bug(
-            "ruby_external_gc_init: Shared library %s cannot be opened.",
-            gc_so_path
-        );
+        rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
     }
 
     void *gc_init_func = dln_symbol(h, "Init_GC");
     if (!gc_init_func) {
-        rb_bug(
-            "ruby_external_gc_init: Init_GC func not exported by library %s",
-            gc_so_path
-        );
+        rb_bug("ruby_external_gc_init: Init_GC func not exported by library %s", gc_so_path);
     }
 
     map->init = gc_init_func;
