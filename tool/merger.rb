@@ -57,11 +57,11 @@ class << Merger
       yield if block_given?
       STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
       case STDIN.gets
-      when /\Aa/i then exit
+      when /\Aa/i then exit 1
       when /\Ar/i then redo
       when /\Ay/i then break
       when /\Ae/i then system(ENV['EDITOR'], editfile)
-      else exit
+      else exit 1
       end
     end
   end
