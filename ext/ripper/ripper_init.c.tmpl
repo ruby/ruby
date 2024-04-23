@@ -40,15 +40,15 @@ ripper_parser_mark2(void *ptr)
         ripper_parser_mark(r->p);
 
         switch (r->type) {
-            case lex_type_str:
-              rb_gc_mark(r->data.ptr_str.str);
-              break;
-            case lex_type_io:
-              rb_gc_mark(r->data.val);
-              break;
-            case lex_type_generic:
-              rb_gc_mark(r->data.val);
-              break;
+          case lex_type_str:
+            rb_gc_mark(r->data.ptr_str.str);
+            break;
+          case lex_type_io:
+            rb_gc_mark(r->data.val);
+            break;
+          case lex_type_generic:
+            rb_gc_mark(r->data.val);
+            break;
         }
     }
 }
