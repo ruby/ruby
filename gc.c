@@ -12355,6 +12355,34 @@ ruby_mimmalloc(size_t size)
     return mem;
 }
 
+void *
+ruby_mimcalloc(size_t num, size_t size)
+{
+    void *mem;
+#if CALC_EXACT_MALLOC_SIZE
+    size += sizeof(struct malloc_obj_info);
+#endif
+    mem = calloc(num, size);
+#if CALC_EXACT_MALLOC_SIZE
+    if (!mem) {
+        return NULL;
+    }
+    else
+    /* set 0 for consistency of allocated_size/allocations */
+    {
+        struct malloc_obj_info *info = mem;
+        info->size = 0;
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+        info->gen = 0;
+        info->file = NULL;
+        info->line = 0;
+#endif
+        mem = info + 1;
+    }
+#endif
+    return mem;
+}
+
 void
 ruby_mimfree(void *ptr)
 {
