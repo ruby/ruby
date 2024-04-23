@@ -1024,6 +1024,29 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when gemspecs are unreadable", :permissions do
+    let(:gemspec_path) { vendored_gems("specifications/rack-1.0.0.gemspec") }
+
+    before do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+      bundle "config path vendor/bundle"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-r", gemspec_path)
+    end
+
+    it "shows a good error" do
+      bundle :install, raise_on_error: false
+      expect(err).to include(gemspec_path.to_s)
+      expect(err).to include("grant read permissions")
+    end
+  end
+
   context "after installing with --standalone" do
     before do
       install_gemfile <<-G
