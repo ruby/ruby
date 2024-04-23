@@ -1122,6 +1122,16 @@ match_init_copy(VALUE obj, VALUE orig)
     RB_OBJ_WRITE(obj, &RMATCH(obj)->regexp, RMATCH(orig)->regexp);
 
     rm = RMATCH_EXT(obj);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // The rb_reg_region_copy below may write to `obj` (`rm->registers.{beg,end}`).
+        // We apply write barrier here.  It's probably not necessary because the `RB_OBJ_WRITE`
+        // above executes the same object-remembering operation.
+        rb_gc_writebarrier_remember(obj);
+    }
+#endif
+
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
         rb_memerror();
 
@@ -1501,6 +1511,15 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, string);
     RB_OBJ_WRITE(match, &RMATCH(match)->regexp, Qnil);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // The onig_region_resize below may write to `m` (`rmatch->registers.{beg,end}`).
+        // We apply write barrier here.  It's probably not necessary because the `RB_OBJ_WRITE`
+        // above executes the same object-remembering operation.
+        rb_gc_writebarrier_remember(m);
+    }
+#endif
     int err = onig_region_resize(&rmatch->regs, 1);
     if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
@@ -1825,9 +1844,34 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return ONIG_MISMATCH;
     }
 
+#if USE_MMTK
+    VALUE root_beg;
+    VALUE root_end;
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, the `beg` and `end` fields of `re_registers` point to heap objects,
+        // but are interior pointers.  The conservative stack scanner will not recognize interior
+        // pointers as object references.  We compute the pointers to the beginning of those
+        // objects and use RB_GC_GUARD to keep them on the stack so that even if the `match_alloc`
+        // invocation triggers GC, the `beg` and `end` will still be kept alive.
+        root_beg = (VALUE)rb_mmtk_chars_to_strbuf((char*)args.regs.beg);
+        root_end = (VALUE)rb_mmtk_chars_to_strbuf((char*)args.regs.end);
+    } else {
+        root_beg = root_end = Qnil;
+    }
+#endif
+
+    // MMTk note: `match_alloc` may trigger GC.
     VALUE match = match_alloc(rb_cMatch);
     rb_matchext_t *rm = RMATCH_EXT(match);
     rm->regs = args.regs;
+
+#if USE_MMTK
+    // Guard `root_beg` and `root_end` until here.  Now that `args.regs` has been assigned to a
+    // field of `match`, the conservative stack scanner will pick up the `match` variable, and
+    // `gc_mark_children` will take care of the interior pointers when scanning the `T_MATCH`.
+    RB_GC_GUARD(root_beg);
+    RB_GC_GUARD(root_end);
+#endif
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));

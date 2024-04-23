@@ -889,9 +889,10 @@ onig_region_clear(OnigRegion* region)
 
 #if USE_MMTK
 static OnigPosition*
-rb_mmtk_onig_position_array_alloc(size_t len)
+rb_mmtk_onig_position_array_alloc(size_t len, VALUE *root_var)
 {
   rb_mmtk_strbuf_t *strbuf = rb_mmtk_new_strbuf(len * sizeof(OnigPosition));
+  *root_var = (VALUE)strbuf;
   OnigPosition *result = (OnigPosition*)rb_mmtk_strbuf_to_chars(strbuf);
   return result;
 }
@@ -931,13 +932,25 @@ onig_region_resize(OnigRegion* region, int n)
     }
 #if USE_MMTK
     } else {
-      OnigPosition *new_beg = rb_mmtk_onig_position_array_alloc(n);
-      OnigPosition *new_end = rb_mmtk_onig_position_array_alloc(n);
-      // TODO: Use write barrier when writing these fields.
+      VALUE root_beg;
+      VALUE root_end;
+      OnigPosition *new_beg = rb_mmtk_onig_position_array_alloc(n, &root_beg); // May trigger GC.
+      OnigPosition *new_end = rb_mmtk_onig_position_array_alloc(n, &root_end); // May trigger GC.
+
+      // About write barriers: The following assignments may write to fields of `RMatch` or local
+      // variables on the stack, depending on the call site.  This file `regexec.c` knows nothing
+      // about the Ruby-level `RMatch` object, so we can't apply write barriers here.  The caller
+      // should apply `rb_gc_writebarrier_remember` to the `RMatch` object if applicable.
       region->beg = new_beg;
       region->end = new_end;
+
       // Currently MMTk panicks when out of memory.  We can customize the OOM handling in the
       // `mmtk-ruby` binding so that it returns NULL instead.
+
+      // Prevent new_beg and `new_end from being collected.  Actually we only need to guard
+      // `root_beg`, but we do the same for `root_end` just for consistency.
+      RB_GC_GUARD(root_beg);
+      RB_GC_GUARD(root_end);
     }
 #endif
 
