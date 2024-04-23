@@ -3904,11 +3904,16 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 		     UChar* range, UChar** low, UChar** high, UChar** low_prev)
 {
   UChar *p, *pprev = (UChar* )NULL;
+  size_t input_len = end - str;
 
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr, "forward_search_range: str: %"PRIuPTR" (%p), end: %"PRIuPTR" (%p), s: %"PRIuPTR" (%p), range: %"PRIuPTR" (%p)\n",
 	  (uintptr_t )str, str, (uintptr_t )end, end, (uintptr_t )s, s, (uintptr_t )range, range);
 #endif
+
+  if (reg->dmin > input_len) {
+    return 0;
+  }
 
   p = s;
   if (reg->dmin > 0) {
@@ -4046,6 +4051,11 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
 		      UChar** low, UChar** high)
 {
   UChar *p;
+  size_t input_len = end - str;
+
+  if (reg->dmin > input_len) {
+    return 0;
+  }
 
   range += reg->dmin;
   p = s;
