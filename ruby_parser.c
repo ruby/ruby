@@ -827,7 +827,7 @@ rb_parser_encoding(VALUE vparser)
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    return rb_ruby_parser_encoding(parser->parser_params);
+    return rb_enc_from_encoding(rb_ruby_parser_encoding(parser->parser_params));
 }
 
 VALUE

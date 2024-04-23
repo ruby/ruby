@@ -15953,10 +15953,10 @@ rb_ruby_parser_keep_tokens(rb_parser_t *p)
     p->tokens = rb_parser_ary_new_capa_for_ast_token(p, 10);
 }
 
-VALUE
+rb_encoding *
 rb_ruby_parser_encoding(rb_parser_t *p)
 {
-    return rb_enc_from_encoding(p->enc);
+    return p->enc;
 }
 
 int
