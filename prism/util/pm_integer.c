@@ -135,11 +135,18 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     }
 
     if (left_length * 2 <= right_length) {
-        uint32_t *values = (uint32_t*) xcalloc(left_length + right_length, sizeof(uint32_t));
+        uint32_t *values = (uint32_t *) xcalloc(left_length + right_length, sizeof(uint32_t));
 
         for (size_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
             size_t end_offset = start_offset + left_length;
             if (end_offset > right_length) end_offset = right_length;
+
+            pm_integer_t sliced_left = {
+                .value = 0,
+                .length = left_length,
+                .values = left_values,
+                .negative = false
+            };
 
             pm_integer_t sliced_right = {
                 .value = 0,
@@ -149,7 +156,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             };
 
             pm_integer_t product;
-            karatsuba_multiply(&product, left, &sliced_right, base);
+            karatsuba_multiply(&product, &sliced_left, &sliced_right, base);
 
             uint32_t carry = 0;
             for (size_t index = 0; index < product.length; index++) {
