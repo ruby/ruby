@@ -4816,3 +4816,19 @@ assert_equal "abc", %q{
   change_bytes(str, to_int_1, to_int_99)
   str
 }
+
+assert_equal '["raised", "Module", "Object"]', %q{
+  def foo(obj)
+    obj.superclass.name
+  end
+
+  ret = []
+
+  begin
+    foo(Class.allocate)
+  rescue TypeError
+    ret << 'raised'
+  end
+
+  ret += [foo(Class), foo(Class.new)]
+}
