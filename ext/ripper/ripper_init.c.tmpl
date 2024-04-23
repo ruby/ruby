@@ -188,7 +188,7 @@ ripper_parser_encoding(VALUE vparser)
 {
     struct parser_params *p = ripper_parser_params(vparser, false);
 
-    return rb_ruby_parser_encoding(p);
+    return rb_enc_from_encoding(rb_ruby_parser_encoding(p));
 }
 
 /*
