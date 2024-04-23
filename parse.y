@@ -2218,7 +2218,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset(p, $1, idCOLON2, $3, &@$);
 		    /*% %*/
-		    /*% ripper: field!($1, idCOLON2, $3) %*/
+		    /*% ripper: field!($1, $2, $3) %*/
 		    }
 		| primary_value call_op tCONSTANT
 		    {
