@@ -356,15 +356,9 @@ ary_heap_alloc(size_t capa)
 }
 
 static void
-ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
+ary_heap_free_ptr(const VALUE *ptr, long size)
 {
     ruby_sized_xfree((void *)ptr, size);
-}
-
-static void
-ary_heap_free(VALUE ary)
-{
-    ary_heap_free_ptr(ary, ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
 }
 
 static size_t
@@ -389,7 +383,7 @@ rb_ary_make_embedded(VALUE ary)
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(buf, len * sizeof(VALUE));
     }
 }
 
@@ -424,7 +418,7 @@ ary_resize_capa(VALUE ary, long capacity)
 
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
-            ary_heap_free_ptr(ary, ptr, old_capa);
+            ary_heap_free_ptr(ptr, old_capa);
 
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
@@ -484,7 +478,7 @@ static void
 rb_ary_reset(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-        ary_heap_free(ary);
+        ary_heap_free_ptr(ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
     }
     else if (ARY_SHARED_P(ary)) {
         rb_ary_unshare(ary);
@@ -866,7 +860,7 @@ rb_ary_free(VALUE ary)
         }
 
         RB_DEBUG_COUNTER_INC(obj_ary_ptr);
-        ary_heap_free(ary);
+        ary_heap_free_ptr(ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_ary_embed);
@@ -3414,7 +3408,7 @@ rb_ary_sort_bang(VALUE ary)
                     rb_ary_unshare(ary);
                 }
                 else {
-                    ary_heap_free(ary);
+                    ary_heap_free_ptr(ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
                 }
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(tmp));
                 ARY_SET_HEAP_LEN(ary, len);
