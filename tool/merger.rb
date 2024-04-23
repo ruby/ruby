@@ -324,7 +324,10 @@ else
       end
       patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
 
-      message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
+      message = "#{(patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n")}"
+      message.gsub!(/\G(.*)\n( .*)/, "\\1\\2")
+      message = "\n\n#{message}"
+
       puts '+ git apply'
       IO.popen(['git', 'apply', '--3way'], 'wb') { |f| f.write(patch) }
     else
