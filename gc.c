@@ -1882,11 +1882,10 @@ rb_gc_initial_stress_set(VALUE flag)
     initial_stress = flag;
 }
 
-static void * Alloc_GC_impl(void);
+static void *rb_gc_impl_objspace_alloc(void);
 
 #if USE_SHARED_GC
 # include "dln.h"
-# define Alloc_GC rb_gc_functions->init
 
 void
 ruby_external_gc_init()
@@ -1895,26 +1894,33 @@ ruby_external_gc_init()
     rb_gc_functions = map;
 
     char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
-    if (!gc_so_path) {
-        map->init = Alloc_GC_impl;
-        return;
+    void *handle = NULL;
+    if (gc_so_path) {
+        const char *error = NULL;
+        handle = dln_open(gc_so_path, &error);
+        if (!handle) {
+            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
+        }
     }
 
-    const char *error = NULL;
-    void *h = dln_open(gc_so_path, &error);
-    if (!h) {
-        rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
-    }
+# define load_external_gc_func(name) do { \
+    if (handle) { \
+        map->name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!map->name) { \
+            rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+        } \
+    } \
+    else { \
+        map->name = rb_gc_impl_##name; \
+    } \
+} while (0)
 
-    void *gc_init_func = dln_symbol(h, "Init_GC");
-    if (!gc_init_func) {
-        rb_bug("ruby_external_gc_init: Init_GC func not exported by library %s", gc_so_path);
-    }
+    load_external_gc_func(objspace_alloc);
 
-    map->init = gc_init_func;
+# undef load_external_gc_func
 }
-#else
-# define Alloc_GC Alloc_GC_impl
+
+# define rb_gc_impl_objspace_alloc rb_gc_functions->objspace_alloc
 #endif
 
 rb_objspace_t *
@@ -1923,8 +1929,12 @@ rb_objspace_alloc(void)
 #if USE_SHARED_GC
     ruby_external_gc_init();
 #endif
-    return (rb_objspace_t *)Alloc_GC();
+    return (rb_objspace_t *)rb_gc_impl_objspace_alloc();
 }
+
+#if USE_SHARED_GC
+# undef rb_gc_impl_objspace_alloc
+#endif
 
 static void free_stack_chunks(mark_stack_t *);
 static void mark_stack_free_cache(mark_stack_t *);
@@ -3526,7 +3536,7 @@ static const struct st_hash_type object_id_hash_type = {
 };
 
 static void *
-Alloc_GC_impl(void)
+rb_gc_impl_objspace_alloc(void)
 {
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     ruby_current_vm_ptr->objspace = objspace;
