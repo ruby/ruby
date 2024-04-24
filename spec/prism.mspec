@@ -5,9 +5,6 @@
 MSpec.register(:exclude, "Warning.[] returns default values for categories :deprecated and :experimental")
 
 ## Language
-MSpec.register(:exclude, "Hash literal expands an '**{}' or '**obj' element with the last key/value pair taking precedence")
-MSpec.register(:exclude, "Hash literal expands an '**{}' and warns when finding an additional duplicate key afterwards")
-MSpec.register(:exclude, "Hash literal merges multiple nested '**obj' in Hash literals")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used")
 MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation")
