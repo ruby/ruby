@@ -6060,6 +6060,36 @@ fn gen_block_given(
     asm.mov(out_opnd, block_given);
 }
 
+// Codegen for rb_class_superclass()
+fn jit_rb_class_superclass(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    _block: Option<crate::codegen::BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    extern "C" {
+        fn rb_class_superclass(klass: VALUE) -> VALUE;
+    }
+
+    if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(0)) {
+        return false;
+    }
+
+    asm_comment!(asm, "Class#superclass");
+    let recv_opnd = asm.stack_opnd(0);
+    let ret = asm.ccall(rb_class_superclass as *const u8, vec![recv_opnd]);
+
+    asm.stack_pop(1);
+    let ret_opnd = asm.stack_push(Type::Unknown);
+    asm.mov(ret_opnd, ret);
+
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     asm: &mut Assembler,
@@ -10071,6 +10101,8 @@ pub fn yjit_reg_method_codegen_fns() {
 
         yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
         yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
+
+        yjit_reg_method(rb_cClass, "superclass", jit_rb_class_superclass);
 
         yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
     }

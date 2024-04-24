@@ -174,6 +174,7 @@ fn main() {
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
+        .allowlist_var("rb_cClass")
 
         // From include/ruby/internal/fl_type.h
         .allowlist_type("ruby_fl_type")
