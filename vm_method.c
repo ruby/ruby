@@ -427,7 +427,6 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     RB_VM_LOCK_LEAVE();
 
     VM_ASSERT(ci);
-    VM_ASSERT(vm_ci_markable(ci));
 
     return ci;
 }
