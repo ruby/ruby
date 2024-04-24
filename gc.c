@@ -1890,9 +1890,6 @@ static void *rb_gc_impl_objspace_alloc(void);
 void
 ruby_external_gc_init()
 {
-    rb_gc_function_map_t *map = malloc(sizeof(rb_gc_function_map_t));
-    rb_gc_functions = map;
-
     char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
     void *handle = NULL;
     if (gc_so_path) {
@@ -1905,13 +1902,13 @@ ruby_external_gc_init()
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        map->name = dln_symbol(handle, "rb_gc_impl_" #name); \
-        if (!map->name) { \
+        rb_gc_functions->name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!rb_gc_functions->name) { \
             rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
         } \
     } \
     else { \
-        map->name = rb_gc_impl_##name; \
+        rb_gc_functions->name = rb_gc_impl_##name; \
     } \
 } while (0)
 

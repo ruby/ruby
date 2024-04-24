@@ -111,7 +111,7 @@ typedef struct gc_function_map {
     void *(*objspace_alloc)(void);
 } rb_gc_function_map_t;
 
-#define rb_gc_functions (GET_VM()->gc_functions_map)
+#define rb_gc_functions (&GET_VM()->gc_functions_map)
 #endif
 
 /*
@@ -761,7 +761,7 @@ typedef struct rb_vm_struct {
 
     struct rb_objspace *objspace;
 #if USE_SHARED_GC
-    rb_gc_function_map_t *gc_functions_map;
+    rb_gc_function_map_t gc_functions_map;
 #endif
 
     rb_at_exit_list *at_exit;
