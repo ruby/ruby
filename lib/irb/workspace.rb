@@ -179,7 +179,7 @@ EOF
     def self.install_helper_methods
       HelperMethod.helper_methods.each do |name, helper_method_class|
         define_method name do |*args, **opts, &block|
-          helper_method_class.new.execute(*args, **opts, &block)
+          helper_method_class.instance.execute(*args, **opts, &block)
         end unless method_defined?(name)
       end
     end
