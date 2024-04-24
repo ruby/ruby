@@ -13152,11 +13152,11 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
  */
 static void
 pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    const pm_node_t *duplicated = pm_static_literals_add(parser, literals, node);
+    const pm_node_t *duplicated = pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node);
 
     if (duplicated != NULL) {
         pm_buffer_t buffer = { 0 };
-        pm_static_literal_inspect(&buffer, parser, duplicated);
+        pm_static_literal_inspect(&buffer, &parser->newline_list, parser->start_line, parser->encoding->name, duplicated);
 
         pm_diagnostic_list_append_format(
             &parser->warning_list,
@@ -13178,7 +13178,7 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
  */
 static void
 pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    if (pm_static_literals_add(parser, literals, node) != NULL) {
+    if (pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node) != NULL) {
         pm_diagnostic_list_append_format(
             &parser->warning_list,
             node->location.start,
@@ -15678,7 +15678,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
  */
 static void
 parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
-    if (pm_static_literals_add(parser, keys, node) != NULL) {
+    if (pm_static_literals_add(&parser->newline_list, parser->start_line, keys, node) != NULL) {
         pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_KEY_DUPLICATE);
     }
 }
