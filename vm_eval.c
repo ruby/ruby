@@ -415,8 +415,32 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
     return vm->global_cc_cache_table[index] = cd.cc;
 }
 
+static void
+scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
+{
+    int flags = 0;
+
+    switch(scope) {
+      case CALL_PUBLIC:
+        break;
+      case CALL_FCALL:
+        flags |= VM_CALL_FCALL;
+        break;
+      case CALL_VCALL:
+        flags |= VM_CALL_VCALL;
+        break;
+      case CALL_PUBLIC_KW:
+        flags |= VM_CALL_KWARG;
+        break;
+      case CALL_FCALL_KW:
+        flags |= (VM_CALL_KWARG | VM_CALL_FCALL);
+        break;
+    }
+    *ci = VM_CI_ON_STACK(mid, flags, argc, NULL);
+}
+
 static inline const struct rb_callcache *
-gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, call_type call_scope)
+gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
     VALUE klass;
 
@@ -451,27 +475,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, ca
     }
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
-
-    int flags = 0;
-
-    switch(call_scope) {
-      case CALL_PUBLIC:
-        break;
-      case CALL_FCALL:
-        flags |= VM_CALL_FCALL;
-        break;
-      case CALL_VCALL:
-        flags |= VM_CALL_VCALL;
-        break;
-      case CALL_PUBLIC_KW:
-        flags |= VM_CALL_KWARG;
-        break;
-      case CALL_FCALL_KW:
-        flags |= (VM_CALL_KWARG | VM_CALL_FCALL);
-        break;
-    }
-
-    return gccct_method_search_slowpath(vm, klass, index, &VM_CI_ON_STACK(mid, flags, argc, NULL));
+    return gccct_method_search_slowpath(vm, klass, index, ci);
 }
 
 /**
@@ -512,7 +516,10 @@ rb_call0(rb_execution_context_t *ec,
         break;
     }
 
-    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc, scope);
+    struct rb_callinfo ci;
+    scope_to_ci(scope, mid, argc, &ci);
+
+    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, &ci);
 
     if (scope == CALL_PUBLIC) {
         RB_DEBUG_COUNTER_INC(call0_public);
@@ -1029,7 +1036,11 @@ static inline VALUE
 rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
     rb_execution_context_t *ec = GET_EC();
-    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, argc, scope);
+
+    struct rb_callinfo ci;
+    scope_to_ci(scope, mid, argc, &ci);
+
+    const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, &ci);
     VALUE self = ec->cfp->self;
 
     if (LIKELY(cc) &&
