@@ -3036,7 +3036,6 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 {
     const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
-    bool cacheable_ci = vm_ci_markable(ci);
 
     if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
                  calling->block_handler != VM_BLOCK_HANDLER_NONE &&
@@ -3057,7 +3056,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(ci == calling->cd->ci);
             VM_ASSERT(cc == calling->cc);
 
-            if (cacheable_ci && vm_call_iseq_optimizable_p(ci, cc)) {
+            if (vm_call_iseq_optimizable_p(ci, cc)) {
                 if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) &&
                     !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
                     VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
@@ -3087,12 +3086,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && vm_call_cacheable(ci, cc));
+                                vm_call_cacheable(ci, cc));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && vm_call_cacheable(ci, cc));
+                                vm_call_cacheable(ci, cc));
             }
 
             /* initialize opt vars for self-references */
@@ -3120,7 +3119,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    cacheable_ci && vm_call_cacheable(ci, cc));
+                                    vm_call_cacheable(ci, cc));
 
                     return 0;
                 }
@@ -3133,7 +3132,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    cacheable_ci && vm_call_cacheable(ci, cc));
+                                    vm_call_cacheable(ci, cc));
                 }
 
                 return 0;
