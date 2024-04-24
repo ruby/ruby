@@ -21,9 +21,9 @@ dln_symbol(void *handle, const char *symbol)
     UNREACHABLE_RETURN(NULL);
 }
 
-NORETURN(void *dln_open(const char *library, const char **error));
+NORETURN(void *dln_open(const char *library, char *error, size_t size));
 void*
-dln_open(const char *library, const char **error)
+dln_open(const char *library, char *error, size_t size)
 {
     rb_loaderror("this executable file can't load extension libraries");
 
