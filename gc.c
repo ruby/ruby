@@ -1896,8 +1896,8 @@ ruby_external_gc_init()
     char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
     void *handle = NULL;
     if (gc_so_path) {
-        const char *error = NULL;
-        handle = dln_open(gc_so_path, &error);
+        char error[128];
+        handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
             rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
         }
