@@ -2917,6 +2917,26 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
                          VALUE *const locals);
 
 static VALUE
+vm_call_iseq_forwardable(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+                                struct rb_calling_info *calling)
+{
+    const struct rb_callcache *cc = calling->cc;
+    const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
+    int param_size = ISEQ_BODY(iseq)->param.size;
+    int local_size = ISEQ_BODY(iseq)->local_table_size;
+
+    // Setting up local size and param size
+    VM_ASSERT(ISEQ_BODY(iseq)->param.flags.forwardable);
+
+    local_size = local_size + vm_ci_argc(calling->cd->ci);
+    param_size = param_size + vm_ci_argc(calling->cd->ci);
+
+    cfp->sp[0] = (VALUE)calling->cd->ci;
+
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param_size, local_size);
+}
+
+static VALUE
 vm_call_iseq_setup_kwparm_kwarg(rb_execution_context_t *ec, rb_control_frame_t *cfp,
                                 struct rb_calling_info *calling)
 {
@@ -3171,6 +3191,8 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     //   => type
     //
     if (ISEQ_BODY(iseq)->param.flags.forwardable) {
+        bool can_fastpath = true;
+
         if ((vm_ci_flag(ci) & VM_CALL_FORWARDING)) {
             struct rb_forwarding_call_data * forward_cd = (struct rb_forwarding_call_data *)calling->cd;
             if (vm_ci_argc(ci) != vm_ci_argc(forward_cd->caller_ci)) {
@@ -3182,6 +3204,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             } else {
                 ci = forward_cd->caller_ci;
             }
+            can_fastpath = false;
         }
         // C functions calling iseqs will stack allocate a CI,
         // so we need to convert it to heap allocated
@@ -3191,8 +3214,10 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     vm_ci_flag(ci),
                     vm_ci_argc(ci),
                     vm_ci_kwarg(ci));
+            can_fastpath = false;
         }
         argv[param_size - 1] = (VALUE)ci;
+        CC_SET_FASTPATH(cc, vm_call_iseq_forwardable, can_fastpath);
         return 0;
     }
 
