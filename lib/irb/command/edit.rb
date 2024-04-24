@@ -1,5 +1,6 @@
 require 'shellwords'
 
+require_relative "../color"
 require_relative "../source_finder"
 
 module IRB
@@ -7,6 +8,8 @@ module IRB
 
   module Command
     class Edit < Base
+      include RubyArgsExtractor
+
       category "Misc"
       description 'Open a file or source location.'
       help_message <<~HELP_MESSAGE

@@ -81,7 +81,7 @@ module Bundler
 
         if resolve_if_needed(options)
           ensure_specs_are_compatible!
-          load_plugins
+          Bundler.load_plugins(@definition)
           options.delete(:jobs)
         else
           options[:jobs] = 1 # to avoid the overhead of Bundler::Worker
@@ -211,20 +211,6 @@ module Bundler
       end
 
       Bundler.settings.processor_count
-    end
-
-    def load_plugins
-      Gem.load_plugins
-
-      requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
-      path_plugin_files = requested_path_gems.map do |spec|
-        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
-      rescue TypeError
-        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-        raise Gem::InvalidSpecificationException, error_message
-      end.flatten
-      Gem.load_plugin_files(path_plugin_files)
-      Gem.load_env_plugins
     end
 
     def ensure_specs_are_compatible!

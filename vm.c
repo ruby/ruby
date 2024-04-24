@@ -1479,7 +1479,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     ast.root = RNODE(&tmp_node);
     ast.frozen_string_literal = -1;
     ast.coverage_enabled = -1;
-    ast.script_lines = INT2FIX(-1);
+    ast.script_lines = (rb_parser_ary_t *)INT2FIX(-1);
 
     if (base_iseq) {
         iseq = rb_iseq_new(&ast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
@@ -2140,6 +2140,12 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
+                rb_category_warn(
+                    RB_WARN_CATEGORY_PERFORMANCE,
+                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                    rb_class2name(me->owner),
+                    rb_id2name(me->called_id)
+                );
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_rjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
@@ -4275,6 +4281,13 @@ Init_BareVM(void)
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
+    vm->unused_block_warning_table = st_init_numtable();
+
+    // TODO: remove before Ruby 3.4.0 release
+    const char *s = getenv("RUBY_TRY_UNUSED_BLOCK_WARNING_STRICT");
+    if (s && strcmp(s, "1") == 0) {
+        vm->unused_block_warning_strict = true;
+    }
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);

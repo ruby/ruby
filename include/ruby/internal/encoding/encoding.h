@@ -28,6 +28,7 @@
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/returns_nonnull.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/encoding/coderange.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/fl_type.h"

@@ -2006,9 +2006,6 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
     if (! vm_cc_markable(cc)) {
         return;
     }
-    else if (! vm_ci_markable(ci)) {
-        return;
-    }
 
     if (UNLIKELY(ccs->len == ccs->capa)) {
         if (ccs->capa == 0) {
@@ -2023,7 +2020,8 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
     VM_ASSERT(ccs->len < ccs->capa);
 
     const int pos = ccs->len++;
-    RB_OBJ_WRITE(klass, &ccs->entries[pos].ci, ci);
+    ccs->entries[pos].argc = vm_ci_argc(ci);
+    ccs->entries[pos].flag = vm_ci_flag(ci);
     RB_OBJ_WRITE(klass, &ccs->entries[pos].cc, cc);
 
     if (RB_DEBUG_COUNTER_SETMAX(ccs_maxlen, ccs->len)) {
@@ -2038,7 +2036,9 @@ rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
     ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
-        vm_ci_dump(ccs->entries[i].ci);
+        ruby_debug_printf("CCS CI ID:flag:%x argc:%u\n",
+                ccs->entries[i].flag,
+                ccs->entries[i].argc);
         rp(ccs->entries[i].cc);
     }
 }
@@ -2050,11 +2050,8 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
     VM_ASSERT(ccs->len <= ccs->capa);
 
     for (int i=0; i<ccs->len; i++) {
-        const struct rb_callinfo  *ci = ccs->entries[i].ci;
         const struct rb_callcache *cc = ccs->entries[i].cc;
 
-        VM_ASSERT(vm_ci_p(ci));
-        VM_ASSERT(vm_ci_mid(ci) == mid);
         VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
         VM_ASSERT(vm_cc_class_check(cc, klass));
         VM_ASSERT(vm_cc_check_cme(cc, ccs->cme));
@@ -2076,6 +2073,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     VALUE ccs_data;
 
     if (cc_tbl) {
+        // CCS data is keyed on method id, so we don't need the method id
+        // for doing comparisons in the `for` loop below.
         if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
             ccs = (struct rb_class_cc_entries *)ccs_data;
             const int ccs_len = ccs->len;
@@ -2088,14 +2087,20 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
             else {
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
+                // We already know the method id is correct because we had
+                // to look up the ccs_data by method id.  All we need to
+                // compare is argc and flag
+                unsigned int argc = vm_ci_argc(ci);
+                unsigned int flag = vm_ci_flag(ci);
+
                 for (int i=0; i<ccs_len; i++) {
-                    const struct rb_callinfo  *ccs_ci = ccs->entries[i].ci;
+                    unsigned int ccs_ci_argc = ccs->entries[i].argc;
+                    unsigned int ccs_ci_flag = ccs->entries[i].flag;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
-                    VM_ASSERT(vm_ci_p(ccs_ci));
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci == ci) { // TODO: equality
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
                         RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
@@ -2966,6 +2971,65 @@ vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t
     return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
 }
 
+VALUE rb_gen_method_name(VALUE owner, VALUE name); // in vm_backtrace.c
+
+static void
+warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, void *pc)
+{
+    rb_vm_t *vm = GET_VM();
+    st_table *dup_check_table = vm->unused_block_warning_table;
+    st_data_t key;
+
+    union {
+        VALUE v;
+        unsigned char b[SIZEOF_VALUE];
+    } k1 = {
+        .v = (VALUE)pc,
+    }, k2 = {
+        .v = (VALUE)cme->def,
+    };
+
+    // relax check
+    if (!vm->unused_block_warning_strict) {
+        key = (st_data_t)cme->def->original_id;
+
+        if (st_lookup(dup_check_table, key, NULL)) {
+            return;
+        }
+    }
+
+    // strict check
+    // make unique key from pc and me->def pointer
+    key = 0;
+    for (int i=0; i<SIZEOF_VALUE; i++) {
+        // fprintf(stderr, "k1:%3d k2:%3d\n", k1.b[i], k2.b[SIZEOF_VALUE-1-i]);
+        key |= (st_data_t)(k1.b[i] ^ k2.b[SIZEOF_VALUE-1-i]) << (8 * i);
+    }
+
+    if (0) {
+        fprintf(stderr, "SIZEOF_VALUE:%d\n", SIZEOF_VALUE);
+        fprintf(stderr, "pc:%p def:%p\n", pc, cme->def);
+        fprintf(stderr, "key:%p\n", (void *)key);
+    }
+
+    // duplication check
+    if (st_insert(dup_check_table, key, 1)) {
+        // already shown
+    }
+    else {
+        VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
+        VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
+
+        if (!NIL_P(m_loc)) {
+            rb_warning("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
+                       name, RARRAY_AREF(m_loc, 0), RARRAY_AREF(m_loc, 1));
+        }
+        else {
+            rb_warning("the block may be ignored because '%"PRIsVALUE"' does not use a block", name);
+        }
+    }
+}
+
 static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
@@ -2973,6 +3037,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
     bool cacheable_ci = vm_ci_markable(ci);
+
+    if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
+                 calling->block_handler != VM_BLOCK_HANDLER_NONE &&
+                 !(vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER))) {
+        warn_unused_block(vm_cc_cme(cc), iseq, (void *)ec->cfp->pc);
+    }
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_KW_SPLAT))) {
         if (LIKELY(rb_simple_iseq_p(iseq))) {

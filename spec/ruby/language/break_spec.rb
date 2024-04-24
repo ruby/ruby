@@ -372,7 +372,7 @@ describe "Executing break from within a block" do
     end.should_not raise_error
   end
 
-  it "raises LocalJumpError when converted into a proc during a a super call" do
+  it "raises LocalJumpError when converted into a proc during a super call" do
     cls1 = Class.new { def foo(&b); b; end }
     cls2 = Class.new(cls1) { def foo; super { break 1 }.call; end }
 

@@ -97,7 +97,7 @@ rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE
 
     StringValue(str);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
@@ -120,25 +120,12 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VAL
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
     if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);
-}
-
-static VALUE
-lex_array(VALUE array, int index)
-{
-    VALUE str = rb_ary_entry(array, index);
-    if (!NIL_P(str)) {
-        StringValue(str);
-        if (!rb_enc_asciicompat(rb_enc_get(str))) {
-            rb_raise(rb_eArgError, "invalid source encoding");
-        }
-    }
-    return str;
 }
 
 static VALUE
@@ -148,10 +135,10 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
 
     array = rb_check_array_type(array);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
-    ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
+    ast = rb_parser_compile_array(vparser, Qnil, array, 1);
     return ast_parse_done(ast);
 }
 
@@ -806,9 +793,9 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
-    VALUE ret = data->ast->body.script_lines;
-    if (!RB_TYPE_P(ret, T_ARRAY)) return Qnil;
-    return ret;
+    rb_parser_ary_t *ret = data->ast->body.script_lines;
+    if (!ret || FIXNUM_P((VALUE)ret)) return Qnil;
+    return rb_parser_build_script_lines_from(ret);
 }
 
 #include "ast.rbinc"

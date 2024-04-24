@@ -16,6 +16,10 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
+#ifndef USE_SHARED_GC
+# define USE_SHARED_GC 0
+#endif
+
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
 #elif defined(__i386) && defined(__GNUC__)
@@ -114,8 +118,6 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
-
-size_t rb_size_pool_slot_size(unsigned char pool_id);
 
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */

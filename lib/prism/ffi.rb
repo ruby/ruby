@@ -286,10 +286,20 @@ module Prism
       LibRubyParser::PrismString.with_string(code) { |string| parse_file_success_common(string, options) }
     end
 
+    # Mirror the Prism.parse_failure? API by using the serialization API.
+    def parse_failure?(code, **options)
+      !parse_success?(code, **options)
+    end
+
     # Mirror the Prism.parse_file_success? API by using the serialization API.
     def parse_file_success?(filepath, **options)
       options[:filepath] = filepath
       LibRubyParser::PrismString.with_file(filepath) { |string| parse_file_success_common(string, options) }
+    end
+
+    # Mirror the Prism.parse_file_failure? API by using the serialization API.
+    def parse_file_failure?(filepath, **options)
+      !parse_file_success?(filepath, **options)
     end
 
     private
@@ -340,7 +350,7 @@ module Prism
         node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
         tokens.each { |token,| token.value.force_encoding(loader.encoding) }
 
-        ParseResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
+        ParseLexResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
       end
     end
 

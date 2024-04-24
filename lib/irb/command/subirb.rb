@@ -9,6 +9,8 @@ module IRB
 
   module Command
     class MultiIRBCommand < Base
+      include RubyArgsExtractor
+
       private
 
       def print_deprecated_warning

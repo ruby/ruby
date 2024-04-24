@@ -60,7 +60,6 @@ errors:
   - DEF_ENDLESS
   - DEF_ENDLESS_SETTER
   - DEF_NAME
-  - DEF_NAME_AFTER_RECEIVER
   - DEF_PARAMS_TERM
   - DEF_PARAMS_TERM_PAREN
   - DEF_RECEIVER
@@ -97,6 +96,7 @@ errors:
   - EXPECT_EXPRESSION_AFTER_STAR
   - EXPECT_IDENT_REQ_PARAMETER
   - EXPECT_LPAREN_REQ_PARAMETER
+  - EXPECT_MESSAGE
   - EXPECT_RBRACKET
   - EXPECT_RPAREN
   - EXPECT_RPAREN_AFTER_MULTI
@@ -104,6 +104,14 @@ errors:
   - EXPECT_STRING_CONTENT
   - EXPECT_WHEN_DELIMITER
   - EXPRESSION_BARE_HASH
+  - EXPRESSION_NOT_WRITABLE
+  - EXPRESSION_NOT_WRITABLE_ENCODING
+  - EXPRESSION_NOT_WRITABLE_FALSE
+  - EXPRESSION_NOT_WRITABLE_FILE
+  - EXPRESSION_NOT_WRITABLE_LINE
+  - EXPRESSION_NOT_WRITABLE_NIL
+  - EXPRESSION_NOT_WRITABLE_SELF
+  - EXPRESSION_NOT_WRITABLE_TRUE
   - FLOAT_PARSE
   - FOR_COLLECTION
   - FOR_IN
@@ -126,6 +134,8 @@ errors:
   - INVALID_CHARACTER
   - INVALID_ENCODING_MAGIC_COMMENT
   - INVALID_FLOAT_EXPONENT
+  - INVALID_LOCAL_VARIABLE_READ
+  - INVALID_LOCAL_VARIABLE_WRITE
   - INVALID_MULTIBYTE_CHAR
   - INVALID_MULTIBYTE_CHARACTER
   - INVALID_MULTIBYTE_ESCAPE
@@ -198,6 +208,7 @@ errors:
   - PATTERN_HASH_KEY
   - PATTERN_HASH_KEY_DUPLICATE
   - PATTERN_HASH_KEY_LABEL
+  - PATTERN_HASH_KEY_LOCALS
   - PATTERN_IDENT_AFTER_HROCKET
   - PATTERN_LABEL_AFTER_COMMA
   - PATTERN_REST
@@ -235,6 +246,7 @@ errors:
   - TERNARY_EXPRESSION_TRUE
   - UNARY_RECEIVER
   - UNDEF_ARGUMENT
+  - UNEXPECTED_BLOCK_ARGUMENT
   - UNEXPECTED_TOKEN_CLOSE_CONTEXT
   - UNEXPECTED_TOKEN_IGNORE
   - UNTIL_TERM
@@ -269,7 +281,9 @@ warnings:
   - LITERAL_IN_CONDITION_VERBOSE
   - SHEBANG_CARRIAGE_RETURN
   - UNEXPECTED_CARRIAGE_RETURN
+  - UNREACHABLE_STATEMENT
   - UNUSED_LOCAL_VARIABLE
+  - VOID_STATEMENT
 tokens:
   - name: EOF
     value: 1
@@ -726,10 +740,25 @@ nodes:
     fields:
       - name: new_name
         type: node
+        comment: |
+          Represents the new name of the global variable that can be used after aliasing. This can be either a global variable, a back reference, or a numbered reference.
+
+              alias $foo $bar
+                    ^^^^
       - name: old_name
         type: node
+        comment: |
+          Represents the old name of the global variable that could be used before aliasing. This can be either a global variable, a back reference, or a numbered reference.
+
+              alias $foo $bar
+                         ^^^^
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `alias` keyword.
+
+              alias $foo $bar
+              ^^^^^
     comment: |
       Represents the use of the `alias` keyword to alias a global variable.
 
@@ -814,10 +843,25 @@ nodes:
         kind: ArrayNodeFlags
       - name: elements
         type: node[]
+        comment: Represent the list of zero or more [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression) within the array.
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the optional source location for the opening token.
+
+              [1,2,3]                 # "["
+              %w[foo bar baz]         # "%w["
+              %I(apple orange banana) # "%I("
+              foo = 1, 2, 3           # nil
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the optional source location for the closing token.
+
+              [1,2,3]                 # "]"
+              %w[foo bar baz]         # "]"
+              %I(apple orange banana) # ")"
+              foo = 1, 2, 3           # nil
     comment: |
       Represents an array literal. This can be a regular array using brackets or a special array using % like %w or %i.
 
@@ -1036,8 +1080,18 @@ nodes:
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: |
+          The arguments to the break statement, if present. These can be any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              break foo
+                    ^^^
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `break` keyword.
+
+              break foo
+              ^^^^^
     comment: |
       Represents the use of the `break` keyword.
 
@@ -1922,26 +1976,87 @@ nodes:
     fields:
       - name: if_keyword_loc
         type: location?
+        comment: |
+          The location of the `if` keyword if present.
+
+              bar if foo
+                  ^^
+
+          The `if_keyword_loc` field will be `nil` when the `IfNode` represents a ternary expression.
       - name: predicate
         type: node
+        comment: |
+          The node for the condition the `IfNode` is testing.
+
+              if foo
+                 ^^^
+                bar
+              end
+
+              bar if foo
+                     ^^^
+
+              foo ? bar : baz
+              ^^^
       - name: then_keyword_loc
         type: location?
+        comment: |
+          The location of the `then` keyword (if present) or the `?` in a ternary expression, `nil` otherwise.
+
+              if foo then bar end
+                     ^^^^
+
+              a ? b : c
+                ^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the body of statements that will be executed when the predicate is evaluated as truthy. Will be `nil` when no body is provided.
+
+              if foo
+                bar
+                ^^^
+                baz
+                ^^^
+              end
       - name: consequent
         type: node?
+        comment: |
+          Represents an `ElseNode` or an `IfNode` when there is an `else` or an `elsif` in the `if` statement.
+
+              if foo
+                bar
+              elsif baz
+              ^^^^^^^^^
+                qux
+                ^^^
+              end
+              ^^^
+
+              if foo then bar else baz end
+                              ^^^^^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          The location of the `end` keyword if present, `nil` otherwise.
+
+              if foo
+                bar
+              end
+              ^^^
     newline: predicate
     comment: |
-      Represents the use of the `if` keyword, either in the block form or the modifier form.
+      Represents the use of the `if` keyword, either in the block form or the modifier form, or a ternary expression.
 
           bar if foo
           ^^^^^^^^^^
 
           if foo then bar end
           ^^^^^^^^^^^^^^^^^^^
+
+          foo ? bar : baz
+          ^^^^^^^^^^^^^^^
   - name: ImaginaryNode
     fields:
       - name: numeric
@@ -3155,6 +3270,7 @@ nodes:
         kind: StringFlags
       - name: filepath
         type: string
+        comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism::parse*` APIs.
     comment: |
       Represents the use of the `__FILE__` keyword.
 
@@ -3276,18 +3392,56 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `unless` keyword.
+
+              unless cond then bar end
+              ^^^^^^
+
+              bar unless cond
+                  ^^^^^^
       - name: predicate
         type: node
+        comment: |
+          The condition to be evaluated for the unless expression. Can be any
+          kind of node that represents a non-void expression.
+
+              unless cond then bar end
+                     ^^^^
+
+              bar unless cond
+                         ^^^^
       - name: then_keyword_loc
         type: location?
+        comment:
+          The location of the `then` keyword, if present.
+
+              unless cond then bar end
+                          ^^^^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          The body of statements that will executed if the unless condition is
+          falsey. Will be `nil` if no body is provided.
+
+              unless cond then bar end
+                               ^^^
       - name: consequent
         type: node?
         kind: ElseNode
+        comment: |
+          The else clause of the unless expression, if present.
+
+              unless cond then bar else baz end
+                                   ^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          The location of the `end` keyword, if present.
+
+              unless cond then bar end
+                                   ^^^
     newline: predicate
     comment: |
       Represents the use of the `unless` keyword, either in the block form or the modifier form.

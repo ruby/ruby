@@ -105,9 +105,14 @@ module Prism
     end
 
     def test_unterminated_embdoc
-      assert_errors expression("1"), "1\n=begin\n", [
-        ["could not find a terminator for the embedded document", 2..9]
-      ]
+      message = "embedded document meets end of file"
+      assert_error_messages "=begin", [message]
+      assert_error_messages "=begin\n", [message]
+
+      refute_error_messages "=begin\n=end"
+      refute_error_messages "=begin\n=end\0"
+      refute_error_messages "=begin\n=end\C-d"
+      refute_error_messages "=begin\n=end\C-z"
     end
 
     def test_unterminated_i_list
@@ -336,7 +341,7 @@ module Prism
     def test_def_with_expression_receiver_and_no_identifier
       assert_errors expression("def (a); end"), "def (a); end", [
         ["expected a `.` or `::` after the receiver in a method definition", 7..7],
-        ["expected a method name", 7..7]
+        ["unexpected ';'; expected a method name", 7..8]
       ]
     end
 
@@ -406,7 +411,7 @@ module Prism
 
     def test_arguments_binding_power_for_and
       assert_error_messages "foo(*bar and baz)", [
-        "expected a `)` to close the arguments",
+        "unexpected 'and'; expected a `)` to close the arguments",
         "unexpected ')', expecting end-of-input",
         "unexpected ')', ignoring it"
       ]
@@ -2197,6 +2202,10 @@ module Prism
       refute_error_messages "case (); in [{a:1}, {a:2}]; end"
     end
 
+    def test_unexpected_block
+      assert_error_messages "def foo = yield(&:+)", ["block argument should not be given"]
+    end
+
     private
 
     def assert_errors(expected, source, errors, check_valid_syntax: true)
@@ -2217,7 +2226,7 @@ module Prism
 
     def refute_error_messages(source)
       assert_valid_syntax(source)
-      assert Prism.parse_success?(source)
+      assert Prism.parse_success?(source), "Expected #{source.inspect} to parse successfully"
     end
 
     def assert_warning_messages(source, warnings)

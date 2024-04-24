@@ -227,6 +227,12 @@ class IPAddr
     return str
   end
 
+  # Returns a string containing the IP address representation in
+  # cidr notation
+  def cidr
+    format("%s/%s", to_s, prefix)
+  end
+
   # Returns a network byte ordered string form of the IP address.
   def hton
     case @family

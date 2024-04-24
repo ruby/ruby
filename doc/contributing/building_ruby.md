@@ -96,10 +96,19 @@
 5. Build Ruby:
 
     ``` shell
-    make install
+    make
     ```
 
 6. [Run tests](testing_ruby.md) to confirm your build succeeded.
+
+7. Install Ruby:
+
+    ``` shell
+    make install
+    ```
+
+    - If you need to run `make install` with `sudo` and want to avoid document generation with different permissions, you can use
+    `make SUDO=sudo install`.
 
 ### Unexplainable Build Errors
 

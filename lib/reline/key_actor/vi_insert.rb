@@ -41,7 +41,7 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     #  19 ^S
     :vi_search_next,
     #  20 ^T
-    :ed_insert,
+    :ed_transpose_chars,
     #  21 ^U
     :vi_kill_line_prev,
     #  22 ^V
@@ -51,7 +51,7 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     #  24 ^X
     :ed_insert,
     #  25 ^Y
-    :ed_insert,
+    :em_yank,
     #  26 ^Z
     :ed_insert,
     #  27 ^[

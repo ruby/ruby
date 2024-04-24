@@ -10,6 +10,23 @@ module Prism
   # generally lines up. However, there are a few cases that require special
   # handling.
   class LexCompat # :nodoc:
+    # A result class specialized for holding tokens produced by the lexer.
+    class Result < Prism::Result
+      # The list of tokens that were produced by the lexer.
+      attr_reader :value
+
+      # Create a new lex compat result object with the given values.
+      def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
+        @value = value
+        super(comments, magic_comments, data_loc, errors, warnings, source)
+      end
+
+      # Implement the hash pattern matching interface for Result.
+      def deconstruct_keys(keys)
+        super.merge!(value: value)
+      end
+    end
+
     # This is a mapping of prism token types to Ripper token types. This is a
     # many-to-one mapping because we split up our token types, whereas Ripper
     # tends to group them.
@@ -844,7 +861,7 @@ module Prism
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
 
-      ParseResult.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, Source.new(source))
+      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, Source.new(source))
     end
   end
 

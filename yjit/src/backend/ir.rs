@@ -452,6 +452,12 @@ pub enum Insn {
     /// Jump if zero
     Jz(Target),
 
+    /// Jump if operand is zero (only used during lowering at the moment)
+    Joz(Opnd, Target),
+
+    /// Jump if operand is non-zero (only used during lowering at the moment)
+    Jonz(Opnd, Target),
+
     // Add a label into the IR at the point that this instruction is added.
     Label(Target),
 
@@ -547,6 +553,9 @@ impl Insn {
             Insn::Jo(target) |
             Insn::Jz(target) |
             Insn::Label(target) |
+            Insn::JoMul(target) |
+            Insn::Joz(_, target) |
+            Insn::Jonz(_, target) |
             Insn::LeaJumpTarget { target, .. } => {
                 Some(target)
             }
@@ -595,6 +604,8 @@ impl Insn {
             Insn::Jo(_) => "Jo",
             Insn::JoMul(_) => "JoMul",
             Insn::Jz(_) => "Jz",
+            Insn::Joz(..) => "Joz",
+            Insn::Jonz(..) => "Jonz",
             Insn::Label(_) => "Label",
             Insn::LeaJumpTarget { .. } => "LeaJumpTarget",
             Insn::Lea { .. } => "Lea",
@@ -755,6 +766,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
+
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -763,6 +775,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
+            Insn::Joz(opnd, _) |
+            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
@@ -857,6 +871,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
+
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -865,6 +880,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
+            Insn::Joz(opnd, _) |
+            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {

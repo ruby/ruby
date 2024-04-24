@@ -25,6 +25,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 char *dln_find_exe_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
 char *dln_find_file_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
 void *dln_load(const char*);
+void *dln_open(const char *file, const char **error);
 void *dln_symbol(void*,const char*);
 
 RUBY_SYMBOL_EXPORT_END

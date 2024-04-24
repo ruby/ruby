@@ -47,17 +47,5 @@ module TestIRB
 
       assert_match(/irb\(main\):001> 123/, output)
     end
-
-    def test_forced_exit_out_of_irb_session
-      write_ruby <<~'ruby'
-        at_exit { puts 'un' + 'reachable' }
-        binding.irb
-        exit! # this will call exit! method overrided by command
-      ruby
-      output = run_ruby_file do
-        type "exit"
-      end
-      assert_not_include(output, 'unreachable')
-    end
   end
 end

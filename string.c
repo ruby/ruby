@@ -530,7 +530,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                                      RSTRING(str)->len,
                                      ENCODING_GET(str));
             }
-            OBJ_FREEZE_RAW(str);
+            OBJ_FREEZE(str);
         }
         else {
             if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
@@ -566,7 +566,7 @@ rb_fstring(VALUE str)
     bare = BARE_STRING_P(str);
     if (!bare) {
         if (STR_EMBED_P(str)) {
-            OBJ_FREEZE_RAW(str);
+            OBJ_FREEZE(str);
             return str;
         }
 
@@ -583,7 +583,7 @@ rb_fstring(VALUE str)
 
     if (!bare) {
         str_replace_shared_without_enc(str, fstr);
-        OBJ_FREEZE_RAW(str);
+        OBJ_FREEZE(str);
         return str;
     }
     return fstr;
@@ -3759,7 +3759,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 
   incompatible:
     rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-             rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+             rb_enc_inspect_name(str_enc), rb_enc_inspect_name(ptr_enc));
     UNREACHABLE_RETURN(Qundef);
 }
 
@@ -6247,8 +6247,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             if (coderange_scan(p, beg0, str_enc) != ENC_CODERANGE_7BIT ||
                 coderange_scan(p+end0, len-end0, str_enc) != ENC_CODERANGE_7BIT) {
                 rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-                         rb_enc_name(str_enc),
-                         rb_enc_name(STR_ENC_GET(repl)));
+                         rb_enc_inspect_name(str_enc),
+                         rb_enc_inspect_name(STR_ENC_GET(repl)));
             }
             enc = STR_ENC_GET(repl);
         }
@@ -11545,7 +11545,7 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
         rb_encoding *e = STR_ENC_GET(str);
         if (cr == ENC_CODERANGE_7BIT ? rb_enc_mbminlen(enc) != 1 : enc != e) {
             rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-                     rb_enc_name(enc), rb_enc_name(e));
+                     rb_enc_inspect_name(enc), rb_enc_inspect_name(e));
         }
     }
     return str;

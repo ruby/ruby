@@ -106,4 +106,103 @@ RSpec.describe "hook plugins" do
       expect(out).to include "installed gem rack : installed"
     end
   end
+
+  context "before-require-all hook" do
+    before do
+      build_repo2 do
+        build_plugin "before-require-all-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_BEFORE_REQUIRE_ALL do |deps|
+              puts "gems to be required \#{deps.map(&:name).join(", ")}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install before-require-all-plugin --source #{file_uri_for(gem_repo2)}"
+    end
+
+    it "runs before all rubygems are required" do
+      install_gemfile_and_bundler_require
+      expect(out).to include "gems to be required rake, rack"
+    end
+  end
+
+  context "before-require hook" do
+    before do
+      build_repo2 do
+        build_plugin "before-require-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_BEFORE_REQUIRE do |dep|
+              puts "requiring gem \#{dep.name}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install before-require-plugin --source #{file_uri_for(gem_repo2)}"
+    end
+
+    it "runs before each rubygem is required" do
+      install_gemfile_and_bundler_require
+      expect(out).to include "requiring gem rake"
+      expect(out).to include "requiring gem rack"
+    end
+  end
+
+  context "after-require-all hook" do
+    before do
+      build_repo2 do
+        build_plugin "after-require-all-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_AFTER_REQUIRE_ALL do |deps|
+              puts "required gems \#{deps.map(&:name).join(", ")}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install after-require-all-plugin --source #{file_uri_for(gem_repo2)}"
+    end
+
+    it "runs after all rubygems are required" do
+      install_gemfile_and_bundler_require
+      expect(out).to include "required gems rake, rack"
+    end
+  end
+
+  context "after-require hook" do
+    before do
+      build_repo2 do
+        build_plugin "after-require-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_AFTER_REQUIRE do |dep|
+              puts "required gem \#{dep.name}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install after-require-plugin --source #{file_uri_for(gem_repo2)}"
+    end
+
+    it "runs after each rubygem is required" do
+      install_gemfile_and_bundler_require
+      expect(out).to include "required gem rake"
+      expect(out).to include "required gem rack"
+    end
+  end
+
+  def install_gemfile_and_bundler_require
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rake"
+      gem "rack"
+    G
+
+    ruby <<-RUBY
+      require "bundler"
+      Bundler.require
+    RUBY
+  end
 end

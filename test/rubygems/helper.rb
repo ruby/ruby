@@ -285,9 +285,12 @@ class Gem::TestCase < Test::Unit::TestCase
   def setup
     @orig_hooks = {}
     @orig_env = ENV.to_hash
-    @tmp = File.expand_path("../../tmp", __dir__)
 
-    FileUtils.mkdir_p @tmp
+    top_srcdir = __dir__ + "/../.."
+    @tmp = File.expand_path(ENV.fetch("GEM_TEST_TMPDIR", "tmp"), top_srcdir)
+
+    FileUtils.mkdir_p(@tmp, mode: 0o700) # =rwx
+    @tmp = File.realpath(@tmp)
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
 

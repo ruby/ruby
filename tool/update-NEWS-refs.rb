@@ -13,8 +13,9 @@ if links.empty? || lines.last != ""
   raise "NEWS.md must end with a sequence of links"
 end
 
-labels = links.keys.select {|k| !(k.start_with?("Feature") || k.start_with?("Bug"))}
-new_src = lines.join("\n").gsub(/\[?\[((?:Feature|Bug)\s+#(\d+))\]\]?/) do
+trackers = ["Feature", "Bug", "Misc"]
+labels = links.keys.reject {|k| k.start_with?(*trackers)}
+new_src = lines.join("\n").gsub(/\[?\[(#{Regexp.union(trackers)}\s+#(\d+))\]\]?/) do
   links[$1] ||= "https://bugs.ruby-lang.org/issues/#$2"
   "[[#$1]]"
 end.gsub(/\[\[#{Regexp.union(labels)}\]\]?/) do
@@ -22,7 +23,7 @@ end.gsub(/\[\[#{Regexp.union(labels)}\]\]?/) do
 end.chomp + "\n\n"
 
 label_width = links.max_by {|k, _| k.size}.first.size + 4
-redmine_links, non_redmine_links = links.partition {|k,| k =~ /\A(Feature|Bug)\s+#\d+\z/ }
+redmine_links, non_redmine_links = links.partition {|k,| k =~ /\A#{Regexp.union(trackers)}\s+#\d+\z/ }
 
 (redmine_links.sort_by {|k,| k[/\d+/].to_i } + non_redmine_links.reverse).each do |k, v|
   new_src << "[#{k}]:".ljust(label_width) << v << "\n"

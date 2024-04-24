@@ -244,28 +244,46 @@ module TestIRB
     def test_exit
       write_ruby <<~'RUBY'
         binding.irb
-        puts "hello"
+        puts "he" + "llo"
       RUBY
 
       output = run_ruby_file do
-        type "next"
+        type "debug"
         type "exit"
       end
 
-      assert_match(/irb\(main\):001> next/, output)
+      assert_match(/irb:rdbg\(main\):002>/, output)
+      assert_match(/hello/, output)
+    end
+
+    def test_force_exit
+      write_ruby <<~'RUBY'
+        binding.irb
+        puts "he" + "llo"
+      RUBY
+
+      output = run_ruby_file do
+        type "debug"
+        type "exit!"
+      end
+
+      assert_match(/irb:rdbg\(main\):002>/, output)
+      assert_not_match(/hello/, output)
     end
 
     def test_quit
       write_ruby <<~'RUBY'
         binding.irb
+        puts "he" + "llo"
       RUBY
 
       output = run_ruby_file do
-        type "next"
+        type "debug"
         type "quit!"
       end
 
-      assert_match(/irb\(main\):001> next/, output)
+      assert_match(/irb:rdbg\(main\):002>/, output)
+      assert_not_match(/hello/, output)
     end
 
     def test_prompt_line_number_continues

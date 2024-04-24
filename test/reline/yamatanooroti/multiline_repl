@@ -143,6 +143,11 @@ opt.on('--complete') {
     %w{String ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
 }
+opt.on('--complete-menu-with-perfect-match') {
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
+    %w{abs abs2}.select{ |c| c.start_with?(target) }
+  }
+}
 opt.on('--autocomplete') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|

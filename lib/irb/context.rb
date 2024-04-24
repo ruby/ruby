@@ -585,31 +585,44 @@ module IRB
       @inspect_mode
     end
 
-    def evaluate(line, line_no) # :nodoc:
+    def evaluate(statement, line_no) # :nodoc:
       @line_no = line_no
       result = nil
 
+      case statement
+      when Statement::EmptyInput
+        return
+      when Statement::Expression
+        result = evaluate_expression(statement.code, line_no)
+      when Statement::Command
+        result = statement.command_class.execute(self, statement.arg)
+      end
+
+      set_last_value(result)
+    end
+
+    def evaluate_expression(code, line_no) # :nodoc:
+      result = nil
       if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
         IRB.set_measure_callback
       end
 
       if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
         last_proc = proc do
-          result = workspace.evaluate(line, @eval_path, line_no)
+          result = workspace.evaluate(code, @eval_path, line_no)
         end
         IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
           _name, callback, arg = item
           proc do
-            callback.(self, line, line_no, arg) do
+            callback.(self, code, line_no, arg) do
               chain.call
             end
           end
         end.call
       else
-        result = workspace.evaluate(line, @eval_path, line_no)
+        result = workspace.evaluate(code, @eval_path, line_no)
       end
-
-      set_last_value(result)
+      result
     end
 
     def inspect_last_value # :nodoc:

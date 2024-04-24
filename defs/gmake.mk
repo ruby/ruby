@@ -193,7 +193,7 @@ $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
 .PHONY: commit
-COMMIT_PREPARE := $(filter-out commit do-commit,$(MAKECMDGOALS)) up
+COMMIT_PREPARE := $(subst :,\:,$(filter-out commit do-commit,$(MAKECMDGOALS))) up
 
 commit: pre-commit $(DOT_WAIT) do-commit $(DOT_WAIT) post_commit
 pre-commit: $(COMMIT_PREPARE)
@@ -513,10 +513,12 @@ ifneq ($(POSTLINK),)
 endif
 	$(Q) $(RMALL) $@.*
 
-rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
 	@ $(NULLCMD)
 
 ifeq ($(ENABLE_SHARED),yes)
+ruby: $(if $(LIBRUBY_SO_UPDATE),$(RUBYSPEC_CAPIEXT_SO))
 exts: rubyspec-capiext
 endif
 

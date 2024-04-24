@@ -19,7 +19,9 @@ VALUE rb_cPrismEmbDocComment;
 VALUE rb_cPrismMagicComment;
 VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
+VALUE rb_cPrismResult;
 VALUE rb_cPrismParseResult;
+VALUE rb_cPrismParseLexResult;
 
 VALUE rb_cPrismDebugEncoding;
 
@@ -515,7 +517,7 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
  * Create a new parse result from the given parser, value, encoding, and source.
  */
 static VALUE
-parse_result_create(pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source) {
+parse_result_create(VALUE class, pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source) {
     VALUE result_argv[] = {
         value,
         parser_comments(parser, source),
@@ -526,7 +528,7 @@ parse_result_create(pm_parser_t *parser, VALUE value, rb_encoding *encoding, VAL
         source
     };
 
-    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
+    return rb_class_new_instance(7, result_argv, class);
 }
 
 /******************************************************************************/
@@ -635,7 +637,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         value = parse_lex_data.tokens;
     }
 
-    VALUE result = parse_result_create(&parser, value, parse_lex_data.encoding, source);
+    VALUE result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
 
@@ -700,7 +702,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE value = pm_ast_new(&parser, node, encoding, source);
-    VALUE result = parse_result_create(&parser, value, encoding, source) ;
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source) ;
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -804,7 +806,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE value = pm_ast_new(&parser, node, encoding, source);
-    VALUE result = parse_result_create(&parser, value, encoding, source);
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source);
 
     pm_node_destroy(&parser, node);
     pm_buffer_free(&buffer);
@@ -969,7 +971,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse_success?(source, **options) -> Array
+ *   Prism::parse_success?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses without errors. For
  * supported options, see Prism::parse.
@@ -989,7 +991,19 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_success?(filepath, **options) -> Array
+ *   Prism::parse_failure?(source, **options) -> bool
+ *
+ * Parse the given string and return true if it parses with errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_failure_p(int argc, VALUE *argv, VALUE self) {
+    return RTEST(parse_success_p(argc, argv, self)) ? Qfalse : Qtrue;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_success?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses without errors. For
  * supported options, see Prism::parse.
@@ -1006,6 +1020,18 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_options_free(&options);
 
     return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_failure?(filepath, **options) -> bool
+ *
+ * Parse the given file and return true if it parses with errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
+    return RTEST(parse_file_success_p(argc, argv, self)) ? Qfalse : Qtrue;
 }
 
 /******************************************************************************/
@@ -1338,7 +1364,10 @@ Init_prism(void) {
     rb_cPrismMagicComment = rb_define_class_under(rb_cPrism, "MagicComment", rb_cObject);
     rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
-    rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cObject);
+
+    rb_cPrismResult = rb_define_class_under(rb_cPrism, "Result", rb_cObject);
+    rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cPrismResult);
+    rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
 
     // Intern all of the options that we support so that we don't have to do it
     // every time we parse.
@@ -1366,7 +1395,9 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse_success?", parse_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_failure?", parse_failure_p, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file_success?", parse_file_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_failure?", parse_file_failure_p, -1);
 
 #ifndef PRISM_EXCLUDE_SERIALIZATION
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);

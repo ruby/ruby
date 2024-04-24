@@ -732,11 +732,11 @@ ruby_init_loadpath(void)
             p -= bindir_len;
             archlibdir = rb_str_subseq(sopath, 0, p - libpath);
             rb_str_cat_cstr(archlibdir, libdir);
-            OBJ_FREEZE_RAW(archlibdir);
+            OBJ_FREEZE(archlibdir);
         }
         else if (p - libpath >= libdir_len && !strncmp(p - libdir_len, libdir, libdir_len)) {
             archlibdir = rb_str_subseq(sopath, 0, (p2 ? p2 : p) - libpath);
-            OBJ_FREEZE_RAW(archlibdir);
+            OBJ_FREEZE(archlibdir);
             p -= libdir_len;
         }
 #ifdef ENABLE_MULTIARCH
@@ -767,7 +767,7 @@ ruby_init_loadpath(void)
 #endif
     rb_gc_register_address(&ruby_prefix_path);
     ruby_prefix_path = PREFIX_PATH();
-    OBJ_FREEZE_RAW(ruby_prefix_path);
+    OBJ_FREEZE(ruby_prefix_path);
     if (!archlibdir) archlibdir = ruby_prefix_path;
     rb_gc_register_address(&ruby_archlibdir_path);
     ruby_archlibdir_path = archlibdir;
@@ -2632,7 +2632,7 @@ struct load_file_arg {
     VALUE f;
 };
 
-VALUE rb_script_lines_for(VALUE path);
+void rb_set_script_lines_for(VALUE vparser, VALUE path);
 
 static VALUE
 load_file_internal(VALUE argp_v)
@@ -2737,10 +2737,7 @@ load_file_internal(VALUE argp_v)
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
                           opt->do_line, opt->do_split);
 
-    VALUE lines = rb_script_lines_for(orig_fname);
-    if (!NIL_P(lines)) {
-        rb_parser_set_script_lines(parser, lines);
-    }
+    rb_set_script_lines_for(parser, orig_fname);
 
     if (NIL_P(f)) {
         f = rb_str_new(0, 0);

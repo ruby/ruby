@@ -135,11 +135,18 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     }
 
     if (left_length * 2 <= right_length) {
-        uint32_t *values = (uint32_t*) xcalloc(left_length + right_length, sizeof(uint32_t));
+        uint32_t *values = (uint32_t *) xcalloc(left_length + right_length, sizeof(uint32_t));
 
         for (size_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
             size_t end_offset = start_offset + left_length;
             if (end_offset > right_length) end_offset = right_length;
+
+            pm_integer_t sliced_left = {
+                .value = 0,
+                .length = left_length,
+                .values = left_values,
+                .negative = false
+            };
 
             pm_integer_t sliced_right = {
                 .value = 0,
@@ -149,7 +156,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             };
 
             pm_integer_t product;
-            karatsuba_multiply(&product, left, &sliced_right, base);
+            karatsuba_multiply(&product, &sliced_left, &sliced_right, base);
 
             uint32_t carry = 0;
             for (size_t index = 0; index < product.length; index++) {
@@ -172,21 +179,21 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     pm_integer_t y0 = { 0, half, right_values, false };
     pm_integer_t y1 = { 0, right_length - half, right_values + half, false };
 
-    pm_integer_t z0;
+    pm_integer_t z0 = { 0 };
     karatsuba_multiply(&z0, &x0, &y0, base);
 
-    pm_integer_t z2;
+    pm_integer_t z2 = { 0 };
     karatsuba_multiply(&z2, &x1, &y1, base);
 
     // For simplicity to avoid considering negative values,
     // use `z1 = (x0 + x1) * (y0 + y1) - z0 - z2` instead of original karatsuba algorithm.
-    pm_integer_t x01;
+    pm_integer_t x01 = { 0 };
     big_add(&x01, &x0, &x1, base);
 
-    pm_integer_t y01;
+    pm_integer_t y01 = { 0 };
     big_add(&y01, &y0, &y1, base);
 
-    pm_integer_t xy;
+    pm_integer_t xy = { 0 };
     karatsuba_multiply(&xy, &x01, &y01, base);
 
     pm_integer_t z1;
@@ -194,7 +201,11 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
 
     size_t length = left_length + right_length;
     uint32_t *values = (uint32_t*) xcalloc(length, sizeof(uint32_t));
+
+    assert(z0.values != NULL);
     memcpy(values, z0.values, sizeof(uint32_t) * z0.length);
+
+    assert(z2.values != NULL);
     memcpy(values + 2 * half, z2.values, sizeof(uint32_t) * z2.length);
 
     uint32_t carry = 0;
@@ -326,6 +337,8 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
     INTEGER_EXTRACT(source, source_length, source_values)
 
     size_t bigints_length = (source_length + 1) / 2;
+    assert(bigints_length > 0);
+
     pm_integer_t *bigints = (pm_integer_t *) xcalloc(bigints_length, sizeof(pm_integer_t));
     if (bigints == NULL) return;
 
@@ -345,13 +358,13 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
         base = next_base;
 
         size_t next_length = (bigints_length + 1) / 2;
-        pm_integer_t *next_bigints = (pm_integer_t *) xmalloc(sizeof(pm_integer_t) * next_length);
+        pm_integer_t *next_bigints = (pm_integer_t *) xcalloc(next_length, sizeof(pm_integer_t));
 
         for (size_t bigints_index = 0; bigints_index < bigints_length; bigints_index += 2) {
             if (bigints_index + 1 == bigints_length) {
                 next_bigints[bigints_index / 2] = bigints[bigints_index];
             } else {
-                pm_integer_t multiplied;
+                pm_integer_t multiplied = { 0 };
                 karatsuba_multiply(&multiplied, &base, &bigints[bigints_index + 1], base_to);
 
                 big_add(&next_bigints[bigints_index / 2], &bigints[bigints_index], &multiplied, base_to);
@@ -584,7 +597,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     }
 
     // Otherwise, first we'll convert the base from 1<<32 to 10**9.
-    pm_integer_t converted;
+    pm_integer_t converted = { 0 };
     pm_integer_convert_base(&converted, integer, (uint64_t) 1 << 32, 1000000000);
 
     if (converted.values == NULL) {

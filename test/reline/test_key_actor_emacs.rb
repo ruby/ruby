@@ -789,6 +789,52 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line_around_cursor('foo_ba', '')
   end
 
+  def test_autocompletion_with_upward_navigation
+    @config.autocompletion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        Readline
+        Regexp
+        RegexpError
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('Re')
+    assert_line_around_cursor('Re', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Readline', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Regexp', '')
+    @line_editor.input_key(Reline::Key.new(:completion_journey_up, :completion_journey_up, false))
+    assert_line_around_cursor('Readline', '')
+  ensure
+    @config.autocompletion = false
+  end
+
+  def test_autocompletion_with_upward_navigation_and_menu_complete_backward
+    @config.autocompletion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        Readline
+        Regexp
+        RegexpError
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('Re')
+    assert_line_around_cursor('Re', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Readline', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Regexp', '')
+    @line_editor.input_key(Reline::Key.new(:menu_complete_backward, :menu_complete_backward, false))
+    assert_line_around_cursor('Readline', '')
+  ensure
+    @config.autocompletion = false
+  end
+
   def test_completion_with_indent
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -1263,6 +1309,14 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line_around_cursor('', '')
   end
 
+  def test_incremental_search_history_cancel_by_symbol_key
+    # ed_prev_char should move cursor left and cancel incremental search
+    input_keys("abc\C-r")
+    input_key_by_symbol(:ed_prev_char)
+    input_keys('d')
+    assert_line_around_cursor('abd', 'c')
+  end
+
   # Unicode emoji test
   def test_ed_insert_for_include_zwj_emoji
     omit "This test is for UTF-8 but the locale is #{Reline.core.encoding}" if Reline.core.encoding != Encoding::UTF_8
@@ -1381,5 +1435,10 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line_around_cursor('', 'c')
     input_keys("\C-f\C-u", false)
     assert_line_around_cursor('', '')
+  end
+
+  def test_vi_editing_mode
+    @line_editor.__send__(:vi_editing_mode, nil)
+    assert(@config.editing_mode_is?(:vi_insert))
   end
 end

@@ -95,10 +95,6 @@
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
-#define rb_ary_modify        p->config->ary_modify
-#undef RARRAY_LEN
-#define RARRAY_LEN           p->config->array_len
-#define RARRAY_AREF          p->config->array_aref
 
 #define rb_make_temporary_id     p->config->make_temporary_id
 #define is_local_id              p->config->is_local_id
@@ -123,11 +119,6 @@
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
-#define rb_str_subseq                     p->config->str_subseq
-#define rb_str_new_frozen                 p->config->str_new_frozen
-#define rb_str_buf_new                    p->config->str_buf_new
-#undef rb_str_buf_cat
-#define rb_str_buf_cat                    p->config->str_buf_cat
 #define rb_str_modify                     p->config->str_modify
 #define rb_str_set_len                    p->config->str_set_len
 #define rb_str_cat                        p->config->str_cat
@@ -139,8 +130,6 @@
 #define rb_str_to_interned_str            p->config->str_to_interned_str
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
-#define rb_enc_str_buf_cat                p->config->enc_str_buf_cat
-#define rb_str_buf_append                 p->config->str_buf_append
 #define rb_str_vcatf                      p->config->str_vcatf
 #undef StringValueCStr
 #define StringValueCStr(v)                p->config->string_value_cstr(&(v))
@@ -151,7 +140,6 @@
 #define RSTRING_END                       p->config->rstring_end
 #undef RSTRING_LEN
 #define RSTRING_LEN                       p->config->rstring_len
-#define rb_filesystem_str_new_cstr        p->config->filesystem_str_new_cstr
 #define rb_obj_as_string                  p->config->obj_as_string
 
 #undef INT2NUM
@@ -159,11 +147,9 @@
 
 #define rb_stderr_tty_p    p->config->stderr_tty_p
 #define rb_write_error_str p->config->write_error_str
-#define rb_default_rs      p->config->default_rs()
 #define rb_io_write        p->config->io_write
 #define rb_io_flush        p->config->io_flush
 #define rb_io_puts         p->config->io_puts
-#define rb_io_gets_internal p->config->io_gets_internal
 
 #define rb_ractor_stdout   p->config->debug_output_stdout
 #define rb_ractor_stderr   p->config->debug_output_stderr
@@ -184,13 +170,9 @@
 #define rb_enc_mbcput           p->config->enc_mbcput
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
-#define rb_enc_associate_index  p->config->enc_associate_index
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
-#define rb_enc_compatible       p->config->enc_compatible
-#define rb_enc_from_encoding    p->config->enc_from_encoding
-#define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
 
 #define rb_local_defined          p->config->local_defined
@@ -207,8 +189,6 @@
 
 #define ruby_sized_xfree p->config->sized_xfree
 #define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)p->config->sized_realloc_n((void *)(v), (m), sizeof(T), (n)))
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
@@ -233,16 +213,12 @@
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
-#undef RBOOL
-#define RBOOL p->config->rbool
 #undef RTEST
 #define RTEST p->config->rtest
 #undef NIL_P
 #define NIL_P p->config->nil_p
 #undef Qnil
 #define Qnil  p->config->qnil
-#undef Qtrue
-#define Qtrue p->config->qtrue
 #undef Qfalse
 #define Qfalse p->config->qfalse
 #define rb_eArgError p->config->eArgError()

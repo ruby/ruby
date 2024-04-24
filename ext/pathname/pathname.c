@@ -479,7 +479,6 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -494,10 +493,6 @@ path_birthtime(VALUE self)
 {
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
-#else
-/* check at compilation time for `respond_to?` */
-# define path_birthtime rb_f_notimplement
-#endif
 
 /*
  * call-seq:

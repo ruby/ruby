@@ -38,6 +38,7 @@ m4_include([tool/m4/ruby_replace_type.m4])dnl
 m4_include([tool/m4/ruby_require_funcs.m4])dnl
 m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 m4_include([tool/m4/ruby_setjmp_type.m4])dnl
+m4_include([tool/m4/ruby_shared_gc.m4])dnl
 m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
 m4_include([tool/m4/ruby_thread.m4])dnl
 m4_include([tool/m4/ruby_try_cflags.m4])dnl
@@ -278,7 +279,7 @@ AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
 # nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
 # In case we're working with llvm-nm, tell it to not worry about the bitcode.
-AS_IF([${NM} --help | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
+AS_IF([${NM} --help 2>&1 | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
 
 AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
 AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
@@ -427,15 +428,22 @@ AS_CASE(["$build_os"],
     # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
-    CC_WRAPPER="" CC_NO_WRAPPER="$CC"
+    AC_MSG_CHECKING(for $CC linker warning)
+    suppress_ld_waring=no
     echo 'int main(void) {return 0;}' > conftest.c
-    AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
-	   grep -e '^ld: warning: ignoring duplicate libraries:' \
-	        -e '^ld: warning: text-based stub file' >/dev/null], [
-	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
-	CC="$CC_WRAPPER $CC"
+    AS_IF([$CC -framework Foundation -o conftest -ggdb3 conftest.c 2>&1 |
+	   grep \
+	      -e '^ld: warning: ignoring duplicate libraries:' \
+	      -e '^ld: warning: text-based stub file' \
+	      -e '^ld: warning: -multiply_defined is obsolete' \
+	      -e "^warning: '\.debug_macinfo'" \
+	      -e '^note: while processing' \
+	   >/dev/null], [
+	suppress_ld_waring=yes
     ])
     rm -fr conftest*
+    test $suppress_ld_waring = yes && warnflags="${warnflags:+${warnflags} }-Wl,-w"
+    AC_MSG_RESULT($suppress_ld_waring)
   ])
 AS_CASE(["$target_os"],
   [wasi*], [
@@ -1768,7 +1776,7 @@ AC_CACHE_CHECK(for function name string predefined identifier,
     [AS_CASE(["$target_os"],[openbsd*],[
       rb_cv_function_name_string=__func__
      ],[
-     rb_cv_function_name_string=no
+      rb_cv_function_name_string=no
       RUBY_WERROR_FLAG([
         for func in __func__ __FUNCTION__; do
             AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdio.h>]],
@@ -1776,7 +1784,8 @@ AC_CACHE_CHECK(for function name string predefined identifier,
             [rb_cv_function_name_string=$func
             break])
         done
-      ])])]
+      ])
+    ])]
 )
 AS_IF([test "$rb_cv_function_name_string" != no], [
     AC_DEFINE_UNQUOTED(RUBY_FUNCTION_NAME_STRING, [$rb_cv_function_name_string])
@@ -3751,6 +3760,7 @@ AS_IF([test x"$gcov" = xyes], [
 ])
 
 RUBY_SETJMP_TYPE
+RUBY_SHARED_GC
 
 MMTK_RUBY
 }
@@ -4660,6 +4670,7 @@ config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with thread"         "$THREAD_MODEL"
 config_summary "with coroutine"      "$coroutine_type"
+config_summary "with shared GC"      "$with_shared_gc"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"

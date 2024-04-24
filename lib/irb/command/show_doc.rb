@@ -3,6 +3,8 @@
 module IRB
   module Command
     class ShowDoc < Base
+      include RubyArgsExtractor
+
       category "Context"
       description "Look up documentation with RI."
 

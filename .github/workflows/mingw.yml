@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@5f19ec79cedfadb78ab837f95b87734d0003c899 # v1.173.0
+        uses: ruby/setup-ruby@6bd3d993c602f6b675728ebaecb2b569ff86e99b # v1.174.0
         with:
           ruby-version: ${{ matrix.baseruby }}
 
@@ -97,7 +97,7 @@ jobs:
           $result
         working-directory:
 
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

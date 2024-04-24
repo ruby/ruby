@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.25.0"
+  spec.version = "0.26.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -63,7 +63,6 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_list.h",
     "include/prism/util/pm_memchr.h",
     "include/prism/util/pm_newline_list.h",
-    "include/prism/util/pm_state_stack.h",
     "include/prism/util/pm_strncasecmp.h",
     "include/prism/util/pm_string.h",
     "include/prism/util/pm_string_list.h",
@@ -88,6 +87,7 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/pattern.rb",
     "lib/prism/polyfill/string.rb",
+    "lib/prism/reflection.rb",
     "lib/prism/serialize.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
@@ -117,7 +117,6 @@ Gem::Specification.new do |spec|
     "src/util/pm_list.c",
     "src/util/pm_memchr.c",
     "src/util/pm_newline_list.c",
-    "src/util/pm_state_stack.c",
     "src/util/pm_string.c",
     "src/util/pm_string_list.c",
     "src/util/pm_strncasecmp.c",
@@ -136,6 +135,7 @@ Gem::Specification.new do |spec|
     "sig/prism/pack.rbs",
     "sig/prism/parse_result.rbs",
     "sig/prism/pattern.rbs",
+    "sig/prism/reflection.rbs",
     "sig/prism/serialize.rbs",
     "sig/prism/visitor.rbs",
     "rbi/prism.rbi",
@@ -145,7 +145,11 @@ Gem::Specification.new do |spec|
     "rbi/prism/node_ext.rbi",
     "rbi/prism/node.rbi",
     "rbi/prism/parse_result.rbi",
+    "rbi/prism/reflection.rbi",
+    "rbi/prism/translation/parser.rbi",
     "rbi/prism/translation/parser/compiler.rbi",
+    "rbi/prism/translation/parser33.rbi",
+    "rbi/prism/translation/parser34.rbi",
     "rbi/prism/translation/ripper.rbi",
     "rbi/prism/translation/ripper/ripper_compiler.rbi",
     "rbi/prism/translation/ruby_parser.rbi",

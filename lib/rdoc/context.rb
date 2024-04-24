@@ -710,7 +710,7 @@ class RDoc::Context < RDoc::CodeObject
   # This method exists to make it easy to work with Context subclasses that
   # aren't part of RDoc.
 
-  def each_ancestor # :nodoc:
+  def each_ancestor(&_) # :nodoc:
   end
 
   ##

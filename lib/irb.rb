@@ -10,7 +10,7 @@ require "reline"
 
 require_relative "irb/init"
 require_relative "irb/context"
-require_relative "irb/command"
+require_relative "irb/default_commands"
 
 require_relative "irb/ruby-lex"
 require_relative "irb/statement"
@@ -656,8 +656,10 @@ require_relative "irb/pager"
 # *   `%m`: the value of `self.to_s`.
 # *   `%M`: the value of `self.inspect`.
 # *   `%l`: an indication of the type of string; one of `"`, `'`, `/`, `]`.
-# *   `*NN*i`: Indentation level.
-# *   `*NN*n`: Line number.
+# *   `%NNi`: Indentation level. NN is a 2-digit number that specifies the number
+#             of digits of the indentation level (03 will result in 001).
+# *   `%NNn`: Line number. NN is a 2-digit number that specifies the number
+#             of digits of the line number (03 will result in 001).
 # *   `%%`: Literal `%`.
 #
 #
@@ -960,19 +962,25 @@ module IRB
       #
       # Irb#eval_input will simply return the input, and we need to pass it to the
       # debugger.
-      input = if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
-        # Previous IRB session's history has been saved when `Irb#run` is exited We need
-        # to make sure the saved history is not saved again by resetting the counter
-        context.io.reset_history_counter
+      input = nil
+      forced_exit = catch(:IRB_EXIT) do
+        if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
+          # Previous IRB session's history has been saved when `Irb#run` is exited We need
+          # to make sure the saved history is not saved again by resetting the counter
+          context.io.reset_history_counter
 
-        begin
-          eval_input
-        ensure
-          context.io.save_history
+          begin
+            input = eval_input
+          ensure
+            context.io.save_history
+          end
+        else
+          input = eval_input
         end
-      else
-        eval_input
+        false
       end
+
+      Kernel.exit if forced_exit
 
       if input&.include?("\n")
         @line_no += input.count("\n") - 1
@@ -1028,21 +1036,7 @@ module IRB
               return statement.code
             end
 
-            case statement
-            when Statement::EmptyInput
-              # Do nothing
-            when Statement::Expression
-              @context.evaluate(statement.code, line_no)
-            when Statement::Command
-              ret = statement.command_class.execute(@context, statement.arg)
-              # TODO: Remove this output once we have a better way to handle it
-              # This is to notify `debug`'s test framework that the current input has been processed
-              # We also need to have a way to restart/stop threads around command execution
-              # when being used as `debug`'s console.
-              # https://github.com/ruby/debug/blob/master/lib/debug/irb_integration.rb#L8-L13
-              puts "INTERNAL_INFO: {}" if @context.with_debugger && ENV['RUBY_DEBUG_TEST_UI'] == 'terminal'
-              @context.set_last_value(ret)
-            end
+            @context.evaluate(statement, line_no)
 
             if @context.echo? && !statement.suppresses_echo?
               if statement.is_assignment?
@@ -1126,7 +1120,7 @@ module IRB
 
       code.force_encoding(@context.io.encoding)
       if (command, arg = parse_command(code))
-        command_class = ExtendCommandBundle.load_command(command)
+        command_class = Command.load_command(command)
         Statement::Command.new(code, command_class, arg)
       else
         is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
@@ -1148,7 +1142,7 @@ module IRB
       # Check visibility
       public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
       private_method = !public_method && !!Kernel.instance_method(:method).bind_call(@context.main, command) rescue false
-      if ExtendCommandBundle.execute_as_command?(command, public_method: public_method, private_method: private_method)
+      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
         [command, arg]
       end
     end
@@ -1469,7 +1463,7 @@ module IRB
     end
 
     def format_prompt(format, ltype, indent, line_no) # :nodoc:
-      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
+      format.gsub(/%([0-9]+)?([a-zA-Z%])/) do
         case $2
         when "N"
           @context.irb_name
@@ -1502,7 +1496,7 @@ module IRB
             line_no.to_s
           end
         when "%"
-          "%"
+          "%" unless $1
         end
       end
     end

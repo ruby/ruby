@@ -212,20 +212,13 @@ module TestIRB
 
   class CustomCommandTestCase < CommandTestCase
     def setup
-      super
-      execute_lines("help\n") # To ensure command initialization is done
-      @EXTEND_COMMANDS_backup = IRB::ExtendCommandBundle.instance_variable_get(:@EXTEND_COMMANDS).dup
-      @cvars_backup = IRB::ExtendCommandBundle.class_variables.to_h do |cvar|
-        [cvar, IRB::ExtendCommandBundle.class_variable_get(cvar)]
-      end
+      @commands_backup = IRB::Command.commands
+      IRB::Command.class_variable_set(:@@command_override_policies, nil)
     end
 
     def teardown
-      super
-      IRB::ExtendCommandBundle.instance_variable_set(:@EXTEND_COMMANDS, @EXTEND_COMMANDS_backup)
-      @cvars_backup.each do |cvar, value|
-        IRB::ExtendCommandBundle.class_variable_set(cvar, value)
-      end
+      IRB::Command.class_variable_set(:@@command_override_policies, nil)
+      IRB::Command.instance_variable_set(:@commands, @commands_backup)
     end
   end
 
@@ -239,8 +232,7 @@ module TestIRB
     end
 
     def test_arg
-      IRB::Command.const_set :PrintArgCommand, PrintArgCommand
-      IRB::ExtendCommandBundle.def_extend_command(:print_arg, :PrintArgCommand, nil, [:pa, IRB::ExtendCommandBundle::OVERRIDE_ALL])
+      IRB::Command._register_with_aliases(:print_arg, PrintArgCommand, [:pa, IRB::Command::OVERRIDE_ALL])
       out, err = execute_lines("print_arg\n")
       assert_empty err
       assert_include(out, 'arg=""')
@@ -260,8 +252,6 @@ module TestIRB
       out, err = execute_lines("pa  a r  g  \n")
       assert_empty err
       assert_include(out, 'arg="a r  g"')
-    ensure
-      IRB::Command.send(:remove_const, :PrintArgCommand)
     end
   end
 
@@ -274,20 +264,8 @@ module TestIRB
       end
     end
 
-    def setup
-      super
-      IRB::Command.const_set :FooBarCommand, FooBarCommand
-    end
-
-    def teardown
-      super
-      IRB::Command.send(:remove_const, :FooBarCommand)
-    end
-
     def test_def_extend_command
-      command = [:foobar, :FooBarCommand, nil, [:fbalias, IRB::ExtendCommandBundle::OVERRIDE_ALL]]
-      IRB::ExtendCommandBundle.instance_variable_get(:@EXTEND_COMMANDS).push(command)
-      IRB::ExtendCommandBundle.def_extend_command(*command)
+      IRB::ExtendCommandBundle.def_extend_command(:foobar, FooBarCommand, nil, [:fbalias, IRB::Command::OVERRIDE_ALL])
       out, err = execute_lines("foobar\n")
       assert_empty err
       assert_include(out, "FooBar executed")

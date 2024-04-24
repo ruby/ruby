@@ -10,6 +10,7 @@ module IRB
 
   module Command
     class LoaderCommand < Base
+      include RubyArgsExtractor
       include IrbLoader
 
       def raise_cmd_argument_error

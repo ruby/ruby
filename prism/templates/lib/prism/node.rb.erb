@@ -60,6 +60,17 @@ module Prism
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
 
+    # Returns a list of the fields that exist for this node class. Fields
+    # describe the structure of the node. This kind of reflection is useful for
+    # things like recursively visiting each node _and_ field in the tree.
+    def self.fields
+      # This method should only be called on subclasses of Node, not Node
+      # itself.
+      raise NoMethodError, "undefined method `fields' for #{inspect}" if self == Node
+
+      Reflection.fields_for(self)
+    end
+
     # --------------------------------------------------------------------------
     # :section: Node interface
     # These methods are effectively abstract methods that must be implemented by
@@ -101,6 +112,11 @@ module Prism
     # Returns a string representation of the node.
     def inspect(inspector = NodeInspector.new)
       raise NoMethodError, "undefined method `inspect' for #{inspect}"
+    end
+
+    # Returns the type of the node as a symbol.
+    def self.type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
     end
   end
   <%- nodes.each do |node| -%>
@@ -203,10 +219,10 @@ module Prism
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
-
     <%- node.fields.each do |field| -%>
+
     <%- if field.comment.nil? -%>
-    # <%= "private " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    # <%= "protected " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%- else -%>
     <%- field.each_comment_line do |line| -%>
     #<%= line %>
@@ -232,9 +248,8 @@ module Prism
       end
     end
     <%- else -%>
-    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
+    attr_reader :<%= field.name -%><%= "\n    protected :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
     <%- end -%>
-
     <%- end -%>
     <%- node.fields.each do |field| -%>
     <%- case field -%>
@@ -332,6 +347,22 @@ module Prism
     # def self.type: () -> Symbol
     def self.type
       :<%= node.human %>
+    end
+
+    # Implements case-equality for the node. This is effectively == but without
+    # comparing the value of locations. Locations are checked only for presence.
+    def ===(other)
+      other.is_a?(<%= node.name %>)<%= " &&" if node.fields.any? %>
+        <%- node.fields.each_with_index do |field, index| -%>
+        <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
+        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != node.fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
+        (<%= field.name %>.length == other.<%= field.name %>.length) &&
+        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != node.fields.length - 1 %>
+        <%- else -%>
+        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != node.fields.length - 1 %>
+        <%- end -%>
+        <%- end -%>
     end
   end
   <%- end -%>

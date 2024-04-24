@@ -431,14 +431,62 @@ impl Assembler
                         }
                     }
                 },
-                Insn::And { left, right, .. } |
-                Insn::Or { left, right, .. } |
-                Insn::Xor { left, right, .. } => {
+                Insn::And { left, right, out } |
+                Insn::Or { left, right, out } |
+                Insn::Xor { left, right, out } => {
                     let (opnd0, opnd1) = split_boolean_operands(asm, *left, *right);
                     *left = opnd0;
                     *right = opnd1;
+
+                    // Since these instructions are lowered to an instruction that have 2 input
+                    // registers and an output register, look to merge with an `Insn::Mov` that
+                    // follows which puts the output in another register. For example:
+                    // `Add a, b => out` followed by `Mov c, out` becomes `Add a, b => c`.
+                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek()) {
+                        if live_ranges[index] == index + 1 {
+                            // Check after potentially lowering a stack operand to a register operand
+                            let lowered_dest = if let Opnd::Stack { .. } = dest {
+                                asm.lower_stack_opnd(dest)
+                            } else {
+                                *dest
+                            };
+                            if out == src && matches!(lowered_dest, Opnd::Reg(_)) {
+                                *out = lowered_dest;
+                                iterator.map_insn_index(asm);
+                                iterator.next_unmapped(); // Pop merged Insn::Mov
+                            }
+                        }
+                    }
+
                     asm.push_insn(insn);
-                },
+                }
+                // Lower to Joz and Jonz for generating CBZ/CBNZ for compare-with-0-and-branch.
+                ref insn @ Insn::Cmp { ref left, right: ref right @ (Opnd::UImm(0) | Opnd::Imm(0)) } |
+                ref insn @ Insn::Test { ref left, right: ref right @ (Opnd::InsnOut { .. } | Opnd::Reg(_)) } if {
+                    let same_opnd_if_test = if let Insn::Test { .. } = insn {
+                        left == right
+                    } else {
+                        true
+                    };
+
+                    same_opnd_if_test && if let Some(
+                            Insn::Jz(target) | Insn::Je(target) | Insn::Jnz(target) | Insn::Jne(target)
+                        ) = iterator.peek() {
+                            matches!(target, Target::SideExit { .. })
+                        } else {
+                            false
+                        }
+                } => {
+                    let reg = split_load_operand(asm, *left);
+                    match iterator.peek() {
+                        Some(Insn::Jz(target) | Insn::Je(target))   => asm.push_insn(Insn::Joz(reg, *target)),
+                        Some(Insn::Jnz(target) | Insn::Jne(target)) => asm.push_insn(Insn::Jonz(reg, *target)),
+                        _ => ()
+                    }
+
+                    iterator.map_insn_index(asm);
+                    iterator.next_unmapped(); // Pop merged jump instruction
+                }
                 Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
@@ -789,6 +837,45 @@ impl Assembler
                     unreachable!("Target::SideExit should have been compiled by compile_side_exit")
                 },
             };
+        }
+
+        /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
+        fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
+            if let Target::SideExitPtr(dst_ptr) = target {
+                let dst_addr = dst_ptr.as_offset();
+                let src_addr = cb.get_write_ptr().as_offset();
+
+                if cmp_branch_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    // If the offset fits in one instruction, generate cbz or cbnz
+                    let bytes = (dst_addr - src_addr) as i32;
+                    if branch_if_zero {
+                        cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    } else {
+                        cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    }
+                } else {
+                    // Otherwise, we load the address into a register and
+                    // use the branch register instruction. Note that because
+                    // side exits should always be close, this form should be
+                    // rare or impossible to see.
+                    let dst_addr = dst_ptr.raw_addr(cb) as u64;
+                    let load_insns: i32 = emit_load_size(dst_addr).into();
+
+                    // Write out the inverse condition so that if
+                    // it doesn't match it will skip over the
+                    // instructions used for branching.
+                    if branch_if_zero {
+                        cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                    } else {
+                        cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                    }
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
+                    br(cb, Assembler::SCRATCH0);
+
+                }
+            } else {
+                unreachable!("We should only generate Joz/Jonz with side-exit targets");
+            }
         }
 
         /// Emit a push instruction for the given operand by adding to the stack
@@ -1150,6 +1237,12 @@ impl Assembler
                 },
                 Insn::Jo(target) => {
                     emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb)?);
+                },
+                Insn::Joz(opnd, target) => {
+                    emit_cmp_zero_jump(cb, opnd.into(), true, compile_side_exit(*target, self, ocb)?);
+                },
+                Insn::Jonz(opnd, target) => {
+                    emit_cmp_zero_jump(cb, opnd.into(), false, compile_side_exit(*target, self, ocb)?);
                 },
                 Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());

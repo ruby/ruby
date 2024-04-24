@@ -425,7 +425,7 @@
 #
 class OptionParser
   # The version string
-  OptionParser::Version = "0.4.0"
+  OptionParser::Version = "0.5.0"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -461,7 +461,7 @@ class OptionParser
       candidates
     end
 
-    def candidate(key, icase = false, pat = nil)
+    def candidate(key, icase = false, pat = nil, &_)
       Completion.candidate(key, icase, pat, &method(:each))
     end
 
@@ -739,7 +739,7 @@ class OptionParser
       #
       # Raises an exception if argument is not present.
       #
-      def parse(arg, argv)
+      def parse(arg, argv, &_)
         unless arg
           raise MissingArgument if argv.empty?
           arg = argv.shift

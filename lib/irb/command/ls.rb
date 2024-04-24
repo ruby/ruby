@@ -11,6 +11,8 @@ module IRB
 
   module Command
     class Ls < Base
+      include RubyArgsExtractor
+
       category "Context"
       description "Show methods, constants, and variables."
 

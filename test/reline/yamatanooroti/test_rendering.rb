@@ -309,6 +309,21 @@ begin
       EOC
     end
 
+    def test_readline_with_multiline_input
+      start_terminal(5, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt}, startup_message: 'Multiline REPL.')
+      write("def foo\n  bar\nend\n")
+      write("Reline.readline('prompt> ')\n")
+      write("\C-p\C-p")
+      close
+      assert_screen(<<~EOC)
+        => :foo
+        [0000]> Reline.readline('prompt> ')
+        prompt> def foo
+          bar
+        end
+      EOC
+    end
+
     def test_multiline_and_autowrap
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaaaaaa\n  33333333\n           end\C-a\C-pputs\C-e\e\C-m888888888888888")
@@ -988,6 +1003,47 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt>
+      EOC
+    end
+
+    def test_completion_menu_is_displayed_horizontally
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("S\t\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+        ScriptError  String
+        Signal       SyntaxError
+      EOC
+    end
+
+    def test_show_all_if_ambiguous_on
+      write_inputrc <<~LINES
+        set show-all-if-ambiguous on
+      LINES
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("S\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+        ScriptError  String
+        Signal       SyntaxError
+      EOC
+    end
+
+    def test_show_all_if_ambiguous_on_and_menu_with_perfect_match
+      write_inputrc <<~LINES
+        set show-all-if-ambiguous on
+      LINES
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete-menu-with-perfect-match}, startup_message: 'Multiline REPL.')
+      write("a\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> abs
+        abs   abs2
       EOC
     end
 

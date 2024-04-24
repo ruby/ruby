@@ -1623,4 +1623,88 @@ class TestMethod < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_warn_unused_block
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      foo{}          # warn
+      send(:foo){}   # warn
+      b = Proc.new{}
+      foo(&b)        # warn
+    RUBY
+      assert_equal 3, err.size
+      err = err.join
+      assert_match(/-:2: warning/, err)
+      assert_match(/-:3: warning/, err)
+      assert_match(/-:5: warning/, err)
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      10.times{foo{}} # warn once
+    RUBY
+      assert_equal 1, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil; b = nil
+      foo(&b)       # no warning
+      1.object_id{} # no warning because it is written in C
+
+      class C
+        def initialize
+        end
+      end
+      C.new{} # no warning
+
+    RUBY
+      assert_equal 0, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def f1 = nil
+        def f2 = nil
+        def f3 = nil
+        def f4 = nil
+        def f5 = nil
+        def f6 = nil
+      end
+
+      class C1 < C0
+        def f1 = super         # zsuper / use
+        def f2 = super()       # super  / use
+        def f3(&_) = super(&_) # super  / use
+        def f4 = super(&nil)   # super  / unuse
+        def f5 = super(){}     # super  / unuse
+        def f6 = super{}       # zsuper / unuse
+      end
+
+      C1.new.f1{} # no warning
+      C1.new.f2{} # no warning
+      C1.new.f3{} # no warning
+      C1.new.f4{} # warning
+      C1.new.f5{} # warning
+      C1.new.f6{} # warning
+    RUBY
+      assert_equal 3, err.size, err.join("\n")
+      assert_match(/-:22: warning.+f4/, err.join)
+      assert_match(/-:23: warning.+f5/, err.join)
+      assert_match(/-:24: warning.+f6/, err.join)
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def f = yield
+      end
+
+      class C1 < C0
+        def f = nil
+      end
+
+      C1.new.f{} # do not warn on duck typing
+    RUBY
+      assert_equal 0, err.size, err.join("\n")
+    end
+  end
 end

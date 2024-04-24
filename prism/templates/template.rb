@@ -631,6 +631,7 @@ module Prism
       "lib/prism/dsl.rb",
       "lib/prism/mutation_compiler.rb",
       "lib/prism/node.rb",
+      "lib/prism/reflection.rb",
       "lib/prism/serialize.rb",
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
