@@ -118,7 +118,7 @@ module Prism
           when Prism::Template::OptionalLocationField
             "OptionalLocationField.new(:#{field.name})"
           when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField
-            "Integer.new(:#{field.name})"
+            "IntegerField.new(:#{field.name})"
           when Prism::Template::DoubleField
             "FloatField.new(:#{field.name})"
           when Prism::Template::FlagsField

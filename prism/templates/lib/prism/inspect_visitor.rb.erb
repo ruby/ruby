@@ -1,0 +1,137 @@
+module Prism
+  # This visitor is responsible for composing the strings that get returned by
+  # the various #inspect methods defined on each of the nodes.
+  class InspectVisitor < Visitor
+    # Most of the time, we can simply pass down the indent to the next node.
+    # However, when we are inside a list we want some extra special formatting
+    # when we hit an element in that list. In this case, we have a special
+    # command that replaces the subsequent indent with the given value.
+    class Replace # :nodoc:
+      attr_reader :value
+
+      def initialize(value)
+        @value = value
+      end
+    end
+
+    private_constant :Replace
+
+    # The current prefix string.
+    attr_reader :indent
+
+    # The list of commands that we need to execute in order to compose the
+    # final string.
+    attr_reader :commands
+
+    # Initializes a new instance of the InspectVisitor.
+    def initialize(indent = +"")
+      @indent = indent
+      @commands = []
+    end
+
+    # Compose an inspect string for the given node.
+    def self.compose(node)
+      visitor = new
+      node.accept(visitor)
+      visitor.compose
+    end
+
+    # Compose the final string.
+    def compose
+      buffer = +""
+      replace = nil
+
+      until commands.empty?
+        # @type var command: String | node | Replace
+        # @type var indent: String
+        command, indent = *commands.shift
+
+        case command
+        when String
+          buffer << (replace || indent)
+          buffer << command
+          replace = nil
+        when Node
+          visitor = InspectVisitor.new(indent)
+          command.accept(visitor)
+          @commands = [*visitor.commands, *@commands]
+        when Replace
+          replace = command.value
+        else
+          raise "Unknown command: #{command.inspect}"
+        end
+      end
+
+      buffer
+    end
+    <%- nodes.each do |node| -%>
+
+    # Inspect a <%= node.name %> node.
+    def visit_<%= node.human %>(node)
+      commands << [inspect_node(<%= node.name.inspect %>, node), indent]
+      <%- node.fields.each_with_index do |field, index| -%>
+      <%- pointer = index == node.fields.length - 1 ? "└── " : "├── " -%>
+      <%- preadd = index == node.fields.length - 1 ? "    " : "│   " -%>
+      <%- case field -%>
+      <%- when Prism::Template::NodeListField -%>
+      commands << ["<%= pointer %><%= field.name %>: (length: #{(<%= field.name %> = node.<%= field.name %>).length})\n", indent]
+      if <%= field.name %>.any?
+        <%= field.name %>[0...-1].each do |child|
+          commands << [Replace.new("#{indent}<%= preadd %>├── "), indent]
+          commands << [child, "#{indent}<%= preadd %>│   "]
+        end
+        commands << [Replace.new("#{indent}<%= preadd %>└── "), indent]
+        commands << [<%= field.name %>[-1], "#{indent}<%= preadd %>    "]
+      end
+      <%- when Prism::Template::NodeField -%>
+      commands << ["<%= pointer %><%= field.name %>:\n", indent]
+      commands << [node.<%= field.name %>, "#{indent}<%= preadd %>"]
+      <%- when Prism::Template::OptionalNodeField -%>
+      if (<%= field.name %> = node.<%= field.name %>).nil?
+        commands << ["<%= pointer %><%= field.name %>: ∅\n", indent]
+      else
+        commands << ["<%= pointer %><%= field.name %>:\n", indent]
+        commands << [<%= field.name %>, "#{indent}<%= preadd %>"]
+      end
+      <%- when Prism::Template::ConstantField, Prism::Template::ConstantListField, Prism::Template::StringField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField, Prism::Template::DoubleField -%>
+      commands << ["<%= pointer %><%= field.name %>: #{node.<%= field.name %>.inspect}\n", indent]
+      <%- when Prism::Template::OptionalConstantField -%>
+      if (<%= field.name %> = node.<%= field.name %>).nil?
+        commands << ["<%= pointer %><%= field.name %>: ∅\n", indent]
+      else
+        commands << ["<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n", indent]
+      end
+      <%- when Prism::Template::FlagsField -%>
+      <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
+      flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if node.#{value.name.downcase}?)" }.join(", ") %>].compact
+      commands << ["<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n", indent]
+      <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField -%>
+      commands << ["<%= pointer %><%= field.name %>: #{inspect_location(node.<%= field.name %>)}\n", indent]
+      <%- end -%>
+      <%- end -%>
+    end
+    <%- end -%>
+
+    private
+
+    # Compose a header for the given node.
+    def inspect_node(name, node)
+      result = +"@ #{name} ("
+
+      location = node.location
+      result << "location: (#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
+      result << ", newline: true" if node.newline?
+
+      result << ")\n"
+    end
+
+    # Compose a string representing the given inner location field.
+    def inspect_location(location)
+      if location
+        "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column}) = #{location.slice.inspect}"
+      else
+        "∅"
+      end
+    end
+  end
+end
