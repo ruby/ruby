@@ -400,46 +400,19 @@ gccct_hash(VALUE klass, ID mid)
     return (klass >> 3) ^ (VALUE)mid;
 }
 
-NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index, call_type scope));
+NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo * ci));
 
 static const struct rb_callcache *
-gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, ID mid, int argc, unsigned int index, call_type scope)
+gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo *ci)
 {
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
-    const struct rb_callcache *cc;
-    int flags = 0;
-
-    switch(scope) {
-      case CALL_PUBLIC:
-        break;
-      case CALL_FCALL:
-        flags |= VM_CALL_FCALL;
-        break;
-      case CALL_VCALL:
-        flags |= VM_CALL_VCALL;
-        break;
-      case CALL_PUBLIC_KW:
-        flags |= VM_CALL_KWARG;
-        break;
-      case CALL_FCALL_KW:
-        flags |= (VM_CALL_KWARG | VM_CALL_FCALL);
-        break;
-    }
-
     struct rb_call_data cd = {
-            .ci = &VM_CI_ON_STACK(mid, flags, argc, NULL),
+            .ci = ci,
             .cc = NULL
     };
 
-    if (cme != NULL) {
-        vm_search_method_slowpath0(vm->self, &cd, klass);
-        cc = cd.cc;
-    }
-    else {
-        cc = NULL;
-    }
+    vm_search_method_slowpath0(vm->self, &cd, klass);
 
-    return vm->global_cc_cache_table[index] = cc;
+    return vm->global_cc_cache_table[index] = cd.cc;
 }
 
 static inline const struct rb_callcache *
@@ -478,7 +451,27 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, ca
     }
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
-    return gccct_method_search_slowpath(vm, klass, mid, argc, index, call_scope);
+
+    int flags = 0;
+
+    switch(call_scope) {
+      case CALL_PUBLIC:
+        break;
+      case CALL_FCALL:
+        flags |= VM_CALL_FCALL;
+        break;
+      case CALL_VCALL:
+        flags |= VM_CALL_VCALL;
+        break;
+      case CALL_PUBLIC_KW:
+        flags |= VM_CALL_KWARG;
+        break;
+      case CALL_FCALL_KW:
+        flags |= (VM_CALL_KWARG | VM_CALL_FCALL);
+        break;
+    }
+
+    return gccct_method_search_slowpath(vm, klass, index, &VM_CI_ON_STACK(mid, flags, argc, NULL));
 }
 
 /**
