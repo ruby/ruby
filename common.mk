@@ -483,9 +483,9 @@ docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
-install-all: pre-install-all docs do-install-all post-install-all
+install-all: pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
-do-install-all: pre-install-all
+do-install-all: pre-install-all $(DOT_WAIT) docs
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
