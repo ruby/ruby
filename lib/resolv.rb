@@ -513,22 +513,32 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      begin
-        requester = make_udp_requester
-      rescue Errno::EACCES
-        # fall back to TCP
-      end
+      protocols = {}
+      requesters = {}
       senders = {}
       begin
-        @config.resolv(name) {|candidate, tout, nameserver, port|
-          requester ||= make_tcp_requester(nameserver, port)
+        @config.resolv(name) do |candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
-          unless sender = senders[[candidate, nameserver, port]]
+
+          protocol = protocols[candidate] ||= :udp
+          requester = requesters[[protocol, nameserver]] ||=
+            case protocol
+            when :udp
+              begin
+                make_udp_requester
+              rescue Errno::EACCES
+                make_tcp_requester(nameserver, port)
+              end
+            when :tcp
+              make_tcp_requester(nameserver, port)
+            end
+
+          unless sender = senders[[candidate, requester, nameserver, port]]
             sender = requester.sender(msg, candidate, nameserver, port)
             next if !sender
-            senders[[candidate, nameserver, port]] = sender
+            senders[[candidate, requester, nameserver, port]] = sender
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
@@ -536,12 +546,7 @@ class Resolv
             if reply.tc == 1 and not Requester::TCP === requester
               requester.close
               # Retry via TCP:
-              requester = make_tcp_requester(nameserver, port)
-              senders = {}
-              # This will use TCP for all remaining candidates (assuming the
-              # current candidate does not already respond successfully via
-              # TCP).  This makes sense because we already know the full
-              # response will not fit in an untruncated UDP packet.
+              protocols[candidate] = :tcp
               redo
             else
               yield(reply, reply_name)
@@ -552,9 +557,9 @@ class Resolv
           else
             raise Config::OtherResolvError.new(reply_name.to_s)
           end
-        }
+        end
       ensure
-        requester&.close
+        requesters.each_value { |requester| requester&.close }
       end
     end
 
@@ -569,6 +574,11 @@ class Resolv
 
     def make_tcp_requester(host, port) # :nodoc:
       return Requester::TCP.new(host, port)
+    rescue Errno::ECONNREFUSED
+      # Treat a refused TCP connection attempt to a nameserver like a timeout,
+      # as Resolv::DNS::Config#resolv considers ResolvTimeout exceptions as a
+      # hint to try the next nameserver:
+      raise ResolvTimeout
     end
 
     def extract_resources(msg, name, typeclass) # :nodoc:
@@ -1800,7 +1810,6 @@ class Resolv
       end
     end
 
-
     ##
     # Base class for SvcParam. [RFC9460]
 
@@ -2498,7 +2507,6 @@ class Resolv
         # in centimeters as an unsigned 32bit integer
 
         attr_reader :altitude
-
 
         def encode_rdata(msg) # :nodoc:
           msg.put_bytes(@version)
@@ -3439,4 +3447,3 @@ class Resolv
   AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 
 end
-

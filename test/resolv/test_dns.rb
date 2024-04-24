@@ -698,4 +698,117 @@ class TestResolvDNS < Test::Unit::TestCase
   ensure
     sock&.close
   end
+
+  def test_multiple_servers_with_timeout_and_truncated_tcp_fallback
+    begin
+      OpenSSL
+    rescue LoadError
+      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+    end if defined?(OpenSSL)
+
+    num_records = 50
+
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_tcp('0.0.0.0', 0) do |t2|
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+
+        client_thread = Thread.new do
+          Resolv::DNS.open(nameserver_port: [[server1_address, server1_port], [server2_address, server2_port]]) do |dns|
+            dns.timeouts = [0.1, 0.2]
+            dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+          end
+        end
+
+        udp_server1_thread = Thread.new do
+          msg, (_, client_port, _, client_address) = Timeout.timeout(5) { u1.recvfrom(4096) }
+          id, word2, _qdcount, _ancount, _nscount, _arcount = msg.unpack('nnnnnn')
+          opcode = (word2 & 0x7800) >> 11
+          rd = (word2 & 0x0100) >> 8
+          name = [3, 'foo', 7, 'example', 3, 'org', 0].pack('Ca*Ca*Ca*C')
+          qr = 1
+          aa = 0
+          tc = 1
+          ra = 1
+          z = 0
+          rcode = 0
+          qdcount = 0
+          ancount = num_records
+          nscount = 0
+          arcount = 0
+          word2 = (qr << 15) |
+                  (opcode << 11) |
+                  (aa << 10) |
+                  (tc << 9) |
+                  (rd << 8) |
+                  (ra << 7) |
+                  (z << 4) |
+                  rcode
+          msg = [id, word2, qdcount, ancount, nscount, arcount].pack('nnnnnn')
+          type = 1
+          klass = 1
+          ttl = 3600
+          rdlength = 4
+          num_records.times do |i|
+            rdata = [192, 0, 2, i].pack('CCCC') # 192.0.2.x (TEST-NET address) RFC 3330
+            rr = [name, type, klass, ttl, rdlength, rdata].pack('a*nnNna*')
+            msg << rr
+          end
+          u1.send(msg[0...512], 0, client_address, client_port)
+        end
+
+        tcp_server1_thread = Thread.new { t1.accept }
+
+        tcp_server2_thread = Thread.new do
+          ct = t2.accept
+          msg = ct.recv(512)
+          msg.slice!(0..1) # Size (only for TCP)
+          id, word2, _qdcount, _ancount, _nscount, _arcount = msg.unpack('nnnnnn')
+          rd = (word2 & 0x0100) >> 8
+          opcode = (word2 & 0x7800) >> 11
+          name = [3, 'foo', 7, 'example', 3, 'org', 0].pack('Ca*Ca*Ca*C')
+          qr = 1
+          aa = 0
+          tc = 0
+          ra = 1
+          z = 0
+          rcode = 0
+          qdcount = 0
+          ancount = num_records
+          nscount = 0
+          arcount = 0
+          word2 = (qr << 15) |
+                  (opcode << 11) |
+                  (aa << 10) |
+                  (tc << 9) |
+                  (rd << 8) |
+                  (ra << 7) |
+                  (z << 4) |
+                  rcode
+          msg = [id, word2, qdcount, ancount, nscount, arcount].pack('nnnnnn')
+          type = 1
+          klass = 1
+          ttl = 3600
+          rdlength = 4
+          num_records.times do |i|
+            rdata = [192, 0, 2, i].pack('CCCC') # 192.0.2.x (TEST-NET address) RFC 3330
+            rr = [name, type, klass, ttl, rdlength, rdata].pack('a*nnNna*')
+            msg << rr
+          end
+          msg = "#{[msg.bytesize].pack('n')}#{msg}" # Prefix with size
+          ct.send(msg, 0)
+          ct.close
+        end
+        result, = assert_join_threads([client_thread, udp_server1_thread, tcp_server1_thread, tcp_server2_thread])
+        assert_instance_of(Array, result)
+        assert_equal(50, result.length)
+        result.each_with_index do |rr, i|
+          assert_instance_of(Resolv::DNS::Resource::IN::A, rr)
+          assert_instance_of(Resolv::IPv4, rr.address)
+          assert_equal("192.0.2.#{i}", rr.address.to_s)
+          assert_equal(3600, rr.ttl)
+        end
+      end
+    end
+  end
 end
