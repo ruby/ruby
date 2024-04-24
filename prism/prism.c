@@ -13206,10 +13206,16 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
                 pm_token_t operator = parser->previous;
                 pm_node_t *value = NULL;
 
-                if (token_begins_expression_p(parser->current.type)) {
+                if (match1(parser, PM_TOKEN_BRACE_LEFT)) {
+                    // If we're about to parse a nested hash that is being
+                    // pushed into this hash directly with **, then we want the
+                    // inner hash to share the static literals with the outer
+                    // hash.
+                    parser->current_hash_keys = literals;
                     value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH);
-                }
-                else {
+                } else if (token_begins_expression_p(parser->current.type)) {
+                    value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH);
+                } else {
                     pm_parser_scope_forwarding_keywords_check(parser, &operator);
                 }
 
@@ -13360,15 +13366,15 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 pm_keyword_hash_node_t *hash = pm_keyword_hash_node_create(parser);
                 argument = (pm_node_t *) hash;
 
-                pm_static_literals_t literals = { 0 };
-                bool contains_keyword_splat = parse_assocs(parser, &literals, (pm_node_t *) hash);
+                pm_static_literals_t hash_keys = { 0 };
+                bool contains_keyword_splat = parse_assocs(parser, &hash_keys, (pm_node_t *) hash);
 
                 parse_arguments_append(parser, arguments, argument);
                 if (contains_keyword_splat) {
-                    pm_node_flag_set((pm_node_t *)arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
+                    pm_node_flag_set((pm_node_t *) arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
                 }
 
-                pm_static_literals_free(&literals);
+                pm_static_literals_free(&hash_keys);
                 parsed_bare_hash = true;
 
                 break;
@@ -13460,8 +13466,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     pm_keyword_hash_node_t *bare_hash = pm_keyword_hash_node_create(parser);
 
                     // Create the set of static literals for this hash.
-                    pm_static_literals_t literals = { 0 };
-                    pm_hash_key_static_literals_add(parser, &literals, argument);
+                    pm_static_literals_t hash_keys = { 0 };
+                    pm_hash_key_static_literals_add(parser, &hash_keys, argument);
 
                     // Finish parsing the one we are part way through.
                     pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_HASH_VALUE);
@@ -13475,10 +13481,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         token_begins_expression_p(parser->current.type) ||
                         match2(parser, PM_TOKEN_USTAR_STAR, PM_TOKEN_LABEL)
                     )) {
-                        contains_keyword_splat = parse_assocs(parser, &literals, (pm_node_t *) bare_hash);
+                        contains_keyword_splat = parse_assocs(parser, &hash_keys, (pm_node_t *) bare_hash);
                     }
 
-                    pm_static_literals_free(&literals);
+                    pm_static_literals_free(&hash_keys);
                     parsed_bare_hash = true;
                 } else if (accept1(parser, PM_TOKEN_KEYWORD_IN)) {
                     // TODO: Could we solve this with binding powers instead?
@@ -16724,13 +16730,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     }
 
                     element = (pm_node_t *) pm_keyword_hash_node_create(parser);
-                    pm_static_literals_t literals = { 0 };
+                    pm_static_literals_t hash_keys = { 0 };
 
                     if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                        parse_assocs(parser, &literals, element);
+                        parse_assocs(parser, &hash_keys, element);
                     }
 
-                    pm_static_literals_free(&literals);
+                    pm_static_literals_free(&hash_keys);
                     parsed_bare_hash = true;
                 } else {
                     element = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_ARRAY_EXPRESSION);
@@ -16741,8 +16747,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         }
 
                         pm_keyword_hash_node_t *hash = pm_keyword_hash_node_create(parser);
-                        pm_static_literals_t literals = { 0 };
-                        pm_hash_key_static_literals_add(parser, &literals, element);
+                        pm_static_literals_t hash_keys = { 0 };
+                        pm_hash_key_static_literals_add(parser, &hash_keys, element);
 
                         pm_token_t operator;
                         if (parser->previous.type == PM_TOKEN_EQUAL_GREATER) {
@@ -16757,10 +16763,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                         element = (pm_node_t *) hash;
                         if (accept1(parser, PM_TOKEN_COMMA) && !match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                            parse_assocs(parser, &literals, element);
+                            parse_assocs(parser, &hash_keys, element);
                         }
 
-                        pm_static_literals_free(&literals);
+                        pm_static_literals_free(&hash_keys);
                         parsed_bare_hash = true;
                     }
                 }
@@ -16920,14 +16926,30 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous);
         }
         case PM_TOKEN_BRACE_LEFT: {
+            // If we were passed a current_hash_keys via the parser, then that
+            // means we're already parsing a hash and we want to share the set
+            // of hash keys with this inner hash we're about to parse for the
+            // sake of warnings. We'll set it to NULL after we grab it to make
+            // sure subsequent expressions don't use it. Effectively this is a
+            // way of getting around passing it to every call to
+            // parse_expression.
+            pm_static_literals_t *current_hash_keys = parser->current_hash_keys;
+            parser->current_hash_keys = NULL;
+
             pm_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
             pm_hash_node_t *node = pm_hash_node_create(parser, &parser->previous);
-            pm_static_literals_t literals = { 0 };
 
             if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
-                parse_assocs(parser, &literals, (pm_node_t *) node);
+                if (current_hash_keys != NULL) {
+                    parse_assocs(parser, current_hash_keys, (pm_node_t *) node);
+                } else {
+                    pm_static_literals_t hash_keys = { 0 };
+                    parse_assocs(parser, &hash_keys, (pm_node_t *) node);
+                    pm_static_literals_free(&hash_keys);
+                }
+
                 accept1(parser, PM_TOKEN_NEWLINE);
             }
 
@@ -16935,7 +16957,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM);
             pm_hash_node_closing_loc_set(node, &parser->previous);
 
-            pm_static_literals_free(&literals);
             return (pm_node_t *) node;
         }
         case PM_TOKEN_CHARACTER_LITERAL: {

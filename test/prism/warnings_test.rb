@@ -44,6 +44,7 @@ module Prism
 
     def test_duplicated_hash_key
       assert_warning("{ a: 1, a: 2 }", "duplicated and overwritten")
+      assert_warning("{ a: 1, **{ a: 2 } }", "duplicated and overwritten")
     end
 
     def test_duplicated_when_clause
