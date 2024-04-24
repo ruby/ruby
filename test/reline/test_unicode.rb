@@ -38,6 +38,11 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal [["ab\e]0;1\ac", nil, "\e]0;1\ad"], 2], Reline::Unicode.split_by_width("ab\e]0;1\acd", 3)
   end
 
+  def test_split_by_width_csi_reset_sgr_optimization
+    assert_equal [["\e[1ma\e[mb\e[2mc", nil, "\e[2md\e[0me\e[3mf", nil, "\e[3mg"], 3], Reline::Unicode.split_by_width("\e[1ma\e[mb\e[2mcd\e[0me\e[3mfg", 3)
+    assert_equal [["\e[1ma\1\e[mzero\e[0m\2\e[2mb", nil, "\e[1m\e[2mc"], 2], Reline::Unicode.split_by_width("\e[1ma\1\e[mzero\e[0m\2\e[2mbc", 2)
+  end
+
   def test_take_range
     assert_equal 'cdef', Reline::Unicode.take_range('abcdefghi', 2, 4)
     assert_equal 'あde', Reline::Unicode.take_range('abあdef', 2, 4)

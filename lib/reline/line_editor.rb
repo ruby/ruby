@@ -1542,11 +1542,7 @@ class Reline::LineEditor
   alias_method :vi_zero, :ed_move_to_beg
 
   private def ed_move_to_end(key)
-    @byte_pointer = 0
-    while @byte_pointer < current_line.bytesize
-      byte_size = Reline::Unicode.get_next_mbchar_size(current_line, @byte_pointer)
-      @byte_pointer += byte_size
-    end
+    @byte_pointer = current_line.bytesize
   end
   alias_method :end_of_line, :ed_move_to_end
 

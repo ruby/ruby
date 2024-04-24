@@ -145,7 +145,13 @@ class Reline::Unicode
         lines.last << NON_PRINTING_END
       when csi
         lines.last << csi
-        seq << csi
+        unless in_zero_width
+          if csi == -"\e[m" || csi == -"\e[0m"
+            seq.clear
+          else
+            seq << csi
+          end
+        end
       when osc
         lines.last << osc
         seq << osc
