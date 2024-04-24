@@ -57,11 +57,11 @@ class << Merger
       yield if block_given?
       STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
       case STDIN.gets
-      when /\Aa/i then exit
+      when /\Aa/i then exit 1
       when /\Ar/i then redo
       when /\Ay/i then break
       when /\Ae/i then system(ENV['EDITOR'], editfile)
-      else exit
+      else exit 1
       end
     end
   end
@@ -324,7 +324,10 @@ else
       end
       patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
 
-      message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
+      message = "#{(patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n")}"
+      message.gsub!(/\G(.*)\n( .*)/, "\\1\\2")
+      message = "\n\n#{message}"
+
       puts '+ git apply'
       IO.popen(['git', 'apply', '--3way'], 'wb') { |f| f.write(patch) }
     else

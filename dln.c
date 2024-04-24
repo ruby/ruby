@@ -194,7 +194,6 @@ dln_strerror(char *message, size_t size)
     }
     return message;
 }
-#define dln_strerror() dln_strerror(message, sizeof message)
 #elif defined USE_DLN_DLOPEN
 static const char *
 dln_strerror(void)
@@ -340,15 +339,12 @@ dln_disable_dlclose(void)
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
 void *
-dln_open(const char *file)
+dln_open(const char *file, char *error, size_t size)
 {
     static const char incompatible[] = "incompatible library version";
-    const char *error = NULL;
     void *handle;
 
 #if defined(_WIN32)
-    char message[1024];
-
     /* Convert the file path to wide char */
     WCHAR *winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
     if (!winfile) {
@@ -360,15 +356,15 @@ dln_open(const char *file)
     free(winfile);
 
     if (!handle) {
-        error = dln_strerror();
-        goto failed;
+        strlcpy(error, dln_strerror(error, size), size);
+        return NULL;
     }
 
 # if defined(RUBY_EXPORT)
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
         FreeLibrary(handle);
-        error = incompatible;
-        goto failed;
+        strlcpy(error, incompatible, size);
+        return NULL;
     }
 # endif
 
@@ -387,8 +383,8 @@ dln_open(const char *file)
     /* Load file */
     handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
     if (handle == NULL) {
-        error = dln_strerror();
-        goto failed;
+        strlcpy(error, dln_strerror(), size);
+        return NULL;
     }
 
 # if defined(RUBY_EXPORT)
@@ -410,11 +406,15 @@ dln_open(const char *file)
                     libruby_name = tmp;
                 }
                 dlclose(handle);
+
                 if (libruby_name) {
-                    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+                    snprintf(error, size, "linked to incompatible %s - %s", libruby_name, file);
                 }
-                error = incompatible;
-                goto failed;
+                else {
+                    strlcpy(error, incompatible, size);
+                }
+
+                return NULL;
             }
         }
     }
@@ -422,9 +422,6 @@ dln_open(const char *file)
 #endif
 
     return handle;
-
-  failed:
-    dln_loaderror("%s - %s", error, file);
 }
 
 void *
@@ -446,7 +443,7 @@ dln_sym_func(void *handle, const char *symbol)
         const char *error;
 #if defined(_WIN32)
         char message[1024];
-        error = dln_strerror();
+        error = dln_strerror(message, sizeof(message));
 #elif defined(USE_DLN_DLOPEN)
         const size_t errlen = strlen(error = dln_strerror()) + 1;
         error = memcpy(ALLOCA_N(char, errlen), error, errlen);
@@ -501,7 +498,12 @@ void *
 dln_load(const char *file)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-    void *handle = dln_open(file);
+    char error[1024];
+    void *handle = dln_open(file, error, sizeof(error));
+
+    if (handle == NULL) {
+        dln_loaderror("%s - %s", error, file);
+    }
 
 #ifdef RUBY_DLN_CHECK_ABI
     typedef unsigned long long abi_version_number;

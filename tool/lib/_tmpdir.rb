@@ -1,14 +1,23 @@
-require "tmpdir"
-require "fileutils"
-
 template = "rubytest."
-if (tmpdir = Dir.mktmpdir(template)).size > 50 and File.directory?("/tmp")
+
+# This path is only for tests.
+# Assume the directory by these environment variables are safe.
+base = [ENV["TMPDIR"], ENV["TMP"], "/tmp"].find do |tmp|
+  next unless tmp and tmp.size <= 50 and File.directory?(tmp)
   # On macOS, the default TMPDIR is very long, inspite of UNIX socket
   # path length is limited.
-  # Assume "/tmp" always exists on UNIX-like systems where UNIX socket
-  # is available, otherwise no need to shorten TMPDIR.
-  Dir.rmdir(tmpdir)
-  tmpdir = Dir.mktmpdir(template, "/tmp")
+  #
+  # Also Rubygems creates its own temporary directory per tests, and
+  # some tests copy the full path of gemhome there.  In that caes, the
+  # path contains both temporary names twice, and can exceed path name
+  # limit very easily.
+  tmp
+end
+begin
+  tmpdir = File.join(base, template + Random.new_seed.to_s(36)[-6..-1])
+  Dir.mkdir(tmpdir, 0o700)
+rescue Errno::EEXIST
+  retry
 end
 # warn "tmpdir(#{tmpdir.size}) = #{tmpdir}"
 
@@ -73,13 +82,16 @@ END {
         end
       end.new(colorize)
       warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
-      ls.list_tree(tmpdir) do |path, st|
-        if st.directory?
-          Dir.rmdir(path)
-        else
-          File.unlink(path)
+      Dir.chdir(tmpdir) do
+        ls.list_tree(".") do |path, st|
+          if st.directory?
+            Dir.rmdir(path)
+          else
+            File.unlink(path)
+          end
         end
       end
+      require "fileutils"
       FileUtils.rm_rf(tmpdir)
     end
   end

@@ -110,7 +110,7 @@ module Prism
     end
 
     # Returns a string representation of the node.
-    def inspect(inspector = NodeInspector.new)
+    def inspect
       raise NoMethodError, "undefined method `inspect' for #{inspect}"
     end
 
@@ -219,10 +219,10 @@ module Prism
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
-
     <%- node.fields.each do |field| -%>
+
     <%- if field.comment.nil? -%>
-    # <%= "private " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    # <%= "protected " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%- else -%>
     <%- field.each_comment_line do |line| -%>
     #<%= line %>
@@ -248,9 +248,8 @@ module Prism
       end
     end
     <%- else -%>
-    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
+    attr_reader :<%= field.name -%><%= "\n    protected :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
     <%- end -%>
-
     <%- end -%>
     <%- node.fields.each do |field| -%>
     <%- case field -%>
@@ -281,45 +280,9 @@ module Prism
     <%- end -%>
     <%- end -%>
 
-    # def inspect(NodeInspector inspector) -> String
-    def inspect(inspector = NodeInspector.new)
-      inspector << inspector.header(self)
-      <%- node.fields.each_with_index do |field, index| -%>
-      <%- pointer, preadd = index == node.fields.length - 1 ? ["└── ", "    "] : ["├── ", "│   "] -%>
-      <%- case field -%>
-      <%- when Prism::Template::NodeListField -%>
-      inspector << "<%= pointer %><%= field.name %>: #{inspector.list("#{inspector.prefix}<%= preadd %>", <%= field.name %>)}"
-      <%- when Prism::Template::ConstantListField -%>
-      inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when Prism::Template::NodeField -%>
-      inspector << "<%= pointer %><%= field.name %>:\n"
-      inspector << inspector.child_node(<%= field.name %>, "<%= preadd %>")
-      <%- when Prism::Template::OptionalNodeField -%>
-      if (<%= field.name %> = self.<%= field.name %>).nil?
-        inspector << "<%= pointer %><%= field.name %>: ∅\n"
-      else
-        inspector << "<%= pointer %><%= field.name %>:\n"
-        inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
-      end
-      <%- when Prism::Template::ConstantField, Prism::Template::StringField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField, Prism::Template::DoubleField -%>
-      inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when Prism::Template::OptionalConstantField -%>
-      if (<%= field.name %> = self.<%= field.name %>).nil?
-        inspector << "<%= pointer %><%= field.name %>: ∅\n"
-      else
-        inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      end
-      <%- when Prism::Template::FlagsField -%>
-      <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
-      flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact
-      inspector << "<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n"
-      <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField -%>
-      inspector << "<%= pointer %><%= field.name %>: #{inspector.location(<%= field.name %>)}\n"
-      <%- else -%>
-      <%- raise -%>
-      <%- end -%>
-      <%- end -%>
-      inspector.to_str
+    # def inspect -> String
+    def inspect
+      InspectVisitor.compose(self)
     end
 
     # Sometimes you want to check an instance of a node against a list of
@@ -348,6 +311,22 @@ module Prism
     # def self.type: () -> Symbol
     def self.type
       :<%= node.human %>
+    end
+
+    # Implements case-equality for the node. This is effectively == but without
+    # comparing the value of locations. Locations are checked only for presence.
+    def ===(other)
+      other.is_a?(<%= node.name %>)<%= " &&" if node.fields.any? %>
+        <%- node.fields.each_with_index do |field, index| -%>
+        <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
+        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != node.fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
+        (<%= field.name %>.length == other.<%= field.name %>.length) &&
+        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != node.fields.length - 1 %>
+        <%- else -%>
+        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != node.fields.length - 1 %>
+        <%- end -%>
+        <%- end -%>
     end
   end
   <%- end -%>

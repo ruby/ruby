@@ -839,7 +839,7 @@ module Prism
             token(node.in_loc),
             pattern,
             guard,
-            srange_find(node.pattern.location.end_offset, node.statements&.location&.start_offset || node.location.end_offset, [";", "then"]),
+            srange_find(node.pattern.location.end_offset, node.statements&.location&.start_offset, [";", "then"]),
             visit(node.statements)
           )
         end
@@ -1679,7 +1679,7 @@ module Prism
         end
 
         # until foo; bar end
-        # ^^^^^^^^^^^^^^^^^
+        # ^^^^^^^^^^^^^^^^^^
         #
         # bar until foo
         # ^^^^^^^^^^^^^
@@ -1712,7 +1712,7 @@ module Prism
             if node.then_keyword_loc
               token(node.then_keyword_loc)
             else
-              srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset || (node.conditions.last.location.end_offset + 1), [";"])
+              srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset, [";"])
             end,
             visit(node.statements)
           )
@@ -1871,12 +1871,16 @@ module Prism
 
         # Constructs a new source range by finding the given tokens between the
         # given start offset and end offset. If the needle is not found, it
-        # returns nil.
+        # returns nil. Importantly it does not search past newlines or comments.
+        #
+        # Note that end_offset is allowed to be nil, in which case this will
+        # search until the end of the string.
         def srange_find(start_offset, end_offset, tokens)
-          tokens.find do |token|
-            next unless (index = source_buffer.source.byteslice(start_offset...end_offset).index(token))
-            offset = start_offset + index
-            return [token, Range.new(source_buffer, offset_cache[offset], offset_cache[offset + token.length])]
+          if (match = source_buffer.source.byteslice(start_offset...end_offset).match(/(\s*)(#{tokens.join("|")})/))
+            _, whitespace, token = *match
+            token_offset = start_offset + whitespace.bytesize
+
+            [token, Range.new(source_buffer, offset_cache[token_offset], offset_cache[token_offset + token.bytesize])]
           end
         end
 

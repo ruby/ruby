@@ -1340,9 +1340,6 @@ typedef struct rb_parser_config_struct {
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
-    rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
-    VALUE (*enc_from_encoding)(rb_encoding *enc);
-    int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
     int enc_coderange_broken;
     int (*enc_mbminlen)(rb_encoding *enc);

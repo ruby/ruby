@@ -1243,7 +1243,7 @@ static_inspect(int argc, VALUE *argv, VALUE self) {
     pm_node_t *node = ((pm_program_node_t *) program)->statements->body.nodes[0];
 
     pm_buffer_t buffer = { 0 };
-    pm_static_literal_inspect(&buffer, &parser, node);
+    pm_static_literal_inspect(&buffer, &parser.newline_list, parser.start_line, parser.encoding->name, node);
 
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);

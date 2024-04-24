@@ -108,7 +108,7 @@ extern int ruby_assert_critical_section_entered;
 
 #if USE_SHARED_GC
 typedef struct gc_function_map {
-    void *(*init)(void);
+    void *(*objspace_alloc)(void);
 } rb_gc_function_map_t;
 
 #define rb_gc_functions (GET_VM()->gc_functions_map)

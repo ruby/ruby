@@ -89,8 +89,6 @@
     ../configure --prefix="${HOME}/.rubies/ruby-master"
     ```
 
-    - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
-
     - Also `-C` (or `--config-cache`) would reduce time to configure from the next time.
 
 5. Build Ruby:

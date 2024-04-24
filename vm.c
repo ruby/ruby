@@ -3301,7 +3301,6 @@ vm_default_params_setup(rb_vm_t *vm)
 static void
 vm_init2(rb_vm_t *vm)
 {
-    MEMZERO(vm, rb_vm_t, 1);
     rb_vm_living_threads_init(vm);
     vm->thread_report_on_exception = 1;
     vm->src_encoding_index = -1;
@@ -4237,15 +4236,14 @@ void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t * vm = ruby_mimmalloc(sizeof(*vm));
-    rb_thread_t * th = ruby_mimmalloc(sizeof(*th));
+    rb_vm_t *vm = ruby_mimcalloc(1, sizeof(*vm));
+    rb_thread_t *th = ruby_mimcalloc(1, sizeof(*th));
     if (!vm || !th) {
         fputs("[FATAL] failed to allocate memory\n", stderr);
         exit(EXIT_FAILURE);
     }
 
     // setup the VM
-    MEMZERO(th, rb_thread_t, 1);
     vm_init2(vm);
 
     rb_vm_postponed_job_queue_init(vm);

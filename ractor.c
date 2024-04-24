@@ -2012,12 +2012,11 @@ ractor_alloc(VALUE klass)
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
-    rb_ractor_t *r = ruby_mimmalloc(sizeof(rb_ractor_t));
+    rb_ractor_t *r = ruby_mimcalloc(1, sizeof(rb_ractor_t));
     if (r == NULL) {
         fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
     }
-    MEMZERO(r, rb_ractor_t, 1);
     r->pub.id = ++ractor_last_id;
     r->loc = Qnil;
     r->name = Qnil;

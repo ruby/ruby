@@ -962,6 +962,7 @@ extern "C" {
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
     pub static mut rb_cArray: VALUE;
+    pub static mut rb_cClass: VALUE;
     pub static mut rb_cFalseClass: VALUE;
     pub static mut rb_cFloat: VALUE;
     pub static mut rb_cHash: VALUE;

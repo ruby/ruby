@@ -216,6 +216,11 @@ srcs: $(srcdir)/lib/prism/dsl.rb
 $(srcdir)/lib/prism/dsl.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/dsl.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/dsl.rb $(srcdir)/lib/prism/dsl.rb
 
+main: $(srcdir)/lib/prism/inspect_visitor.rb
+srcs: $(srcdir)/lib/prism/inspect_visitor.rb
+$(srcdir)/lib/prism/inspect_visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/inspect_visitor.rb.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/inspect_visitor.rb $(srcdir)/lib/prism/inspect_visitor.rb
+
 main: $(srcdir)/lib/prism/mutation_compiler.rb
 srcs: $(srcdir)/lib/prism/mutation_compiler.rb
 $(srcdir)/lib/prism/mutation_compiler.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/mutation_compiler.rb.erb
@@ -483,9 +488,9 @@ docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
-install-all: pre-install-all docs do-install-all post-install-all
+install-all: pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
-do-install-all: pre-install-all
+do-install-all: pre-install-all $(DOT_WAIT) docs
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
@@ -12562,6 +12567,7 @@ prism/node.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/node.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12587,6 +12593,7 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12629,6 +12636,7 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.c
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12739,6 +12747,7 @@ prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h

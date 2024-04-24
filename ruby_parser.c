@@ -185,24 +185,6 @@ intern3(const char *name, long len, void *enc)
 }
 
 static void *
-enc_compatible(VALUE str1, VALUE str2)
-{
-    return (void *)rb_enc_compatible(str1, str2);
-}
-
-static VALUE
-enc_from_encoding(void *enc)
-{
-    return rb_enc_from_encoding((rb_encoding *)enc);
-}
-
-static int
-encoding_is_ascii8bit(VALUE obj)
-{
-    return ENCODING_IS_ASCII8BIT(obj);
-}
-
-static void *
 usascii_encoding(void)
 {
     return (void *)rb_usascii_encoding();
@@ -442,9 +424,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isspace = enc_isspace,
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
-    .enc_compatible = enc_compatible,
-    .enc_from_encoding = enc_from_encoding,
-    .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
     .enc_coderange_broken = ENC_CODERANGE_BROKEN,
     .enc_mbminlen = enc_mbminlen,
@@ -834,7 +813,7 @@ rb_parser_encoding(VALUE vparser)
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    return rb_ruby_parser_encoding(parser->parser_params);
+    return rb_enc_from_encoding(rb_ruby_parser_encoding(parser->parser_params));
 }
 
 VALUE

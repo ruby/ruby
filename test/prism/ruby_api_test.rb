@@ -244,6 +244,21 @@ module Prism
       assert_equal 16, base[parse_expression("0x1")]
     end
 
+    def test_node_equality
+      assert_operator parse_expression("1"), :===, parse_expression("1")
+      assert_operator Prism.parse("1").value, :===, Prism.parse("1").value
+
+      complex_source = "class Something; @var = something.else { _1 }; end"
+      assert_operator parse_expression(complex_source), :===, parse_expression(complex_source)
+
+      refute_operator parse_expression("1"), :===, parse_expression("2")
+      refute_operator parse_expression("1"), :===, parse_expression("0x1")
+
+      complex_source_1 = "class Something; @var = something.else { _1 }; end"
+      complex_source_2 = "class Something; @var = something.else { _2 }; end"
+      refute_operator parse_expression(complex_source_1), :===, parse_expression(complex_source_2)
+    end
+
     private
 
     def parse_expression(source)
