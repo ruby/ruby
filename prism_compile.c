@@ -5176,8 +5176,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // We're going to use this to uniquely identify each branch so that we
         // can track coverage information.
+        rb_code_location_t case_location;
+        VALUE branches = Qfalse;
         int branch_id = 0;
-        // VALUE branches = 0;
+
+        if (PM_BRANCH_COVERAGE_P(iseq)) {
+            case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
+            branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+        }
 
         // If there is only one pattern, then the behavior changes a bit. It
         // effectively gets treated as a match required node (this is how it is
@@ -5217,12 +5223,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_LABEL(body_seq, body_label);
             PUSH_INSN1(body_seq, in_location, adjuststack, INT2FIX(in_single_pattern ? 6 : 2));
 
-            // TODO: We need to come back to this and enable trace branch
-            // coverage. At the moment we can't call this function because it
-            // accepts a NODE* and not a pm_node_t*.
-            // add_trace_branch_coverage(iseq, body_seq, in_node->statements || in, branch_id++, "in", branches);
+            // Establish branch coverage for the in clause.
+            if (PM_BRANCH_COVERAGE_P(iseq)) {
+                rb_code_location_t branch_location = pm_code_location(scope_node, in_node->statements != NULL ? ((const pm_node_t *) in_node->statements) : ((const pm_node_t *) in_node));
+                add_trace_branch_coverage(iseq, body_seq, &branch_location, branch_location.beg_pos.column, branch_id++, "in", branches);
+            }
 
-            branch_id++;
             if (in_node->statements != NULL) {
                 PM_COMPILE_INTO_ANCHOR(body_seq, (const pm_node_t *) in_node->statements);
             }
@@ -5249,16 +5255,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN(cond_seq, location, pop);
             PUSH_INSN(cond_seq, location, pop);
 
-            // TODO: trace branch coverage
-            // add_trace_branch_coverage(iseq, cond_seq, cast->consequent, branch_id, "else", branches);
-
-            if (else_node->statements != NULL) {
-                PM_COMPILE_INTO_ANCHOR(cond_seq, (const pm_node_t *) else_node->statements);
-            }
-            else if (!popped) {
-                PUSH_INSN(cond_seq, location, putnil);
+            // Establish branch coverage for the else clause.
+            if (PM_BRANCH_COVERAGE_P(iseq)) {
+                rb_code_location_t branch_location = pm_code_location(scope_node, else_node->statements != NULL ? ((const pm_node_t *) else_node->statements) : ((const pm_node_t *) else_node));
+                add_trace_branch_coverage(iseq, cond_seq, &branch_location, branch_location.beg_pos.column, branch_id, "else", branches);
             }
 
+            PM_COMPILE_INTO_ANCHOR(cond_seq, (const pm_node_t *) else_node);
             PUSH_INSNL(cond_seq, location, jump, end_label);
             PUSH_INSN(cond_seq, location, putnil);
             if (popped) PUSH_INSN(cond_seq, location, putnil);
@@ -5268,8 +5271,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // the code to handle raising an appropriate error.
             PUSH_LABEL(cond_seq, else_label);
 
-            // TODO: trace branch coverage
-            // add_trace_branch_coverage(iseq, cond_seq, orig_node, branch_id, "else", branches);
+            // Establish branch coverage for the implicit else clause.
+            add_trace_branch_coverage(iseq, cond_seq, &case_location, case_location.beg_pos.column, branch_id, "else", branches);
 
             if (in_single_pattern) {
                 pm_compile_pattern_error_handler(iseq, scope_node, node, cond_seq, end_label, popped);
