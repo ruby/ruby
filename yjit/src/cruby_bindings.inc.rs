@@ -478,6 +478,16 @@ pub struct iseq_inline_iv_cache_entry {
 pub struct iseq_inline_cvar_cache_entry {
     pub entry: *mut rb_cvar_class_tbl_entry,
 }
+pub const ISEQ_TYPE_TOP: rb_iseq_type = 0;
+pub const ISEQ_TYPE_METHOD: rb_iseq_type = 1;
+pub const ISEQ_TYPE_BLOCK: rb_iseq_type = 2;
+pub const ISEQ_TYPE_CLASS: rb_iseq_type = 3;
+pub const ISEQ_TYPE_RESCUE: rb_iseq_type = 4;
+pub const ISEQ_TYPE_ENSURE: rb_iseq_type = 5;
+pub const ISEQ_TYPE_EVAL: rb_iseq_type = 6;
+pub const ISEQ_TYPE_MAIN: rb_iseq_type = 7;
+pub const ISEQ_TYPE_PLAIN: rb_iseq_type = 8;
+pub type rb_iseq_type = u32;
 pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
 pub const BUILTIN_ATTR_SINGLE_NOARG_LEAF: rb_builtin_attr = 2;
 pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
@@ -1154,6 +1164,7 @@ extern "C" {
     pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_get_iseq_body_iseq_encoded(iseq: *const rb_iseq_t) -> *mut VALUE;
     pub fn rb_get_iseq_body_stack_max(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+    pub fn rb_get_iseq_body_type(iseq: *const rb_iseq_t) -> rb_iseq_type;
     pub fn rb_get_iseq_flags_has_lead(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_has_opt(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_has_kw(iseq: *const rb_iseq_t) -> bool;
