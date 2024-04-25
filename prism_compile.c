@@ -2808,6 +2808,27 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
     }
 }
 
+/**
+ * A prism-specific version of decl_branch_base that converts prism nodes into
+ * the required structure for branch coverage.
+ */
+static VALUE
+pm_decl_branch_base(rb_iseq_t *iseq, rb_code_location_t *code_location, const pm_scope_node_t *scope_node, const pm_node_t *node, const char *type) {
+    // This is done in compile.c after the lines have already been extracted,
+    // but we want to avoid that work if we can, so we check early here.
+    if (!ISEQ_COVERAGE(iseq)) return Qfalse;
+
+    const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, node);
+
+    *code_location = (rb_code_location_t) {
+        .beg_pos = { .lineno = start_location.line, .column = start_location.column },
+        .end_pos = { .lineno = end_location.line, .column = end_location.column }
+    };
+
+    return decl_branch_base(iseq, PTR2NUM(node), code_location, type);
+}
+
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
@@ -2818,9 +2839,18 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
 
+    VALUE branches = Qfalse;
+    rb_code_location_t code_location;
+    int node_id = -1;
+
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        branches = pm_decl_branch_base(iseq, &code_location, scope_node, (const pm_node_t *) call_node, "&.");
+        node_id = code_location.beg_pos.column;
+
         PUSH_INSN(ret, location, dup);
         PUSH_INSNL(ret, location, branchnil, else_label);
+
+        add_trace_branch_coverage(iseq, ret, &code_location, node_id, 0, "then", branches);
     }
 
     int flags = 0;
@@ -2889,7 +2919,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_LABEL(ret, else_label);
     }
 
-    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) || (block_iseq && ISEQ_BODY(block_iseq)->catch_table)) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        add_trace_branch_coverage(iseq, ret, &code_location, node_id, 1, "else", branches);
+        PUSH_LABEL(ret, end_label);
+    } else if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
         PUSH_LABEL(ret, end_label);
     }
 
