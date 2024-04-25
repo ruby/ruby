@@ -486,7 +486,7 @@ struct parser_params {
 
     struct {
         rb_strterm_t *strterm;
-        VALUE (*gets)(struct parser_params*,rb_parser_input_data,int);
+        rb_parser_lex_gets_func *gets;
         rb_parser_input_data input;
         parser_string_buffer_t string_buffer;
         rb_parser_string_t *lastline;
@@ -7783,9 +7783,9 @@ yycompile(struct parser_params *p, const char *fname_ptr, long fname_len, rb_enc
 #endif /* !RIPPER */
 
 static rb_encoding *
-must_be_ascii_compatible(struct parser_params *p, VALUE s)
+must_be_ascii_compatible(struct parser_params *p, rb_parser_string_t *s)
 {
-    rb_encoding *enc = rb_enc_get(s);
+    rb_encoding *enc = rb_parser_str_get_encoding(s);
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eArgError, "invalid source encoding");
     }
@@ -7795,14 +7795,12 @@ must_be_ascii_compatible(struct parser_params *p, VALUE s)
 static rb_parser_string_t *
 lex_getline(struct parser_params *p)
 {
-    rb_parser_string_t *str;
-    VALUE line = (*p->lex.gets)(p, p->lex.input, p->line_count);
-    if (NIL_P(line)) return 0;
-    must_be_ascii_compatible(p, line);
+    rb_parser_string_t *line = (*p->lex.gets)(p, p->lex.input, p->line_count);
+    if (!line) return 0;
     p->line_count++;
-    str = rb_str_to_parser_string(p, line);
-    string_buffer_append(p, str);
-    return str;
+    string_buffer_append(p, line);
+    must_be_ascii_compatible(p, line);
+    return line;
 }
 
 #ifndef RIPPER
