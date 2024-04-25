@@ -85,7 +85,7 @@ module IRB
         @io = nil
         case use_multiline?
         when nil
-          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
+          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline? && ENV['TERM'] != 'dumb'
             # Both of multiline mode and singleline mode aren't specified.
             @io = RelineInputMethod.new(build_completor)
           else
@@ -100,7 +100,7 @@ module IRB
           case use_singleline?
           when nil
             if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-                IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+                IRB.conf[:PROMPT_MODE] != :INF_RUBY) && ENV['TERM'] != 'dumb'
               @io = ReadlineInputMethod.new
             else
               @io = nil
