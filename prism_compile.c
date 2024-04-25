@@ -137,7 +137,7 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line_no, int c
 #define PM_NODE_END_LINE_COLUMN(parser, node) \
     pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.end, (parser)->start_line)
 
-#define PM_LOCATION_LINE_COLUMN(parser, location) \
+#define PM_LOCATION_START_LINE_COLUMN(parser, location) \
     pm_newline_list_line_column(&(parser)->newline_list, (location)->start, (parser)->start_line)
 
 static int
@@ -148,7 +148,7 @@ pm_node_line_number(const pm_parser_t *parser, const pm_node_t *node)
 
 static int
 pm_location_line_number(const pm_parser_t *parser, const pm_location_t *location) {
-    return (int) PM_LOCATION_LINE_COLUMN(parser, location).line;
+    return (int) PM_LOCATION_START_LINE_COLUMN(parser, location).line;
 }
 
 /**
@@ -944,7 +944,20 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_
         if (else_label->refcnt) {
             // Establish branch coverage for the then block.
             if (PM_BRANCH_COVERAGE_P(iseq)) {
-                rb_code_location_t branch_location = statements != NULL ? pm_code_location(scope_node, (const pm_node_t *) statements) : conditional_location;
+                rb_code_location_t branch_location;
+
+                if (statements != NULL) {
+                    branch_location = pm_code_location(scope_node, (const pm_node_t *) statements);
+                } else if (type == PM_IF_NODE) {
+                    pm_line_column_t predicate_end = PM_NODE_END_LINE_COLUMN(scope_node->parser, predicate);
+                    branch_location = (rb_code_location_t) {
+                        .beg_pos = { .lineno = predicate_end.line, .column = predicate_end.column },
+                        .end_pos = { .lineno = predicate_end.line, .column = predicate_end.column }
+                    };
+                } else {
+                    branch_location = conditional_location;
+                }
+
                 add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, 0, type == PM_IF_NODE ? "then" : "else", branches);
             }
 
@@ -2907,25 +2920,38 @@ pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry
     }
 }
 
+/**
+ * Compile a call node into the given iseq.
+ */
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
     const pm_location_t *message_loc = &call_node->message_loc;
     if (message_loc->start == NULL) message_loc = &call_node->base.location;
 
-    const pm_line_column_t location = PM_LOCATION_LINE_COLUMN(scope_node->parser, message_loc);
+    const pm_line_column_t location = PM_LOCATION_START_LINE_COLUMN(scope_node->parser, message_loc);
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
     LABEL *retry_end_l = NEW_LABEL(location.line);
 
     VALUE branches = Qfalse;
-    rb_code_location_t code_location;
-    int node_id = -1;
+    rb_code_location_t code_location = { 0 };
+    int node_id = location.column;
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
+            const uint8_t *cursors[3] = {
+                call_node->closing_loc.end,
+                call_node->arguments == NULL ? NULL : call_node->arguments->base.location.end,
+                call_node->message_loc.end
+            };
+
+            const uint8_t *end_cursor = cursors[0];
+            end_cursor = (end_cursor == NULL || cursors[1] == NULL) ? cursors[1] : (end_cursor > cursors[1] ? end_cursor : cursors[1]);
+            end_cursor = (end_cursor == NULL || cursors[2] == NULL) ? cursors[2] : (end_cursor > cursors[2] ? end_cursor : cursors[2]);
+
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
-            const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, call_node->message_loc.end, scope_node->parser->start_line);
+            const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, end_cursor, scope_node->parser->start_line);
 
             code_location = (rb_code_location_t) {
                 .beg_pos = { .lineno = start_location.line, .column = start_location.column },
@@ -2933,7 +2959,6 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             };
 
             branches = decl_branch_base(iseq, PTR2NUM(call_node), &code_location, "&.");
-            node_id = code_location.beg_pos.column;
         }
 
         PUSH_INSN(ret, location, dup);
@@ -4300,7 +4325,7 @@ pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
 static void
 pm_compile_constant_read(rb_iseq_t *iseq, VALUE name, const pm_location_t *name_loc, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
 {
-    const pm_line_column_t location = PM_LOCATION_LINE_COLUMN(scope_node->parser, name_loc);
+    const pm_line_column_t location = PM_LOCATION_START_LINE_COLUMN(scope_node->parser, name_loc);
 
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
         ISEQ_BODY(iseq)->ic_size++;
