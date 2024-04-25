@@ -737,6 +737,28 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
     }
 }
 
+/**
+ * A helper for converting a pm_location_t into a rb_code_location_t.
+ */
+static rb_code_location_t
+pm_code_location(const pm_scope_node_t *scope_node, const pm_node_t *node)
+{
+    const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+    const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, node);
+
+    return (rb_code_location_t) {
+        .beg_pos = { .lineno = start_location.line, .column = start_location.column },
+        .end_pos = { .lineno = end_location.line, .column = end_location.column }
+    };
+}
+
+/**
+ * A macro for determining if we should go through the work of adding branch
+ * coverage to the current iseq. We check this manually each time because we
+ * want to avoid the overhead of creating rb_code_location_t objects.
+ */
+#define PM_BRANCH_COVERAGE_P(iseq) (ISEQ_COVERAGE(iseq) && ISEQ_BRANCH_COVERAGE(iseq))
+
 static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond,
                          LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node);
@@ -947,7 +969,7 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_line_column_t *line_column, con
  * Compile a while or until loop.
  */
 static void
-pm_compile_loop(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_node_flags_t flags, enum pm_node_type type, const pm_statements_node_t *statements, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_loop(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_node_flags_t flags, enum pm_node_type type, const pm_node_t *node, const pm_statements_node_t *statements, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_line_column_t location = *line_column;
 
@@ -983,9 +1005,19 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_node_fl
     if (tmp_label) PUSH_LABEL(ret, tmp_label);
 
     PUSH_LABEL(ret, redo_label);
-    if (statements != NULL) PM_COMPILE_POPPED((const pm_node_t *) statements);
 
+    // Establish branch coverage for the loop.
+    if (PM_BRANCH_COVERAGE_P(iseq)) {
+        rb_code_location_t loop_location = pm_code_location(scope_node, node);
+        VALUE branches = decl_branch_base(iseq, PTR2NUM(node), &loop_location, type == PM_WHILE_NODE ? "while" : "until");
+
+        rb_code_location_t branch_location = statements != NULL ? pm_code_location(scope_node, (const pm_node_t *) statements) : loop_location;
+        add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, 0, "body", branches);
+    }
+
+    if (statements != NULL) PM_COMPILE_POPPED((const pm_node_t *) statements);
     PUSH_LABEL(ret, next_label);
+
     if (type == PM_WHILE_NODE) {
         pm_compile_branch_condition(iseq, ret, predicate, redo_label, end_label, popped, scope_node);
     }
@@ -2814,28 +2846,6 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
         st_free_table(scope_node->index_lookup_table);
     }
 }
-
-/**
- * A helper for converting a pm_location_t into a rb_code_location_t.
- */
-static rb_code_location_t
-pm_code_location(const pm_scope_node_t *scope_node, const pm_node_t *node)
-{
-    const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
-    const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, node);
-
-    return (rb_code_location_t) {
-        .beg_pos = { .lineno = start_location.line, .column = start_location.column },
-        .end_pos = { .lineno = end_location.line, .column = end_location.column }
-    };
-}
-
-/**
- * A macro for determining if we should go through the work of adding branch
- * coverage to the current iseq. We check this manually each time because we
- * want to avoid the overhead of creating rb_code_location_t objects.
- */
-#define PM_BRANCH_COVERAGE_P(iseq) (ISEQ_COVERAGE(iseq) && ISEQ_BRANCH_COVERAGE(iseq))
 
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
@@ -8500,7 +8510,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // bar until foo
         // ^^^^^^^^^^^^^
         const pm_until_node_t *cast = (const pm_until_node_t *) node;
-        pm_compile_loop(iseq, &location, cast->base.flags, PM_UNTIL_NODE, cast->statements, cast->predicate, ret, popped, scope_node);
+        pm_compile_loop(iseq, &location, cast->base.flags, PM_UNTIL_NODE, (const pm_node_t *) cast, cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_WHILE_NODE: {
@@ -8510,7 +8520,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // bar while foo
         // ^^^^^^^^^^^^^
         const pm_while_node_t *cast = (const pm_while_node_t *) node;
-        pm_compile_loop(iseq, &location, cast->base.flags, PM_WHILE_NODE, cast->statements, cast->predicate, ret, popped, scope_node);
+        pm_compile_loop(iseq, &location, cast->base.flags, PM_WHILE_NODE, (const pm_node_t *) cast, cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_X_STRING_NODE: {
