@@ -1518,7 +1518,7 @@ RSpec.describe "bundle gem" do
       it "includes rake-compiler, but no Rust related changes" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
 
-        expect(bundled_app("#{gem_name}/Gemfile").read).to_not include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to_not include('spec.add_dependency "rb_sys"')
         expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to_not include('spec.required_rubygems_version = ">= ')
       end
 
@@ -1578,7 +1578,7 @@ RSpec.describe "bundle gem" do
 
       it "includes rake-compiler, rb_sys gems and required_rubygems_version constraint" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
-        expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "rb_sys"')
         expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.required_rubygems_version = ">= ')
       end
 
