@@ -228,6 +228,7 @@ module Bundler
         templates.merge!(
           "Cargo.toml.tt" => "Cargo.toml",
           "ext/newgem/Cargo.toml.tt" => "ext/#{name}/Cargo.toml",
+          "ext/newgem/build.rs.tt" => "ext/#{name}/build.rs",
           "ext/newgem/extconf-rust.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/src/lib.rs.tt" => "ext/#{name}/src/lib.rs",
         )

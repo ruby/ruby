@@ -10,3 +10,14 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     module.define_singleton_method("hello", function!(hello, 1))?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use rb_sys_test_helpers::ruby_test;
+
+    #[ruby_test]
+    fn test_hello() {
+        use magnus::RString;
+        assert_eq!(12, RString::new("rust ❤️ ruby").length())
+    }
+}
