@@ -160,6 +160,7 @@ parser.o: $(hdrdir)/ruby/internal/special_consts.h
 parser.o: $(hdrdir)/ruby/internal/static_assert.h
 parser.o: $(hdrdir)/ruby/internal/stdalign.h
 parser.o: $(hdrdir)/ruby/internal/stdbool.h
+parser.o: $(hdrdir)/ruby/internal/stdckdint.h
 parser.o: $(hdrdir)/ruby/internal/symbol.h
 parser.o: $(hdrdir)/ruby/internal/value.h
 parser.o: $(hdrdir)/ruby/internal/value_type.h

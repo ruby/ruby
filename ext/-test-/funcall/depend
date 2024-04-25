@@ -147,6 +147,7 @@ funcall.o: $(hdrdir)/ruby/internal/special_consts.h
 funcall.o: $(hdrdir)/ruby/internal/static_assert.h
 funcall.o: $(hdrdir)/ruby/internal/stdalign.h
 funcall.o: $(hdrdir)/ruby/internal/stdbool.h
+funcall.o: $(hdrdir)/ruby/internal/stdckdint.h
 funcall.o: $(hdrdir)/ruby/internal/symbol.h
 funcall.o: $(hdrdir)/ruby/internal/value.h
 funcall.o: $(hdrdir)/ruby/internal/value_type.h

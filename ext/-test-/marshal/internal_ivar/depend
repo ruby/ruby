@@ -147,6 +147,7 @@ internal_ivar.o: $(hdrdir)/ruby/internal/special_consts.h
 internal_ivar.o: $(hdrdir)/ruby/internal/static_assert.h
 internal_ivar.o: $(hdrdir)/ruby/internal/stdalign.h
 internal_ivar.o: $(hdrdir)/ruby/internal/stdbool.h
+internal_ivar.o: $(hdrdir)/ruby/internal/stdckdint.h
 internal_ivar.o: $(hdrdir)/ruby/internal/symbol.h
 internal_ivar.o: $(hdrdir)/ruby/internal/value.h
 internal_ivar.o: $(hdrdir)/ruby/internal/value_type.h

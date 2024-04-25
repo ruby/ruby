@@ -147,6 +147,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/special_consts.h
 iseq_load.o: $(hdrdir)/ruby/internal/static_assert.h
 iseq_load.o: $(hdrdir)/ruby/internal/stdalign.h
 iseq_load.o: $(hdrdir)/ruby/internal/stdbool.h
+iseq_load.o: $(hdrdir)/ruby/internal/stdckdint.h
 iseq_load.o: $(hdrdir)/ruby/internal/symbol.h
 iseq_load.o: $(hdrdir)/ruby/internal/value.h
 iseq_load.o: $(hdrdir)/ruby/internal/value_type.h

@@ -147,6 +147,7 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/special_consts.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/static_assert.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/stdalign.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/stdbool.h
+enumerator_kw.o: $(hdrdir)/ruby/internal/stdckdint.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/symbol.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/value.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/value_type.h

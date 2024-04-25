@@ -147,6 +147,7 @@ recursion.o: $(hdrdir)/ruby/internal/special_consts.h
 recursion.o: $(hdrdir)/ruby/internal/static_assert.h
 recursion.o: $(hdrdir)/ruby/internal/stdalign.h
 recursion.o: $(hdrdir)/ruby/internal/stdbool.h
+recursion.o: $(hdrdir)/ruby/internal/stdckdint.h
 recursion.o: $(hdrdir)/ruby/internal/symbol.h
 recursion.o: $(hdrdir)/ruby/internal/value.h
 recursion.o: $(hdrdir)/ruby/internal/value_type.h

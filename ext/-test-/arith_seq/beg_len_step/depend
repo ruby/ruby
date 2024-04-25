@@ -146,6 +146,7 @@ beg_len_step.o: $(hdrdir)/ruby/internal/special_consts.h
 beg_len_step.o: $(hdrdir)/ruby/internal/static_assert.h
 beg_len_step.o: $(hdrdir)/ruby/internal/stdalign.h
 beg_len_step.o: $(hdrdir)/ruby/internal/stdbool.h
+beg_len_step.o: $(hdrdir)/ruby/internal/stdckdint.h
 beg_len_step.o: $(hdrdir)/ruby/internal/symbol.h
 beg_len_step.o: $(hdrdir)/ruby/internal/value.h
 beg_len_step.o: $(hdrdir)/ruby/internal/value_type.h

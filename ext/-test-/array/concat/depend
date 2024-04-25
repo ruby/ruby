@@ -147,6 +147,7 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/special_consts.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/static_assert.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/stdalign.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/stdbool.h
+to_ary_concat.o: $(hdrdir)/ruby/internal/stdckdint.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/symbol.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/value.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/value_type.h

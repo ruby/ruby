@@ -146,6 +146,7 @@ resize.o: $(hdrdir)/ruby/internal/special_consts.h
 resize.o: $(hdrdir)/ruby/internal/static_assert.h
 resize.o: $(hdrdir)/ruby/internal/stdalign.h
 resize.o: $(hdrdir)/ruby/internal/stdbool.h
+resize.o: $(hdrdir)/ruby/internal/stdckdint.h
 resize.o: $(hdrdir)/ruby/internal/symbol.h
 resize.o: $(hdrdir)/ruby/internal/value.h
 resize.o: $(hdrdir)/ruby/internal/value_type.h

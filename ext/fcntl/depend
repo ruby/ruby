@@ -147,6 +147,7 @@ fcntl.o: $(hdrdir)/ruby/internal/special_consts.h
 fcntl.o: $(hdrdir)/ruby/internal/static_assert.h
 fcntl.o: $(hdrdir)/ruby/internal/stdalign.h
 fcntl.o: $(hdrdir)/ruby/internal/stdbool.h
+fcntl.o: $(hdrdir)/ruby/internal/stdckdint.h
 fcntl.o: $(hdrdir)/ruby/internal/symbol.h
 fcntl.o: $(hdrdir)/ruby/internal/value.h
 fcntl.o: $(hdrdir)/ruby/internal/value_type.h

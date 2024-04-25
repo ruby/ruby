@@ -147,6 +147,7 @@ dot.dot.o: $(hdrdir)/ruby/internal/special_consts.h
 dot.dot.o: $(hdrdir)/ruby/internal/static_assert.h
 dot.dot.o: $(hdrdir)/ruby/internal/stdalign.h
 dot.dot.o: $(hdrdir)/ruby/internal/stdbool.h
+dot.dot.o: $(hdrdir)/ruby/internal/stdckdint.h
 dot.dot.o: $(hdrdir)/ruby/internal/symbol.h
 dot.dot.o: $(hdrdir)/ruby/internal/value.h
 dot.dot.o: $(hdrdir)/ruby/internal/value_type.h

@@ -150,6 +150,7 @@ sha2.o: $(hdrdir)/ruby/internal/special_consts.h
 sha2.o: $(hdrdir)/ruby/internal/static_assert.h
 sha2.o: $(hdrdir)/ruby/internal/stdalign.h
 sha2.o: $(hdrdir)/ruby/internal/stdbool.h
+sha2.o: $(hdrdir)/ruby/internal/stdckdint.h
 sha2.o: $(hdrdir)/ruby/internal/symbol.h
 sha2.o: $(hdrdir)/ruby/internal/value.h
 sha2.o: $(hdrdir)/ruby/internal/value_type.h
@@ -311,6 +312,7 @@ sha2init.o: $(hdrdir)/ruby/internal/special_consts.h
 sha2init.o: $(hdrdir)/ruby/internal/static_assert.h
 sha2init.o: $(hdrdir)/ruby/internal/stdalign.h
 sha2init.o: $(hdrdir)/ruby/internal/stdbool.h
+sha2init.o: $(hdrdir)/ruby/internal/stdckdint.h
 sha2init.o: $(hdrdir)/ruby/internal/symbol.h
 sha2init.o: $(hdrdir)/ruby/internal/value.h
 sha2init.o: $(hdrdir)/ruby/internal/value_type.h

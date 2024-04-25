@@ -146,6 +146,7 @@ thread_fd.o: $(hdrdir)/ruby/internal/special_consts.h
 thread_fd.o: $(hdrdir)/ruby/internal/static_assert.h
 thread_fd.o: $(hdrdir)/ruby/internal/stdalign.h
 thread_fd.o: $(hdrdir)/ruby/internal/stdbool.h
+thread_fd.o: $(hdrdir)/ruby/internal/stdckdint.h
 thread_fd.o: $(hdrdir)/ruby/internal/symbol.h
 thread_fd.o: $(hdrdir)/ruby/internal/value.h
 thread_fd.o: $(hdrdir)/ruby/internal/value_type.h

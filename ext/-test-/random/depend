@@ -146,6 +146,7 @@ bad_version.o: $(hdrdir)/ruby/internal/special_consts.h
 bad_version.o: $(hdrdir)/ruby/internal/static_assert.h
 bad_version.o: $(hdrdir)/ruby/internal/stdalign.h
 bad_version.o: $(hdrdir)/ruby/internal/stdbool.h
+bad_version.o: $(hdrdir)/ruby/internal/stdckdint.h
 bad_version.o: $(hdrdir)/ruby/internal/symbol.h
 bad_version.o: $(hdrdir)/ruby/internal/value.h
 bad_version.o: $(hdrdir)/ruby/internal/value_type.h
@@ -306,6 +307,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
@@ -464,6 +466,7 @@ loop.o: $(hdrdir)/ruby/internal/special_consts.h
 loop.o: $(hdrdir)/ruby/internal/static_assert.h
 loop.o: $(hdrdir)/ruby/internal/stdalign.h
 loop.o: $(hdrdir)/ruby/internal/stdbool.h
+loop.o: $(hdrdir)/ruby/internal/stdckdint.h
 loop.o: $(hdrdir)/ruby/internal/symbol.h
 loop.o: $(hdrdir)/ruby/internal/value.h
 loop.o: $(hdrdir)/ruby/internal/value_type.h

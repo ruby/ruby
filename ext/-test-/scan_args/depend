@@ -147,6 +147,7 @@ scan_args.o: $(hdrdir)/ruby/internal/special_consts.h
 scan_args.o: $(hdrdir)/ruby/internal/static_assert.h
 scan_args.o: $(hdrdir)/ruby/internal/stdalign.h
 scan_args.o: $(hdrdir)/ruby/internal/stdbool.h
+scan_args.o: $(hdrdir)/ruby/internal/stdckdint.h
 scan_args.o: $(hdrdir)/ruby/internal/symbol.h
 scan_args.o: $(hdrdir)/ruby/internal/value.h
 scan_args.o: $(hdrdir)/ruby/internal/value_type.h

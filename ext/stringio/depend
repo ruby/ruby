@@ -157,6 +157,7 @@ stringio.o: $(hdrdir)/ruby/internal/special_consts.h
 stringio.o: $(hdrdir)/ruby/internal/static_assert.h
 stringio.o: $(hdrdir)/ruby/internal/stdalign.h
 stringio.o: $(hdrdir)/ruby/internal/stdbool.h
+stringio.o: $(hdrdir)/ruby/internal/stdckdint.h
 stringio.o: $(hdrdir)/ruby/internal/symbol.h
 stringio.o: $(hdrdir)/ruby/internal/value.h
 stringio.o: $(hdrdir)/ruby/internal/value_type.h
