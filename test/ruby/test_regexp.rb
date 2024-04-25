@@ -1828,14 +1828,11 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_bug_20453
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-    begin;
-      Regexp.timeout = 0.001
+    re = Regexp.new("^(a*)x$", timeout: 0.001)
 
-      assert_raise(Regexp::TimeoutError) do
-        /^(a*)x$/ =~ "a" * 1000000 + "x"
-      end
-    end;
+    assert_raise(Regexp::TimeoutError) do
+      re =~ "a" * 1000000 + "x"
+    end
   end
 
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
