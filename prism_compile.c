@@ -55,6 +55,13 @@
 #define PUSH_SEQ(seq1, seq2) \
     APPEND_LIST((seq1), (seq2))
 
+#define PUSH_SYNTHETIC_PUTNIL(seq, iseq) \
+    do { \
+        int lineno = ISEQ_COMPILE_DATA(iseq)->last_line; \
+        if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq)); \
+        ADD_SYNTHETIC_INSN(seq, lineno, -1, putnil); \
+    } while (0)
+
 /******************************************************************************/
 /* These functions compile getlocal/setlocal instructions but operate on      */
 /* prism locations instead of NODEs.                                          */
@@ -2809,25 +2816,26 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
 }
 
 /**
- * A prism-specific version of decl_branch_base that converts prism nodes into
- * the required structure for branch coverage.
+ * A helper for converting a pm_location_t into a rb_code_location_t.
  */
-static VALUE
-pm_decl_branch_base(rb_iseq_t *iseq, rb_code_location_t *code_location, const pm_scope_node_t *scope_node, const pm_node_t *node, const char *type) {
-    // This is done in compile.c after the lines have already been extracted,
-    // but we want to avoid that work if we can, so we check early here.
-    if (!ISEQ_COVERAGE(iseq)) return Qfalse;
-
+static rb_code_location_t
+pm_code_location(const pm_scope_node_t *scope_node, const pm_node_t *node)
+{
     const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, node);
 
-    *code_location = (rb_code_location_t) {
+    return (rb_code_location_t) {
         .beg_pos = { .lineno = start_location.line, .column = start_location.column },
         .end_pos = { .lineno = end_location.line, .column = end_location.column }
     };
-
-    return decl_branch_base(iseq, PTR2NUM(node), code_location, type);
 }
+
+/**
+ * A macro for determining if we should go through the work of adding branch
+ * coverage to the current iseq. We check this manually each time because we
+ * want to avoid the overhead of creating rb_code_location_t objects.
+ */
+#define PM_BRANCH_COVERAGE_P(iseq) (ISEQ_COVERAGE(iseq) && ISEQ_BRANCH_COVERAGE(iseq))
 
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
@@ -2844,8 +2852,11 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     int node_id = -1;
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-        branches = pm_decl_branch_base(iseq, &code_location, scope_node, (const pm_node_t *) call_node, "&.");
-        node_id = code_location.beg_pos.column;
+        if (PM_BRANCH_COVERAGE_P(iseq)) {
+            code_location = pm_code_location(scope_node, (const pm_node_t *) call_node);
+            branches = decl_branch_base(iseq, PTR2NUM(call_node), &code_location, "&.");
+            node_id = code_location.beg_pos.column;
+        }
 
         PUSH_INSN(ret, location, dup);
         PUSH_INSNL(ret, location, branchnil, else_label);
@@ -4896,6 +4907,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // compare all of the various when clauses to the predicate. If we
         // don't, then it's basically an if-elsif-else chain.
         if (cast->predicate == NULL) {
+            // Establish branch coverage for the case node.
+            VALUE branches = Qfalse;
+            rb_code_location_t case_location;
+            int branch_id = 0;
+
+            if (PM_BRANCH_COVERAGE_P(iseq)) {
+                case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
+                branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            }
+
             // Loop through each clauses in the case node and compile each of
             // the conditions within them into cond_seq. If they match, they
             // should jump into their respective bodies in body_seq.
@@ -4905,8 +4926,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                 int clause_lineno = pm_node_line_number(parser, (const pm_node_t *) clause);
                 LABEL *label = NEW_LABEL(clause_lineno);
-
                 PUSH_LABEL(body_seq, label);
+
+                // Establish branch coverage for the when clause.
+                if (PM_BRANCH_COVERAGE_P(iseq)) {
+                    rb_code_location_t branch_location = pm_code_location(scope_node, clause->statements != NULL ? ((const pm_node_t *) clause->statements) : ((const pm_node_t *) clause));
+                    add_trace_branch_coverage(iseq, body_seq, &branch_location, branch_location.beg_pos.column, branch_id++, "when", branches);
+                }
+
                 if (clause->statements != NULL) {
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
@@ -4923,10 +4950,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     const pm_node_t *condition = conditions->nodes[condition_index];
 
                     if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
-                        PUSH_INSN(cond_seq, location, putnil);
+                        pm_line_column_t cond_location = PM_NODE_START_LINE_COLUMN(parser, condition);
+                        PUSH_INSN(cond_seq, cond_location, putnil);
                         pm_compile_node(iseq, condition, cond_seq, false, scope_node);
-                        PUSH_INSN1(cond_seq, location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
-                        PUSH_INSNL(cond_seq, location, branchif, label);
+                        PUSH_INSN1(cond_seq, cond_location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
+                        PUSH_INSNL(cond_seq, cond_location, branchif, label);
                     }
                     else {
                         LABEL *next_label = NEW_LABEL(pm_node_line_number(parser, condition));
@@ -4936,12 +4964,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
 
+            // Establish branch coverage for the else clause (implicit or
+            // explicit).
+            if (PM_BRANCH_COVERAGE_P(iseq)) {
+                rb_code_location_t branch_location;
+
+                if (cast->consequent == NULL) {
+                    branch_location = case_location;
+                } else if (cast->consequent->statements == NULL) {
+                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->consequent);
+                } else {
+                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->consequent->statements);
+                }
+
+                add_trace_branch_coverage(iseq, cond_seq, &branch_location, branch_location.beg_pos.column, branch_id, "else", branches);
+            }
+
             // Compile the consequent else clause if there is one.
-            if (cast->consequent) {
+            if (cast->consequent != NULL) {
                 pm_compile_node(iseq, (const pm_node_t *) cast->consequent, cond_seq, popped, scope_node);
             }
             else if (!popped) {
-                PUSH_INSN(cond_seq, location, putnil);
+                PUSH_SYNTHETIC_PUTNIL(cond_seq, iseq);
             }
 
             // Finally, jump to the end label if none of the other conditions
@@ -4950,6 +4994,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_SEQ(ret, cond_seq);
         }
         else {
+            // Establish branch coverage for the case node.
+            VALUE branches = Qfalse;
+            rb_code_location_t case_location;
+            int branch_id = 0;
+
+            if (PM_BRANCH_COVERAGE_P(iseq)) {
+                case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
+                branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            }
+
             // This is the label where everything will fall into if none of the
             // conditions matched.
             LABEL *else_label = NEW_LABEL(location.line);
@@ -4975,15 +5029,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // node instructions later.
             for (size_t clause_index = 0; clause_index < conditions->size; clause_index++) {
                 const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
-                const pm_node_list_t *conditions = &clause->conditions;
+                pm_line_column_t clause_location = PM_NODE_START_LINE_COLUMN(parser, (const pm_node_t *) clause);
 
-                LABEL *label = NEW_LABEL(location.line);
+                const pm_node_list_t *conditions = &clause->conditions;
+                LABEL *label = NEW_LABEL(clause_location.line);
 
                 // Compile each of the conditions for the when clause into the
                 // cond_seq. Each one should have a unique comparison that then
                 // jumps into the body if it matches.
                 for (size_t condition_index = 0; condition_index < conditions->size; condition_index++) {
                     const pm_node_t *condition = conditions->nodes[condition_index];
+                    const pm_line_column_t condition_location = PM_NODE_START_LINE_COLUMN(parser, condition);
 
                     // If we haven't already abandoned the optimization, then
                     // we're going to try to compile the condition into the
@@ -4993,25 +5049,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
 
                     if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
-                        PUSH_INSN(cond_seq, location, dup);
+                        PUSH_INSN(cond_seq, condition_location, dup);
                         pm_compile_node(iseq, condition, cond_seq, false, scope_node);
-                        PUSH_INSN1(cond_seq, location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+                        PUSH_INSN1(cond_seq, condition_location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
                     }
                     else {
                         if (PM_NODE_TYPE_P(condition, PM_STRING_NODE)) {
                             const pm_string_node_t *string = (const pm_string_node_t *) condition;
                             VALUE value = parse_static_literal_string(iseq, scope_node, condition, &string->unescaped);
-                            PUSH_INSN1(cond_seq, location, putobject, value);
+                            PUSH_INSN1(cond_seq, condition_location, putobject, value);
                         }
                         else {
                             pm_compile_node(iseq, condition, cond_seq, false, scope_node);
                         }
 
-                        PUSH_INSN1(cond_seq, location, topn, INT2FIX(1));
-                        PUSH_SEND_WITH_FLAG(cond_seq, location, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+                        PUSH_INSN1(cond_seq, condition_location, topn, INT2FIX(1));
+                        PUSH_SEND_WITH_FLAG(cond_seq, condition_location, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
                     }
 
-                    PUSH_INSNL(cond_seq, location, branchif, label);
+                    PUSH_INSNL(cond_seq, condition_location, branchif, label);
                 }
 
                 // Now, add the label to the body and compile the body of the
@@ -5019,16 +5075,22 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // the statements to be executed, and then compiling a jump to
                 // the end of the case node.
                 PUSH_LABEL(body_seq, label);
-                PUSH_INSN(body_seq, location, pop);
+                PUSH_INSN(body_seq, clause_location, pop);
+
+                // Establish branch coverage for the when clause.
+                if (PM_BRANCH_COVERAGE_P(iseq)) {
+                    rb_code_location_t branch_location = pm_code_location(scope_node, clause->statements != NULL ? ((const pm_node_t *) clause->statements) : ((const pm_node_t *) clause));
+                    add_trace_branch_coverage(iseq, body_seq, &branch_location, branch_location.beg_pos.column, branch_id++, "when", branches);
+                }
 
                 if (clause->statements != NULL) {
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    PUSH_INSN(body_seq, location, putnil);
+                    PUSH_INSN(body_seq, clause_location, putnil);
                 }
 
-                PUSH_INSNL(body_seq, location, jump, end_label);
+                PUSH_INSNL(body_seq, clause_location, jump, end_label);
             }
 
             // Now that we have compiled the conditions and the bodies of the
@@ -5050,16 +5112,29 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // Compile either the explicit else clause or an implicit else
             // clause.
             PUSH_LABEL(ret, else_label);
-            PUSH_INSN(ret, location, pop);
 
             if (cast->consequent != NULL) {
-                PM_COMPILE((const pm_node_t *) cast->consequent);
-            }
-            else if (!popped) {
-                PUSH_INSN(ret, location, putnil);
-            }
+                pm_line_column_t else_location = PM_NODE_START_LINE_COLUMN(parser, cast->consequent->statements != NULL ? ((const pm_node_t *) cast->consequent->statements) : ((const pm_node_t *) cast->consequent));
+                PUSH_INSN(ret, else_location, pop);
 
-            PUSH_INSNL(ret, location, jump, end_label);
+                // Establish branch coverage for the else clause.
+                if (PM_BRANCH_COVERAGE_P(iseq)) {
+                    rb_code_location_t branch_location = pm_code_location(scope_node, cast->consequent->statements != NULL ? ((const pm_node_t *) cast->consequent->statements) : ((const pm_node_t *) cast->consequent));
+                    add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, branch_id, "else", branches);
+                }
+
+                PM_COMPILE((const pm_node_t *) cast->consequent);
+                PUSH_INSNL(ret, else_location, jump, end_label);
+            }
+            else {
+                PUSH_INSN(ret, location, pop);
+
+                // Establish branch coverage for the implicit else clause.
+                add_trace_branch_coverage(iseq, ret, &case_location, case_location.beg_pos.column, branch_id, "else", branches);
+
+                if (!popped) PUSH_INSN(ret, location, putnil);
+                PUSH_INSNL(ret, location, jump, end_label);
+            }
         }
 
         PUSH_SEQ(ret, body_seq);
@@ -5719,7 +5794,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((const pm_node_t *) cast->statements);
         }
         else if (!popped) {
-            PUSH_INSN(ret, location, putnil);
+            PUSH_SYNTHETIC_PUTNIL(ret, iseq);
         }
 
         return;
