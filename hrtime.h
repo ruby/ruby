@@ -6,6 +6,8 @@
 #  include <sys/time.h>
 #endif
 
+#include "internal/compilers.h"
+
 /*
  * Hi-res monotonic clock.  It is currently nsec resolution, which has over
  * 500 years of range (with an unsigned 64-bit integer).  Developers
@@ -61,7 +63,11 @@ rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
 {
     rb_hrtime_t c;
 
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
+#ifdef ckd_mul
+    if (ckd_mul(&c, a, b))
+        return RB_HRTIME_MAX;
+
+#elif __has_builtin(__builtin_mul_overflow)
     if (__builtin_mul_overflow(a, b, &c))
         return RB_HRTIME_MAX;
 #else
@@ -81,7 +87,11 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
 {
     rb_hrtime_t c;
 
-#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+#ifdef ckd_add
+    if (ckd_add(&c, a, b))
+        return RB_HRTIME_MAX;
+
+#elif __has_builtin(__builtin_add_overflow)
     if (__builtin_add_overflow(a, b, &c))
         return RB_HRTIME_MAX;
 #else
