@@ -567,14 +567,36 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         unsafe { CStr::from_ptr(rb_obj_info(val)).to_str().unwrap() }
     }
 
+    // Some types such as CString only assert the class field of the object
+    // when there has never been a singleton class created for objects of that class.
+    // Once there is a singleton class created they become their weaker
+    // `T*` variant, and we more objects should pass the verification.
+    fn relax_type_with_singleton_class_assumption(ty: Type) -> Type {
+        if let Type::CString | Type::CArray | Type::CHash = ty {
+            if has_singleton_class_of(ty.known_class().unwrap()) {
+                match ty {
+                    Type::CString => return Type::TString,
+                    Type::CArray => return Type::TArray,
+                    Type::CHash => return Type::THash,
+                    _ => (),
+                }
+            }
+        }
+
+        ty
+    }
+
     // Only able to check types when at current insn
     assert!(jit.at_current_insn());
 
     let self_val = jit.peek_at_self();
     let self_val_type = Type::from(self_val);
+    let learned_self_type = ctx.get_opnd_type(SelfOpnd);
+    let learned_self_type = relax_type_with_singleton_class_assumption(learned_self_type);
+
 
     // Verify self operand type
-    if self_val_type.diff(ctx.get_opnd_type(SelfOpnd)) == TypeDiff::Incompatible {
+    if self_val_type.diff(learned_self_type) == TypeDiff::Incompatible {
         panic!(
             "verify_ctx: ctx self type ({:?}) incompatible with actual value of self {}",
             ctx.get_opnd_type(SelfOpnd),
@@ -587,6 +609,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     for i in 0..top_idx {
         let learned_mapping = ctx.get_opnd_mapping(StackOpnd(i));
         let learned_type = ctx.get_opnd_type(StackOpnd(i));
+        let learned_type = relax_type_with_singleton_class_assumption(learned_type);
 
         let stack_val = jit.peek_at_stack(ctx, i as isize);
         let val_type = Type::from(stack_val);
@@ -632,6 +655,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     let top_idx: usize = cmp::min(local_table_size as usize, MAX_TEMP_TYPES);
     for i in 0..top_idx {
         let learned_type = ctx.get_local_type(i);
+        let learned_type = relax_type_with_singleton_class_assumption(learned_type);
         let local_val = jit.peek_at_local(i as i32);
         let local_type = Type::from(local_val);
 

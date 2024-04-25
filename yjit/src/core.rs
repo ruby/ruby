@@ -53,11 +53,11 @@ pub enum Type {
     ImmSymbol,
 
     TString, // An object with the T_STRING flag set, possibly an rb_cString
-    CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
+    CString, // An object that at one point had its class field equal rb_cString (creating a singleton class changes it)
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
-    CArray, // An un-subclassed array of type rb_cArray (can have instance vars in some cases)
+    CArray, // An object that at one point had its class field equal rb_cArray (creating a singleton class changes it)
     THash, // An object with the T_HASH flag set, possibly an rb_cHash
-    CHash, // An un-subclassed hash of type rb_cHash (can have instance vars in some cases)
+    CHash, // An object that at one point had its class field equal rb_cHash (creating a singleton class changes it)
 
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp

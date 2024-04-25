@@ -4830,6 +4830,20 @@ assert_equal "abc", %q{
   str
 }
 
+# test --yjit-verify-ctx for arrays with a singleton class
+assert_equal "ok", %q{
+  class Array
+    def foo
+      self.singleton_class.define_method(:first) { :ok }
+      first
+    end
+  end
+
+  def test = [].foo
+
+  test
+}
+
 assert_equal '["raised", "Module", "Object"]', %q{
   def foo(obj)
     obj.superclass.name
