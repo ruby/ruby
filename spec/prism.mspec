@@ -24,17 +24,6 @@ MSpec.register(:exclude, "TracePoint.new includes multiple events when multiple 
 MSpec.register(:exclude, "TracePoint#path equals \"(eval at __FILE__:__LINE__)\" inside an eval for :end event")
 
 ## Library
-MSpec.register(:exclude, "Coverage.peek_result returns the result so far")
-MSpec.register(:exclude, "Coverage.peek_result second call after require returns accumulated result")
-MSpec.register(:exclude, "Coverage.result gives the covered files as a hash with arrays of count or nil")
-MSpec.register(:exclude, "Coverage.result returns results for each mode separately when enabled :all modes")
-MSpec.register(:exclude, "Coverage.result returns results for each mode separately when enabled any mode explicitly")
-MSpec.register(:exclude, "Coverage.result returns the correct results when eval coverage is enabled")
 MSpec.register(:exclude, "Coverage.result returns the correct results when eval coverage is disabled")
-MSpec.register(:exclude, "Coverage.result clears counters (sets 0 values) when stop is not specified but clear: true specified")
-MSpec.register(:exclude, "Coverage.result does not clear counters when stop is not specified but clear: false specified")
-MSpec.register(:exclude, "Coverage.result does not clear counters when stop: false and clear is not specified")
-MSpec.register(:exclude, "Coverage.result clears counters (sets 0 values) when stop: false and clear: true specified")
-MSpec.register(:exclude, "Coverage.result does not clear counters when stop: false and clear: false specified")
 MSpec.register(:exclude, "Coverage.start measures coverage within eval")
 MSpec.register(:exclude, "Socket.gethostbyaddr using an IPv6 address with an explicit address family raises SocketError when the address is not supported by the family")
