@@ -12833,13 +12833,13 @@ literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_str
 static rb_parser_string_t *
 string_literal_head(struct parser_params *p, enum node_type htype, NODE *head)
 {
-    if (htype != NODE_DSTR) return false;
+    if (htype != NODE_DSTR) return NULL;
     if (RNODE_DSTR(head)->nd_next) {
         head = RNODE_LIST(RNODE_LIST(RNODE_DSTR(head)->nd_next)->as.nd_end)->nd_head;
-        if (!head || !nd_type_p(head, NODE_STR)) return false;
+        if (!head || !nd_type_p(head, NODE_STR)) return NULL;
     }
     rb_parser_string_t *lit = RNODE_DSTR(head)->string;
-    ASSUME(lit != false);
+    ASSUME(lit);
     return lit;
 }
 
