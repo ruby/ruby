@@ -1367,6 +1367,7 @@ AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
 AC_CHECK_HEADERS(sys/epoll.h)
 AC_CHECK_HEADERS(sys/event.h)
+AC_CHECK_HEADERS(stdckdint.h)
 
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)

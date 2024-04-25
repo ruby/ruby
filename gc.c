@@ -224,6 +224,9 @@ size_add_overflow(size_t x, size_t y)
     bool p;
 #if 0
 
+#elif defined(ckd_add)
+    p = ckd_add(&z, x, y);
+
 #elif __has_builtin(__builtin_add_overflow)
     p = __builtin_add_overflow(x, y, &z);
 
