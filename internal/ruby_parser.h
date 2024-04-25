@@ -19,6 +19,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef UNIVERSAL_PARSER
 const rb_parser_config_t *rb_ruby_parser_config(void);
 rb_parser_t *rb_parser_params_new(void);
+int rb_parser_dedent_string(rb_parser_t *p, rb_parser_string_t *string, int width);
 #endif
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
 VALUE rb_parser_new(void);
