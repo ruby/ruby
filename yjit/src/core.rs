@@ -1138,8 +1138,12 @@ pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback:
 
 /// Free the per-iseq payload
 #[no_mangle]
-pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
+pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
+    // Free invariants for the ISEQ
+    iseq_free_invariants(iseq);
+
     let payload = {
+        let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
         if payload.is_null() {
             // Nothing to free.
             return;
@@ -1266,7 +1270,11 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// GC callback for updating GC objects in the per-iseq payload.
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
-pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
+pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
+    // Update ISEQ references in invariants
+    iseq_update_references_in_invariants(iseq);
+
+    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
         return;
@@ -1657,6 +1665,9 @@ impl JITState {
         for klass in self.no_singleton_class_assumptions {
             track_no_singleton_class_assumption(blockref, klass);
         }
+        if self.no_ep_escape {
+            track_no_ep_escape_assumption(blockref, self.iseq);
+        }
 
         blockref
     }
@@ -1796,6 +1807,13 @@ impl Context {
     pub fn sp_opnd(&self, offset: i32) -> Opnd {
         let offset = (self.sp_offset as i32 + offset) * SIZEOF_VALUE_I32;
         return Opnd::mem(64, SP, offset);
+    }
+
+    /// Get an operand for the adjusted environment pointer address using SP register.
+    /// This is valid only when a Binding object hasn't been created for the frame.
+    pub fn ep_opnd(&self, offset: i32) -> Opnd {
+        let ep_offset = self.get_stack_size() as i32 + 1;
+        self.sp_opnd(-ep_offset + offset)
     }
 
     /// Stop using a register for a given stack temp.
@@ -3130,6 +3148,12 @@ pub fn defer_compilation(
     // Likely a stub due to the increased chain depth
     let target0_address = branch.set_target(0, blockid, &next_ctx, ocb);
 
+    // Pad the block if it has the potential to be invalidated. This must be
+    // done before gen_fn() in case the jump is overwritten by a fallthrough.
+    if jit.block_entry_exit.is_some() {
+        asm.pad_inval_patch();
+    }
+
     // Call the branch generation function
     asm_comment!(asm, "defer_compilation");
     asm.mark_branch_start(&branch);
@@ -3313,9 +3337,10 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
             assert!(
                 cb.get_write_ptr() <= block_end,
-                "invalidation wrote past end of block (code_size: {:?}, new_size: {})",
+                "invalidation wrote past end of block (code_size: {:?}, new_size: {}, start_addr: {:?})",
                 block.code_size(),
                 cb.get_write_ptr().as_offset() - block_start.as_offset(),
+                block.start_addr.raw_ptr(cb),
             );
             cb.set_write_ptr(cur_pos);
             cb.set_dropped_bytes(cur_dropped_bytes);
