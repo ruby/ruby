@@ -1138,8 +1138,12 @@ pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback:
 
 /// Free the per-iseq payload
 #[no_mangle]
-pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
+pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
+    // Free invariants for the ISEQ
+    iseq_free_invariants(iseq);
+
     let payload = {
+        let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
         if payload.is_null() {
             // Nothing to free.
             return;
@@ -1266,7 +1270,11 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// GC callback for updating GC objects in the per-iseq payload.
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
-pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
+pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
+    // Update ISEQ references in invariants
+    iseq_update_references_in_invariants(iseq);
+
+    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
         return;

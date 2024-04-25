@@ -177,6 +177,26 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
         .map_or(false, |blocks| blocks.is_empty())
 }
 
+/// Update ISEQ references in invariants on GC compaction
+pub fn iseq_update_references_in_invariants(iseq: IseqPtr) {
+    if unsafe { INVARIANTS.is_none() } {
+        return;
+    }
+    let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
+    if let Some(blocks) = no_ep_escape_iseqs.remove(&iseq) {
+        let new_iseq = unsafe { rb_gc_location(iseq.into()) }.as_iseq();
+        no_ep_escape_iseqs.insert(new_iseq, blocks);
+    }
+}
+
+/// Forget an ISEQ remembered in invariants
+pub fn iseq_free_invariants(iseq: IseqPtr) {
+    if unsafe { INVARIANTS.is_none() } {
+        return;
+    }
+    Invariants::get_instance().no_ep_escape_iseqs.remove(&iseq);
+}
+
 // Checks rb_method_basic_definition_p and registers the current block for invalidation if method
 // lookup changes.
 // A "basic method" is one defined during VM boot, so we can use this to check assumptions based on
