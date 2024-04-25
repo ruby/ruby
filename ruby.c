@@ -2157,7 +2157,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     }
     else {
         pm_options_command_line_set(options, command_line);
-        error = pm_load_file(result, opt->script_name);
+        error = pm_load_file(result, opt->script_name, true);
 
         // If reading the file did not error, at that point we load the command
         // line options. We do it in this order so that if the main script fails

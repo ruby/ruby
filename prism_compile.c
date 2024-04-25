@@ -8785,7 +8785,7 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
  * be read.
  */
 VALUE
-pm_load_file(pm_parse_result_t *result, VALUE filepath)
+pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 {
     if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
 #ifdef _WIN32
@@ -8794,9 +8794,21 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath)
         int e = errno;
 #endif
 
-        VALUE err = rb_syserr_new(e, RSTRING_PTR(filepath));
-        RB_GC_GUARD(filepath);
-        return err;
+        VALUE error;
+
+        if (load_error) {
+            VALUE message = rb_str_buf_new_cstr(strerror(e));
+            rb_str_cat2(message, " -- ");
+            rb_str_append(message, filepath);
+
+            error = rb_exc_new3(rb_eLoadError, message);
+            rb_ivar_set(error, rb_intern_const("@path"), filepath);
+        } else {
+            error = rb_syserr_new(e, RSTRING_PTR(filepath));
+            RB_GC_GUARD(filepath);
+        }
+
+        return error;
     }
 
     pm_options_frozen_string_literal_init(&result->options);
@@ -8843,7 +8855,7 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 VALUE
 pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
-    VALUE error = pm_load_file(result, filepath);
+    VALUE error = pm_load_file(result, filepath, false);
     if (NIL_P(error)) {
         error = pm_parse_file(result, filepath);
     }

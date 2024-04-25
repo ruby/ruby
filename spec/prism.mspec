@@ -19,8 +19,6 @@ MSpec.register(:exclude, "Regexps with encoding modifiers preserves UTF-8 as /u 
 MSpec.register(:exclude, "A Symbol literal raises an SyntaxError at parse time when Symbol with invalid bytes")
 
 ## Core
-MSpec.register(:exclude, "IO.popen with a leading Array argument accepts a trailing Hash of Process.exec options")
-MSpec.register(:exclude, "IO.popen with a leading Array argument accepts an IO mode argument following the Array")
 MSpec.register(:exclude, "TracePoint#inspect returns a String showing the event, method, path and line for a :return event")
 MSpec.register(:exclude, "TracePoint.new includes multiple events when multiple event names are passed as params")
 MSpec.register(:exclude, "TracePoint#path equals \"(eval at __FILE__:__LINE__)\" inside an eval for :end event")
