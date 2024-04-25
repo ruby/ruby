@@ -250,6 +250,33 @@ impl JITState {
         }
     }
 
+    pub fn assume_expected_cfunc(
+        &mut self,
+        asm: &mut Assembler,
+        ocb: &mut OutlinedCb,
+        class: VALUE,
+        method: ID,
+        cfunc: *mut c_void,
+    ) -> bool {
+        let cme = unsafe { rb_callable_method_entry(class, method) };
+
+        if cme.is_null() {
+            return false;
+        }
+
+        let def_type = unsafe { get_cme_def_type(cme) };
+        if def_type != VM_METHOD_TYPE_CFUNC {
+            return false;
+        }
+        if unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) } != cfunc {
+            return false;
+        }
+
+        self.assume_method_lookup_stable(asm, ocb, cme);
+
+        true
+    }
+
     pub fn assume_method_lookup_stable(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, cme: CmePtr) -> Option<()> {
         jit_ensure_block_entry_exit(self, asm, ocb)?;
         self.method_lookup_assumptions.push(cme);
@@ -6164,6 +6191,34 @@ fn jit_rb_class_superclass(
     true
 }
 
+// Codegen for rb_trueclass_case_equal()
+fn jit_rb_trueclass_case_equal(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    if !jit.assume_expected_cfunc( asm, ocb, unsafe { rb_cTrueClass }, ID!(eq), rb_obj_equal as _) {
+        return false;
+    }
+
+    // Compare the arguments
+    asm_comment!(asm, "TrueClass#===");
+    let arg1 = asm.stack_pop(1);
+    let arg0 = asm.stack_pop(1);
+    asm.cmp(arg0, arg1);
+    let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
+
+    let stack_ret = asm.stack_push(Type::UnknownImm);
+    asm.mov(stack_ret, ret_opnd);
+
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     asm: &mut Assembler,
@@ -10165,6 +10220,8 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+        yjit_reg_method(rb_cTrueClass, "===", jit_rb_trueclass_case_equal);
 
         yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
         yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);

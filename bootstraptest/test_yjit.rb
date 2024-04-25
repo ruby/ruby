@@ -4859,3 +4859,38 @@ assert_equal '["raised", "Module", "Object"]', %q{
 
   ret += [foo(Class), foo(Class.new)]
 }
+
+# test TrueClass#=== before and after redefining TrueClass#==
+assert_equal '[[true, false, false], [true, true, false], [true, :error, :error]]', %q{
+  def true_eqq(x)
+    true === x
+  rescue NoMethodError
+    :error
+  end
+
+  def test
+    [
+      # first one is always true because rb_equal does object comparison before calling #==
+      true_eqq(true),
+      # these will use TrueClass#==
+      true_eqq(false),
+      true_eqq(:truthy),
+    ]
+  end
+
+  results = [test]
+
+  class TrueClass
+    def ==(x)
+      !x
+    end
+  end
+
+  results << test
+
+  class TrueClass
+    undef_method :==
+  end
+
+  results << test
+}

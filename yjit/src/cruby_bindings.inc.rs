@@ -1024,6 +1024,7 @@ extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
+    pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
