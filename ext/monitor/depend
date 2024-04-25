@@ -146,6 +146,7 @@ monitor.o: $(hdrdir)/ruby/internal/special_consts.h
 monitor.o: $(hdrdir)/ruby/internal/static_assert.h
 monitor.o: $(hdrdir)/ruby/internal/stdalign.h
 monitor.o: $(hdrdir)/ruby/internal/stdbool.h
+monitor.o: $(hdrdir)/ruby/internal/stdckdint.h
 monitor.o: $(hdrdir)/ruby/internal/symbol.h
 monitor.o: $(hdrdir)/ruby/internal/value.h
 monitor.o: $(hdrdir)/ruby/internal/value_type.h

@@ -147,6 +147,7 @@ core_ext.o: $(hdrdir)/ruby/internal/special_consts.h
 core_ext.o: $(hdrdir)/ruby/internal/static_assert.h
 core_ext.o: $(hdrdir)/ruby/internal/stdalign.h
 core_ext.o: $(hdrdir)/ruby/internal/stdbool.h
+core_ext.o: $(hdrdir)/ruby/internal/stdckdint.h
 core_ext.o: $(hdrdir)/ruby/internal/symbol.h
 core_ext.o: $(hdrdir)/ruby/internal/value.h
 core_ext.o: $(hdrdir)/ruby/internal/value_type.h
@@ -314,6 +315,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
@@ -473,6 +475,7 @@ my_integer.o: $(hdrdir)/ruby/internal/special_consts.h
 my_integer.o: $(hdrdir)/ruby/internal/static_assert.h
 my_integer.o: $(hdrdir)/ruby/internal/stdalign.h
 my_integer.o: $(hdrdir)/ruby/internal/stdbool.h
+my_integer.o: $(hdrdir)/ruby/internal/stdckdint.h
 my_integer.o: $(hdrdir)/ruby/internal/symbol.h
 my_integer.o: $(hdrdir)/ruby/internal/value.h
 my_integer.o: $(hdrdir)/ruby/internal/value_type.h

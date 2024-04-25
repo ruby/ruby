@@ -147,6 +147,7 @@ bug-14384.o: $(hdrdir)/ruby/internal/special_consts.h
 bug-14384.o: $(hdrdir)/ruby/internal/static_assert.h
 bug-14384.o: $(hdrdir)/ruby/internal/stdalign.h
 bug-14384.o: $(hdrdir)/ruby/internal/stdbool.h
+bug-14384.o: $(hdrdir)/ruby/internal/stdckdint.h
 bug-14384.o: $(hdrdir)/ruby/internal/symbol.h
 bug-14384.o: $(hdrdir)/ruby/internal/value.h
 bug-14384.o: $(hdrdir)/ruby/internal/value_type.h

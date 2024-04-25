@@ -171,6 +171,7 @@ psych.o: $(hdrdir)/ruby/internal/special_consts.h
 psych.o: $(hdrdir)/ruby/internal/static_assert.h
 psych.o: $(hdrdir)/ruby/internal/stdalign.h
 psych.o: $(hdrdir)/ruby/internal/stdbool.h
+psych.o: $(hdrdir)/ruby/internal/stdckdint.h
 psych.o: $(hdrdir)/ruby/internal/symbol.h
 psych.o: $(hdrdir)/ruby/internal/value.h
 psych.o: $(hdrdir)/ruby/internal/value_type.h
@@ -347,6 +348,7 @@ psych_emitter.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_emitter.o: $(hdrdir)/ruby/internal/static_assert.h
 psych_emitter.o: $(hdrdir)/ruby/internal/stdalign.h
 psych_emitter.o: $(hdrdir)/ruby/internal/stdbool.h
+psych_emitter.o: $(hdrdir)/ruby/internal/stdckdint.h
 psych_emitter.o: $(hdrdir)/ruby/internal/symbol.h
 psych_emitter.o: $(hdrdir)/ruby/internal/value.h
 psych_emitter.o: $(hdrdir)/ruby/internal/value_type.h
@@ -523,6 +525,7 @@ psych_parser.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_parser.o: $(hdrdir)/ruby/internal/static_assert.h
 psych_parser.o: $(hdrdir)/ruby/internal/stdalign.h
 psych_parser.o: $(hdrdir)/ruby/internal/stdbool.h
+psych_parser.o: $(hdrdir)/ruby/internal/stdckdint.h
 psych_parser.o: $(hdrdir)/ruby/internal/symbol.h
 psych_parser.o: $(hdrdir)/ruby/internal/value.h
 psych_parser.o: $(hdrdir)/ruby/internal/value_type.h
@@ -699,6 +702,7 @@ psych_to_ruby.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/static_assert.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/stdalign.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/stdbool.h
+psych_to_ruby.o: $(hdrdir)/ruby/internal/stdckdint.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/symbol.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/value.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/value_type.h
@@ -875,6 +879,7 @@ psych_yaml_tree.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/static_assert.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/stdalign.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/stdbool.h
+psych_yaml_tree.o: $(hdrdir)/ruby/internal/stdckdint.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/symbol.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/value.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/value_type.h

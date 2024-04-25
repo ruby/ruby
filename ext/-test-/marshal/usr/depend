@@ -147,6 +147,7 @@ usrmarshal.o: $(hdrdir)/ruby/internal/special_consts.h
 usrmarshal.o: $(hdrdir)/ruby/internal/static_assert.h
 usrmarshal.o: $(hdrdir)/ruby/internal/stdalign.h
 usrmarshal.o: $(hdrdir)/ruby/internal/stdbool.h
+usrmarshal.o: $(hdrdir)/ruby/internal/stdckdint.h
 usrmarshal.o: $(hdrdir)/ruby/internal/symbol.h
 usrmarshal.o: $(hdrdir)/ruby/internal/value.h
 usrmarshal.o: $(hdrdir)/ruby/internal/value_type.h

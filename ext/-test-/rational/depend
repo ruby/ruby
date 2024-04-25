@@ -151,6 +151,7 @@ rat.o: $(hdrdir)/ruby/internal/special_consts.h
 rat.o: $(hdrdir)/ruby/internal/static_assert.h
 rat.o: $(hdrdir)/ruby/internal/stdalign.h
 rat.o: $(hdrdir)/ruby/internal/stdbool.h
+rat.o: $(hdrdir)/ruby/internal/stdckdint.h
 rat.o: $(hdrdir)/ruby/internal/symbol.h
 rat.o: $(hdrdir)/ruby/internal/value.h
 rat.o: $(hdrdir)/ruby/internal/value_type.h

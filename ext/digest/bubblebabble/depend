@@ -147,6 +147,7 @@ bubblebabble.o: $(hdrdir)/ruby/internal/special_consts.h
 bubblebabble.o: $(hdrdir)/ruby/internal/static_assert.h
 bubblebabble.o: $(hdrdir)/ruby/internal/stdalign.h
 bubblebabble.o: $(hdrdir)/ruby/internal/stdbool.h
+bubblebabble.o: $(hdrdir)/ruby/internal/stdckdint.h
 bubblebabble.o: $(hdrdir)/ruby/internal/symbol.h
 bubblebabble.o: $(hdrdir)/ruby/internal/value.h
 bubblebabble.o: $(hdrdir)/ruby/internal/value_type.h
