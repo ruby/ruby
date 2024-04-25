@@ -132,7 +132,7 @@ module Bundler
         @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
       end
 
-      @unlock[:sources] ||= []
+      @sources_to_unlock = @unlock.delete(:sources) || []
       @unlock[:ruby] ||= if @ruby_version && locked_ruby_version_object
         @ruby_version.diff(locked_ruby_version_object)
       end
@@ -144,11 +144,13 @@ module Bundler
       @path_changes = converge_paths
       @source_changes = converge_sources
 
+      @explicit_unlocks = @unlock.delete(:gems) || []
+
       if @unlock[:conservative]
-        @unlock[:gems] ||= @dependencies.map(&:name)
+        @gems_to_unlock = @explicit_unlocks.any? ? @explicit_unlocks : @dependencies.map(&:name)
       else
-        eager_unlock = (@unlock[:gems] || []).map {|name| Dependency.new(name, ">= 0") }
-        @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
+        eager_unlock = @explicit_unlocks.map {|name| Dependency.new(name, ">= 0") }
+        @gems_to_unlock = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
       end
 
       @dependency_changes = converge_dependencies
@@ -567,7 +569,7 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!(current_dependencies)
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlock[:gems], prerelease: gem_version_promoter.pre?)
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?)
         additional_base_requirements_for_resolve(packages, last_resolve)
       end
     end
@@ -672,14 +674,18 @@ module Bundler
 
     def change_reason
       if unlocking?
-        unlock_reason = @unlock.reject {|_k, v| Array(v).empty? }.map do |k, v|
-          if v == true
-            k.to_s
-          else
-            v = Array(v)
-            "#{k}: (#{v.join(", ")})"
-          end
-        end.join(", ")
+        unlock_targets = if @gems_to_unlock.any?
+          ["gems", @gems_to_unlock]
+        elsif @sources_to_unlock.any?
+          ["sources", @sources_to_unlock]
+        end
+
+        unlock_reason = if unlock_targets
+          "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
+        else
+          @unlock[:ruby] ? "ruby" : ""
+        end
+
         return "bundler is unlocking #{unlock_reason}"
       end
       [
@@ -734,7 +740,7 @@ module Bundler
         spec   = @dependencies.find {|s| s.name == k }
         source = spec&.source
         if source&.respond_to?(:local_override!)
-          source.unlock! if @unlock[:gems].include?(spec.name)
+          source.unlock! if @gems_to_unlock.include?(spec.name)
           locals << [source, source.local_override!(v)]
         end
       end
@@ -742,7 +748,7 @@ module Bundler
       sources_with_changes = locals.select do |source, changed|
         changed || specs_changed?(source)
       end.map(&:first)
-      !sources_with_changes.each {|source| @unlock[:sources] << source.name }.empty?
+      !sources_with_changes.each {|source| @sources_to_unlock << source.name }.empty?
     end
 
     def check_lockfile
@@ -819,7 +825,7 @@ module Bundler
         # gem), unlock it. For git sources, this means to unlock the revision, which
         # will cause the `ref` used to be the most recent for the branch (or master) if
         # an explicit `ref` is not used.
-        if source.respond_to?(:unlock!) && @unlock[:sources].include?(source.name)
+        if source.respond_to?(:unlock!) && @sources_to_unlock.include?(source.name)
           source.unlock!
           changes = true
         end
@@ -863,7 +869,7 @@ module Bundler
     def converge_locked_specs
       converged = converge_specs(@locked_specs)
 
-      resolve = SpecSet.new(converged.reject {|s| @unlock[:gems].include?(s.name) })
+      resolve = SpecSet.new(converged.reject {|s| @gems_to_unlock.include?(s.name) })
 
       diff = nil
 
@@ -896,7 +902,7 @@ module Bundler
 
           @specs_that_changed_sources << s if gemfile_source != lockfile_source
           deps << dep if !dep.source || lockfile_source.include?(dep.source)
-          @unlock[:gems] << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
+          @gems_to_unlock << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
 
           # Replace the locked dependency's source with the equivalent source from the Gemfile
           s.source = gemfile_source
@@ -905,7 +911,7 @@ module Bundler
           s.source = default_source unless sources.get(lockfile_source)
         end
 
-        next if @unlock[:sources].include?(s.source.name)
+        next if @sources_to_unlock.include?(s.source.name)
 
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
@@ -927,12 +933,12 @@ module Bundler
           else
             # If the spec is no longer in the path source, unlock it. This
             # commonly happens if the version changed in the gemspec
-            @unlock[:gems] << name
+            @gems_to_unlock << name
           end
         end
 
         if dep.nil? && requested_dependencies.find {|d| name == d.name }
-          @unlock[:gems] << s.name
+          @gems_to_unlock << s.name
         else
           converged << s
         end
