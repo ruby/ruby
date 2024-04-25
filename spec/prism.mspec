@@ -25,5 +25,4 @@ MSpec.register(:exclude, "TracePoint#path equals \"(eval at __FILE__:__LINE__)\"
 
 ## Library
 MSpec.register(:exclude, "Coverage.result returns the correct results when eval coverage is disabled")
-MSpec.register(:exclude, "Coverage.start measures coverage within eval")
 MSpec.register(:exclude, "Socket.gethostbyaddr using an IPv6 address with an explicit address family raises SocketError when the address is not supported by the family")
