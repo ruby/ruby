@@ -253,12 +253,6 @@ syntax_error_new(void)
 }
 
 static void *
-memmove2(void *dest, const void *src, size_t t, size_t n)
-{
-    return memmove(dest, src, rbimpl_size_mul_or_raise(t, n));
-}
-
-static void *
 nonempty_memcpy(void *dest, const void *src, size_t t, size_t n)
 {
     return ruby_nonempty_memcpy(dest, src, rbimpl_size_mul_or_raise(t, n));
@@ -338,7 +332,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .alloc = ruby_xmalloc,
     .realloc_n = ruby_xrealloc2,
     .zalloc = zalloc,
-    .rb_memmove = memmove2,
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
 
@@ -446,7 +439,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .compile_warn = rb_compile_warn,
     .compile_warning = rb_compile_warning,
     .bug = rb_bug,
-    .fatal = rb_fatal,
     .verbose = ruby_verbose2,
     .errno_ptr = rb_errno_ptr2,
 
@@ -468,6 +460,97 @@ static const rb_parser_config_t rb_global_parser_config = {
     .static_id2sym = static_id2sym,
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
 };
+
+
+static size_t
+rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
+{
+    return str->len;
+}
+
+static void
+rb_parser_str_set_len(rb_parser_t *p, rb_parser_string_t *str, long len)
+{
+#define RARSER_STRING_TERM_FILL(str) (str->ptr[str->len] = '\0')
+#define RARSER_STRING_TERM_LEN(str) (1)
+#define RARSER_STRING_SET_LEN(str, n) do { \
+    (str)->len = (n); \
+} while (0)
+    long capa;
+    const int termlen = RARSER_STRING_TERM_LEN(str);
+
+    if (len > (capa = (long)(rb_parser_str_capacity(str, termlen))) || len < 0) {
+        rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    }
+
+    int cr = str->coderange;
+    if (cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+        /* Leave unknown. */
+    }
+    else if (len > str->len) {
+        str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+    }
+    else if (len < str->len) {
+        if (cr != RB_PARSER_ENC_CODERANGE_7BIT) {
+            /* ASCII-only string is keeping after truncated.  Valid
+             * and broken may be invalid or valid, leave unknown. */
+            str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+        }
+    }
+
+    RARSER_STRING_SET_LEN(str, len);
+    RARSER_STRING_TERM_FILL(str);
+#undef RARSER_STRING_TERM_FILL
+#undef RARSER_STRING_TERM_LEN
+#undef RARSER_STRING_SET_LEN
+}
+
+static int
+dedent_string_column(const char *str, long len, int width)
+{
+#define TAB_WIDTH 8
+    int i, col = 0;
+
+    for (i = 0; i < len && col < width; i++) {
+        if (str[i] == ' ') {
+            col++;
+        }
+        else if (str[i] == '\t') {
+            int n = TAB_WIDTH * (col / TAB_WIDTH + 1);
+            if (n > width) break;
+            col = n;
+        }
+        else {
+            break;
+        }
+    }
+
+    return i;
+#undef TAB_WIDTH
+}
+
+int
+rb_parser_dedent_string(rb_parser_t *p, rb_parser_string_t *string, int width)
+{
+    char *str;
+    long len;
+    int i;
+
+    len = string->len;
+    str = string->ptr;
+
+    i = dedent_string_column(str, len, width);
+    if (!i) return 0;
+
+    string->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+    str = string->ptr;
+    if (string->len != len)
+        rb_fatal("literal string changed: %s", string->ptr);
+    MEMMOVE(str, str + i, char, len - i);
+    rb_parser_str_set_len(p, string, len - i);
+    return i;
+}
+
 #endif
 
 enum lex_type {

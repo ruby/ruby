@@ -2070,11 +2070,15 @@ rb_char_p_hash(const char *c)
     return parser_memhash((const void *)c, strlen(c));
 }
 
+#ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
 {
     return PARSER_STRING_LEN(str);
 }
+#endif
+#endif /* !UNIVERSAL_PARSER */
 
 #ifndef RIPPER
 static char *
@@ -2283,6 +2287,8 @@ rb_parser_str_modify(rb_parser_string_t *str)
     PARSER_ENC_CODERANGE_CLEAR(str);
 }
 
+#ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static void
 rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
 {
@@ -2311,6 +2317,8 @@ rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len
     STRING_SET_LEN(str, len);
     STRING_TERM_FILL(str);
 }
+#endif
+#endif /* !UNIVERSAL_PARSER */
 
 static rb_parser_string_t *
 rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len)
@@ -8927,6 +8935,8 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     xfree(term);
 }
 
+#ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static int
 dedent_string_column(const char *str, long len, int width)
 {
@@ -8949,8 +8959,8 @@ dedent_string_column(const char *str, long len, int width)
     return i;
 }
 
-static int
-dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
+int
+rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
 {
     char *str;
     long len;
@@ -8970,6 +8980,8 @@ dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
     rb_parser_str_set_len(p, string, len - i);
     return i;
 }
+#endif
+#endif /* !UNIVERSAL_PARSER */
 
 static NODE *
 heredoc_dedent(struct parser_params *p, NODE *root)
@@ -8987,7 +8999,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
     while (str_node) {
         rb_parser_string_t *lit = RNODE_STR(str_node)->string;
         if (nd_fl_newline(str_node)) {
-            dedent_string(p, lit, indent);
+            rb_parser_dedent_string(p, lit, indent);
         }
         if (!prev_lit) {
             prev_lit = lit;
@@ -15865,26 +15877,6 @@ rb_ruby_ripper_parse0(rb_parser_t *p)
     p->ast = 0;
     p->eval_tree = 0;
     p->eval_tree_begin = 0;
-}
-
-int
-rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
-{
-    char *str;
-    long len;
-    int i;
-
-    RSTRING_GETMEM(string, str, len);
-    i = dedent_string_column(str, len, width);
-    if (!i) return 0;
-
-    rb_str_modify(string);
-    str = RSTRING_PTR(string);
-    if (RSTRING_LEN(string) != len)
-        rb_fatal("literal string changed: %+"PRIsVALUE, string);
-    MEMMOVE(str, str + i, char, len - i);
-    rb_str_set_len(string, len - i);
-    return i;
 }
 
 int

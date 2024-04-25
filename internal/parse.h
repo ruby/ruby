@@ -77,6 +77,10 @@ int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int
 int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc);
 int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq_struct *iseq);
 
+#ifndef UNIVERSAL_PARSER
+int rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width);
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #ifndef UNIVERSAL_PARSER
@@ -104,7 +108,6 @@ VALUE rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p);
 int rb_ruby_parser_ruby_sourceline(rb_parser_t *p);
 int rb_ruby_parser_lex_state(rb_parser_t *p);
 void rb_ruby_ripper_parse0(rb_parser_t *p);
-int rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width);
 int rb_ruby_ripper_initialized_p(rb_parser_t *p);
 void rb_ruby_ripper_parser_initialize(rb_parser_t *p);
 long rb_ruby_ripper_column(rb_parser_t *p);
