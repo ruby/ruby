@@ -2877,6 +2877,36 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
     }
 }
 
+/**
+ * We need to put the label "retry_end_l" immediately after the last "send"
+ * instruction. This because vm_throw checks if the break cont is equal to the
+ * index of next insn of the "send". (Otherwise, it is considered
+ * "break from proc-closure". See "TAG_BREAK" handling in "vm_throw_start".)
+ *
+ * Normally, "send" instruction is at the last. However, qcall under branch
+ * coverage measurement adds some instructions after the "send".
+ *
+ * Note that "invokesuper" appears instead of "send".
+ */
+static void
+pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry_end_l)
+{
+    INSN *iobj;
+    LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
+    iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
+    while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+        iobj = (INSN*) get_prev_insn(iobj);
+    }
+    ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
+
+    // LINK_ANCHOR has a pointer to the last element, but
+    // ELEM_INSERT_NEXT does not update it even if we add an insn to the
+    // last of LINK_ANCHOR. So this updates it manually.
+    if (&iobj->link == LAST_ELEMENT(ret)) {
+        ret->last = (LINK_ELEMENT*) retry_end_l;
+    }
+}
+
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
@@ -2886,6 +2916,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     const pm_line_column_t location = PM_LOCATION_LINE_COLUMN(scope_node->parser, message_loc);
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
+    LABEL *retry_end_l = NEW_LABEL(location.line);
 
     VALUE branches = Qfalse;
     rb_code_location_t code_location;
@@ -2893,7 +2924,14 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
-            code_location = pm_code_location(scope_node, (const pm_node_t *) call_node);
+            const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
+            const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, call_node->message_loc.end, scope_node->parser->start_line);
+
+            code_location = (rb_code_location_t) {
+                .beg_pos = { .lineno = start_location.line, .column = start_location.column },
+                .end_pos = { .lineno = end_location.line, .column = end_location.column }
+            };
+
             branches = decl_branch_base(iseq, PTR2NUM(call_node), &code_location, "&.");
             node_id = code_location.beg_pos.column;
         }
@@ -2917,10 +2955,6 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number(scope_node->parser, call_node->block));
         pm_scope_node_destroy(&next_scope_node);
-
-        if (ISEQ_BODY(block_iseq)->catch_table) {
-            PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, start, end_label, block_iseq, end_label);
-        }
         ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
     }
     else {
@@ -2965,15 +2999,15 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
 
-    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-        PUSH_INSNL(ret, location, jump, end_label);
-        PUSH_LABEL(ret, else_label);
+    if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
+        pm_compile_retry_end_label(iseq, ret, retry_end_l);
+        PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, start, retry_end_l, block_iseq, retry_end_l);
     }
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        PUSH_INSNL(ret, location, jump, end_label);
+        PUSH_LABEL(ret, else_label);
         add_trace_branch_coverage(iseq, ret, &code_location, node_id, 1, "else", branches);
-        PUSH_LABEL(ret, end_label);
-    } else if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
         PUSH_LABEL(ret, end_label);
     }
 
@@ -5896,33 +5930,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Now, create the method call to each that will be used to iterate over
         // the collection, and pass the newly created iseq as the block.
         PUSH_SEND_WITH_BLOCK(ret, location, idEach, INT2FIX(0), child_iseq);
-
-        // We need to put the label "retry_end_l" immediately after the last
-        // "send" instruction. This because vm_throw checks if the break cont is
-        // equal to the index of next insn of the "send". (Otherwise, it is
-        // considered "break from proc-closure". See "TAG_BREAK" handling in
-        // "vm_throw_start".)
-        //
-        // Normally, "send" instruction is at the last. However, qcall under
-        // branch coverage measurement adds some instructions after the "send".
-        //
-        // Note that "invokesuper" appears instead of "send".
-        {
-            INSN *iobj;
-            LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
-            iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
-            while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
-                iobj = (INSN*) get_prev_insn(iobj);
-            }
-            ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
-
-            // LINK_ANCHOR has a pointer to the last element, but
-            // ELEM_INSERT_NEXT does not update it even if we add an insn to the
-            // last of LINK_ANCHOR. So this updates it manually.
-            if (&iobj->link == LAST_ELEMENT(ret)) {
-                ret->last = (LINK_ELEMENT*) retry_end_l;
-            }
-        }
+        pm_compile_retry_end_label(iseq, ret, retry_end_l);
 
         if (popped) PUSH_INSN(ret, location, pop);
         ISEQ_COMPILE_DATA(iseq)->current_block = prev_block;
@@ -6065,7 +6073,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
 
         if (cast->block != NULL) {
-            PUSH_LABEL(ret, retry_end_l);
+            pm_compile_retry_end_label(iseq, ret, retry_end_l);
             PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, block, retry_end_l);
             ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
         }
@@ -8472,9 +8480,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PUSH_SEQ(ret, args);
         PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
-        PUSH_LABEL(ret, retry_end_l);
-        if (popped) PUSH_INSN(ret, location, pop);
+        pm_compile_retry_end_label(iseq, ret, retry_end_l);
 
+        if (popped) PUSH_INSN(ret, location, pop);
         ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
         PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, current_block, retry_end_l);
 
