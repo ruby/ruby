@@ -216,6 +216,38 @@ class Reline::Config::Test < Reline::TestCase
     end
   end
 
+  def test_nested_if_else
+    @config.read_lines(<<~LINES.lines)
+      $if Ruby
+        "\x1": "O"
+        $if NotRuby
+          "\x2": "X"
+        $else
+          "\x3": "O"
+          $if Ruby
+            "\x4": "O"
+          $else
+            "\x5": "X"
+          $endif
+          "\x6": "O"
+        $endif
+        "\x7": "O"
+      $else
+        "\x8": "X"
+        $if NotRuby
+          "\x9": "X"
+        $else
+          "\xA": "X"
+        $endif
+        "\xB": "X"
+      $endif
+      "\xC": "O"
+    LINES
+    keys = [0x1, 0x3, 0x4, 0x6, 0x7, 0xC]
+    key_bindings = keys.to_h { |k| [[k.ord], ['O'.ord]] }
+    assert_equal(key_bindings, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+  end
+
   def test_unclosed_if
     e = assert_raise(Reline::Config::InvalidInputrc) do
       @config.read_lines(<<~LINES.lines, "INPUTRC")

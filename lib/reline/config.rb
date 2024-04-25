@@ -53,8 +53,6 @@ class Reline::Config
     @additional_key_bindings[:vi_insert] = {}
     @additional_key_bindings[:vi_command] = {}
     @oneshot_key_bindings = {}
-    @skip_section = nil
-    @if_stack = nil
     @editing_mode_label = :emacs
     @keymap_label = :emacs
     @keymap_prefix = []
@@ -190,9 +188,7 @@ class Reline::Config
         end
       end
     end
-    conditions = [@skip_section, @if_stack]
-    @skip_section = nil
-    @if_stack = []
+    if_stack = []
 
     lines.each_with_index do |line, no|
       next if line.match(/\A\s*#/)
@@ -201,11 +197,11 @@ class Reline::Config
 
       line = line.chomp.lstrip
       if line.start_with?('$')
-        handle_directive(line[1..-1], file, no)
+        handle_directive(line[1..-1], file, no, if_stack)
         next
       end
 
-      next if @skip_section
+      next if if_stack.any? { |_no, skip| skip }
 
       case line
       when /^set +([^ ]+) +([^ ]+)/i
@@ -219,14 +215,12 @@ class Reline::Config
         @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
       end
     end
-    unless @if_stack.empty?
-      raise InvalidInputrc, "#{file}:#{@if_stack.last[1]}: unclosed if"
+    unless if_stack.empty?
+      raise InvalidInputrc, "#{file}:#{if_stack.last[0]}: unclosed if"
     end
-  ensure
-    @skip_section, @if_stack = conditions
   end
 
-  def handle_directive(directive, file, no)
+  def handle_directive(directive, file, no, if_stack)
     directive, args = directive.split(' ')
     case directive
     when 'if'
@@ -239,18 +233,17 @@ class Reline::Config
         condition = true if args == 'Ruby'
         condition = true if args == 'Reline'
       end
-      @if_stack << [file, no, @skip_section]
-      @skip_section = !condition
+      if_stack << [no, !condition]
     when 'else'
-      if @if_stack.empty?
+      if if_stack.empty?
         raise InvalidInputrc, "#{file}:#{no}: unmatched else"
       end
-      @skip_section = !@skip_section
+      if_stack.last[1] = !if_stack.last[1]
     when 'endif'
-      if @if_stack.empty?
+      if if_stack.empty?
         raise InvalidInputrc, "#{file}:#{no}: unmatched endif"
       end
-      @skip_section = @if_stack.pop
+      if_stack.pop
     when 'include'
       read(File.expand_path(args))
     end
