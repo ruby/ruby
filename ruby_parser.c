@@ -630,8 +630,8 @@ rb_parser_keep_tokens(VALUE vparser)
     rb_ruby_parser_keep_tokens(parser->parser_params);
 }
 
-VALUE
-rb_parser_lex_get_str(struct lex_pointer_string *ptr_str)
+rb_parser_string_t *
+rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str)
 {
     char *beg, *end, *start;
     long len;
@@ -641,20 +641,20 @@ rb_parser_lex_get_str(struct lex_pointer_string *ptr_str)
     len = RSTRING_LEN(s);
     start = beg;
     if (ptr_str->ptr) {
-        if (len == ptr_str->ptr) return Qnil;
+        if (len == ptr_str->ptr) return 0;
         beg += ptr_str->ptr;
         len -= ptr_str->ptr;
     }
     end = memchr(beg, '\n', len);
     if (end) len = ++end - beg;
     ptr_str->ptr += len;
-    return rb_str_subseq(s, beg - start, len);
+    return rb_str_to_parser_string(p, rb_str_subseq(s, beg - start, len));
 }
 
-static VALUE
+static rb_parser_string_t *
 lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
-    return rb_parser_lex_get_str((struct lex_pointer_string *)input);
+    return rb_parser_lex_get_str(p, (struct lex_pointer_string *)input);
 }
 
 static void parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines);
@@ -716,15 +716,16 @@ parser_compile_string(struct ruby_parser *parser, const char *f, VALUE s, int li
 
 VALUE rb_io_gets_internal(VALUE io);
 
-static VALUE
+static rb_parser_string_t *
 lex_io_gets(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
     VALUE io = (VALUE)input;
-
-    return rb_io_gets_internal(io);
+    VALUE line = rb_io_gets_internal(io);
+    if (NIL_P(line)) return 0;
+    return rb_str_to_parser_string(p, line);
 }
 
-static VALUE
+static rb_parser_string_t *
 lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
 {
     VALUE array = (VALUE)data;
@@ -734,8 +735,11 @@ lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
         if (!rb_enc_asciicompat(rb_enc_get(str))) {
             rb_raise(rb_eArgError, "invalid source encoding");
         }
+        return rb_str_to_parser_string(p, str);
     }
-    return str;
+    else {
+        return 0;
+    }
 }
 
 static rb_ast_t*

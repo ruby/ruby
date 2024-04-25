@@ -78,17 +78,18 @@ static const rb_data_type_t parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE
+static rb_parser_string_t *
 ripper_lex_get_generic(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
     VALUE src = (VALUE)input;
     VALUE line = rb_funcallv_public(src, id_gets, 0, 0);
-    if (!NIL_P(line) && !RB_TYPE_P(line, T_STRING)) {
+    if (NIL_P(line)) return 0;
+    if (!RB_TYPE_P(line, T_STRING)) {
         rb_raise(rb_eTypeError,
                  "gets returned %"PRIsVALUE" (expected String or nil)",
                  rb_obj_class(line));
     }
-    return line;
+    return rb_str_to_parser_string(p, line);
 }
 
 void
@@ -104,17 +105,19 @@ ripper_compile_error(struct parser_params *p, const char *fmt, ...)
     ripper_error(p);
 }
 
-static VALUE
+static rb_parser_string_t *
 ripper_lex_io_get(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
     VALUE src = (VALUE)input;
-    return rb_io_gets(src);
+    VALUE line = rb_io_gets(src);
+    if (NIL_P(line)) return 0;
+    return rb_str_to_parser_string(p, line);
 }
 
-static VALUE
+static rb_parser_string_t *
 ripper_lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
-    return rb_parser_lex_get_str((struct lex_pointer_string *)input);
+    return rb_parser_lex_get_str(p, (struct lex_pointer_string *)input);
 }
 
 static VALUE
