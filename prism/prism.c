@@ -8507,6 +8507,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_decimal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_DECIMAL);
                 }
 
@@ -8519,6 +8520,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_binary_digit(peek(parser))) {
                     parser->current.end += pm_strspn_binary_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_BINARY);
                 }
 
@@ -8532,6 +8534,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_octal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_octal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_OCTAL);
                 }
 
@@ -8559,6 +8562,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_hexadecimal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_hexadecimal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_HEXADECIMAL);
                 }
 
