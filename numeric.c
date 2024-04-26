@@ -862,6 +862,8 @@ rb_int_zero_p(VALUE num)
  *  Of the Core and Standard Library classes,
  *  Integer, Float, Rational, and Complex use this implementation.
  *
+ * Related: #zero?
+ *
  */
 
 static VALUE
