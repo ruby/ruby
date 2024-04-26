@@ -7722,7 +7722,6 @@ yycompile0(VALUE arg)
     n = yyparse(p);
     RUBY_DTRACE_PARSE_HOOK(END);
 
-    rb_parser_aset_script_lines_for(p->ruby_sourcefile_string, p->debug_lines);
     p->debug_lines = 0;
 
     xfree(p->lex.strterm);
