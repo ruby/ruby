@@ -318,7 +318,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(0)
         name = make_wstr(name)
         check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
-        data = String.new("\0").force_encoding('ASCII-8BIT') * unpackdw(size)
+        data = "\0".b * unpackdw(size)
         check RegQueryValueExW.call(hkey, name, 0, type, data, size)
         [ unpackdw(type), data[0, unpackdw(size)] ]
       end
