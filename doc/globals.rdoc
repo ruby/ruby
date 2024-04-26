@@ -1,7 +1,7 @@
 = Pre-Defined Global Variables
 
 Some of the pre-defined global variables have synonyms
-that are available via module Engish.
+that are available via module English.
 For each of those, the \English synonym is given.
 
 To use the module:
