@@ -24,6 +24,7 @@
         │   │   @ StatementsNode (location: (2,0)-(2,6))
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (2,0)-(2,6))
+        │   │           ├── flags: redundant
         │   │           ├── keyword_loc: (2,0)-(2,6) = "return"
         │   │           └── arguments: ∅
         │   ├── locals: [:b]

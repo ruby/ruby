@@ -122,6 +122,7 @@
         │   │   @ StatementsNode (location: (12,0)-(12,6))
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (12,0)-(12,6))
+        │   │           ├── flags: ∅
         │   │           ├── keyword_loc: (12,0)-(12,6) = "return"
         │   │           └── arguments: ∅
         │   ├── consequent: ∅
