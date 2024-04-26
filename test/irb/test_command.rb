@@ -485,12 +485,11 @@ module TestIRB
   class CwwsTest < WorkspaceCommandTestCase
     def test_cwws_returns_the_current_workspace_object
       out, err = execute_lines(
-        "cwws",
-        "self.class"
+        "cwws"
       )
 
       assert_empty err
-      assert_include(out, self.class.name)
+      assert_include(out, "Current workspace: #{self}")
     end
   end
 
@@ -556,7 +555,7 @@ module TestIRB
         "pushws Foo.new\n",
         "popws\n",
         "cwws\n",
-        "_.class",
+        "self.class",
       )
       assert_empty err
       assert_include(out, "=> #{self.class}")
@@ -576,20 +575,19 @@ module TestIRB
       out, err = execute_lines(
         "chws #{self.class}::Foo.new\n",
         "cwws\n",
-        "_.class",
+        "self.class\n"
       )
       assert_empty err
+      assert_include(out, "Current workspace: #<#{self.class.name}::Foo")
       assert_include(out, "=> #{self.class}::Foo")
     end
 
     def test_chws_does_nothing_when_receiving_no_argument
       out, err = execute_lines(
         "chws\n",
-        "cwws\n",
-        "_.class",
       )
       assert_empty err
-      assert_include(out, "=> #{self.class}")
+      assert_include(out, "Current workspace: #{self}")
     end
   end
 
