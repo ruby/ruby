@@ -1166,9 +1166,9 @@ typedef struct RNode_ERROR {
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
-#define nd_fl_newline(n) (n)->flags & NODE_FL_NEWLINE
-#define nd_set_fl_newline(n) (n)->flags |= NODE_FL_NEWLINE
-#define nd_unset_fl_newline(n) (n)->flags &= ~NODE_FL_NEWLINE
+#define nd_fl_newline(n) ((n)->flags & NODE_FL_NEWLINE)
+#define nd_set_fl_newline(n) ((n)->flags |= NODE_FL_NEWLINE)
+#define nd_unset_fl_newline(n) ((n)->flags &= ~NODE_FL_NEWLINE)
 
 #define nd_type(n) ((int) ((RNODE(n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
