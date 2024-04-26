@@ -340,6 +340,7 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 static void
 script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 {
+    if (!script_lines) return;
     for (long i = 0; i < script_lines->len; i++) {
         parser_string_free(ast, (rb_parser_string_t *)script_lines->data[i]);
     }
@@ -358,10 +359,8 @@ rb_ast_free(rb_ast_t *ast)
 #ifdef UNIVERSAL_PARSER
     if (ast && ast->node_buffer) {
         void (*free_func)(void *) = xfree;
-        if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
-            script_lines_free(ast, ast->body.script_lines);
-            ast->body.script_lines = NULL;
-        }
+        script_lines_free(ast, ast->body.script_lines);
+        ast->body.script_lines = NULL;
         rb_node_buffer_free(ast, ast->node_buffer);
         ast->node_buffer = 0;
         free_func(ast);
@@ -418,7 +417,7 @@ rb_ast_memsize(const rb_ast_t *ast)
         }
     }
 
-    if (script_lines && !FIXNUM_P((VALUE)script_lines)) {
+    if (script_lines) {
         size += sizeof(rb_parser_ary_t);
         for (i = 0; i < script_lines->len; i++) {
             size += sizeof(rb_parser_string_t);
@@ -436,10 +435,8 @@ rb_ast_dispose(rb_ast_t *ast)
     // noop. See the comment in rb_ast_free().
 #else
     if (ast && ast->node_buffer) {
-        if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
-            script_lines_free(ast, ast->body.script_lines);
-            ast->body.script_lines = NULL;
-        }
+        script_lines_free(ast, ast->body.script_lines);
+        ast->body.script_lines = NULL;
         rb_node_buffer_free(ast, ast->node_buffer);
         ast->node_buffer = 0;
     }

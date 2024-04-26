@@ -802,7 +802,6 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
     ast = rb_ruby_ast_data_get(data->vast);
     rb_parser_ary_t *ret = ast->body.script_lines;
-    if (!ret || FIXNUM_P((VALUE)ret)) return Qnil;
     return rb_parser_build_script_lines_from(ret);
 }
 
