@@ -39,7 +39,7 @@ module IRB
       # This API is for IRB's internal use only and may change at any time.
       # Please do NOT use it.
       def _register_with_aliases(name, command_class, *aliases)
-        @commands[name] = [command_class, aliases]
+        @commands[name.to_sym] = [command_class, aliases]
       end
 
       def all_commands_info
