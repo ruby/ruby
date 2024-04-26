@@ -45,6 +45,13 @@ module Prism
       location.slice
     end
 
+    # Slice the location of the node from the source, starting at the beginning
+    # of the line that the location starts on, ending at the end of the line
+    # that the location ends on.
+    def slice_lines
+      location.slice_lines
+    end
+
     # Similar to inspect, but respects the current level of indentation given by
     # the pretty print object.
     def pretty_print(q)

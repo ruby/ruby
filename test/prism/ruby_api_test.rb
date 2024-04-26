@@ -209,6 +209,13 @@ module Prism
       assert_equal "", location.slice
     end
 
+    def test_location_slice_lines
+      result = Prism.parse("\nprivate def foo\nend\n")
+      method = result.value.statements.body.first.arguments.arguments.first
+
+      assert_equal "private def foo\nend\n", method.slice_lines
+    end
+
     def test_heredoc?
       refute parse_expression("\"foo\"").heredoc?
       refute parse_expression("\"foo \#{1}\"").heredoc?
