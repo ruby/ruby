@@ -659,6 +659,16 @@ lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
     return rb_parser_lex_get_str((struct lex_pointer_string *)input);
 }
 
+static void parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines);
+
+static rb_ast_t*
+parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
+{
+    rb_ast_t *ast = rb_parser_compile(p, gets, fname, input, line);
+    parser_aset_script_lines_for(fname, ast->body.script_lines);
+    return ast;
+}
+
 static rb_ast_t*
 parser_compile_string0(struct ruby_parser *parser, VALUE fname, VALUE s, int line)
 {
@@ -668,7 +678,7 @@ parser_compile_string0(struct ruby_parser *parser, VALUE fname, VALUE s, int lin
     parser->data.lex_str.str = str;
     parser->data.lex_str.ptr = 0;
 
-    return rb_parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
+    return parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
 }
 
 static rb_encoding *
@@ -724,7 +734,7 @@ parser_compile_file_path(struct ruby_parser *parser, VALUE fname, VALUE file, in
     parser->type = lex_type_io;
     parser->data.lex_io.file = file;
 
-    return rb_parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
+    return parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
 }
 
 static rb_ast_t*
@@ -733,7 +743,7 @@ parser_compile_array(struct ruby_parser *parser, VALUE fname, VALUE array, int s
     parser->type = lex_type_array;
     parser->data.lex_array.ary = array;
 
-    return rb_parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
+    return parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
 }
 
 static rb_ast_t*
@@ -741,7 +751,7 @@ parser_compile_generic(struct ruby_parser *parser, rb_parser_lex_gets_func *lex_
 {
     parser->type = lex_type_generic;
 
-    return rb_parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
+    return parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
 }
 
 static void
@@ -1100,8 +1110,8 @@ rb_node_encoding_val(const NODE *node)
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
 }
 
-void
-rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
+static void
+parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 {
     VALUE hash, script_lines;
     ID script_lines_id;
