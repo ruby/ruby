@@ -1887,12 +1887,14 @@ static void *rb_gc_impl_objspace_alloc(void);
 #if USE_SHARED_GC
 # include "dln.h"
 
+# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
+
 void
 ruby_external_gc_init()
 {
-    char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
+    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
     void *handle = NULL;
-    if (gc_so_path) {
+    if (gc_so_path && dln_supported_p()) {
         char error[1024];
         handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
@@ -13657,6 +13659,12 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 Init_GC(void)
 {
+#if USE_SHARED_GC
+    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
+        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
+    }
+#endif
+
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 

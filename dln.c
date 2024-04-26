@@ -76,6 +76,12 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
+bool
+dln_supported_p(void)
+{
+    return true;
+}
+
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
