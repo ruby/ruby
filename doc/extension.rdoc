@@ -759,7 +759,12 @@ RUBY_TYPED_FROZEN_SHAREABLE ::
   If this flag is not set, the object can not become a shareable
   object by Ractor.make_shareable() method.
 
-You can allocate and wrap the structure in one step.
+Note that this macro can raise an exception.  If sval to be wrapped
+holds a resource needs to be released (e.g., allocated memory, handle
+from an external library, and etc), you will have to use rb_protect.
+
+You can allocate and wrap the structure in one step, in more
+preferable manner.
 
   TypedData_Make_Struct(klass, type, data_type, sval)
 
@@ -767,6 +772,10 @@ This macro returns an allocated T_DATA object, wrapping the pointer to
 the structure, which is also allocated.  This macro works like:
 
   (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
+
+However, you should use this macro instead of "allocation then wrap"
+like the above code if it is simply allocated, because the latter can
+raise a NoMemoryError and sval will be memory leaked in that case.
 
 Arguments klass and data_type work like their counterparts in
 TypedData_Wrap_Struct().  A pointer to the allocated structure will
