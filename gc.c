@@ -1888,7 +1888,7 @@ static void *rb_gc_impl_objspace_alloc(void);
 # include "dln.h"
 
 void
-ruby_external_gc_init()
+ruby_external_gc_init(void)
 {
     char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
     void *handle = NULL;
