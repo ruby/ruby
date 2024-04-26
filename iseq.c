@@ -851,14 +851,7 @@ static int
 ast_line_count(const VALUE vast)
 {
     rb_ast_t *ast = rb_ruby_ast_data_get(vast);
-    if (!ast || !ast->body.script_lines) {
-        // this occurs when failed to parse the source code with a syntax error
-        return 0;
-    }
-    if (!FIXNUM_P((VALUE)ast->body.script_lines)) {
-        return (int)ast->body.script_lines->len;
-    }
-    return FIX2INT((VALUE)ast->body.script_lines);
+    return ast->body.line_count;
 }
 
 static VALUE
@@ -999,7 +992,7 @@ rb_iseq_new_with_opt(const VALUE vast, VALUE name, VALUE path, VALUE realpath,
     if (!NIL_P(script_lines)) {
         // noop
     }
-    else if (body && !FIXNUM_P((VALUE)body->script_lines) && body->script_lines) {
+    else if (body && body->script_lines) {
         script_lines = rb_parser_build_script_lines_from(body->script_lines);
     }
     else if (parent) {

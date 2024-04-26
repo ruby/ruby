@@ -893,6 +893,7 @@ VALUE
 rb_parser_build_script_lines_from(rb_parser_ary_t *lines)
 {
     int i;
+    if (!lines) return Qnil;
     if (lines->data_type != PARSER_ARY_DATA_SCRIPT_LINE) {
         rb_bug("unexpected rb_parser_ary_data_type (%d) for script lines", lines->data_type);
     }
@@ -1115,7 +1116,7 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 {
     VALUE hash, script_lines;
     ID script_lines_id;
-    if (NIL_P(path) || !lines || FIXNUM_P((VALUE)lines)) return;
+    if (NIL_P(path) || !lines) return;
     CONST_ID(script_lines_id, "SCRIPT_LINES__");
     if (!rb_const_defined_at(rb_cObject, script_lines_id)) return;
     hash = rb_const_get_at(rb_cObject, script_lines_id);
@@ -1126,7 +1127,7 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 }
 
 VALUE
-rb_ruby_ast_new(const NODE *const root, rb_parser_ary_t *script_lines)
+rb_ruby_ast_new(const NODE *const root)
 {
     VALUE vast = ast_alloc();
     rb_ast_t *ast = DATA_PTR(vast);
@@ -1134,7 +1135,8 @@ rb_ruby_ast_new(const NODE *const root, rb_parser_ary_t *script_lines)
         .root = root,
         .frozen_string_literal = -1,
         .coverage_enabled = -1,
-        .script_lines = script_lines
+        .script_lines = NULL,
+        .line_count = 0,
     };
     return vast;
 }

@@ -7755,7 +7755,7 @@ yycompile0(VALUE arg)
         }
     }
     p->ast->body.root = tree;
-    if (!p->ast->body.script_lines) p->ast->body.script_lines = (rb_parser_ary_t *)INT2FIX(p->line_count);
+    p->ast->body.line_count = p->line_count;
     return TRUE;
 }
 
