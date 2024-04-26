@@ -119,8 +119,9 @@ module Lrama
 
     VALID_TRACES = %w[
       none locations scan parse automaton bitsets
-      closure grammar rules resource sets muscles tools
-      m4-early m4 skeleton time ielr cex all
+      closure grammar rules actions resource
+      sets muscles tools m4-early m4 skeleton time
+      ielr cex all
     ]
 
     def validate_trace(trace)
