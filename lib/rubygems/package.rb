@@ -7,7 +7,6 @@
 
 # rubocop:enable Style/AsciiComments
 
-require_relative "../rubygems"
 require_relative "security"
 require_relative "user_interaction"
 
