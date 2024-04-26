@@ -166,6 +166,12 @@ enc_mbcput(unsigned int c, void *buf, void *enc)
     return rb_enc_mbcput(c, buf, (rb_encoding *)enc);
 }
 
+static int
+enc_mbclen(const char *p, const char *e, void *enc)
+{
+    return rb_enc_mbclen(p, e, (rb_encoding *)enc);
+}
+
 static void *
 enc_from_index(int idx)
 {
@@ -411,6 +417,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
+    .enc_mbclen = enc_mbclen,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
     .enc_isspace = enc_isspace,
@@ -654,7 +661,19 @@ static void parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines);
 static rb_ast_t*
 parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
 {
-    rb_ast_t *ast = rb_parser_compile(p, gets, fname, input, line);
+    rb_ast_t *ast;
+    const char *ptr = 0;
+    long len = 0;
+    rb_encoding *enc = 0;
+
+    if (!NIL_P(fname)) {
+        StringValueCStr(fname);
+        ptr = RSTRING_PTR(fname);
+        len = RSTRING_LEN(fname);
+        enc = rb_enc_get(fname);
+    }
+
+    ast = rb_parser_compile(p, gets, ptr, len, enc, input, line);
     parser_aset_script_lines_for(fname, ast->body.script_lines);
     return ast;
 }
