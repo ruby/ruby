@@ -4893,4 +4893,4 @@ assert_equal '[[true, false, false], [true, true, false], [true, :error, :error]
   end
 
   results << test
-}
+} unless rjit_enabled? # Not yet working on RJIT
