@@ -696,6 +696,37 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:a, args.children[rest])
   end
 
+  def test_return
+    assert_ast_eqaul(<<~STR, <<~EXP)
+      def m(a)
+        return a
+      end
+    STR
+      (SCOPE@1:0-3:3
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-3:3
+          mid: :m
+          body:
+            (SCOPE@1:0-3:3
+             tbl: [:a]
+             args:
+               (ARGS@1:6-1:7
+                pre_num: 1
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (RETURN@2:2-2:10 (LVAR@2:9-2:10 :a)))))
+    EXP
+  end
+
   def test_keep_script_lines_for_parse
     node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_script_lines: true)
 1.times do
@@ -1239,9 +1270,13 @@ dummy
   end
 
   def assert_error_tolerant(src, expected, keep_tokens: false)
+    assert_ast_eqaul(src, expected, error_tolerant: true, keep_tokens: keep_tokens)
+  end
+
+  def assert_ast_eqaul(src, expected, **options)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
-      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true, keep_tokens: keep_tokens)
+      node = RubyVM::AbstractSyntaxTree.parse(src, **options)
     ensure
       $VERBOSE = verbose_bak
     end
