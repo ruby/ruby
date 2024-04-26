@@ -70,38 +70,16 @@ module Lrama
       reduce.look_ahead = look_ahead
     end
 
-    # Returns array of [Shift, next_state]
     def nterm_transitions
-      return @nterm_transitions if @nterm_transitions
-
-      @nterm_transitions = []
-
-      shifts.each do |shift|
-        next if shift.next_sym.term?
-
-        @nterm_transitions << [shift, @items_to_state[shift.next_items]]
-      end
-
-      @nterm_transitions
+      @nterm_transitions ||= transitions.select {|shift, _| shift.next_sym.nterm? }
     end
 
-    # Returns array of [Shift, next_state]
     def term_transitions
-      return @term_transitions if @term_transitions
-
-      @term_transitions = []
-
-      shifts.each do |shift|
-        next if shift.next_sym.nterm?
-
-        @term_transitions << [shift, @items_to_state[shift.next_items]]
-      end
-
-      @term_transitions
+      @term_transitions ||= transitions.select {|shift, _| shift.next_sym.term? }
     end
 
     def transitions
-      term_transitions + nterm_transitions
+      @transitions ||= shifts.map {|shift| [shift, @items_to_state[shift.next_items]] }
     end
 
     def selected_term_transitions

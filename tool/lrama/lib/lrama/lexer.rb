@@ -37,6 +37,7 @@ module Lrama
       %code
       %rule
       %no-stdlib
+      %inline
     )
 
     def initialize(grammar_file)
