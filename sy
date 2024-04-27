@@ -1,0 +1,5 @@
+require 'gosu'
+require_relative 'backgrounds.rb'
+require_relative 'player.rb'
+require_relative 'menu.rb'
+require_relative 'texts.rb'
