@@ -377,8 +377,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     def self.expand_environ(str)
       str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) {
         v = $1.encode(LOCALE)
-        (e = ENV[v] || ENV[v.upcase]; e.encode(str.encoding) if e) ||
-        $&
+        (ENV[v] || ENV[v.upcase])&.encode(str.encoding) || $&
       }
     end
 
