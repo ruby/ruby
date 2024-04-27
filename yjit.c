@@ -1164,20 +1164,14 @@ yjit_root_memsize(const void *ptr)
     return 0; // TODO: more accurate accounting
 }
 
-// GC callback during compaction
-static void
-yjit_root_update_references(void *ptr)
-{
-    // Do nothing since we use rb_gc_mark(), which pins.
-}
-
 void rb_yjit_root_mark(void *ptr); // in Rust
+void rb_yjit_root_update_references(void *ptr); // in Rust
 
 // Custom type for interacting with the GC
 // TODO: make this write barrier protected
 static const rb_data_type_t yjit_root_type = {
     "yjit_root",
-    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, yjit_root_update_references},
+    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, rb_yjit_root_update_references},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

@@ -1271,9 +1271,6 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
-    // Update ISEQ references in invariants
-    iseq_update_references_in_invariants(iseq);
-
     let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
