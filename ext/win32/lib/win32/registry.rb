@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'fiddle/import'
 
 module Win32
@@ -254,7 +254,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         /^(?:x64|x86_64)/ =~ RUBY_PLATFORM
       end
 
-      TEMPLATE_HANDLE = -'J<'
+      TEMPLATE_HANDLE = 'J<'
 
       def packhandle(h)
         [h].pack(TEMPLATE_HANDLE)
@@ -264,7 +264,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         (h + [0].pack(TEMPLATE_HANDLE)).unpack1(TEMPLATE_HANDLE)
       end
 
-      TEMPLATE_DWORD = -'V'
+      TEMPLATE_DWORD = 'V'
 
       def packdw(dw)
         [dw].pack(TEMPLATE_DWORD)
@@ -274,7 +274,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         (dw + [0].pack(TEMPLATE_DWORD)).unpack1(TEMPLATE_DWORD)
       end
 
-      TEMPLATE_QWORD = -'Q<'
+      TEMPLATE_QWORD = 'Q<'
 
       def packqw(qw)
         [qw].pack(TEMPLATE_QWORD)
@@ -388,7 +388,6 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       REG_RESOURCE_LIST REG_FULL_RESOURCE_DESCRIPTOR
       REG_RESOURCE_REQUIREMENTS_LIST REG_QWORD
     ].inject([]) do |ary, type|
-      type.freeze
       ary[Constants.const_get(type)] = type
       ary
     end.freeze
