@@ -758,9 +758,7 @@ static void
 ast_free(void *ptr)
 {
     rb_ast_t *ast = (rb_ast_t *)ptr;
-    if (ast) {
-        rb_ast_free(ast);
-    }
+    rb_ast_free(ast);
 }
 
 static const rb_data_type_t ast_data_type = {
@@ -777,7 +775,12 @@ static VALUE
 ast_alloc(void)
 {
     rb_ast_t *ast;
-    return TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+    VALUE vast = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+#ifdef UNIVERSAL_PARSER
+    ast = (rb_ast_t *)DATA_PTR(vast);
+    ast->config = &rb_global_parser_config;
+#endif
+    return vast;
 }
 
 VALUE

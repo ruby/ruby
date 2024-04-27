@@ -39,9 +39,6 @@ struct node_buffer_struct {
     // - location info
     // Array, whose entry is array
     rb_parser_ary_t *tokens;
-#ifdef UNIVERSAL_PARSER
-    const rb_parser_config_t *config;
-#endif
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
