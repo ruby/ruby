@@ -59,19 +59,16 @@ rb_node_buffer_new(void)
     init_node_buffer_list(&nb->buffer_list, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
     nb->local_tables = 0;
     nb->tokens = 0;
-#ifdef UNIVERSAL_PARSER
-    nb->config = config;
-#endif
     return nb;
 }
 
 #ifdef UNIVERSAL_PARSER
 #undef ruby_xmalloc
-#define ruby_xmalloc ast->node_buffer->config->malloc
+#define ruby_xmalloc ast->config->malloc
 #undef xfree
-#define xfree ast->node_buffer->config->free
-#define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
-#define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
+#define xfree ast->config->free
+#define rb_xmalloc_mul_add ast->config->xmalloc_mul_add
+#define ruby_xrealloc(var,size) (ast->config->realloc_n((void *)var, 1, size))
 #endif
 
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
@@ -218,8 +215,8 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
 {
-    if (ast->node_buffer && ast->node_buffer->tokens) {
-        parser_tokens_free(ast, ast->node_buffer->tokens);
+    if (nb && nb->tokens) {
+        parser_tokens_free(ast, nb->tokens);
     }
     iterate_node_values(ast, &nb->buffer_list, free_ast_value, NULL);
     node_buffer_list_free(ast, &nb->buffer_list);
@@ -304,7 +301,9 @@ rb_ast_t *
 rb_ast_new(const rb_parser_config_t *config)
 {
     node_buffer_t *nb = rb_node_buffer_new(config);
-    return config->ast_new(nb);
+    rb_ast_t *ast = config->ast_new(nb);
+    ast->config = config;
+    return ast;
 }
 #else
 rb_ast_t *
@@ -351,24 +350,8 @@ script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 void
 rb_ast_free(rb_ast_t *ast)
 {
-    /* TODO
-     * The current impl. of rb_ast_free() and rb_ast_dispose() is complicated.
-     * Upcoming task of changing `ast->node_buffer->config` to `ast->config`,
-     * that is based on "deIMEMO" of `rb_ast_t *`, will let us simplify the code.
-     */
-#ifdef UNIVERSAL_PARSER
-    if (ast && ast->node_buffer) {
-        void (*free_func)(void *) = xfree;
-        script_lines_free(ast, ast->body.script_lines);
-        ast->body.script_lines = NULL;
-        rb_node_buffer_free(ast, ast->node_buffer);
-        ast->node_buffer = 0;
-        free_func(ast);
-    }
-#else
     rb_ast_dispose(ast);
     xfree(ast);
-#endif
 }
 
 static size_t
@@ -431,16 +414,12 @@ rb_ast_memsize(const rb_ast_t *ast)
 void
 rb_ast_dispose(rb_ast_t *ast)
 {
-#ifdef UNIVERSAL_PARSER
-    // noop. See the comment in rb_ast_free().
-#else
     if (ast && ast->node_buffer) {
         script_lines_free(ast, ast->body.script_lines);
         ast->body.script_lines = NULL;
         rb_node_buffer_free(ast, ast->node_buffer);
         ast->node_buffer = 0;
     }
-#endif
 }
 
 VALUE
