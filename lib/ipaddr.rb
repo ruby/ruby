@@ -721,8 +721,8 @@ class IPAddr
       octets = addr.split('.')
     end
     octets.inject(0) { |i, s|
-      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{@addr}"
-      (s != '0') && s.start_with?('0') and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{@addr}"
+      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{addr}"
+      (s != '0') && s.start_with?('0') and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{addr}"
       i << 8 | n
     }
   end
