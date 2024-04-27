@@ -77,6 +77,7 @@ bt = Struct.new(:ruby,
                 :indent,
                 :platform,
                 :timeout,
+                :timeout_scale,
                 )
 BT = Class.new(bt) do
   def indent=(n)
@@ -144,6 +145,10 @@ BT = Class.new(bt) do
     end
     super wn
   end
+
+  def apply_timeout_scale(timeout)
+    timeout&.*(timeout_scale)
+  end
 end.new
 
 BT_STATE = Struct.new(:count, :error).new
@@ -157,6 +162,7 @@ def main
   BT.tty = nil
   BT.quiet = false
   BT.timeout = 180
+  BT.timeout_scale = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 3 : 1) # for --jit-wait
   # BT.wn = 1
   dir = nil
   quiet = false
@@ -194,8 +200,9 @@ def main
     when /\A-j(\d+)?/
       BT.wn = $1.to_i
       true
-    when /\A--timeout=(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?)/
+    when /\A--timeout=(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?)(?::(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?))?/
       BT.timeout = $1.to_f
+      BT.timeout_scale = $2.to_f if defined?($2)
       true
     when /\A(-v|--v(erbose))\z/
       BT.verbose = true
@@ -533,6 +540,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
 
   def get_result_string(opt = '', timeout: BT.timeout, **argh)
     if BT.ruby
+      timeout = BT.apply_timeout_scale(timeout)
       filename = make_srcfile(**argh)
       begin
         kw = self.err ? {err: self.err} : {}
@@ -627,6 +635,7 @@ end
 
 def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
   add_assertion testsrc, -> as do
+    timeout = BT.apply_timeout_scale(timeout)
     message, ignore_signals = rest
     message ||= ''
     as.show_progress(message) {
@@ -680,9 +689,7 @@ end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   add_assertion testsrc, -> as do
-    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # for --jit-wait
-      timeout_seconds *= 3
-    end
+    timeout_seconds = BT.apply_timeout_scale(timeout_seconds)
 
     as.show_progress(message) {
       faildesc = nil
