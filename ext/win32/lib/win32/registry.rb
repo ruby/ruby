@@ -254,30 +254,34 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         /^(?:x64|x86_64)/ =~ RUBY_PLATFORM
       end
 
+      TEMPLATE_HANDLE = -'J<'
+
       def packhandle(h)
-        win64? ? packqw(h) : packdw(h)
+        [h].pack(TEMPLATE_HANDLE)
       end
 
       def unpackhandle(h)
-        win64? ? unpackqw(h) : unpackdw(h)
+        (h + [0].pack(TEMPLATE_HANDLE)).unpack1(TEMPLATE_HANDLE)
       end
 
+      TEMPLATE_DWORD = -'V'
+
       def packdw(dw)
-        [dw].pack('V')
+        [dw].pack(TEMPLATE_DWORD)
       end
 
       def unpackdw(dw)
-        dw += [0].pack('V')
-        dw.unpack('V')[0]
+        (dw + [0].pack(TEMPLATE_DWORD)).unpack1(TEMPLATE_DWORD)
       end
 
+      TEMPLATE_QWORD = -'Q<'
+
       def packqw(qw)
-        [ qw & 0xFFFFFFFF, qw >> 32 ].pack('VV')
+        [qw].pack(TEMPLATE_QWORD)
       end
 
       def unpackqw(qw)
-        qw = qw.unpack('VV')
-        (qw[1] << 32) | qw[0]
+        (qw + [0].pack(TEMPLATE_QWORD)).unpack1(TEMPLATE_QWORD)
       end
 
       def make_wstr(str)
@@ -657,7 +661,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_DWORD
         [ type, API.unpackdw(data) ]
       when REG_DWORD_BIG_ENDIAN
-        [ type, data.unpack('N')[0] ]
+        [ type, data.unpack1('N') ]
       when REG_QWORD
         [ type, API.unpackqw(data) ]
       else
