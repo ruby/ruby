@@ -1481,16 +1481,6 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     tmp_node.nd_args = 0;
 
     VALUE vast = rb_ruby_ast_new(RNODE(&tmp_node));
-    {   /*
-         * TODO:
-         * Assigning -1 to line_count is to maintain the previous code.
-         * However, the author of this patch guesses this code is no longer necessary.
-         * We will try to remove this code in the next commit which is atomically
-         * revertable if the author is wrong.
-         */
-        rb_ast_t *ast = (rb_ast_t *)DATA_PTR(vast);
-        ast->body.line_count = -1;
-    }
 
     if (base_iseq) {
         iseq = rb_iseq_new(vast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
