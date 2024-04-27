@@ -193,7 +193,7 @@ def main
       warn "unknown --tty argument: #$3" if $3
       BT.tty = !$1 || !$2
       true
-    when /\A(-q|--q(uiet))\z/
+    when /\A(-q|--q(uiet)?)\z/
       quiet = true
       BT.quiet = true
       true
@@ -204,7 +204,7 @@ def main
       BT.timeout = $1.to_f
       BT.timeout_scale = $2.to_f if defined?($2)
       true
-    when /\A(-v|--v(erbose))\z/
+    when /\A(-v|--v(erbose)?)\z/
       BT.verbose = true
       BT.quiet = false
       true
