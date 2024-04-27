@@ -76,6 +76,7 @@ bt = Struct.new(:ruby,
                 :width,
                 :indent,
                 :platform,
+                :timeout,
                 )
 BT = Class.new(bt) do
   def indent=(n)
@@ -155,6 +156,7 @@ def main
   BT.color = nil
   BT.tty = nil
   BT.quiet = false
+  BT.timeout = 180
   # BT.wn = 1
   dir = nil
   quiet = false
@@ -192,6 +194,9 @@ def main
     when /\A-j(\d+)?/
       BT.wn = $1.to_i
       true
+    when /\A--timeout=(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?)/
+      BT.timeout = $1.to_f
+      true
     when /\A(-v|--v(erbose))\z/
       BT.verbose = true
       BT.quiet = false
@@ -204,6 +209,7 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
                                     default: /tmp/bootstraptestXXXXX.tmpwd
         --color[=WHEN]              Colorize the output.  WHEN defaults to 'always'
                                     or can be 'never' or 'auto'.
+        --timeout=TIMEOUT           Default timeout in seconds.
     -s, --stress                    stress test.
     -v, --verbose                   Output test name before exec.
     -q, --quiet                     Don\'t print header message.
@@ -525,14 +531,15 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     end
   end
 
-  def get_result_string(opt = '', **argh)
+  def get_result_string(opt = '', timeout: BT.timeout, **argh)
     if BT.ruby
       filename = make_srcfile(**argh)
       begin
         kw = self.err ? {err: self.err} : {}
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
-        out.read.tap{ Process.waitpid(pid); out.close }
+        th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
+        th.value if th.join(timeout)
       ensure
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
@@ -618,7 +625,7 @@ def assert_valid_syntax(testsrc, message = '')
   end
 end
 
-def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
+def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
   add_assertion testsrc, -> as do
     message, ignore_signals = rest
     message ||= ''
