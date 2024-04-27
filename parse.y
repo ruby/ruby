@@ -2951,6 +2951,16 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 
 %token tLAST_TOKEN
 
+/*
+ *	parameterizing rules
+ */
+%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
+                                {
+                                    $$ = make_list($3, &@$);
+                                /*% ripper: array!($:3) %*/
+                                }
+                            ;
+
 %%
 program		:  {
                         SET_LEX_STATE(EXPR_BEG);
@@ -6104,11 +6114,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words		: tWORDS_BEG ' '+ word_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+words		: words(tWORDS_BEG, word_list) <node>
                 ;
 
 word_list	: /* none */
@@ -6132,11 +6138,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG ' '+ symbol_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+symbols 	: words(tSYMBOLS_BEG, symbol_list) <node>
                 ;
 
 symbol_list	: /* none */
@@ -6151,18 +6153,10 @@ symbol_list	: /* none */
                     }
                 ;
 
-qwords		: tQWORDS_BEG ' '+ qword_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qwords		: words(tQWORDS_BEG, qword_list) <node>
                 ;
 
-qsymbols	: tQSYMBOLS_BEG ' '+ qsym_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qsymbols	: words(tQSYMBOLS_BEG, qsym_list) <node>
                 ;
 
 qword_list	: /* none */

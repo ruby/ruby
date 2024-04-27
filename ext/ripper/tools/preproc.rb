@@ -51,6 +51,10 @@ def process(f, out, path, template)
   usercode f, out, path, template
 end
 
+require_relative 'dsl'
+
+RIPPER_CODE_PATTERN = %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+
 def prelude(f, out)
   @exprs = {}
   while line = f.gets
@@ -58,6 +62,9 @@ def prelude(f, out)
     when /\A%%/
       out << "%%\n"
       return
+    when RIPPER_CODE_PATTERN # %rule actions may contain /*% ripper: ... %*/ DSL
+      out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
+      next
     else
       if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
         case line
@@ -74,12 +81,10 @@ def prelude(f, out)
   end
 end
 
-require_relative "dsl"
-
 def grammar(f, out)
   while line = f.gets
     case line
-    when %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+    when RIPPER_CODE_PATTERN
       out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
     when %r</\*%%%\*/>
       out << "#if 0\n"
