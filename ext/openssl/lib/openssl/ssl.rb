@@ -460,12 +460,27 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       end
 
       # Close the stream for reading.
+      # This method is ignored by OpenSSL as there is no reasonable way to
+      # implement it, but exists for compatibility with IO.
       def close_read
         # Unsupported and ignored.
         # Just don't read any more.
       end
 
-      # Close the stream for writing.
+      # Closes the stream for writing. The behavior of this method depends on
+      # the version of OpenSSL and the TLS protocol in use.
+      # 
+      # In TLS 1.3 and later:
+      # - Sends a 'close_notify' alert to the peer.
+      # - Does not wait for the peer's 'close_notify' alert in response.
+      # 
+      # In TLS 1.2 and earlier:
+      # - Sends a 'close_notify' alert to the peer.
+      # - Waits for the peer's 'close_notify' alert in response.
+      # 
+      # Therefore, on TLS 1.2, this method will cause the connection to be
+      # completely shut down. On TLS 1.3, the connection will remain open for
+      # reading only.
       def close_write
         stop
       end
