@@ -2265,12 +2265,6 @@ fn gen_getlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
-    // Start the block with this instruction for EP-escape invalidation
-    if level == 0 && !jit.at_current_insn() {
-        defer_compilation(jit, asm, ocb);
-        return Some(EndBlock);
-    }
-
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm, ocb) {
         // Load the local using SP register
         asm.ctx.ep_opnd(-(ep_offset as i32))
@@ -2332,12 +2326,6 @@ fn gen_setlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
-    // Start the block with this instruction for EP-escape invalidation
-    if level == 0 && !jit.at_current_insn() {
-        defer_compilation(jit, asm, ocb);
-        return Some(EndBlock);
-    }
-
     let value_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Fallback because of write barrier
