@@ -147,9 +147,9 @@ jobs:
           - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }
           - { name: RUBY_DEVEL,           env: { append_configure: '--enable-devel' } }
 
+          - { name: OPT_THREADED_CODE=0,            env: { cppflags: '-DOPT_THREADED_CODE=0' } }
           - { name: OPT_THREADED_CODE=1,            env: { cppflags: '-DOPT_THREADED_CODE=1' } }
           - { name: OPT_THREADED_CODE=2,            env: { cppflags: '-DOPT_THREADED_CODE=2' } }
-          - { name: OPT_THREADED_CODE=3,            env: { cppflags: '-DOPT_THREADED_CODE=3' } }
 
           - { name: NDEBUG,                         env: { cppflags: '-DNDEBUG' } }
           - { name: RUBY_DEBUG,                     env: { cppflags: '-DRUBY_DEBUG' } }
