@@ -179,7 +179,7 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          make -s -j ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug
           YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
