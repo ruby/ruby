@@ -2873,6 +2873,17 @@ static void timer_thread_wakeup_thread(rb_thread_t *th);
 
 #include "thread_pthread_mn.c"
 
+static rb_thread_t *
+thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
+{
+    if (w) {
+        return (rb_thread_t *)((size_t)w - offsetof(rb_thread_t, sched.waiting_reason));
+    }
+    else {
+        return NULL;
+    }
+}
+
 static int
 timer_thread_set_timeout(rb_vm_t *vm)
 {
@@ -2905,7 +2916,9 @@ timer_thread_set_timeout(rb_vm_t *vm)
     if (vm->ractor.sched.timeslice_wait_inf) {
         rb_native_mutex_lock(&timer_th.waiting_lock);
         {
-            rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
+            struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
+            rb_thread_t *th = thread_sched_waiting_thread(w);
+
             if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
                 rb_hrtime_t now = rb_hrtime_now();
                 rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
@@ -2955,22 +2968,22 @@ timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
 static rb_thread_t *
 timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 {
-    rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
+    struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
 
-    if (th != NULL &&
-        (th->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-        timer_thread_check_exceed(th->sched.waiting_reason.data.timeout, now)) {
+    if (w != NULL &&
+        (w->flags & thread_sched_waiting_timeout) &&
+        timer_thread_check_exceed(w->data.timeout, now)) {
 
         RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
 
         // delete from waiting list
-        ccan_list_del_init(&th->sched.waiting_reason.node);
+        ccan_list_del_init(&w->node);
 
         // setup result
-        th->sched.waiting_reason.flags = thread_sched_waiting_none;
-        th->sched.waiting_reason.data.result = 0;
+        w->flags = thread_sched_waiting_none;
+        w->data.result = 0;
 
-        return th;
+        return thread_sched_waiting_thread(w);
     }
 
     return NULL;
