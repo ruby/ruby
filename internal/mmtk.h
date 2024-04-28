@@ -19,6 +19,7 @@ typedef rb_thread_t* MMTk_VMMutatorThread;
 typedef struct MMTk_GCThreadTLS* MMTk_VMWorkerThread;
 typedef void* MMTk_Address;
 typedef void* MMTk_ObjectReference;
+typedef void* MMTk_NullableObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
 
 
@@ -164,7 +165,7 @@ bool mmtk_is_reachable(MMTk_ObjectReference object);
 
 bool mmtk_is_live_object(MMTk_ObjectReference object);
 
-MMTk_ObjectReference mmtk_get_forwarded_object(MMTk_ObjectReference object);
+MMTk_NullableObjectReference mmtk_get_forwarded_object(MMTk_ObjectReference object);
 
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
