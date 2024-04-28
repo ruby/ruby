@@ -53,50 +53,48 @@ end
 
 require_relative 'dsl'
 
-RIPPER_CODE_PATTERN = %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+def generate_line(f, out)
+  while line = f.gets
+    case
+    when gen = DSL.line?(line)
+      out << gen.generate << "\n"
+    when line.start_with?("%%")
+      out << "%%\n"
+      break
+    else
+      out << yield(line)
+    end
+  end
+end
 
 def prelude(f, out)
   @exprs = {}
-  while line = f.gets
-    case line
-    when /\A%%/
-      out << "%%\n"
-      return
-    when RIPPER_CODE_PATTERN # %rule actions may contain /*% ripper: ... %*/ DSL
-      out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
-      next
-    else
-      if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
-        case line
-        when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
-          @exprs[$1.chomp("_bit")] = $2.strip
-        when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
-          name = $1
-          val = $2.chomp(",")
-          @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
-        end
+  generate_line(f, out) do |line|
+    if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
+      case line
+      when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
+        @exprs[$1.chomp("_bit")] = $2.strip
+      when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
+        name = $1
+        val = $2.chomp(",")
+        @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
       end
     end
-    out << line
+    line
   end
 end
 
 def grammar(f, out)
-  while line = f.gets
+  generate_line(f, out) do |line|
     case line
-    when RIPPER_CODE_PATTERN
-      out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
     when %r</\*%%%\*/>
-      out << "#if 0\n"
+      "#if 0\n"
     when %r</\*%>
-      out << "#endif\n"
+      "#endif\n"
     when %r<%\*/>
-      out << "\n"
-    when /\A%%/
-      out << "%%\n"
-      return
+      "\n"
     else
-      out << line
+      line
     end
   end
 end
