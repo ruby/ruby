@@ -715,7 +715,7 @@ EOM
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
 
-  if RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23.1.2"
+  if RUBY_ENGINE == "truffleruby"
     def copy_stream(src, dst) # :nodoc:
       dst.write src.read
     end
