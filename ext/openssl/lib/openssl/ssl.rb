@@ -469,15 +469,15 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 
       # Closes the stream for writing. The behavior of this method depends on
       # the version of OpenSSL and the TLS protocol in use.
-      # 
-      # In TLS 1.3 and later:
+      #
       # - Sends a 'close_notify' alert to the peer.
       # - Does not wait for the peer's 'close_notify' alert in response.
-      # 
+      #
       # In TLS 1.2 and earlier:
-      # - Sends a 'close_notify' alert to the peer.
-      # - Waits for the peer's 'close_notify' alert in response.
-      # 
+      # - On receipt of a 'close_notify' alert, responds with a 'close_notify'
+      #   alert of its own and close down the connection immediately,
+      #   discarding any pending writes.
+      #
       # Therefore, on TLS 1.2, this method will cause the connection to be
       # completely shut down. On TLS 1.3, the connection will remain open for
       # reading only.
