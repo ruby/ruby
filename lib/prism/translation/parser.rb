@@ -46,7 +46,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -59,7 +59,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -78,7 +78,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
