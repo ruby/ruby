@@ -1255,8 +1255,6 @@ typedef struct rb_parser_config_struct {
     void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
-    rb_ast_t *(*ast_new)(node_buffer_t *nb);
-
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
