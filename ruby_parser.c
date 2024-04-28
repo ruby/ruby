@@ -292,14 +292,6 @@ arg_error(void)
     return rb_eArgError;
 }
 
-static rb_ast_t *
-ast_new(node_buffer_t *nb)
-{
-    rb_ast_t *ast = ruby_xcalloc(1, sizeof(rb_ast_t));
-    ast->node_buffer = nb;
-    return ast;
-}
-
 static VALUE
 static_id2sym(ID id)
 {
@@ -347,8 +339,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .rb_memmove = memmove2,
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
-
-    .ast_new = ast_new,
 
     .compile_callback = rb_suppress_tracing,
     .reg_named_capture_assign = reg_named_capture_assign,
