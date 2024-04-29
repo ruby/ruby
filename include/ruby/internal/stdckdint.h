@@ -35,6 +35,13 @@
 # define RBIMPL_HAVE_STDCKDINT_H
 #endif
 
+#ifdef __cplusplus
+# /* It seems OS/Compiler provided stdckdint.h tend not support C++ yet.
+#  * Situations could improve someday but in a meantime let us work around.
+#  */
+# undef RBIMPL_HAVE_STDCKDINT_H
+#endif
+
 #ifdef RBIMPL_HAVE_STDCKDINT_H
 # /* Take that. */
 # include <stdckdint.h>
