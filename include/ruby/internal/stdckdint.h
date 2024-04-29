@@ -20,6 +20,7 @@
  * @brief      C23 shim for <stdckdint.h>
  */
 #include "ruby/internal/config.h"
+#include "ruby/internal/cast.h"
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/stdbool.h"
 
@@ -47,9 +48,9 @@
 # include <stdckdint.h>
 
 #elif RBIMPL_HAS_BUILTIN(__builtin_add_overflow)
-# define ckd_add(x, y, z) ((bool)__builtin_add_overflow((y), (z), (x)))
-# define ckd_sub(x, y, z) ((bool)__builtin_sub_overflow((y), (z), (x)))
-# define ckd_mul(x, y, z) ((bool)__builtin_mul_overflow((y), (z), (x)))
+# define ckd_add(x, y, z) RBIMPL_CAST((bool)__builtin_add_overflow((y), (z), (x)))
+# define ckd_sub(x, y, z) RBIMPL_CAST((bool)__builtin_sub_overflow((y), (z), (x)))
+# define ckd_mul(x, y, z) RBIMPL_CAST((bool)__builtin_mul_overflow((y), (z), (x)))
 # define __STDC_VERSION_STDCKDINT_H__ 202311L
 
 #/* elif defined(__cplusplus) */
