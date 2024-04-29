@@ -13,7 +13,6 @@
 #include <stddef.h>
 #include "node.h"
 #include "rubyparser.h"
-#include "internal/parse.h"
 #endif
 
 #include "internal/variable.h"
