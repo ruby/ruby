@@ -369,11 +369,7 @@ parse_regexp_string_part(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, con
     // check that it's okay here for this fragment of the string.
     VALUE string = rb_enc_str_new((const char *) pm_string_source(unescaped), pm_string_length(unescaped), regexp_encoding);
     VALUE error = rb_reg_check_preprocess(string);
-
-    if (error != Qnil) {
-        parse_regexp_error(iseq, pm_node_line_number(scope_node->parser, node), "%" PRIsVALUE, rb_obj_as_string(error));
-    }
-
+    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number(scope_node->parser, node), "%" PRIsVALUE, rb_obj_as_string(error));
     return string;
 }
 
@@ -388,17 +384,28 @@ pm_static_literal_concat(rb_iseq_t *iseq, const pm_node_list_t *nodes, const pm_
 
         switch (PM_NODE_TYPE(part)) {
           case PM_STRING_NODE:
-            if (regexp_encoding == NULL) {
-                string = parse_string_encoded(part, &((const pm_string_node_t *) part)->unescaped, scope_node->encoding);
+            if (regexp_encoding != NULL) {
+                if (top) {
+                    string = parse_regexp_string_part(iseq, scope_node, part, &((const pm_string_node_t *) part)->unescaped, regexp_encoding);
+                }
+                else {
+                    string = parse_string_encoded(part, &((const pm_string_node_t *) part)->unescaped, scope_node->encoding);
+                    VALUE error = rb_reg_check_preprocess(string);
+                    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number(scope_node->parser, part), "%" PRIsVALUE, rb_obj_as_string(error));
+                }
             }
             else {
-                string = parse_regexp_string_part(iseq, scope_node, part, &((const pm_string_node_t *) part)->unescaped, regexp_encoding);
+                string = parse_string_encoded(part, &((const pm_string_node_t *) part)->unescaped, scope_node->encoding);
             }
-
             break;
           case PM_INTERPOLATED_STRING_NODE:
             string = pm_static_literal_concat(iseq, &((const pm_interpolated_string_node_t *) part)->parts, scope_node, regexp_encoding, false);
             break;
+          case PM_EMBEDDED_STATEMENTS_NODE: {
+            const pm_embedded_statements_node_t *cast = (const pm_embedded_statements_node_t *) part;
+            string = pm_static_literal_concat(iseq, &cast->statements->body, scope_node, regexp_encoding, false);
+            break;
+          }
           default:
             RUBY_ASSERT(false && "unexpected node type in pm_static_literal_concat");
             return Qnil;
