@@ -83,7 +83,7 @@
 #![allow(non_upper_case_globals)]
 
 use std::convert::From;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -208,8 +208,6 @@ pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
-    use std::ffi::CStr;
-
     unsafe {
         // Look up Ruby's NULL-terminated insn name string
         let op_name = raw_insn_name(VALUE(opcode));
@@ -608,7 +606,6 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     assert!(c_char_ptr != std::ptr::null());
 
-    use std::ffi::CStr;
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
 
     match c_str.to_str() {
@@ -620,17 +617,20 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {
-    pub file: CString,
+    pub file: &'static CStr,
     pub line: c_int,
 }
 
 /// Make a [SourceLocation] at the current spot.
 macro_rules! src_loc {
     () => {
-        // NOTE(alan): `CString::new` allocates so we might want to limit this to debug builds.
-        $crate::cruby::SourceLocation {
-            file: std::ffi::CString::new(file!()).unwrap(), // ASCII source file paths
-            line: line!().try_into().unwrap(),              // not that many lines
+        {
+            // Nul-terminated string with static lifetime, make a CStr out of it safely.
+            let file: &'static str = concat!(file!(), '\0');
+            $crate::cruby::SourceLocation {
+                file: unsafe { std::ffi::CStr::from_ptr(file.as_ptr().cast()) },
+                line: line!().try_into().unwrap(),
+            }
         }
     };
 }
@@ -668,17 +668,16 @@ where
         Err(_) => {
             // Theoretically we can recover from some of these panics,
             // but it's too late if the unwind reaches here.
-            use std::{process, str};
 
             let _ = catch_unwind(|| {
                 // IO functions can panic too.
                 eprintln!(
                     "YJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
-                    str::from_utf8(loc.file.as_bytes()).unwrap_or("<not utf8>"),
+                    loc.file.to_string_lossy(),
                     line,
                 );
             });
-            process::abort();
+            std::process::abort();
         }
     };
 
