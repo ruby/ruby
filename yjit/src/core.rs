@@ -498,6 +498,141 @@ pub struct Context {
     inline_block: u64,
 }
 
+
+
+struct BitArray
+{
+    bytes: Vec<u8>,
+    num_bits: usize,
+}
+
+impl BitArray
+{
+    fn new() -> Self
+    {
+        Self {
+            bytes: Vec::with_capacity(64),
+            num_bits: 0,
+        }
+    }
+
+    // Total number of bytes taken
+    fn num_bytes(&self) -> usize
+    {
+        (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
+    }
+
+    fn write_uint(&mut self, mut val: usize, mut num_bits: usize)
+    {
+        // Mask out bits above the number of bits requested
+        let val_bits = val & ((1 << num_bits) - 1);
+        assert!(val == val_bits);
+
+        // Number of bits encoded in the last byte
+        let rem_bits = self.num_bits % 8;
+
+        // Encode as many bits as we can in this last byte
+        if rem_bits != 0 {
+            let num_enc = std::cmp::min(num_bits, 8 - rem_bits);
+            let bit_mask = (1 << num_enc) - 1;
+            let frac_bits = (val & bit_mask) << rem_bits;
+            let frac_bits: u8 = frac_bits.try_into().unwrap();
+            let last_byte_idx = self.bytes.len() - 1;
+            self.bytes[last_byte_idx] |= frac_bits;
+
+            self.num_bits += num_enc;
+            num_bits -= num_enc;
+            val >>= num_enc;
+        }
+
+        // While we have bits left to encode
+        while num_bits > 0 {
+            let bits = val & 0xFF;
+            let bits: u8 = bits.try_into().unwrap();
+            self.bytes.push(bits);
+
+            let bits_to_encode = std::cmp::min(num_bits, 8);
+            self.num_bits += bits_to_encode;
+            num_bits -= bits_to_encode;
+            val >>= bits_to_encode;
+        }
+    }
+
+    fn read_uint(&self, start_bit_idx: usize, mut num_bits: usize) -> usize
+    {
+        let mut bit_idx = start_bit_idx;
+
+        // Read the bits in the first byte
+        let bit_mod = bit_idx % 8;
+        let bits_in_byte = self.bytes[bit_idx / 8] >> bit_mod;
+
+        let num_bits_in_byte = std::cmp::min(num_bits, 8 - bit_mod);
+        bit_idx += num_bits_in_byte;
+        num_bits -= num_bits_in_byte;
+
+        let mut out_bits: usize = bits_in_byte as usize;
+
+        // While we have bits left to read
+        while num_bits > 0 {
+            assert!(bit_idx % 8 == 0);
+            let byte = self.bytes[bit_idx / 8];
+            let bits_in_byte = (byte as usize) & ((1 << num_bits) - 1);
+
+            let num_bits_in_byte = std::cmp::min(num_bits, 8);
+            bit_idx += num_bits_in_byte;
+            num_bits -= num_bits_in_byte;
+
+            out_bits |= bits_in_byte << (bit_idx - start_bit_idx);
+        }
+
+        out_bits
+    }
+
+}
+
+#[cfg(test)]
+mod bitarray_tests {
+    use super::*;
+
+    #[test]
+    fn write_3() {
+        let mut arr = BitArray::new();
+        arr.write_uint(3, 2);
+        assert!(arr.read_uint(0, 2) == 3);
+    }
+
+    #[test]
+    fn write_11() {
+        let mut arr = BitArray::new();
+        arr.write_uint(1, 1);
+        arr.write_uint(1, 1);
+        assert!(arr.read_uint(0, 2) == 3);
+    }
+
+
+
+    /*
+    #[test]
+    fn write_11_overlap() {
+        let mut arr = BitArray::new();
+        arr.write_uint(0, 7);
+        arr.write_uint(3, 2);
+        arr.write_uint(1, 1);
+
+        dbg!(arr.read_uint(7, 2));
+        assert!(arr.read_uint(7, 2) == 3);
+    }
+    */
+
+
+}
+
+
+
+
+
+
+
 /// Tuple of (iseq, idx) used to identify basic blocks
 /// There are a lot of blockid objects so we try to keep the size small.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

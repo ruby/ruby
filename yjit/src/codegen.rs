@@ -5789,7 +5789,7 @@ fn jit_rb_str_getbyte(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    // Exit if the indes is out of bounds
+    // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
     asm.jge(Target::side_exit(Counter::getbyte_idx_out_of_bounds));
 
