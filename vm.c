@@ -3077,6 +3077,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_vm_postponed_job_free();
 
             rb_id_table_free(vm->constant_cache);
+            st_free_table(vm->unused_block_warning_table);
 
             if (th) {
                 xfree(th->nt);
