@@ -10,7 +10,7 @@
 .P
 If not, the first missing gem is listed and Bundler exits status 1\.
 .P
-If a gem in the Gemfile is installed on the local machine, but not yet listed in the lockfile, then the lockfile will be updated to include it\.
+If the lockfile needs to be updated then it will be resolved using the gems installed on the local machine, if they satisfy the requirements\.
 .SH "OPTIONS"
 .TP
 \fB\-\-dry\-run\fR
