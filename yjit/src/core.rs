@@ -500,13 +500,13 @@ pub struct Context {
 
 
 
-struct BitArray
+struct BitVector
 {
     bytes: Vec<u8>,
     num_bits: usize,
 }
 
-impl BitArray
+impl BitVector
 {
     fn new() -> Self
     {
@@ -592,20 +592,40 @@ impl BitArray
 
 }
 
+impl fmt::Debug for BitVector
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        // We print the higher bytes first
+        for (idx, byte) in self.bytes.iter().enumerate().rev() {
+            write!(f, "{:08b}", byte)?;
+
+            // Insert a separator between each byte
+            if idx > 0 {
+                write!(f, "|")?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+
+
 #[cfg(test)]
-mod bitarray_tests {
+mod bitvector_tests {
     use super::*;
 
     #[test]
     fn write_3() {
-        let mut arr = BitArray::new();
+        let mut arr = BitVector::new();
         arr.push_uint(3, 2);
         assert!(arr.read_uint_at(0, 2) == 3);
     }
 
     #[test]
     fn write_11() {
-        let mut arr = BitArray::new();
+        let mut arr = BitVector::new();
         arr.push_uint(1, 1);
         arr.push_uint(1, 1);
         assert!(arr.read_uint_at(0, 2) == 3);
@@ -613,35 +633,32 @@ mod bitarray_tests {
 
     #[test]
     fn write_ff_0() {
-        let mut arr = BitArray::new();
+        let mut arr = BitVector::new();
         arr.push_uint(0xFF, 8);
         assert!(arr.read_uint_at(0, 8) == 0xFF);
     }
 
 
-
-
-    // FIXME: broken
-    /*
     #[test]
     fn write_ff_3() {
         // Write 0xFF at bit index 3
-        let mut arr = BitArray::new();
+        let mut arr = BitVector::new();
         arr.push_uint(0, 3);
         arr.push_uint(0xFF, 8);
 
-        dbg!(arr.read_uint(3, 8));
+        dbg!(&arr);
 
-        assert!(arr.read_uint(3, 8) == 0xFF);
+        dbg!(arr.read_uint_at(3, 8));
+
+        assert!(arr.read_uint_at(3, 8) == 0xFF);
     }
-    */
 
 
 
     /*
     #[test]
     fn write_11_overlap() {
-        let mut arr = BitArray::new();
+        let mut arr = BitVector::new();
         arr.write_uint(0, 7);
         arr.write_uint(3, 2);
         arr.write_uint(1, 1);
