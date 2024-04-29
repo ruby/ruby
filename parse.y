@@ -2869,7 +2869,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
 %type <node_opt_arg> f_opt
-%type <node_kw_arg> f_kwarg f_kw f_block_kwarg f_block_kw
+%type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
@@ -2986,12 +2986,17 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	parameterizing rules
  */
-%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
-                                {
-                                    $$ = make_list($3, &@$);
-                                /*% ripper: array!($:3) %*/
-                                }
-                            ;
+%rule f_kwarg(kw): kw
+                    {
+                        $$ = $1;
+                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
+                    }
+                | f_kwarg(kw) <node_kw_arg> ',' kw
+                    {
+                        $$ = kwd_append($1, $3);
+                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
+                    }
+                ;
 
 %rule opt_args_tail(tail): ',' tail
                             {
@@ -3004,6 +3009,13 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                             /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
                             }
                         ;
+
+%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
+                                {
+                                    $$ = make_list($3, &@$);
+                                /*% ripper: array!($:3) %*/
+                                }
+                            ;
 
 %%
 program		:  {
@@ -5073,12 +5085,12 @@ f_any_kwrest	: f_kwrest
 
 f_eq		: {p->ctxt.in_argdef = 0;} '=';
 
-block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
+block_args_tail	: f_kwarg(f_block_kw) <node_kw_arg> ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), get_value($:3), get_value($:4)); %*/
                     }
-                | f_block_kwarg opt_f_block_arg
+                | f_kwarg(f_block_kw) <node_kw_arg> opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
@@ -6492,12 +6504,12 @@ f_arglist	: f_paren_args
                     }
                 ;
 
-args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
+args_tail	: f_kwarg(f_kw) <node_kw_arg> ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), get_value($:3), get_value($:4)); %*/
                     }
-                | f_kwarg opt_f_block_arg
+                | f_kwarg(f_kw) <node_kw_arg> opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
@@ -6749,31 +6761,6 @@ f_block_kw	: f_label primary_value
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
                     /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), 0) %*/
-                    }
-                ;
-
-f_block_kwarg	: f_block_kw
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_block_kwarg ',' f_block_kw
-                    {
-                        $$ = kwd_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
-                    }
-                ;
-
-
-f_kwarg		: f_kw
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_kwarg ',' f_kw
-                    {
-                        $$ = kwd_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
                     }
                 ;
 
