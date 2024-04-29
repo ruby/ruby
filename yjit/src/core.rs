@@ -576,16 +576,19 @@ impl BitVector
 
         // While we have bits left to read
         while num_bits > 0 {
-            assert!(bit_idx % 8 == 0);
-            let byte = self.bytes[bit_idx / 8];
-            let bits_in_byte = (byte as usize) & ((1 << num_bits) - 1);
-
             let num_bits_in_byte = std::cmp::min(num_bits, 8);
+            assert!(bit_idx % 8 == 0);
+            let byte = self.bytes[bit_idx / 8] as usize;
+
+            let bits_in_byte = byte & ((1 << num_bits) - 1);
+            out_bits |= bits_in_byte << (bit_idx - start_bit_idx);
+
+            // Move to the next byte/offset
             bit_idx += num_bits_in_byte;
             num_bits -= num_bits_in_byte;
-
-            out_bits |= bits_in_byte << (bit_idx - start_bit_idx);
         }
+
+        dbg!(out_bits);
 
         out_bits
     }
@@ -610,8 +613,6 @@ impl fmt::Debug for BitVector
     }
 }
 
-
-
 #[cfg(test)]
 mod bitvector_tests {
     use super::*;
@@ -632,12 +633,22 @@ mod bitvector_tests {
     }
 
     #[test]
+    fn write_11_overlap() {
+        let mut arr = BitVector::new();
+        arr.push_uint(0, 7);
+        arr.push_uint(3, 2);
+        arr.push_uint(1, 1);
+
+        //dbg!(arr.read_uint(7, 2));
+        assert!(arr.read_uint_at(7, 2) == 3);
+    }
+
+    #[test]
     fn write_ff_0() {
         let mut arr = BitVector::new();
         arr.push_uint(0xFF, 8);
         assert!(arr.read_uint_at(0, 8) == 0xFF);
     }
-
 
     #[test]
     fn write_ff_3() {
@@ -645,28 +656,12 @@ mod bitvector_tests {
         let mut arr = BitVector::new();
         arr.push_uint(0, 3);
         arr.push_uint(0xFF, 8);
-
-        dbg!(&arr);
-
-        dbg!(arr.read_uint_at(3, 8));
-
         assert!(arr.read_uint_at(3, 8) == 0xFF);
     }
 
 
 
-    /*
-    #[test]
-    fn write_11_overlap() {
-        let mut arr = BitVector::new();
-        arr.write_uint(0, 7);
-        arr.write_uint(3, 2);
-        arr.write_uint(1, 1);
 
-        dbg!(arr.read_uint(7, 2));
-        assert!(arr.read_uint(7, 2) == 3);
-    }
-    */
 
 
 }
