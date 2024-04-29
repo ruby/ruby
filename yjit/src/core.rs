@@ -522,6 +522,7 @@ impl BitArray
         (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
     }
 
+    // Write and append a uint
     fn write_uint(&mut self, mut val: usize, mut num_bits: usize)
     {
         // Mask out bits above the number of bits requested
@@ -558,7 +559,8 @@ impl BitArray
         }
     }
 
-    fn read_uint(&self, start_bit_idx: usize, mut num_bits: usize) -> usize
+    // Read a uint value at a given bit index
+    fn read_uint_at(&self, start_bit_idx: usize, mut num_bits: usize) -> usize
     {
         let mut bit_idx = start_bit_idx;
 
@@ -598,7 +600,7 @@ mod bitarray_tests {
     fn write_3() {
         let mut arr = BitArray::new();
         arr.write_uint(3, 2);
-        assert!(arr.read_uint(0, 2) == 3);
+        assert!(arr.read_uint_at(0, 2) == 3);
     }
 
     #[test]
@@ -606,8 +608,33 @@ mod bitarray_tests {
         let mut arr = BitArray::new();
         arr.write_uint(1, 1);
         arr.write_uint(1, 1);
-        assert!(arr.read_uint(0, 2) == 3);
+        assert!(arr.read_uint_at(0, 2) == 3);
     }
+
+    #[test]
+    fn write_ff_0() {
+        let mut arr = BitArray::new();
+        arr.write_uint(0xFF, 8);
+        assert!(arr.read_uint_at(0, 8) == 0xFF);
+    }
+
+
+
+
+    // FIXME: broken
+    /*
+    #[test]
+    fn write_ff_3() {
+        // Write 0xFF at bit index 3
+        let mut arr = BitArray::new();
+        arr.write_uint(0, 3);
+        arr.write_uint(0xFF, 8);
+
+        dbg!(arr.read_uint(3, 8));
+
+        assert!(arr.read_uint(3, 8) == 0xFF);
+    }
+    */
 
 
 
