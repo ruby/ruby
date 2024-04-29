@@ -179,32 +179,78 @@ class Reline::Unicode
 
   # Take a chunk of a String cut by width with escape sequences.
   def self.take_range(str, start_col, max_width)
+    take_mbchar_range(str, start_col, max_width).first
+  end
+
+  def self.take_mbchar_range(str, start_col, width, cover_begin: false, cover_end: false, padding: false)
     chunk = String.new(encoding: str.encoding)
+
+    end_col = start_col + width
     total_width = 0
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
+    chunk_start_col = nil
+    chunk_end_col = nil
+    has_csi = false
     rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
       case
       when non_printing_start
         in_zero_width = true
+        chunk << NON_PRINTING_START
       when non_printing_end
         in_zero_width = false
+        chunk << NON_PRINTING_END
       when csi
+        has_csi = true
         chunk << csi
       when osc
         chunk << osc
       when gc
         if in_zero_width
           chunk << gc
+          next
+        end
+
+        mbchar_width = get_mbchar_width(gc)
+        prev_width = total_width
+        total_width += mbchar_width
+
+        if (cover_begin || padding ? total_width <= start_col : prev_width < start_col)
+          # Current character haven't reached start_col yet
+          next
+        elsif padding && !cover_begin && prev_width < start_col && start_col < total_width
+          # Add preceding padding. This padding might have background color.
+          chunk << ' '
+          chunk_start_col ||= start_col
+          chunk_end_col = total_width
+          next
+        elsif (cover_end ? prev_width < end_col : total_width <= end_col)
+          # Current character is in the range
+          chunk << gc
+          chunk_start_col ||= prev_width
+          chunk_end_col = total_width
+          break if total_width >= end_col
         else
-          mbchar_width = get_mbchar_width(gc)
-          total_width += mbchar_width
-          break if (start_col + max_width) < total_width
-          chunk << gc if start_col < total_width
+          # Current character exceeds end_col
+          if padding && end_col < total_width
+            # Add succeeding padding. This padding might have background color.
+            chunk << ' '
+            chunk_start_col ||= prev_width
+            chunk_end_col = end_col
+          end
+          break
         end
       end
     end
-    chunk
+    chunk_start_col ||= start_col
+    chunk_end_col ||= start_col
+    if padding && chunk_end_col < end_col
+      # Append padding. This padding should not include background color.
+      chunk << "\e[0m" if has_csi
+      chunk << ' ' * (end_col - chunk_end_col)
+      chunk_end_col = end_col
+    end
+    [chunk, chunk_start_col, chunk_end_col - chunk_start_col]
   end
 
   def self.get_next_mbchar_size(line, byte_pointer)

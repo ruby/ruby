@@ -112,6 +112,36 @@ class Reline::LineEditor
       end
     end
 
+    def test_multibyte
+      base = [0, 12, '一二三一二三']
+      left = [0, 3, 'LLL']
+      right = [9, 3, 'RRR']
+      front = [3, 6, 'FFFFFF']
+      # 一 FFFFFF 三
+      # 一二三一二三
+      assert_output '[COL_2]二三一二' do
+        @line_editor.render_line_differential([base, front], [base, nil])
+      end
+
+      # LLLFFFFFF 三
+      # LLL 三一二三
+      assert_output '[COL_3] 三一二' do
+        @line_editor.render_line_differential([base, left, front], [base, left, nil])
+      end
+
+      # 一 FFFFFFRRR
+      # 一二三一 RRR
+      assert_output '[COL_2]二三一 ' do
+        @line_editor.render_line_differential([base, right, front], [base, right, nil])
+      end
+
+      # LLLFFFFFFRRR
+      # LLL 三一 RRR
+      assert_output '[COL_3] 三一 ' do
+        @line_editor.render_line_differential([base, left, right, front], [base, left, right, nil])
+      end
+    end
+
     def test_complicated
       state_a = [nil, [19, 7, 'bbbbbbb'], [15, 8, 'cccccccc'], [10, 5, 'ddddd'], [18, 4, 'eeee'], [1, 3, 'fff'], [17, 2, 'gg'], [7, 1, 'h']]
       state_b = [[5, 9, 'aaaaaaaaa'], nil, [15, 8, 'cccccccc'], nil, [18, 4, 'EEEE'], [25, 4, 'ffff'], [17, 2, 'gg'], [2, 2, 'hh']]
