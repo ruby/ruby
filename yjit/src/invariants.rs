@@ -549,21 +549,23 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
 
     // We apply this optimization only to Array, Hash, and String for now.
     if unsafe { [rb_cArray, rb_cHash, rb_cString].contains(&klass) } {
-        let no_singleton_classes = &mut Invariants::get_instance().no_singleton_classes;
-        match no_singleton_classes.get_mut(&klass) {
-            Some(blocks) => {
-                // Invalidate existing blocks and let has_singleton_class_of()
-                // return true when they are compiled again
-                for block in mem::take(blocks) {
-                    invalidate_block_version(&block);
-                    incr_counter!(invalidate_no_singleton_class);
+        with_vm_lock(src_loc!(), || {
+            let no_singleton_classes = &mut Invariants::get_instance().no_singleton_classes;
+            match no_singleton_classes.get_mut(&klass) {
+                Some(blocks) => {
+                    // Invalidate existing blocks and let has_singleton_class_of()
+                    // return true when they are compiled again
+                    for block in mem::take(blocks) {
+                        invalidate_block_version(&block);
+                        incr_counter!(invalidate_no_singleton_class);
+                    }
+                }
+                None => {
+                    // Let has_singleton_class_of() return true for this class
+                    no_singleton_classes.insert(klass, HashSet::new());
                 }
             }
-            None => {
-                // Let has_singleton_class_of() return true for this class
-                no_singleton_classes.insert(klass, HashSet::new());
-            }
-        }
+        });
     }
 }
 
@@ -576,23 +578,25 @@ pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
         return;
     }
 
-    // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
-    // associated to the ISEQ.
-    let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
-    match no_ep_escape_iseqs.get_mut(&iseq) {
-        Some(blocks) => {
-            // Invalidate existing blocks and let jit.ep_is_bp()
-            // return true when they are compiled again
-            for block in mem::take(blocks) {
-                invalidate_block_version(&block);
-                incr_counter!(invalidate_no_singleton_class);
+    with_vm_lock(src_loc!(), || {
+        // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
+        // associated to the ISEQ.
+        let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
+        match no_ep_escape_iseqs.get_mut(&iseq) {
+            Some(blocks) => {
+                // Invalidate existing blocks and let jit.ep_is_bp()
+                // return true when they are compiled again
+                for block in mem::take(blocks) {
+                    invalidate_block_version(&block);
+                    incr_counter!(invalidate_no_singleton_class);
+                }
+            }
+            None => {
+                // Let jit.ep_is_bp() return false for this ISEQ
+                no_ep_escape_iseqs.insert(iseq, HashSet::new());
             }
         }
-        None => {
-            // Let jit.ep_is_bp() return false for this ISEQ
-            no_ep_escape_iseqs.insert(iseq, HashSet::new());
-        }
-    }
+    });
 }
 
 // Invalidate all generated code and patch C method return code to contain
