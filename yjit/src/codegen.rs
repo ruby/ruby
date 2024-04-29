@@ -6191,8 +6191,7 @@ fn jit_rb_class_superclass(
     true
 }
 
-// Codegen for rb_trueclass_case_equal()
-fn jit_rb_trueclass_case_equal(
+fn jit_rb_case_equal(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -6200,14 +6199,15 @@ fn jit_rb_trueclass_case_equal(
     _cme: *const rb_callable_method_entry_t,
     _block: Option<BlockHandler>,
     _argc: i32,
-    _known_recv_class: Option<VALUE>,
+    known_recv_class: Option<VALUE>,
 ) -> bool {
-    if !jit.assume_expected_cfunc( asm, ocb, unsafe { rb_cTrueClass }, ID!(eq), rb_obj_equal as _) {
+    if !jit.assume_expected_cfunc( asm, ocb, known_recv_class.unwrap(), ID!(eq), rb_obj_equal as _) {
         return false;
     }
 
+    asm_comment!(asm, "case_equal: {}#===", get_class_name(known_recv_class));
+
     // Compare the arguments
-    asm_comment!(asm, "TrueClass#===");
     let arg1 = asm.stack_pop(1);
     let arg0 = asm.stack_pop(1);
     asm.cmp(arg0, arg1);
@@ -8882,11 +8882,16 @@ fn gen_send_general(
     }
 }
 
+/// Get class name from a class pointer.
+fn get_class_name(class: Option<VALUE>) -> String {
+    class.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string())
+}
+
 /// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
 fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
-    let class_name = class.and_then(|class| unsafe {
-        cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string());
+    let class_name = get_class_name(class);
     let method_name = if mid != 0 {
         unsafe { cstr_to_rust_string(rb_id2name(mid)) }
     } else {
@@ -10221,7 +10226,9 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
-        yjit_reg_method(rb_cTrueClass, "===", jit_rb_trueclass_case_equal);
+        yjit_reg_method(rb_cNilClass, "===", jit_rb_case_equal);
+        yjit_reg_method(rb_cTrueClass, "===", jit_rb_case_equal);
+        yjit_reg_method(rb_cFalseClass, "===", jit_rb_case_equal);
 
         yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
         yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);
