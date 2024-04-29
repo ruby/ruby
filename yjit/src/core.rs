@@ -659,11 +659,15 @@ mod bitvector_tests {
         assert!(arr.read_uint_at(3, 8) == 0xFF);
     }
 
-
-
-
-
-
+    #[test]
+    fn write_ff_sandwich() {
+        // Write 0xFF sandwhiched between zeros
+        let mut arr = BitVector::new();
+        arr.push_uint(0, 3);
+        arr.push_uint(0xFF, 8);
+        arr.push_uint(0, 3);
+        assert!(arr.read_uint_at(3, 8) == 0xFF);
+    }
 }
 
 
