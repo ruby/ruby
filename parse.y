@@ -2860,7 +2860,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
-%type <node_opt_arg> f_block_optarg f_block_opt
+%type <node_opt_arg> f_block_optarg
 %type <node_args> f_arglist f_opt_paren_args f_paren_args f_args
 %type <node_args_aux> f_arg f_arg_item
 %type <node_opt_arg> f_optarg
@@ -2868,7 +2868,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
-%type <node_opt_arg> f_opt
 %type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
@@ -2986,6 +2985,15 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	parameterizing rules
  */
+%rule f_opt(value): f_arg_asgn f_eq value
+                    {
+                        p->cur_arg = 0;
+                        p->ctxt.in_argdef = 1;
+                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
+                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
+                    }
+                ;
+
 %rule f_kwarg(kw): kw
                     {
                         $$ = $1;
@@ -6788,42 +6796,24 @@ f_kwrest	: kwrest_mark tIDENTIFIER
                     }
                 ;
 
-f_opt		: f_arg_asgn f_eq arg_value
-                    {
-                        p->cur_arg = 0;
-                        p->ctxt.in_argdef = 1;
-                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
-                    }
-                ;
-
-f_block_opt	: f_arg_asgn f_eq primary_value
-                    {
-                        p->cur_arg = 0;
-                        p->ctxt.in_argdef = 1;
-                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
-                    }
-                ;
-
-f_block_optarg	: f_block_opt
+f_block_optarg	: f_opt(primary_value) <node_opt_arg>
                     {
                         $$ = $1;
                     /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
                     }
-                | f_block_optarg ',' f_block_opt
+                | f_block_optarg ',' f_opt(primary_value) <node_opt_arg>
                     {
                         $$ = opt_arg_append($1, $3);
                     /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
                     }
                 ;
 
-f_optarg	: f_opt
+f_optarg	: f_opt(arg_value) <node_opt_arg>
                     {
                         $$ = $1;
                     /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
                     }
-                | f_optarg ',' f_opt
+                | f_optarg ',' f_opt(arg_value) <node_opt_arg>
                     {
                         $$ = opt_arg_append($1, $3);
                     /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
