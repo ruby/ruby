@@ -762,11 +762,13 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         }
         else {
             rb_ast_t *ast;
+            VALUE vast;
             VALUE parser = rb_parser_new();
             rb_parser_set_context(parser, NULL, FALSE);
-            ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+            vast = rb_parser_load_file(parser, fname);
+            ast = rb_ruby_ast_data_get(vast);
 
-            iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
+            iseq = rb_iseq_new_top(vast, rb_fstring_lit("<top (required)>"),
                                    fname, realpath_internal_cached(realpath_map, fname), NULL);
             rb_ast_dispose(ast);
         }

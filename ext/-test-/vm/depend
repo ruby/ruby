@@ -146,6 +146,7 @@ at_exit.o: $(hdrdir)/ruby/internal/special_consts.h
 at_exit.o: $(hdrdir)/ruby/internal/static_assert.h
 at_exit.o: $(hdrdir)/ruby/internal/stdalign.h
 at_exit.o: $(hdrdir)/ruby/internal/stdbool.h
+at_exit.o: $(hdrdir)/ruby/internal/stdckdint.h
 at_exit.o: $(hdrdir)/ruby/internal/symbol.h
 at_exit.o: $(hdrdir)/ruby/internal/value.h
 at_exit.o: $(hdrdir)/ruby/internal/value_type.h

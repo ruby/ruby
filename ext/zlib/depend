@@ -157,6 +157,7 @@ zlib.o: $(hdrdir)/ruby/internal/special_consts.h
 zlib.o: $(hdrdir)/ruby/internal/static_assert.h
 zlib.o: $(hdrdir)/ruby/internal/stdalign.h
 zlib.o: $(hdrdir)/ruby/internal/stdbool.h
+zlib.o: $(hdrdir)/ruby/internal/stdckdint.h
 zlib.o: $(hdrdir)/ruby/internal/symbol.h
 zlib.o: $(hdrdir)/ruby/internal/value.h
 zlib.o: $(hdrdir)/ruby/internal/value_type.h

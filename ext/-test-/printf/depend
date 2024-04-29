@@ -157,6 +157,7 @@ printf.o: $(hdrdir)/ruby/internal/special_consts.h
 printf.o: $(hdrdir)/ruby/internal/static_assert.h
 printf.o: $(hdrdir)/ruby/internal/stdalign.h
 printf.o: $(hdrdir)/ruby/internal/stdbool.h
+printf.o: $(hdrdir)/ruby/internal/stdckdint.h
 printf.o: $(hdrdir)/ruby/internal/symbol.h
 printf.o: $(hdrdir)/ruby/internal/value.h
 printf.o: $(hdrdir)/ruby/internal/value_type.h

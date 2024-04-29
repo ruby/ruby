@@ -147,6 +147,7 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/special_consts.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/static_assert.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/stdalign.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/stdbool.h
+infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/stdckdint.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/symbol.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/value.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/value_type.h

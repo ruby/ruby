@@ -42,6 +42,7 @@
         │   ├── keyword_loc: (2,4)-(2,10) = "rescue"
         │   └── rescue_expression:
         │       @ ReturnNode (location: (2,11)-(2,21))
+        │       ├── flags: ∅
         │       ├── keyword_loc: (2,11)-(2,17) = "return"
         │       └── arguments:
         │           @ ArgumentsNode (location: (2,18)-(2,21))
@@ -81,6 +82,7 @@
             │   │           ├── keyword_loc: (3,9)-(3,15) = "rescue"
             │   │           └── rescue_expression:
             │   │               @ ReturnNode (location: (3,16)-(3,26))
+            │   │               ├── flags: ∅
             │   │               ├── keyword_loc: (3,16)-(3,22) = "return"
             │   │               └── arguments:
             │   │                   @ ArgumentsNode (location: (3,23)-(3,26))

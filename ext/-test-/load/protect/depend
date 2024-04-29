@@ -147,6 +147,7 @@ protect.o: $(hdrdir)/ruby/internal/special_consts.h
 protect.o: $(hdrdir)/ruby/internal/static_assert.h
 protect.o: $(hdrdir)/ruby/internal/stdalign.h
 protect.o: $(hdrdir)/ruby/internal/stdbool.h
+protect.o: $(hdrdir)/ruby/internal/stdckdint.h
 protect.o: $(hdrdir)/ruby/internal/symbol.h
 protect.o: $(hdrdir)/ruby/internal/value.h
 protect.o: $(hdrdir)/ruby/internal/value_type.h

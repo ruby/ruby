@@ -49,6 +49,7 @@ module IRB
 
         extend_irb_context
         IRB.irb(nil, *obj)
+        puts IRB.JobManager.inspect
       end
     end
 
@@ -65,7 +66,7 @@ module IRB
         end
 
         extend_irb_context
-        IRB.JobManager
+        puts IRB.JobManager.inspect
       end
     end
 
@@ -90,6 +91,7 @@ module IRB
 
         raise CommandArgumentError.new("Please specify the id of target IRB job (listed in the `jobs` command).") unless key
         IRB.JobManager.switch(key)
+        puts IRB.JobManager.inspect
       end
     end
 
@@ -112,6 +114,7 @@ module IRB
 
         extend_irb_context
         IRB.JobManager.kill(*keys)
+        puts IRB.JobManager.inspect
       end
     end
   end

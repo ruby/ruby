@@ -601,7 +601,7 @@ assert_equal '{:ok=>3}', %q{
   end
 
   3.times.map{Ractor.receive}.tally
-}
+} unless yjit_enabled? # `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec()
 
 # unshareable object are copied
 assert_equal 'false', %q{

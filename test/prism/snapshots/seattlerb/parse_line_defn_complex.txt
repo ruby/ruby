@@ -49,6 +49,7 @@
             │       │   ├── operator: :*
             │       │   └── depth: 0
             │       └── @ ReturnNode (location: (4,2)-(4,10))
+            │           ├── flags: redundant
             │           ├── keyword_loc: (4,2)-(4,8) = "return"
             │           └── arguments:
             │               @ ArgumentsNode (location: (4,9)-(4,10))

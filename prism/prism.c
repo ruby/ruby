@@ -3717,6 +3717,113 @@ pm_def_node_receiver_check(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * When a method body is created, we want to check if the last statement is a
+ * return or a statement that houses a return. If it is, then we want to mark
+ * that return as being redundant so that we can compile it differently but also
+ * so that we can indicate that to the user.
+ */
+static void
+pm_def_node_body_redundant_return(pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_RETURN_NODE:
+            node->flags |= PM_RETURN_NODE_FLAGS_REDUNDANT;
+            break;
+        case PM_BEGIN_NODE: {
+            pm_begin_node_t *cast = (pm_begin_node_t *) node;
+
+            if (cast->statements != NULL && cast->else_clause == NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+            break;
+        }
+        case PM_STATEMENTS_NODE: {
+            pm_statements_node_t *cast = (pm_statements_node_t *) node;
+
+            if (cast->body.size > 0) {
+                pm_def_node_body_redundant_return(cast->body.nodes[cast->body.size - 1]);
+            }
+            break;
+        }
+        case PM_IF_NODE: {
+            pm_if_node_t *cast = (pm_if_node_t *) node;
+
+            if (cast->statements != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+
+            if (cast->consequent != NULL) {
+                pm_def_node_body_redundant_return(cast->consequent);
+            }
+            break;
+        }
+        case PM_UNLESS_NODE: {
+            pm_unless_node_t *cast = (pm_unless_node_t *) node;
+
+            if (cast->statements != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+
+            if (cast->consequent != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->consequent);
+            }
+            break;
+        }
+        case PM_ELSE_NODE: {
+            pm_else_node_t *cast = (pm_else_node_t *) node;
+
+            if (cast->statements != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+            break;
+        }
+        case PM_CASE_NODE: {
+            pm_case_node_t *cast = (pm_case_node_t *) node;
+            pm_node_t *condition;
+
+            PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
+                pm_def_node_body_redundant_return(condition);
+            }
+
+            if (cast->consequent != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->consequent);
+            }
+            break;
+        }
+        case PM_WHEN_NODE: {
+            pm_when_node_t *cast = (pm_when_node_t *) node;
+
+            if (cast->statements != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+            break;
+        }
+        case PM_CASE_MATCH_NODE: {
+            pm_case_match_node_t *cast = (pm_case_match_node_t *) node;
+            pm_node_t *condition;
+
+            PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
+                pm_def_node_body_redundant_return(condition);
+            }
+
+            if (cast->consequent != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->consequent);
+            }
+            break;
+        }
+        case PM_IN_NODE: {
+            pm_in_node_t *cast = (pm_in_node_t *) node;
+
+            if (cast->statements != NULL) {
+                pm_def_node_body_redundant_return((pm_node_t *) cast->statements);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+/**
  * Allocate and initialize a new DefNode node.
  */
 static pm_def_node_t *
@@ -3746,6 +3853,10 @@ pm_def_node_create(
 
     if ((receiver != NULL) && PM_NODE_TYPE_P(receiver, PM_PARENTHESES_NODE)) {
         pm_def_node_receiver_check(parser, receiver);
+    }
+
+    if (body != NULL) {
+        pm_def_node_body_redundant_return(body);
     }
 
     *node = (pm_def_node_t) {
@@ -6397,6 +6508,7 @@ pm_return_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argumen
     *node = (pm_return_node_t) {
         {
             .type = PM_RETURN_NODE,
+            .flags = 0,
             .location = {
                 .start = keyword->start,
                 .end = (arguments == NULL ? keyword->end : arguments->base.location.end)
@@ -8395,6 +8507,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_decimal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_DECIMAL);
                 }
 
@@ -8407,6 +8520,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_binary_digit(peek(parser))) {
                     parser->current.end += pm_strspn_binary_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_BINARY);
                 }
 
@@ -8420,6 +8534,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_octal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_octal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_OCTAL);
                 }
 
@@ -8447,6 +8562,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 if (pm_char_is_hexadecimal_digit(peek(parser))) {
                     parser->current.end += pm_strspn_hexadecimal_number_validate(parser, parser->current.end);
                 } else {
+                    match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_HEXADECIMAL);
                 }
 

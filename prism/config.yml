@@ -706,6 +706,11 @@ flags:
       - name: FORCED_US_ASCII_ENCODING
         comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
+  - name: ReturnNodeFlags
+    values:
+      - name: REDUNDANT
+        comment: "a return statement that is redundant because it is the last statement in a method"
+    comment: Flags for return nodes.
   - name: ShareableConstantNodeFlags
     values:
       - name: LITERAL
@@ -1417,8 +1422,7 @@ nodes:
       - name: value
         type: node
         comment: |
-          The value to assign to the class variable. Can be any node that
-          represents a non-void expression.
+          The value to write to the class variable. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               @@foo = :bar
                       ^^^^
@@ -1502,13 +1506,44 @@ nodes:
     fields:
       - name: parent
         type: node?
+        comment: |
+          The left-hand node of the path, if present. It can be `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression). It will be `nil` when the constant lookup is at the root of the module tree.
+
+              Foo::Bar
+              ^^^
+
+              self::Test
+              ^^^^
+
+              a.b::C
+              ^^^
       - name: child
         type: node
         kind:
           - ConstantReadNode
           - MissingNode
+        comment: |
+          The right-hand node of the path. Always a `ConstantReadNode` in a
+          valid Ruby syntax tree.
+
+              ::Foo
+                ^^^
+
+              self::Test
+                    ^^^^
+
+              a.b::C
+                   ^
       - name: delimiter_loc
         type: location
+        comment: |
+          The location of the `::` delimiter.
+
+              ::Foo
+              ^^
+
+              One::Two
+                 ^^
     comment: |
       Represents accessing a constant through a path of `::` operators.
 
@@ -1565,10 +1600,28 @@ nodes:
       - name: target
         type: node
         kind: ConstantPathNode
+        comment: |
+          A node representing the constant path being written to.
+
+              Foo::Bar = 1
+              ^^^^^^^^
+
+              ::Foo = :abc
+              ^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              ::ABC = 123
+                    ^
       - name: value
         type: node
+        comment: |
+          The value to write to the constant path. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              FOO::BAR = :abc
+                         ^^^^
     comment: |
       Represents writing to a constant path.
 
@@ -1608,12 +1661,36 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the [constant](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#constants).
+
+              Foo = :bar # name `:Foo`
+
+              XYZ = 1    # name `:XYZ`
       - name: name_loc
         type: location
+        comment: |
+          The location of the constant name.
+
+              FOO = 1
+              ^^^
       - name: value
         type: node
+        comment: |
+          The value to write to the constant. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              FOO = :bar
+                    ^^^^
+
+              MyClass = Class.new
+                        ^^^^^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              FOO = :bar
+                  ^
     comment: |
       Represents writing to a constant.
 
@@ -1903,12 +1980,36 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the global variable, which is a `$` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifier). Alternatively, it can be one of the special global variables designated by a symbol.
+
+              $foo = :bar  # name `:$foo`
+
+              $_Test = 123 # name `:$_Test`
       - name: name_loc
         type: location
+        comment: |
+          The location of the global variable's name.
+
+              $foo = :bar
+              ^^^^
       - name: value
         type: node
+        comment: |
+          The value to write to the global variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              $foo = :bar
+                     ^^^^
+
+              $-xyz = 123
+                      ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              $foo = :bar
+                   ^
     comment: |
       Represents writing to a global variable.
 
@@ -2319,8 +2420,7 @@ nodes:
       - name: value
         type: node
         comment: |
-          The value to assign to the instance variable. Can be any node that
-          represents a non-void expression.
+          The value to write to the instance variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               @foo = :bar
                      ^^^^
@@ -2611,14 +2711,50 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the local variable, which is an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              foo = :bar # name `:foo`
+
+              abc = 123  # name `:abc`
       - name: depth
         type: uint32
+        comment: |
+          The number of semantic scopes we have to traverse to find the declaration of this variable.
+
+              foo = 1         # depth 0
+
+              tap { foo = 1 } # depth 1
+
+          The specific rules for calculating the depth may differ from individual Ruby implementations, as they are not specified by the language. For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
       - name: name_loc
         type: location
+        comment: |
+          The location of the variable name.
+
+              foo = :bar
+              ^^^
       - name: value
         type: node
+        comment: |
+          The value to write to the local variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo = :bar
+                    ^^^^
+
+              abc = 1234
+                    ^^^^
+
+          Note that since the name of a local variable is known before the value is parsed, it is valid for a local variable to appear within the value of its own write.
+
+              foo = foo
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `=` operator.
+
+              x = :y
+                ^
     comment: |
       Represents writing to a local variable.
 
@@ -3199,6 +3335,9 @@ nodes:
           ^^^^^
   - name: ReturnNode
     fields:
+      - name: flags
+        type: flags
+        kind: ReturnNodeFlags
       - name: keyword_loc
         type: location
       - name: arguments
@@ -3403,8 +3542,7 @@ nodes:
       - name: predicate
         type: node
         comment: |
-          The condition to be evaluated for the unless expression. Can be any
-          kind of node that represents a non-void expression.
+          The condition to be evaluated for the unless expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               unless cond then bar end
                      ^^^^

@@ -210,6 +210,7 @@ class Reline::Config
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
+        func_name = func_name.split.first
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
         @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
@@ -226,7 +227,13 @@ class Reline::Config
     when 'if'
       condition = false
       case args
-      when 'mode'
+      when /^mode=(vi|emacs)$/i
+        mode = $1.downcase
+        # NOTE: mode=vi means vi-insert mode
+        mode = 'vi_insert' if mode == 'vi'
+        if @editing_mode_label == mode.to_sym
+          condition = true
+        end
       when 'term'
       when 'version'
       else # application name

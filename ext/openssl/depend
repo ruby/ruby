@@ -161,6 +161,7 @@ ossl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl.o: $(hdrdir)/ruby/internal/symbol.h
 ossl.o: $(hdrdir)/ruby/internal/value.h
 ossl.o: $(hdrdir)/ruby/internal/value_type.h
@@ -355,6 +356,7 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/value.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/value_type.h
@@ -549,6 +551,7 @@ ossl_bio.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_bio.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_bio.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_bio.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_bio.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_bio.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_bio.o: $(hdrdir)/ruby/internal/value.h
 ossl_bio.o: $(hdrdir)/ruby/internal/value_type.h
@@ -743,6 +746,7 @@ ossl_bn.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_bn.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_bn.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_bn.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_bn.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_bn.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_bn.o: $(hdrdir)/ruby/internal/value.h
 ossl_bn.o: $(hdrdir)/ruby/internal/value_type.h
@@ -938,6 +942,7 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/value.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1132,6 +1137,7 @@ ossl_config.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_config.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_config.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_config.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_config.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_config.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_config.o: $(hdrdir)/ruby/internal/value.h
 ossl_config.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1326,6 +1332,7 @@ ossl_digest.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_digest.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_digest.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_digest.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_digest.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_digest.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_digest.o: $(hdrdir)/ruby/internal/value.h
 ossl_digest.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1520,6 +1527,7 @@ ossl_engine.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_engine.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_engine.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_engine.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_engine.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_engine.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_engine.o: $(hdrdir)/ruby/internal/value.h
 ossl_engine.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1714,6 +1722,7 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/value.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1908,6 +1917,7 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/value.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/value_type.h
@@ -2102,6 +2112,7 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/value.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/value_type.h
@@ -2296,6 +2307,7 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/value.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/value_type.h
@@ -2490,6 +2502,7 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/value_type.h
@@ -2684,6 +2697,7 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/value_type.h
@@ -2878,6 +2892,7 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/value_type.h
@@ -3072,6 +3087,7 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/value_type.h
@@ -3266,6 +3282,7 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/value_type.h
@@ -3460,6 +3477,7 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/value_type.h
@@ -3654,6 +3672,7 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/value_type.h
@@ -3848,6 +3867,7 @@ ossl_provider.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_provider.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_provider.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_provider.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_provider.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_provider.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_provider.o: $(hdrdir)/ruby/internal/value.h
 ossl_provider.o: $(hdrdir)/ruby/internal/value_type.h
@@ -4042,6 +4062,7 @@ ossl_rand.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_rand.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_rand.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_rand.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_rand.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_rand.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_rand.o: $(hdrdir)/ruby/internal/value.h
 ossl_rand.o: $(hdrdir)/ruby/internal/value_type.h
@@ -4236,6 +4257,7 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/value.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/value_type.h
@@ -4430,6 +4452,7 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/value.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/value_type.h
@@ -4624,6 +4647,7 @@ ossl_ts.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ts.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ts.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ts.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_ts.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_ts.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_ts.o: $(hdrdir)/ruby/internal/value.h
 ossl_ts.o: $(hdrdir)/ruby/internal/value_type.h
@@ -4818,6 +4842,7 @@ ossl_x509.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5012,6 +5037,7 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5206,6 +5232,7 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5400,6 +5427,7 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5594,6 +5622,7 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5788,6 +5817,7 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/value_type.h
@@ -5982,6 +6012,7 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/value_type.h
@@ -6176,6 +6207,7 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/value_type.h
@@ -6370,6 +6402,7 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/stdbool.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/stdckdint.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/symbol.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/value_type.h

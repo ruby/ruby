@@ -146,6 +146,7 @@ continuation.o: $(hdrdir)/ruby/internal/special_consts.h
 continuation.o: $(hdrdir)/ruby/internal/static_assert.h
 continuation.o: $(hdrdir)/ruby/internal/stdalign.h
 continuation.o: $(hdrdir)/ruby/internal/stdbool.h
+continuation.o: $(hdrdir)/ruby/internal/stdckdint.h
 continuation.o: $(hdrdir)/ruby/internal/symbol.h
 continuation.o: $(hdrdir)/ruby/internal/value.h
 continuation.o: $(hdrdir)/ruby/internal/value_type.h

@@ -157,6 +157,7 @@ nonblock.o: $(hdrdir)/ruby/internal/special_consts.h
 nonblock.o: $(hdrdir)/ruby/internal/static_assert.h
 nonblock.o: $(hdrdir)/ruby/internal/stdalign.h
 nonblock.o: $(hdrdir)/ruby/internal/stdbool.h
+nonblock.o: $(hdrdir)/ruby/internal/stdckdint.h
 nonblock.o: $(hdrdir)/ruby/internal/symbol.h
 nonblock.o: $(hdrdir)/ruby/internal/value.h
 nonblock.o: $(hdrdir)/ruby/internal/value_type.h

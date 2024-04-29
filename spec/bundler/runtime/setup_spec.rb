@@ -767,6 +767,18 @@ end
     expect(err).to be_empty
   end
 
+  it "can require rubygems without warnings, when using a local cache", rubygems: ">= 3.5.10" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle "package"
+    bundle %(exec ruby -w -e "require 'rubygems'")
+
+    expect(err).to be_empty
+  end
+
   context "when the user has `MANPATH` set", :man do
     before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
 

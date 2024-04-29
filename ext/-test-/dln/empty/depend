@@ -147,6 +147,7 @@ empty.o: $(hdrdir)/ruby/internal/special_consts.h
 empty.o: $(hdrdir)/ruby/internal/static_assert.h
 empty.o: $(hdrdir)/ruby/internal/stdalign.h
 empty.o: $(hdrdir)/ruby/internal/stdbool.h
+empty.o: $(hdrdir)/ruby/internal/stdckdint.h
 empty.o: $(hdrdir)/ruby/internal/symbol.h
 empty.o: $(hdrdir)/ruby/internal/value.h
 empty.o: $(hdrdir)/ruby/internal/value_type.h

@@ -1463,7 +1463,6 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();
     const rb_iseq_t *base_iseq, *iseq;
-    rb_ast_body_t ast;
     rb_node_scope_t tmp_node;
 
     if (dyncount < 0) return 0;
@@ -1481,17 +1480,14 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     tmp_node.nd_body = 0;
     tmp_node.nd_args = 0;
 
-    ast.root = RNODE(&tmp_node);
-    ast.frozen_string_literal = -1;
-    ast.coverage_enabled = -1;
-    ast.script_lines = (rb_parser_ary_t *)INT2FIX(-1);
+    VALUE vast = rb_ruby_ast_new(RNODE(&tmp_node));
 
     if (base_iseq) {
-        iseq = rb_iseq_new(&ast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
+        iseq = rb_iseq_new(vast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
     }
     else {
         VALUE tempstr = rb_fstring_lit("<temp>");
-        iseq = rb_iseq_new_top(&ast, tempstr, tempstr, tempstr, NULL);
+        iseq = rb_iseq_new_top(vast, tempstr, tempstr, tempstr, NULL);
     }
     tmp_node.nd_tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
@@ -2864,7 +2860,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 {
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
-    const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
@@ -4179,7 +4175,7 @@ Init_VM(void)
         rb_vm_t *vm = ruby_current_vm_ptr;
         rb_thread_t *th = GET_THREAD();
         VALUE filename = rb_fstring_lit("<main>");
-        const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+        const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
 
         // Ractor setup
         rb_ractor_main_setup(vm, th->ractor, th);

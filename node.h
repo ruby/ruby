@@ -39,9 +39,6 @@ struct node_buffer_struct {
     // - location info
     // Array, whose entry is array
     rb_parser_ary_t *tokens;
-#ifdef UNIVERSAL_PARSER
-    const rb_parser_config_t *config;
-#endif
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -88,6 +85,7 @@ RUBY_SYMBOL_EXPORT_END
 #define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
 #define NODE_SPECIAL_NO_REST_KEYWORD   ((NODE *)-1)
 
+#define nd_code_loc(n) (&RNODE(n)->nd_loc)
 #define nd_first_column(n) ((int)(RNODE(n)->nd_loc.beg_pos.column))
 #define nd_set_first_column(n, v) (RNODE(n)->nd_loc.beg_pos.column = (v))
 #define nd_first_lineno(n) ((int)(RNODE(n)->nd_loc.beg_pos.lineno))

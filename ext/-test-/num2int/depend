@@ -147,6 +147,7 @@ num2int.o: $(hdrdir)/ruby/internal/special_consts.h
 num2int.o: $(hdrdir)/ruby/internal/static_assert.h
 num2int.o: $(hdrdir)/ruby/internal/stdalign.h
 num2int.o: $(hdrdir)/ruby/internal/stdbool.h
+num2int.o: $(hdrdir)/ruby/internal/stdckdint.h
 num2int.o: $(hdrdir)/ruby/internal/symbol.h
 num2int.o: $(hdrdir)/ruby/internal/value.h
 num2int.o: $(hdrdir)/ruby/internal/value_type.h

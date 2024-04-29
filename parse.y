@@ -2951,6 +2951,16 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 
 %token tLAST_TOKEN
 
+/*
+ *	parameterizing rules
+ */
+%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
+                                {
+                                    $$ = make_list($3, &@$);
+                                /*% ripper: array!($:3) %*/
+                                }
+                            ;
+
 %%
 program		:  {
                         SET_LEX_STATE(EXPR_BEG);
@@ -6104,15 +6114,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words_sep	: ' ' {}
-                | words_sep ' '
-                ;
-
-words		: tWORDS_BEG words_sep word_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+words		: words(tWORDS_BEG, word_list) <node>
                 ;
 
 word_list	: /* none */
@@ -6120,7 +6122,7 @@ word_list	: /* none */
                         $$ = 0;
                     /*% ripper: words_new! %*/
                     }
-                | word_list word words_sep
+                | word_list word ' '+
                     {
                         $$ = list_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: words_add!($:1, $:2) %*/
@@ -6136,11 +6138,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG words_sep symbol_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+symbols 	: words(tSYMBOLS_BEG, symbol_list) <node>
                 ;
 
 symbol_list	: /* none */
@@ -6148,25 +6146,17 @@ symbol_list	: /* none */
                         $$ = 0;
                     /*% ripper: symbols_new! %*/
                     }
-                | symbol_list word words_sep
+                | symbol_list word ' '+
                     {
                         $$ = symbol_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
                 ;
 
-qwords		: tQWORDS_BEG words_sep qword_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qwords		: words(tQWORDS_BEG, qword_list) <node>
                 ;
 
-qsymbols	: tQSYMBOLS_BEG words_sep qsym_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qsymbols	: words(tQSYMBOLS_BEG, qsym_list) <node>
                 ;
 
 qword_list	: /* none */
@@ -6174,7 +6164,7 @@ qword_list	: /* none */
                         $$ = 0;
                     /*% ripper: qwords_new! %*/
                     }
-                | qword_list tSTRING_CONTENT words_sep
+                | qword_list tSTRING_CONTENT ' '+
                     {
                         $$ = list_append(p, $1, $2);
                     /*% ripper: qwords_add!($:1, $:2) %*/
@@ -6186,7 +6176,7 @@ qsym_list	: /* none */
                         $$ = 0;
                     /*% ripper: qsymbols_new! %*/
                     }
-                | qsym_list tSTRING_CONTENT words_sep
+                | qsym_list tSTRING_CONTENT ' '+
                     {
                         $$ = symbol_append(p, $1, $2);
                     /*% ripper: qsymbols_add!($:1, $:2) %*/
@@ -7722,7 +7712,6 @@ yycompile0(VALUE arg)
     n = yyparse(p);
     RUBY_DTRACE_PARSE_HOOK(END);
 
-    rb_parser_aset_script_lines_for(p->ruby_sourcefile_string, p->debug_lines);
     p->debug_lines = 0;
 
     xfree(p->lex.strterm);
@@ -7756,7 +7745,7 @@ yycompile0(VALUE arg)
         }
     }
     p->ast->body.root = tree;
-    if (!p->ast->body.script_lines) p->ast->body.script_lines = (rb_parser_ary_t *)INT2FIX(p->line_count);
+    p->ast->body.line_count = p->line_count;
     return TRUE;
 }
 
@@ -15809,7 +15798,6 @@ rb_ruby_parser_mark(void *ptr)
     struct parser_params *p = (struct parser_params*)ptr;
 
     rb_gc_mark(p->ruby_sourcefile_string);
-    rb_gc_mark((VALUE)p->ast);
 #ifndef RIPPER
     rb_gc_mark(p->error_buffer);
 #else

@@ -200,6 +200,7 @@ eventids1.o: $(hdrdir)/ruby/internal/special_consts.h
 eventids1.o: $(hdrdir)/ruby/internal/static_assert.h
 eventids1.o: $(hdrdir)/ruby/internal/stdalign.h
 eventids1.o: $(hdrdir)/ruby/internal/stdbool.h
+eventids1.o: $(hdrdir)/ruby/internal/stdckdint.h
 eventids1.o: $(hdrdir)/ruby/internal/symbol.h
 eventids1.o: $(hdrdir)/ruby/internal/value.h
 eventids1.o: $(hdrdir)/ruby/internal/value_type.h
@@ -370,6 +371,7 @@ eventids2.o: $(hdrdir)/ruby/internal/special_consts.h
 eventids2.o: $(hdrdir)/ruby/internal/static_assert.h
 eventids2.o: $(hdrdir)/ruby/internal/stdalign.h
 eventids2.o: $(hdrdir)/ruby/internal/stdbool.h
+eventids2.o: $(hdrdir)/ruby/internal/stdckdint.h
 eventids2.o: $(hdrdir)/ruby/internal/symbol.h
 eventids2.o: $(hdrdir)/ruby/internal/value.h
 eventids2.o: $(hdrdir)/ruby/internal/value_type.h
@@ -549,6 +551,7 @@ ripper.o: $(hdrdir)/ruby/internal/special_consts.h
 ripper.o: $(hdrdir)/ruby/internal/static_assert.h
 ripper.o: $(hdrdir)/ruby/internal/stdalign.h
 ripper.o: $(hdrdir)/ruby/internal/stdbool.h
+ripper.o: $(hdrdir)/ruby/internal/stdckdint.h
 ripper.o: $(hdrdir)/ruby/internal/symbol.h
 ripper.o: $(hdrdir)/ruby/internal/value.h
 ripper.o: $(hdrdir)/ruby/internal/value_type.h
@@ -786,6 +789,7 @@ ripper_init.o: $(hdrdir)/ruby/internal/special_consts.h
 ripper_init.o: $(hdrdir)/ruby/internal/static_assert.h
 ripper_init.o: $(hdrdir)/ruby/internal/stdalign.h
 ripper_init.o: $(hdrdir)/ruby/internal/stdbool.h
+ripper_init.o: $(hdrdir)/ruby/internal/stdckdint.h
 ripper_init.o: $(hdrdir)/ruby/internal/symbol.h
 ripper_init.o: $(hdrdir)/ruby/internal/value.h
 ripper_init.o: $(hdrdir)/ruby/internal/value_type.h

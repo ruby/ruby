@@ -1094,7 +1094,7 @@ module Prism
         ConstantReadNode(:A),
         nil,
         nil,
-        StatementsNode([ReturnNode(Location(), nil)]),
+        StatementsNode([ReturnNode(0, Location(), nil)]),
         Location(),
         :A
       )
@@ -1109,7 +1109,7 @@ module Prism
         [],
         Location(),
         ConstantReadNode(:A),
-        StatementsNode([ReturnNode(Location(), nil)]),
+        StatementsNode([ReturnNode(0, Location(), nil)]),
         Location(),
         :A
       )

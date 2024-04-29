@@ -147,6 +147,7 @@ foreach.o: $(hdrdir)/ruby/internal/special_consts.h
 foreach.o: $(hdrdir)/ruby/internal/static_assert.h
 foreach.o: $(hdrdir)/ruby/internal/stdalign.h
 foreach.o: $(hdrdir)/ruby/internal/stdbool.h
+foreach.o: $(hdrdir)/ruby/internal/stdckdint.h
 foreach.o: $(hdrdir)/ruby/internal/symbol.h
 foreach.o: $(hdrdir)/ruby/internal/value.h
 foreach.o: $(hdrdir)/ruby/internal/value_type.h

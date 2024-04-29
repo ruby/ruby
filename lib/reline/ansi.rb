@@ -284,7 +284,7 @@ class Reline::ANSI
         buf = @@output.pread(@@output.pos, 0)
         row = buf.count("\n")
         column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
-      rescue Errno::ESPIPE
+      rescue Errno::ESPIPE, IOError
         # Just returns column 1 for ambiguous width because this I/O is not
         # tty and can't seek.
         row = 0

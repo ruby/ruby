@@ -179,12 +179,12 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          make -s -j ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug
           YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:
-          RUBY_TESTOPTS: '-v --tty=no'
+          RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
