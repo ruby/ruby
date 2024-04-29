@@ -5034,6 +5034,50 @@ pm_instance_variable_write_node_create(pm_parser_t *parser, pm_instance_variable
 }
 
 /**
+ * Append a part into a list of string parts. Importantly this handles nested
+ * interpolated strings by not necessarily removing the marker for static
+ * literals.
+ */
+static void
+pm_interpolated_node_append(pm_node_t *node, pm_node_list_t *parts, pm_node_t *part) {
+    switch (PM_NODE_TYPE(part)) {
+        case PM_STRING_NODE:
+            pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+            break;
+        case PM_EMBEDDED_STATEMENTS_NODE: {
+            pm_embedded_statements_node_t *cast = (pm_embedded_statements_node_t *) part;
+            pm_node_t *embedded = (cast->statements != NULL && cast->statements->body.size == 1) ? cast->statements->body.nodes[0] : NULL;
+
+            if (embedded == NULL) {
+                // If there are no statements or more than one statement, then
+                // we lose the static literal flag.
+                pm_node_flag_unset(node, PM_NODE_FLAG_STATIC_LITERAL);
+            } else if (PM_NODE_TYPE_P(embedded, PM_STRING_NODE)) {
+                // If the embedded statement is a string, then we can keep the
+                // static literal flag and mark the string as frozen.
+                pm_node_flag_set(embedded, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+            } else if (PM_NODE_TYPE_P(embedded, PM_INTERPOLATED_STRING_NODE) && PM_NODE_FLAG_P(embedded, PM_NODE_FLAG_STATIC_LITERAL)) {
+                // If the embedded statement is an interpolated string and it's
+                // a static literal, then we can keep the static literal flag.
+            } else {
+                // Otherwise we lose the static literal flag.
+                pm_node_flag_unset(node, PM_NODE_FLAG_STATIC_LITERAL);
+            }
+
+            break;
+        }
+        case PM_EMBEDDED_VARIABLE_NODE:
+            pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
+            break;
+        default:
+            assert(false && "unexpected node type");
+            break;
+    }
+
+    pm_node_list_append(parts, part);
+}
+
+/**
  * Allocate a new InterpolatedRegularExpressionNode node.
  */
 static pm_interpolated_regular_expression_node_t *
@@ -5066,54 +5110,113 @@ pm_interpolated_regular_expression_node_append(pm_interpolated_regular_expressio
         node->base.location.end = part->location.end;
     }
 
-    if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-        pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
-    }
-
-    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
-        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
-    }
-
-    pm_node_list_append(&node->parts, part);
+    pm_interpolated_node_append((pm_node_t *) node, &node->parts, part);
 }
 
 static inline void
 pm_interpolated_regular_expression_node_closing_set(pm_parser_t *parser, pm_interpolated_regular_expression_node_t *node, const pm_token_t *closing) {
     node->closing_loc = PM_LOCATION_TOKEN_VALUE(closing);
     node->base.location.end = closing->end;
-    pm_node_flag_set((pm_node_t *)node, pm_regular_expression_flags_create(parser, closing));
+    pm_node_flag_set((pm_node_t *) node, pm_regular_expression_flags_create(parser, closing));
 }
 
 /**
  * Append a part to an InterpolatedStringNode node.
+ *
+ * This has some somewhat complicated semantics, because we need to update
+ * multiple flags that have somewhat confusing interactions.
+ *
+ * PM_NODE_FLAG_STATIC_LITERAL indicates that the node should be treated as a
+ * single static literal string that can be pushed onto the stack on its own.
+ * Note that this doesn't necessarily mean that the string will be frozen or
+ * not; the instructions in CRuby will be either putobject or putstring,
+ * depending on the combination of `--enable-frozen-string-literal`,
+ * `# frozen_string_literal: true`, and whether or not there is interpolation.
+ *
+ * PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN indicates that the string should be
+ * explicitly frozen. This will only happen if the string is comprised entirely
+ * of string parts that are themselves static literals and frozen.
+ *
+ * PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE indicates that the string should
+ * be explicitly marked as mutable. This will happen from
+ * `--disable-frozen-string-literal` or `# frozen_string_literal: false`. This
+ * is necessary to indicate that the string should be left up to the runtime,
+ * which could potentially use a chilled string otherwise.
  */
 static inline void
-pm_interpolated_string_node_append(pm_parser_t *parser, pm_interpolated_string_node_t *node, pm_node_t *part) {
+pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_t *part) {
+#define CLEAR_FLAGS(node) \
+    node->base.flags = (pm_node_flags_t) (node->base.flags & ~(PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE))
+
+#define MUTABLE_FLAGS(node) \
+    node->base.flags = (pm_node_flags_t) ((node->base.flags | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE) & ~PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
+
     if (node->parts.size == 0 && node->opening_loc.start == NULL) {
         node->base.location.start = part->location.start;
     }
 
-    if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-        pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
-    }
+    node->base.location.end = MAX(node->base.location.end, part->location.end);
 
-    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
-        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE);
+    switch (PM_NODE_TYPE(part)) {
+        case PM_STRING_NODE:
+            pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+            break;
+        case PM_INTERPOLATED_STRING_NODE:
+            if (PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
+                // If the string that we're concatenating is a static literal,
+                // then we can keep the static literal flag for this string.
+            } else {
+                // Otherwise, we lose the static literal flag here and we should
+                // also clear the mutability flags.
+                CLEAR_FLAGS(node);
+            }
+            break;
+        case PM_EMBEDDED_STATEMENTS_NODE: {
+            pm_embedded_statements_node_t *cast = (pm_embedded_statements_node_t *) part;
+            pm_node_t *embedded = (cast->statements != NULL && cast->statements->body.size == 1) ? cast->statements->body.nodes[0] : NULL;
+
+            if (embedded == NULL) {
+                // If we're embedding multiple statements or no statements, then
+                // the string is not longer a static literal.
+                CLEAR_FLAGS(node);
+            } else if (PM_NODE_TYPE_P(embedded, PM_STRING_NODE)) {
+                // If the embedded statement is a string, then we can make that
+                // string as frozen and static literal, and not touch the static
+                // literal status of this string.
+                pm_node_flag_set(embedded, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+
+                if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
+                    MUTABLE_FLAGS(node);
+                }
+            } else if (PM_NODE_TYPE_P(embedded, PM_INTERPOLATED_STRING_NODE) && PM_NODE_FLAG_P(embedded, PM_NODE_FLAG_STATIC_LITERAL)) {
+                // If the embedded statement is an interpolated string, but that
+                // string is marked as static literal, then we can keep our
+                // static literal status for this string.
+                if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
+                    MUTABLE_FLAGS(node);
+                }
+            } else {
+                // In all other cases, we lose the static literal flag here and
+                // become mutable.
+                CLEAR_FLAGS(node);
+            }
+
+            break;
+        }
+        case PM_EMBEDDED_VARIABLE_NODE:
+            // Embedded variables clear static literal, which means we also
+            // should clear the mutability flags.
+            CLEAR_FLAGS(node);
+            break;
+        default:
+            assert(false && "unexpected node type");
+            break;
     }
 
     pm_node_list_append(&node->parts, part);
-    node->base.location.end = MAX(node->base.location.end, part->location.end);
 
-    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
-        switch (parser->frozen_string_literal) {
-            case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
-                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE);
-                break;
-            case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
-                pm_node_flag_set((pm_node_t *) node, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
-                break;
-        }
-    }
+#undef CLEAR_FLAGS
+#undef MUTABLE_FLAGS
 }
 
 /**
@@ -5122,11 +5225,21 @@ pm_interpolated_string_node_append(pm_parser_t *parser, pm_interpolated_string_n
 static pm_interpolated_string_node_t *
 pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_node_list_t *parts, const pm_token_t *closing) {
     pm_interpolated_string_node_t *node = PM_ALLOC_NODE(parser, pm_interpolated_string_node_t);
+    pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL;
+
+    switch (parser->frozen_string_literal) {
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
+            flags |= PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE;
+            break;
+        case PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED:
+            flags |= PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN;
+            break;
+    }
 
     *node = (pm_interpolated_string_node_t) {
         {
             .type = PM_INTERPOLATED_STRING_NODE,
-            .flags = PM_NODE_FLAG_STATIC_LITERAL,
+            .flags = flags,
             .location = {
                 .start = opening->start,
                 .end = closing->end,
@@ -5140,7 +5253,7 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
     if (parts != NULL) {
         pm_node_t *part;
         PM_NODE_LIST_FOREACH(parts, index, part) {
-            pm_interpolated_string_node_append(parser, node, part);
+            pm_interpolated_string_node_append(node, part);
         }
     }
 
@@ -5162,15 +5275,7 @@ pm_interpolated_symbol_node_append(pm_interpolated_symbol_node_t *node, pm_node_
         node->base.location.start = part->location.start;
     }
 
-    if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-        pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
-    }
-
-    if (!PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
-        pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
-    }
-
-    pm_node_list_append(&node->parts, part);
+    pm_interpolated_node_append((pm_node_t *) node, &node->parts, part);
     node->base.location.end = MAX(node->base.location.end, part->location.end);
 }
 
@@ -5236,11 +5341,7 @@ pm_interpolated_xstring_node_create(pm_parser_t *parser, const pm_token_t *openi
 
 static inline void
 pm_interpolated_xstring_node_append(pm_interpolated_x_string_node_t *node, pm_node_t *part) {
-    if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-        pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
-    }
-
-    pm_node_list_append(&node->parts, part);
+    pm_interpolated_node_append((pm_node_t *) node, &node->parts, part);
     node->base.location.end = part->location.end;
 }
 
@@ -16597,11 +16698,11 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
                 pm_token_t bounds = not_provided(parser);
 
                 pm_interpolated_string_node_t *container = pm_interpolated_string_node_create(parser, &bounds, NULL, &bounds);
-                pm_interpolated_string_node_append(parser, container, current);
+                pm_interpolated_string_node_append(container, current);
                 current = (pm_node_t *) container;
             }
 
-            pm_interpolated_string_node_append(parser, (pm_interpolated_string_node_t *) current, node);
+            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, node);
         }
     }
 
@@ -18786,15 +18887,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             // If we hit string content and the current node is
                             // an interpolated string, then we need to append
                             // the string content to the list of child nodes.
-                            pm_interpolated_string_node_append(parser, (pm_interpolated_string_node_t *) current, string);
+                            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, string);
                         } else if (PM_NODE_TYPE_P(current, PM_STRING_NODE)) {
                             // If we hit string content and the current node is
                             // a string node, then we need to convert the
                             // current node into an interpolated string and add
                             // the string content to the list of child nodes.
                             pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
-                            pm_interpolated_string_node_append(parser, interpolated, current);
-                            pm_interpolated_string_node_append(parser, interpolated, string);
+                            pm_interpolated_string_node_append(interpolated, current);
+                            pm_interpolated_string_node_append(interpolated, string);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
@@ -18819,7 +18920,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             pm_token_t opening = not_provided(parser);
                             pm_token_t closing = not_provided(parser);
                             pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
-                            pm_interpolated_string_node_append(parser, interpolated, current);
+                            pm_interpolated_string_node_append(interpolated, current);
                             current = (pm_node_t *) interpolated;
                         } else {
                             // If we hit an embedded variable and the current
@@ -18828,7 +18929,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         }
 
                         pm_node_t *part = parse_string_part(parser);
-                        pm_interpolated_string_node_append(parser, (pm_interpolated_string_node_t *) current, part);
+                        pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, part);
                         break;
                     }
                     case PM_TOKEN_EMBEXPR_BEGIN: {
@@ -18848,7 +18949,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             pm_token_t opening = not_provided(parser);
                             pm_token_t closing = not_provided(parser);
                             pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
-                            pm_interpolated_string_node_append(parser, interpolated, current);
+                            pm_interpolated_string_node_append(interpolated, current);
                             current = (pm_node_t *) interpolated;
                         } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
                             // If we hit an embedded expression and the current
@@ -18859,7 +18960,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         }
 
                         pm_node_t *part = parse_string_part(parser);
-                        pm_interpolated_string_node_append(parser, (pm_interpolated_string_node_t *) current, part);
+                        pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, part);
                         break;
                     }
                     default:

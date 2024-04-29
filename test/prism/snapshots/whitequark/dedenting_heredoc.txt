@@ -15,7 +15,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (1,2)-(1,8))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: mutable
         │   │           ├── opening_loc: (1,2)-(1,8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (2,0)-(3,0))
@@ -30,7 +30,7 @@
         │   │           │   │   │   @ StatementsNode (location: (3,4)-(3,9))
         │   │           │   │   │   └── body: (length: 1)
         │   │           │   │   │       └── @ StringNode (location: (3,4)-(3,9))
-        │   │           │   │   │           ├── flags: ∅
+        │   │           │   │   │           ├── flags: frozen
         │   │           │   │   │           ├── opening_loc: (3,4)-(3,5) = "\""
         │   │           │   │   │           ├── content_loc: (3,5)-(3,8) = "  y"
         │   │           │   │   │           ├── closing_loc: (3,8)-(3,9) = "\""
