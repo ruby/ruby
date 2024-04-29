@@ -13,7 +13,7 @@
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "1"
             │   ├── @ InterpolatedStringNode (location: (1,6)-(1,12))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: mutable
             │   │   ├── opening_loc: ∅
             │   │   ├── parts: (length: 1)
             │   │   │   └── @ EmbeddedStatementsNode (location: (1,6)-(1,12))
@@ -22,7 +22,7 @@
             │   │   │       │   @ StatementsNode (location: (1,8)-(1,11))
             │   │   │       │   └── body: (length: 1)
             │   │   │       │       └── @ StringNode (location: (1,8)-(1,11))
-            │   │   │       │           ├── flags: ∅
+            │   │   │       │           ├── flags: frozen
             │   │   │       │           ├── opening_loc: (1,8)-(1,11) = "<<A"
             │   │   │       │           ├── content_loc: (2,0)-(3,0) = "2\n"
             │   │   │       │           ├── closing_loc: (3,0)-(4,0) = "A\n"

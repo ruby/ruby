@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(12,4))
     └── body: (length: 2)
         ├── @ InterpolatedStringNode (location: (1,0)-(1,7))
-        │   ├── flags: ∅
+        │   ├── flags: mutable
         │   ├── opening_loc: (1,0)-(1,7) = "<<~RUBY"
         │   ├── parts: (length: 4)
         │   │   ├── @ StringNode (location: (2,0)-(3,0))
@@ -19,7 +19,7 @@
         │   │   │   │   @ StatementsNode (location: (4,0)-(4,6))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ StringNode (location: (4,0)-(4,6))
-        │   │   │   │           ├── flags: ∅
+        │   │   │   │           ├── flags: frozen
         │   │   │   │           ├── opening_loc: (4,0)-(4,6) = "<<RUBY"
         │   │   │   │           ├── content_loc: (5,0)-(6,0) = "  hello\n"
         │   │   │   │           ├── closing_loc: (6,0)-(7,0) = "RUBY\n"
