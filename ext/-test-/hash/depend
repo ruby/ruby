@@ -147,6 +147,7 @@ delete.o: $(hdrdir)/ruby/internal/special_consts.h
 delete.o: $(hdrdir)/ruby/internal/static_assert.h
 delete.o: $(hdrdir)/ruby/internal/stdalign.h
 delete.o: $(hdrdir)/ruby/internal/stdbool.h
+delete.o: $(hdrdir)/ruby/internal/stdckdint.h
 delete.o: $(hdrdir)/ruby/internal/symbol.h
 delete.o: $(hdrdir)/ruby/internal/value.h
 delete.o: $(hdrdir)/ruby/internal/value_type.h
@@ -306,6 +307,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h

@@ -210,76 +210,6 @@ module TestIRB
     end
   end
 
-  class CustomCommandTestCase < CommandTestCase
-    def setup
-      @commands_backup = IRB::Command.commands
-      IRB::Command.class_variable_set(:@@command_override_policies, nil)
-    end
-
-    def teardown
-      IRB::Command.class_variable_set(:@@command_override_policies, nil)
-      IRB::Command.instance_variable_set(:@commands, @commands_backup)
-    end
-  end
-
-  class CommandArgTest < CustomCommandTestCase
-    class PrintArgCommand < IRB::Command::Base
-      category 'CommandTest'
-      description 'print_command_arg'
-      def execute(arg)
-        puts "arg=#{arg.inspect}"
-      end
-    end
-
-    def test_arg
-      IRB::Command._register_with_aliases(:print_arg, PrintArgCommand, [:pa, IRB::Command::OVERRIDE_ALL])
-      out, err = execute_lines("print_arg\n")
-      assert_empty err
-      assert_include(out, 'arg=""')
-
-      out, err = execute_lines("print_arg  \n")
-      assert_empty err
-      assert_include(out, 'arg=""')
-
-      out, err = execute_lines("print_arg a r  g\n")
-      assert_empty err
-      assert_include(out, 'arg="a r  g"')
-
-      out, err = execute_lines("print_arg  a r  g  \n")
-      assert_empty err
-      assert_include(out, 'arg="a r  g"')
-
-      out, err = execute_lines("pa  a r  g  \n")
-      assert_empty err
-      assert_include(out, 'arg="a r  g"')
-    end
-  end
-
-  class ExtendCommandBundleCompatibilityTest < CustomCommandTestCase
-    class FooBarCommand < IRB::Command::Base
-      category 'FooBarCategory'
-      description 'foobar_description'
-      def execute(_arg)
-        puts "FooBar executed"
-      end
-    end
-
-    def test_def_extend_command
-      IRB::ExtendCommandBundle.def_extend_command(:foobar, FooBarCommand, nil, [:fbalias, IRB::Command::OVERRIDE_ALL])
-      out, err = execute_lines("foobar\n")
-      assert_empty err
-      assert_include(out, "FooBar executed")
-
-      out, err = execute_lines("fbalias\n")
-      assert_empty err
-      assert_include(out, "FooBar executed")
-
-      out, err = execute_lines("show_cmds\n")
-      assert_include(out, "FooBarCategory")
-      assert_include(out, "foobar_description")
-    end
-  end
-
   class MeasureTest < CommandTestCase
     def test_measure
       conf = {
@@ -555,12 +485,11 @@ module TestIRB
   class CwwsTest < WorkspaceCommandTestCase
     def test_cwws_returns_the_current_workspace_object
       out, err = execute_lines(
-        "cwws",
-        "self.class"
+        "cwws"
       )
 
       assert_empty err
-      assert_include(out, self.class.name)
+      assert_include(out, "Current workspace: #{self}")
     end
   end
 
@@ -626,7 +555,7 @@ module TestIRB
         "pushws Foo.new\n",
         "popws\n",
         "cwws\n",
-        "_.class",
+        "self.class",
       )
       assert_empty err
       assert_include(out, "=> #{self.class}")
@@ -646,20 +575,19 @@ module TestIRB
       out, err = execute_lines(
         "chws #{self.class}::Foo.new\n",
         "cwws\n",
-        "_.class",
+        "self.class\n"
       )
       assert_empty err
+      assert_include(out, "Current workspace: #<#{self.class.name}::Foo")
       assert_include(out, "=> #{self.class}::Foo")
     end
 
     def test_chws_does_nothing_when_receiving_no_argument
       out, err = execute_lines(
         "chws\n",
-        "cwws\n",
-        "_.class",
       )
       assert_empty err
-      assert_include(out, "=> #{self.class}")
+      assert_include(out, "Current workspace: #{self}")
     end
   end
 

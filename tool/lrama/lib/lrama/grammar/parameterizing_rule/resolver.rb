@@ -13,8 +13,12 @@ module Lrama
           @rules << rule
         end
 
-        def find(token)
-          select_rules(token).last
+        def find_rule(token)
+          select_rules(@rules, token).last
+        end
+
+        def find_inline(token)
+          @rules.select { |rule| rule.name == token.s_value && rule.is_inline }.last
         end
 
         def created_lhs(lhs_s_value)
@@ -23,8 +27,9 @@ module Lrama
 
         private
 
-        def select_rules(token)
-          rules = select_rules_by_name(token.rule_name)
+        def select_rules(rules, token)
+          rules = select_not_inline_rules(rules)
+          rules = select_rules_by_name(rules, token.rule_name)
           rules = rules.select { |rule| rule.required_parameters_count == token.args_count }
           if rules.empty?
             raise "Invalid number of arguments. `#{token.rule_name}`"
@@ -33,8 +38,12 @@ module Lrama
           end
         end
 
-        def select_rules_by_name(rule_name)
-          rules = @rules.select { |rule| rule.name == rule_name }
+        def select_not_inline_rules(rules)
+          rules.select { |rule| !rule.is_inline }
+        end
+
+        def select_rules_by_name(rules, rule_name)
+          rules = rules.select { |rule| rule.name == rule_name }
           if rules.empty?
             raise "Parameterizing rule does not exist. `#{rule_name}`"
           else

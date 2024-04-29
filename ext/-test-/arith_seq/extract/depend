@@ -146,6 +146,7 @@ extract.o: $(hdrdir)/ruby/internal/special_consts.h
 extract.o: $(hdrdir)/ruby/internal/static_assert.h
 extract.o: $(hdrdir)/ruby/internal/stdalign.h
 extract.o: $(hdrdir)/ruby/internal/stdbool.h
+extract.o: $(hdrdir)/ruby/internal/stdckdint.h
 extract.o: $(hdrdir)/ruby/internal/symbol.h
 extract.o: $(hdrdir)/ruby/internal/value.h
 extract.o: $(hdrdir)/ruby/internal/value_type.h

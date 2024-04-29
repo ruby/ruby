@@ -16,7 +16,7 @@ module IRB # :nodoc:
       # Registers a command with the given name.
       # Aliasing is intentionally not supported at the moment.
       def register(name, command_class)
-        @commands[name] = [command_class, []]
+        @commands[name.to_sym] = [command_class, []]
       end
     end
   end

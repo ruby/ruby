@@ -159,6 +159,7 @@ coverage.o: $(hdrdir)/ruby/internal/special_consts.h
 coverage.o: $(hdrdir)/ruby/internal/static_assert.h
 coverage.o: $(hdrdir)/ruby/internal/stdalign.h
 coverage.o: $(hdrdir)/ruby/internal/stdbool.h
+coverage.o: $(hdrdir)/ruby/internal/stdckdint.h
 coverage.o: $(hdrdir)/ruby/internal/symbol.h
 coverage.o: $(hdrdir)/ruby/internal/value.h
 coverage.o: $(hdrdir)/ruby/internal/value_type.h

@@ -45,6 +45,12 @@ module Prism
       offsets[find_line(byte_offset)]
     end
 
+    # Returns the byte offset of the end of the line corresponding to the given
+    # byte offset.
+    def line_end(byte_offset)
+      offsets[find_line(byte_offset) + 1] || source.bytesize
+    end
+
     # Return the column number for the given byte offset.
     def column(byte_offset)
       byte_offset - line_start(byte_offset)
@@ -174,6 +180,15 @@ module Prism
     # The source code that this location represents.
     def slice
       source.slice(start_offset, length)
+    end
+
+    # The source code that this location represents starting from the beginning
+    # of the line that this location starts on to the end of the line that this
+    # location ends on.
+    def slice_lines
+      line_start = source.line_start(start_offset)
+      line_end = source.line_end(end_offset)
+      source.slice(line_start, line_end - line_start)
     end
 
     # The character offset from the beginning of the source where this location

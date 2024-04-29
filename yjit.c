@@ -629,6 +629,12 @@ rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
     return iseq->body->stack_max;
 }
 
+enum rb_iseq_type
+rb_get_iseq_body_type(const rb_iseq_t *iseq)
+{
+    return iseq->body->type;
+}
+
 bool
 rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
 {
@@ -1041,7 +1047,6 @@ rb_yjit_multi_ractor_p(void)
 void
 rb_assert_iseq_handle(VALUE handle)
 {
-    RUBY_ASSERT_ALWAYS(rb_objspace_markable_object_p(handle));
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_iseq));
 }
 
@@ -1158,20 +1163,14 @@ yjit_root_memsize(const void *ptr)
     return 0; // TODO: more accurate accounting
 }
 
-// GC callback during compaction
-static void
-yjit_root_update_references(void *ptr)
-{
-    // Do nothing since we use rb_gc_mark(), which pins.
-}
-
 void rb_yjit_root_mark(void *ptr); // in Rust
+void rb_yjit_root_update_references(void *ptr); // in Rust
 
 // Custom type for interacting with the GC
 // TODO: make this write barrier protected
 static const rb_data_type_t yjit_root_type = {
     "yjit_root",
-    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, yjit_root_update_references},
+    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, rb_yjit_root_update_references},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

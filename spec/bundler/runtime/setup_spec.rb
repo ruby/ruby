@@ -767,6 +767,18 @@ end
     expect(err).to be_empty
   end
 
+  it "can require rubygems without warnings, when using a local cache", rubygems: ">= 3.5.10" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle "package"
+    bundle %(exec ruby -w -e "require 'rubygems'")
+
+    expect(err).to be_empty
+  end
+
   context "when the user has `MANPATH` set", :man do
     before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
 
@@ -1598,5 +1610,20 @@ end
 
     sys_exec "#{Gem.ruby} #{script}", raise_on_error: false
     expect(out).to include("requiring foo used the monkeypatch")
+  end
+
+  it "performs an automatic bundle install" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack", :group => :test
+    G
+
+    bundle "config set auto_install 1"
+
+    ruby <<-RUBY
+      require 'bundler/setup'
+    RUBY
+    expect(err).to be_empty
+    expect(out).to include("Installing rack 1.0.0")
   end
 end

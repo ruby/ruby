@@ -814,6 +814,7 @@
         │   │       │   │   @ StatementsNode (location: (99,0)-(99,10))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ReturnNode (location: (99,0)-(99,10))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── keyword_loc: (99,0)-(99,6) = "return"
         │   │       │   │           └── arguments:
         │   │       │   │               @ ArgumentsNode (location: (99,7)-(99,10))

@@ -2317,6 +2317,19 @@ assert_equal '123', %q{
   foo(Foo)
 }
 
+# Test EP == BP invalidation with moving ISEQs
+assert_equal 'ok', %q{
+  def entry
+    ok = proc { :ok } # set #entry as an EP-escaping ISEQ
+    [nil].reverse_each do # avoid exiting the JIT frame on the constant
+      GC.compact # move #entry ISEQ
+    end
+    ok # should be read off of escaped EP
+  end
+
+  entry.call
+}
+
 # invokesuper edge case
 assert_equal '[:A, [:A, :B]]', %q{
   class B
@@ -4815,6 +4828,20 @@ assert_equal "abc", %q{
 
   change_bytes(str, to_int_1, to_int_99)
   str
+}
+
+# test --yjit-verify-ctx for arrays with a singleton class
+assert_equal "ok", %q{
+  class Array
+    def foo
+      self.singleton_class.define_method(:first) { :ok }
+      first
+    end
+  end
+
+  def test = [].foo
+
+  test
 }
 
 assert_equal '["raised", "Module", "Object"]', %q{

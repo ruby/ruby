@@ -20,6 +20,12 @@ class DSL
   NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])(?>(?:\.|->)[a-zA-Z_][a-zA-Z0-9_]*)*/.source
   NOT_REF_PATTERN = /(?>\#.*|[^\"$@]*|"(?>\\.|[^\"])*")/.source
 
+  def self.line?(line, lineno = nil)
+    if %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/> =~ line
+      new($2, $1&.split(",") || [], lineno)
+    end
+  end
+
   def initialize(code, options, lineno = nil)
     @lineno = lineno
     @events = {}

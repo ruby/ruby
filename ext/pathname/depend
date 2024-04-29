@@ -157,6 +157,7 @@ pathname.o: $(hdrdir)/ruby/internal/special_consts.h
 pathname.o: $(hdrdir)/ruby/internal/static_assert.h
 pathname.o: $(hdrdir)/ruby/internal/stdalign.h
 pathname.o: $(hdrdir)/ruby/internal/stdbool.h
+pathname.o: $(hdrdir)/ruby/internal/stdckdint.h
 pathname.o: $(hdrdir)/ruby/internal/symbol.h
 pathname.o: $(hdrdir)/ruby/internal/value.h
 pathname.o: $(hdrdir)/ruby/internal/value_type.h

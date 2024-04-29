@@ -587,18 +587,19 @@ module IRB
 
     def evaluate(statement, line_no) # :nodoc:
       @line_no = line_no
-      result = nil
 
       case statement
       when Statement::EmptyInput
         return
       when Statement::Expression
         result = evaluate_expression(statement.code, line_no)
+        set_last_value(result)
       when Statement::Command
-        result = statement.command_class.execute(self, statement.arg)
+        statement.command_class.execute(self, statement.arg)
+        set_last_value(nil)
       end
 
-      set_last_value(result)
+      nil
     end
 
     def evaluate_expression(code, line_no) # :nodoc:

@@ -147,6 +147,7 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/special_consts.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/static_assert.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/stdalign.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/stdbool.h
+rb_call_super_kw.o: $(hdrdir)/ruby/internal/stdckdint.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/symbol.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/value.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/value_type.h

@@ -146,6 +146,18 @@ module Gem
     end
   end
 
+  module BetterPermissionError
+    def data
+      Bundler::SharedHelpers.filesystem_access(loaded_from, :read) do
+        super
+      end
+    end
+  end
+
+  class StubSpecification
+    prepend BetterPermissionError
+  end
+
   class Dependency
     include ::Bundler::ForcePlatform
 

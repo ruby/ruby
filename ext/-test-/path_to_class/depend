@@ -147,6 +147,7 @@ path_to_class.o: $(hdrdir)/ruby/internal/special_consts.h
 path_to_class.o: $(hdrdir)/ruby/internal/static_assert.h
 path_to_class.o: $(hdrdir)/ruby/internal/stdalign.h
 path_to_class.o: $(hdrdir)/ruby/internal/stdbool.h
+path_to_class.o: $(hdrdir)/ruby/internal/stdckdint.h
 path_to_class.o: $(hdrdir)/ruby/internal/symbol.h
 path_to_class.o: $(hdrdir)/ruby/internal/value.h
 path_to_class.o: $(hdrdir)/ruby/internal/value_type.h

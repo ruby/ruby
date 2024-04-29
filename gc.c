@@ -224,6 +224,9 @@ size_add_overflow(size_t x, size_t y)
     bool p;
 #if 0
 
+#elif defined(ckd_add)
+    p = ckd_add(&z, x, y);
+
 #elif __has_builtin(__builtin_add_overflow)
     p = __builtin_add_overflow(x, y, &z);
 
@@ -1887,31 +1890,31 @@ static void *rb_gc_impl_objspace_alloc(void);
 #if USE_SHARED_GC
 # include "dln.h"
 
-void
-ruby_external_gc_init()
-{
-    rb_gc_function_map_t *map = malloc(sizeof(rb_gc_function_map_t));
-    rb_gc_functions = map;
+# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
 
-    char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
+void
+ruby_external_gc_init(void)
+{
+    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
     void *handle = NULL;
-    if (gc_so_path) {
-        char error[128];
+    if (gc_so_path && dln_supported_p()) {
+        char error[1024];
         handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
-            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
+            fprintf(stderr, "%s", error);
+            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
         }
     }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        map->name = dln_symbol(handle, "rb_gc_impl_" #name); \
-        if (!map->name) { \
+        rb_gc_functions->name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!rb_gc_functions->name) { \
             rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
         } \
     } \
     else { \
-        map->name = rb_gc_impl_##name; \
+        rb_gc_functions->name = rb_gc_impl_##name; \
     } \
 } while (0)
 
@@ -13659,6 +13662,12 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 Init_GC(void)
 {
+#if USE_SHARED_GC
+    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
+        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
+    }
+#endif
+
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 

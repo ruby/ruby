@@ -146,6 +146,7 @@ big2str.o: $(hdrdir)/ruby/internal/special_consts.h
 big2str.o: $(hdrdir)/ruby/internal/static_assert.h
 big2str.o: $(hdrdir)/ruby/internal/stdalign.h
 big2str.o: $(hdrdir)/ruby/internal/stdbool.h
+big2str.o: $(hdrdir)/ruby/internal/stdckdint.h
 big2str.o: $(hdrdir)/ruby/internal/symbol.h
 big2str.o: $(hdrdir)/ruby/internal/value.h
 big2str.o: $(hdrdir)/ruby/internal/value_type.h
@@ -305,6 +306,7 @@ bigzero.o: $(hdrdir)/ruby/internal/special_consts.h
 bigzero.o: $(hdrdir)/ruby/internal/static_assert.h
 bigzero.o: $(hdrdir)/ruby/internal/stdalign.h
 bigzero.o: $(hdrdir)/ruby/internal/stdbool.h
+bigzero.o: $(hdrdir)/ruby/internal/stdckdint.h
 bigzero.o: $(hdrdir)/ruby/internal/symbol.h
 bigzero.o: $(hdrdir)/ruby/internal/value.h
 bigzero.o: $(hdrdir)/ruby/internal/value_type.h
@@ -464,6 +466,7 @@ div.o: $(hdrdir)/ruby/internal/special_consts.h
 div.o: $(hdrdir)/ruby/internal/static_assert.h
 div.o: $(hdrdir)/ruby/internal/stdalign.h
 div.o: $(hdrdir)/ruby/internal/stdbool.h
+div.o: $(hdrdir)/ruby/internal/stdckdint.h
 div.o: $(hdrdir)/ruby/internal/symbol.h
 div.o: $(hdrdir)/ruby/internal/value.h
 div.o: $(hdrdir)/ruby/internal/value_type.h
@@ -624,6 +627,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
@@ -782,6 +786,7 @@ intpack.o: $(hdrdir)/ruby/internal/special_consts.h
 intpack.o: $(hdrdir)/ruby/internal/static_assert.h
 intpack.o: $(hdrdir)/ruby/internal/stdalign.h
 intpack.o: $(hdrdir)/ruby/internal/stdbool.h
+intpack.o: $(hdrdir)/ruby/internal/stdckdint.h
 intpack.o: $(hdrdir)/ruby/internal/symbol.h
 intpack.o: $(hdrdir)/ruby/internal/value.h
 intpack.o: $(hdrdir)/ruby/internal/value_type.h
@@ -941,6 +946,7 @@ mul.o: $(hdrdir)/ruby/internal/special_consts.h
 mul.o: $(hdrdir)/ruby/internal/static_assert.h
 mul.o: $(hdrdir)/ruby/internal/stdalign.h
 mul.o: $(hdrdir)/ruby/internal/stdbool.h
+mul.o: $(hdrdir)/ruby/internal/stdckdint.h
 mul.o: $(hdrdir)/ruby/internal/symbol.h
 mul.o: $(hdrdir)/ruby/internal/value.h
 mul.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1100,6 +1106,7 @@ str2big.o: $(hdrdir)/ruby/internal/special_consts.h
 str2big.o: $(hdrdir)/ruby/internal/static_assert.h
 str2big.o: $(hdrdir)/ruby/internal/stdalign.h
 str2big.o: $(hdrdir)/ruby/internal/stdbool.h
+str2big.o: $(hdrdir)/ruby/internal/stdckdint.h
 str2big.o: $(hdrdir)/ruby/internal/symbol.h
 str2big.o: $(hdrdir)/ruby/internal/value.h
 str2big.o: $(hdrdir)/ruby/internal/value_type.h

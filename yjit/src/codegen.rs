@@ -46,7 +46,7 @@ type InsnGenFn = fn(
 /// Represents a [core::Block] while we build it.
 pub struct JITState {
     /// Instruction sequence for the compiling block
-    iseq: IseqPtr,
+    pub iseq: IseqPtr,
 
     /// The iseq index of the first instruction in the block
     starting_insn_idx: IseqIdx,
@@ -101,6 +101,9 @@ pub struct JITState {
     /// A list of classes that are not supposed to have a singleton class.
     pub no_singleton_class_assumptions: Vec<VALUE>,
 
+    /// When true, the block is valid only when base pointer is equal to environment pointer.
+    pub no_ep_escape: bool,
+
     /// When true, the block is valid only when there is a total of one ractor running
     pub block_assumes_single_ractor: bool,
 
@@ -130,6 +133,7 @@ impl JITState {
             bop_assumptions: vec![],
             stable_constant_names_assumption: None,
             no_singleton_class_assumptions: vec![],
+            no_ep_escape: false,
             block_assumes_single_ractor: false,
             perf_map: Rc::default(),
             perf_stack: vec![],
@@ -169,6 +173,23 @@ impl JITState {
         #[cfg(not(test))]
         assert!(insn_len(self.get_opcode()) > (arg_idx + 1).try_into().unwrap());
         unsafe { *(self.pc.offset(arg_idx + 1)) }
+    }
+
+    /// Return true if the current ISEQ could escape an environment.
+    ///
+    /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
+    /// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
+    /// Also, some method calls escape the environment to the heap.
+    fn escapes_ep(&self) -> bool {
+        match unsafe { get_iseq_body_type(self.iseq) } {
+            // <main> frame is always associated to TOPLEVEL_BINDING.
+            ISEQ_TYPE_MAIN |
+            // Kernel#eval uses a heap EP when a Binding argument is not nil.
+            ISEQ_TYPE_EVAL => true,
+            // If this ISEQ has previously escaped EP, give up the optimization.
+            _ if iseq_escapes_ep(self.iseq) => true,
+            _ => false,
+        }
     }
 
     // Get the index of the next instruction
@@ -247,6 +268,19 @@ impl JITState {
             return false; // we've seen a singleton class. disable the optimization to avoid an invalidation loop.
         }
         self.no_singleton_class_assumptions.push(klass);
+        true
+    }
+
+    /// Assume that base pointer is equal to environment pointer in the current ISEQ.
+    /// Return true if it's safe to assume so.
+    fn assume_no_ep_escape(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb) -> bool {
+        if jit_ensure_block_entry_exit(self, asm, ocb).is_none() {
+            return false; // out of space, give up
+        }
+        if self.escapes_ep() {
+            return false; // EP has been escaped in this ISEQ. disable the optimization to avoid an invalidation loop.
+        }
+        self.no_ep_escape = true;
         true
     }
 
@@ -533,14 +567,36 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         unsafe { CStr::from_ptr(rb_obj_info(val)).to_str().unwrap() }
     }
 
+    // Some types such as CString only assert the class field of the object
+    // when there has never been a singleton class created for objects of that class.
+    // Once there is a singleton class created they become their weaker
+    // `T*` variant, and we more objects should pass the verification.
+    fn relax_type_with_singleton_class_assumption(ty: Type) -> Type {
+        if let Type::CString | Type::CArray | Type::CHash = ty {
+            if has_singleton_class_of(ty.known_class().unwrap()) {
+                match ty {
+                    Type::CString => return Type::TString,
+                    Type::CArray => return Type::TArray,
+                    Type::CHash => return Type::THash,
+                    _ => (),
+                }
+            }
+        }
+
+        ty
+    }
+
     // Only able to check types when at current insn
     assert!(jit.at_current_insn());
 
     let self_val = jit.peek_at_self();
     let self_val_type = Type::from(self_val);
+    let learned_self_type = ctx.get_opnd_type(SelfOpnd);
+    let learned_self_type = relax_type_with_singleton_class_assumption(learned_self_type);
+
 
     // Verify self operand type
-    if self_val_type.diff(ctx.get_opnd_type(SelfOpnd)) == TypeDiff::Incompatible {
+    if self_val_type.diff(learned_self_type) == TypeDiff::Incompatible {
         panic!(
             "verify_ctx: ctx self type ({:?}) incompatible with actual value of self {}",
             ctx.get_opnd_type(SelfOpnd),
@@ -553,6 +609,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     for i in 0..top_idx {
         let learned_mapping = ctx.get_opnd_mapping(StackOpnd(i));
         let learned_type = ctx.get_opnd_type(StackOpnd(i));
+        let learned_type = relax_type_with_singleton_class_assumption(learned_type);
 
         let stack_val = jit.peek_at_stack(ctx, i as isize);
         let val_type = Type::from(stack_val);
@@ -598,6 +655,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     let top_idx: usize = cmp::min(local_table_size as usize, MAX_TEMP_TYPES);
     for i in 0..top_idx {
         let learned_type = ctx.get_local_type(i);
+        let learned_type = relax_type_with_singleton_class_assumption(learned_type);
         let local_val = jit.peek_at_local(i as i32);
         let local_type = Type::from(local_val);
 
@@ -2203,16 +2261,22 @@ fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
 fn gen_getlocal_generic(
     jit: &mut JITState,
     asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
-    // Load environment pointer EP (level 0) from CFP
-    let ep_opnd = gen_get_ep(asm, level);
+    let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm, ocb) {
+        // Load the local using SP register
+        asm.ctx.ep_opnd(-(ep_offset as i32))
+    } else {
+        // Load environment pointer EP (level 0) from CFP
+        let ep_opnd = gen_get_ep(asm, level);
 
-    // Load the local from the block
-    // val = *(vm_get_ep(GET_EP(), level) - idx);
-    let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
-    let local_opnd = Opnd::mem(64, ep_opnd, offs);
+        // Load the local from the block
+        // val = *(vm_get_ep(GET_EP(), level) - idx);
+        let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
+        Opnd::mem(64, ep_opnd, offs)
+    };
 
     // Write the local at SP
     let stack_top = if level == 0 {
@@ -2230,29 +2294,29 @@ fn gen_getlocal_generic(
 fn gen_getlocal(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
     let level = jit.get_arg(1).as_u32();
-    gen_getlocal_generic(jit, asm, idx, level)
+    gen_getlocal_generic(jit, asm, ocb, idx, level)
 }
 
 fn gen_getlocal_wc0(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
-    gen_getlocal_generic(jit, asm, idx, 0)
+    gen_getlocal_generic(jit, asm, ocb, idx, 0)
 }
 
 fn gen_getlocal_wc1(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
-    gen_getlocal_generic(jit, asm, idx, 1)
+    gen_getlocal_generic(jit, asm, ocb, idx, 1)
 }
 
 fn gen_setlocal_generic(
@@ -2264,11 +2328,11 @@ fn gen_setlocal_generic(
 ) -> Option<CodegenStatus> {
     let value_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
-    // Load environment pointer EP at level
-    let ep_opnd = gen_get_ep(asm, level);
-
     // Fallback because of write barrier
     if asm.ctx.get_chain_depth() > 0 {
+        // Load environment pointer EP at level
+        let ep_opnd = gen_get_ep(asm, level);
+
         // This function should not yield to the GC.
         // void rb_vm_env_write(const VALUE *ep, int index, VALUE v)
         let index = -(ep_offset as i64);
@@ -2286,16 +2350,27 @@ fn gen_setlocal_generic(
         return Some(KeepCompiling);
     }
 
-    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
-    // only affect heap objects being written. If we know an immediate value is being written we
-    // can skip this check.
-    if !value_type.is_imm() {
-        // flags & VM_ENV_FLAG_WB_REQUIRED
+    let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm, ocb) {
+        // Load flags and the local using SP register
+        let local_opnd = asm.ctx.ep_opnd(-(ep_offset as i32));
+        let flags_opnd = asm.ctx.ep_opnd(VM_ENV_DATA_INDEX_FLAGS as i32);
+        (flags_opnd, local_opnd)
+    } else {
+        // Load flags and the local for the level
+        let ep_opnd = gen_get_ep(asm, level);
         let flags_opnd = Opnd::mem(
             64,
             ep_opnd,
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
+        (flags_opnd, Opnd::mem(64, ep_opnd, -SIZEOF_VALUE_I32 * ep_offset as i32))
+    };
+
+    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+    // only affect heap objects being written. If we know an immediate value is being written we
+    // can skip this check.
+    if !value_type.is_imm() {
+        // flags & VM_ENV_FLAG_WB_REQUIRED
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
         // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
@@ -2319,8 +2394,7 @@ fn gen_setlocal_generic(
     let stack_top = asm.stack_pop(1);
 
     // Write the value at the environment pointer
-    let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
-    asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
+    asm.mov(local_opnd, stack_top);
 
     Some(KeepCompiling)
 }

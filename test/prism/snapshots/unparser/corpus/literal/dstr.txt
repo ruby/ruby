@@ -203,6 +203,7 @@
         │   │   @ StatementsNode (location: (27,2)-(27,19))
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (27,2)-(27,19))
+        │   │           ├── flags: ∅
         │   │           ├── keyword_loc: (27,2)-(27,8) = "return"
         │   │           └── arguments:
         │   │               @ ArgumentsNode (location: (27,9)-(27,19))

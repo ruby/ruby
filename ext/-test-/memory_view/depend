@@ -147,6 +147,7 @@ memory_view.o: $(hdrdir)/ruby/internal/special_consts.h
 memory_view.o: $(hdrdir)/ruby/internal/static_assert.h
 memory_view.o: $(hdrdir)/ruby/internal/stdalign.h
 memory_view.o: $(hdrdir)/ruby/internal/stdbool.h
+memory_view.o: $(hdrdir)/ruby/internal/stdckdint.h
 memory_view.o: $(hdrdir)/ruby/internal/symbol.h
 memory_view.o: $(hdrdir)/ruby/internal/value.h
 memory_view.o: $(hdrdir)/ruby/internal/value_type.h

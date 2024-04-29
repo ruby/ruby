@@ -147,6 +147,7 @@ instrumentation.o: $(hdrdir)/ruby/internal/special_consts.h
 instrumentation.o: $(hdrdir)/ruby/internal/static_assert.h
 instrumentation.o: $(hdrdir)/ruby/internal/stdalign.h
 instrumentation.o: $(hdrdir)/ruby/internal/stdbool.h
+instrumentation.o: $(hdrdir)/ruby/internal/stdckdint.h
 instrumentation.o: $(hdrdir)/ruby/internal/symbol.h
 instrumentation.o: $(hdrdir)/ruby/internal/value.h
 instrumentation.o: $(hdrdir)/ruby/internal/value_type.h
