@@ -250,6 +250,33 @@ impl JITState {
         }
     }
 
+    pub fn assume_expected_cfunc(
+        &mut self,
+        asm: &mut Assembler,
+        ocb: &mut OutlinedCb,
+        class: VALUE,
+        method: ID,
+        cfunc: *mut c_void,
+    ) -> bool {
+        let cme = unsafe { rb_callable_method_entry(class, method) };
+
+        if cme.is_null() {
+            return false;
+        }
+
+        let def_type = unsafe { get_cme_def_type(cme) };
+        if def_type != VM_METHOD_TYPE_CFUNC {
+            return false;
+        }
+        if unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) } != cfunc {
+            return false;
+        }
+
+        self.assume_method_lookup_stable(asm, ocb, cme);
+
+        true
+    }
+
     pub fn assume_method_lookup_stable(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, cme: CmePtr) -> Option<()> {
         jit_ensure_block_entry_exit(self, asm, ocb)?;
         self.method_lookup_assumptions.push(cme);
@@ -6164,6 +6191,34 @@ fn jit_rb_class_superclass(
     true
 }
 
+fn jit_rb_case_equal(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    known_recv_class: Option<VALUE>,
+) -> bool {
+    if !jit.assume_expected_cfunc( asm, ocb, known_recv_class.unwrap(), ID!(eq), rb_obj_equal as _) {
+        return false;
+    }
+
+    asm_comment!(asm, "case_equal: {}#===", get_class_name(known_recv_class));
+
+    // Compare the arguments
+    let arg1 = asm.stack_pop(1);
+    let arg0 = asm.stack_pop(1);
+    asm.cmp(arg0, arg1);
+    let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
+
+    let stack_ret = asm.stack_push(Type::UnknownImm);
+    asm.mov(stack_ret, ret_opnd);
+
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     asm: &mut Assembler,
@@ -8827,11 +8882,16 @@ fn gen_send_general(
     }
 }
 
+/// Get class name from a class pointer.
+fn get_class_name(class: Option<VALUE>) -> String {
+    class.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string())
+}
+
 /// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
 fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
-    let class_name = class.and_then(|class| unsafe {
-        cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string());
+    let class_name = get_class_name(class);
     let method_name = if mid != 0 {
         unsafe { cstr_to_rust_string(rb_id2name(mid)) }
     } else {
@@ -10165,6 +10225,10 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+        yjit_reg_method(rb_cNilClass, "===", jit_rb_case_equal);
+        yjit_reg_method(rb_cTrueClass, "===", jit_rb_case_equal);
+        yjit_reg_method(rb_cFalseClass, "===", jit_rb_case_equal);
 
         yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
         yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);

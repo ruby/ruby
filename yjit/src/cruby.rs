@@ -805,6 +805,7 @@ pub(crate) mod ids {
         name: hash               content: b"hash"
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
+        name: eq                 content: b"=="
     }
 }
 

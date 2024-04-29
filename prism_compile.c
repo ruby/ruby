@@ -5008,7 +5008,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (cast->predicate == NULL) {
             // Establish branch coverage for the case node.
             VALUE branches = Qfalse;
-            rb_code_location_t case_location;
+            rb_code_location_t case_location = { 0 };
             int branch_id = 0;
 
             if (PM_BRANCH_COVERAGE_P(iseq)) {
@@ -5229,7 +5229,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN(ret, location, pop);
 
                 // Establish branch coverage for the implicit else clause.
-                add_trace_branch_coverage(iseq, ret, &case_location, case_location.beg_pos.column, branch_id, "else", branches);
+                if (PM_BRANCH_COVERAGE_P(iseq)) {
+                    add_trace_branch_coverage(iseq, ret, &case_location, case_location.beg_pos.column, branch_id, "else", branches);
+                }
 
                 if (!popped) PUSH_INSN(ret, location, putnil);
                 PUSH_INSNL(ret, location, jump, end_label);
