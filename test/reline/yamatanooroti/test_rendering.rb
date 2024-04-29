@@ -945,15 +945,27 @@ begin
       EOC
     end
 
-    def test_with_newline
+    def test_eof_with_newline
       omit if Reline.core.io_gate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
       sleep 1
-      close
+      close rescue nil
       assert_screen(<<~'EOC')
         > abc def
         "abc def "
+      EOC
+    end
+
+    def test_eof_without_newline
+      omit if Reline.core.io_gate.win?
+      cmd = %Q{ruby -e 'print(%{hello})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
+      start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
+      close rescue nil
+      assert_screen(<<~'EOC')
+        > hello
+        "hello"
       EOC
     end
 

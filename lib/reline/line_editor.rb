@@ -1118,6 +1118,7 @@ class Reline::LineEditor
       end
     end
     if key.char.nil?
+      process_insert(force: true)
       if @first_char
         @eof = true
       end
