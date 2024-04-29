@@ -380,6 +380,7 @@ fn main() {
 
         // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
+        .allowlist_function("rb_obj_equal")
 
         // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")
