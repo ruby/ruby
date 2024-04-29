@@ -518,6 +518,7 @@ parser_free(void *ptr)
 {
     struct ruby_parser *parser = (struct ruby_parser*)ptr;
     rb_ruby_parser_free(parser->parser_params);
+    xfree(parser);
 }
 
 static size_t
