@@ -419,7 +419,6 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_MEASURE_LINE || PRINT_ROOT_TICKS)
-#define TICK_TYPE 1
 
 typedef struct {
     size_t size_pool_init_slots[SIZE_POOL_COUNT];
@@ -1419,17 +1418,7 @@ static const char *obj_type_name(VALUE obj);
 
 static void gc_finalize_deferred(void *dmy);
 
-/*
- * 1 - TSC (H/W Time Stamp Counter)
- * 2 - getrusage
- */
-#ifndef TICK_TYPE
-#define TICK_TYPE 1
-#endif
-
 #if USE_TICK_T
-
-#if TICK_TYPE == 1
 /* the following code is only for internal tuning. */
 
 /* Source code to use RDTSC is quoted and modified from
@@ -1526,28 +1515,6 @@ tick(void)
     return clock();
 }
 #endif /* TSC */
-
-#elif TICK_TYPE == 2
-typedef double tick_t;
-#define PRItick "4.9f"
-
-static inline tick_t
-tick(void)
-{
-    return getrusage_time();
-}
-#else /* TICK_TYPE */
-#error "choose tick type"
-#endif /* TICK_TYPE */
-
-#define MEASURE_LINE(expr) do { \
-    volatile tick_t start_time = tick(); \
-    volatile tick_t end_time; \
-    expr; \
-    end_time = tick(); \
-    fprintf(stderr, "0\t%"PRItick"\t%s\n", end_time - start_time, #expr); \
-} while (0)
-
 #else /* USE_TICK_T */
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
