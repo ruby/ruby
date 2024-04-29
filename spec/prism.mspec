@@ -7,15 +7,6 @@ MSpec.register(:exclude, "Warning.[] returns default values for categories :depr
 ## Language
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /e (EUC encoding) with interpolation /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves EUC-JP as /e encoding through interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /s (Windows_31J encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /s (Windows_31J encoding) with interpolation and /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves Windows-31J as /s encoding through interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /u (UTF8 encoding) with interpolation")
-MSpec.register(:exclude, "Regexps with encoding modifiers supports /u (UTF8 encoding) with interpolation and /o")
-MSpec.register(:exclude, "Regexps with encoding modifiers preserves UTF-8 as /u encoding through interpolation")
 MSpec.register(:exclude, "A Symbol literal raises an SyntaxError at parse time when Symbol with invalid bytes")
 
 ## Core
