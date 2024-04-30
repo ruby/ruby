@@ -5140,7 +5140,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         else {
             // Establish branch coverage for the case node.
             VALUE branches = Qfalse;
-            rb_code_location_t case_location;
+            rb_code_location_t case_location = { 0 };
             int branch_id = 0;
 
             if (PM_BRANCH_COVERAGE_P(iseq)) {
