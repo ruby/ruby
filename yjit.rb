@@ -202,9 +202,16 @@ module RubyVM::YJIT
     iseq = RubyVM::InstructionSequence.of(iseq)
 
     if self.enabled?
-      # Produce the disassembly string
-      # Include the YARV iseq disasm in the string for additional context
-      iseq.disasm + "\n" + Primitive.rb_yjit_disasm_iseq(iseq)
+      disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
+
+      if !disasm_str
+        $stderr.puts("YJIT disasm is only available when YJIT is built in dev mode, i.e.:\n")
+        $stderr.puts("./configure --enable-yjit (see doc/yjit/yjit.md)\n")
+      else
+        # Produce the disassembly string
+        # Include the YARV iseq disasm in the string for additional context
+        iseq.disasm + "\n" + disasm_str
+      end
     else
       iseq.disasm
     end
