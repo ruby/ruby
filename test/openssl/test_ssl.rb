@@ -125,7 +125,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ensure
       ssl.close
     end
-    
+
     start_server(server_proc: server_proc) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
