@@ -225,17 +225,20 @@ module Reline
       journey_data = completion_journey_data
       return unless journey_data
 
-      target = journey_data.list[journey_data.pointer]
+      target = journey_data.list.first
+      completed = journey_data.list[journey_data.pointer]
       result = journey_data.list.drop(1)
       pointer = journey_data.pointer - 1
-      return if target.empty? || (result == [target] && pointer < 0)
+      return if completed.empty? || (result == [completed] && pointer < 0)
 
       target_width = Reline::Unicode.calculate_width(target)
-      x = cursor_pos.x - target_width
-      if x < 0
-        x = screen_width + x
+      completed_width = Reline::Unicode.calculate_width(completed)
+      if cursor_pos.x <= completed_width - target_width
+        # When target is rendered on the line above cursor position
+        x = screen_width - completed_width
         y = -1
       else
+        x = [cursor_pos.x - completed_width, 0].max
         y = 0
       end
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
