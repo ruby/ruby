@@ -3,14 +3,6 @@ require 'test/unit'
 require 'delegate'
 
 class TestDelegateClass < Test::Unit::TestCase
-  module PP
-    def mu_pp(obj)
-      str = super
-      str = "#<#{obj.class}: #{str}>" if Delegator === obj
-      str
-    end
-  end
-
   module M
     attr_reader :m
   end
@@ -215,7 +207,6 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   def test_eql?
-    extend PP
     s0 = SimpleDelegator.new("foo")
     s1 = SimpleDelegator.new("bar")
     s2 = SimpleDelegator.new("foo")
