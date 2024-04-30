@@ -125,6 +125,26 @@ module TestIRB
     end
   end
 
+  class NestedBindingIrbTest < IntegrationTestCase
+    def test_current_context_restore
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type '$ctx = IRB.CurrentContext'
+        type 'binding.irb'
+        type 'p context_changed: IRB.CurrentContext != $ctx'
+        type 'exit'
+        type 'p context_restored: IRB.CurrentContext == $ctx'
+        type 'exit'
+      end
+
+      assert_include output, '{:context_changed=>true}'
+      assert_include output, '{:context_restored=>true}'
+    end
+  end
+
   class IrbIOConfigurationTest < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :indent_level)
 

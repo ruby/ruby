@@ -992,6 +992,7 @@ module IRB
     def run(conf = IRB.conf)
       in_nested_session = !!conf[:MAIN_CONTEXT]
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
+      prev_context = conf[:MAIN_CONTEXT]
       conf[:MAIN_CONTEXT] = context
 
       save_history = !in_nested_session && conf[:SAVE_HISTORY] && context.io.support_history_saving?
@@ -1014,6 +1015,9 @@ module IRB
           eval_input
         end
       ensure
+        # Do not restore to nil. It will cause IRB crash when used with threads.
+        IRB.conf[:MAIN_CONTEXT] = prev_context if prev_context
+
         RubyVM.keep_script_lines = keep_script_lines_backup if defined?(RubyVM.keep_script_lines)
         trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
