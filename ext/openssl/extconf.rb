@@ -149,6 +149,9 @@ engines.each { |name|
   have_func("ENGINE_load_#{name}()", "openssl/engine.h")
 }
 
+# missing in libressl < 3.5
+have_func("i2d_re_X509_tbs(NULL, NULL)", x509_h)
+
 # added in 1.1.0
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")

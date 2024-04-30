@@ -322,6 +322,15 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     end
   end
 
+  def test_tbs_precert_bytes
+    pend "LibreSSL < 3.5 does not have i2d_re_X509_tbs" if libressl? && !libressl?(3, 5, 0)
+
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    seq = OpenSSL::ASN1.decode(cert.tbs_bytes)
+
+    assert_equal 7, seq.value.size
+  end
+
   private
 
   def certificate_error_returns_false

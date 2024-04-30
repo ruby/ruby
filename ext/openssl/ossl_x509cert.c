@@ -707,6 +707,38 @@ ossl_x509_eq(VALUE self, VALUE other)
     return !X509_cmp(a, b) ? Qtrue : Qfalse;
 }
 
+#ifdef HAVE_I2D_RE_X509_TBS
+/*
+ * call-seq:
+ *    cert.tbs_bytes => string
+ *
+ * Returns the DER-encoded bytes of the certificate's to be signed certificate.
+ * This is mainly useful for validating embedded certificate transparency signatures.
+ */
+static VALUE
+ossl_x509_tbs_bytes(VALUE self)
+{
+    X509 *x509;
+    int len;
+    unsigned char *p0;
+    VALUE str;
+
+    GetX509(self, x509);
+    len = i2d_re_X509_tbs(x509, NULL);
+    if (len <= 0) {
+        ossl_raise(eX509CertError, "i2d_re_X509_tbs");
+    }
+    str = rb_str_new(NULL, len);
+    p0 = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_re_X509_tbs(x509, &p0) <= 0) {
+        ossl_raise(eX509CertError, "i2d_re_X509_tbs");
+    }
+    ossl_str_adjust(str, p0);
+
+    return str;
+}
+#endif
+
 struct load_chained_certificates_arguments {
     VALUE certificates;
     X509 *certificate;
@@ -999,4 +1031,7 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
     rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
+#ifdef HAVE_I2D_RE_X509_TBS
+    rb_define_method(cX509Cert, "tbs_bytes", ossl_x509_tbs_bytes, 0);
+#endif
 }
