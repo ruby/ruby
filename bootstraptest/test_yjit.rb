@@ -4964,3 +4964,19 @@ assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]
 
   results << test
 } unless rjit_enabled? # Not yet working on RJIT
+
+# test struct accessors fire c_call events
+assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{
+  c = Struct.new(:x)
+  obj = c.new
+
+  events = []
+  TracePoint.new(:c_call) do
+    events << [_1.event, _1.method_id]
+  end.enable do
+    obj.x = 100
+    obj.x
+  end
+
+  events
+}
