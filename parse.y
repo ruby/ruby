@@ -7889,21 +7889,27 @@ enum string_type {
     str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND)
 };
 
+static void
+parser_str_enc_associate(rb_parser_string_t *str, void *enc)
+{
+    str->enc = (rb_encoding *)(enc);
+}
+
 static VALUE
 parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
-    VALUE str;
+    rb_parser_string_t *str;
 
-    str = rb_enc_str_new(ptr, len, enc);
+    str = rb_parser_encoding_string_new(p, ptr, len, enc);
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
-        if (is_ascii_string(str)) {
+        if (rb_parser_is_ascii_string(p, str)) {
         }
         else if (rb_is_usascii_enc((void *)enc0) && enc != rb_utf8_encoding()) {
-            rb_enc_associate(str, rb_ascii8bit_encoding());
+            parser_str_enc_associate(str, (void *)rb_ascii8bit_encoding());
         }
     }
 
-    return str;
+    return rb_str_new_parser_string(str);
 }
 
 static int

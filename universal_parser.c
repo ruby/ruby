@@ -128,7 +128,6 @@
 #undef rb_str_new_cstr
 #define rb_str_new_cstr                   p->config->str_new_cstr
 #define rb_str_to_interned_str            p->config->str_to_interned_str
-#define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
 #define rb_str_vcatf                      p->config->str_vcatf
 #undef StringValueCStr
@@ -164,7 +163,6 @@
 #define rb_enc_get              p->config->enc_get
 #define rb_enc_asciicompat      p->config->enc_asciicompat
 #define rb_utf8_encoding        p->config->utf8_encoding
-#define rb_enc_associate        p->config->enc_associate
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
