@@ -201,13 +201,27 @@ module RubyVM::YJIT
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
 
-    if self.enabled?
-      # Produce the disassembly string
-      # Include the YARV iseq disasm in the string for additional context
-      iseq.disasm + "\n" + Primitive.rb_yjit_disasm_iseq(iseq)
-    else
-      iseq.disasm
+    if !self.enabled?
+      warn(
+        "YJIT needs to be enabled to produce disasm output, e.g.\n" +
+        "ruby --yjit-call-threshold=1 my_script.rb (see doc/yjit/yjit.md)"
+      )
+      return nil
     end
+
+    disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
+
+    if !disasm_str
+      warn(
+        "YJIT disasm is only available when YJIT is built in dev mode, i.e.\n" +
+        "./configure --enable-yjit=dev (see doc/yjit/yjit.md)\n"
+      )
+      return nil
+    end
+
+    # Produce the disassembly string
+    # Include the YARV iseq disasm in the string for additional context
+    iseq.disasm + "\n" + disasm_str
   end
 
   # Produce a list of instructions compiled by YJIT for an iseq
