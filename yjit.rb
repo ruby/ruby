@@ -206,7 +206,7 @@ module RubyVM::YJIT
 
       if !disasm_str
         $stderr.puts("YJIT disasm is only available when YJIT is built in dev mode, i.e.:\n")
-        $stderr.puts("./configure --enable-yjit (see doc/yjit/yjit.md)\n")
+        $stderr.puts("./configure --enable-yjit=dev (see doc/yjit/yjit.md)\n")
       else
         # Produce the disassembly string
         # Include the YARV iseq disasm in the string for additional context
