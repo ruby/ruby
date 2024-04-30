@@ -241,7 +241,7 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data)
 
 #if USE_MMTK
 static enum rb_id_table_iterator_result
-cc_table_mark_i_no_id(VALUE ccs_ptr, void *data_ptr)
+rb_mmtk_cc_table_mark_i_no_id(VALUE ccs_ptr, void *data_ptr)
 {
     return cc_table_mark_i(0, ccs_ptr, data_ptr);
 }
@@ -257,7 +257,7 @@ rb_cc_table_mark(VALUE klass)
             // Note: rb_id_table_foreach will look up the ID from keys by accessing
             // arrays in the heap during key2id, but the id is only used for
             // assertion which fails with an evacuating GC (such as Immix) anyway.
-            rb_id_table_foreach_values(cc_tbl, cc_table_mark_i_no_id, (void *)klass);
+            rb_id_table_foreach_values(cc_tbl, rb_mmtk_cc_table_mark_i_no_id, (void *)klass);
         } else {
 #endif
         rb_id_table_foreach(cc_tbl, cc_table_mark_i, (void *)klass);

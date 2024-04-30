@@ -2682,10 +2682,6 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 
 #define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
 
-#if USE_MMTK
-
-#endif
-
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
@@ -3357,7 +3353,8 @@ cvar_table_free_i(VALUE value, void *ctx)
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_SEEN_OBJ_ID | FL_FINALIZE)
 
 #if USE_MMTK
-static inline void rb_mmtk_push_final_job(struct MMTk_FinalJob *job)
+static inline void
+rb_mmtk_push_final_job(struct MMTk_FinalJob *job)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -7540,7 +7537,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (any->as.match.str) {
             gc_mark(objspace, any->as.match.str);
         }
-        #if USE_MMTK
+#if USE_MMTK
         if (rb_mmtk_enabled_p()) {
             // If GC is triggered when the mutator is resizing the following buffers, we retain
             // them because their contents need to be copied to the new buffers after GC.
@@ -7548,7 +7545,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, false);
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, false);
         }
-        #endif
+#endif
         break;
 
       case T_RATIONAL:
@@ -10337,7 +10334,7 @@ gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func co
 
 #if USE_MMTK
 static void
-gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
+rb_mmtk_gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
 {
      if (STR_EMBED_P(str)) {
         // Embedded strings don't point into any buffer.
@@ -10867,7 +10864,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         {
 #if USE_MMTK
             if (rb_mmtk_enabled_p()) {
-                gc_ref_update_string(objspace, obj);
+                rb_mmtk_gc_ref_update_string(objspace, obj);
                 break;
             }
 #endif
@@ -10942,7 +10939,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, any->as.match.str);
         }
 
-        #if USE_MMTK
+#if USE_MMTK
         if (rb_mmtk_enabled_p()) {
             // If GC is triggered when the mutator is resizing the following buffers, we retain
             // them because their contents need to be copied to the new buffers after GC.
@@ -10950,7 +10947,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, true);
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, true);
         }
-        #endif
+#endif
 
         break;
 
