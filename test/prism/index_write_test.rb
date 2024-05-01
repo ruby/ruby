@@ -4,7 +4,7 @@ require_relative "test_helper"
 
 module Prism
   class IndexWriteTest < TestCase
-    def test_keywords_3_3_0
+    def test_keywords_3_3
       assert_parse_success(<<~RUBY, "3.3.0")
         foo[bar: 1] = 1
         foo[bar: 1] &&= 1
@@ -22,7 +22,7 @@ module Prism
       RUBY
     end
 
-    def test_block_3_3_0
+    def test_block_3_3
       assert_parse_success(<<~RUBY, "3.3.0")
         foo[&bar] = 1
         foo[&bar] &&= 1

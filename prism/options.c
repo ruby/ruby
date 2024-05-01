@@ -58,8 +58,8 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         case 5:
             assert(version != NULL);
 
-            if (strncmp(version, "3.3.0", length) == 0) {
-                options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
+            if ((strncmp(version, "3.3.0", length) == 0) || (strncmp(version, "3.3.1", length) == 0)) {
+                options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
                 return true;
             }
 

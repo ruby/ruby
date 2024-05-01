@@ -1405,7 +1405,7 @@ pm_conditional_predicate_warn_write_literal_p(const pm_node_t *node) {
 static inline void
 pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, const pm_node_t *node) {
     if (pm_conditional_predicate_warn_write_literal_p(node)) {
-        pm_parser_warn_node(parser, node, parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3_0 : PM_WARN_EQUAL_IN_CONDITIONAL);
+        pm_parser_warn_node(parser, node, parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3 : PM_WARN_EQUAL_IN_CONDITIONAL);
     }
 }
 
@@ -7834,7 +7834,7 @@ pm_local_variable_read_node_create_it(pm_parser_t *parser, const pm_token_t *nam
 static pm_node_t *
 pm_node_check_it(pm_parser_t *parser, pm_node_t *node) {
     if (
-        (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) &&
+        (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) &&
         !parser->current_scope->closed &&
         (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
         pm_node_is_it(parser, node)
@@ -8832,7 +8832,7 @@ lex_global_variable(pm_parser_t *parser) {
                 } while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);
 
                 // $0 isn't allowed to be followed by anything.
-                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, diag_id);
             }
 
@@ -8868,7 +8868,7 @@ lex_global_variable(pm_parser_t *parser) {
             } else {
                 // If we get here, then we have a $ followed by something that
                 // isn't recognized as a global variable.
-                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3_0 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
                 size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, (int) ((parser->current.end + width) - parser->current.start), (const char *) parser->current.start);
             }
@@ -9825,8 +9825,8 @@ lex_at_variable(pm_parser_t *parser) {
         }
     } else if (parser->current.end < parser->end && pm_char_is_decimal_digit(*parser->current.end)) {
         pm_diagnostic_id_t diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE;
-        if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3_0) {
-            diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3_0 : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3_0;
+        if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3) {
+            diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3 : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3;
         }
 
         size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
@@ -16254,7 +16254,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
                     if (variable == NULL) {
                         if (
-                            (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) &&
+                            (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) &&
                             !parser->current_scope->closed &&
                             (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
                             pm_token_is_it(parser->previous.start, parser->previous.end)

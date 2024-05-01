@@ -149,17 +149,17 @@ module Prism
           Diagnostic.new(:error, :endless_setter, {}, diagnostic_location, [])
         when :embdoc_term
           Diagnostic.new(:error, :embedded_document, {}, diagnostic_location, [])
-        when :incomplete_variable_class, :incomplete_variable_class_3_3_0
+        when :incomplete_variable_class, :incomplete_variable_class_3_3
           location = location.copy(length: location.length + 1)
           diagnostic_location = build_range(location, offset_cache)
 
           Diagnostic.new(:error, :cvar_name, { name: location.slice }, diagnostic_location, [])
-        when :incomplete_variable_instance, :incomplete_variable_instance_3_3_0
+        when :incomplete_variable_instance, :incomplete_variable_instance_3_3
           location = location.copy(length: location.length + 1)
           diagnostic_location = build_range(location, offset_cache)
 
           Diagnostic.new(:error, :ivar_name, { name: location.slice }, diagnostic_location, [])
-        when :invalid_variable_global, :invalid_variable_global_3_3_0
+        when :invalid_variable_global, :invalid_variable_global_3_3
           Diagnostic.new(:error, :gvar_name, { name: location.slice }, diagnostic_location, [])
         when :module_in_method
           Diagnostic.new(:error, :module_in_def, {}, diagnostic_location, [])
