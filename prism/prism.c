@@ -12824,6 +12824,23 @@ expect3(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_to
     parser->previous.type = PM_TOKEN_MISSING;
 }
 
+/**
+ * A special expect1 that expects a heredoc terminator and handles popping the
+ * lex mode accordingly.
+ */
+static void
+expect1_heredoc_term(pm_parser_t *parser, pm_lex_mode_t *lex_mode) {
+    if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+        lex_mode_pop(parser);
+        parser_lex(parser);
+    } else {
+        pm_parser_err_heredoc_term(parser, lex_mode);
+        lex_mode_pop(parser);
+        parser->previous.start = parser->previous.end;
+        parser->previous.type = PM_TOKEN_MISSING;
+    }
+}
+
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id);
 
@@ -17527,16 +17544,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
                 // If we get here, then we have an empty heredoc. We'll create
                 // an empty content token and return an empty string node.
-                if (match1(parser, PM_TOKEN_HEREDOC_END)) {
-                    lex_mode_pop(parser);
-                    parser_lex(parser);
-                } else {
-                    pm_parser_err_heredoc_term(parser, lex_mode);
-                    lex_mode_pop(parser);
-                    parser->previous.start = parser->previous.end;
-                    parser->previous.type = PM_TOKEN_MISSING;
-                }
-
+                expect1_heredoc_term(parser, lex_mode);
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
                 if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
@@ -17577,16 +17585,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
 
                 node = (pm_node_t *) cast;
-
-                if (match1(parser, PM_TOKEN_HEREDOC_END)) {
-                    lex_mode_pop(parser);
-                    parser_lex(parser);
-                } else {
-                    pm_parser_err_heredoc_term(parser, lex_mode);
-                    lex_mode_pop(parser);
-                    parser->previous.start = parser->previous.end;
-                    parser->previous.type = PM_TOKEN_MISSING;
-                }
+                expect1_heredoc_term(parser, lex_mode);
             } else {
                 // If we get here, then we have multiple parts in the heredoc,
                 // so we'll need to create an interpolated string node to hold
@@ -17608,34 +17607,18 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_interpolated_x_string_node_t *cast = pm_interpolated_xstring_node_create(parser, &opening, &opening);
                     cast->parts = parts;
 
-                    if (match1(parser, PM_TOKEN_HEREDOC_END)) {
-                        lex_mode_pop(parser);
-                        parser_lex(parser);
-                    } else {
-                        pm_parser_err_heredoc_term(parser, lex_mode);
-                        lex_mode_pop(parser);
-                        parser->previous.start = parser->previous.end;
-                        parser->previous.type = PM_TOKEN_MISSING;
-                    }
-
+                    expect1_heredoc_term(parser, lex_mode);
                     pm_interpolated_xstring_node_closing_set(cast, &parser->previous);
+
                     cast->base.location = cast->opening_loc;
                     node = (pm_node_t *) cast;
                 } else {
                     pm_interpolated_string_node_t *cast = pm_interpolated_string_node_create(parser, &opening, &parts, &opening);
                     pm_node_list_free(&parts);
 
-                    if (match1(parser, PM_TOKEN_HEREDOC_END)) {
-                        lex_mode_pop(parser);
-                        parser_lex(parser);
-                    } else {
-                        pm_parser_err_heredoc_term(parser, lex_mode);
-                        lex_mode_pop(parser);
-                        parser->previous.start = parser->previous.end;
-                        parser->previous.type = PM_TOKEN_MISSING;
-                    }
-
+                    expect1_heredoc_term(parser, lex_mode);
                     pm_interpolated_string_node_closing_set(cast, &parser->previous);
+
                     cast->base.location = cast->opening_loc;
                     node = (pm_node_t *) cast;
                 }
