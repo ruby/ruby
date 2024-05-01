@@ -1381,7 +1381,6 @@ module Prism
 
     def test_invalid_number_underscores
       error_messages = ["invalid underscore placement in number"]
-
       assert_error_messages "1__1", error_messages
       assert_error_messages "0b1__1", error_messages
       assert_error_messages "0o1__1", error_messages
@@ -1389,6 +1388,7 @@ module Prism
       assert_error_messages "0d1__1", error_messages
       assert_error_messages "0x1__1", error_messages
 
+      error_messages = ["trailing '_' in number"]
       assert_error_messages "1_1_", error_messages
       assert_error_messages "0b1_1_", error_messages
       assert_error_messages "0o1_1_", error_messages

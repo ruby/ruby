@@ -8558,10 +8558,11 @@ context_human(pm_context_t context) {
 /* Specific token lexers                                                      */
 /******************************************************************************/
 
-static void
-pm_strspn_number_validate(pm_parser_t *parser, const uint8_t *invalid) {
+static inline void
+pm_strspn_number_validate(pm_parser_t *parser, const uint8_t *string, size_t length, const uint8_t *invalid) {
     if (invalid != NULL) {
-        pm_parser_err(parser, invalid, invalid + 1, PM_ERR_INVALID_NUMBER_UNDERSCORE);
+        pm_diagnostic_id_t diag_id = (invalid == (string + length - 1)) ? PM_ERR_INVALID_NUMBER_UNDERSCORE_TRAILING : PM_ERR_INVALID_NUMBER_UNDERSCORE_INNER;
+        pm_parser_err(parser, invalid, invalid + 1, diag_id);
     }
 }
 
@@ -8569,7 +8570,7 @@ static size_t
 pm_strspn_binary_number_validate(pm_parser_t *parser, const uint8_t *string) {
     const uint8_t *invalid = NULL;
     size_t length = pm_strspn_binary_number(string, parser->end - string, &invalid);
-    pm_strspn_number_validate(parser, invalid);
+    pm_strspn_number_validate(parser, string, length, invalid);
     return length;
 }
 
@@ -8577,7 +8578,7 @@ static size_t
 pm_strspn_octal_number_validate(pm_parser_t *parser, const uint8_t *string) {
     const uint8_t *invalid = NULL;
     size_t length = pm_strspn_octal_number(string, parser->end - string, &invalid);
-    pm_strspn_number_validate(parser, invalid);
+    pm_strspn_number_validate(parser, string, length, invalid);
     return length;
 }
 
@@ -8585,7 +8586,7 @@ static size_t
 pm_strspn_decimal_number_validate(pm_parser_t *parser, const uint8_t *string) {
     const uint8_t *invalid = NULL;
     size_t length = pm_strspn_decimal_number(string, parser->end - string, &invalid);
-    pm_strspn_number_validate(parser, invalid);
+    pm_strspn_number_validate(parser, string, length, invalid);
     return length;
 }
 
@@ -8593,7 +8594,7 @@ static size_t
 pm_strspn_hexadecimal_number_validate(pm_parser_t *parser, const uint8_t *string) {
     const uint8_t *invalid = NULL;
     size_t length = pm_strspn_hexadecimal_number(string, parser->end - string, &invalid);
-    pm_strspn_number_validate(parser, invalid);
+    pm_strspn_number_validate(parser, string, length, invalid);
     return length;
 }
 
