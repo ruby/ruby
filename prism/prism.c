@@ -21531,24 +21531,27 @@ pm_parser_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, 
         pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
 
         size_t column = 0;
-        while (column < error->column_end) {
-            if (column < error->column_start) {
-                pm_buffer_append_byte(buffer, ' ');
-            } else {
-                const uint8_t caret = column == error->column_start ? '^' : '~';
-
-                if (colorize) {
-                    pm_buffer_append_string(buffer, PM_COLOR_RED, 7);
-                    pm_buffer_append_byte(buffer, caret);
-                    pm_buffer_append_string(buffer, PM_COLOR_RESET, 3);
-                } else {
-                    pm_buffer_append_byte(buffer, caret);
-                }
-            }
+        while (column < error->column_start) {
+            pm_buffer_append_byte(buffer, ' ');
 
             size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
             column += (char_width == 0 ? 1 : char_width);
         }
+
+        if (colorize) pm_buffer_append_string(buffer, PM_COLOR_RED, 7);
+        pm_buffer_append_byte(buffer, '^');
+
+        size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
+        column += (char_width == 0 ? 1 : char_width);
+
+        while (column < error->column_end) {
+            pm_buffer_append_byte(buffer, '~');
+
+            size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
+            column += (char_width == 0 ? 1 : char_width);
+        }
+
+        if (colorize) pm_buffer_append_string(buffer, PM_COLOR_RESET, 3);
 
         if (inline_messages) {
             pm_buffer_append_byte(buffer, ' ');
