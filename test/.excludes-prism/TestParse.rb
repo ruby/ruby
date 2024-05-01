@@ -1,6 +1,5 @@
 exclude(:test_error_def_in_argument, "unknown")
 exclude(:test_global_variable, "unknown")
-exclude(:test_here_document, "unknown")
 exclude(:test_invalid_char, "unknown")
 exclude(:test_location_of_invalid_token, "unknown")
 exclude(:test_op_asgn1_with_block, "unknown")
