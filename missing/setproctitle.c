@@ -87,8 +87,29 @@ static char **argv1_addr = NULL;
 #endif
 
 #if ALLOCATE_ENVIRON
+/* system_environ is the value of environ before we allocate a custom buffer.
+ *
+ * We use this to restore environ in ruby_free_proctitle.
+ */
 static char **system_environ = NULL;
+/* orig_environ is the buffer we allocate for environ.
+ *
+ * We use this to free this buffer in ruby_free_proctitle. When we add new
+ * environment variables using setenv, the system may change environ to a
+ * different buffer and will not free the original buffer, so we need to hold
+ * onto this so we can free it in ruby_free_proctitle.
+ *
+ * We must not free any of the contents because it may change if the system
+ * updates existing environment variables.
+ */
 static char **orig_environ = NULL;
+/* alloc_environ is a copy of orig_environ.
+ *
+ * We use this to free all the original string copies that were in orig_environ.
+ * Since environ could be changed to point to strings allocated by the system
+ * if environment variables are updated, so we need this to point to the
+ * original strings.
+ */
 static char **alloc_environ = NULL;
 #endif
 
