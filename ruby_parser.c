@@ -784,13 +784,7 @@ static const rb_data_type_t ast_data_type = {
 static VALUE
 ast_alloc(void)
 {
-    rb_ast_t *ast;
-    VALUE vast = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
-#ifdef UNIVERSAL_PARSER
-    ast = (rb_ast_t *)DATA_PTR(vast);
-    ast->config = &rb_global_parser_config;
-#endif
-    return vast;
+    return TypedData_Wrap_Struct(0, &ast_data_type, NULL);
 }
 
 VALUE
@@ -1142,8 +1136,11 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 VALUE
 rb_ruby_ast_new(const NODE *const root)
 {
-    VALUE vast = ast_alloc();
-    rb_ast_t *ast = DATA_PTR(vast);
+    rb_ast_t *ast;
+    VALUE vast = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+#ifdef UNIVERSAL_PARSER
+    ast->config = &rb_global_parser_config;
+#endif
     ast->body = (rb_ast_body_t){
         .root = root,
         .frozen_string_literal = -1,
