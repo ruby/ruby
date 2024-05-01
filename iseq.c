@@ -1274,6 +1274,20 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
 
+    switch (option.frozen_string_literal) {
+      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+        pm_options_frozen_string_literal_set(&result.options, false);
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+        pm_options_frozen_string_literal_set(&result.options, true);
+        break;
+      default:
+        rb_bug("pm_iseq_compile_with_option: invalid frozen_string_literal=%d", option.frozen_string_literal);
+        break;
+    }
+
     VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
