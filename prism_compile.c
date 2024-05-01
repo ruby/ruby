@@ -3717,7 +3717,7 @@ pm_multi_target_state_update(pm_multi_target_state_t *state)
         previous = current;
         current = current->next;
 
-        free(previous);
+        xfree(previous);
     }
 }
 
