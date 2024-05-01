@@ -493,9 +493,8 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	@$(RM) $(ALLOBJS:.$(OBJEXT)=.bc)
-	@$(RM) $(ALLOBJS:.$(OBJEXT)=.i)
-	@$(RM) $(ALLOBJS:.$(OBJEXT)=.s)
+	$(Q)find . ! -type d \( -name '*.bc' -o -name '*.[is]' \) -exec rm -f {} + || true
+
 
 distclean-local::
 	$(Q)$(RM) \
