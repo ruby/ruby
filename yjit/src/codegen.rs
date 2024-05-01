@@ -8309,6 +8309,13 @@ fn gen_struct_aref(
         }
     }
 
+    if c_method_tracing_currently_enabled(jit) {
+        // Struct accesses need fire c_call and c_return events, which we can't support
+        // See :attr-tracing:
+        gen_counter_incr(asm, Counter::send_cfunc_tracing);
+        return None;
+    }
+
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
         handle_opt_send_shift_stack(asm, argc);
@@ -8350,6 +8357,13 @@ fn gen_struct_aset(
     argc: i32,
 ) -> Option<CodegenStatus> {
     if unsafe { vm_ci_argc(ci) } != 1 {
+        return None;
+    }
+
+    if c_method_tracing_currently_enabled(jit) {
+        // Struct accesses need fire c_call and c_return events, which we can't support
+        // See :attr-tracing:
+        gen_counter_incr(asm, Counter::send_cfunc_tracing);
         return None;
     }
 
@@ -8619,10 +8633,8 @@ fn gen_send_general(
                     // Handling the C method tracing events for attr_accessor
                     // methods is easier than regular C methods as we know the
                     // "method" we are calling into never enables those tracing
-                    // events. Once global invalidation runs, the code for the
-                    // attr_accessor is invalidated and we exit at the closest
-                    // instruction boundary which is always outside of the body of
-                    // the attr_accessor code.
+                    // events. We are never inside the code that needs to be
+                    // invalidated when invalidation happens.
                     gen_counter_incr(asm, Counter::send_cfunc_tracing);
                     return None;
                 }
