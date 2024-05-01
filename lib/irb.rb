@@ -1242,27 +1242,33 @@ module IRB
         irb_bug = true
       else
         irb_bug = false
-        # This is mostly to make IRB work nicely with Rails console's backtrace filtering, which patches WorkSpace#filter_backtrace
-        # In such use case, we want to filter the exception's backtrace before its displayed through Exception#full_message
-        # And we clone the exception object in order to avoid mutating the original exception
-        # TODO: introduce better API to expose exception backtrace externally
-        backtrace = exc.backtrace.map { |l| @context.workspace.filter_backtrace(l) }.compact
+        # To support backtrace filtering while utilizing Exception#full_message, we need to clone
+        # the exception to avoid modifying the original exception's backtrace.
         exc = exc.clone
-        exc.set_backtrace(backtrace)
+        filtered_backtrace = exc.backtrace.map { |l| @context.workspace.filter_backtrace(l) }.compact
+        backtrace_filter = IRB.conf[:BACKTRACE_FILTER]
+
+        if backtrace_filter
+          if backtrace_filter.respond_to?(:call)
+            filtered_backtrace = backtrace_filter.call(filtered_backtrace)
+          else
+            warn "IRB.conf[:BACKTRACE_FILTER] #{backtrace_filter} should respond to `call` method"
+          end
+        end
+
+        exc.set_backtrace(filtered_backtrace)
       end
 
-      if RUBY_VERSION < '3.0.0'
-        if STDOUT.tty?
-          message = exc.full_message(order: :bottom)
-          order = :bottom
-        else
-          message = exc.full_message(order: :top)
-          order = :top
+      highlight = Color.colorable?
+
+      order =
+        if RUBY_VERSION < '3.0.0'
+          STDOUT.tty? ? :bottom : :top
+        else # '3.0.0' <= RUBY_VERSION
+          :top
         end
-      else # '3.0.0' <= RUBY_VERSION
-        message = exc.full_message(order: :top)
-        order = :top
-      end
+
+      message = exc.full_message(order: order, highlight: highlight)
       message = convert_invalid_byte_sequence(message, exc.message.encoding)
       message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
       message = message.gsub(/((?:^\t.+$\n)+)/) { |m|

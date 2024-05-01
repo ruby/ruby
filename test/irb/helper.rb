@@ -196,7 +196,7 @@ module TestIRB
     end
 
     def write_ruby(program)
-      @ruby_file = Tempfile.create(%w{irb- .rb})
+      @ruby_file = Tempfile.create(%w{irbtest- .rb})
       @tmpfiles << @ruby_file
       @ruby_file.write(program)
       @ruby_file.close
