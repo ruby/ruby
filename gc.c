@@ -710,6 +710,7 @@ struct rvalue_overhead {
         VALUE value; \
     }; \
 }))
+# define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_obj_slot_size(obj)))
 #else
 # define RVALUE_OVERHEAD 0
 #endif
@@ -2637,7 +2638,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #endif
 
 #if GC_DEBUG
-    RANY(obj)->file = rb_source_location_cstr(&RANY(obj)->line);
+    GET_RVALUE_OVERHEAD(obj)->file = rb_source_location_cstr(&GET_RVALUE_OVERHEAD(obj)->line);
     GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
@@ -13183,7 +13184,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         }
 
 #if GC_DEBUG
-        APPEND_F("@%s:%d", RANY(obj)->file, RANY(obj)->line);
+        APPEND_F("@%s:%d", GET_RVALUE_OVERHEAD(obj)->file, GET_RVALUE_OVERHEAD(obj)->line);
 #endif
     }
   end:
@@ -13492,7 +13493,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    fprintf(stderr, "created at: %s:%d\n", RANY(obj)->file, RANY(obj)->line);
+    fprintf(stderr, "created at: %s:%d\n", GET_RVALUE_OVERHEAD(obj)->file, GET_RVALUE_OVERHEAD(obj)->line);
 
     if (BUILTIN_TYPE(obj) == T_MOVED) {
         fprintf(stderr, "moved?: true\n");
@@ -13517,7 +13518,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     if (is_lazy_sweeping(objspace)) {
         fprintf(stderr, "lazy sweeping?: true\n");
-        fprintf(stderr, "page swept?: %s\n", GET_HEAP_PAGE(ptr)->flags.before_sweep ? "false" : "true");
+        fprintf(stderr, "page swept?: %s\n", GET_HEAP_PAGE(obj)->flags.before_sweep ? "false" : "true");
     }
     else {
         fprintf(stderr, "lazy sweeping?: false\n");
