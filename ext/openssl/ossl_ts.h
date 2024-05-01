@@ -5,7 +5,7 @@
  */
 /*
  * This program is licenced under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 
 #if !defined(_OSSL_TS_H_)
