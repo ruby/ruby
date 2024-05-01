@@ -170,6 +170,14 @@ end
     end;
   end
 
+  def test_sexp_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.sexp("")
+      end
+    end;
+  end
+
   class TestInput < self
     Input = Struct.new(:lines) do
       def gets
