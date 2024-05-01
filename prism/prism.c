@@ -12941,12 +12941,22 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             target->type = PM_CLASS_VARIABLE_TARGET_NODE;
             return target;
         case PM_CONSTANT_PATH_NODE:
+            if (context_def_p(parser)) {
+                pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
+            }
+
             assert(sizeof(pm_constant_path_target_node_t) == sizeof(pm_constant_path_node_t));
             target->type = PM_CONSTANT_PATH_TARGET_NODE;
+
             return target;
         case PM_CONSTANT_READ_NODE:
+            if (context_def_p(parser)) {
+                pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
+            }
+
             assert(sizeof(pm_constant_target_node_t) == sizeof(pm_constant_read_node_t));
             target->type = PM_CONSTANT_TARGET_NODE;
+
             return target;
         case PM_BACK_REFERENCE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
@@ -13090,13 +13100,20 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
         }
         case PM_CONSTANT_PATH_NODE: {
             pm_node_t *node = (pm_node_t *) pm_constant_path_write_node_create(parser, (pm_constant_path_node_t *) target, operator, value);
+
+            if (context_def_p(parser)) {
+                pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_IN_METHOD);
+            }
+
             return parse_shareable_constant_write(parser, node);
         }
         case PM_CONSTANT_READ_NODE: {
             pm_node_t *node = (pm_node_t *) pm_constant_write_node_create(parser, (pm_constant_read_node_t *) target, operator, value);
+
             if (context_def_p(parser)) {
                 pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
+
             pm_node_destroy(parser, target);
             return parse_shareable_constant_write(parser, node);
         }
