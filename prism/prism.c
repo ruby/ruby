@@ -12950,6 +12950,32 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
 }
 
 /**
+ * Certain expressions are not targetable, but in order to provide a better
+ * experience we give a specific error message. In order to maintain as much
+ * information in the tree as possible, we replace them with local variable
+ * writes.
+ */
+static pm_node_t *
+parse_unwriteable_target(pm_parser_t *parser, pm_node_t *target) {
+    switch (PM_NODE_TYPE(target)) {
+        case PM_SOURCE_ENCODING_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_ENCODING); break;
+        case PM_FALSE_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_FALSE); break;
+        case PM_SOURCE_FILE_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_FILE); break;
+        case PM_SOURCE_LINE_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_LINE); break;
+        case PM_NIL_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_NIL); break;
+        case PM_SELF_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_SELF); break;
+        case PM_TRUE_NODE: pm_parser_err_node(parser, target, PM_ERR_EXPRESSION_NOT_WRITABLE_TRUE); break;
+        default: break;
+    }
+
+    pm_constant_id_t name = pm_parser_constant_id_location(parser, target->location.start, target->location.end);
+    pm_local_variable_target_node_t *result = pm_local_variable_target_node_create(parser, &target->location, name, 0);
+
+    pm_node_destroy(parser, target);
+    return (pm_node_t *) result;
+}
+
+/**
  * Convert the given node into a valid target node.
  */
 static pm_node_t *
@@ -12957,6 +12983,17 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
     switch (PM_NODE_TYPE(target)) {
         case PM_MISSING_NODE:
             return target;
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_FALSE_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_SOURCE_LINE_NODE:
+        case PM_NIL_NODE:
+        case PM_SELF_NODE:
+        case PM_TRUE_NODE: {
+            // In these special cases, we have specific error messages and we
+            // will replace them with local variable writes.
+            return parse_unwriteable_target(parser, target);
+        }
         case PM_CLASS_VARIABLE_READ_NODE:
             assert(sizeof(pm_class_variable_target_node_t) == sizeof(pm_class_variable_read_node_t));
             target->type = PM_CLASS_VARIABLE_TARGET_NODE;
