@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{SSL/TLS and general-purpose cryptography for Ruby}
   spec.description   = %q{OpenSSL for Ruby provides access to SSL/TLS and general-purpose cryptography based on the OpenSSL library.}
   spec.homepage      = "https://github.com/ruby/openssl"
-  spec.license       = "Ruby"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     spec.platform    = "java"
