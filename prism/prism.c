@@ -672,6 +672,26 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
 #define PM_PARSER_WARN_NODE_FORMAT(parser, node, diag_id, ...) \
     PM_PARSER_WARN_FORMAT(parser, (node)->location.start, (node)->location.end, diag_id, __VA_ARGS__)
 
+/**
+ * Add an error for an expected heredoc terminator. This is a special function
+ * only because it grabs its location off of a lex mode instead of a node or a
+ * token.
+ */
+static void
+pm_parser_err_heredoc_term(pm_parser_t *parser, pm_lex_mode_t *lex_mode) {
+    const uint8_t *ident_start = lex_mode->as.heredoc.ident_start;
+    size_t ident_length = lex_mode->as.heredoc.ident_length;
+
+    PM_PARSER_ERR_FORMAT(
+        parser,
+        ident_start,
+        ident_start + ident_length,
+        PM_ERR_HEREDOC_TERM,
+        (int) ident_length,
+        (const char *) ident_start
+    );
+}
+
 /******************************************************************************/
 /* Scope-related functions                                                    */
 /******************************************************************************/
@@ -10836,7 +10856,7 @@ parser_lex(pm_parser_t *parser) {
                                         // this is not a valid heredoc declaration. In this case we
                                         // will add an error, but we will still return a heredoc
                                         // start.
-                                        pm_parser_err_current(parser, PM_ERR_HEREDOC_TERM);
+                                        pm_parser_err_heredoc_term(parser, parser->lex_modes.current);
                                         body_start = parser->end;
                                     } else {
                                         // Otherwise, we want to indicate that the body of the
@@ -12163,7 +12183,7 @@ parser_lex(pm_parser_t *parser) {
             // terminator) but still continue parsing so that content after the
             // declaration of the heredoc can be parsed.
             if (parser->current.end >= parser->end) {
-                pm_parser_err_current(parser, PM_ERR_HEREDOC_TERM);
+                pm_parser_err_heredoc_term(parser, lex_mode);
                 parser->next_start = lex_mode->as.heredoc.next_start;
                 parser->heredoc_end = parser->current.end;
                 lex_state_set(parser, PM_LEX_STATE_END);
@@ -17468,8 +17488,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
                 // If we get here, then we have an empty heredoc. We'll create
                 // an empty content token and return an empty string node.
-                lex_mode_pop(parser);
-                expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+                if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+                    lex_mode_pop(parser);
+                    parser_lex(parser);
+                } else {
+                    pm_parser_err_heredoc_term(parser, lex_mode);
+                    lex_mode_pop(parser);
+                    parser->previous.start = parser->previous.end;
+                    parser->previous.type = PM_TOKEN_MISSING;
+                }
+
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
                 if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
@@ -17510,8 +17538,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
 
                 node = (pm_node_t *) cast;
-                lex_mode_pop(parser);
-                expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+
+                if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+                    lex_mode_pop(parser);
+                    parser_lex(parser);
+                } else {
+                    pm_parser_err_heredoc_term(parser, lex_mode);
+                    lex_mode_pop(parser);
+                    parser->previous.start = parser->previous.end;
+                    parser->previous.type = PM_TOKEN_MISSING;
+                }
             } else {
                 // If we get here, then we have multiple parts in the heredoc,
                 // so we'll need to create an interpolated string node to hold
@@ -17533,8 +17569,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_interpolated_x_string_node_t *cast = pm_interpolated_xstring_node_create(parser, &opening, &opening);
                     cast->parts = parts;
 
-                    lex_mode_pop(parser);
-                    expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+                    if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+                        lex_mode_pop(parser);
+                        parser_lex(parser);
+                    } else {
+                        pm_parser_err_heredoc_term(parser, lex_mode);
+                        lex_mode_pop(parser);
+                        parser->previous.start = parser->previous.end;
+                        parser->previous.type = PM_TOKEN_MISSING;
+                    }
 
                     pm_interpolated_xstring_node_closing_set(cast, &parser->previous);
                     cast->base.location = cast->opening_loc;
@@ -17543,8 +17586,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_interpolated_string_node_t *cast = pm_interpolated_string_node_create(parser, &opening, &parts, &opening);
                     pm_node_list_free(&parts);
 
-                    lex_mode_pop(parser);
-                    expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+                    if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+                        lex_mode_pop(parser);
+                        parser_lex(parser);
+                    } else {
+                        pm_parser_err_heredoc_term(parser, lex_mode);
+                        lex_mode_pop(parser);
+                        parser->previous.start = parser->previous.end;
+                        parser->previous.type = PM_TOKEN_MISSING;
+                    }
 
                     pm_interpolated_string_node_closing_set(cast, &parser->previous);
                     cast->base.location = cast->opening_loc;
