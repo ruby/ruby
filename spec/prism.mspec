@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# This is turned off because when we run with --parser=prism we explicitly turn
-# off experimental warnings to make sure the output is consistent.
-MSpec.register(:exclude, "Warning.[] returns default values for categories :deprecated and :experimental")
-
 ## Language
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes")
 MSpec.register(:exclude, "Hash literal raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used")
