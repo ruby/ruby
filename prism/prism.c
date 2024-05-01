@@ -9526,22 +9526,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             const uint8_t *start = parser->current.end - 1;
             parser->current.end++;
 
-            if (
-                (parser->current.end + 4 <= parser->end) &&
-                pm_char_is_hexadecimal_digit(parser->current.end[0]) &&
-                pm_char_is_hexadecimal_digit(parser->current.end[1]) &&
-                pm_char_is_hexadecimal_digit(parser->current.end[2]) &&
-                pm_char_is_hexadecimal_digit(parser->current.end[3])
-            ) {
-                uint32_t value = escape_unicode(parser->current.end, 4);
-
-                if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
-                }
-                escape_write_unicode(parser, buffer, flags, start, parser->current.end + 4, value);
-
-                parser->current.end += 4;
-            } else if (peek(parser) == '{') {
+            if (peek(parser) == '{') {
                 const uint8_t *unicode_codepoints_start = parser->current.end - 2;
 
                 parser->current.end++;
@@ -9591,7 +9576,21 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     pm_buffer_append_bytes(regular_expression_buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
                 }
             } else {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
+                size_t length = pm_strspn_hexadecimal_digit(parser->current.end, MIN(parser->end - parser->current.end, 4));
+
+                if (length == 4) {
+                    uint32_t value = escape_unicode(parser->current.end, 4);
+
+                    if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
+                    }
+
+                    escape_write_unicode(parser, buffer, flags, start, parser->current.end + 4, value);
+                    parser->current.end += 4;
+                } else {
+                    parser->current.end += length;
+                    pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
+                }
             }
 
             return;
