@@ -1238,6 +1238,15 @@ dummy
     end
   end
 
+  def test_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "\n#{<<~'end;'}", rss: true)
+    begin;
+      1_000_000.times do
+        eval("")
+      end
+    end;
+  end
+
   def assert_error_tolerant(src, expected, keep_tokens: false)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
