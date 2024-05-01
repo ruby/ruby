@@ -16076,7 +16076,7 @@ rb_ruby_ripper_parse0(rb_parser_t *p)
     parser_prepare(p);
     p->ast = rb_ast_new();
     ripper_yyparse((void*)p);
-    rb_ast_dispose(p->ast);
+    rb_ast_free(p->ast);
     p->ast = 0;
     p->eval_tree = 0;
     p->eval_tree_begin = 0;
