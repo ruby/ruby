@@ -10830,8 +10830,11 @@ parser_lex(pm_parser_t *parser) {
                                 }
 
                                 size_t ident_length = (size_t) (parser->current.end - ident_start);
+                                bool ident_error = false;
+
                                 if (quote != PM_HEREDOC_QUOTE_NONE && !match(parser, (uint8_t) quote)) {
-                                    // TODO: handle unterminated heredoc
+                                    pm_parser_err(parser, ident_start, ident_start + ident_length, PM_ERR_HEREDOC_IDENTIFIER);
+                                    ident_error = true;
                                 }
 
                                 parser->explicit_encoding = NULL;
@@ -10856,7 +10859,7 @@ parser_lex(pm_parser_t *parser) {
                                         // this is not a valid heredoc declaration. In this case we
                                         // will add an error, but we will still return a heredoc
                                         // start.
-                                        pm_parser_err_heredoc_term(parser, parser->lex_modes.current);
+                                        if (!ident_error) pm_parser_err_heredoc_term(parser, parser->lex_modes.current);
                                         body_start = parser->end;
                                     } else {
                                         // Otherwise, we want to indicate that the body of the
