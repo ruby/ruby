@@ -11861,7 +11861,7 @@ static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC) {}
 
 #if CALC_EXACT_MALLOC_SIZE
     {
@@ -12340,10 +12340,12 @@ ruby_mimcalloc(size_t num, size_t size)
 {
     void *mem;
 #if CALC_EXACT_MALLOC_SIZE
-    size += sizeof(struct malloc_obj_info);
-#endif
-    mem = calloc(num, size);
-#if CALC_EXACT_MALLOC_SIZE
+    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(num, size);
+    if (UNLIKELY(t.left)) {
+        return NULL;
+    }
+    size = t.right + sizeof(struct malloc_obj_info);
+    mem = calloc1(size);
     if (!mem) {
         return NULL;
     }
@@ -12359,6 +12361,8 @@ ruby_mimcalloc(size_t num, size_t size)
 #endif
         mem = info + 1;
     }
+#else
+    mem = calloc(num, size);
 #endif
     return mem;
 }
