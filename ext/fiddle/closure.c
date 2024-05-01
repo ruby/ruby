@@ -276,7 +276,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     result = ffi_prep_closure_loc(pcl, cif, callback,
 		(void *)self, cl->code);
 #else
-    result = ffi_prep_closure(pcl, cif, callback, (void *)(data->self));
+    result = ffi_prep_closure(pcl, cif, callback, (void *)self);
     cl->code = (void *)pcl;
     i = mprotect(pcl, sizeof(*pcl), PROT_READ | PROT_EXEC);
     if (i) {
