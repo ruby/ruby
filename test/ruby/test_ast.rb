@@ -337,6 +337,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_location
+    omit if compiling_with_prism?
+
     exception = begin
                   raise
                 rescue => e
@@ -356,6 +358,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method
+    omit if compiling_with_prism?
+
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
@@ -385,6 +389,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location
+    omit if compiling_with_prism?
+
     backtrace_location, lineno = sample_backtrace_location
     node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node)
@@ -396,6 +402,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval
+    omit if compiling_with_prism?
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
 
@@ -425,6 +433,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval_with_keep_script_lines
+    omit if compiling_with_prism?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -456,6 +465,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval
+    omit if compiling_with_prism?
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
 
@@ -474,6 +485,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval_with_keep_script_lines
+    omit if compiling_with_prism?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -736,6 +748,8 @@ dummy
   end
 
   def test_keep_script_lines_for_of
+    omit if compiling_with_prism?
+
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
@@ -1245,6 +1259,15 @@ dummy
         eval("")
       end
     end;
+  end
+
+  private
+
+  # We can't revisit instruction sequences to find node ids if the prism
+  # compiler was used instead of the parse.y compiler. In that case, we'll omit
+  # some tests.
+  def compiling_with_prism?
+    RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
   end
 
   def assert_error_tolerant(src, expected, keep_tokens: false)
