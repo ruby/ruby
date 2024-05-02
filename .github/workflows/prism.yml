@@ -92,7 +92,7 @@ jobs:
         timeout-minutes: 40
         env:
           GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb" --exclude="prism/locals_test.rb" --exclude="prism/newline_test.rb"'
+          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb" --exclude="prism/newline_test.rb"'
           RUN_OPTS: ${{ matrix.run_opts }}
 
       - name: make test-prism-spec
