@@ -417,6 +417,18 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.key_bindings
   end
 
+  def test_key_bindings_with_reset
+    # @config.reset is called after each readline.
+    # inputrc file is read once, so key binding shouldn't be cleared by @config.reset
+    @config.add_default_key_binding('default'.bytes, 'DEFAULT'.bytes)
+    @config.read_lines(<<~'LINES'.lines)
+      "additional": "ADDITIONAL"
+    LINES
+    @config.reset
+    expected = { 'default'.bytes => 'DEFAULT'.bytes, 'additional'.bytes => 'ADDITIONAL'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
   def test_history_size
     @config.read_lines(<<~LINES.lines)
       set history-size 5000

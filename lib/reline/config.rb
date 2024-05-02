@@ -76,11 +76,7 @@ class Reline::Config
     if editing_mode_is?(:vi_command)
       @editing_mode_label = :vi_insert
     end
-    @additional_key_bindings.keys.each do |key|
-      @additional_key_bindings[key].clear
-    end
     @oneshot_key_bindings.clear
-    reset_default_key_bindings
   end
 
   def editing_mode
@@ -134,6 +130,7 @@ class Reline::Config
   end
 
   def read(file = nil)
+    @loaded = true
     file ||= default_inputrc_path
     begin
       if file.respond_to?(:readlines)
@@ -146,7 +143,6 @@ class Reline::Config
     end
 
     read_lines(lines, file)
-    @loaded = true
     self
   rescue InvalidInputrc => e
     warn e.message
@@ -175,12 +171,6 @@ class Reline::Config
 
   def add_default_key_binding(keystroke, target)
     @key_actors[@keymap_label].default_key_bindings[keystroke] = target
-  end
-
-  def reset_default_key_bindings
-    @key_actors.values.each do |ka|
-      ka.reset_default_key_bindings
-    end
   end
 
   def read_lines(lines, file = nil)

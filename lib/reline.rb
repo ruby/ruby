@@ -340,7 +340,6 @@ module Reline
 
       unless config.test_mode or config.loaded?
         config.read
-        config.reset_default_key_bindings
         io_gate.set_default_key_bindings(config)
       end
 
