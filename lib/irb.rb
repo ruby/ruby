@@ -311,7 +311,9 @@ require_relative "irb/pager"
 # ### Input Method
 #
 # The IRB input method determines how command input is to be read; by default,
-# the input method for a session is IRB::RelineInputMethod.
+# the input method for a session is IRB::RelineInputMethod. Unless the
+# value of the TERM environment variable is 'dumb', in which case the
+# most simplistic input method is used.
 #
 # You can set the input method by:
 #
@@ -329,7 +331,8 @@ require_relative "irb/pager"
 #         IRB::ReadlineInputMethod.
 #     *   `--nosingleline` or `--multiline` sets the input method to
 #         IRB::RelineInputMethod.
-#
+#     *   `--nosingleline` together with `--nomultiline` sets the
+#         input to IRB::StdioInputMethod.
 #
 #
 # Method `conf.use_multiline?` and its synonym `conf.use_reline` return:
