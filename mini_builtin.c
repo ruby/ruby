@@ -12,17 +12,17 @@
 static struct st_table *loaded_builtin_table;
 #endif
 
-VALUE rb_builtin_vast(const char *feature_name, VALUE *name_str);
+VALUE rb_builtin_ast_value(const char *feature_name, VALUE *name_str);
 
 static const rb_iseq_t *
 builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *table)
 {
     VALUE name_str = 0;
     rb_ast_t *ast;
-    VALUE vast = rb_builtin_vast(feature_name, &name_str);
+    VALUE ast_value = rb_builtin_ast_value(feature_name, &name_str);
     rb_vm_t *vm = GET_VM();
 
-    if (NIL_P(vast)) {
+    if (NIL_P(ast_value)) {
         rb_fatal("builtin_iseq_load: can not find %s; "
                  "probably miniprelude.c is out of date",
                  feature_name);
@@ -40,8 +40,8 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         .coverage_enabled = FALSE,
         .debug_level = 0,
     };
-    ast = rb_ruby_ast_data_get(vast);
-    const rb_iseq_t *iseq = rb_iseq_new_with_opt(vast, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, Qnil);
+    ast = rb_ruby_ast_data_get(ast_value);
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(ast_value, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, Qnil);
     GET_VM()->builtin_function_table = NULL;
 
     rb_ast_dispose(ast);

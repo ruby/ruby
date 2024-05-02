@@ -1480,14 +1480,14 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     tmp_node.nd_body = 0;
     tmp_node.nd_args = 0;
 
-    VALUE vast = rb_ruby_ast_new(RNODE(&tmp_node));
+    VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));
 
     if (base_iseq) {
-        iseq = rb_iseq_new(vast, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
+        iseq = rb_iseq_new(ast_value, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
     }
     else {
         VALUE tempstr = rb_fstring_lit("<temp>");
-        iseq = rb_iseq_new_top(vast, tempstr, tempstr, tempstr, NULL);
+        iseq = rb_iseq_new_top(ast_value, tempstr, tempstr, tempstr, NULL);
     }
     tmp_node.nd_tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
