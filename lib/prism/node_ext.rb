@@ -172,7 +172,7 @@ module Prism
         DEPRECATED: ConstantPathNode#child is deprecated and will be removed \
         in the next major version. Use \
         ConstantPathNode#name/ConstantPathNode#name_loc instead. Called from \
-        #{caller(1..1).first}.
+        #{caller(1, 1)&.first}.
       MSG
 
       name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
@@ -214,7 +214,7 @@ module Prism
         DEPRECATED: ConstantPathTargetNode#child is deprecated and will be \
         removed in the next major version. Use \
         ConstantPathTargetNode#name/ConstantPathTargetNode#name_loc instead. \
-        Called from #{caller(1..1).first}.
+        Called from #{caller(1, 1)&.first}.
       MSG
 
       name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)

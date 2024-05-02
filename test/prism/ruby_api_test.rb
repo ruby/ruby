@@ -266,6 +266,25 @@ module Prism
       refute_operator parse_expression(complex_source_1), :===, parse_expression(complex_source_2)
     end
 
+    def test_node_tunnel
+      program = Prism.parse("foo(1) +\n  bar(2, 3) +\n  baz(3, 4, 5)").value
+
+      tunnel = program.tunnel(1, 4).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 1, tunnel.value
+
+      tunnel = program.tunnel(2, 6).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 2, tunnel.value
+
+      tunnel = program.tunnel(3, 9).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 4, tunnel.value
+
+      tunnel = program.tunnel(3, 8)
+      assert_equal [ProgramNode, StatementsNode, CallNode, ArgumentsNode, CallNode, ArgumentsNode], tunnel.map(&:class)
+    end
+
     private
 
     def parse_expression(source)

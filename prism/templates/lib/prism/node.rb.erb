@@ -76,6 +76,43 @@ module Prism
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
 
+    # Returns a list of nodes that are descendants of this node that contain the
+    # given line and column. This is useful for locating a node that is selected
+    # based on the line and column of the source code.
+    #
+    # Important to note is that the column given to this method should be in
+    # bytes, as opposed to characters or code units.
+    def tunnel(line, column)
+      queue = [self]
+      result = []
+
+      while (node = queue.shift)
+        result << node
+
+        node.compact_child_nodes.each do |child_node|
+          child_location = child_node.location
+
+          start_line = child_location.start_line
+          end_line = child_location.end_line
+
+          if start_line == end_line
+            if line == start_line && column >= child_location.start_column && column < child_location.end_column
+              queue << child_node
+              break
+            end
+          elsif (line == start_line && column >= child_location.start_column) || (line == end_line && column < child_location.end_column)
+            queue << child_node
+            break
+          elsif line > start_line && line < end_line
+            queue << child_node
+            break
+          end
+        end
+      end
+
+      result
+    end
+
     # Returns a list of the fields that exist for this node class. Fields
     # describe the structure of the node. This kind of reflection is useful for
     # things like recursively visiting each node _and_ field in the tree.

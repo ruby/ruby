@@ -149,7 +149,10 @@ module Prism
       parent = node.parent
 
       if parent.is_a?(ConstantReadNode) && parent.slice == "Prism"
-        compile_constant_name(node, node.name)
+        name = node.name
+        raise CompilationError, node.inspect if name.nil?
+
+        compile_constant_name(node, name)
       else
         compile_error(node)
       end
