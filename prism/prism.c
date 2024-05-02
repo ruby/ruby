@@ -19173,6 +19173,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
                 pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
+
+                if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
+                    // This is extremely strange, but the first string part of a
+                    // regular expression will always be tagged as binary if we
+                    // are in a US-ASCII file, no matter its contents.
+                    pm_node_flag_set(part, PM_STRING_FLAGS_FORCED_BINARY_ENCODING);
+                }
+
                 pm_interpolated_regular_expression_node_append(interpolated, part);
             } else {
                 // If the first part of the body of the regular expression is not a
