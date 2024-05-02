@@ -76,8 +76,7 @@ pm_source_new(const pm_parser_t *parser, rb_encoding *encoding) {
         rb_ary_push(offsets, ULONG2NUM(parser->newline_list.offsets[index]));
     }
 
-    VALUE source_argv[] = { source_string, LONG2NUM(parser->start_line), offsets };
-    return rb_class_new_instance(3, source_argv, rb_cPrismSource);
+    return rb_funcall(rb_cPrismSource, rb_intern("for"), 3, source_string, LONG2NUM(parser->start_line), offsets);
 }
 
 typedef struct pm_node_stack_node {

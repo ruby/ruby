@@ -5,6 +5,14 @@ module Prism
   # conjunction with locations to allow them to resolve line numbers and source
   # ranges.
   class Source
+    # Create a new source object with the given source code. This method should
+    # be used instead of `new` and it will return either a `Source` or a
+    # specialized and more performant `ASCIISource` if no multibyte characters
+    # are present in the source code.
+    def self.for(source, start_line = 1, offsets = [])
+      source.ascii_only? ? ASCIISource.new(source, start_line, offsets): new(source, start_line, offsets)
+    end
+
     # The source code that this source object represents.
     attr_reader :source
 
@@ -108,6 +116,39 @@ module Prism
       end
 
       left - 1
+    end
+  end
+
+  # Specialized version of Prism::Source for source code that includes ASCII
+  # characters only. This class is used to apply performance optimizations that
+  # cannot be applied to sources that include multibyte characters. Sources that
+  # include multibyte characters are represented by the Prism::Source class.
+  class ASCIISource < Source
+    # Return the character offset for the given byte offset.
+    def character_offset(byte_offset)
+      byte_offset
+    end
+
+    # Return the column number in characters for the given byte offset.
+    def character_column(byte_offset)
+      byte_offset - line_start(byte_offset)
+    end
+
+    # Returns the offset from the start of the file for the given byte offset
+    # counting in code units for the given encoding.
+    #
+    # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
+    # concept of code units that differs from the number of characters in other
+    # encodings, it is not captured here.
+    def code_units_offset(byte_offset, encoding)
+      byte_offset
+    end
+
+    # Specialized version of `code_units_column` that does not depend on
+    # `code_units_offset`, which is a more expensive operation. This is
+    # essentialy the same as `Prism::Source#column`.
+    def code_units_column(byte_offset, encoding)
+      byte_offset - line_start(byte_offset)
     end
   end
 

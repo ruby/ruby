@@ -19,7 +19,7 @@ module Prism
     # Deserialize the AST represented by the given string into a parse result.
     def self.load(input, serialized)
       input = input.dup
-      source = Source.new(input)
+      source = Source.for(input)
       loader = Loader.new(source, serialized)
       result = loader.load_result
 

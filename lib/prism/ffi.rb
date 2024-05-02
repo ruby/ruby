@@ -317,7 +317,7 @@ module Prism
         buffer.read
       end
 
-      Serialize.load_tokens(Source.new(code), serialized)
+      Serialize.load_tokens(Source.for(code), serialized)
     end
 
     def parse_common(string, code, options) # :nodoc:
@@ -329,7 +329,7 @@ module Prism
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
 
-        source = Source.new(code)
+        source = Source.for(code)
         loader = Serialize::Loader.new(source, buffer.read)
 
         loader.load_header
@@ -343,7 +343,7 @@ module Prism
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
 
-        source = Source.new(code)
+        source = Source.for(code)
         loader = Serialize::Loader.new(source, buffer.read)
 
         tokens = loader.load_tokens
