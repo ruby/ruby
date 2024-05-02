@@ -791,65 +791,65 @@ VALUE
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct ruby_parser *parser;
-    VALUE vast = ast_alloc();
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    DATA_PTR(vast) = parser_compile_file_path(parser, fname, file, start);
+    DATA_PTR(ast_value) = parser_compile_file_path(parser, fname, file, start);
     RB_GC_GUARD(vparser);
 
-    return vast;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
 {
     struct ruby_parser *parser;
-    VALUE vast = ast_alloc();
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    DATA_PTR(vast) = parser_compile_array(parser, fname, array, start);
+    DATA_PTR(ast_value) = parser_compile_array(parser, fname, array, start);
     RB_GC_GUARD(vparser);
 
-    return vast;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
 {
     struct ruby_parser *parser;
-    VALUE vast = ast_alloc();
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    DATA_PTR(vast) = parser_compile_generic(parser, lex_gets, fname, input, start);
+    DATA_PTR(ast_value) = parser_compile_generic(parser, lex_gets, fname, input, start);
     RB_GC_GUARD(vparser);
 
-    return vast;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    VALUE vast = ast_alloc();
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    DATA_PTR(vast) = parser_compile_string(parser, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return vast;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    VALUE vast = ast_alloc();
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    DATA_PTR(vast) = parser_compile_string_path(parser, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return vast;
+    return ast_value;
 }
 
 VALUE
@@ -1137,7 +1137,7 @@ VALUE
 rb_ruby_ast_new(const NODE *const root)
 {
     rb_ast_t *ast;
-    VALUE vast = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+    VALUE ast_value = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
 #ifdef UNIVERSAL_PARSER
     ast->config = &rb_global_parser_config;
 #endif
@@ -1148,14 +1148,14 @@ rb_ruby_ast_new(const NODE *const root)
         .script_lines = NULL,
         .line_count = 0,
     };
-    return vast;
+    return ast_value;
 }
 
 rb_ast_t *
-rb_ruby_ast_data_get(VALUE vast)
+rb_ruby_ast_data_get(VALUE ast_value)
 {
     rb_ast_t *ast;
-    if (NIL_P(vast)) return NULL;
-    TypedData_Get_Struct(vast, rb_ast_t, &ast_data_type, ast);
+    if (NIL_P(ast_value)) return NULL;
+    TypedData_Get_Struct(ast_value, rb_ast_t, &ast_data_type, ast);
     return ast;
 }
