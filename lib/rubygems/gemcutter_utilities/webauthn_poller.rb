@@ -69,8 +69,10 @@ module Gem::GemcutterUtilities
       rubygems_api_request(:get, "api/v1/webauthn_verification/#{webauthn_token}/status.json") do |request|
         if credentials.empty?
           request.add_field "Authorization", api_key
+        elsif credentials[:identifier] && credentials[:password]
+          request.basic_auth credentials[:identifier], credentials[:password]
         else
-          request.basic_auth credentials[:email], credentials[:password]
+          raise Gem::WebauthnVerificationError, "Provided missing credentials"
         end
       end
     end
