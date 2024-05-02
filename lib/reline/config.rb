@@ -69,6 +69,7 @@ class Reline::Config
     @test_mode = false
     @autocompletion = false
     @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
+    @loaded = false
   end
 
   def reset
@@ -96,6 +97,10 @@ class Reline::Config
 
   def keymap
     @key_actors[@keymap_label]
+  end
+
+  def loaded?
+    @loaded
   end
 
   def inputrc_path
@@ -141,6 +146,7 @@ class Reline::Config
     end
 
     read_lines(lines, file)
+    @loaded = true
     self
   rescue InvalidInputrc => e
     warn e.message
