@@ -350,7 +350,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 }
 
 static VALUE *
-ary_heap_alloc(size_t capa)
+ary_heap_alloc_buffer(size_t capa)
 {
     return ALLOC_N(VALUE, capa);
 }
@@ -404,7 +404,7 @@ ary_resize_capa(VALUE ary, long capacity)
         size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
-            VALUE *ptr = ary_heap_alloc(capacity);
+            VALUE *ptr = ary_heap_alloc_buffer(capacity);
 
             MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
             FL_UNSET_EMBED(ary);
@@ -555,7 +555,7 @@ rb_ary_cancel_sharing(VALUE ary)
             rb_ary_decrement_share(shared_root);
         }
         else {
-            VALUE *ptr = ary_heap_alloc(len);
+            VALUE *ptr = ary_heap_alloc_buffer(len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
@@ -714,7 +714,7 @@ ary_new(VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         RUBY_ASSERT(!ARY_EMBED_P(ary));
 
-        ARY_SET_PTR(ary, ary_heap_alloc(capa));
+        ARY_SET_PTR(ary, ary_heap_alloc_buffer(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -818,7 +818,7 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         RUBY_ASSERT(!ARY_EMBED_P(ary));
 
-        ARY_SET_PTR(ary, ary_heap_alloc(capa));
+        ARY_SET_PTR(ary, ary_heap_alloc_buffer(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -918,7 +918,7 @@ ary_make_shared(VALUE ary)
         FL_SET_SHARED_ROOT(shared);
 
         if (ARY_EMBED_P(ary)) {
-            VALUE *ptr = ary_heap_alloc(capa);
+            VALUE *ptr = ary_heap_alloc_buffer(capa);
             ARY_SET_PTR(shared, ptr);
             ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
 
@@ -4559,7 +4559,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
         long len = ARY_EMBED_LEN(orig);
-        VALUE *ptr = ary_heap_alloc(len);
+        VALUE *ptr = ary_heap_alloc_buffer(len);
 
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ptr);
