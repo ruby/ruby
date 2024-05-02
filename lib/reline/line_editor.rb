@@ -387,7 +387,7 @@ class Reline::LineEditor
           next cached
         end
         *wrapped_prompts, code_line_prompt = split_by_width(prompt, width).first.compact
-        wrapped_lines = split_by_width(line, width, offset: calculate_width(code_line_prompt)).first.compact
+        wrapped_lines = split_by_width(line, width, offset: calculate_width(code_line_prompt, true)).first.compact
         wrapped_prompts.map { |p| [p, ''] } + [[code_line_prompt, wrapped_lines.first]] + wrapped_lines.drop(1).map { |c| ['', c] }
       end
     end
