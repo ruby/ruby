@@ -40,6 +40,15 @@ module Prism
       end
     end
 
+    # Returns all of the lines of the source code associated with this node.
+    def source_lines
+      location.source_lines
+    end
+
+    # An alias for source_lines, used to mimic the API from
+    # RubyVM::AbstractSyntaxTree to make it easier to migrate.
+    alias script_lines source_lines
+
     # Slice the location of the node from the source.
     def slice
       location.slice

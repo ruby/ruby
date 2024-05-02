@@ -27,6 +27,11 @@ module Prism
       source.encoding
     end
 
+    # Returns the lines of the source code as an array of strings.
+    def lines
+      source.lines
+    end
+
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
     def slice(byte_offset, length)
@@ -175,6 +180,11 @@ module Prism
     # Returns a string representation of this location.
     def inspect
       "#<Prism::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"
+    end
+
+    # Returns all of the lines of the source code associated with this location.
+    def source_lines
+      source.lines
     end
 
     # The source code that this location represents.
