@@ -4542,14 +4542,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(parser, node);
     int lineno = (int) location.line;
 
-    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
-        int event = RUBY_EVENT_LINE;
+    if (!PM_NODE_TYPE_P(node, PM_RETURN_NODE) || !PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) || ((const pm_return_node_t *) node)->arguments != NULL) {
+        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+            int event = RUBY_EVENT_LINE;
 
-        ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
-        if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
-            event |= RUBY_EVENT_COVERAGE_LINE;
+            ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
+            if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+                event |= RUBY_EVENT_COVERAGE_LINE;
+            }
+            PUSH_TRACE(ret, event);
         }
-        PUSH_TRACE(ret, event);
     }
 
     switch (PM_NODE_TYPE(node)) {
