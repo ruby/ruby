@@ -19355,7 +19355,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (match1(parser, PM_TOKEN_COMMA)) {
                 return parse_targets_validate(parser, splat, PM_BINDING_POWER_INDEX);
             } else {
-                return parse_target_validate(parser, splat, false);
+                return parse_target_validate(parser, splat, true);
             }
         }
         case PM_TOKEN_BANG: {
