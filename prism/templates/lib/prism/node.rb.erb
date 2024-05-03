@@ -83,7 +83,7 @@ module Prism
     # Important to note is that the column given to this method should be in
     # bytes, as opposed to characters or code units.
     def tunnel(line, column)
-      queue = [self]
+      queue = [self] #: Array[Prism::node]
       result = []
 
       while (node = queue.shift)

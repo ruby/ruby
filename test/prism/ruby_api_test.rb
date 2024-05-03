@@ -285,6 +285,19 @@ module Prism
       assert_equal [ProgramNode, StatementsNode, CallNode, ArgumentsNode, CallNode, ArgumentsNode], tunnel.map(&:class)
     end
 
+    def test_location_adjoin
+      program = Prism.parse("foo.bar = 1").value
+
+      location = program.statements.body.first.message_loc
+      adjoined = location.adjoin("=")
+
+      assert_kind_of Location, adjoined
+      refute_equal location, adjoined
+
+      assert_equal 4, adjoined.start_offset
+      assert_equal 9, adjoined.end_offset
+    end
+
     private
 
     def parse_expression(source)

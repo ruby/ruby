@@ -347,6 +347,18 @@ module Prism
 
       Location.new(source, start_offset, other.end_offset - start_offset)
     end
+
+    # Join this location with the first occurrence of the string in the source
+    # that occurs after this location on the same line, and return the new
+    # location. This will raise an error if the string does not exist.
+    def adjoin(string)
+      line_suffix = source.slice(end_offset, source.line_end(end_offset) - end_offset)
+
+      line_suffix_index = line_suffix.byteindex(string)
+      raise "Could not find #{string}" if line_suffix_index.nil?
+
+      Location.new(source, start_offset, length + line_suffix_index + string.bytesize)
+    end
   end
 
   # This represents a comment that was encountered during parsing. It is the
