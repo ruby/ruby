@@ -209,6 +209,9 @@ jobs:
           - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
           - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
+          - name: SHARED_GC
+            shared_gc: true
+            env: { append_configure: '--with-shared-gc' }
 
     name: ${{ matrix.entry.name }}
 
@@ -255,6 +258,16 @@ jobs:
             matrix.entry.crosshost || '"${default_cc}${append_cc:+ $append_cc}"'
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
+
+      - name: Build shared GC
+        run: >
+          make probes.h &&
+          export RUBY_GC_LIBRARY_PATH=$HOME/librubygc.so &&
+          echo "RUBY_GC_LIBRARY_PATH=$RUBY_GC_LIBRARY_PATH" >> $GITHUB_ENV &&
+          gcc -I../src -I../src/include -I. -I.ext/include/x86_64-linux
+          -Wl,-undefined,dynamic_lookup -fPIC -g -O3 -shared
+          -o $RUBY_GC_LIBRARY_PATH ../src/gc_impl.c
+        if: ${{ matrix.entry.shared_gc }}
 
       - name: Add to ext/Setup
         id: ext-setup
