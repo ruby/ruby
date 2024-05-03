@@ -12,7 +12,7 @@
         │   ├── opening_loc: (1,1)-(1,2) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,2)-(3,1))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (1,2)-(3,1))
         │   │           ├── flags: symbol_keys
@@ -42,7 +42,7 @@
         │   ├── opening_loc: (5,1)-(5,2) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (5,2)-(6,1))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (5,2)-(6,1))
         │   │           ├── flags: symbol_keys
@@ -72,7 +72,7 @@
             ├── opening_loc: (8,1)-(8,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (8,2)-(8,11))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (8,2)-(8,11))
             │           ├── flags: symbol_keys

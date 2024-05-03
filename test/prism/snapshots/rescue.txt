@@ -380,7 +380,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
         │   │   │           │   @ ArgumentsNode (location: (29,4)-(29,6))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: contains_keywords
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ KeywordHashNode (location: (29,4)-(29,6))
         │   │   │           │           ├── flags: symbol_keys

@@ -378,10 +378,13 @@ module Prism
         :a,
         Location(),
         Location(),
-        ArgumentsNode(1, [
-          KeywordHashNode(0, [AssocSplatNode(expression("kwargs"), Location())]),
-          SplatNode(Location(), expression("args"))
-        ]),
+        ArgumentsNode(
+          ArgumentsNodeFlags::CONTAINS_KEYWORDS | ArgumentsNodeFlags::CONTAINS_KEYWORD_SPLAT,
+          [
+            KeywordHashNode(0, [AssocSplatNode(expression("kwargs"), Location())]),
+            SplatNode(Location(), expression("args"))
+          ]
+        ),
         Location(),
         nil
       )
@@ -425,7 +428,7 @@ module Prism
         :a,
         Location(),
         Location(),
-        ArgumentsNode(0, [
+        ArgumentsNode(ArgumentsNodeFlags::CONTAINS_KEYWORDS, [
           KeywordHashNode(1, [
             AssocNode(
               SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, nil, Location(), Location(), "foo"),

@@ -250,6 +250,8 @@ errors:
   - UNARY_RECEIVER
   - UNDEF_ARGUMENT
   - UNEXPECTED_BLOCK_ARGUMENT
+  - UNEXPECTED_INDEX_BLOCK
+  - UNEXPECTED_INDEX_KEYWORDS
   - UNEXPECTED_TOKEN_CLOSE_CONTEXT
   - UNEXPECTED_TOKEN_IGNORE
   - UNTIL_TERM
@@ -620,6 +622,8 @@ tokens:
 flags:
   - name: ArgumentsNodeFlags
     values:
+      - name: CONTAINS_KEYWORDS
+        comment: "if arguments contain keywords"
       - name: CONTAINS_KEYWORD_SPLAT
         comment: "if arguments contain keyword splat"
     comment: Flags for arguments nodes.

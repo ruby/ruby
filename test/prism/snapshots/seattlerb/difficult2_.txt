@@ -52,7 +52,7 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (2,2)-(2,6))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (2,2)-(2,6))
             │           ├── flags: symbol_keys

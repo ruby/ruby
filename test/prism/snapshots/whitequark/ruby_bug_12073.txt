@@ -21,7 +21,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,9)-(1,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (1,9)-(1,13))
         │   │           ├── flags: symbol_keys

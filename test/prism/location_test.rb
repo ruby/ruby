@@ -477,7 +477,7 @@ module Prism
     end
 
     def test_IndexTargetNode
-      assert_location(IndexTargetNode, "foo[bar, &baz], = qux", 0...14) do |node|
+      assert_location(IndexTargetNode, "foo[bar], = qux", 0...8) do |node|
         node.lefts.first
       end
     end

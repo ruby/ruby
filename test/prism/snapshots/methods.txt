@@ -1296,7 +1296,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (139,11)-(139,30))
-        │   │           │   ├── flags: contains_keyword_splat
+        │   │           │   ├── flags: contains_keywords, contains_keyword_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (139,11)-(139,30))
         │   │           │           ├── flags: ∅
