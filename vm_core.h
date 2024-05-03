@@ -609,10 +609,9 @@ typedef struct rb_at_exit_list {
     struct rb_at_exit_list *next;
 } rb_at_exit_list;
 
-struct rb_objspace;
-struct rb_objspace *rb_objspace_alloc(void);
-void rb_objspace_free(struct rb_objspace *);
-void rb_objspace_call_finalizer(struct rb_objspace *);
+void *rb_objspace_alloc(void);
+void rb_objspace_free(void *objspace);
+void rb_objspace_call_finalizer(void);
 
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
