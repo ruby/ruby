@@ -14008,7 +14008,6 @@ typedef enum {
     PM_PARAMETERS_ORDER_OPTIONAL,
     PM_PARAMETERS_ORDER_NAMED,
     PM_PARAMETERS_ORDER_NONE,
-
 } pm_parameters_order_t;
 
 /**
@@ -14316,6 +14315,7 @@ parse_parameters(
                 pm_token_t operator = parser->previous;
                 pm_token_t name;
                 bool repeated = false;
+
                 if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                     name = parser->previous;
                     repeated = pm_parser_parameter_name_check(parser, &name);
@@ -14329,6 +14329,7 @@ parse_parameters(
                 if (repeated) {
                     pm_node_flag_set_repeated_parameter(param);
                 }
+
                 if (params->rest == NULL) {
                     pm_parameters_node_rest_set(params, param);
                 } else {
@@ -14340,6 +14341,7 @@ parse_parameters(
             }
             case PM_TOKEN_STAR_STAR:
             case PM_TOKEN_USTAR_STAR: {
+                pm_parameters_order_t previous_order = order;
                 update_parameter_state(parser, &parser->current, &order);
                 parser_lex(parser);
 
@@ -14347,6 +14349,10 @@ parse_parameters(
                 pm_node_t *param;
 
                 if (accept1(parser, PM_TOKEN_KEYWORD_NIL)) {
+                    if (previous_order <= PM_PARAMETERS_ORDER_KEYWORDS) {
+                        pm_parser_err_previous(parser, PM_ERR_PARAMETER_UNEXPECTED_NO_KW);
+                    }
+
                     param = (pm_node_t *) pm_no_keywords_parameter_node_create(parser, &operator, &parser->previous);
                 } else {
                     pm_token_t name;
