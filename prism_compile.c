@@ -3301,7 +3301,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
       }
       case PM_CONSTANT_PATH_NODE: {
         const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, ((const pm_constant_read_node_t *) cast->child)->name));
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
 
         if (cast->parent != NULL) {
             if (!lfinish[1]) lfinish[1] = NEW_LABEL(location.line);
@@ -3917,7 +3917,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //     for I::J in []; end
         //
         const pm_constant_path_target_node_t *cast = (const pm_constant_path_target_node_t *) node;
-        ID name = pm_constant_id_lookup(scope_node, ((const pm_constant_read_node_t *) cast->child)->name);
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
 
         if (cast->parent != NULL) {
             pm_compile_node(iseq, cast->parent, parents, false, scope_node);
@@ -4447,7 +4447,7 @@ pm_constant_path_parts(const pm_node_t *node, const pm_scope_node_t *scope_node)
           }
           case PM_CONSTANT_PATH_NODE: {
             const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
-            VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, ((const pm_constant_read_node_t *) cast->child)->name));
+            VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
 
             rb_ary_unshift(parts, name);
             if (cast->parent == NULL) {
@@ -4485,7 +4485,7 @@ pm_compile_constant_path(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
       }
       case PM_CONSTANT_PATH_NODE: {
         const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, ((const pm_constant_read_node_t *) cast->child)->name));
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
 
         if (cast->parent == NULL) {
             PUSH_INSN(body, location, pop);
@@ -5653,8 +5653,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_constant_path_and_write_node_t *cast = (const pm_constant_path_and_write_node_t *) node;
         const pm_constant_path_node_t *target = cast->target;
 
-        const pm_constant_read_node_t *child = (const pm_constant_read_node_t *) target->child;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
         LABEL *lfin = NEW_LABEL(location.line);
 
         if (target->parent) {
@@ -5696,9 +5695,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_constant_path_or_write_node_t *cast = (const pm_constant_path_or_write_node_t *) node;
         const pm_constant_path_node_t *target = cast->target;
 
-        const pm_constant_read_node_t *child = (const pm_constant_read_node_t *) target->child;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
-
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
         LABEL *lassign = NEW_LABEL(location.line);
         LABEL *lfin = NEW_LABEL(location.line);
 
@@ -5746,9 +5743,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_constant_path_operator_write_node_t *cast = (const pm_constant_path_operator_write_node_t *) node;
         const pm_constant_path_node_t *target = cast->target;
         ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
-
-        const pm_constant_read_node_t *child = (const pm_constant_read_node_t *) target->child;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
 
         if (target->parent) {
             PM_COMPILE_NOT_POPPED(target->parent);
@@ -5778,9 +5773,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^^^^^
         const pm_constant_path_write_node_t *cast = (const pm_constant_path_write_node_t *) node;
         const pm_constant_path_node_t *target = cast->target;
-
-        const pm_constant_read_node_t *child = (const pm_constant_read_node_t *) target->child;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
+        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
 
         if (target->parent) {
             PM_COMPILE_NOT_POPPED((const pm_node_t *) target->parent);
