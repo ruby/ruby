@@ -577,7 +577,7 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
     VALUE key = obj;
     VALUE val = obj;
 
-    if (rb_objspace_markable_object_p(obj)) {
+    if (!rb_objspace_garbage_object_p(obj)) {
         if (NIL_P(rb_hash_lookup(data->refs, key))) {
             rb_hash_aset(data->refs, key, Qtrue);
 
@@ -643,7 +643,7 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
 static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
-    if (rb_objspace_markable_object_p(obj)) {
+    if (!RB_SPECIAL_CONST_P(obj)) {
         struct rof_data data;
 
         if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
@@ -690,7 +690,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
         rb_hash_aset(data->categories, category_str, category_objects);
     }
 
-    if (rb_objspace_markable_object_p(obj) &&
+    if (!rb_objspace_garbage_object_p(obj) &&
         obj != data->categories &&
         obj != data->last_category_objects) {
         if (rb_objspace_internal_object_p(obj)) {
