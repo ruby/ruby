@@ -7,10 +7,9 @@
             ├── target:
             │   @ ConstantPathNode (location: (1,0)-(1,5))
             │   ├── parent: ∅
-            │   ├── child:
-            │   │   @ ConstantReadNode (location: (1,2)-(1,5))
-            │   │   └── name: :Foo
-            │   └── delimiter_loc: (1,0)-(1,2) = "::"
+            │   ├── name: :Foo
+            │   ├── delimiter_loc: (1,0)-(1,2) = "::"
+            │   └── name_loc: (1,2)-(1,5) = "Foo"
             ├── operator_loc: (1,6)-(1,7) = "="
             └── value:
                 @ IntegerNode (location: (1,8)-(1,10))

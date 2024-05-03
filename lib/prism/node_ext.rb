@@ -143,11 +143,12 @@ module Prism
       current = self #: node?
 
       while current.is_a?(ConstantPathNode)
-        child = current.child
-        if child.is_a?(MissingNode)
+        name = current.name
+        if name.nil?
           raise MissingNodesInConstantPathError, "Constant path contains missing nodes. Cannot compute full name"
         end
-        parts.unshift(child.name)
+
+        parts.unshift(name)
         current = current.parent
       end
 
@@ -161,6 +162,20 @@ module Prism
     # Returns the full name of this constant path. For example: "Foo::Bar"
     def full_name
       full_name_parts.join("::")
+    end
+
+    # Previously, we had a child node on this class that contained either a
+    # constant read or a missing node. To not cause a breaking change, we
+    # continue to supply that API.
+    def child
+      warn(<<~MSG, category: :deprecated)
+        DEPRECATED: ConstantPathNode#child is deprecated and will be removed \
+        in the next major version. Use \
+        ConstantPathNode#name/ConstantPathNode#name_loc instead. Called from \
+        #{caller(1..1).first}.
+      MSG
+
+      name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
     end
   end
 
@@ -179,16 +194,30 @@ module Prism
           raise ConstantPathNode::DynamicPartsInConstantPathError, "Constant target path contains dynamic parts. Cannot compute full name"
         end
 
-      if child.is_a?(MissingNode)
+      if name.nil?
         raise ConstantPathNode::MissingNodesInConstantPathError, "Constant target path contains missing nodes. Cannot compute full name"
       end
 
-      parts.push(child.name)
+      parts.push(name)
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
     def full_name
       full_name_parts.join("::")
+    end
+
+    # Previously, we had a child node on this class that contained either a
+    # constant read or a missing node. To not cause a breaking change, we
+    # continue to supply that API.
+    def child
+      warn(<<~MSG, category: :deprecated)
+        DEPRECATED: ConstantPathTargetNode#child is deprecated and will be \
+        removed in the next major version. Use \
+        ConstantPathTargetNode#name/ConstantPathTargetNode#name_loc instead. \
+        Called from #{caller(1..1).first}.
+      MSG
+
+      name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
     end
   end
 

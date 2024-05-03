@@ -20,10 +20,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (4,7)-(4,8))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (4,10)-(4,11))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (4,8)-(4,10) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (4,8)-(4,10) = "::"
+        │   │   └── name_loc: (4,10)-(4,11) = "B"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (5,0)-(5,3) = "end"
         │   └── name: :B
@@ -37,14 +36,12 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (7,7)-(7,8))
         │   │   │   │   └── name: :A
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (7,10)-(7,11))
-        │   │   │   │   └── name: :B
-        │   │   │   └── delimiter_loc: (7,8)-(7,10) = "::"
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (7,13)-(7,14))
-        │   │   │   └── name: :C
-        │   │   └── delimiter_loc: (7,11)-(7,13) = "::"
+        │   │   │   ├── name: :B
+        │   │   │   ├── delimiter_loc: (7,8)-(7,10) = "::"
+        │   │   │   └── name_loc: (7,10)-(7,11) = "B"
+        │   │   ├── name: :C
+        │   │   ├── delimiter_loc: (7,11)-(7,13) = "::"
+        │   │   └── name_loc: (7,13)-(7,14) = "C"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (8,0)-(8,3) = "end"
         │   └── name: :C

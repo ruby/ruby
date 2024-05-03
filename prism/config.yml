@@ -1520,23 +1520,9 @@ nodes:
 
               a.b::C
               ^^^
-      - name: child
-        type: node
-        kind:
-          - ConstantReadNode
-          - MissingNode
-        comment: |
-          The right-hand node of the path. Always a `ConstantReadNode` in a
-          valid Ruby syntax tree.
-
-              ::Foo
-                ^^^
-
-              self::Test
-                    ^^^^
-
-              a.b::C
-                   ^
+      - name: name
+        type: constant?
+        comment: The name of the constant being accessed. This could be `nil` in the event of a syntax error.
       - name: delimiter_loc
         type: location
         comment: |
@@ -1547,6 +1533,16 @@ nodes:
 
               One::Two
                  ^^
+      - name: name_loc
+        type: location
+        comment: |
+          The location of the name of the constant.
+
+              ::Foo
+                ^^^
+
+              One::Two
+                   ^^^
     comment: |
       Represents accessing a constant through a path of `::` operators.
 
@@ -1586,12 +1582,11 @@ nodes:
     fields:
       - name: parent
         type: node?
-      - name: child
-        type: node
-        kind:
-          - ConstantReadNode
-          - MissingNode
+      - name: name
+        type: constant?
       - name: delimiter_loc
+        type: location
+      - name: name_loc
         type: location
     comment: |
       Represents writing to a constant path in a context that doesn't have an explicit value.

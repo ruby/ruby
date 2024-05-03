@@ -1454,14 +1454,12 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (64,7)-(64,10))
         │   │   │   │   └── name: :Foo
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (64,12)-(64,15))
-        │   │   │   │   └── name: :Bar
-        │   │   │   └── delimiter_loc: (64,10)-(64,12) = "::"
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (64,17)-(64,20))
-        │   │   │   └── name: :Baz
-        │   │   └── delimiter_loc: (64,15)-(64,17) = "::"
+        │   │   │   ├── name: :Bar
+        │   │   │   ├── delimiter_loc: (64,10)-(64,12) = "::"
+        │   │   │   └── name_loc: (64,12)-(64,15) = "Bar"
+        │   │   ├── name: :Baz
+        │   │   ├── delimiter_loc: (64,15)-(64,17) = "::"
+        │   │   └── name_loc: (64,17)-(64,20) = "Baz"
         │   └── operator_loc: (64,4)-(64,6) = "=>"
         ├── @ MatchRequiredNode (location: (65,0)-(65,12))
         │   ├── value:
@@ -1478,10 +1476,9 @@
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (65,7)-(65,12))
         │   │   ├── parent: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (65,9)-(65,12))
-        │   │   │   └── name: :Foo
-        │   │   └── delimiter_loc: (65,7)-(65,9) = "::"
+        │   │   ├── name: :Foo
+        │   │   ├── delimiter_loc: (65,7)-(65,9) = "::"
+        │   │   └── name_loc: (65,9)-(65,12) = "Foo"
         │   └── operator_loc: (65,4)-(65,6) = "=>"
         ├── @ MatchRequiredNode (location: (66,0)-(66,22))
         │   ├── value:
@@ -1502,18 +1499,15 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantPathNode (location: (66,7)-(66,12))
         │   │   │   │   ├── parent: ∅
-        │   │   │   │   ├── child:
-        │   │   │   │   │   @ ConstantReadNode (location: (66,9)-(66,12))
-        │   │   │   │   │   └── name: :Foo
-        │   │   │   │   └── delimiter_loc: (66,7)-(66,9) = "::"
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (66,14)-(66,17))
-        │   │   │   │   └── name: :Bar
-        │   │   │   └── delimiter_loc: (66,12)-(66,14) = "::"
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (66,19)-(66,22))
-        │   │   │   └── name: :Baz
-        │   │   └── delimiter_loc: (66,17)-(66,19) = "::"
+        │   │   │   │   ├── name: :Foo
+        │   │   │   │   ├── delimiter_loc: (66,7)-(66,9) = "::"
+        │   │   │   │   └── name_loc: (66,9)-(66,12) = "Foo"
+        │   │   │   ├── name: :Bar
+        │   │   │   ├── delimiter_loc: (66,12)-(66,14) = "::"
+        │   │   │   └── name_loc: (66,14)-(66,17) = "Bar"
+        │   │   ├── name: :Baz
+        │   │   ├── delimiter_loc: (66,17)-(66,19) = "::"
+        │   │   └── name_loc: (66,19)-(66,22) = "Baz"
         │   └── operator_loc: (66,4)-(66,6) = "=>"
         ├── @ MatchRequiredNode (location: (68,0)-(68,12))
         │   ├── value:

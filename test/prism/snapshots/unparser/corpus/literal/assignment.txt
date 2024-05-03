@@ -469,18 +469,16 @@
         │   ├── target:
         │   │   @ ConstantPathNode (location: (18,0)-(18,5))
         │   │   ├── parent: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (18,2)-(18,5))
-        │   │   │   └── name: :Foo
-        │   │   └── delimiter_loc: (18,0)-(18,2) = "::"
+        │   │   ├── name: :Foo
+        │   │   ├── delimiter_loc: (18,0)-(18,2) = "::"
+        │   │   └── name_loc: (18,2)-(18,5) = "Foo"
         │   ├── operator_loc: (18,6)-(18,7) = "="
         │   └── value:
         │       @ ConstantPathNode (location: (18,8)-(18,13))
         │       ├── parent: ∅
-        │       ├── child:
-        │       │   @ ConstantReadNode (location: (18,10)-(18,13))
-        │       │   └── name: :Bar
-        │       └── delimiter_loc: (18,8)-(18,10) = "::"
+        │       ├── name: :Bar
+        │       ├── delimiter_loc: (18,8)-(18,10) = "::"
+        │       └── name_loc: (18,10)-(18,13) = "Bar"
         ├── @ ClassVariableWriteNode (location: (19,0)-(19,7))
         │   ├── name: :@@a
         │   ├── name_loc: (19,0)-(19,3) = "@@a"
@@ -513,14 +511,12 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (22,0)-(22,4))
         │   │   │   │   └── name: :Name
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (22,6)-(22,12))
-        │   │   │   │   └── name: :Spaced
-        │   │   │   └── delimiter_loc: (22,4)-(22,6) = "::"
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (22,14)-(22,19))
-        │   │   │   └── name: :CONST
-        │   │   └── delimiter_loc: (22,12)-(22,14) = "::"
+        │   │   │   ├── name: :Spaced
+        │   │   │   ├── delimiter_loc: (22,4)-(22,6) = "::"
+        │   │   │   └── name_loc: (22,6)-(22,12) = "Spaced"
+        │   │   ├── name: :CONST
+        │   │   ├── delimiter_loc: (22,12)-(22,14) = "::"
+        │   │   └── name_loc: (22,14)-(22,19) = "CONST"
         │   ├── operator_loc: (22,20)-(22,21) = "="
         │   └── value:
         │       @ IntegerNode (location: (22,22)-(22,23))

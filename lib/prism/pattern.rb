@@ -149,7 +149,7 @@ module Prism
       parent = node.parent
 
       if parent.is_a?(ConstantReadNode) && parent.slice == "Prism"
-        compile_node(node.child)
+        compile_constant_name(node, node.name)
       else
         compile_error(node)
       end
@@ -158,14 +158,17 @@ module Prism
     # in ConstantReadNode
     # in String
     def compile_constant_read_node(node)
-      value = node.slice
+      compile_constant_name(node, node.name)
+    end
 
-      if Prism.const_defined?(value, false)
-        clazz = Prism.const_get(value)
+    # Compile a name associated with a constant.
+    def compile_constant_name(node, name)
+      if Prism.const_defined?(name, false)
+        clazz = Prism.const_get(name)
 
         ->(other) { clazz === other }
-      elsif Object.const_defined?(value, false)
-        clazz = Object.const_get(value)
+      elsif Object.const_defined?(name, false)
+        clazz = Object.const_get(name)
 
         ->(other) { clazz === other }
       else

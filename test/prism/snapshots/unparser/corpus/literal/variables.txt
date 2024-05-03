@@ -29,25 +29,21 @@
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (8,0)-(8,6))
         │   │   └── name: :SCOPED
-        │   ├── child:
-        │   │   @ ConstantReadNode (location: (8,8)-(8,13))
-        │   │   └── name: :CONST
-        │   └── delimiter_loc: (8,6)-(8,8) = "::"
+        │   ├── name: :CONST
+        │   ├── delimiter_loc: (8,6)-(8,8) = "::"
+        │   └── name_loc: (8,8)-(8,13) = "CONST"
         ├── @ ConstantPathNode (location: (9,0)-(9,10))
         │   ├── parent: ∅
-        │   ├── child:
-        │   │   @ ConstantReadNode (location: (9,2)-(9,10))
-        │   │   └── name: :TOPLEVEL
-        │   └── delimiter_loc: (9,0)-(9,2) = "::"
+        │   ├── name: :TOPLEVEL
+        │   ├── delimiter_loc: (9,0)-(9,2) = "::"
+        │   └── name_loc: (9,2)-(9,10) = "TOPLEVEL"
         └── @ ConstantPathNode (location: (10,0)-(10,17))
             ├── parent:
             │   @ ConstantPathNode (location: (10,0)-(10,10))
             │   ├── parent: ∅
-            │   ├── child:
-            │   │   @ ConstantReadNode (location: (10,2)-(10,10))
-            │   │   └── name: :TOPLEVEL
-            │   └── delimiter_loc: (10,0)-(10,2) = "::"
-            ├── child:
-            │   @ ConstantReadNode (location: (10,12)-(10,17))
-            │   └── name: :CONST
-            └── delimiter_loc: (10,10)-(10,12) = "::"
+            │   ├── name: :TOPLEVEL
+            │   ├── delimiter_loc: (10,0)-(10,2) = "::"
+            │   └── name_loc: (10,2)-(10,10) = "TOPLEVEL"
+            ├── name: :CONST
+            ├── delimiter_loc: (10,10)-(10,12) = "::"
+            └── name_loc: (10,12)-(10,17) = "CONST"

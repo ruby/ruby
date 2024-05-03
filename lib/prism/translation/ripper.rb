@@ -1456,16 +1456,16 @@ module Prism
       # ^^^^^^^^
       def visit_constant_path_node(node)
         if node.parent.nil?
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_top_const_ref(child)
         else
           parent = visit(node.parent)
 
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_const_path_ref(parent, child)
