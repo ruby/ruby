@@ -3267,7 +3267,11 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source)
+        @result ||=
+          begin
+            scopes = RUBY_VERSION >= "3.3.0" ? [] : [[]]
+            Prism.parse(source, scopes: scopes)
+          end
       end
 
       ##########################################################################
