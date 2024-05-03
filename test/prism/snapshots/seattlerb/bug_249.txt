@@ -12,7 +12,7 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,6)-(4,28))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 2)
             │       ├── @ CallNode (location: (1,6)-(4,9))
             │       │   ├── flags: ∅

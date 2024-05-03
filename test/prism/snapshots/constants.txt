@@ -112,7 +112,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (17,4)-(17,9))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (17,4)-(17,9))
         │   │           ├── flags: ∅
@@ -194,7 +194,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (23,9)-(23,14))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (23,9)-(23,14))
         │   │           ├── flags: ∅

@@ -2944,12 +2944,37 @@ pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
 }
 
 /**
+ * Validate that index expressions do not have keywords or blocks if we are
+ * parsing as Ruby 3.4+.
+ */
+static void
+pm_index_arguments_check(pm_parser_t *parser, const pm_arguments_node_t *arguments, const pm_node_t *block) {
+    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) {
+        if (arguments != NULL && PM_NODE_FLAG_P(arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS)) {
+            pm_node_t *node;
+            PM_NODE_LIST_FOREACH(&arguments->arguments, index, node) {
+                if (PM_NODE_TYPE_P(node, PM_KEYWORD_HASH_NODE)) {
+                    pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_INDEX_KEYWORDS);
+                    break;
+                }
+            }
+        }
+
+        if (block != NULL) {
+            pm_parser_err_node(parser, block, PM_ERR_UNEXPECTED_INDEX_BLOCK);
+        }
+    }
+}
+
+/**
  * Allocate and initialize a new IndexAndWriteNode node.
  */
 static pm_index_and_write_node_t *
 pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     pm_index_and_write_node_t *node = PM_ALLOC_NODE(parser, pm_index_and_write_node_t);
+
+    pm_index_arguments_check(parser, target->arguments, target->block);
 
     *node = (pm_index_and_write_node_t) {
         {
@@ -3021,6 +3046,8 @@ pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, 
 static pm_index_operator_write_node_t *
 pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     pm_index_operator_write_node_t *node = PM_ALLOC_NODE(parser, pm_index_operator_write_node_t);
+
+    pm_index_arguments_check(parser, target->arguments, target->block);
 
     *node = (pm_index_operator_write_node_t) {
         {
@@ -3095,6 +3122,8 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
     pm_index_or_write_node_t *node = PM_ALLOC_NODE(parser, pm_index_or_write_node_t);
 
+    pm_index_arguments_check(parser, target->arguments, target->block);
+
     *node = (pm_index_or_write_node_t) {
         {
             .type = PM_INDEX_OR_WRITE_NODE,
@@ -3158,6 +3187,8 @@ static pm_index_target_node_t *
 pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_index_target_node_t *node = PM_ALLOC_NODE(parser, pm_index_target_node_t);
     pm_node_flags_t flags = target->base.flags;
+
+    pm_index_arguments_check(parser, target->arguments, target->block);
 
     *node = (pm_index_target_node_t) {
         {
@@ -13733,9 +13764,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 bool contains_keyword_splat = parse_assocs(parser, &hash_keys, (pm_node_t *) hash);
 
                 parse_arguments_append(parser, arguments, argument);
-                if (contains_keyword_splat) {
-                    pm_node_flag_set((pm_node_t *) arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
-                }
+
+                pm_node_flags_t flags = PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
+                if (contains_keyword_splat) flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                pm_node_flag_set((pm_node_t *) arguments->arguments, flags);
 
                 pm_static_literals_free(&hash_keys);
                 parsed_bare_hash = true;
@@ -13813,7 +13845,9 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, !parsed_first_argument, PM_ERR_EXPECT_ARGUMENT);
                 }
 
+                bool contains_keywords = false;
                 bool contains_keyword_splat = false;
+
                 if (pm_symbol_node_label_p(argument) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
                     if (parsed_bare_hash) {
                         pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
@@ -13827,6 +13861,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     }
 
                     pm_keyword_hash_node_t *bare_hash = pm_keyword_hash_node_create(parser);
+                    contains_keywords = true;
 
                     // Create the set of static literals for this hash.
                     pm_static_literals_t hash_keys = { 0 };
@@ -13855,9 +13890,12 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 }
 
                 parse_arguments_append(parser, arguments, argument);
-                if (contains_keyword_splat) {
-                    pm_node_flag_set((pm_node_t *)arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
-                }
+
+                pm_node_flags_t flags = 0;
+                if (contains_keywords) flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
+                if (contains_keyword_splat) flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                pm_node_flag_set((pm_node_t *) arguments->arguments, flags);
+
                 break;
             }
         }

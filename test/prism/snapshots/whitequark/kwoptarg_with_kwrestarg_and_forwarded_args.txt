@@ -39,7 +39,7 @@
             │           ├── opening_loc: (1,20)-(1,21) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,21)-(1,23))
-            │           │   ├── flags: contains_keyword_splat
+            │           │   ├── flags: contains_keywords, contains_keyword_splat
             │           │   └── arguments: (length: 1)
             │           │       └── @ KeywordHashNode (location: (1,21)-(1,23))
             │           │           ├── flags: ∅

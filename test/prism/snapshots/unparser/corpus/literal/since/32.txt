@@ -36,7 +36,7 @@
         │   │           ├── opening_loc: (2,5)-(2,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (2,6)-(2,18))
-        │   │           │   ├── flags: contains_keyword_splat
+        │   │           │   ├── flags: contains_keywords, contains_keyword_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ LocalVariableReadNode (location: (2,6)-(2,14))
         │   │           │       │   ├── name: :argument

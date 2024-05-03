@@ -12,7 +12,7 @@
             ├── opening_loc: (1,1)-(1,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(1,5))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (1,2)-(1,5))
             │           ├── flags: symbol_keys

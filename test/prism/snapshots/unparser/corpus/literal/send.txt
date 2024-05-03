@@ -1251,7 +1251,7 @@
         │   ├── opening_loc: (63,7)-(63,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (63,8)-(63,16))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (63,8)-(63,16))
         │   │           ├── flags: symbol_keys
@@ -1297,7 +1297,7 @@
         │   ├── opening_loc: (64,7)-(64,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (64,8)-(64,25))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (64,8)-(64,11))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -1571,7 +1571,7 @@
         │   ├── opening_loc: (70,3)-(70,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (70,4)-(70,8))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (70,4)-(70,8))
         │   │           ├── flags: symbol_keys
@@ -1617,7 +1617,7 @@
         │   ├── opening_loc: (71,5)-(71,6) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (71,6)-(71,10))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (71,6)-(71,10))
         │   │           ├── flags: symbol_keys
@@ -1663,7 +1663,7 @@
         │   ├── opening_loc: (72,5)-(72,6) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (72,6)-(72,9))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (72,6)-(72,9))
         │   │           ├── flags: ∅
@@ -2082,7 +2082,7 @@
         │   ├── opening_loc: (81,1)-(81,2) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (81,2)-(81,7))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (81,2)-(81,7))
         │   │           ├── flags: ∅

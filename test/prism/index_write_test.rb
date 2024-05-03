@@ -40,41 +40,41 @@ module Prism
       RUBY
     end
 
-    # def test_keywords_latest
-    #   assert_parse_failure(<<~RUBY)
-    #     foo[bar: 1] = 1
-    #     foo[bar: 1] &&= 1
-    #     foo[bar: 1] ||= 1
-    #     foo[bar: 1] += 1
-    #   RUBY
+    def test_keywords_latest
+      assert_parse_failure(<<~RUBY)
+        foo[bar: 1] = 1
+        foo[bar: 1] &&= 1
+        foo[bar: 1] ||= 1
+        foo[bar: 1] += 1
+      RUBY
 
-    #   assert_parse_failure(<<~RUBY)
-    #     def foo(**)
-    #       bar[**] = 1
-    #       bar[**] &&= 1
-    #       bar[**] ||= 1
-    #       bar[**] += 1
-    #     end
-    #   RUBY
-    # end
+      assert_parse_failure(<<~RUBY)
+        def foo(**)
+          bar[**] = 1
+          bar[**] &&= 1
+          bar[**] ||= 1
+          bar[**] += 1
+        end
+      RUBY
+    end
 
-    # def test_block_latest
-    #   assert_parse_failure(<<~RUBY)
-    #     foo[&bar] = 1
-    #     foo[&bar] &&= 1
-    #     foo[&bar] ||= 1
-    #     foo[&bar] += 1
-    #   RUBY
+    def test_block_latest
+      assert_parse_failure(<<~RUBY)
+        foo[&bar] = 1
+        foo[&bar] &&= 1
+        foo[&bar] ||= 1
+        foo[&bar] += 1
+      RUBY
 
-    #   assert_parse_failure(<<~RUBY)
-    #     def foo(&)
-    #       bar[&] = 1
-    #       bar[&] &&= 1
-    #       bar[&] ||= 1
-    #       bar[&] += 1
-    #     end
-    #   RUBY
-    # end
+      assert_parse_failure(<<~RUBY)
+        def foo(&)
+          bar[&] = 1
+          bar[&] &&= 1
+          bar[&] ||= 1
+          bar[&] += 1
+        end
+      RUBY
+    end
 
     private
 
