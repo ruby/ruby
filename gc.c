@@ -353,8 +353,6 @@ rb_gc_rebuild_shape(VALUE obj, size_t size_pool_id)
 }
 RUBY_SYMBOL_EXPORT_END
 
-typedef int each_obj_callback(void *, void *, size_t, void *);
-
 /* Headers from gc_impl.c */
 // Bootup
 void *rb_gc_impl_objspace_alloc(void);
@@ -364,7 +362,6 @@ void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr);
 void rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache);
 void rb_gc_impl_set_params(void *objspace_ptr);
 void rb_gc_impl_init(void);
-int rb_gc_impl_heap_count(void *objspace_ptr);
 void rb_gc_impl_initial_stress_set(VALUE flag);
 size_t *rb_gc_impl_size_pool_sizes(void *objspace_ptr);
 // Shutdown
@@ -405,7 +402,7 @@ void rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b);
 void rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj);
 void rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj);
 // Heap walking
-void rb_gc_impl_each_objects(void *objspace_ptr, each_obj_callback *callback, void *data);
+void rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
 void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
 void rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
@@ -672,10 +669,81 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 
 #if USE_SHARED_GC
 # include "dln.h"
-# define rb_gc_impl_objspace_alloc rb_gc_functions->objspace_alloc
 
 typedef struct gc_function_map {
+    // Bootup
     void *(*objspace_alloc)(void);
+    void (*objspace_init)(void *objspace_ptr);
+    void (*objspace_free)(void *objspace_ptr);
+    void *(*ractor_cache_alloc)(void *objspace_ptr);
+    void (*ractor_cache_free)(void *objspace_ptr, void *cache);
+    void (*set_params)(void *objspace_ptr);
+    void (*init)(void);
+    void (*initial_stress_set)(VALUE flag);
+    size_t *(*size_pool_sizes)(void *objspace_ptr);
+    // Shutdown
+    void (*shutdown_free_objects)(void *objspace_ptr);
+    // GC
+    void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
+    bool (*during_gc_p)(void *objspace_ptr);
+    void (*prepare_heap)(void *objspace_ptr);
+    void (*gc_enable)(void *objspace_ptr);
+    void (*gc_disable)(void *objspace_ptr, bool finish_current_gc);
+    bool (*gc_enabled_p)(void *objspace_ptr);
+    void (*stress_set)(void *objspace_ptr, VALUE flag);
+    VALUE (*stress_get)(void *objspace_ptr);
+    // Object allocation
+    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size);
+    size_t (*obj_slot_size)(VALUE obj);
+    size_t (*size_pool_id_for_size)(void *objspace_ptr, size_t size);
+    bool (*size_allocatable_p)(size_t size);
+    // Malloc
+    void *(*malloc)(void *objspace_ptr, size_t size);
+    void *(*calloc)(void *objspace_ptr, size_t size);
+    void *(*realloc)(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
+    void (*free)(void *objspace_ptr, void *ptr, size_t old_size);
+    void (*adjust_memory_usage)(void *objspace_ptr, ssize_t diff);
+    // Marking
+    void (*mark)(void *objspace_ptr, VALUE obj);
+    void (*mark_and_move)(void *objspace_ptr, VALUE *ptr);
+    void (*mark_and_pin)(void *objspace_ptr, VALUE obj);
+    void (*mark_maybe)(void *objspace_ptr, VALUE obj);
+    void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
+    void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
+    void (*objspace_mark)(void *objspace_ptr);
+    // Compaction
+    bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
+    VALUE (*location)(void *objspace_ptr, VALUE value);
+    // Write barriers
+    void (*writebarrier)(void *objspace_ptr, VALUE a, VALUE b);
+    void (*writebarrier_unprotect)(void *objspace_ptr, VALUE obj);
+    void (*writebarrier_remember)(void *objspace_ptr, VALUE obj);
+    // Heap walking
+    void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
+    void (*each_object)(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
+    // Finalizers
+    void (*make_zombie)(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
+    VALUE (*define_finalizer)(void *objspace_ptr, VALUE obj, VALUE block);
+    VALUE (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
+    void (*copy_finalizer)(void *objspace_ptr, VALUE dest, VALUE obj);
+    void (*shutdown_call_finalizer)(void *objspace_ptr);
+    // Object ID
+    VALUE (*object_id)(void *objspace_ptr, VALUE obj);
+    VALUE (*object_id_to_ref)(void *objspace_ptr, VALUE object_id);
+    // Statistics
+    VALUE (*set_measure_total_time)(void *objspace_ptr, VALUE flag);
+    VALUE (*get_measure_total_time)(void *objspace_ptr);
+    VALUE (*get_profile_total_time)(void *objspace_ptr);
+    size_t (*gc_count)(void *objspace_ptr);
+    VALUE (*latest_gc_info)(void *objspace_ptr, VALUE key);
+    size_t (*stat)(void *objspace_ptr, VALUE hash_or_sym);
+    size_t (*stat_heap)(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
+    // Miscellaneous
+    size_t (*obj_flags)(void *objspace_ptr, VALUE obj, ID* flags, size_t max);
+    bool (*pointer_to_heap_p)(void *objspace_ptr, const void *ptr);
+    bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
+    void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
+    void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
 } rb_gc_function_map_t;
 
 static rb_gc_function_map_t rb_gc_functions;
@@ -715,12 +783,156 @@ ruby_load_external_gc_from_argv(int argc, char **argv)
     } \
 } while (0)
 
+    // Bootup
     load_external_gc_func(objspace_alloc);
+    load_external_gc_func(objspace_init);
+    load_external_gc_func(objspace_free);
+    load_external_gc_func(ractor_cache_alloc);
+    load_external_gc_func(ractor_cache_free);
+    load_external_gc_func(set_params);
+    load_external_gc_func(init);
+    load_external_gc_func(initial_stress_set);
+    load_external_gc_func(size_pool_sizes);
+    // Shutdown
+    load_external_gc_func(shutdown_free_objects);
+    // GC
+    load_external_gc_func(start);
+    load_external_gc_func(during_gc_p);
+    load_external_gc_func(prepare_heap);
+    load_external_gc_func(gc_enable);
+    load_external_gc_func(gc_disable);
+    load_external_gc_func(gc_enabled_p);
+    load_external_gc_func(stress_set);
+    load_external_gc_func(stress_get);
+    // Object allocation
+    load_external_gc_func(new_obj);
+    load_external_gc_func(obj_slot_size);
+    load_external_gc_func(size_pool_id_for_size);
+    load_external_gc_func(size_allocatable_p);
+    // Malloc
+    load_external_gc_func(malloc);
+    load_external_gc_func(calloc);
+    load_external_gc_func(realloc);
+    load_external_gc_func(free);
+    load_external_gc_func(adjust_memory_usage);
+    // Marking
+    load_external_gc_func(mark);
+    load_external_gc_func(mark_and_move);
+    load_external_gc_func(mark_and_pin);
+    load_external_gc_func(mark_maybe);
+    load_external_gc_func(mark_weak);
+    load_external_gc_func(remove_weak);
+    load_external_gc_func(objspace_mark);
+    // Compaction
+    load_external_gc_func(object_moved_p);
+    load_external_gc_func(location);
+    // Write barriers
+    load_external_gc_func(writebarrier);
+    load_external_gc_func(writebarrier_unprotect);
+    load_external_gc_func(writebarrier_remember);
+    // Heap walking
+    load_external_gc_func(each_objects);
+    load_external_gc_func(each_object);
+    // Finalizers
+    load_external_gc_func(make_zombie);
+    load_external_gc_func(define_finalizer);
+    load_external_gc_func(undefine_finalizer);
+    load_external_gc_func(copy_finalizer);
+    load_external_gc_func(shutdown_call_finalizer);
+    // Object ID
+    load_external_gc_func(object_id);
+    load_external_gc_func(object_id_to_ref);
+    // Statistics
+    load_external_gc_func(set_measure_total_time);
+    load_external_gc_func(get_measure_total_time);
+    load_external_gc_func(get_profile_total_time);
+    load_external_gc_func(gc_count);
+    load_external_gc_func(latest_gc_info);
+    load_external_gc_func(stat);
+    load_external_gc_func(stat_heap);
+    // Miscellaneous
+    load_external_gc_func(obj_flags);
+    load_external_gc_func(pointer_to_heap_p);
+    load_external_gc_func(garbage_object_p);
+    load_external_gc_func(set_event_hook);
+    load_external_gc_func(copy_attributes);
 
 # undef load_external_gc_func
 }
 
+// Bootup
 # define rb_gc_impl_objspace_alloc rb_gc_functions.objspace_alloc
+# define rb_gc_impl_objspace_init rb_gc_functions.objspace_init
+# define rb_gc_impl_objspace_free rb_gc_functions.objspace_free
+# define rb_gc_impl_ractor_cache_alloc rb_gc_functions.ractor_cache_alloc
+# define rb_gc_impl_ractor_cache_free rb_gc_functions.ractor_cache_free
+# define rb_gc_impl_set_params rb_gc_functions.set_params
+# define rb_gc_impl_init rb_gc_functions.init
+# define rb_gc_impl_initial_stress_set rb_gc_functions.initial_stress_set
+# define rb_gc_impl_size_pool_sizes rb_gc_functions.size_pool_sizes
+// Shutdown
+# define rb_gc_impl_shutdown_free_objects rb_gc_functions.shutdown_free_objects
+// GC
+# define rb_gc_impl_start rb_gc_functions.start
+# define rb_gc_impl_during_gc_p rb_gc_functions.during_gc_p
+# define rb_gc_impl_prepare_heap rb_gc_functions.prepare_heap
+# define rb_gc_impl_gc_enable rb_gc_functions.gc_enable
+# define rb_gc_impl_gc_disable rb_gc_functions.gc_disable
+# define rb_gc_impl_gc_enabled_p rb_gc_functions.gc_enabled_p
+# define rb_gc_impl_stress_set rb_gc_functions.stress_set
+# define rb_gc_impl_stress_get rb_gc_functions.stress_get
+// Object allocation
+# define rb_gc_impl_new_obj rb_gc_functions.new_obj
+# define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
+# define rb_gc_impl_size_pool_id_for_size rb_gc_functions.size_pool_id_for_size
+# define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
+// Malloc
+# define rb_gc_impl_malloc rb_gc_functions.malloc
+# define rb_gc_impl_calloc rb_gc_functions.calloc
+# define rb_gc_impl_realloc rb_gc_functions.realloc
+# define rb_gc_impl_free rb_gc_functions.free
+# define rb_gc_impl_adjust_memory_usage rb_gc_functions.adjust_memory_usage
+// Marking
+# define rb_gc_impl_mark rb_gc_functions.mark
+# define rb_gc_impl_mark_and_move rb_gc_functions.mark_and_move
+# define rb_gc_impl_mark_and_pin rb_gc_functions.mark_and_pin
+# define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
+# define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
+# define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
+# define rb_gc_impl_objspace_mark rb_gc_functions.objspace_mark
+// Compaction
+# define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
+# define rb_gc_impl_location rb_gc_functions.location
+// Write barriers
+# define rb_gc_impl_writebarrier rb_gc_functions.writebarrier
+# define rb_gc_impl_writebarrier_unprotect rb_gc_functions.writebarrier_unprotect
+# define rb_gc_impl_writebarrier_remember rb_gc_functions.writebarrier_remember
+// Heap walking
+# define rb_gc_impl_each_objects rb_gc_functions.each_objects
+# define rb_gc_impl_each_object rb_gc_functions.each_object
+// Finalizers
+# define rb_gc_impl_make_zombie rb_gc_functions.make_zombie
+# define rb_gc_impl_define_finalizer rb_gc_functions.define_finalizer
+# define rb_gc_impl_undefine_finalizer rb_gc_functions.undefine_finalizer
+# define rb_gc_impl_copy_finalizer rb_gc_functions.copy_finalizer
+# define rb_gc_impl_shutdown_call_finalizer rb_gc_functions.shutdown_call_finalizer
+// Object ID
+# define rb_gc_impl_object_id rb_gc_functions.object_id
+# define rb_gc_impl_object_id_to_ref rb_gc_functions.object_id_to_ref
+// Statistics
+# define rb_gc_impl_set_measure_total_time rb_gc_functions.set_measure_total_time
+# define rb_gc_impl_get_measure_total_time rb_gc_functions.get_measure_total_time
+# define rb_gc_impl_get_profile_total_time rb_gc_functions.get_profile_total_time
+# define rb_gc_impl_gc_count rb_gc_functions.gc_count
+# define rb_gc_impl_latest_gc_info rb_gc_functions.latest_gc_info
+# define rb_gc_impl_stat rb_gc_functions.stat
+# define rb_gc_impl_stat_heap rb_gc_functions.stat_heap
+// Miscellaneous
+# define rb_gc_impl_obj_flags rb_gc_functions.obj_flags
+# define rb_gc_impl_pointer_to_heap_p rb_gc_functions.pointer_to_heap_p
+# define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
+# define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
+# define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
 #endif
 
 void *
@@ -2774,7 +2986,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
  *       use some constant value in the iteration.
  */
 void
-rb_objspace_each_objects(each_obj_callback *callback, void *data)
+rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *data)
 {
     rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
 }

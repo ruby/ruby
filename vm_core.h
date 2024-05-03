@@ -105,7 +105,6 @@ extern int ruby_assert_critical_section_entered;
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
-
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
