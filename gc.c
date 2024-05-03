@@ -13594,10 +13594,9 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  traverse all living objects with an iterator.
  *
  *  ObjectSpace also provides support for object finalizers, procs that will be
- *  called when a specific object is about to be destroyed by garbage
- *  collection. See the documentation for
- *  <code>ObjectSpace.define_finalizer</code> for important information on
- *  how to use this method correctly.
+ *  called after a specific object was destroyed by garbage collection.  See
+ *  the documentation for +ObjectSpace.define_finalizer+ for important
+ *  information on how to use this method correctly.
  *
  *     a = "A"
  *     b = "B"
