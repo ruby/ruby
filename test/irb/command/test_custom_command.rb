@@ -5,7 +5,7 @@ require_relative "../helper"
 
 module TestIRB
   class CustomCommandIntegrationTest < TestIRB::IntegrationTestCase
-    def test_command_regsitration_can_happen_after_irb_require
+    def test_command_registration_can_happen_after_irb_require
       write_ruby <<~RUBY
         require "irb"
         require "irb/command"
@@ -32,7 +32,7 @@ module TestIRB
       assert_include(output, "Hello from PrintCommand")
     end
 
-    def test_command_regsitration_accepts_string_too
+    def test_command_registration_accepts_string_too
       write_ruby <<~RUBY
         require "irb/command"
 
@@ -58,7 +58,7 @@ module TestIRB
       assert_include(output, "Hello from PrintCommand")
     end
 
-    def test_arguments_propogation
+    def test_arguments_propagation
       write_ruby <<~RUBY
         require "irb/command"
 
