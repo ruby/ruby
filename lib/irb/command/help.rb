@@ -12,7 +12,7 @@ module IRB
             help_message
           else
             if command_class = Command.load_command(command_name)
-              command_class.help_message || command_class.description
+              command_class.help_message || command_class.description || ""
             else
               "Can't find command `#{command_name}`. Please check the command name and try again.\n\n"
             end

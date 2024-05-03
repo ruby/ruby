@@ -123,5 +123,31 @@ module TestIRB
       assert_include(output, "2 FooBar executed")
       assert_include(output, "foobar_description")
     end
+
+    def test_no_meta_command_also_works
+      write_ruby <<~RUBY
+        require "irb/command"
+
+        class NoMetaCommand < IRB::Command::Base
+          def execute(*)
+            puts "This command does not override meta attributes"
+            nil
+          end
+        end
+
+        IRB::Command.register(:no_meta, NoMetaCommand)
+
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "no_meta\n"
+        type "help no_meta\n"
+        type "exit"
+      end
+
+      assert_include(output, "This command does not override meta attributes")
+      assert_not_include(output, "Maybe IRB bug")
+    end
   end
 end
