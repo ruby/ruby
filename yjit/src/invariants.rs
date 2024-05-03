@@ -584,11 +584,10 @@ pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
         let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
         match no_ep_escape_iseqs.get_mut(&iseq) {
             Some(blocks) => {
-                // Invalidate existing blocks and let jit.ep_is_bp()
-                // return true when they are compiled again
+                // Invalidate existing blocks and make jit.ep_is_bp() return false
                 for block in mem::take(blocks) {
                     invalidate_block_version(&block);
-                    incr_counter!(invalidate_no_singleton_class);
+                    incr_counter!(invalidate_ep_escape);
                 }
             }
             None => {
