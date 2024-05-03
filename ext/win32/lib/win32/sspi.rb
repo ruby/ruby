@@ -181,20 +181,19 @@ module Win32
       SEC_E_SECPKG_NOT_FOUND = 0x80090305
       SEC_E_UNKNOWN_CREDENTIALS = 0x8009030D
 
-      @@map = {}
-      constants.each { |v| @@map[self.const_get(v.to_s)] = v }
+      RESULT_MAP = constants.to_h {|v| [const_get(v), v]}.freeze
 
       attr_reader :value
 
       def initialize(value)
         # convert to unsigned long
         value = [value].pack("L").unpack("L").first
-        raise "#{value.to_s(16)} is not a recognized result" unless @@map.has_key? value
+        raise "#{value.to_s(16)} is not a recognized result" unless RESULT_MAP.key? value
         @value = value
       end
 
       def to_s
-        @@map[@value].to_s
+        RESULT_MAP[@value].to_s
       end
 
       def ok?
@@ -208,7 +207,7 @@ module Win32
         when Integer
           @value == other
         when Symbol
-          @@map[@value] == other
+          RESULT_MAP[@value] == other
         else
           false
         end
