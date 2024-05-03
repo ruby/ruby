@@ -295,7 +295,7 @@ module Win32
         end
 
         outputBuffer = SecurityBuffer.new
-        result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, @context.to_p, nil,
+        result = SSPIResult.new(API::InitializeSecurityContextA.call(@credentials.to_p, @context.to_p, nil,
           REQUEST_FLAGS, 0, SECURITY_NETWORK_DREP, SecurityBuffer.new(token).to_p, 0,
           @context.to_p,
           outputBuffer.to_p, @contextAttributes, TimeStamp.new.to_p))
