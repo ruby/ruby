@@ -202,10 +202,13 @@ module Win32
       end
 
       def ==(other)
-        if other.is_a?(SSPIResult)
+        case other
+        when SSPIResult
           @value == other.value
-        elsif other.is_a?(Integer)
-          @value == @@map[other]
+        when Integer
+          @value == other
+        when Symbol
+          @@map[@value] == other
         else
           false
         end
