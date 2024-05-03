@@ -1443,10 +1443,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (97,0)-(97,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (97,3)-(97,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (97,1)-(97,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (97,1)-(97,3) = "::"
+        │   │   └── name_loc: (97,3)-(97,4) = "B"
         │   ├── call_operator_loc: (97,4)-(97,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (97,6)-(97,7) = "C"
@@ -1470,10 +1469,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (99,0)-(99,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (99,3)-(99,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (99,1)-(99,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (99,1)-(99,3) = "::"
+        │   │   └── name_loc: (99,3)-(99,4) = "B"
         │   ├── call_operator_loc: (99,4)-(99,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (99,6)-(99,7) = "C"
@@ -1497,10 +1495,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (101,0)-(101,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (101,3)-(101,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (101,1)-(101,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (101,1)-(101,3) = "::"
+        │   │   └── name_loc: (101,3)-(101,4) = "B"
         │   ├── call_operator_loc: (101,4)-(101,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (101,6)-(101,7) = "C"

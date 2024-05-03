@@ -72,10 +72,9 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (5,10)-(5,11))
-        │   │   │   └── name: :M
-        │   │   └── delimiter_loc: (5,8)-(5,10) = "::"
+        │   │   ├── name: :M
+        │   │   ├── delimiter_loc: (5,8)-(5,10) = "::"
+        │   │   └── name_loc: (5,10)-(5,11) = "M"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (6,0)-(6,3) = "end"
         │   └── name: :M
@@ -119,10 +118,9 @@
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (11,7)-(11,10))
         │   │   ├── parent: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (11,9)-(11,10))
-        │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (11,7)-(11,9) = "::"
+        │   │   ├── name: :A
+        │   │   ├── delimiter_loc: (11,7)-(11,9) = "::"
+        │   │   └── name_loc: (11,9)-(11,10) = "A"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (12,0)-(12,3) = "end"
         │   └── name: :A
@@ -144,10 +142,9 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: (14,9)-(14,10) = "]"
         │   │   │   └── block: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (14,10)-(14,12) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (14,10)-(14,12) = "::"
+        │   │   └── name_loc: (14,12)-(14,13) = "B"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (15,0)-(15,3) = "end"
         │   └── name: :B
@@ -175,10 +172,9 @@
             │   │   │           └── value: 1
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   └── block: ∅
-            │   ├── child:
-            │   │   @ ConstantReadNode (location: (17,13)-(17,14))
-            │   │   └── name: :B
-            │   └── delimiter_loc: (17,11)-(17,13) = "::"
+            │   ├── name: :B
+            │   ├── delimiter_loc: (17,11)-(17,13) = "::"
+            │   └── name_loc: (17,13)-(17,14) = "B"
             ├── body: ∅
             ├── end_keyword_loc: (18,0)-(18,3) = "end"
             └── name: :B

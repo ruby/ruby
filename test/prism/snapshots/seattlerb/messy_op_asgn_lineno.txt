@@ -24,10 +24,9 @@
             │           │           │   ├── parent:
             │           │           │   │   @ ConstantReadNode (location: (1,3)-(1,4))
             │           │           │   │   └── name: :B
-            │           │           │   ├── child:
-            │           │           │   │   @ ConstantReadNode (location: (1,6)-(1,7))
-            │           │           │   │   └── name: :C
-            │           │           │   └── delimiter_loc: (1,4)-(1,6) = "::"
+            │           │           │   ├── name: :C
+            │           │           │   ├── delimiter_loc: (1,4)-(1,6) = "::"
+            │           │           │   └── name_loc: (1,6)-(1,7) = "C"
             │           │           ├── operator_loc: (1,8)-(1,10) = "*="
             │           │           ├── value:
             │           │           │   @ CallNode (location: (1,11)-(1,14))

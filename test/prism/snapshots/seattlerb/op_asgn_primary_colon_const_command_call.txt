@@ -9,10 +9,9 @@
             │   ├── parent:
             │   │   @ ConstantReadNode (location: (1,0)-(1,1))
             │   │   └── name: :A
-            │   ├── child:
-            │   │   @ ConstantReadNode (location: (1,3)-(1,4))
-            │   │   └── name: :B
-            │   └── delimiter_loc: (1,1)-(1,3) = "::"
+            │   ├── name: :B
+            │   ├── delimiter_loc: (1,1)-(1,3) = "::"
+            │   └── name_loc: (1,3)-(1,4) = "B"
             ├── operator_loc: (1,5)-(1,7) = "*="
             ├── value:
             │   @ CallNode (location: (1,8)-(1,11))

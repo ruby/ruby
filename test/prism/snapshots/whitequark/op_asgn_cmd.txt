@@ -103,10 +103,9 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block: ∅
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (5,5)-(5,6))
-        │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (5,3)-(5,5) = "::"
+        │   │   ├── name: :A
+        │   │   ├── delimiter_loc: (5,3)-(5,5) = "::"
+        │   │   └── name_loc: (5,5)-(5,6) = "A"
         │   ├── operator_loc: (5,7)-(5,9) = "+="
         │   ├── value:
         │   │   @ CallNode (location: (5,10)-(5,15))

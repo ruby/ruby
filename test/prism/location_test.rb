@@ -298,7 +298,6 @@ module Prism
 
     def test_ConstantReadNode
       assert_location(ConstantReadNode, "Foo")
-      assert_location(ConstantReadNode, "Foo::Bar", 5...8, &:child)
     end
 
     def test_ConstantTargetNode

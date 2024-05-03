@@ -35,10 +35,9 @@
             │       │   ├── posts: (length: 1)
             │       │   │   └── @ ConstantPathNode (location: (2,6)-(2,16))
             │       │   │       ├── parent: ∅
-            │       │   │       ├── child:
-            │       │   │       │   @ ConstantReadNode (location: (2,8)-(2,16))
-            │       │   │       │   └── name: :NilClass
-            │       │   │       └── delimiter_loc: (2,6)-(2,8) = "::"
+            │       │   │       ├── name: :NilClass
+            │       │   │       ├── delimiter_loc: (2,6)-(2,8) = "::"
+            │       │   │       └── name_loc: (2,8)-(2,16) = "NilClass"
             │       │   ├── opening_loc: ∅
             │       │   └── closing_loc: ∅
             │       ├── statements:

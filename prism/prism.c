@@ -3530,22 +3530,27 @@ pm_constant_path_or_write_node_create(pm_parser_t *parser, pm_constant_path_node
  * Allocate and initialize a new ConstantPathNode node.
  */
 static pm_constant_path_node_t *
-pm_constant_path_node_create(pm_parser_t *parser, pm_node_t *parent, const pm_token_t *delimiter, pm_node_t *child) {
+pm_constant_path_node_create(pm_parser_t *parser, pm_node_t *parent, const pm_token_t *delimiter, const pm_token_t *name_token) {
     pm_assert_value_expression(parser, parent);
-
     pm_constant_path_node_t *node = PM_ALLOC_NODE(parser, pm_constant_path_node_t);
+
+    pm_constant_id_t name = PM_CONSTANT_ID_UNSET;
+    if (name_token->type == PM_TOKEN_CONSTANT) {
+        name = pm_parser_constant_id_token(parser, name_token);
+    }
 
     *node = (pm_constant_path_node_t) {
         {
             .type = PM_CONSTANT_PATH_NODE,
             .location = {
                 .start = parent == NULL ? delimiter->start : parent->location.start,
-                .end = child->location.end
+                .end = name_token->end
             },
         },
         .parent = parent,
-        .child = child,
-        .delimiter_loc = PM_LOCATION_TOKEN_VALUE(delimiter)
+        .name = name,
+        .delimiter_loc = PM_LOCATION_TOKEN_VALUE(delimiter),
+        .name_loc = PM_LOCATION_TOKEN_VALUE(name_token)
     };
 
     return node;
@@ -15823,9 +15828,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
     while (accept1(parser, PM_TOKEN_COLON_COLON)) {
         pm_token_t delimiter = parser->previous;
         expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-
-        pm_node_t *child = (pm_node_t *) pm_constant_read_node_create(parser, &parser->previous);
-        node = (pm_node_t *) pm_constant_path_node_create(parser, node, &delimiter, child);
+        node = (pm_node_t *) pm_constant_path_node_create(parser, node, &delimiter, &parser->previous);
     }
 
     // If there is a [ or ( that follows, then this is part of a larger pattern
@@ -16404,8 +16407,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             parser_lex(parser);
 
             expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-            pm_node_t *child = (pm_node_t *) pm_constant_read_node_create(parser, &parser->previous);
-            pm_constant_path_node_t *node = pm_constant_path_node_create(parser, NULL, &delimiter, child);
+            pm_constant_path_node_t *node = pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous);
 
             return parse_pattern_constant_path(parser, captures, (pm_node_t *) node);
         }
@@ -17379,12 +17381,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
         }
         case PM_TOKEN_UCOLON_COLON: {
             parser_lex(parser);
-
             pm_token_t delimiter = parser->previous;
-            expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
 
-            pm_node_t *constant = (pm_node_t *) pm_constant_read_node_create(parser, &parser->previous);
-            pm_node_t *node = (pm_node_t *)pm_constant_path_node_create(parser, NULL, &delimiter, constant);
+            expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
+            pm_node_t *node = (pm_node_t *) pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous);
 
             if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
                 node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX);
@@ -18642,9 +18642,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t double_colon = parser->previous;
 
                 expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-                pm_node_t *constant = (pm_node_t *) pm_constant_read_node_create(parser, &parser->previous);
-
-                constant_path = (pm_node_t *) pm_constant_path_node_create(parser, constant_path, &double_colon, constant);
+                constant_path = (pm_node_t *) pm_constant_path_node_create(parser, constant_path, &double_colon, &parser->previous);
             }
 
             // Here we retrieve the name of the module. If it wasn't a constant,
@@ -20442,8 +20440,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         path = (pm_node_t *) pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
                     } else {
                         // Otherwise, this is a constant path. That would look like Foo::Bar.
-                        pm_node_t *child = (pm_node_t *) pm_constant_read_node_create(parser, &parser->previous);
-                        path = (pm_node_t *)pm_constant_path_node_create(parser, node, &delimiter, child);
+                        path = (pm_node_t *) pm_constant_path_node_create(parser, node, &delimiter, &parser->previous);
                     }
 
                     // If this is followed by a comma then it is a multiple assignment.
@@ -20482,9 +20479,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &delimiter, &arguments);
                 }
                 default: {
-                    pm_parser_err_token(parser, &delimiter, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-                    pm_node_t *child = (pm_node_t *) pm_missing_node_create(parser, delimiter.start, delimiter.end);
-                    return (pm_node_t *)pm_constant_path_node_create(parser, node, &delimiter, child);
+                    expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
+                    return (pm_node_t *) pm_constant_path_node_create(parser, node, &delimiter, &parser->previous);
                 }
             }
         }

@@ -7,7 +7,6 @@
             ├── parent:
             │   @ ConstantReadNode (location: (1,0)-(1,3))
             │   └── name: :Bar
-            ├── child:
-            │   @ ConstantReadNode (location: (1,5)-(1,8))
-            │   └── name: :Foo
-            └── delimiter_loc: (1,3)-(1,5) = "::"
+            ├── name: :Foo
+            ├── delimiter_loc: (1,3)-(1,5) = "::"
+            └── name_loc: (1,5)-(1,8) = "Foo"

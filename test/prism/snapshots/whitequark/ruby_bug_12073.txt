@@ -75,10 +75,9 @@
             │           │       │   ├── parent:
             │           │       │   │   @ ConstantReadNode (location: (3,21)-(3,22))
             │           │       │   │   └── name: :A
-            │           │       │   ├── child:
-            │           │       │   │   @ ConstantReadNode (location: (3,24)-(3,25))
-            │           │       │   │   └── name: :B
-            │           │       │   └── delimiter_loc: (3,22)-(3,24) = "::"
+            │           │       │   ├── name: :B
+            │           │       │   ├── delimiter_loc: (3,22)-(3,24) = "::"
+            │           │       │   └── name_loc: (3,24)-(3,25) = "B"
             │           │       └── @ StringNode (location: (3,27)-(3,29))
             │           │           ├── flags: ∅
             │           │           ├── opening_loc: (3,27)-(3,28) = "'"
