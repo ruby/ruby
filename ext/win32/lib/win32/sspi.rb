@@ -283,12 +283,12 @@ module Win32
         # Nil token OK, just set it to empty string
         token = "" if token.nil?
 
-        if token.include? "Negotiate"
+        if token.start_with? "Negotiate"
           # If the Negotiate prefix is passed in, assume we are seeing "Negotiate <token>" and get the token.
-          token = token.split(" ").last
+          token = token.split(" ", 2).last
         end
 
-        if token.include? B64_TOKEN_PREFIX
+        if token.start_with? B64_TOKEN_PREFIX
           # indicates base64 encoded token
           token = token.strip.unpack1("m")
         end
@@ -309,7 +309,7 @@ module Win32
         clean_up unless @cleaned_up
       end
 
-     private
+    private
 
       def clean_up
         # free structures allocated
