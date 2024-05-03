@@ -204,7 +204,7 @@ module Win32
       def ==(other)
         if other.is_a?(SSPIResult)
           @value == other.value
-        elsif other.is_a?(Fixnum)
+        elsif other.is_a?(Integer)
           @value == @@map[other]
         else
           false
