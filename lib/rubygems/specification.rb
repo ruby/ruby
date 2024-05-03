@@ -859,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
   # optionally filtering out specs not matching the current platform
   #
   def self.stubs_for_pattern(pattern, match_platform = true) # :nodoc:
-    installed_stubs = installed_stubs(Gem::Specification.dirs, pattern)
+    installed_stubs = installed_stubs(dirs, pattern)
     installed_stubs.select! {|s| Gem::Platform.match_spec? s } if match_platform
     stubs = installed_stubs + default_stubs(pattern)
     stubs = stubs.uniq(&:full_name)
@@ -1125,7 +1125,7 @@ class Gem::Specification < Gem::BasicSpecification
   # +prerelease+ is true.
 
   def self.latest_specs(prerelease = false)
-    _latest_specs Gem::Specification.stubs, prerelease
+    _latest_specs stubs, prerelease
   end
 
   ##
