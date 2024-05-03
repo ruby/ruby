@@ -56,11 +56,11 @@ module Win32
     # SecHandle struct
     class SecurityHandle
       def upper
-        @struct.unpack("LL")[1]
+        @struct.unpack1("x4L")
       end
 
       def lower
-        @struct.unpack("LL")[0]
+        @struct.unpack1("L")
       end
 
       def to_p
@@ -129,7 +129,7 @@ module Win32
       def unpack
         if ! @unpacked && @sec_buffer && @struct
           @bufferSize, @type = @sec_buffer.unpack("LL")
-          @buffer = @sec_buffer.unpack("LLP#{@bufferSize}")[2]
+          @buffer = @sec_buffer.unpack1("x8P#{@bufferSize}")
           @struct = nil
           @sec_buffer = nil
           @unpacked = true
@@ -187,7 +187,7 @@ module Win32
 
       def initialize(value)
         # convert to unsigned long
-        value = [value].pack("L").unpack("L").first
+        value &= 0xffffffff
         raise "#{value.to_s(16)} is not a recognized result" unless RESULT_MAP.key? value
         @value = value
       end
@@ -290,7 +290,7 @@ module Win32
 
         if token.include? B64_TOKEN_PREFIX
           # indicates base64 encoded token
-          token = token.strip.unpack("m")[0]
+          token = token.strip.unpack1("m")
         end
 
         outputBuffer = SecurityBuffer.new
@@ -332,8 +332,7 @@ module Win32
       end
 
       def encode_token(t)
-        # encode64 will add newlines every 60 characters so we need to remove those.
-        [t].pack("m").delete("\n")
+        [t].pack("m0")
       end
     end
   end
