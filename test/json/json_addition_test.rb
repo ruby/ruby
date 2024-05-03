@@ -1,5 +1,6 @@
 #frozen_string_literal: false
 require_relative 'test_helper'
+require 'json/add/arithmetic_sequence'
 require 'json/add/core'
 require 'json/add/complex'
 require 'json/add/rational'
@@ -195,5 +196,12 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_set
     s = Set.new([:a, :b, :c, :a])
     assert_equal s, JSON.parse(JSON(s), :create_additions => true)
+  end
+
+  def test_arithmetic_sequence
+    include_end = 42.step(by: 3, to: 72)
+    assert_equal include_end, JSON.parse(JSON(include_end), :create_additions => true)
+    exclude_end = ((42...72) % 4)
+    assert_equal exclude_end, JSON.parse(JSON(exclude_end), :create_additions => true)
   end
 end

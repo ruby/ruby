@@ -408,6 +408,7 @@ require 'json/common'
 # - Complex: <tt>require 'json/add/complex'</tt>
 # - Date: <tt>require 'json/add/date'</tt>
 # - DateTime: <tt>require 'json/add/date_time'</tt>
+# - Enumerator::ArithmeticSequence: <tt>require 'json/add/arithmetic_sequence'</tt>
 # - Exception: <tt>require 'json/add/exception'</tt>
 # - OpenStruct: <tt>require 'json/add/ostruct'</tt>
 # - Range: <tt>require 'json/add/range'</tt>
