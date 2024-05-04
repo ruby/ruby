@@ -1696,6 +1696,11 @@ r_copy_ivar(VALUE v, VALUE data)
     return v;
 }
 
+#define override_ivar_error(type, str) \
+        rb_raise(rb_eTypeError, \
+                 "can't override instance variable of "type" '%"PRIsVALUE"'", \
+                 (str))
+
 static void
 r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
@@ -1703,6 +1708,12 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 
     len = r_long(arg);
     if (len > 0) {
+        if (RB_TYPE_P(obj, T_MODULE)) {
+            override_ivar_error("module", rb_mod_name(obj));
+        }
+        else if (RB_TYPE_P(obj, T_CLASS)) {
+            override_ivar_error("class", rb_class_name(obj));
+        }
         do {
             VALUE sym = r_symbol(arg);
             VALUE val = r_object(arg);
@@ -1795,9 +1806,7 @@ append_extmod(VALUE obj, VALUE extmod)
 
 #define prohibit_ivar(type, str) do { \
         if (!ivp || !*ivp) break; \
-        rb_raise(rb_eTypeError, \
-                 "can't override instance variable of "type" '%"PRIsVALUE"'", \
-                 (str)); \
+        override_ivar_error(type, str); \
     } while (0)
 
 static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
