@@ -134,6 +134,7 @@ class Gem::Platform
                       when /netbsdelf/ then             ["netbsdelf", nil]
                       when /openbsd(\d+\.\d+)?/ then    ["openbsd",   $1]
                       when /solaris(\d+\.\d+)?/ then    ["solaris",   $1]
+                      when /wasi/ then                  ["wasi",      nil]
                       # test
                       when /^(\w+_platform)(\d+)?/ then [$1,          $2]
                       else ["unknown", nil]
