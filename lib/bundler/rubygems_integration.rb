@@ -34,6 +34,10 @@ module Bundler
       Gem::Command.build_args = args
     end
 
+    def set_target_rbconfig(path)
+      Gem.set_target_rbconfig(path)
+    end
+
     def loaded_specs(name)
       Gem.loaded_specs[name]
     end
