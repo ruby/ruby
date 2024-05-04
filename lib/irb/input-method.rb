@@ -67,7 +67,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      puts
+      puts if @stdout.tty? # workaround for debug compatibility test
       print @prompt
       line = @stdin.gets
       @line[@line_no += 1] = line
