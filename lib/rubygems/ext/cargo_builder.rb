@@ -16,9 +16,14 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     @profile = :release
   end
 
-  def build(extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
+  def build(extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd,
+    target_rbconfig=Gem.target_rbconfig)
     require "tempfile"
     require "fileutils"
+
+    if target_rbconfig.path
+      warn "--target-rbconfig is not yet supported for Rust extensions. Ignoring"
+    end
 
     # Where's the Cargo.toml of the crate we're building
     cargo_toml = File.join(cargo_dir, "Cargo.toml")

@@ -12,9 +12,10 @@ class Gem::Platform
 
   attr_accessor :cpu, :os, :version
 
-  def self.local
-    @local ||= begin
-      arch = RbConfig::CONFIG["arch"]
+  def self.local(refresh: false)
+    return @local if @local && !refresh
+    @local = begin
+      arch = Gem.target_rbconfig["arch"]
       arch = "#{arch}_60" if /mswin(?:32|64)$/.match?(arch)
       new(arch)
     end
