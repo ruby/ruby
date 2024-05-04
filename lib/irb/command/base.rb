@@ -18,12 +18,12 @@ module IRB
       class << self
         def category(category = nil)
           @category = category if category
-          @category
+          @category || "No category"
         end
 
         def description(description = nil)
           @description = description if description
-          @description
+          @description || "No description provided."
         end
 
         def help_message(help_message = nil)

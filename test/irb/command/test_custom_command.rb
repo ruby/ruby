@@ -15,7 +15,6 @@ module TestIRB
           description 'print_command'
           def execute(*)
             puts "Hello from PrintCommand"
-            nil
           end
         end
 
@@ -25,7 +24,7 @@ module TestIRB
       RUBY
 
       output = run_ruby_file do
-        type "print!\n"
+        type "print!"
         type "exit"
       end
 
@@ -41,7 +40,6 @@ module TestIRB
           description 'print_command'
           def execute(*)
             puts "Hello from PrintCommand"
-            nil
           end
         end
 
@@ -51,7 +49,7 @@ module TestIRB
       RUBY
 
       output = run_ruby_file do
-        type "print!\n"
+        type "print!"
         type "exit"
       end
 
@@ -69,7 +67,6 @@ module TestIRB
             $nth_execution ||= 0
             puts "\#{$nth_execution} arg=\#{arg.inspect}"
             $nth_execution += 1
-            nil
           end
         end
 
@@ -79,9 +76,9 @@ module TestIRB
       RUBY
 
       output = run_ruby_file do
-        type "print_arg\n"
+        type "print_arg"
         type "print_arg  \n"
-        type "print_arg a r  g\n"
+        type "print_arg a r  g"
         type "print_arg  a r  g  \n"
         type "exit"
       end
@@ -103,7 +100,6 @@ module TestIRB
             $nth_execution ||= 1
             puts "\#{$nth_execution} FooBar executed"
             $nth_execution += 1
-            nil
           end
         end
 
@@ -131,7 +127,6 @@ module TestIRB
         class NoMetaCommand < IRB::Command::Base
           def execute(*)
             puts "This command does not override meta attributes"
-            nil
           end
         end
 
@@ -141,12 +136,13 @@ module TestIRB
       RUBY
 
       output = run_ruby_file do
-        type "no_meta\n"
-        type "help no_meta\n"
+        type "no_meta"
+        type "help no_meta"
         type "exit"
       end
 
       assert_include(output, "This command does not override meta attributes")
+      assert_include(output, "No description provided.")
       assert_not_include(output, "Maybe IRB bug")
     end
   end
