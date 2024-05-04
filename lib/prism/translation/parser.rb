@@ -284,7 +284,7 @@ module Prism
       def convert_for_prism(version)
         case version
         when 33
-          "3.3.0"
+          "3.3.1"
         when 34
           "3.4.0"
         else

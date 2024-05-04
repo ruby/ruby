@@ -408,7 +408,7 @@ module Prism
       values << dump_options_command_line(options)
 
       template << "C"
-      values << { nil => 0, "3.3.0" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
+      values << { nil => 0, "3.3.0" => 1, "3.3.1" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
 
       template << "L"
       if (scopes = options[:scopes])
