@@ -67,17 +67,16 @@ describe "The for expression" do
     end
   end
 
-  it "allows a constant as an iterator name" do
-    class OFor
-      m = [1,2,3]
-      n = 0
-      -> {
-        for CONST in m
-          n += 1
-        end
-      }.should complain(/already initialized constant/)
-      CONST.should == 3
-      n.should == 3
+  ruby_bug("#20468", ""..."3.4") do
+    it "disallows a constant as an iterator name" do
+      class OFor
+        -> {
+          eval(<<-RUBY)
+            for CONST in [1,2,3]
+            end
+          RUBY
+        }.should raise_error(SyntaxError)
+      end
     end
   end
 

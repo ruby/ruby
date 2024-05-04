@@ -18559,6 +18559,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 index = (pm_node_t *) pm_splat_node_create(parser, &star_operator, name);
             } else if (token_begins_expression_p(parser->current.type)) {
                 index = parse_expression(parser, PM_BINDING_POWER_INDEX, false, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
+                switch (index->type) {
+                    case PM_CALL_NODE:
+                        if (!(index->flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) break;
+                    case PM_CONSTANT_READ_NODE:
+                    case PM_CONSTANT_PATH_NODE:
+                        pm_parser_err_node(parser, index, PM_ERR_FOR_INDEX);
+                        break;
+                }
             } else {
                 pm_parser_err_token(parser, &for_keyword, PM_ERR_FOR_INDEX);
                 index = (pm_node_t *) pm_missing_node_create(parser, for_keyword.start, for_keyword.end);
