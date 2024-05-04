@@ -67,6 +67,22 @@ module TestIRB
       assert_match(/IRB is already running with a debug session/, output)
     end
 
+    def test_debug_command_can_only_be_called_from_binding_irb
+      write_ruby <<~'ruby'
+        require "irb"
+        # trick test framework
+        puts "binding.irb"
+        IRB.start
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "exit"
+      end
+
+      assert_include(output, "Debugging commands are only available when IRB is started with binding.irb")
+    end
+
     def test_next
       write_ruby <<~'ruby'
         binding.irb

@@ -931,8 +931,11 @@ module IRB
     # The lexer used by this irb session
     attr_accessor :scanner
 
+    attr_reader :from_binding
+
     # Creates a new irb session
-    def initialize(workspace = nil, input_method = nil)
+    def initialize(workspace = nil, input_method = nil, from_binding: false)
+      @from_binding = from_binding
       @context = Context.new(self, workspace, input_method)
       @context.workspace.load_helper_methods_to_main
       @signal_status = :IN_IRB
@@ -1596,7 +1599,7 @@ class Binding
     else
       # If we're not in a debugger session, create a new IRB instance with the current
       # workspace
-      binding_irb = IRB::Irb.new(workspace)
+      binding_irb = IRB::Irb.new(workspace, from_binding: true)
       binding_irb.context.irb_path = irb_path
       binding_irb.run(IRB.conf)
       binding_irb.debug_break

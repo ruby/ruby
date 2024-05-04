@@ -607,6 +607,10 @@ module IRB
       nil
     end
 
+    def from_binding?
+      @irb.from_binding
+    end
+
     def evaluate_expression(code, line_no) # :nodoc:
       result = nil
       if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
