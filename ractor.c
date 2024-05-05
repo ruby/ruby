@@ -1804,17 +1804,17 @@ ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ractors, VA
     int state;
 
     EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG() == TAG_NONE)) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = ractor_selector__wait(selector, do_receive, do_yield, yield_value, move);
     }
-    else {
+    EC_POP_TAG();
+    if (state != TAG_NONE) {
         // ensure
         ractor_selector_clear(selector);
 
         // jump
         EC_JUMP_TAG(ec, state);
     }
-    EC_POP_TAG();
 
     RB_GC_GUARD(ractors);
     return result;

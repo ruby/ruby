@@ -1466,6 +1466,25 @@ assert_equal '[:ok, :ok]', %q{
   end
 }
 
+# Ractor.select is interruptible
+assert_normal_exit %q{
+  trap(:INT) do
+    exit
+  end
+
+  r = Ractor.new do
+    loop do
+      sleep 1
+    end
+  end
+
+  Thread.new do
+    sleep 0.5
+    Process.kill(:INT, Process.pid)
+  end
+  Ractor.select(r)
+}
+
 # Ractor-local storage
 assert_equal '[nil, "b", "a"]', %q{
   ans = []
