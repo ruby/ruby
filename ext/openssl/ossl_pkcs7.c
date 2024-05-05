@@ -153,13 +153,14 @@ ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *si)
 static VALUE
 ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
 {
-    PKCS7_SIGNER_INFO *pkcs7;
+    PKCS7_SIGNER_INFO *p7si_new;
     VALUE obj;
 
     obj = NewPKCS7si(cPKCS7Signer);
-    pkcs7 = p7si ? ossl_PKCS7_SIGNER_INFO_dup(p7si) : PKCS7_SIGNER_INFO_new();
-    if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
-    SetPKCS7si(obj, pkcs7);
+    p7si_new = ossl_PKCS7_SIGNER_INFO_dup(p7si);
+    if (!p7si_new)
+        ossl_raise(ePKCS7Error, "ASN1_dup");
+    SetPKCS7si(obj, p7si_new);
 
     return obj;
 }
@@ -167,13 +168,14 @@ ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
 static VALUE
 ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
 {
-    PKCS7_RECIP_INFO *pkcs7;
+    PKCS7_RECIP_INFO *p7ri_new;
     VALUE obj;
 
     obj = NewPKCS7ri(cPKCS7Recipient);
-    pkcs7 = p7ri ? ossl_PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
-    if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
-    SetPKCS7ri(obj, pkcs7);
+    p7ri_new = ossl_PKCS7_RECIP_INFO_dup(p7ri);
+    if (!p7ri_new)
+        ossl_raise(ePKCS7Error,"ASN1_dup");
+    SetPKCS7ri(obj, p7ri_new);
 
     return obj;
 }
