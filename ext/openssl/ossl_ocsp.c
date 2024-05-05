@@ -149,10 +149,14 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
  * Public
  */
 static VALUE
-ossl_ocspcertid_new(OCSP_CERTID *cid)
+ossl_ocspcid_new(const OCSP_CERTID *cid)
 {
     VALUE obj = NewOCSPCertId(cOCSPCertId);
-    SetOCSPCertId(obj, cid);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    OCSP_CERTID *cid_new = OCSP_CERTID_dup((OCSP_CERTID *)cid);
+    if (!cid_new)
+        ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+    SetOCSPCertId(obj, cid_new);
     return obj;
 }
 
@@ -328,21 +332,19 @@ static VALUE
 ossl_ocspreq_get_certid(VALUE self)
 {
     OCSP_REQUEST *req;
-    OCSP_ONEREQ *one;
-    OCSP_CERTID *id;
-    VALUE ary, tmp;
-    int i, count;
 
     GetOCSPReq(self, req);
-    count = OCSP_request_onereq_count(req);
-    ary = (count > 0) ? rb_ary_new() : Qnil;
-    for(i = 0; i < count; i++){
-	one = OCSP_request_onereq_get0(req, i);
-	tmp = NewOCSPCertId(cOCSPCertId);
-	if(!(id = OCSP_CERTID_dup(OCSP_onereq_get0_id(one))))
-	    ossl_raise(eOCSPError, NULL);
-	SetOCSPCertId(tmp, id);
-	rb_ary_push(ary, tmp);
+    int count = OCSP_request_onereq_count(req);
+    if (count < 0)
+        ossl_raise(eOCSPError, "OCSP_request_onereq_count");
+    if (count == 0)
+        return Qnil;
+
+    VALUE ary = rb_ary_new_capa(count);
+    for (int i = 0; i < count; i++) {
+        OCSP_ONEREQ *one = OCSP_request_onereq_get0(req, i);
+        OCSP_CERTID *cid = OCSP_onereq_get0_id(one);
+        rb_ary_push(ary, ossl_ocspcid_new(cid));
     }
 
     return ary;
@@ -899,42 +901,34 @@ static VALUE
 ossl_ocspbres_get_status(VALUE self)
 {
     OCSP_BASICRESP *bs;
-    OCSP_SINGLERESP *single;
-    OCSP_CERTID *cid;
-    ASN1_TIME *revtime, *thisupd, *nextupd;
-    int status, reason;
-    X509_EXTENSION *x509ext;
-    VALUE ret, ary, ext;
-    int count, ext_count, i, j;
 
     GetOCSPBasicRes(self, bs);
-    ret = rb_ary_new();
-    count = OCSP_resp_count(bs);
-    for(i = 0; i < count; i++){
-	single = OCSP_resp_get0(bs, i);
-	if(!single) continue;
+    VALUE ret = rb_ary_new();
+    int count = OCSP_resp_count(bs);
+    for (int i = 0; i < count; i++) {
+        OCSP_SINGLERESP *single = OCSP_resp_get0(bs, i);
+        ASN1_TIME *revtime, *thisupd, *nextupd;
+        int reason;
 
-	revtime = thisupd = nextupd = NULL;
-	status = OCSP_single_get0_status(single, &reason, &revtime,
-					 &thisupd, &nextupd);
-	if(status < 0) continue;
-	if(!(cid = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(single)))) /* FIXME */
-	    ossl_raise(eOCSPError, NULL);
-	ary = rb_ary_new();
-	rb_ary_push(ary, ossl_ocspcertid_new(cid));
-	rb_ary_push(ary, INT2NUM(status));
-	rb_ary_push(ary, INT2NUM(reason));
-	rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
-	rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
-	rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
-	ext = rb_ary_new();
-	ext_count = OCSP_SINGLERESP_get_ext_count(single);
-	for(j = 0; j < ext_count; j++){
-	    x509ext = OCSP_SINGLERESP_get_ext(single, j);
-	    rb_ary_push(ext, ossl_x509ext_new(x509ext));
-	}
-	rb_ary_push(ary, ext);
-	rb_ary_push(ret, ary);
+        int status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
+        if (status < 0)
+            ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+        VALUE ary = rb_ary_new();
+        rb_ary_push(ary, ossl_ocspcid_new(OCSP_SINGLERESP_get0_id(single)));
+        rb_ary_push(ary, INT2NUM(status));
+        rb_ary_push(ary, INT2NUM(reason));
+        rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
+        rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
+        rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
+        VALUE ext = rb_ary_new();
+        int ext_count = OCSP_SINGLERESP_get_ext_count(single);
+        for (int j = 0; j < ext_count; j++) {
+            X509_EXTENSION *x509ext = OCSP_SINGLERESP_get_ext(single, j);
+            rb_ary_push(ext, ossl_x509ext_new(x509ext));
+        }
+        rb_ary_push(ary, ext);
+        rb_ary_push(ret, ary);
     }
 
     return ret;
@@ -1225,12 +1219,9 @@ static VALUE
 ossl_ocspsres_get_certid(VALUE self)
 {
     OCSP_SINGLERESP *sres;
-    OCSP_CERTID *id;
 
     GetOCSPSingleRes(self, sres);
-    id = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(sres)); /* FIXME */
-
-    return ossl_ocspcertid_new(id);
+    return ossl_ocspcid_new(OCSP_SINGLERESP_get0_id(sres));
 }
 
 /*
