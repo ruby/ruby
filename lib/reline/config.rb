@@ -8,31 +8,12 @@ class Reline::Config
   end
 
   VARIABLE_NAMES = %w{
-    bind-tty-special-chars
-    blink-matching-paren
-    byte-oriented
     completion-ignore-case
     convert-meta
     disable-completion
-    enable-keypad
-    expand-tilde
-    history-preserve-point
     history-size
-    horizontal-scroll-mode
-    input-meta
     keyseq-timeout
-    mark-directories
-    mark-modified-lines
-    mark-symlinked-directories
-    match-hidden-files
-    meta-flag
-    output-meta
-    page-completions
-    prefer-visible-bell
-    print-completions-horizontally
     show-all-if-ambiguous
-    show-all-if-unmodified
-    visible-stats
     show-mode-in-prompt
     vi-cmd-mode-string
     vi-ins-mode-string
