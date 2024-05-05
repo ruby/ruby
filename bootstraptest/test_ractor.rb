@@ -1482,7 +1482,7 @@ assert_normal_exit %q{
   Thread.new do
     sleep 0.5
     Process.kill(:INT, Process.pid)
-  do
+  end
   Ractor.select(r)
 }
 
