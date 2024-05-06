@@ -8851,6 +8851,16 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
         type = lex_optional_float_suffix(parser, seen_e);
     }
 
+    // At this point we have a completed number, but we want to provide the user
+    // with a good experience if they put an additional .xxx fractional
+    // component on the end, so we'll check for that here.
+    if (peek_offset(parser, 0) == '.' && pm_char_is_decimal_digit(peek_offset(parser, 1))) {
+        const uint8_t *fraction_start = parser->current.end;
+        const uint8_t *fraction_end = parser->current.end + 2;
+        fraction_end += pm_strspn_decimal_digit(fraction_end, parser->end - fraction_end);
+        pm_parser_err(parser, fraction_start, fraction_end, PM_ERR_INVALID_NUMBER_FRACTION);
+    }
+
     return type;
 }
 
