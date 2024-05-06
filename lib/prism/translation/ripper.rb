@@ -1456,16 +1456,16 @@ module Prism
       # ^^^^^^^^
       def visit_constant_path_node(node)
         if node.parent.nil?
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_top_const_ref(child)
         else
           parent = visit(node.parent)
 
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_const_path_ref(parent, child)
@@ -1488,16 +1488,16 @@ module Prism
       # Visit a constant path that is part of a write node.
       private def visit_constant_path_write_node_target(node)
         if node.parent.nil?
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_top_const_field(child)
         else
           parent = visit(node.parent)
 
-          bounds(node.child.location)
-          child = on_const(node.child.name.to_s)
+          bounds(node.name_loc)
+          child = on_const(node.name.to_s)
 
           bounds(node.location)
           on_const_path_field(parent, child)
@@ -3267,7 +3267,11 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source)
+        @result ||=
+          begin
+            scopes = RUBY_VERSION >= "3.3.0" ? [] : [[]]
+            Prism.parse(source, scopes: scopes)
+          end
       end
 
       ##########################################################################

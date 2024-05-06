@@ -442,9 +442,9 @@ module Prism
         # ^^^^^^^^
         def visit_constant_path_node(node)
           if node.parent.nil?
-            s(node, :colon3, node.child.name)
+            s(node, :colon3, node.name)
           else
-            s(node, :colon2, visit(node.parent), node.child.name)
+            s(node, :colon2, visit(node.parent), node.name)
           end
         end
 
@@ -1536,13 +1536,13 @@ module Prism
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source, filepath: filepath), filepath)
+        translate(Prism.parse(source, filepath: filepath, scopes: [[]]), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse_file(filepath)
-        translate(Prism.parse_file(filepath), filepath)
+        translate(Prism.parse_file(filepath, scopes: [[]]), filepath)
       end
 
       class << self

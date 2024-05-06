@@ -46,7 +46,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -59,7 +59,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -78,7 +78,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
+            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version), scopes: [[]]), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
@@ -149,17 +149,17 @@ module Prism
           Diagnostic.new(:error, :endless_setter, {}, diagnostic_location, [])
         when :embdoc_term
           Diagnostic.new(:error, :embedded_document, {}, diagnostic_location, [])
-        when :incomplete_variable_class, :incomplete_variable_class_3_3_0
+        when :incomplete_variable_class, :incomplete_variable_class_3_3
           location = location.copy(length: location.length + 1)
           diagnostic_location = build_range(location, offset_cache)
 
           Diagnostic.new(:error, :cvar_name, { name: location.slice }, diagnostic_location, [])
-        when :incomplete_variable_instance, :incomplete_variable_instance_3_3_0
+        when :incomplete_variable_instance, :incomplete_variable_instance_3_3
           location = location.copy(length: location.length + 1)
           diagnostic_location = build_range(location, offset_cache)
 
           Diagnostic.new(:error, :ivar_name, { name: location.slice }, diagnostic_location, [])
-        when :invalid_variable_global, :invalid_variable_global_3_3_0
+        when :invalid_variable_global, :invalid_variable_global_3_3
           Diagnostic.new(:error, :gvar_name, { name: location.slice }, diagnostic_location, [])
         when :module_in_method
           Diagnostic.new(:error, :module_in_def, {}, diagnostic_location, [])
@@ -284,7 +284,7 @@ module Prism
       def convert_for_prism(version)
         case version
         when 33
-          "3.3.0"
+          "3.3.1"
         when 34
           "3.4.0"
         else

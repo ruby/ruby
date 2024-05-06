@@ -45,13 +45,13 @@ The following default gems are updated.
 * erb 4.0.4
 * fiddle 1.1.3
 * io-console 0.7.2
-* irb 1.12.0
+* irb 1.13.1
 * json 2.7.2
 * net-http 0.4.1
 * optparse 0.5.0
-* prism 0.26.0
+* prism 0.27.0
 * rdoc 6.6.3.1
-* reline 0.5.3
+* reline 0.5.5
 * resolv 0.4.0
 * stringio 3.1.1
 * strscan 3.1.1

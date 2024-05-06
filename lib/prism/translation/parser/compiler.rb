@@ -483,13 +483,13 @@ module Prism
           if node.parent.nil?
             builder.const_global(
               token(node.delimiter_loc),
-              [node.child.name, srange(node.child.location)]
+              [node.name, srange(node.name_loc)]
             )
           else
             builder.const_fetch(
               visit(node.parent),
               token(node.delimiter_loc),
-              [node.child.name, srange(node.child.location)]
+              [node.name, srange(node.name_loc)]
             )
           end
         end

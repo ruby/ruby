@@ -200,6 +200,7 @@ closure.o: $(hdrdir)/ruby/internal/special_consts.h
 closure.o: $(hdrdir)/ruby/internal/static_assert.h
 closure.o: $(hdrdir)/ruby/internal/stdalign.h
 closure.o: $(hdrdir)/ruby/internal/stdbool.h
+closure.o: $(hdrdir)/ruby/internal/stdckdint.h
 closure.o: $(hdrdir)/ruby/internal/symbol.h
 closure.o: $(hdrdir)/ruby/internal/value.h
 closure.o: $(hdrdir)/ruby/internal/value_type.h
@@ -364,6 +365,7 @@ conversions.o: $(hdrdir)/ruby/internal/special_consts.h
 conversions.o: $(hdrdir)/ruby/internal/static_assert.h
 conversions.o: $(hdrdir)/ruby/internal/stdalign.h
 conversions.o: $(hdrdir)/ruby/internal/stdbool.h
+conversions.o: $(hdrdir)/ruby/internal/stdckdint.h
 conversions.o: $(hdrdir)/ruby/internal/symbol.h
 conversions.o: $(hdrdir)/ruby/internal/value.h
 conversions.o: $(hdrdir)/ruby/internal/value_type.h
@@ -527,6 +529,7 @@ fiddle.o: $(hdrdir)/ruby/internal/special_consts.h
 fiddle.o: $(hdrdir)/ruby/internal/static_assert.h
 fiddle.o: $(hdrdir)/ruby/internal/stdalign.h
 fiddle.o: $(hdrdir)/ruby/internal/stdbool.h
+fiddle.o: $(hdrdir)/ruby/internal/stdckdint.h
 fiddle.o: $(hdrdir)/ruby/internal/symbol.h
 fiddle.o: $(hdrdir)/ruby/internal/value.h
 fiddle.o: $(hdrdir)/ruby/internal/value_type.h
@@ -690,6 +693,7 @@ function.o: $(hdrdir)/ruby/internal/special_consts.h
 function.o: $(hdrdir)/ruby/internal/static_assert.h
 function.o: $(hdrdir)/ruby/internal/stdalign.h
 function.o: $(hdrdir)/ruby/internal/stdbool.h
+function.o: $(hdrdir)/ruby/internal/stdckdint.h
 function.o: $(hdrdir)/ruby/internal/symbol.h
 function.o: $(hdrdir)/ruby/internal/value.h
 function.o: $(hdrdir)/ruby/internal/value_type.h
@@ -854,6 +858,7 @@ handle.o: $(hdrdir)/ruby/internal/special_consts.h
 handle.o: $(hdrdir)/ruby/internal/static_assert.h
 handle.o: $(hdrdir)/ruby/internal/stdalign.h
 handle.o: $(hdrdir)/ruby/internal/stdbool.h
+handle.o: $(hdrdir)/ruby/internal/stdckdint.h
 handle.o: $(hdrdir)/ruby/internal/symbol.h
 handle.o: $(hdrdir)/ruby/internal/value.h
 handle.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1027,6 +1032,7 @@ memory_view.o: $(hdrdir)/ruby/internal/special_consts.h
 memory_view.o: $(hdrdir)/ruby/internal/static_assert.h
 memory_view.o: $(hdrdir)/ruby/internal/stdalign.h
 memory_view.o: $(hdrdir)/ruby/internal/stdbool.h
+memory_view.o: $(hdrdir)/ruby/internal/stdckdint.h
 memory_view.o: $(hdrdir)/ruby/internal/symbol.h
 memory_view.o: $(hdrdir)/ruby/internal/value.h
 memory_view.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1193,6 +1199,7 @@ pinned.o: $(hdrdir)/ruby/internal/special_consts.h
 pinned.o: $(hdrdir)/ruby/internal/static_assert.h
 pinned.o: $(hdrdir)/ruby/internal/stdalign.h
 pinned.o: $(hdrdir)/ruby/internal/stdbool.h
+pinned.o: $(hdrdir)/ruby/internal/stdckdint.h
 pinned.o: $(hdrdir)/ruby/internal/symbol.h
 pinned.o: $(hdrdir)/ruby/internal/value.h
 pinned.o: $(hdrdir)/ruby/internal/value_type.h
@@ -1366,6 +1373,7 @@ pointer.o: $(hdrdir)/ruby/internal/special_consts.h
 pointer.o: $(hdrdir)/ruby/internal/static_assert.h
 pointer.o: $(hdrdir)/ruby/internal/stdalign.h
 pointer.o: $(hdrdir)/ruby/internal/stdbool.h
+pointer.o: $(hdrdir)/ruby/internal/stdckdint.h
 pointer.o: $(hdrdir)/ruby/internal/symbol.h
 pointer.o: $(hdrdir)/ruby/internal/value.h
 pointer.o: $(hdrdir)/ruby/internal/value_type.h

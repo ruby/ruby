@@ -174,6 +174,7 @@ fn main() {
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
+        .allowlist_var("rb_cClass")
 
         // From include/ruby/internal/fl_type.h
         .allowlist_type("ruby_fl_type")
@@ -298,6 +299,7 @@ fn main() {
         .allowlist_type("ruby_tag_type")
         .allowlist_type("ruby_vm_throw_flags")
         .allowlist_type("vm_check_match_type")
+        .allowlist_type("rb_iseq_type")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -378,6 +380,7 @@ fn main() {
 
         // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
+        .allowlist_function("rb_obj_equal")
 
         // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")
@@ -415,6 +418,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_parent_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")
         .allowlist_function("rb_get_iseq_body_stack_max")
+        .allowlist_function("rb_get_iseq_body_type")
         .allowlist_function("rb_get_iseq_flags_has_lead")
         .allowlist_function("rb_get_iseq_flags_has_opt")
         .allowlist_function("rb_get_iseq_flags_has_kw")

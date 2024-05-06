@@ -97,13 +97,38 @@ module TestIRB
       RUBY
 
       output = run_ruby_file do
-        type <<~INPUT
-          my_helper
-        INPUT
+        type "my_helper"
         type "exit"
       end
 
       assert_include(output, 'Hello from MyHelper')
+    end
+
+    def test_helper_method_instances_are_memoized
+      write_ruby <<~RUBY
+        require "irb/helper_method"
+
+        class MyHelper < IRB::HelperMethod::Base
+          description "This is a test helper"
+
+          def execute(val)
+            @val ||= val
+          end
+        end
+
+        IRB::HelperMethod.register(:my_helper, MyHelper)
+
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "my_helper(100)"
+        type "my_helper(200)"
+        type "exit"
+      end
+
+      assert_include(output, '=> 100')
+      assert_not_include(output, '=> 200')
     end
   end
 end

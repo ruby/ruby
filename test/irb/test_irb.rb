@@ -125,6 +125,26 @@ module TestIRB
     end
   end
 
+  class NestedBindingIrbTest < IntegrationTestCase
+    def test_current_context_restore
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type '$ctx = IRB.CurrentContext'
+        type 'binding.irb'
+        type 'p context_changed: IRB.CurrentContext != $ctx'
+        type 'exit'
+        type 'p context_restored: IRB.CurrentContext == $ctx'
+        type 'exit'
+      end
+
+      assert_include output, '{:context_changed=>true}'
+      assert_include output, '{:context_restored=>true}'
+    end
+  end
+
   class IrbIOConfigurationTest < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :indent_level)
 
@@ -801,6 +821,97 @@ module TestIRB
 
       IRB.conf[:VERBOSE] = false
       IRB::Irb.new(workspace, TestInputMethod.new)
+    end
+  end
+
+  class BacktraceFilteringTest < TestIRB::IntegrationTestCase
+    def test_backtrace_filtering
+      write_ruby <<~'RUBY'
+        def foo
+          raise "error"
+        end
+
+        def bar
+          foo
+        end
+
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "bar"
+        type "exit"
+      end
+
+      assert_match(/irbtest-.*\.rb:2:in (`|'Object#)foo': error \(RuntimeError\)/, output)
+      frame_traces = output.split("\n").select { |line| line.strip.match?(/from /) }.map(&:strip)
+
+      expected_traces = if RUBY_VERSION >= "3.3.0"
+        [
+          /from .*\/irbtest-.*.rb:6:in (`|'Object#)bar'/,
+          /from .*\/irbtest-.*.rb\(irb\):1:in [`']<main>'/,
+          /from <internal:kernel>:\d+:in (`|'Kernel#)loop'/,
+          /from <internal:prelude>:\d+:in (`|'Binding#)irb'/,
+          /from .*\/irbtest-.*.rb:9:in [`']<main>'/
+        ]
+      else
+        [
+          /from .*\/irbtest-.*.rb:6:in (`|'Object#)bar'/,
+          /from .*\/irbtest-.*.rb\(irb\):1:in [`']<main>'/,
+          /from <internal:prelude>:\d+:in (`|'Binding#)irb'/,
+          /from .*\/irbtest-.*.rb:9:in [`']<main>'/
+        ]
+      end
+
+      expected_traces.reverse! if RUBY_VERSION < "3.0.0"
+
+      expected_traces.each_with_index do |expected_trace, index|
+        assert_match(expected_trace, frame_traces[index])
+      end
+    end
+
+    def test_backtrace_filtering_with_backtrace_filter
+      write_rc <<~'RUBY'
+        class TestBacktraceFilter
+          def self.call(backtrace)
+            backtrace.reject { |line| line.include?("internal") }
+          end
+        end
+
+        IRB.conf[:BACKTRACE_FILTER] = TestBacktraceFilter
+      RUBY
+
+      write_ruby <<~'RUBY'
+        def foo
+          raise "error"
+        end
+
+        def bar
+          foo
+        end
+
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "bar"
+        type "exit"
+      end
+
+      assert_match(/irbtest-.*\.rb:2:in (`|'Object#)foo': error \(RuntimeError\)/, output)
+      frame_traces = output.split("\n").select { |line| line.strip.match?(/from /) }.map(&:strip)
+
+      expected_traces = [
+        /from .*\/irbtest-.*.rb:6:in (`|'Object#)bar'/,
+        /from .*\/irbtest-.*.rb\(irb\):1:in [`']<main>'/,
+        /from .*\/irbtest-.*.rb:9:in [`']<main>'/
+      ]
+
+      expected_traces.reverse! if RUBY_VERSION < "3.0.0"
+
+      expected_traces.each_with_index do |expected_trace, index|
+        assert_match(expected_trace, frame_traces[index])
+      end
     end
   end
 end

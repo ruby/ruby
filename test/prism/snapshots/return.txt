@@ -4,9 +4,11 @@
     @ StatementsNode (location: (1,0)-(23,9))
     └── body: (length: 10)
         ├── @ ReturnNode (location: (1,0)-(1,6))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (1,0)-(1,6) = "return"
         │   └── arguments: ∅
         ├── @ ReturnNode (location: (3,0)-(3,20))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (3,7)-(3,20))
@@ -40,6 +42,7 @@
         │               ├── opening_loc: (3,17)-(3,18) = "("
         │               └── closing_loc: (3,19)-(3,20) = ")"
         ├── @ ReturnNode (location: (5,0)-(5,9))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,7)-(5,9))
@@ -52,6 +55,7 @@
         │                   ├── flags: decimal
         │                   └── value: 1
         ├── @ ReturnNode (location: (7,0)-(7,8))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (7,0)-(7,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (7,7)-(7,8))
@@ -61,6 +65,7 @@
         │               ├── flags: decimal
         │               └── value: 1
         ├── @ ReturnNode (location: (9,0)-(10,1))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (9,0)-(9,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (9,7)-(10,1))
@@ -76,6 +81,7 @@
         │               ├── flags: decimal
         │               └── value: 3
         ├── @ ReturnNode (location: (12,0)-(12,14))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (12,0)-(12,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (12,7)-(12,14))
@@ -91,6 +97,7 @@
         │               ├── flags: decimal
         │               └── value: 3
         ├── @ ReturnNode (location: (14,0)-(14,16))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (14,0)-(14,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (14,7)-(14,16))
@@ -111,6 +118,7 @@
         │               ├── opening_loc: (14,7)-(14,8) = "["
         │               └── closing_loc: (14,15)-(14,16) = "]"
         ├── @ ReturnNode (location: (16,0)-(19,1))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (16,0)-(16,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (16,6)-(19,1))
@@ -129,6 +137,7 @@
         │               ├── opening_loc: (16,6)-(16,7) = "("
         │               └── closing_loc: (19,0)-(19,1) = ")"
         ├── @ ReturnNode (location: (21,0)-(21,8))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (21,0)-(21,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (21,6)-(21,8))
@@ -139,6 +148,7 @@
         │               ├── opening_loc: (21,6)-(21,7) = "("
         │               └── closing_loc: (21,7)-(21,8) = ")"
         └── @ ReturnNode (location: (23,0)-(23,9))
+            ├── flags: ∅
             ├── keyword_loc: (23,0)-(23,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (23,6)-(23,9))

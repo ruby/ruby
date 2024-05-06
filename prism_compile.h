@@ -72,7 +72,7 @@ typedef struct {
     bool parsed;
 } pm_parse_result_t;
 
-VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath);
+VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error);
 VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath);
 VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath);
 VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath);

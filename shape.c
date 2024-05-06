@@ -1213,9 +1213,7 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 void
 Init_default_shapes(void)
 {
-    rb_shape_tree_t *st = ruby_mimmalloc(sizeof(rb_shape_tree_t));
-    memset(st, 0, sizeof(rb_shape_tree_t));
-    rb_shape_tree_ptr = st;
+    rb_shape_tree_ptr = xcalloc(1, sizeof(rb_shape_tree_t));
 
 #ifdef HAVE_MMAP
     rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),

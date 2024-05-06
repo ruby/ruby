@@ -8,11 +8,6 @@ module IRB
       category "Debugging"
       description "Start the debugger of debug.gem."
 
-      BINDING_IRB_FRAME_REGEXPS = [
-        '<internal:prelude>',
-        binding.method(:irb).source_location.first,
-      ].map { |file| /\A#{Regexp.escape(file)}:\d+:in (`|'Binding#)irb'\z/ }
-
       def execute(_arg)
         execute_debug_command
       end
@@ -36,7 +31,7 @@ module IRB
           # 3. Insert a debug breakpoint at `Irb#debug_break` with the intended command.
           # 4. Exit the current Irb#run call via `throw :IRB_EXIT`.
           # 5. `Irb#debug_break` will be called and trigger the breakpoint, which will run the intended command.
-          unless binding_irb?
+          unless irb_context.from_binding?
             puts "Debugging commands are only available when IRB is started with binding.irb"
             return
           end
@@ -58,16 +53,6 @@ module IRB
 
           # exit current Irb#run call
           throw :IRB_EXIT
-        end
-      end
-
-      private
-
-      def binding_irb?
-        caller.any? do |frame|
-          BINDING_IRB_FRAME_REGEXPS.any? do |regexp|
-            frame.match?(regexp)
-          end
         end
       end
     end

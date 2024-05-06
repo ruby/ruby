@@ -112,10 +112,10 @@ extern int ruby_assert_critical_section_entered;
 
 #if USE_SHARED_GC
 typedef struct gc_function_map {
-    void *(*init)(void);
+    void *(*objspace_alloc)(void);
 } rb_gc_function_map_t;
 
-#define rb_gc_functions (GET_VM()->gc_functions_map)
+#define rb_gc_functions (&GET_VM()->gc_functions_map)
 #endif
 
 /*
@@ -765,7 +765,7 @@ typedef struct rb_vm_struct {
 
     struct rb_objspace *objspace;
 #if USE_SHARED_GC
-    rb_gc_function_map_t *gc_functions_map;
+    rb_gc_function_map_t gc_functions_map;
 #endif
 
     rb_at_exit_list *at_exit;
@@ -1220,11 +1220,11 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent, enum rb_iseq_type);
-rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath,                     const rb_iseq_t *parent, int opt);
-rb_iseq_t *rb_iseq_new_eval    (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
-rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+rb_iseq_t *rb_iseq_new         (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,                   const rb_iseq_t *parent, enum rb_iseq_type);
+rb_iseq_t *rb_iseq_new_top     (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,                   const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_main    (const VALUE ast_value,             VALUE path, VALUE realpath,                   const rb_iseq_t *parent, int opt);
+rb_iseq_t *rb_iseq_new_eval    (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
+rb_iseq_t *rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                                 enum rb_iseq_type, const rb_compile_option_t*,
                                 VALUE script_lines);
 

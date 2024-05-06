@@ -252,6 +252,128 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)", "(#{rake_version})"))
   end
 
+  it "updates specific gems using --update, even if that requires unlocking other top level gems" do
+    build_repo4 do
+      build_gem "prism", "0.15.1"
+      build_gem "prism", "0.24.0"
+
+      build_gem "ruby-lsp", "0.12.0" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "ruby-lsp", "0.16.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "tapioca", "0.11.10" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "tapioca", "0.13.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "tapioca"
+      gem "ruby-lsp"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}
+        specs:
+          prism (0.15.1)
+          ruby-lsp (0.12.0)
+            prism (< 0.24.0)
+          tapioca (0.11.10)
+            prism (< 0.24.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ruby-lsp
+        tapioca
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update tapioca --verbose"
+
+    expect(lockfile).to include("tapioca (0.13.1)")
+  end
+
+  it "updates specific gems using --update, even if that requires unlocking other top level gems, but only as few as possible" do
+    build_repo4 do
+      build_gem "prism", "0.15.1"
+      build_gem "prism", "0.24.0"
+
+      build_gem "ruby-lsp", "0.12.0" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "ruby-lsp", "0.16.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "tapioca", "0.11.10" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "tapioca", "0.13.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "other-prism-dependent", "1.0.0" do |s|
+        s.add_dependency "prism", ">= 0.15.1"
+      end
+
+      build_gem "other-prism-dependent", "1.1.0" do |s|
+        s.add_dependency "prism", ">= 0.15.1"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "tapioca"
+      gem "ruby-lsp"
+      gem "other-prism-dependent"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}
+        specs:
+          other-prism-dependent (1.0.0)
+            prism (>= 0.15.1)
+          prism (0.15.1)
+          ruby-lsp (0.12.0)
+            prism (< 0.24.0)
+          tapioca (0.11.10)
+            prism (< 0.24.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ruby-lsp
+        tapioca
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update tapioca"
+
+    expect(lockfile).to include("tapioca (0.13.1)")
+    expect(lockfile).to include("other-prism-dependent (1.0.0)")
+  end
+
   it "preserves unknown checksum algorithms" do
     lockfile @lockfile.gsub(/(sha256=[a-f0-9]+)$/, "constant=true,\\1,xyz=123")
 

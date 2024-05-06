@@ -4,7 +4,7 @@ require_relative "test_helper"
 
 module Prism
   class IndexWriteTest < TestCase
-    def test_keywords_3_3_0
+    def test_keywords_3_3
       assert_parse_success(<<~RUBY, "3.3.0")
         foo[bar: 1] = 1
         foo[bar: 1] &&= 1
@@ -22,7 +22,7 @@ module Prism
       RUBY
     end
 
-    def test_block_3_3_0
+    def test_block_3_3
       assert_parse_success(<<~RUBY, "3.3.0")
         foo[&bar] = 1
         foo[&bar] &&= 1
@@ -40,41 +40,41 @@ module Prism
       RUBY
     end
 
-    # def test_keywords_latest
-    #   assert_parse_failure(<<~RUBY)
-    #     foo[bar: 1] = 1
-    #     foo[bar: 1] &&= 1
-    #     foo[bar: 1] ||= 1
-    #     foo[bar: 1] += 1
-    #   RUBY
+    def test_keywords_latest
+      assert_parse_failure(<<~RUBY)
+        foo[bar: 1] = 1
+        foo[bar: 1] &&= 1
+        foo[bar: 1] ||= 1
+        foo[bar: 1] += 1
+      RUBY
 
-    #   assert_parse_failure(<<~RUBY)
-    #     def foo(**)
-    #       bar[**] = 1
-    #       bar[**] &&= 1
-    #       bar[**] ||= 1
-    #       bar[**] += 1
-    #     end
-    #   RUBY
-    # end
+      assert_parse_failure(<<~RUBY)
+        def foo(**)
+          bar[**] = 1
+          bar[**] &&= 1
+          bar[**] ||= 1
+          bar[**] += 1
+        end
+      RUBY
+    end
 
-    # def test_block_latest
-    #   assert_parse_failure(<<~RUBY)
-    #     foo[&bar] = 1
-    #     foo[&bar] &&= 1
-    #     foo[&bar] ||= 1
-    #     foo[&bar] += 1
-    #   RUBY
+    def test_block_latest
+      assert_parse_failure(<<~RUBY)
+        foo[&bar] = 1
+        foo[&bar] &&= 1
+        foo[&bar] ||= 1
+        foo[&bar] += 1
+      RUBY
 
-    #   assert_parse_failure(<<~RUBY)
-    #     def foo(&)
-    #       bar[&] = 1
-    #       bar[&] &&= 1
-    #       bar[&] ||= 1
-    #       bar[&] += 1
-    #     end
-    #   RUBY
-    # end
+      assert_parse_failure(<<~RUBY)
+        def foo(&)
+          bar[&] = 1
+          bar[&] &&= 1
+          bar[&] ||= 1
+          bar[&] += 1
+        end
+      RUBY
+    end
 
     private
 

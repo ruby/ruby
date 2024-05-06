@@ -32,6 +32,7 @@ ID rb_option_id_frozen_string_literal;
 ID rb_option_id_line;
 ID rb_option_id_scopes;
 ID rb_option_id_version;
+ID rb_prism_source_id_for;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -599,8 +600,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { source_string, LONG2NUM(parser.start_line), offsets };
-    VALUE source = rb_class_new_instance(3, source_argv, rb_cPrismSource);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_prism_source_id_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
@@ -1243,7 +1243,7 @@ static_inspect(int argc, VALUE *argv, VALUE self) {
     pm_node_t *node = ((pm_program_node_t *) program)->statements->body.nodes[0];
 
     pm_buffer_t buffer = { 0 };
-    pm_static_literal_inspect(&buffer, &parser, node);
+    pm_static_literal_inspect(&buffer, &parser.newline_list, parser.start_line, parser.encoding->name, node);
 
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
@@ -1378,6 +1378,8 @@ Init_prism(void) {
     rb_option_id_line = rb_intern_const("line");
     rb_option_id_scopes = rb_intern_const("scopes");
     rb_option_id_version = rb_intern_const("version");
+
+    rb_prism_source_id_for = rb_intern("for");
 
     /**
      * The version of the prism library.

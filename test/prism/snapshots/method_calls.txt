@@ -308,7 +308,7 @@
         │   ├── opening_loc: (27,1)-(27,2) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (27,2)-(27,10))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (27,2)-(27,10))
         │   │           ├── flags: ∅
@@ -779,7 +779,7 @@
         │   ├── opening_loc: (60,3)-(60,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (60,4)-(60,32))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (60,4)-(60,6))
         │   │       │   ├── flags: forced_us_ascii_encoding
@@ -912,7 +912,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (64,4)-(64,15))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (64,4)-(64,6))
         │   │       │   ├── flags: forced_us_ascii_encoding
@@ -988,7 +988,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (66,3)-(66,17))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (66,3)-(66,17))
         │   │           ├── flags: symbol_keys
@@ -1020,7 +1020,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (68,3)-(68,40))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (68,3)-(68,40))
         │   │           ├── flags: ∅
@@ -1075,7 +1075,7 @@
         │   ├── opening_loc: (70,2)-(70,3) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (70,3)-(70,40))
-        │   │   ├── flags: contains_keyword_splat
+        │   │   ├── flags: contains_keywords, contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (70,3)-(70,40))
         │   │           ├── flags: ∅
@@ -1178,7 +1178,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (74,3)-(74,20))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (74,3)-(74,20))
         │   │           ├── flags: symbol_keys
@@ -1235,7 +1235,7 @@
         │   ├── opening_loc: (80,3)-(80,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (81,0)-(82,5))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (81,0)-(81,2))
         │   │       │   ├── flags: forced_us_ascii_encoding
@@ -1292,7 +1292,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (87,4)-(87,21))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (87,4)-(87,21))
         │   │           ├── flags: symbol_keys
@@ -1339,7 +1339,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (89,10)-(89,21))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (89,10)-(89,11))
         │   │       │   ├── flags: decimal
@@ -1443,10 +1443,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (97,0)-(97,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (97,3)-(97,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (97,1)-(97,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (97,1)-(97,3) = "::"
+        │   │   └── name_loc: (97,3)-(97,4) = "B"
         │   ├── call_operator_loc: (97,4)-(97,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (97,6)-(97,7) = "C"
@@ -1470,10 +1469,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (99,0)-(99,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (99,3)-(99,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (99,1)-(99,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (99,1)-(99,3) = "::"
+        │   │   └── name_loc: (99,3)-(99,4) = "B"
         │   ├── call_operator_loc: (99,4)-(99,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (99,6)-(99,7) = "C"
@@ -1497,10 +1495,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (101,0)-(101,1))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (101,3)-(101,4))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (101,1)-(101,3) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (101,1)-(101,3) = "::"
+        │   │   └── name_loc: (101,3)-(101,4) = "B"
         │   ├── call_operator_loc: (101,4)-(101,6) = "::"
         │   ├── name: :C
         │   ├── message_loc: (101,6)-(101,7) = "C"
@@ -1532,7 +1529,7 @@
         │   ├── opening_loc: (103,3)-(103,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (103,4)-(103,11))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (103,4)-(103,11))
         │   │           ├── flags: symbol_keys
@@ -1561,7 +1558,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (105,4)-(105,28))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (105,4)-(105,28))
         │   │           ├── flags: symbol_keys
@@ -1617,7 +1614,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (107,4)-(107,24))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (107,4)-(107,24))
         │   │           ├── flags: symbol_keys
@@ -2417,7 +2414,7 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (156,5)-(156,19))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (156,5)-(156,19))
             │           ├── flags: ∅

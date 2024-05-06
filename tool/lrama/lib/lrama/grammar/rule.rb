@@ -19,7 +19,7 @@ module Lrama
       # TODO: Change this to display_name
       def to_s
         l = lhs.id.s_value
-        r = empty_rule? ? "ε" : rhs.map {|r| r.id.s_value }.join(", ")
+        r = empty_rule? ? "ε" : rhs.map {|r| r.id.s_value }.join(" ")
 
         "#{l} -> #{r}"
       end
@@ -30,6 +30,10 @@ module Lrama
         r = empty_rule? ? "%empty" : rhs.map(&:display_name).join(" ")
 
         "#{l}: #{r}"
+      end
+
+      def with_actions
+        "#{to_s} {#{token_code&.s_value}}"
       end
 
       # opt_nl: ε     <-- empty_rule

@@ -55,7 +55,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -92,7 +92,7 @@ jobs:
         timeout-minutes: 40
         env:
           GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb" --exclude="prism/locals_test.rb" --exclude="prism/newline_test.rb"'
+          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb"'
           RUN_OPTS: ${{ matrix.run_opts }}
 
       - name: make test-prism-spec

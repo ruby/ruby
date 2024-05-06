@@ -47,6 +47,11 @@ module Lrama
         puts grammar.rules
       end
 
+      if options.trace_opts && options.trace_opts[:actions]
+        puts "Grammar rules with actions:"
+        grammar.rules.each { |rule| puts rule.with_actions }
+      end
+
       File.open(options.outfile, "w+") do |f|
         Lrama::Output.new(
           out: f,

@@ -209,6 +209,13 @@ module Prism
       assert_equal "", location.slice
     end
 
+    def test_location_slice_lines
+      result = Prism.parse("\nprivate def foo\nend\n")
+      method = result.value.statements.body.first.arguments.arguments.first
+
+      assert_equal "private def foo\nend\n", method.slice_lines
+    end
+
     def test_heredoc?
       refute parse_expression("\"foo\"").heredoc?
       refute parse_expression("\"foo \#{1}\"").heredoc?
@@ -257,6 +264,38 @@ module Prism
       complex_source_1 = "class Something; @var = something.else { _1 }; end"
       complex_source_2 = "class Something; @var = something.else { _2 }; end"
       refute_operator parse_expression(complex_source_1), :===, parse_expression(complex_source_2)
+    end
+
+    def test_node_tunnel
+      program = Prism.parse("foo(1) +\n  bar(2, 3) +\n  baz(3, 4, 5)").value
+
+      tunnel = program.tunnel(1, 4).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 1, tunnel.value
+
+      tunnel = program.tunnel(2, 6).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 2, tunnel.value
+
+      tunnel = program.tunnel(3, 9).last
+      assert_kind_of IntegerNode, tunnel
+      assert_equal 4, tunnel.value
+
+      tunnel = program.tunnel(3, 8)
+      assert_equal [ProgramNode, StatementsNode, CallNode, ArgumentsNode, CallNode, ArgumentsNode], tunnel.map(&:class)
+    end
+
+    def test_location_adjoin
+      program = Prism.parse("foo.bar = 1").value
+
+      location = program.statements.body.first.message_loc
+      adjoined = location.adjoin("=")
+
+      assert_kind_of Location, adjoined
+      refute_equal location, adjoined
+
+      assert_equal 4, adjoined.start_offset
+      assert_equal 9, adjoined.end_offset
     end
 
     private

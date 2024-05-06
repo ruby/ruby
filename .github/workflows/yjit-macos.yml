@@ -37,7 +37,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
       - run: RUST_BACKTRACE=1 cargo test
         working-directory: yjit
@@ -60,11 +60,13 @@ jobs:
           - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+            specopts: '-T --yjit-call-threshold=1 -T --yjit-verify-ctx -T --yjit-code-gc'
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
+      SPECOPTS: ${{ matrix.specopts }}
 
     runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
 
@@ -79,7 +81,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -128,6 +130,7 @@ jobs:
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS"
+          SPECOPTS="$SPECOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'

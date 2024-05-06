@@ -787,9 +787,22 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     input_keys('b')
     input_keys("\C-i", false)
     assert_line_around_cursor('foo_ba', '')
+    input_keys("\C-h")
+    input_key_by_symbol(:complete)
+    assert_line_around_cursor('foo_ba', '')
+    input_keys("\C-h", false)
+    input_key_by_symbol(:menu_complete)
+    assert_line_around_cursor('foo_bar', '')
+    input_key_by_symbol(:menu_complete)
+    assert_line_around_cursor('foo_baz', '')
+    input_keys("\C-h", false)
+    input_key_by_symbol(:menu_complete_backward)
+    assert_line_around_cursor('foo_baz', '')
+    input_key_by_symbol(:menu_complete_backward)
+    assert_line_around_cursor('foo_bar', '')
   end
 
-  def test_autocompletion_with_upward_navigation
+  def test_autocompletion
     @config.autocompletion = true
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -806,31 +819,14 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line_around_cursor('Readline', '')
     input_keys("\C-i", false)
     assert_line_around_cursor('Regexp', '')
-    @line_editor.input_key(Reline::Key.new(:completion_journey_up, :completion_journey_up, false))
+    input_key_by_symbol(:completion_journey_up)
     assert_line_around_cursor('Readline', '')
-  ensure
-    @config.autocompletion = false
-  end
-
-  def test_autocompletion_with_upward_navigation_and_menu_complete_backward
-    @config.autocompletion = true
-    @line_editor.completion_proc = proc { |word|
-      %w{
-        Readline
-        Regexp
-        RegexpError
-      }.map { |i|
-        i.encode(@encoding)
-      }
-    }
-    input_keys('Re')
-    assert_line_around_cursor('Re', '')
-    input_keys("\C-i", false)
-    assert_line_around_cursor('Readline', '')
-    input_keys("\C-i", false)
+    input_key_by_symbol(:complete)
     assert_line_around_cursor('Regexp', '')
-    @line_editor.input_key(Reline::Key.new(:menu_complete_backward, :menu_complete_backward, false))
+    input_key_by_symbol(:menu_complete_backward)
     assert_line_around_cursor('Readline', '')
+    input_key_by_symbol(:menu_complete)
+    assert_line_around_cursor('Regexp', '')
   ensure
     @config.autocompletion = false
   end

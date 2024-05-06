@@ -40,14 +40,15 @@ void rb_yjit_init(bool yjit_enabled);
 void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_yjit_constant_state_changed(ID id);
 void rb_yjit_iseq_mark(void *payload);
-void rb_yjit_iseq_update_references(void *payload);
-void rb_yjit_iseq_free(void *payload);
+void rb_yjit_iseq_update_references(const rb_iseq_t *iseq);
+void rb_yjit_iseq_free(const rb_iseq_t *iseq);
 void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
 void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 void rb_yjit_lazy_push_frame(const VALUE *pc);
 void rb_yjit_invalidate_no_singleton_class(VALUE klass);
+void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
 
 #else
 // !USE_YJIT
@@ -64,13 +65,14 @@ static inline void rb_yjit_init(bool yjit_enabled) {}
 static inline void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_yjit_constant_state_changed(ID id) {}
 static inline void rb_yjit_iseq_mark(void *payload) {}
-static inline void rb_yjit_iseq_update_references(void *payload) {}
-static inline void rb_yjit_iseq_free(void *payload) {}
+static inline void rb_yjit_iseq_update_references(const rb_iseq_t *iseq) {}
+static inline void rb_yjit_iseq_free(const rb_iseq_t *iseq) {}
 static inline void rb_yjit_before_ractor_spawn(void) {}
 static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
 static inline void rb_yjit_lazy_push_frame(const VALUE *pc) {}
 static inline void rb_yjit_invalidate_no_singleton_class(VALUE klass) {}
+static inline void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq) {}
 
 #endif // #if USE_YJIT
 

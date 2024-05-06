@@ -230,6 +230,9 @@ size_add_overflow(size_t x, size_t y)
     bool p;
 #if 0
 
+#elif defined(ckd_add)
+    p = ckd_add(&z, x, y);
+
 #elif __has_builtin(__builtin_add_overflow)
     p = __builtin_add_overflow(x, y, &z);
 
@@ -422,7 +425,6 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_MEASURE_LINE || PRINT_ROOT_TICKS)
-#define TICK_TYPE 1
 
 typedef struct {
     size_t size_pool_init_slots[SIZE_POOL_COUNT];
@@ -693,29 +695,33 @@ typedef struct RVALUE {
             VALUE v3;
         } values;
     } as;
-
-    /* Start of RVALUE_OVERHEAD.
-     * Do not directly read these members from the RVALUE as they're located
-     * at the end of the slot (which may differ in size depending on the size
-     * pool). */
-#if RACTOR_CHECK_MODE
-    uint32_t _ractor_belonging_id;
-#endif
-#if GC_DEBUG
-    const char *file;
-    int line;
-#endif
 } RVALUE;
 
-#if RACTOR_CHECK_MODE
-# define RVALUE_OVERHEAD (sizeof(RVALUE) - offsetof(RVALUE, _ractor_belonging_id))
-#elif GC_DEBUG
-# define RVALUE_OVERHEAD (sizeof(RVALUE) - offsetof(RVALUE, file))
+/* These members ae located at the end of the slot that the object is in. */
+#if RACTOR_CHECK_MODE || GC_DEBUG
+struct rvalue_overhead {
+# if RACTOR_CHECK_MODE
+    uint32_t _ractor_belonging_id;
+# endif
+# if GC_DEBUG
+    const char *file;
+    int line;
+# endif
+};
+
+// Make sure that RVALUE_OVERHEAD aligns to sizeof(VALUE)
+# define RVALUE_OVERHEAD (sizeof(struct { \
+    union { \
+        struct rvalue_overhead overhead; \
+        VALUE value; \
+    }; \
+}))
+# define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_obj_slot_size(obj)))
 #else
 # define RVALUE_OVERHEAD 0
 #endif
 
-STATIC_ASSERT(sizeof_rvalue, sizeof(RVALUE) == (SIZEOF_VALUE * 5) + RVALUE_OVERHEAD);
+STATIC_ASSERT(sizeof_rvalue, sizeof(RVALUE) == (SIZEOF_VALUE * 5));
 STATIC_ASSERT(alignof_rvalue, RUBY_ALIGNOF(RVALUE) == SIZEOF_VALUE);
 
 typedef uintptr_t bits_t;
@@ -963,7 +969,7 @@ typedef struct rb_objspace {
 #define HEAP_PAGE_ALIGN_LOG 16
 #endif
 
-#define BASE_SLOT_SIZE sizeof(RVALUE)
+#define BASE_SLOT_SIZE (sizeof(RVALUE) + RVALUE_OVERHEAD)
 
 #define CEILDIV(i, mod) roomof(i, mod)
 enum {
@@ -1470,17 +1476,7 @@ static const char *obj_type_name(VALUE obj);
 
 static void gc_finalize_deferred(void *dmy);
 
-/*
- * 1 - TSC (H/W Time Stamp Counter)
- * 2 - getrusage
- */
-#ifndef TICK_TYPE
-#define TICK_TYPE 1
-#endif
-
 #if USE_TICK_T
-
-#if TICK_TYPE == 1
 /* the following code is only for internal tuning. */
 
 /* Source code to use RDTSC is quoted and modified from
@@ -1577,28 +1573,6 @@ tick(void)
     return clock();
 }
 #endif /* TSC */
-
-#elif TICK_TYPE == 2
-typedef double tick_t;
-#define PRItick "4.9f"
-
-static inline tick_t
-tick(void)
-{
-    return getrusage_time();
-}
-#else /* TICK_TYPE */
-#error "choose tick type"
-#endif /* TICK_TYPE */
-
-#define MEASURE_LINE(expr) do { \
-    volatile tick_t start_time = tick(); \
-    volatile tick_t end_time; \
-    expr; \
-    end_time = tick(); \
-    fprintf(stderr, "0\t%"PRItick"\t%s\n", end_time - start_time, #expr); \
-} while (0)
-
 #else /* USE_TICK_T */
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
@@ -1948,39 +1922,45 @@ rb_gc_initial_stress_set(VALUE flag)
     initial_stress = flag;
 }
 
-static void * Alloc_GC_impl(void);
+static void *rb_gc_impl_objspace_alloc(void);
 
 #if USE_SHARED_GC
 # include "dln.h"
-# define Alloc_GC rb_gc_functions->init
+
+# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
 
 void
-ruby_external_gc_init()
+ruby_external_gc_init(void)
 {
-    rb_gc_function_map_t *map = malloc(sizeof(rb_gc_function_map_t));
-    rb_gc_functions = map;
-
-    char *gc_so_path = getenv("RUBY_GC_LIBRARY_PATH");
-    if (!gc_so_path) {
-        map->init = Alloc_GC_impl;
-        return;
+    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
+    void *handle = NULL;
+    if (gc_so_path && dln_supported_p()) {
+        char error[1024];
+        handle = dln_open(gc_so_path, error, sizeof(error));
+        if (!handle) {
+            fprintf(stderr, "%s", error);
+            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
+        }
     }
 
-    const char *error = NULL;
-    void *h = dln_open(gc_so_path, &error);
-    if (!h) {
-        rb_bug("ruby_external_gc_init: Shared library %s cannot be opened (%s)", gc_so_path, error);
-    }
+# define load_external_gc_func(name) do { \
+    if (handle) { \
+        rb_gc_functions->name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!rb_gc_functions->name) { \
+            rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+        } \
+    } \
+    else { \
+        rb_gc_functions->name = rb_gc_impl_##name; \
+    } \
+} while (0)
 
-    void *gc_init_func = dln_symbol(h, "Init_GC");
-    if (!gc_init_func) {
-        rb_bug("ruby_external_gc_init: Init_GC func not exported by library %s", gc_so_path);
-    }
+    load_external_gc_func(objspace_alloc);
 
-    map->init = gc_init_func;
+# undef load_external_gc_func
 }
-#else
-# define Alloc_GC Alloc_GC_impl
+
+# define rb_gc_impl_objspace_alloc rb_gc_functions->objspace_alloc
 #endif
 
 rb_objspace_t *
@@ -1989,8 +1969,12 @@ rb_objspace_alloc(void)
 #if USE_SHARED_GC
     ruby_external_gc_init();
 #endif
-    return (rb_objspace_t *)Alloc_GC();
+    return (rb_objspace_t *)rb_gc_impl_objspace_alloc();
 }
+
+#if USE_SHARED_GC
+# undef rb_gc_impl_objspace_alloc
+#endif
 
 static void free_stack_chunks(mark_stack_t *);
 static void mark_stack_free_cache(mark_stack_t *);
@@ -2764,7 +2748,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #endif
 
 #if GC_DEBUG
-    RANY(obj)->file = rb_source_location_cstr(&RANY(obj)->line);
+    GET_RVALUE_OVERHEAD(obj)->file = rb_source_location_cstr(&GET_RVALUE_OVERHEAD(obj)->line);
     GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
@@ -3777,7 +3761,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 }
 
 
-#define OBJ_ID_INCREMENT (sizeof(RVALUE))
+#define OBJ_ID_INCREMENT (BASE_SLOT_SIZE)
 #define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
 
 static int
@@ -3807,7 +3791,7 @@ static const struct st_hash_type object_id_hash_type = {
 };
 
 static void *
-Alloc_GC_impl(void)
+rb_gc_impl_objspace_alloc(void)
 {
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     ruby_current_vm_ptr->objspace = objspace;
@@ -8770,7 +8754,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
 
     do {
         VALUE vp = (VALUE)p;
-        GC_ASSERT(vp % sizeof(RVALUE) == 0);
+        GC_ASSERT(vp % BASE_SLOT_SIZE == 0);
 
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
@@ -12664,7 +12648,7 @@ static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC) {}
 
 #if CALC_EXACT_MALLOC_SIZE
     {
@@ -13134,6 +13118,38 @@ ruby_mimmalloc(size_t size)
 #endif
         mem = info + 1;
     }
+#endif
+    return mem;
+}
+
+void *
+ruby_mimcalloc(size_t num, size_t size)
+{
+    void *mem;
+#if CALC_EXACT_MALLOC_SIZE
+    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(num, size);
+    if (UNLIKELY(t.left)) {
+        return NULL;
+    }
+    size = t.right + sizeof(struct malloc_obj_info);
+    mem = calloc1(size);
+    if (!mem) {
+        return NULL;
+    }
+    else
+    /* set 0 for consistency of allocated_size/allocations */
+    {
+        struct malloc_obj_info *info = mem;
+        info->size = 0;
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+        info->gen = 0;
+        info->file = NULL;
+        info->line = 0;
+#endif
+        mem = info + 1;
+    }
+#else
+    mem = calloc(num, size);
 #endif
     return mem;
 }
@@ -13962,7 +13978,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         }
 
 #if GC_DEBUG
-        APPEND_F("@%s:%d", RANY(obj)->file, RANY(obj)->line);
+        APPEND_F("@%s:%d", GET_RVALUE_OVERHEAD(obj)->file, GET_RVALUE_OVERHEAD(obj)->line);
 #endif
     }
   end:
@@ -14271,7 +14287,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    fprintf(stderr, "created at: %s:%d\n", RANY(obj)->file, RANY(obj)->line);
+    fprintf(stderr, "created at: %s:%d\n", GET_RVALUE_OVERHEAD(obj)->file, GET_RVALUE_OVERHEAD(obj)->line);
 
     if (BUILTIN_TYPE(obj) == T_MOVED) {
         fprintf(stderr, "moved?: true\n");
@@ -14296,7 +14312,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     if (is_lazy_sweeping(objspace)) {
         fprintf(stderr, "lazy sweeping?: true\n");
-        fprintf(stderr, "page swept?: %s\n", GET_HEAP_PAGE(ptr)->flags.before_sweep ? "false" : "true");
+        fprintf(stderr, "page swept?: %s\n", GET_HEAP_PAGE(obj)->flags.before_sweep ? "false" : "true");
     }
     else {
         fprintf(stderr, "lazy sweeping?: false\n");
@@ -14372,10 +14388,9 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  traverse all living objects with an iterator.
  *
  *  ObjectSpace also provides support for object finalizers, procs that will be
- *  called when a specific object is about to be destroyed by garbage
- *  collection. See the documentation for
- *  <code>ObjectSpace.define_finalizer</code> for important information on
- *  how to use this method correctly.
+ *  called after a specific object was destroyed by garbage collection.  See
+ *  the documentation for +ObjectSpace.define_finalizer+ for important
+ *  information on how to use this method correctly.
  *
  *     a = "A"
  *     b = "B"
@@ -14415,6 +14430,12 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 Init_GC(void)
 {
+#if USE_SHARED_GC
+    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
+        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
+    }
+#endif
+
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 
@@ -14428,7 +14449,7 @@ Init_GC(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("DEBUG")), RBOOL(GC_DEBUG));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE - RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(RVALUE)));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_OBJ_LIMIT")), SIZET2NUM(HEAP_PAGE_OBJ_LIMIT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));

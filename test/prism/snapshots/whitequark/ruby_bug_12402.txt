@@ -312,10 +312,9 @@
         │   │   │   @ LocalVariableReadNode (location: (17,0)-(17,3))
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (17,5)-(17,6))
-        │   │   │   └── name: :C
-        │   │   └── delimiter_loc: (17,3)-(17,5) = "::"
+        │   │   ├── name: :C
+        │   │   ├── delimiter_loc: (17,3)-(17,5) = "::"
+        │   │   └── name_loc: (17,5)-(17,6) = "C"
         │   ├── operator_loc: (17,7)-(17,10) = "||="
         │   └── value:
         │       @ RescueModifierNode (location: (17,11)-(17,31))
@@ -353,10 +352,9 @@
         │   │   │   @ LocalVariableReadNode (location: (19,0)-(19,3))
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (19,5)-(19,6))
-        │   │   │   └── name: :C
-        │   │   └── delimiter_loc: (19,3)-(19,5) = "::"
+        │   │   ├── name: :C
+        │   │   ├── delimiter_loc: (19,3)-(19,5) = "::"
+        │   │   └── name_loc: (19,5)-(19,6) = "C"
         │   ├── operator_loc: (19,7)-(19,10) = "||="
         │   └── value:
         │       @ RescueModifierNode (location: (19,11)-(19,32))

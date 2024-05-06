@@ -12,7 +12,7 @@ opt = OptionParser.new
 opt.on('--dynamic-prompt') {
   Reline.prompt_proc = proc { |lines|
     lines.each_with_index.map { |l, i|
-      '[%04d]> ' % i
+      "\e[1m[%04d]>\e[m " % i
     }
   }
 }
@@ -222,7 +222,7 @@ rescue
 end
 
 begin
-  prompt = ENV['RELINE_TEST_PROMPT'] || 'prompt> '
+  prompt = ENV['RELINE_TEST_PROMPT'] || "\e[1mprompt>\e[m "
   puts 'Multiline REPL.'
   while code = Reline.readmultiline(prompt, true) { |code| TerminationChecker.terminated?(code) }
     case code.chomp

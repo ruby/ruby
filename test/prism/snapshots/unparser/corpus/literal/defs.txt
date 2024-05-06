@@ -225,10 +225,9 @@
         │   │   │   │   ├── parent:
         │   │   │   │   │   @ ConstantReadNode (location: (26,5)-(26,8))
         │   │   │   │   │   └── name: :Foo
-        │   │   │   │   ├── child:
-        │   │   │   │   │   @ ConstantReadNode (location: (26,10)-(26,13))
-        │   │   │   │   │   └── name: :Bar
-        │   │   │   │   └── delimiter_loc: (26,8)-(26,10) = "::"
+        │   │   │   │   ├── name: :Bar
+        │   │   │   │   ├── delimiter_loc: (26,8)-(26,10) = "::"
+        │   │   │   │   └── name_loc: (26,10)-(26,13) = "Bar"
         │   │   │   ├── call_operator_loc: (26,13)-(26,14) = "."
         │   │   │   ├── name: :baz
         │   │   │   ├── message_loc: (26,14)-(26,17) = "baz"
@@ -269,10 +268,9 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (30,5)-(30,8))
         │   │   │   │   └── name: :Foo
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (30,10)-(30,13))
-        │   │   │   │   └── name: :Bar
-        │   │   │   └── delimiter_loc: (30,8)-(30,10) = "::"
+        │   │   │   ├── name: :Bar
+        │   │   │   ├── delimiter_loc: (30,8)-(30,10) = "::"
+        │   │   │   └── name_loc: (30,10)-(30,13) = "Bar"
         │   │   ├── opening_loc: (30,4)-(30,5) = "("
         │   │   └── closing_loc: (30,13)-(30,14) = ")"
         │   ├── parameters: ∅

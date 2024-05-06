@@ -5461,6 +5461,12 @@ module RubyVM::RJIT
         return CantCompile
       end
 
+      if c_method_tracing_currently_enabled?
+        # Don't JIT if tracing c_call or c_return
+        asm.incr_counter(:send_cfunc_tracing)
+        return CantCompile
+      end
+
       off = cme.def.body.optimized.index
 
       recv_idx = argc # blockarg is not supported

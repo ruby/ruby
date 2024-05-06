@@ -15,7 +15,7 @@ module IRB
       description "Show the current workspace."
 
       def execute(_arg)
-        irb_context.main
+        puts "Current workspace: #{irb_context.main}"
       end
     end
 
@@ -30,7 +30,8 @@ module IRB
           obj = eval(arg, irb_context.workspace.binding)
           irb_context.change_workspace(obj)
         end
-        irb_context.main
+
+        puts "Current workspace: #{irb_context.main}"
       end
     end
   end

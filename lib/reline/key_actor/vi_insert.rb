@@ -19,7 +19,7 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     #   8 ^H
     :vi_delete_prev_char,
     #   9 ^I
-    :ed_insert,
+    :complete,
     #  10 ^J
     :ed_newline,
     #  11 ^K
@@ -29,11 +29,11 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     #  13 ^M
     :ed_newline,
     #  14 ^N
-    :ed_insert,
+    :menu_complete,
     #  15 ^O
     :ed_insert,
     #  16 ^P
-    :ed_insert,
+    :menu_complete_backward,
     #  17 ^Q
     :ed_ignore,
     #  18 ^R

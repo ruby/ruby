@@ -20,10 +20,9 @@
             │       │   │   ├── parent:
             │       │   │   │   @ ConstantReadNode (location: (2,3)-(2,4))
             │       │   │   │   └── name: :B
-            │       │   │   ├── child:
-            │       │   │   │   @ ConstantReadNode (location: (2,6)-(2,7))
-            │       │   │   │   └── name: :C
-            │       │   │   └── delimiter_loc: (2,4)-(2,6) = "::"
+            │       │   │   ├── name: :C
+            │       │   │   ├── delimiter_loc: (2,4)-(2,6) = "::"
+            │       │   │   └── name_loc: (2,6)-(2,7) = "C"
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ LocalVariableTargetNode (location: (2,8)-(2,9))
             │       │   │       ├── name: :d

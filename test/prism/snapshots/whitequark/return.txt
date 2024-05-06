@@ -4,9 +4,11 @@
     @ StatementsNode (location: (1,0)-(7,11))
     └── body: (length: 4)
         ├── @ ReturnNode (location: (1,0)-(1,6))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (1,0)-(1,6) = "return"
         │   └── arguments: ∅
         ├── @ ReturnNode (location: (3,0)-(3,10))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (3,7)-(3,10))
@@ -23,6 +25,7 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ ReturnNode (location: (5,0)-(5,8))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,6)-(5,8))
@@ -33,6 +36,7 @@
         │               ├── opening_loc: (5,6)-(5,7) = "("
         │               └── closing_loc: (5,7)-(5,8) = ")"
         └── @ ReturnNode (location: (7,0)-(7,11))
+            ├── flags: ∅
             ├── keyword_loc: (7,0)-(7,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (7,6)-(7,11))

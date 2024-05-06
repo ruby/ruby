@@ -19,7 +19,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #   8 ^H
     :em_delete_prev_char,
     #   9 ^I
-    :ed_unassigned,
+    :complete,
     #  10 ^J
     :ed_newline,
     #  11 ^K

@@ -4300,7 +4300,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
  timeout:
   xfree(xmalloc_base);
-  xfree(stk_base);
+  if (stk_base != stk_alloc || IS_NOT_NULL(msa->stack_p))
+      xfree(stk_base);
   HANDLE_REG_TIMEOUT_IN_MATCH_AT;
 }
 

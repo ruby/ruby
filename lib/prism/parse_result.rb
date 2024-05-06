@@ -5,6 +5,14 @@ module Prism
   # conjunction with locations to allow them to resolve line numbers and source
   # ranges.
   class Source
+    # Create a new source object with the given source code. This method should
+    # be used instead of `new` and it will return either a `Source` or a
+    # specialized and more performant `ASCIISource` if no multibyte characters
+    # are present in the source code.
+    def self.for(source, start_line = 1, offsets = [])
+      source.ascii_only? ? ASCIISource.new(source, start_line, offsets): new(source, start_line, offsets)
+    end
+
     # The source code that this source object represents.
     attr_reader :source
 
@@ -27,6 +35,11 @@ module Prism
       source.encoding
     end
 
+    # Returns the lines of the source code as an array of strings.
+    def lines
+      source.lines
+    end
+
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
     def slice(byte_offset, length)
@@ -43,6 +56,12 @@ module Prism
     # byte offset.
     def line_start(byte_offset)
       offsets[find_line(byte_offset)]
+    end
+
+    # Returns the byte offset of the end of the line corresponding to the given
+    # byte offset.
+    def line_end(byte_offset)
+      offsets[find_line(byte_offset) + 1] || source.bytesize
     end
 
     # Return the column number for the given byte offset.
@@ -97,6 +116,39 @@ module Prism
       end
 
       left - 1
+    end
+  end
+
+  # Specialized version of Prism::Source for source code that includes ASCII
+  # characters only. This class is used to apply performance optimizations that
+  # cannot be applied to sources that include multibyte characters. Sources that
+  # include multibyte characters are represented by the Prism::Source class.
+  class ASCIISource < Source
+    # Return the character offset for the given byte offset.
+    def character_offset(byte_offset)
+      byte_offset
+    end
+
+    # Return the column number in characters for the given byte offset.
+    def character_column(byte_offset)
+      byte_offset - line_start(byte_offset)
+    end
+
+    # Returns the offset from the start of the file for the given byte offset
+    # counting in code units for the given encoding.
+    #
+    # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
+    # concept of code units that differs from the number of characters in other
+    # encodings, it is not captured here.
+    def code_units_offset(byte_offset, encoding)
+      byte_offset
+    end
+
+    # Specialized version of `code_units_column` that does not depend on
+    # `code_units_offset`, which is a more expensive operation. This is
+    # essentialy the same as `Prism::Source#column`.
+    def code_units_column(byte_offset, encoding)
+      byte_offset - line_start(byte_offset)
     end
   end
 
@@ -171,9 +223,23 @@ module Prism
       "#<Prism::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"
     end
 
+    # Returns all of the lines of the source code associated with this location.
+    def source_lines
+      source.lines
+    end
+
     # The source code that this location represents.
     def slice
       source.slice(start_offset, length)
+    end
+
+    # The source code that this location represents starting from the beginning
+    # of the line that this location starts on to the end of the line that this
+    # location ends on.
+    def slice_lines
+      line_start = source.line_start(start_offset)
+      line_end = source.line_end(end_offset)
+      source.slice(line_start, line_end - line_start)
     end
 
     # The character offset from the beginning of the source where this location
@@ -280,6 +346,18 @@ module Prism
       raise "Incompatible locations" if start_offset > other.start_offset
 
       Location.new(source, start_offset, other.end_offset - start_offset)
+    end
+
+    # Join this location with the first occurrence of the string in the source
+    # that occurs after this location on the same line, and return the new
+    # location. This will raise an error if the string does not exist.
+    def adjoin(string)
+      line_suffix = source.slice(end_offset, source.line_end(end_offset) - end_offset)
+
+      line_suffix_index = line_suffix.byteindex(string)
+      raise "Could not find #{string}" if line_suffix_index.nil?
+
+      Location.new(source, start_offset, length + line_suffix_index + string.bytesize)
     end
   end
 

@@ -814,6 +814,7 @@
         │   │       │   │   @ StatementsNode (location: (99,0)-(99,10))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ReturnNode (location: (99,0)-(99,10))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── keyword_loc: (99,0)-(99,6) = "return"
         │   │       │   │           └── arguments:
         │   │       │   │               @ ArgumentsNode (location: (99,7)-(99,10))
@@ -1295,7 +1296,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (139,11)-(139,30))
-        │   │           │   ├── flags: contains_keyword_splat
+        │   │           │   ├── flags: contains_keywords, contains_keyword_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (139,11)-(139,30))
         │   │           │           ├── flags: ∅

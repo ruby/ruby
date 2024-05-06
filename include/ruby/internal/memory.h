@@ -56,6 +56,7 @@
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/stdalign.h"
 #include "ruby/internal/stdbool.h"
+#include "ruby/internal/stdckdint.h"
 #include "ruby/internal/xmalloc.h"
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/long_long.h"
@@ -567,7 +568,10 @@ rbimpl_size_mul_overflow(size_t x, size_t y)
 {
     struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
 
-#if RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
+#if defined(ckd_mul)
+    ret.left = ckd_mul(&ret.right, x, y);
+
+#elif RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
     ret.left = __builtin_mul_overflow(x, y, &ret.right);
 
 #elif defined(DSIZE_T)

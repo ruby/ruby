@@ -166,6 +166,12 @@ enc_mbcput(unsigned int c, void *buf, void *enc)
     return rb_enc_mbcput(c, buf, (rb_encoding *)enc);
 }
 
+static int
+enc_mbclen(const char *p, const char *e, void *enc)
+{
+    return rb_enc_mbclen(p, e, (rb_encoding *)enc);
+}
+
 static void *
 enc_from_index(int idx)
 {
@@ -292,12 +298,6 @@ arg_error(void)
     return rb_eArgError;
 }
 
-static rb_ast_t *
-ast_new(VALUE nb)
-{
-    return IMEMO_NEW(rb_ast_t, imemo_ast, nb);
-}
-
 static VALUE
 static_id2sym(ID id)
 {
@@ -345,8 +345,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .rb_memmove = memmove2,
     .nonempty_memcpy = nonempty_memcpy,
     .xmalloc_mul_add = rb_xmalloc_mul_add,
-
-    .ast_new = ast_new,
 
     .compile_callback = rb_suppress_tracing,
     .reg_named_capture_assign = reg_named_capture_assign,
@@ -419,6 +417,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
+    .enc_mbclen = enc_mbclen,
     .enc_find_index = rb_enc_find_index,
     .enc_from_index = enc_from_index,
     .enc_isspace = enc_isspace,
@@ -526,6 +525,7 @@ parser_free(void *ptr)
 {
     struct ruby_parser *parser = (struct ruby_parser*)ptr;
     rb_ruby_parser_free(parser->parser_params);
+    xfree(parser);
 }
 
 static size_t
@@ -630,8 +630,8 @@ rb_parser_keep_tokens(VALUE vparser)
     rb_ruby_parser_keep_tokens(parser->parser_params);
 }
 
-VALUE
-rb_parser_lex_get_str(struct lex_pointer_string *ptr_str)
+rb_parser_string_t *
+rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str)
 {
     char *beg, *end, *start;
     long len;
@@ -641,20 +641,42 @@ rb_parser_lex_get_str(struct lex_pointer_string *ptr_str)
     len = RSTRING_LEN(s);
     start = beg;
     if (ptr_str->ptr) {
-        if (len == ptr_str->ptr) return Qnil;
+        if (len == ptr_str->ptr) return 0;
         beg += ptr_str->ptr;
         len -= ptr_str->ptr;
     }
     end = memchr(beg, '\n', len);
     if (end) len = ++end - beg;
     ptr_str->ptr += len;
-    return rb_str_subseq(s, beg - start, len);
+    return rb_str_to_parser_string(p, rb_str_subseq(s, beg - start, len));
 }
 
-static VALUE
+static rb_parser_string_t *
 lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
-    return rb_parser_lex_get_str((struct lex_pointer_string *)input);
+    return rb_parser_lex_get_str(p, (struct lex_pointer_string *)input);
+}
+
+static void parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines);
+
+static rb_ast_t*
+parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
+{
+    rb_ast_t *ast;
+    const char *ptr = 0;
+    long len = 0;
+    rb_encoding *enc = 0;
+
+    if (!NIL_P(fname)) {
+        StringValueCStr(fname);
+        ptr = RSTRING_PTR(fname);
+        len = RSTRING_LEN(fname);
+        enc = rb_enc_get(fname);
+    }
+
+    ast = rb_parser_compile(p, gets, ptr, len, enc, input, line);
+    parser_aset_script_lines_for(fname, ast->body.script_lines);
+    return ast;
 }
 
 static rb_ast_t*
@@ -666,7 +688,7 @@ parser_compile_string0(struct ruby_parser *parser, VALUE fname, VALUE s, int lin
     parser->data.lex_str.str = str;
     parser->data.lex_str.ptr = 0;
 
-    return rb_parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
+    return parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
 }
 
 static rb_encoding *
@@ -694,15 +716,16 @@ parser_compile_string(struct ruby_parser *parser, const char *f, VALUE s, int li
 
 VALUE rb_io_gets_internal(VALUE io);
 
-static VALUE
+static rb_parser_string_t *
 lex_io_gets(struct parser_params *p, rb_parser_input_data input, int line_count)
 {
     VALUE io = (VALUE)input;
-
-    return rb_io_gets_internal(io);
+    VALUE line = rb_io_gets_internal(io);
+    if (NIL_P(line)) return 0;
+    return rb_str_to_parser_string(p, line);
 }
 
-static VALUE
+static rb_parser_string_t *
 lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
 {
     VALUE array = (VALUE)data;
@@ -712,8 +735,11 @@ lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
         if (!rb_enc_asciicompat(rb_enc_get(str))) {
             rb_raise(rb_eArgError, "invalid source encoding");
         }
+        return rb_str_to_parser_string(p, str);
     }
-    return str;
+    else {
+        return 0;
+    }
 }
 
 static rb_ast_t*
@@ -722,7 +748,7 @@ parser_compile_file_path(struct ruby_parser *parser, VALUE fname, VALUE file, in
     parser->type = lex_type_io;
     parser->data.lex_io.file = file;
 
-    return rb_parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
+    return parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
 }
 
 static rb_ast_t*
@@ -731,7 +757,7 @@ parser_compile_array(struct ruby_parser *parser, VALUE fname, VALUE array, int s
     parser->type = lex_type_array;
     parser->data.lex_array.ary = array;
 
-    return rb_parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
+    return parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
 }
 
 static rb_ast_t*
@@ -739,72 +765,95 @@ parser_compile_generic(struct ruby_parser *parser, rb_parser_lex_gets_func *lex_
 {
     parser->type = lex_type_generic;
 
-    return rb_parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
+    return parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
 }
 
-rb_ast_t*
+static void
+ast_free(void *ptr)
+{
+    rb_ast_t *ast = (rb_ast_t *)ptr;
+    rb_ast_free(ast);
+}
+
+static const rb_data_type_t ast_data_type = {
+    "AST",
+    {
+        NULL,
+        ast_free,
+        NULL, // No dsize() because this object does not appear in ObjectSpace.
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+ast_alloc(void)
+{
+    return TypedData_Wrap_Struct(0, &ast_data_type, NULL);
+}
+
+VALUE
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_file_path(parser, fname, file, start);
+    DATA_PTR(ast_value) = parser_compile_file_path(parser, fname, file, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_array(parser, fname, array, start);
+    DATA_PTR(ast_value) = parser_compile_array(parser, fname, array, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_generic(parser, lex_gets, fname, input, start);
+    DATA_PTR(ast_value) = parser_compile_generic(parser, lex_gets, fname, input, start);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_string(parser, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = parser_compile_string_path(parser, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
 VALUE
@@ -855,6 +904,7 @@ VALUE
 rb_parser_build_script_lines_from(rb_parser_ary_t *lines)
 {
     int i;
+    if (!lines) return Qnil;
     if (lines->data_type != PARSER_ARY_DATA_SCRIPT_LINE) {
         rb_bug("unexpected rb_parser_ary_data_type (%d) for script lines", lines->data_type);
     }
@@ -1072,12 +1122,12 @@ rb_node_encoding_val(const NODE *node)
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
 }
 
-void
-rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
+static void
+parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
 {
     VALUE hash, script_lines;
     ID script_lines_id;
-    if (NIL_P(path) || !lines || FIXNUM_P((VALUE)lines)) return;
+    if (NIL_P(path) || !lines) return;
     CONST_ID(script_lines_id, "SCRIPT_LINES__");
     if (!rb_const_defined_at(rb_cObject, script_lines_id)) return;
     hash = rb_const_get_at(rb_cObject, script_lines_id);
@@ -1085,4 +1135,31 @@ rb_parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
     if (rb_hash_lookup(hash, path) == Qnil) return;
     script_lines = rb_parser_build_script_lines_from(lines);
     rb_hash_aset(hash, path, script_lines);
+}
+
+VALUE
+rb_ruby_ast_new(const NODE *const root)
+{
+    rb_ast_t *ast;
+    VALUE ast_value = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+#ifdef UNIVERSAL_PARSER
+    ast->config = &rb_global_parser_config;
+#endif
+    ast->body = (rb_ast_body_t){
+        .root = root,
+        .frozen_string_literal = -1,
+        .coverage_enabled = -1,
+        .script_lines = NULL,
+        .line_count = 0,
+    };
+    return ast_value;
+}
+
+rb_ast_t *
+rb_ruby_ast_data_get(VALUE ast_value)
+{
+    rb_ast_t *ast;
+    if (NIL_P(ast_value)) return NULL;
+    TypedData_Get_Struct(ast_value, rb_ast_t, &ast_data_type, ast);
+    return ast;
 }

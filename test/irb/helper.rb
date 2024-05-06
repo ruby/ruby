@@ -121,7 +121,9 @@ module TestIRB
       @envs["XDG_CONFIG_HOME"] ||= tmp_dir
       @envs["IRBRC"] = nil unless @envs.key?("IRBRC")
 
-      PTY.spawn(@envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
+      envs_for_spawn = @envs.merge('TERM' => 'dumb', 'TEST_IRB_FORCE_INTERACTIVE' => 'true')
+
+      PTY.spawn(envs_for_spawn, *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line
@@ -196,7 +198,7 @@ module TestIRB
     end
 
     def write_ruby(program)
-      @ruby_file = Tempfile.create(%w{irb- .rb})
+      @ruby_file = Tempfile.create(%w{irbtest- .rb})
       @tmpfiles << @ruby_file
       @ruby_file.write(program)
       @ruby_file.close

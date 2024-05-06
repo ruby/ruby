@@ -84,10 +84,7 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 #endif /* !UNIVERSAL_PARSER */
 
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
-
-#ifndef RIPPER
 static rb_parser_string_t *rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *original);
-#endif
 
 static int
 node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
@@ -489,7 +486,7 @@ struct parser_params {
 
     struct {
         rb_strterm_t *strterm;
-        VALUE (*gets)(struct parser_params*,rb_parser_input_data,int);
+        rb_parser_lex_gets_func *gets;
         rb_parser_input_data input;
         parser_string_buffer_t string_buffer;
         rb_parser_string_t *lastline;
@@ -520,7 +517,7 @@ struct parser_params {
     int line_count;
     int ruby_sourceline;	/* current line no. */
     const char *ruby_sourcefile; /* current source file */
-    VALUE ruby_sourcefile_string;
+    rb_parser_string_t *ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
     st_table *case_labels;
@@ -1161,7 +1158,7 @@ static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_a
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
 static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
+static rb_node_file_t *rb_node_file_new(struct parser_params *p, rb_parser_string_t *str, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_SCOPE(a,b,loc) (NODE *)rb_node_scope_new(p,a,b,loc)
@@ -2103,6 +2100,41 @@ rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_enco
 }
 
 #ifndef RIPPER
+static bool
+zero_filled(const char *s, int n)
+{
+    for (; n > 0; --n) {
+        if (*s++) return false;
+    }
+    return true;
+}
+
+static bool
+str_null_char(rb_parser_t *p, const char *s, long len, const int minlen, rb_encoding *enc)
+{
+    const char *e = s + len;
+
+    for (; s + minlen <= e; s += rb_enc_mbclen(s, e, enc)) {
+        if (zero_filled(s, minlen)) return true;
+    }
+    return false;
+}
+
+static bool
+cstr_null_check(rb_parser_t *p, const char *s, long len, rb_encoding *enc, int *w)
+{
+    const int minlen = rb_enc_mbminlen(enc);
+
+    if (minlen > 1) {
+        *w = 1;
+        return str_null_char(p, s, len, minlen, enc);
+    }
+    else {
+        *w = 0;
+        return (!s || memchr(s, 0, len));
+    }
+}
+
 rb_parser_string_t *
 rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 {
@@ -2822,22 +2854,19 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args arg_splat call_args opt_call_args
 %type <node> paren_args opt_paren_args
-%type <node_args> args_tail opt_args_tail block_args_tail opt_block_args_tail
+%type <node_args> args_tail block_args_tail
 %type <node> command_args aref_args
 %type <node_block_pass> opt_block_arg block_arg
 %type <node> var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
-%type <node_opt_arg> f_block_optarg f_block_opt
 %type <node_args> f_arglist f_opt_paren_args f_paren_args f_args
 %type <node_args_aux> f_arg f_arg_item
-%type <node_opt_arg> f_optarg
 %type <node> f_marg f_marg_list f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
-%type <node_opt_arg> f_opt
-%type <node_kw_arg> f_kwarg f_kw f_block_kwarg f_block_kw
+%type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
@@ -2950,6 +2979,61 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %right '!' '~' tUPLUS
 
 %token tLAST_TOKEN
+
+/*
+ *	parameterizing rules
+ */
+%rule f_opt(value) <node_opt_arg>: f_arg_asgn f_eq value
+                                    {
+                                        p->cur_arg = 0;
+                                        p->ctxt.in_argdef = 1;
+                                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
+                                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
+                                    }
+                                ;
+
+%rule f_optarg(value) <node_opt_arg>: f_opt(value)
+                                        {
+                                            $$ = $1;
+                                        /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
+                                        }
+                                    | f_optarg(value) ',' f_opt(value)
+                                        {
+                                            $$ = opt_arg_append($1, $3);
+                                        /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
+                                        }
+                                    ;
+
+%rule f_kwarg(kw) <node_kw_arg>: kw
+                                    {
+                                        $$ = $1;
+                                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
+                                    }
+                                | f_kwarg(kw) ',' kw
+                                    {
+                                        $$ = kwd_append($1, $3);
+                                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
+                                    }
+                                ;
+
+%rule opt_args_tail(tail) <node_args>: ',' tail
+                                        {
+                                            $$ = $2;
+                                        /*% ripper: get_value($:2); %*/
+                                        }
+                                    | /* none */
+                                        {
+                                            $$ = new_args_tail(p, 0, 0, 0, &@0);
+                                        /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
+                                        }
+                                    ;
+
+%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
+                                {
+                                    $$ = make_list($3, &@$);
+                                /*% ripper: array!($:3) %*/
+                                }
+                            ;
 
 %%
 program		:  {
@@ -5019,12 +5103,12 @@ f_any_kwrest	: f_kwrest
 
 f_eq		: {p->ctxt.in_argdef = 0;} '=';
 
-block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
+block_args_tail	: f_kwarg(f_block_kw) ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), get_value($:3), get_value($:4)); %*/
                     }
-                | f_block_kwarg opt_f_block_arg
+                | f_kwarg(f_block_kw) opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
@@ -5041,18 +5125,6 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
                     }
                 ;
 
-opt_block_args_tail : ',' block_args_tail
-                    {
-                        $$ = $2;
-                    /*% ripper: get_value($:2); %*/
-                    }
-                | /* none */
-                    {
-                        $$ = new_args_tail(p, 0, 0, 0, &@0);
-                    /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
-                    }
-                ;
-
 excessed_comma	: ','
                     {
                         /* magic number for rest_id in iseq_set_arguments() */
@@ -5061,27 +5133,27 @@ excessed_comma	: ','
                     }
                 ;
 
-block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
+block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), Qnil, get_value($:6)) %*/
                     }
-                | f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
+                | f_arg ',' f_optarg(primary_value) ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, $7, $8, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), get_value($:7), get_value($:8)) %*/
                     }
-                | f_arg ',' f_block_optarg opt_block_args_tail
+                | f_arg ',' f_optarg(primary_value) opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, Qnil, get_value($:4)) %*/
                     }
-                | f_arg ',' f_block_optarg ',' f_arg opt_block_args_tail
+                | f_arg ',' f_optarg(primary_value) ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, get_value($:5), get_value($:6)) %*/
                     }
-                | f_arg ',' f_rest_arg opt_block_args_tail
+                | f_arg ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), Qnil, get_value($:4)) %*/
@@ -5092,42 +5164,42 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
                         $$ = new_args(p, $1, 0, $2, 0, $$, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:2), Qnil, rb_ary_new_from_args(3, Qnil, Qnil, Qnil)) %*/
                     }
-                | f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
+                | f_arg ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
-                | f_arg opt_block_args_tail
+                | f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, Qnil, Qnil, get_value($:2)) %*/
                     }
-                | f_block_optarg ',' f_rest_arg opt_block_args_tail
+                | f_optarg(primary_value) ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), Qnil, get_value($:4)) %*/
                     }
-                | f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
+                | f_optarg(primary_value) ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
-                | f_block_optarg opt_block_args_tail
+                | f_optarg(primary_value) opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, Qnil, get_value($:2)) %*/
                     }
-                | f_block_optarg ',' f_arg opt_block_args_tail
+                | f_optarg(primary_value) ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, get_value($:3), get_value($:4)) %*/
                     }
-                | f_rest_arg opt_block_args_tail
+                | f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), Qnil, get_value($:2)) %*/
                     }
-                | f_rest_arg ',' f_arg opt_block_args_tail
+                | f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), get_value($:3), get_value($:4)) %*/
@@ -6104,15 +6176,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words_sep	: ' ' {}
-                | words_sep ' '
-                ;
-
-words		: tWORDS_BEG words_sep word_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+words		: words(tWORDS_BEG, word_list) <node>
                 ;
 
 word_list	: /* none */
@@ -6120,7 +6184,7 @@ word_list	: /* none */
                         $$ = 0;
                     /*% ripper: words_new! %*/
                     }
-                | word_list word words_sep
+                | word_list word ' '+
                     {
                         $$ = list_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: words_add!($:1, $:2) %*/
@@ -6136,11 +6200,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG words_sep symbol_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+symbols 	: words(tSYMBOLS_BEG, symbol_list) <node>
                 ;
 
 symbol_list	: /* none */
@@ -6148,25 +6208,17 @@ symbol_list	: /* none */
                         $$ = 0;
                     /*% ripper: symbols_new! %*/
                     }
-                | symbol_list word words_sep
+                | symbol_list word ' '+
                     {
                         $$ = symbol_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
                 ;
 
-qwords		: tQWORDS_BEG words_sep qword_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qwords		: words(tQWORDS_BEG, qword_list) <node>
                 ;
 
-qsymbols	: tQSYMBOLS_BEG words_sep qsym_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
+qsymbols	: words(tQSYMBOLS_BEG, qsym_list) <node>
                 ;
 
 qword_list	: /* none */
@@ -6174,7 +6226,7 @@ qword_list	: /* none */
                         $$ = 0;
                     /*% ripper: qwords_new! %*/
                     }
-                | qword_list tSTRING_CONTENT words_sep
+                | qword_list tSTRING_CONTENT ' '+
                     {
                         $$ = list_append(p, $1, $2);
                     /*% ripper: qwords_add!($:1, $:2) %*/
@@ -6186,7 +6238,7 @@ qsym_list	: /* none */
                         $$ = 0;
                     /*% ripper: qsymbols_new! %*/
                     }
-                | qsym_list tSTRING_CONTENT words_sep
+                | qsym_list tSTRING_CONTENT ' '+
                     {
                         $$ = symbol_append(p, $1, $2);
                     /*% ripper: qsymbols_add!($:1, $:2) %*/
@@ -6470,12 +6522,12 @@ f_arglist	: f_paren_args
                     }
                 ;
 
-args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
+args_tail	: f_kwarg(f_kw) ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), get_value($:3), get_value($:4)); %*/
                     }
-                | f_kwarg opt_f_block_arg
+                | f_kwarg(f_kw) opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: rb_ary_new_from_args(3, get_value($:1), Qnil, get_value($:2)); %*/
@@ -6499,79 +6551,67 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
                     }
                 ;
 
-opt_args_tail	: ',' args_tail
-                    {
-                        $$ = $2;
-                    /*% ripper: get_value($:2); %*/
-                    }
-                | /* none */
-                    {
-                        $$ = new_args_tail(p, 0, 0, 0, &@0);
-                    /*% ripper: rb_ary_new_from_args(3, Qnil, Qnil, Qnil); %*/
-                    }
-                ;
-
-f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
+f_args		: f_arg ',' f_optarg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), Qnil, get_value($:6)) %*/
                     }
-                | f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
+                | f_arg ',' f_optarg(arg_value) ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, $7, $8, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), get_value($:5), get_value($:7), get_value($:8)) %*/
                     }
-                | f_arg ',' f_optarg opt_args_tail
+                | f_arg ',' f_optarg(arg_value) opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, Qnil, get_value($:4)) %*/
                     }
-                | f_arg ',' f_optarg ',' f_arg opt_args_tail
+                | f_arg ',' f_optarg(arg_value) ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), get_value($:3), Qnil, get_value($:5), get_value($:6)) %*/
                     }
-                | f_arg ',' f_rest_arg opt_args_tail
+                | f_arg ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), Qnil, get_value($:4)) %*/
                     }
-                | f_arg ',' f_rest_arg ',' f_arg opt_args_tail
+                | f_arg ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
-                | f_arg opt_args_tail
+                | f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, get_value($:1), Qnil, Qnil, Qnil, get_value($:2)) %*/
                     }
-                | f_optarg ',' f_rest_arg opt_args_tail
+                | f_optarg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), Qnil, get_value($:4)) %*/
                     }
-                | f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
+                | f_optarg(arg_value) ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), get_value($:3), get_value($:5), get_value($:6)) %*/
                     }
-                | f_optarg opt_args_tail
+                | f_optarg(arg_value) opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, Qnil, get_value($:2)) %*/
                     }
-                | f_optarg ',' f_arg opt_args_tail
+                | f_optarg(arg_value) ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, get_value($:1), Qnil, get_value($:3), get_value($:4)) %*/
                     }
-                | f_rest_arg opt_args_tail
+                | f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), Qnil, get_value($:2)) %*/
                     }
-                | f_rest_arg ',' f_arg opt_args_tail
+                | f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
                     /*% ripper: ripper_new_args(p, Qnil, Qnil, get_value($:1), get_value($:3), get_value($:4)) %*/
@@ -6742,31 +6782,6 @@ f_block_kw	: f_label primary_value
                     }
                 ;
 
-f_block_kwarg	: f_block_kw
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_block_kwarg ',' f_block_kw
-                    {
-                        $$ = kwd_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
-                    }
-                ;
-
-
-f_kwarg		: f_kw
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_kwarg ',' f_kw
-                    {
-                        $$ = kwd_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
-                    }
-                ;
-
 kwrest_mark	: tPOW
                 | tDSTAR
                 ;
@@ -6788,48 +6803,6 @@ f_kwrest	: kwrest_mark tIDENTIFIER
                         arg_var(p, idFWD_KWREST);
                         $$ = idFWD_KWREST;
                     /*% ripper: kwrest_param!(Qnil) %*/
-                    }
-                ;
-
-f_opt		: f_arg_asgn f_eq arg_value
-                    {
-                        p->cur_arg = 0;
-                        p->ctxt.in_argdef = 1;
-                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
-                    }
-                ;
-
-f_block_opt	: f_arg_asgn f_eq primary_value
-                    {
-                        p->cur_arg = 0;
-                        p->ctxt.in_argdef = 1;
-                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:3)) %*/
-                    }
-                ;
-
-f_block_optarg	: f_block_opt
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_block_optarg ',' f_block_opt
-                    {
-                        $$ = opt_arg_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
-                    }
-                ;
-
-f_optarg	: f_opt
-                    {
-                        $$ = $1;
-                    /*% ripper: rb_ary_new3(1, get_value($:1)) %*/
-                    }
-                | f_optarg ',' f_opt
-                    {
-                        $$ = opt_arg_append($1, $3);
-                    /*% ripper: rb_ary_push(get_value($:1), get_value($:3)) %*/
                     }
                 ;
 
@@ -7705,7 +7678,7 @@ yycompile0(VALUE arg)
     struct parser_params *p = (struct parser_params *)arg;
     int cov = FALSE;
 
-    if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string) && !e_option_supplied(p)) {
+    if (!compile_for_eval && p->ruby_sourcefile_string && !e_option_supplied(p)) {
         cov = TRUE;
     }
 
@@ -7722,7 +7695,6 @@ yycompile0(VALUE arg)
     n = yyparse(p);
     RUBY_DTRACE_PARSE_HOOK(END);
 
-    rb_parser_aset_script_lines_for(p->ruby_sourcefile_string, p->debug_lines);
     p->debug_lines = 0;
 
     xfree(p->lex.strterm);
@@ -7756,21 +7728,43 @@ yycompile0(VALUE arg)
         }
     }
     p->ast->body.root = tree;
-    if (!p->ast->body.script_lines) p->ast->body.script_lines = (rb_parser_ary_t *)INT2FIX(p->line_count);
+    p->ast->body.line_count = p->line_count;
     return TRUE;
 }
 
+static void
+set_arg_error(struct parser_params *p, const char *err)
+{
+    VALUE excargs[3];
+
+    excargs[0] = rb_eArgError;
+    excargs[1] = rb_str_new_cstr(err);
+    excargs[2] = rb_make_backtrace();
+    rb_set_errinfo(rb_make_exception(3, excargs));
+}
+
 static rb_ast_t *
-yycompile(struct parser_params *p, VALUE fname, int line)
+yycompile(struct parser_params *p, const char *fname_ptr, long fname_len, rb_encoding *fname_enc, int line)
 {
     rb_ast_t *ast;
-    if (NIL_P(fname)) {
-        p->ruby_sourcefile_string = Qnil;
+    if (!fname_ptr) {
+        p->ruby_sourcefile_string = NULL;
         p->ruby_sourcefile = "(none)";
     }
     else {
-        p->ruby_sourcefile_string = rb_str_to_interned_str(fname);
-        p->ruby_sourcefile = StringValueCStr(fname);
+        int w;
+        if (cstr_null_check(p, fname_ptr, fname_len, fname_enc, &w)) {
+            if (w) {
+                set_arg_error(p, "string contains null char");
+            }
+            else {
+                set_arg_error(p, "string contains null byte");
+            }
+            return rb_ast_new();
+        }
+
+        p->ruby_sourcefile_string = rb_parser_encoding_string_new(p, fname_ptr, fname_len, fname_enc);
+        p->ruby_sourcefile = fname_ptr;
     }
     p->ruby_sourceline = line - 1;
 
@@ -7789,9 +7783,9 @@ yycompile(struct parser_params *p, VALUE fname, int line)
 #endif /* !RIPPER */
 
 static rb_encoding *
-must_be_ascii_compatible(struct parser_params *p, VALUE s)
+must_be_ascii_compatible(struct parser_params *p, rb_parser_string_t *s)
 {
-    rb_encoding *enc = rb_enc_get(s);
+    rb_encoding *enc = rb_parser_str_get_encoding(s);
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eArgError, "invalid source encoding");
     }
@@ -7801,25 +7795,24 @@ must_be_ascii_compatible(struct parser_params *p, VALUE s)
 static rb_parser_string_t *
 lex_getline(struct parser_params *p)
 {
-    rb_parser_string_t *str;
-    VALUE line = (*p->lex.gets)(p, p->lex.input, p->line_count);
-    if (NIL_P(line)) return 0;
-    must_be_ascii_compatible(p, line);
+    rb_parser_string_t *line = (*p->lex.gets)(p, p->lex.input, p->line_count);
+    if (!line) return 0;
     p->line_count++;
-    str = rb_str_to_parser_string(p, line);
-    string_buffer_append(p, str);
-    return str;
+    string_buffer_append(p, line);
+    must_be_ascii_compatible(p, line);
+    return line;
 }
 
 #ifndef RIPPER
 rb_ast_t*
-rb_parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
+rb_parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets,
+                  const char *fname_ptr, long fname_len, rb_encoding *fname_enc, rb_parser_input_data input, int line)
 {
     p->lex.gets = gets;
     p->lex.input = input;
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
-    return yycompile(p, fname, line);
+    return yycompile(p, fname_ptr, fname_len, fname_enc, line);
 }
 #endif  /* !RIPPER */
 
@@ -9614,7 +9607,7 @@ parser_set_encode(struct parser_params *p, const char *name)
       error:
         excargs[0] = rb_eArgError;
         excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
+        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", rb_str_new_mutable_parser_string(p->ruby_sourcefile_string), p->ruby_sourceline));
         VALUE exc = rb_make_exception(3, excargs);
         ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
         rb_exc_raise(exc);
@@ -12591,10 +12584,10 @@ rb_node_line_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_file_t *
-rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
+rb_node_file_new(struct parser_params *p, rb_parser_string_t *str, const YYLTYPE *loc)
 {
     rb_node_file_t *n = NODE_NEWNODE(NODE_FILE, rb_node_file_t, loc);
-    n->path = rb_str_to_parser_string(p, str);
+    n->path = str;
 
     return n;
 }
@@ -12833,17 +12826,16 @@ literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_str
 static rb_parser_string_t *
 string_literal_head(struct parser_params *p, enum node_type htype, NODE *head)
 {
-    if (htype != NODE_DSTR) return false;
+    if (htype != NODE_DSTR) return NULL;
     if (RNODE_DSTR(head)->nd_next) {
         head = RNODE_LIST(RNODE_LIST(RNODE_DSTR(head)->nd_next)->as.nd_end)->nd_head;
-        if (!head || !nd_type_p(head, NODE_STR)) return false;
+        if (!head || !nd_type_p(head, NODE_STR)) return NULL;
     }
     rb_parser_string_t *lit = RNODE_DSTR(head)->string;
-    ASSUME(lit != false);
+    ASSUME(lit);
     return lit;
 }
 
-#ifndef RIPPER
 static rb_parser_string_t *
 rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *orig)
 {
@@ -12854,7 +12846,6 @@ rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *or
     copy->enc = orig->enc;
     return copy;
 }
-#endif
 
 /* concat two string literals */
 static NODE *
@@ -13188,9 +13179,13 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         return NEW_FALSE(loc);
       case keyword__FILE__:
         {
-            VALUE file = p->ruby_sourcefile_string;
-            if (NIL_P(file))
-                file = rb_str_new(0, 0);
+            rb_parser_string_t *file;
+            if (p->ruby_sourcefile_string) {
+                file = rb_parser_string_deep_copy(p, p->ruby_sourcefile_string);
+            }
+            else {
+                file = STRING_NEW0();
+            }
             node = NEW_FILE(file, loc);
         }
         return node;
@@ -15773,7 +15768,7 @@ parser_initialize(struct parser_params *p)
 {
     /* note: we rely on TypedData_Make_Struct to set most fields to 0 */
     p->command_start = TRUE;
-    p->ruby_sourcefile_string = Qnil;
+    p->ruby_sourcefile_string = NULL;
     p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
     string_buffer_init(p);
     p->node_id = 0;
@@ -15808,8 +15803,6 @@ rb_ruby_parser_mark(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
-    rb_gc_mark(p->ruby_sourcefile_string);
-    rb_gc_mark((VALUE)p->ast);
 #ifndef RIPPER
     rb_gc_mark(p->error_buffer);
 #else
@@ -15838,6 +15831,10 @@ rb_ruby_parser_free(void *ptr)
 
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
+    }
+
+    if (p->ruby_sourcefile_string) {
+        rb_parser_string_free(p, p->ruby_sourcefile_string);
     }
 
     for (local = p->lvtbl; local; local = prev) {
@@ -16022,7 +16019,7 @@ rb_ruby_parser_ripper_initialize(rb_parser_t *p, rb_parser_lex_gets_func *gets, 
     p->lex.gets = gets;
     p->lex.input = input;
     p->eofp = 0;
-    p->ruby_sourcefile_string = sourcefile_string;
+    p->ruby_sourcefile_string = rb_str_to_parser_string(p, sourcefile_string);
     p->ruby_sourcefile = sourcefile;
     p->ruby_sourceline = sourceline;
 }
@@ -16042,7 +16039,7 @@ rb_ruby_parser_enc(rb_parser_t *p)
 VALUE
 rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p)
 {
-    return p->ruby_sourcefile_string;
+    return rb_str_new_parser_string(p->ruby_sourcefile_string);
 }
 
 int
@@ -16063,7 +16060,7 @@ rb_ruby_ripper_parse0(rb_parser_t *p)
     parser_prepare(p);
     p->ast = rb_ast_new();
     ripper_yyparse((void*)p);
-    rb_ast_dispose(p->ast);
+    rb_ast_free(p->ast);
     p->ast = 0;
     p->eval_tree = 0;
     p->eval_tree_begin = 0;
@@ -16179,7 +16176,7 @@ parser_compile_error(struct parser_params *p, const rb_code_location_t *loc, con
     va_start(ap, fmt);
     p->error_buffer =
         rb_syntax_error_append(p->error_buffer,
-                               p->ruby_sourcefile_string,
+                               p->ruby_sourcefile_string ? rb_str_new_parser_string(p->ruby_sourcefile_string) : Qnil,
                                lineno, column,
                                p->enc, fmt, ap);
     va_end(ap);

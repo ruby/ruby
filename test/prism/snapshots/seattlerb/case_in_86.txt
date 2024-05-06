@@ -30,10 +30,9 @@
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ ConstantPathNode (location: (2,3)-(2,13))
             │       │   │       ├── parent: ∅
-            │       │   │       ├── child:
-            │       │   │       │   @ ConstantReadNode (location: (2,5)-(2,13))
-            │       │   │       │   └── name: :NilClass
-            │       │   │       └── delimiter_loc: (2,3)-(2,5) = "::"
+            │       │   │       ├── name: :NilClass
+            │       │   │       ├── delimiter_loc: (2,3)-(2,5) = "::"
+            │       │   │       └── name_loc: (2,5)-(2,13) = "NilClass"
             │       │   ├── rest:
             │       │   │   @ SplatNode (location: (2,15)-(2,16))
             │       │   │   ├── operator_loc: (2,15)-(2,16) = "*"

@@ -102,7 +102,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (10,8)-(11,1))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (10,8)-(11,1))
         │   │           ├── flags: symbol_keys
@@ -141,7 +141,7 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (13,8)-(14,1))
-            │   ├── flags: ∅
+            │   ├── flags: contains_keywords
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (13,8)-(14,1))
             │           ├── flags: symbol_keys

@@ -18,10 +18,9 @@
             │   │   │   ├── parent:
             │   │   │   │   @ ConstantReadNode (location: (2,3)-(2,4))
             │   │   │   │   └── name: :A
-            │   │   │   ├── child:
-            │   │   │   │   @ ConstantReadNode (location: (2,6)-(2,7))
-            │   │   │   │   └── name: :B
-            │   │   │   └── delimiter_loc: (2,4)-(2,6) = "::"
+            │   │   │   ├── name: :B
+            │   │   │   ├── delimiter_loc: (2,4)-(2,6) = "::"
+            │   │   │   └── name_loc: (2,6)-(2,7) = "B"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (3,2)-(3,4))
             │   │   │   └── body: (length: 1)
@@ -39,10 +38,9 @@
             │       │   ├── parent:
             │       │   │   @ ConstantReadNode (location: (4,3)-(4,4))
             │       │   │   └── name: :D
-            │       │   ├── child:
-            │       │   │   @ ConstantReadNode (location: (4,6)-(4,7))
-            │       │   │   └── name: :E
-            │       │   └── delimiter_loc: (4,4)-(4,6) = "::"
+            │       │   ├── name: :E
+            │       │   ├── delimiter_loc: (4,4)-(4,6) = "::"
+            │       │   └── name_loc: (4,6)-(4,7) = "E"
             │       ├── statements:
             │       │   @ StatementsNode (location: (5,2)-(5,4))
             │       │   └── body: (length: 1)

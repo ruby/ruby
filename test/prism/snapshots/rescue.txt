@@ -88,6 +88,7 @@
         ├── @ RescueModifierNode (location: (10,0)-(10,17))
         │   ├── expression:
         │   │   @ ReturnNode (location: (10,0)-(10,6))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (10,0)-(10,6) = "return"
         │   │   └── arguments: ∅
         │   ├── keyword_loc: (10,7)-(10,13) = "rescue"
@@ -379,7 +380,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
         │   │   │           │   @ ArgumentsNode (location: (29,4)-(29,6))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: contains_keywords
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ KeywordHashNode (location: (29,4)-(29,6))
         │   │   │           │           ├── flags: symbol_keys

@@ -945,15 +945,27 @@ begin
       EOC
     end
 
-    def test_with_newline
+    def test_eof_with_newline
       omit if Reline.core.io_gate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
       sleep 1
-      close
+      close rescue nil
       assert_screen(<<~'EOC')
         > abc def
         "abc def "
+      EOC
+    end
+
+    def test_eof_without_newline
+      omit if Reline.core.io_gate.win?
+      cmd = %Q{ruby -e 'print(%{hello})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
+      start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
+      close rescue nil
+      assert_screen(<<~'EOC')
+        > hello
+        "hello"
       EOC
     end
 
@@ -1173,7 +1185,36 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt>           St
-        r             String
+        r
+        String
+        Struct
+      EOC
+    end
+
+    def test_autocomplete_target_at_end_of_line
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('         ')
+      write('Str')
+      write("\C-i")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>          Str
+        ing           String
+                      Struct
+      EOC
+    end
+
+    def test_autocomplete_completed_input_is_wrapped
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('        ')
+      write('Str')
+      write("\C-i")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>         Stri
+        ng            String
                       Struct
       EOC
     end

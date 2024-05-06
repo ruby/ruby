@@ -157,6 +157,7 @@ escape.o: $(hdrdir)/ruby/internal/special_consts.h
 escape.o: $(hdrdir)/ruby/internal/static_assert.h
 escape.o: $(hdrdir)/ruby/internal/stdalign.h
 escape.o: $(hdrdir)/ruby/internal/stdbool.h
+escape.o: $(hdrdir)/ruby/internal/stdckdint.h
 escape.o: $(hdrdir)/ruby/internal/symbol.h
 escape.o: $(hdrdir)/ruby/internal/value.h
 escape.o: $(hdrdir)/ruby/internal/value_type.h

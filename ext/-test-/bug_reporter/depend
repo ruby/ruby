@@ -147,6 +147,7 @@ bug_reporter.o: $(hdrdir)/ruby/internal/special_consts.h
 bug_reporter.o: $(hdrdir)/ruby/internal/static_assert.h
 bug_reporter.o: $(hdrdir)/ruby/internal/stdalign.h
 bug_reporter.o: $(hdrdir)/ruby/internal/stdbool.h
+bug_reporter.o: $(hdrdir)/ruby/internal/stdckdint.h
 bug_reporter.o: $(hdrdir)/ruby/internal/symbol.h
 bug_reporter.o: $(hdrdir)/ruby/internal/value.h
 bug_reporter.o: $(hdrdir)/ruby/internal/value_type.h

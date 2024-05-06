@@ -13,7 +13,6 @@
 #include <stddef.h>
 #include "node.h"
 #include "rubyparser.h"
-#include "internal/parse.h"
 #endif
 
 #include "internal/variable.h"
@@ -59,19 +58,16 @@ rb_node_buffer_new(void)
     init_node_buffer_list(&nb->buffer_list, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
     nb->local_tables = 0;
     nb->tokens = 0;
-#ifdef UNIVERSAL_PARSER
-    nb->config = config;
-#endif
     return nb;
 }
 
 #ifdef UNIVERSAL_PARSER
 #undef ruby_xmalloc
-#define ruby_xmalloc ast->node_buffer->config->malloc
+#define ruby_xmalloc ast->config->malloc
 #undef xfree
-#define xfree ast->node_buffer->config->free
-#define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
-#define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
+#define xfree ast->config->free
+#define rb_xmalloc_mul_add ast->config->xmalloc_mul_add
+#define ruby_xrealloc(var,size) (ast->config->realloc_n((void *)var, 1, size))
 #endif
 
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
@@ -218,8 +214,8 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
 {
-    if (ast->node_buffer && ast->node_buffer->tokens) {
-        parser_tokens_free(ast, ast->node_buffer->tokens);
+    if (nb && nb->tokens) {
+        parser_tokens_free(ast, nb->tokens);
     }
     iterate_node_values(ast, &nb->buffer_list, free_ast_value, NULL);
     node_buffer_list_free(ast, &nb->buffer_list);
@@ -304,14 +300,19 @@ rb_ast_t *
 rb_ast_new(const rb_parser_config_t *config)
 {
     node_buffer_t *nb = rb_node_buffer_new(config);
-    return config->ast_new((VALUE)nb);
+    rb_ast_t *ast = (rb_ast_t *)config->calloc(1, sizeof(rb_ast_t));
+    ast->config = config;
+    ast->node_buffer = nb;
+    return ast;
 }
 #else
 rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    return IMEMO_NEW(rb_ast_t, imemo_ast, (VALUE)nb);
+    rb_ast_t *ast = ruby_xcalloc(1, sizeof(rb_ast_t));
+    ast->node_buffer = nb;
+    return ast;
 }
 #endif
 
@@ -338,6 +339,7 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 static void
 script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 {
+    if (!script_lines) return;
     for (long i = 0; i < script_lines->len; i++) {
         parser_string_free(ast, (rb_parser_string_t *)script_lines->data[i]);
     }
@@ -348,14 +350,8 @@ script_lines_free(rb_ast_t *ast, rb_parser_ary_t *script_lines)
 void
 rb_ast_free(rb_ast_t *ast)
 {
-    if (ast->node_buffer) {
-        if (ast->body.script_lines && !FIXNUM_P((VALUE)ast->body.script_lines)) {
-            script_lines_free(ast, ast->body.script_lines);
-            ast->body.script_lines = NULL;
-        }
-        rb_node_buffer_free(ast, ast->node_buffer);
-        ast->node_buffer = 0;
-    }
+    rb_ast_dispose(ast);
+    xfree(ast);
 }
 
 static size_t
@@ -373,20 +369,57 @@ buffer_list_size(node_buffer_list_t *nb)
 size_t
 rb_ast_memsize(const rb_ast_t *ast)
 {
-    size_t size = 0;
+    size_t size = sizeof(rb_ast_t);
     node_buffer_t *nb = ast->node_buffer;
+    rb_parser_ary_t *tokens = NULL;
+    struct rb_ast_local_table_link *link = NULL;
+    rb_parser_ary_t *script_lines = ast->body.script_lines;
+
+    long i;
 
     if (nb) {
         size += sizeof(node_buffer_t);
         size += buffer_list_size(&nb->buffer_list);
+        link = nb->local_tables;
+        tokens = nb->tokens;
     }
+
+    while (link) {
+        size += sizeof(struct rb_ast_local_table_link);
+        size += link->size * sizeof(ID);
+        link = link->next;
+    }
+
+    if (tokens) {
+        size += sizeof(rb_parser_ary_t);
+        for (i = 0; i < tokens->len; i++) {
+            size += sizeof(rb_parser_ast_token_t);
+            rb_parser_ast_token_t *token = tokens->data[i];
+            size += sizeof(rb_parser_string_t);
+            size += token->str->len + 1;
+        }
+    }
+
+    if (script_lines) {
+        size += sizeof(rb_parser_ary_t);
+        for (i = 0; i < script_lines->len; i++) {
+            size += sizeof(rb_parser_string_t);
+            size += ((rb_parser_string_t *)script_lines->data[i])->len + 1;
+        }
+    }
+
     return size;
 }
 
 void
 rb_ast_dispose(rb_ast_t *ast)
 {
-    rb_ast_free(ast);
+    if (ast && ast->node_buffer) {
+        script_lines_free(ast, ast->body.script_lines);
+        ast->body.script_lines = NULL;
+        rb_node_buffer_free(ast, ast->node_buffer);
+        ast->node_buffer = 0;
+    }
 }
 
 VALUE

@@ -1281,7 +1281,6 @@ class TestGem < Gem::TestCase
   def test_self_try_activate_missing_extensions
     spec = util_spec "ext", "1" do |s|
       s.extensions = %w[ext/extconf.rb]
-      s.mark_version
       s.installed_by_version = v("2.2")
     end
 

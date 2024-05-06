@@ -68,10 +68,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (11,6)-(11,7))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (11,9)-(11,10))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (11,7)-(11,9) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (11,7)-(11,9) = "::"
+        │   │   └── name_loc: (11,9)-(11,10) = "B"
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body: ∅
@@ -87,14 +86,12 @@
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (14,6)-(14,7))
         │   │   │   │   └── name: :A
-        │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (14,9)-(14,10))
-        │   │   │   │   └── name: :B
-        │   │   │   └── delimiter_loc: (14,7)-(14,9) = "::"
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
-        │   │   │   └── name: :C
-        │   │   └── delimiter_loc: (14,10)-(14,12) = "::"
+        │   │   │   ├── name: :B
+        │   │   │   ├── delimiter_loc: (14,7)-(14,9) = "::"
+        │   │   │   └── name_loc: (14,9)-(14,10) = "B"
+        │   │   ├── name: :C
+        │   │   ├── delimiter_loc: (14,10)-(14,12) = "::"
+        │   │   └── name_loc: (14,12)-(14,13) = "C"
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body: ∅
@@ -125,10 +122,9 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (20,10)-(20,11))
         │   │   │   └── name: :B
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (20,13)-(20,14))
-        │   │   │   └── name: :C
-        │   │   └── delimiter_loc: (20,11)-(20,13) = "::"
+        │   │   ├── name: :C
+        │   │   ├── delimiter_loc: (20,11)-(20,13) = "::"
+        │   │   └── name_loc: (20,13)-(20,14) = "C"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (21,0)-(21,3) = "end"
         │   └── name: :A
@@ -140,20 +136,18 @@
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (23,6)-(23,7))
         │   │   │   └── name: :A
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (23,9)-(23,10))
-        │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (23,7)-(23,9) = "::"
+        │   │   ├── name: :B
+        │   │   ├── delimiter_loc: (23,7)-(23,9) = "::"
+        │   │   └── name_loc: (23,9)-(23,10) = "B"
         │   ├── inheritance_operator_loc: (23,11)-(23,12) = "<"
         │   ├── superclass:
         │   │   @ ConstantPathNode (location: (23,13)-(23,17))
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (23,13)-(23,14))
         │   │   │   └── name: :C
-        │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (23,16)-(23,17))
-        │   │   │   └── name: :D
-        │   │   └── delimiter_loc: (23,14)-(23,16) = "::"
+        │   │   ├── name: :D
+        │   │   ├── delimiter_loc: (23,14)-(23,16) = "::"
+        │   │   └── name_loc: (23,16)-(23,17) = "D"
         │   ├── body: ∅
         │   ├── end_keyword_loc: (24,0)-(24,3) = "end"
         │   └── name: :B
@@ -222,10 +216,9 @@
             ├── constant_path:
             │   @ ConstantPathNode (location: (34,6)-(34,9))
             │   ├── parent: ∅
-            │   ├── child:
-            │   │   @ ConstantReadNode (location: (34,8)-(34,9))
-            │   │   └── name: :A
-            │   └── delimiter_loc: (34,6)-(34,8) = "::"
+            │   ├── name: :A
+            │   ├── delimiter_loc: (34,6)-(34,8) = "::"
+            │   └── name_loc: (34,8)-(34,9) = "A"
             ├── inheritance_operator_loc: ∅
             ├── superclass: ∅
             ├── body: ∅

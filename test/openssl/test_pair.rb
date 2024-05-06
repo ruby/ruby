@@ -250,12 +250,17 @@ module OpenSSL::TestPairM
 
       buf = +"garbage"
       assert_equal :wait_readable, s2.read_nonblock(100, buf, exception: false)
-      assert_equal "", buf
+      assert_equal "garbage", buf
 
       s1.close
       buf = +"garbage"
-      assert_equal nil, s2.read(100, buf)
+      assert_nil s2.read(100, buf)
       assert_equal "", buf
+
+      buf = +"garbage"
+      ret = s2.read(0, buf)
+      assert_same buf, ret
+      assert_equal "", ret
     }
   end
 

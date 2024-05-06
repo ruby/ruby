@@ -146,6 +146,7 @@ dataerror.o: $(hdrdir)/ruby/internal/special_consts.h
 dataerror.o: $(hdrdir)/ruby/internal/static_assert.h
 dataerror.o: $(hdrdir)/ruby/internal/stdalign.h
 dataerror.o: $(hdrdir)/ruby/internal/stdbool.h
+dataerror.o: $(hdrdir)/ruby/internal/stdckdint.h
 dataerror.o: $(hdrdir)/ruby/internal/symbol.h
 dataerror.o: $(hdrdir)/ruby/internal/value.h
 dataerror.o: $(hdrdir)/ruby/internal/value_type.h
@@ -315,6 +316,7 @@ enc_raise.o: $(hdrdir)/ruby/internal/special_consts.h
 enc_raise.o: $(hdrdir)/ruby/internal/static_assert.h
 enc_raise.o: $(hdrdir)/ruby/internal/stdalign.h
 enc_raise.o: $(hdrdir)/ruby/internal/stdbool.h
+enc_raise.o: $(hdrdir)/ruby/internal/stdckdint.h
 enc_raise.o: $(hdrdir)/ruby/internal/symbol.h
 enc_raise.o: $(hdrdir)/ruby/internal/value.h
 enc_raise.o: $(hdrdir)/ruby/internal/value_type.h
@@ -476,6 +478,7 @@ ensured.o: $(hdrdir)/ruby/internal/special_consts.h
 ensured.o: $(hdrdir)/ruby/internal/static_assert.h
 ensured.o: $(hdrdir)/ruby/internal/stdalign.h
 ensured.o: $(hdrdir)/ruby/internal/stdbool.h
+ensured.o: $(hdrdir)/ruby/internal/stdckdint.h
 ensured.o: $(hdrdir)/ruby/internal/symbol.h
 ensured.o: $(hdrdir)/ruby/internal/value.h
 ensured.o: $(hdrdir)/ruby/internal/value_type.h
@@ -635,6 +638,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h

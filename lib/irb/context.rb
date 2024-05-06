@@ -85,7 +85,7 @@ module IRB
         @io = nil
         case use_multiline?
         when nil
-          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
+          if term_interactive? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
             @io = RelineInputMethod.new(build_completor)
           else
@@ -99,7 +99,7 @@ module IRB
         unless @io
           case use_singleline?
           when nil
-            if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+            if (defined?(ReadlineInputMethod) && term_interactive? &&
                 IRB.conf[:PROMPT_MODE] != :INF_RUBY)
               @io = ReadlineInputMethod.new
             else
@@ -149,6 +149,11 @@ module IRB
 
       @user_aliases = IRB.conf[:COMMAND_ALIASES].dup
       @command_aliases = @user_aliases.merge(KEYWORD_ALIASES)
+    end
+
+    private def term_interactive?
+      return true if ENV['TEST_IRB_FORCE_INTERACTIVE']
+      STDIN.tty? && ENV['TERM'] != 'dumb'
     end
 
     # because all input will eventually be evaluated as Ruby code,
@@ -587,18 +592,23 @@ module IRB
 
     def evaluate(statement, line_no) # :nodoc:
       @line_no = line_no
-      result = nil
 
       case statement
       when Statement::EmptyInput
         return
       when Statement::Expression
         result = evaluate_expression(statement.code, line_no)
+        set_last_value(result)
       when Statement::Command
-        result = statement.command_class.execute(self, statement.arg)
+        statement.command_class.execute(self, statement.arg)
+        set_last_value(nil)
       end
 
-      set_last_value(result)
+      nil
+    end
+
+    def from_binding?
+      @irb.from_binding
     end
 
     def evaluate_expression(code, line_no) # :nodoc:

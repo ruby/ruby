@@ -415,7 +415,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 }
 
 static VALUE *
-ary_heap_alloc(size_t capa)
+ary_heap_alloc_buffer(size_t capa)
 {
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
@@ -508,7 +508,7 @@ ary_resize_capa(VALUE ary, long capacity)
 #if USE_MMTK
             if (!rb_mmtk_enabled_p()) {
 #endif
-            VALUE *ptr = ary_heap_alloc(capacity);
+            VALUE *ptr = ary_heap_alloc_buffer(capacity);
 
             MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
             FL_UNSET_EMBED(ary);
@@ -677,7 +677,7 @@ rb_ary_cancel_sharing(VALUE ary)
 #if USE_MMTK
             if (!rb_mmtk_enabled_p()) {
 #endif
-            VALUE *ptr = ary_heap_alloc(len);
+            VALUE *ptr = ary_heap_alloc_buffer(len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
             ARY_SET_PTR(ary, ptr);
 #if USE_MMTK
@@ -877,7 +877,7 @@ ary_new(VALUE klass, long capa)
 #if USE_MMTK
         if (!rb_mmtk_enabled_p()) {
 #endif
-        ARY_SET_PTR(ary, ary_heap_alloc(capa));
+        ARY_SET_PTR(ary, ary_heap_alloc_buffer(capa));
 #if USE_MMTK
         } else {
             rb_mmtk_ary_new_objbuf(ary, capa);
@@ -1001,7 +1001,7 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
 #if USE_MMTK
         if (!rb_mmtk_enabled_p()) {
 #endif
-        ARY_SET_PTR(ary, ary_heap_alloc(capa));
+        ARY_SET_PTR(ary, ary_heap_alloc_buffer(capa));
 #if USE_MMTK
         } else {
             rb_mmtk_ary_new_objbuf(ary, capa);
@@ -1117,7 +1117,7 @@ ary_make_shared(VALUE ary)
 #if USE_MMTK
             if (!rb_mmtk_enabled_p()) {
 #endif
-            VALUE *ptr = ary_heap_alloc(capa);
+            VALUE *ptr = ary_heap_alloc_buffer(capa);
             ARY_SET_PTR(shared, ptr);
             ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
             FL_UNSET_EMBED(ary);
@@ -4822,7 +4822,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
 #if USE_MMTK
         if (!rb_mmtk_enabled_p()) {
 #endif
-        VALUE *ptr = ary_heap_alloc(len);
+        VALUE *ptr = ary_heap_alloc_buffer(len);
 
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ptr);

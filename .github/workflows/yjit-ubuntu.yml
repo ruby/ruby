@@ -36,7 +36,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
@@ -68,7 +68,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
@@ -95,6 +95,7 @@ jobs:
           - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+            specopts: '-T --yjit-call-threshold=1 -T --yjit-verify-ctx -T --yjit-code-gc'
 
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
@@ -108,6 +109,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
+      SPECOPTS: ${{ matrix.specopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
@@ -125,7 +127,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -145,7 +147,7 @@ jobs:
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
 
-      - uses: ruby/setup-ruby@6bd3d993c602f6b675728ebaecb2b569ff86e99b # v1.174.0
+      - uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -179,8 +181,8 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          make -s -j ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
           YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:

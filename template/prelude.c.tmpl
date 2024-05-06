@@ -141,37 +141,39 @@ COMPILER_WARNING_POP
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 
-static rb_ast_t *
-prelude_ast(VALUE name, VALUE code, int line)
+static VALUE
+prelude_ast_value(VALUE name, VALUE code, int line)
 {
-    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    rb_ast_t *ast;
+    VALUE ast_value = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    ast = rb_ruby_ast_data_get(ast_value);
     if (!ast || !ast->body.root) {
         if (ast) rb_ast_dispose(ast);
         rb_exc_raise(rb_errinfo());
     }
-    return ast;
+    return ast_value;
 }
 
 % end
 % if @builtin_count > 0
-#define PRELUDE_AST(n, name_str, start_line) \
+#define PRELUDE_VAST(n, name_str, start_line) \
     (((sizeof(prelude_name<%='##'%><%=%>n) - prefix_len - 2) == namelen) && \
      (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0) ? \
-     prelude_ast((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), start_line) : 0)
+     prelude_ast_value((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), start_line) : Qnil)
 
-rb_ast_t *
-rb_builtin_ast(const char *feature_name, VALUE *name_str)
+VALUE
+rb_builtin_ast_value(const char *feature_name, VALUE *name_str)
 {
     const size_t prefix_len = rb_strlen_lit("<internal:");
     size_t namelen = strlen(feature_name);
-    rb_ast_t *ast = 0;
+    VALUE ast_value = Qnil;
 
 %   @preludes.each_value do |i, prelude, lines, sub, start_line|
 %     if sub
-    if ((ast = PRELUDE_AST(<%=i%><%=%>, *name_str, <%=start_line%>)) != 0) return ast;
+    if (!NIL_P(ast_value = PRELUDE_VAST(<%=i%><%=%>, *name_str, <%=start_line%>))) return ast_value;
 %     end
 %   end
-    return ast;
+    return ast_value;
 }
 
 % end
@@ -196,8 +198,10 @@ prelude_eval(VALUE code, VALUE name, int line)
         0, /* int debug_level; */
     };
 
-    rb_ast_t *ast = prelude_ast(name, code, line);
-    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, line,
+    rb_ast_t *ast;
+    VALUE ast_value = prelude_ast_value(name, code, line);
+    ast = rb_ruby_ast_data_get(ast_value);
+    rb_iseq_eval(rb_iseq_new_with_opt(ast_value, name, name, Qnil, line,
                                       NULL, 0, ISEQ_TYPE_TOP, &optimization,
                                       Qnil));
     rb_ast_dispose(ast);

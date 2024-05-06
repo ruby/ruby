@@ -69,7 +69,7 @@ module TestIRB
         type "exit"
       end
 
-      assert_match(/Helper methods\s+conf\s+Returns the current context/, out)
+      assert_match(/Helper methods\s+conf\s+Returns the current IRB context/, out)
     end
   end
 end

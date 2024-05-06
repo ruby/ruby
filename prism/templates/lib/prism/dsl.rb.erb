@@ -2,7 +2,7 @@ module Prism
   # The DSL module provides a set of methods that can be used to create prism
   # nodes in a more concise manner. For example, instead of writing:
   #
-  #     source = Prism::Source.new("[1]")
+  #     source = Prism::Source.for("[1]")
   #
   #     Prism::ArrayNode.new(
   #       [
@@ -20,7 +20,7 @@ module Prism
   #
   # you could instead write:
   #
-  #     source = Prism::Source.new("[1]")
+  #     source = Prism::Source.for("[1]")
   #
   #     ArrayNode(
   #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, 1, Location(source, 1, 1)), source),

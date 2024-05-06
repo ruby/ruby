@@ -147,6 +147,7 @@ data.o: $(hdrdir)/ruby/internal/special_consts.h
 data.o: $(hdrdir)/ruby/internal/static_assert.h
 data.o: $(hdrdir)/ruby/internal/stdalign.h
 data.o: $(hdrdir)/ruby/internal/stdbool.h
+data.o: $(hdrdir)/ruby/internal/stdckdint.h
 data.o: $(hdrdir)/ruby/internal/symbol.h
 data.o: $(hdrdir)/ruby/internal/value.h
 data.o: $(hdrdir)/ruby/internal/value_type.h
@@ -306,6 +307,7 @@ duplicate.o: $(hdrdir)/ruby/internal/special_consts.h
 duplicate.o: $(hdrdir)/ruby/internal/static_assert.h
 duplicate.o: $(hdrdir)/ruby/internal/stdalign.h
 duplicate.o: $(hdrdir)/ruby/internal/stdbool.h
+duplicate.o: $(hdrdir)/ruby/internal/stdckdint.h
 duplicate.o: $(hdrdir)/ruby/internal/symbol.h
 duplicate.o: $(hdrdir)/ruby/internal/value.h
 duplicate.o: $(hdrdir)/ruby/internal/value_type.h
@@ -465,6 +467,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
@@ -624,6 +627,7 @@ len.o: $(hdrdir)/ruby/internal/special_consts.h
 len.o: $(hdrdir)/ruby/internal/static_assert.h
 len.o: $(hdrdir)/ruby/internal/stdalign.h
 len.o: $(hdrdir)/ruby/internal/stdbool.h
+len.o: $(hdrdir)/ruby/internal/stdckdint.h
 len.o: $(hdrdir)/ruby/internal/symbol.h
 len.o: $(hdrdir)/ruby/internal/value.h
 len.o: $(hdrdir)/ruby/internal/value_type.h
@@ -783,6 +787,7 @@ member.o: $(hdrdir)/ruby/internal/special_consts.h
 member.o: $(hdrdir)/ruby/internal/static_assert.h
 member.o: $(hdrdir)/ruby/internal/stdalign.h
 member.o: $(hdrdir)/ruby/internal/stdbool.h
+member.o: $(hdrdir)/ruby/internal/stdckdint.h
 member.o: $(hdrdir)/ruby/internal/symbol.h
 member.o: $(hdrdir)/ruby/internal/value.h
 member.o: $(hdrdir)/ruby/internal/value_type.h

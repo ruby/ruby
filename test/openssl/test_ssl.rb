@@ -117,6 +117,30 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_socket_close_write
+    server_proc = proc do |ctx, ssl|
+      message = ssl.read
+      ssl.write(message)
+      ssl.close_write
+    ensure
+      ssl.close
+    end
+
+    start_server(server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
+      ssl.sync_close = true
+      ssl.connect
+
+      message = "abc"*1024
+      ssl.write message
+      ssl.close_write
+      assert_equal message, ssl.read
+    ensure
+      ssl&.close
+    end
+  end
+
   def test_add_certificate
     ctx_proc = -> ctx {
       # Unset values set by start_server

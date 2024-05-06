@@ -298,7 +298,6 @@ module Prism
 
     def test_ConstantReadNode
       assert_location(ConstantReadNode, "Foo")
-      assert_location(ConstantReadNode, "Foo::Bar", 5...8, &:child)
     end
 
     def test_ConstantTargetNode
@@ -478,7 +477,7 @@ module Prism
     end
 
     def test_IndexTargetNode
-      assert_location(IndexTargetNode, "foo[bar, &baz], = qux", 0...14) do |node|
+      assert_location(IndexTargetNode, "foo[bar], = qux", 0...8) do |node|
         node.lefts.first
       end
     end

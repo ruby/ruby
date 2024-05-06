@@ -117,25 +117,25 @@ module Prism
 
     def test_unterminated_i_list
       assert_errors expression("%i["), "%i[", [
-        ["expected a closing delimiter for the `%i` list", 0..3]
+        ["unterminated list; expected a closing delimiter for the `%i`", 0..3]
       ]
     end
 
     def test_unterminated_w_list
       assert_errors expression("%w["), "%w[", [
-        ["expected a closing delimiter for the `%w` list", 0..3]
+        ["unterminated list; expected a closing delimiter for the `%w`", 0..3]
       ]
     end
 
     def test_unterminated_W_list
       assert_errors expression("%W["), "%W[", [
-        ["expected a closing delimiter for the `%W` list", 0..3]
+        ["unterminated list; expected a closing delimiter for the `%W`", 0..3]
       ]
     end
 
     def test_unterminated_regular_expression
       assert_errors expression("/hello"), "/hello", [
-        ["expected a closing delimiter for the regular expression", 0..1]
+        ["unterminated regexp meets end of file; expected a closing delimiter", 0..1]
       ]
     end
 
@@ -143,7 +143,7 @@ module Prism
       source = "<<-END + /b\nEND\n"
 
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the regular expression", 9..10]
+        ["unterminated regexp meets end of file; expected a closing delimiter", 9..10]
       ]
     end
 
@@ -189,7 +189,7 @@ module Prism
 
     def test_unterminated_s_symbol
       assert_errors expression("%s[abc"), "%s[abc", [
-        ["expected a closing delimiter for the dynamic symbol", 0..3]
+        ["unterminated quoted string; expected a closing delimiter for the dynamic symbol", 0..3]
       ]
     end
 
@@ -378,10 +378,13 @@ module Prism
         :a,
         Location(),
         Location(),
-        ArgumentsNode(1, [
-          KeywordHashNode(0, [AssocSplatNode(expression("kwargs"), Location())]),
-          SplatNode(Location(), expression("args"))
-        ]),
+        ArgumentsNode(
+          ArgumentsNodeFlags::CONTAINS_KEYWORDS | ArgumentsNodeFlags::CONTAINS_KEYWORD_SPLAT,
+          [
+            KeywordHashNode(0, [AssocSplatNode(expression("kwargs"), Location())]),
+            SplatNode(Location(), expression("args"))
+          ]
+        ),
         Location(),
         nil
       )
@@ -425,7 +428,7 @@ module Prism
         :a,
         Location(),
         Location(),
-        ArgumentsNode(0, [
+        ArgumentsNode(ArgumentsNodeFlags::CONTAINS_KEYWORDS, [
           KeywordHashNode(1, [
             AssocNode(
               SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, nil, Location(), Location(), "foo"),
@@ -690,13 +693,13 @@ module Prism
       expected = StringNode(StringFlags::FORCED_UTF8_ENCODING, Location(), Location(), nil, "\u0001\u0002")
 
       assert_errors expected, '?\u{0001 0002}', [
-        ["invalid Unicode escape sequence; multiple codepoints are not allowed in a character literal", 9..12]
+        ["invalid Unicode escape sequence; Multiple codepoints at single character literal are disallowed", 9..12]
       ]
     end
 
     def test_invalid_hex_escape
       assert_errors expression('"\\xx"'), '"\\xx"', [
-        ["invalid hexadecimal escape sequence", 1..3],
+        ["invalid hex escape sequence", 1..3],
       ]
     end
 
@@ -1094,7 +1097,7 @@ module Prism
         ConstantReadNode(:A),
         nil,
         nil,
-        StatementsNode([ReturnNode(Location(), nil)]),
+        StatementsNode([ReturnNode(0, Location(), nil)]),
         Location(),
         :A
       )
@@ -1109,7 +1112,7 @@ module Prism
         [],
         Location(),
         ConstantReadNode(:A),
-        StatementsNode([ReturnNode(Location(), nil)]),
+        StatementsNode([ReturnNode(0, Location(), nil)]),
         Location(),
         :A
       )
@@ -1238,7 +1241,7 @@ module Prism
       expected = CallNode(0, receiver, Location(), :foo, Location(), nil, nil, nil, nil)
 
       assert_errors expected, "<<~FOO.foo\n", [
-        ["could not find a terminator for the heredoc", 11..11]
+        ["unterminated heredoc; can't find string \"FOO\"", 3..6]
       ]
     end
 
@@ -1381,7 +1384,6 @@ module Prism
 
     def test_invalid_number_underscores
       error_messages = ["invalid underscore placement in number"]
-
       assert_error_messages "1__1", error_messages
       assert_error_messages "0b1__1", error_messages
       assert_error_messages "0o1__1", error_messages
@@ -1389,6 +1391,7 @@ module Prism
       assert_error_messages "0d1__1", error_messages
       assert_error_messages "0x1__1", error_messages
 
+      error_messages = ["trailing '_' in number"]
       assert_error_messages "1_1_", error_messages
       assert_error_messages "0b1_1_", error_messages
       assert_error_messages "0o1_1_", error_messages

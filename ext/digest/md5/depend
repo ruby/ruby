@@ -150,6 +150,7 @@ md5.o: $(hdrdir)/ruby/internal/special_consts.h
 md5.o: $(hdrdir)/ruby/internal/static_assert.h
 md5.o: $(hdrdir)/ruby/internal/stdalign.h
 md5.o: $(hdrdir)/ruby/internal/stdbool.h
+md5.o: $(hdrdir)/ruby/internal/stdckdint.h
 md5.o: $(hdrdir)/ruby/internal/symbol.h
 md5.o: $(hdrdir)/ruby/internal/value.h
 md5.o: $(hdrdir)/ruby/internal/value_type.h
@@ -311,6 +312,7 @@ md5init.o: $(hdrdir)/ruby/internal/special_consts.h
 md5init.o: $(hdrdir)/ruby/internal/static_assert.h
 md5init.o: $(hdrdir)/ruby/internal/stdalign.h
 md5init.o: $(hdrdir)/ruby/internal/stdbool.h
+md5init.o: $(hdrdir)/ruby/internal/stdckdint.h
 md5init.o: $(hdrdir)/ruby/internal/symbol.h
 md5init.o: $(hdrdir)/ruby/internal/value.h
 md5init.o: $(hdrdir)/ruby/internal/value_type.h

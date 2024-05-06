@@ -217,6 +217,11 @@ srcs: $(srcdir)/lib/prism/dsl.rb
 $(srcdir)/lib/prism/dsl.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/dsl.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/dsl.rb $(srcdir)/lib/prism/dsl.rb
 
+main: $(srcdir)/lib/prism/inspect_visitor.rb
+srcs: $(srcdir)/lib/prism/inspect_visitor.rb
+$(srcdir)/lib/prism/inspect_visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/inspect_visitor.rb.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/inspect_visitor.rb $(srcdir)/lib/prism/inspect_visitor.rb
+
 main: $(srcdir)/lib/prism/mutation_compiler.rb
 srcs: $(srcdir)/lib/prism/mutation_compiler.rb
 $(srcdir)/lib/prism/mutation_compiler.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/mutation_compiler.rb.erb
@@ -485,9 +490,9 @@ docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
-install-all: pre-install-all docs do-install-all post-install-all
+install-all: pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
-do-install-all: pre-install-all
+do-install-all: pre-install-all $(DOT_WAIT) docs
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
@@ -2210,6 +2215,7 @@ array.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 array.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 array.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 array.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+array.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 array.$(OBJEXT): {$(VPATH)}internal/symbol.h
 array.$(OBJEXT): {$(VPATH)}internal/value.h
 array.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -2445,6 +2451,7 @@ ast.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ast.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 ast.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 ast.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+ast.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 ast.$(OBJEXT): {$(VPATH)}internal/symbol.h
 ast.$(OBJEXT): {$(VPATH)}internal/value.h
 ast.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -2657,6 +2664,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 bignum.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 bignum.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 bignum.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+bignum.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 bignum.$(OBJEXT): {$(VPATH)}internal/symbol.h
 bignum.$(OBJEXT): {$(VPATH)}internal/value.h
 bignum.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -2881,6 +2889,7 @@ builtin.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 builtin.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 builtin.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 builtin.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+builtin.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 builtin.$(OBJEXT): {$(VPATH)}internal/symbol.h
 builtin.$(OBJEXT): {$(VPATH)}internal/value.h
 builtin.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -3091,6 +3100,7 @@ class.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 class.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 class.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 class.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+class.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 class.$(OBJEXT): {$(VPATH)}internal/symbol.h
 class.$(OBJEXT): {$(VPATH)}internal/value.h
 class.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -3284,6 +3294,7 @@ compar.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 compar.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 compar.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 compar.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+compar.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 compar.$(OBJEXT): {$(VPATH)}internal/symbol.h
 compar.$(OBJEXT): {$(VPATH)}internal/value.h
 compar.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -3522,6 +3533,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 compile.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 compile.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 compile.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+compile.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 compile.$(OBJEXT): {$(VPATH)}internal/symbol.h
 compile.$(OBJEXT): {$(VPATH)}internal/value.h
 compile.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -3749,6 +3761,7 @@ complex.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 complex.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 complex.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 complex.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+complex.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 complex.$(OBJEXT): {$(VPATH)}internal/symbol.h
 complex.$(OBJEXT): {$(VPATH)}internal/value.h
 complex.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -3982,6 +3995,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 cont.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 cont.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 cont.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+cont.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 cont.$(OBJEXT): {$(VPATH)}internal/symbol.h
 cont.$(OBJEXT): {$(VPATH)}internal/value.h
 cont.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -4197,6 +4211,7 @@ debug.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 debug.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 debug.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 debug.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+debug.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 debug.$(OBJEXT): {$(VPATH)}internal/symbol.h
 debug.$(OBJEXT): {$(VPATH)}internal/value.h
 debug.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -4375,6 +4390,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+debug_counter.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/symbol.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/value.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -4575,6 +4591,7 @@ dir.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dir.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 dir.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 dir.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+dir.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 dir.$(OBJEXT): {$(VPATH)}internal/symbol.h
 dir.$(OBJEXT): {$(VPATH)}internal/value.h
 dir.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -4751,6 +4768,7 @@ dln.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dln.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 dln.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 dln.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+dln.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 dln.$(OBJEXT): {$(VPATH)}internal/symbol.h
 dln.$(OBJEXT): {$(VPATH)}internal/value.h
 dln.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -4908,6 +4926,7 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+dln_find.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/symbol.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/value.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -5064,6 +5083,7 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+dmydln.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/symbol.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/value.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -6082,6 +6102,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 encoding.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 encoding.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 encoding.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+encoding.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 encoding.$(OBJEXT): {$(VPATH)}internal/symbol.h
 encoding.$(OBJEXT): {$(VPATH)}internal/value.h
 encoding.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -6291,6 +6312,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enum.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 enum.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 enum.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+enum.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 enum.$(OBJEXT): {$(VPATH)}internal/symbol.h
 enum.$(OBJEXT): {$(VPATH)}internal/value.h
 enum.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -6498,6 +6520,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+enumerator.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/symbol.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/value.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -6713,6 +6736,7 @@ error.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 error.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 error.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 error.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+error.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 error.$(OBJEXT): {$(VPATH)}internal/symbol.h
 error.$(OBJEXT): {$(VPATH)}internal/value.h
 error.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -6957,6 +6981,7 @@ eval.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 eval.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 eval.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 eval.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+eval.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 eval.$(OBJEXT): {$(VPATH)}internal/symbol.h
 eval.$(OBJEXT): {$(VPATH)}internal/value.h
 eval.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -7196,6 +7221,7 @@ file.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 file.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 file.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 file.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+file.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 file.$(OBJEXT): {$(VPATH)}internal/symbol.h
 file.$(OBJEXT): {$(VPATH)}internal/value.h
 file.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -7439,6 +7465,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 gc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 gc.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 gc.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+gc.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 gc.$(OBJEXT): {$(VPATH)}internal/symbol.h
 gc.$(OBJEXT): {$(VPATH)}internal/value.h
 gc.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -7691,6 +7718,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 goruby.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 goruby.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 goruby.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+goruby.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 goruby.$(OBJEXT): {$(VPATH)}internal/symbol.h
 goruby.$(OBJEXT): {$(VPATH)}internal/value.h
 goruby.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -7934,6 +7962,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/st.h
 hash.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 hash.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 hash.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+hash.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 hash.$(OBJEXT): {$(VPATH)}internal/symbol.h
 hash.$(OBJEXT): {$(VPATH)}internal/value.h
 hash.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -8147,6 +8176,7 @@ imemo.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 imemo.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 imemo.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 imemo.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+imemo.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 imemo.$(OBJEXT): {$(VPATH)}internal/symbol.h
 imemo.$(OBJEXT): {$(VPATH)}internal/value.h
 imemo.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -8324,6 +8354,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 inits.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 inits.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 inits.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+inits.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 inits.$(OBJEXT): {$(VPATH)}internal/symbol.h
 inits.$(OBJEXT): {$(VPATH)}internal/value.h
 inits.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -8531,6 +8562,7 @@ io.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 io.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 io.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 io.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+io.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 io.$(OBJEXT): {$(VPATH)}internal/symbol.h
 io.$(OBJEXT): {$(VPATH)}internal/value.h
 io.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -8737,6 +8769,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+io_buffer.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/symbol.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/value.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -8975,6 +9008,7 @@ iseq.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 iseq.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 iseq.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 iseq.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+iseq.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 iseq.$(OBJEXT): {$(VPATH)}internal/symbol.h
 iseq.$(OBJEXT): {$(VPATH)}internal/value.h
 iseq.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -9228,6 +9262,7 @@ load.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 load.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 load.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 load.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+load.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 load.$(OBJEXT): {$(VPATH)}internal/symbol.h
 load.$(OBJEXT): {$(VPATH)}internal/value.h
 load.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -9406,6 +9441,7 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+loadpath.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/symbol.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/value.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -9575,6 +9611,7 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+localeinit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/symbol.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/value.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -9739,6 +9776,7 @@ main.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 main.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 main.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 main.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+main.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 main.$(OBJEXT): {$(VPATH)}internal/symbol.h
 main.$(OBJEXT): {$(VPATH)}internal/value.h
 main.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -9944,6 +9982,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 marshal.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 marshal.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 marshal.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+marshal.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 marshal.$(OBJEXT): {$(VPATH)}internal/symbol.h
 marshal.$(OBJEXT): {$(VPATH)}internal/value.h
 marshal.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10133,6 +10172,7 @@ math.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 math.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 math.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 math.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+math.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 math.$(OBJEXT): {$(VPATH)}internal/symbol.h
 math.$(OBJEXT): {$(VPATH)}internal/value.h
 math.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10323,6 +10363,7 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+memory_view.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/symbol.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/value.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10562,6 +10603,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/symbol.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/value.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10785,6 +10827,7 @@ node.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 node.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 node.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 node.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+node.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 node.$(OBJEXT): {$(VPATH)}internal/symbol.h
 node.$(OBJEXT): {$(VPATH)}internal/value.h
 node.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10996,6 +11039,7 @@ node_dump.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+node_dump.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/symbol.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/value.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -11210,6 +11254,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 numeric.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 numeric.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 numeric.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+numeric.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 numeric.$(OBJEXT): {$(VPATH)}internal/symbol.h
 numeric.$(OBJEXT): {$(VPATH)}internal/value.h
 numeric.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -11428,6 +11473,7 @@ object.$(OBJEXT): {$(VPATH)}internal/st.h
 object.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 object.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 object.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+object.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 object.$(OBJEXT): {$(VPATH)}internal/symbol.h
 object.$(OBJEXT): {$(VPATH)}internal/value.h
 object.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -11640,6 +11686,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 pack.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 pack.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 pack.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+pack.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 pack.$(OBJEXT): {$(VPATH)}internal/symbol.h
 pack.$(OBJEXT): {$(VPATH)}internal/value.h
 pack.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -11861,6 +11908,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 parse.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 parse.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 parse.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+parse.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 parse.$(OBJEXT): {$(VPATH)}internal/symbol.h
 parse.$(OBJEXT): {$(VPATH)}internal/value.h
 parse.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -12138,6 +12186,7 @@ prism/api_node.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+prism/api_node.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/symbol.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/value.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -12333,6 +12382,7 @@ prism/api_pack.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+prism/api_pack.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/symbol.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/value.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -12542,6 +12592,7 @@ prism/extension.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+prism/extension.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/symbol.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/value.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -12564,6 +12615,7 @@ prism/node.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/node.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12589,6 +12641,7 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12631,6 +12684,7 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.c
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12741,6 +12795,7 @@ prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
@@ -12933,6 +12988,7 @@ prism_init.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+prism_init.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/symbol.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/value.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -13156,6 +13212,7 @@ proc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 proc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 proc.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 proc.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+proc.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 proc.$(OBJEXT): {$(VPATH)}internal/symbol.h
 proc.$(OBJEXT): {$(VPATH)}internal/value.h
 proc.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -13384,6 +13441,7 @@ process.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 process.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 process.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 process.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+process.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 process.$(OBJEXT): {$(VPATH)}internal/symbol.h
 process.$(OBJEXT): {$(VPATH)}internal/value.h
 process.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -13606,6 +13664,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ractor.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 ractor.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 ractor.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+ractor.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 ractor.$(OBJEXT): {$(VPATH)}internal/symbol.h
 ractor.$(OBJEXT): {$(VPATH)}internal/value.h
 ractor.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -13819,6 +13878,7 @@ random.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 random.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 random.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 random.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+random.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 random.$(OBJEXT): {$(VPATH)}internal/symbol.h
 random.$(OBJEXT): {$(VPATH)}internal/value.h
 random.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14025,6 +14085,7 @@ range.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 range.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 range.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 range.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+range.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 range.$(OBJEXT): {$(VPATH)}internal/symbol.h
 range.$(OBJEXT): {$(VPATH)}internal/value.h
 range.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14223,6 +14284,7 @@ rational.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 rational.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 rational.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 rational.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+rational.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 rational.$(OBJEXT): {$(VPATH)}internal/symbol.h
 rational.$(OBJEXT): {$(VPATH)}internal/value.h
 rational.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14435,6 +14497,7 @@ re.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 re.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 re.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 re.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+re.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 re.$(OBJEXT): {$(VPATH)}internal/symbol.h
 re.$(OBJEXT): {$(VPATH)}internal/value.h
 re.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14609,6 +14672,7 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regcomp.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/value.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14770,6 +14834,7 @@ regenc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regenc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regenc.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regenc.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regenc.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regenc.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regenc.$(OBJEXT): {$(VPATH)}internal/value.h
 regenc.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14930,6 +14995,7 @@ regerror.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regerror.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regerror.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regerror.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regerror.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regerror.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regerror.$(OBJEXT): {$(VPATH)}internal/value.h
 regerror.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15090,6 +15156,7 @@ regexec.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regexec.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regexec.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regexec.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regexec.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regexec.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regexec.$(OBJEXT): {$(VPATH)}internal/value.h
 regexec.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15254,6 +15321,7 @@ regparse.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regparse.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regparse.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regparse.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regparse.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regparse.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regparse.$(OBJEXT): {$(VPATH)}internal/value.h
 regparse.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15415,6 +15483,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+regsyntax.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/symbol.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/value.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15644,6 +15713,7 @@ rjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 rjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 rjit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 rjit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+rjit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 rjit.$(OBJEXT): {$(VPATH)}internal/symbol.h
 rjit.$(OBJEXT): {$(VPATH)}internal/value.h
 rjit.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15896,6 +15966,7 @@ rjit_c.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+rjit_c.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/symbol.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/value.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -16172,6 +16243,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ruby.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 ruby.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 ruby.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+ruby.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 ruby.$(OBJEXT): {$(VPATH)}internal/symbol.h
 ruby.$(OBJEXT): {$(VPATH)}internal/value.h
 ruby.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -16379,6 +16451,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/symbol.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/value.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -16573,6 +16646,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+scheduler.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/symbol.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/value.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -16744,6 +16818,7 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+setproctitle.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/symbol.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/value.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -16939,6 +17014,7 @@ shape.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 shape.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 shape.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 shape.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+shape.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 shape.$(OBJEXT): {$(VPATH)}internal/symbol.h
 shape.$(OBJEXT): {$(VPATH)}internal/value.h
 shape.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -17150,6 +17226,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 signal.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 signal.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 signal.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+signal.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 signal.$(OBJEXT): {$(VPATH)}internal/symbol.h
 signal.$(OBJEXT): {$(VPATH)}internal/value.h
 signal.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -17356,6 +17433,7 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+sprintf.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/symbol.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/value.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -17529,6 +17607,7 @@ st.$(OBJEXT): {$(VPATH)}internal/st.h
 st.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 st.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 st.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+st.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 st.$(OBJEXT): {$(VPATH)}internal/symbol.h
 st.$(OBJEXT): {$(VPATH)}internal/value.h
 st.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -17703,6 +17782,7 @@ strftime.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 strftime.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 strftime.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 strftime.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+strftime.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 strftime.$(OBJEXT): {$(VPATH)}internal/symbol.h
 strftime.$(OBJEXT): {$(VPATH)}internal/value.h
 strftime.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -17911,6 +17991,7 @@ string.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 string.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 string.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 string.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+string.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 string.$(OBJEXT): {$(VPATH)}internal/symbol.h
 string.$(OBJEXT): {$(VPATH)}internal/value.h
 string.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -18158,6 +18239,7 @@ struct.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 struct.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 struct.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 struct.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+struct.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 struct.$(OBJEXT): {$(VPATH)}internal/symbol.h
 struct.$(OBJEXT): {$(VPATH)}internal/value.h
 struct.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -18370,6 +18452,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 symbol.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 symbol.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 symbol.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+symbol.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 symbol.$(OBJEXT): {$(VPATH)}internal/symbol.h
 symbol.$(OBJEXT): {$(VPATH)}internal/value.h
 symbol.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -18618,6 +18701,7 @@ thread.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 thread.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 thread.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 thread.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+thread.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 thread.$(OBJEXT): {$(VPATH)}internal/symbol.h
 thread.$(OBJEXT): {$(VPATH)}internal/value.h
 thread.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -18844,6 +18928,7 @@ time.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 time.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 time.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 time.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+time.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 time.$(OBJEXT): {$(VPATH)}internal/symbol.h
 time.$(OBJEXT): {$(VPATH)}internal/value.h
 time.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -19041,6 +19126,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 transcode.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 transcode.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 transcode.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+transcode.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 transcode.$(OBJEXT): {$(VPATH)}internal/symbol.h
 transcode.$(OBJEXT): {$(VPATH)}internal/value.h
 transcode.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -19209,6 +19295,7 @@ util.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 util.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 util.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 util.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+util.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 util.$(OBJEXT): {$(VPATH)}internal/symbol.h
 util.$(OBJEXT): {$(VPATH)}internal/value.h
 util.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -19409,6 +19496,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 variable.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 variable.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 variable.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+variable.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 variable.$(OBJEXT): {$(VPATH)}internal/symbol.h
 variable.$(OBJEXT): {$(VPATH)}internal/value.h
 variable.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -19620,6 +19708,7 @@ version.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 version.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 version.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 version.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+version.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 version.$(OBJEXT): {$(VPATH)}internal/symbol.h
 version.$(OBJEXT): {$(VPATH)}internal/value.h
 version.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -19879,6 +19968,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 vm.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 vm.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+vm.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 vm.$(OBJEXT): {$(VPATH)}internal/symbol.h
 vm.$(OBJEXT): {$(VPATH)}internal/value.h
 vm.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -20133,6 +20223,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/symbol.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/value.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -20361,6 +20452,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+vm_dump.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/symbol.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/value.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -20571,6 +20663,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+vm_sync.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/symbol.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/value.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -20805,6 +20898,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+vm_trace.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/symbol.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/value.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -21014,6 +21108,7 @@ weakmap.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+weakmap.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/symbol.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/value.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -21249,6 +21344,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 yjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 yjit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 yjit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+yjit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
 yjit.$(OBJEXT): {$(VPATH)}internal/symbol.h
 yjit.$(OBJEXT): {$(VPATH)}internal/value.h
 yjit.$(OBJEXT): {$(VPATH)}internal/value_type.h

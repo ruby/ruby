@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,10))
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,10))
-            ├── flags: ∅
+            ├── flags: mutable
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (1,1)-(1,3))
@@ -19,7 +19,7 @@
             │       │   @ StatementsNode (location: (1,5)-(1,8))
             │       │   └── body: (length: 1)
             │       │       └── @ StringNode (location: (1,5)-(1,8))
-            │       │           ├── flags: ∅
+            │       │           ├── flags: frozen
             │       │           ├── opening_loc: (1,5)-(1,6) = "'"
             │       │           ├── content_loc: (1,6)-(1,7) = "b"
             │       │           ├── closing_loc: (1,7)-(1,8) = "'"

@@ -56,7 +56,6 @@ end
       s.add_dependency "jabber4r", "> 0.0.0"
       s.add_dependency "pqa", ["> 0.4", "<= 0.6"]
 
-      s.mark_version
       s.files = %w[lib/code.rb]
     end
   end
@@ -69,7 +68,6 @@ end
       s.license = "MIT"
       s.platform = platform
 
-      s.mark_version
       s.files = %w[lib/code.rb]
       s.installed_by_version = v("2.2")
     end
@@ -96,7 +94,6 @@ end
       s.requirements << "A working computer"
       s.license = "MIT"
 
-      s.mark_version
       s.files = %w[lib/code.rb]
     end
 
@@ -3187,7 +3184,7 @@ or set it to nil if you don't want to specify a license.
   end
 
   def test_removed_methods
-    assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=]
+    assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=, :mark_version]
   end
 
   def test_validate_removed_rubyforge_project
@@ -3480,12 +3477,17 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     @a1.rubygems_version = "3"
-    e = assert_raise Gem::InvalidSpecificationException do
+
+    use_ui @ui do
       @a1.validate
     end
 
-    assert_equal "expected RubyGems version #{Gem::VERSION}, was 3",
-                 e.message
+    expected = <<~EXPECTED
+      #{w}:  expected RubyGems version #{Gem::VERSION}, was 3
+      #{w}:  See https://guides.rubygems.org/specification-reference/ for help
+    EXPECTED
+
+    assert_equal expected, @ui.error
   end
 
   def test_validate_specification_version

@@ -162,6 +162,7 @@ etc.o: $(hdrdir)/ruby/internal/special_consts.h
 etc.o: $(hdrdir)/ruby/internal/static_assert.h
 etc.o: $(hdrdir)/ruby/internal/stdalign.h
 etc.o: $(hdrdir)/ruby/internal/stdbool.h
+etc.o: $(hdrdir)/ruby/internal/stdckdint.h
 etc.o: $(hdrdir)/ruby/internal/symbol.h
 etc.o: $(hdrdir)/ruby/internal/value.h
 etc.o: $(hdrdir)/ruby/internal/value_type.h

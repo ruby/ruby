@@ -88,7 +88,7 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_sha512_truncate
-    pend "SHA512_224 is not implemented" unless digest_available?('SHA512-224')
+    pend "SHA512_224 is not implemented" unless digest_available?('sha512-224')
     sha512_224_a = "d5cdb9ccc769a5121d4175f2bfdd13d6310e0d3d361ea75d82108327"
     sha512_256_a = "455e518824bc0601f9fb858ff5c37d417d67c2f8e0df2babe4808858aea830f8"
 
@@ -100,7 +100,7 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_sha3
-    pend "SHA3 is not implemented" unless digest_available?('SHA3-224')
+    pend "SHA3 is not implemented" unless digest_available?('sha3-224')
     s224 = '6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7'
     s256 = 'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a'
     s384 = '0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004'
@@ -126,6 +126,15 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     end
   end
 
+  def test_digests
+    digests = OpenSSL::Digest.digests
+    assert_kind_of Array, digests
+    assert_include digests, "md5"
+    assert_include digests, "sha1"
+    assert_include digests, "sha256"
+    assert_include digests, "sha512"
+  end
+
   private
 
   def check_digest(oid)
@@ -138,11 +147,8 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def digest_available?(name)
-    begin
-      OpenSSL::Digest.new(name)
-    rescue RuntimeError
-      false
-    end
+    @digests ||= OpenSSL::Digest.digests
+    @digests.include?(name)
   end
 end
 

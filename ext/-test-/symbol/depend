@@ -147,6 +147,7 @@ init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
+init.o: $(hdrdir)/ruby/internal/stdckdint.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
@@ -306,6 +307,7 @@ type.o: $(hdrdir)/ruby/internal/special_consts.h
 type.o: $(hdrdir)/ruby/internal/static_assert.h
 type.o: $(hdrdir)/ruby/internal/stdalign.h
 type.o: $(hdrdir)/ruby/internal/stdbool.h
+type.o: $(hdrdir)/ruby/internal/stdckdint.h
 type.o: $(hdrdir)/ruby/internal/symbol.h
 type.o: $(hdrdir)/ruby/internal/value.h
 type.o: $(hdrdir)/ruby/internal/value_type.h

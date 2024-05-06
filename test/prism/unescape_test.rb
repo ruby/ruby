@@ -38,7 +38,7 @@ module Prism
         end
 
         def prism(escape)
-          result = Prism.parse(code(escape))
+          result = Prism.parse(code(escape), encoding: "binary")
 
           if result.success?
             yield result.value.statements.body.first

@@ -10,7 +10,7 @@ describe "Binding#irb" do
       IO.popen([envs, *ruby_exe, irb_fixture, chdir: dir], "r+") do |pipe|
         pipe.puts "a ** 2"
         pipe.puts "exit"
-        pipe.readlines.map(&:chomp)
+        pipe.readlines.map(&:chomp).reject(&:empty?)
       end
     end
 

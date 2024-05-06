@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,27))
     └── body: (length: 1)
         └── @ ReturnNode (location: (1,0)-(1,27))
+            ├── flags: ∅
             ├── keyword_loc: (1,0)-(1,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (1,7)-(1,27))
