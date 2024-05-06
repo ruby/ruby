@@ -534,6 +534,16 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["BUNDLE_GEMFILE"] = File.join(@tempdir, "Gemfile")
   end
 
+  def with_env(overrides, &block)
+    @orig_env = ENV.to_h
+    ENV.replace(overrides)
+    begin
+      block.call
+    ensure
+      ENV.replace(@orig_env)
+    end
+  end
+
   ##
   # A git_gem is used with a gem dependencies file.  The gem created here
   # has no files, just a gem specification for the given +name+ and +version+.

@@ -3,7 +3,7 @@
 require_relative "helper"
 require "rubygems"
 
-class TestCiDetector < Test::Unit::TestCase
+class TestCiDetector < Gem::TestCase
   def test_ci?
     with_env("FOO" => "bar") { assert_equal(false, Gem::CIDetector.ci?) }
     with_env("CI" => "true") { assert_equal(true, Gem::CIDetector.ci?) }
@@ -27,18 +27,6 @@ class TestCiDetector < Test::Unit::TestCase
     end
     with_env("TASKCLUSTER_ROOT_URL" => "https://foo.bar", "DSARI" => "1", "CI_NAME" => "") do
       assert_equal(["dsari", "taskcluster"], Gem::CIDetector.ci_strings)
-    end
-  end
-
-  private
-
-  def with_env(overrides, &block)
-    @orig_env = ENV.to_h
-    ENV.replace(overrides)
-    begin
-      block.call
-    ensure
-      ENV.replace(@orig_env)
     end
   end
 end
