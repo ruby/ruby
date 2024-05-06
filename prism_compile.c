@@ -301,10 +301,10 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
 {
     rb_encoding *encoding;
 
-    if (node->flags & PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING) {
+    if (node->flags & PM_STRING_FLAGS_FORCED_BINARY_ENCODING) {
         encoding = rb_ascii8bit_encoding();
     }
-    else if (node->flags & PM_ENCODING_FLAGS_FORCED_UTF8_ENCODING) {
+    else if (node->flags & PM_STRING_FLAGS_FORCED_UTF8_ENCODING) {
         encoding = rb_utf8_encoding();
     }
     else {
@@ -4563,7 +4563,182 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
     return dispatch;
 }
 
-/*
+/**
+ * Return the object that will be pushed onto the stack for the given node.
+ */
+static VALUE
+pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_node_t *scope_node)
+{
+    switch (PM_NODE_TYPE(node)) {
+      case PM_TRUE_NODE:
+      case PM_FALSE_NODE:
+      case PM_NIL_NODE:
+      case PM_SYMBOL_NODE:
+      case PM_REGULAR_EXPRESSION_NODE:
+      case PM_SOURCE_LINE_NODE:
+      case PM_INTEGER_NODE:
+      case PM_FLOAT_NODE:
+      case PM_RATIONAL_NODE:
+      case PM_IMAGINARY_NODE:
+      case PM_SOURCE_ENCODING_NODE:
+        return pm_static_literal_value(iseq, node, scope_node);
+      case PM_STRING_NODE:
+        return parse_static_literal_string(iseq, scope_node, node, &((const pm_string_node_t *) node)->unescaped);
+      case PM_SOURCE_FILE_NODE:
+        return pm_source_file_value((const pm_source_file_node_t *) node, scope_node);
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        VALUE result = rb_ary_new_capa(cast->elements.size);
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            VALUE element = pm_compile_shareable_constant_literal(iseq, cast->elements.nodes[index], scope_node);
+            if (element == Qundef) return Qundef;
+
+            rb_ary_push(result, element);
+        }
+
+        return rb_ractor_make_shareable(result);
+      }
+      case PM_HASH_NODE: {
+        const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+        VALUE result = rb_hash_new_capa(cast->elements.size);
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            const pm_node_t *element = cast->elements.nodes[index];
+            if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) return Qundef;
+
+            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+
+            VALUE key = pm_compile_shareable_constant_literal(iseq, assoc->key, scope_node);
+            if (key == Qundef) return Qundef;
+
+            VALUE value = pm_compile_shareable_constant_literal(iseq, assoc->value, scope_node);
+            if (value == Qundef) return Qundef;
+
+            rb_hash_aset(result, key, value);
+        }
+
+        return rb_ractor_make_shareable(result);
+      }
+      default:
+        return Qundef;
+    }
+}
+
+/**
+ * Compile the instructions for pushing the value that will be written to a
+ * shared constant.
+ */
+static void
+pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, pm_node_flags_t shareability, VALUE path, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
+{
+    VALUE literal = pm_compile_shareable_constant_literal(iseq, node, scope_node);
+    if (literal != Qundef) {
+        const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+        PUSH_INSN1(ret, location, putobject, literal);
+        return;
+    }
+
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+    switch (PM_NODE_TYPE(node)) {
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+
+        ID method_id = (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) ? rb_intern("make_shareable_copy") : rb_intern("make_shareable");
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            pm_compile_shareable_constant_value(iseq, cast->elements.nodes[index], shareability, path, ret, scope_node);
+        }
+
+        PUSH_INSN1(ret, location, newarray, INT2FIX(cast->elements.size));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        return;
+      }
+      case PM_HASH_NODE: {
+        const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+
+        ID method_id = (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) ? rb_intern("make_shareable_copy") : rb_intern("make_shareable");
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            const pm_node_t *element = cast->elements.nodes[index];
+
+            if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) {
+                COMPILE_ERROR(ERROR_ARGS "Ractor constant writes do not support **");
+            }
+
+            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+            pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, ret, scope_node);
+            pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, ret, scope_node);
+        }
+
+        PUSH_INSN1(ret, location, newhash, INT2FIX(cast->elements.size * 2));
+        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        return;
+      }
+      default: {
+        DECL_ANCHOR(value_seq);
+        INIT_ANCHOR(value_seq);
+
+        pm_compile_node(iseq, node, value_seq, false, scope_node);
+        if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
+            PUSH_SEND_WITH_FLAG(value_seq, location, idUMinus, INT2FIX(0), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            PUSH_INSN1(ret, location, putobject, path);
+            PUSH_SEND_WITH_FLAG(ret, location, rb_intern("ensure_shareable"), INT2FIX(2), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+        else if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            PUSH_SEND_WITH_FLAG(ret, location, rb_intern("make_shareable_copy"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+        else if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            PUSH_SEND_WITH_FLAG(ret, location, rb_intern("make_shareable"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        break;
+      }
+    }
+}
+
+/**
+ * Compile a shareable constant node, which is a write to a constant within the
+ * context of a ractor pragma.
+ */
+static void
+pm_compile_shareable_constant_node(rb_iseq_t *iseq, const pm_shareable_constant_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+
+    switch (PM_NODE_TYPE(node->write)) {
+      case PM_CONSTANT_WRITE_NODE: {
+        const pm_constant_write_node_t *cast = (const pm_constant_write_node_t *) node->write;
+        ID name_id = pm_constant_id_lookup(scope_node, cast->name);
+
+        VALUE name = ID2SYM(name_id);
+        VALUE path = rb_id2str(name_id);
+
+        pm_compile_shareable_constant_value(iseq, cast->value, node->base.flags, path, ret, scope_node);
+        if (!popped) PUSH_INSN(ret, location, dup);
+
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        PUSH_INSN1(ret, location, setconstant, name);
+        return;
+      }
+      default:
+        rb_bug("Unexpected node type for shareable constant write: %s", pm_node_type_to_str(PM_NODE_TYPE(node->write)));
+        return;
+    }
+}
+
+/**
  * Compiles a prism node into instruction sequences.
  *
  * iseq -            The current instruction sequence object (used for locals)
@@ -8453,7 +8628,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_SHAREABLE_CONSTANT_NODE: {
         // A value that is being written to a constant that is being marked as
         // shared depending on the current lexical context.
-        PM_COMPILE(((const pm_shareable_constant_node_t *) node)->write);
+        pm_compile_shareable_constant_node(iseq, (const pm_shareable_constant_node_t *) node, ret, popped, scope_node);
         return;
       }
       case PM_SINGLETON_CLASS_NODE: {
