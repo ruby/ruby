@@ -76,8 +76,6 @@ class Gem::TestCase < Test::Unit::TestCase
 
   attr_accessor :uri # :nodoc:
 
-  @@tempdirs = []
-
   def assert_activate(expected, *specs)
     specs.each do |spec|
       case spec
@@ -451,8 +449,6 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir @current_dir
 
-    FileUtils.rm_rf @tempdir
-
     ENV.replace(@orig_env)
 
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
@@ -481,12 +477,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @back_ui.close
 
-    refute_directory_exists @tempdir, "may be still in use"
-    ghosts = @@tempdirs.filter_map do |test_name, tempdir|
-      test_name if File.exist?(tempdir)
-    end
-    @@tempdirs << [method_name, @tempdir]
-    assert_empty ghosts
+    FileUtils.rm_rf @tempdir
+
+    refute_directory_exists @tempdir, "#{@tempdir} used by test #{method_name} is still in use"
   end
 
   def credential_setup
