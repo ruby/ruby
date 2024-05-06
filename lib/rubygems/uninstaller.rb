@@ -32,7 +32,7 @@ class Gem::Uninstaller
   attr_reader :bin_dir
 
   ##
-  # The gem repository the gem will be installed into
+  # The gem repository the gem will be uninstalled from
 
   attr_reader :gem_home
 
