@@ -923,16 +923,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets the known specs to +specs+. Not guaranteed to work for you in
-  # the future. Use at your own risk. Caveat emptor. Doomy doom doom.
-  # Etc etc.
-  #
-  #--
-  # Makes +specs+ the known specs
-  # Listen, time is a river
-  # Winter comes, code breaks
-  #
-  # -- wilsonb
+  # Sets the known specs to +specs+.
 
   def self.all=(specs)
     @@stubs_by_name = specs.group_by(&:name)
