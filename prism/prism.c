@@ -749,42 +749,97 @@ pm_parser_scope_find(pm_parser_t *parser, uint32_t depth) {
     return scope;
 }
 
-static void
-pm_parser_scope_forwarding_param_check(pm_parser_t *parser, const pm_token_t * token, const uint8_t mask, pm_diagnostic_id_t diag) {
+typedef enum {
+    PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS,
+    PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT,
+    PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL
+} pm_scope_forwarding_param_check_result_t;
+
+static pm_scope_forwarding_param_check_result_t
+pm_parser_scope_forwarding_param_check(pm_parser_t *parser, const uint8_t mask) {
     pm_scope_t *scope = parser->current_scope;
-    while (scope) {
+    bool conflict = false;
+
+    while (scope != NULL) {
         if (scope->parameters & mask) {
-            if (!scope->closed) {
-                pm_parser_err_token(parser, token, diag);
-                return;
+            if (scope->closed) {
+                if (conflict) {
+                    return PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT;
+                } else {
+                    return PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS;
+                }
             }
-            return;
+
+            conflict = true;
         }
+
         if (scope->closed) break;
         scope = scope->previous;
     }
 
-    pm_parser_err_token(parser, token, diag);
+    return PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL;
 }
 
-static inline void
+static void
 pm_parser_scope_forwarding_block_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_BLOCK, PM_ERR_ARGUMENT_NO_FORWARDING_AMP);
+    switch (pm_parser_scope_forwarding_param_check(parser, PM_SCOPE_PARAMETERS_FORWARDING_BLOCK)) {
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS:
+            // Pass.
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_CONFLICT_AMPERSAND);
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_NO_FORWARDING_AMPERSAND);
+            break;
+    }
 }
 
-static inline void
+static void
 pm_parser_scope_forwarding_positionals_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
+    switch (pm_parser_scope_forwarding_param_check(parser, PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS)) {
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS:
+            // Pass.
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_CONFLICT_STAR);
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
+            break;
+    }
 }
 
-static inline void
-pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_ALL, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+static void
+pm_parser_scope_forwarding_all_check(pm_parser_t *parser, const pm_token_t *token) {
+    switch (pm_parser_scope_forwarding_param_check(parser, PM_SCOPE_PARAMETERS_FORWARDING_ALL)) {
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS:
+            // Pass.
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT:
+            // This shouldn't happen, because ... is not allowed in the
+            // declaration of blocks. If we get here, we assume we already have
+            // an error for this.
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+            break;
+    }
 }
 
-static inline void
+static void
 pm_parser_scope_forwarding_keywords_check(pm_parser_t *parser, const pm_token_t * token) {
-    pm_parser_scope_forwarding_param_check(parser, token, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS, PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR);
+    switch (pm_parser_scope_forwarding_param_check(parser, PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS)) {
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_PASS:
+            // Pass.
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_CONFLICT:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_CONFLICT_STAR_STAR);
+            break;
+        case PM_SCOPE_FORWARDING_PARAM_CHECK_RESULT_FAIL:
+            pm_parser_err_token(parser, token, PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR);
+            break;
+    }
 }
 
 /**
