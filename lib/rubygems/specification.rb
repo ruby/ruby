@@ -1044,6 +1044,10 @@ class Gem::Specification < Gem::BasicSpecification
     stub&.to_spec
   end
 
+  ##
+  # Return the best specification that contains the file matching +path+, among
+  # those already activated.
+
   def self.find_active_stub_by_path(path)
     stub = @@active_stub_with_requirable_file[path] ||= stubs.find do |s|
       s.activated? && s.contains_requirable_file?(path)
