@@ -956,7 +956,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *
  *  <b>Second Shortcut: a Reducer function</b>
  *
- *  A _reducer function_ is a function that takes a partial result and the next value,
+ *  A <i>reducer function</i> is a function that takes a partial result and the next value,
  *  returning the next partial result. The block that is given to +inject+ is a reducer.
  *
  *  You can also write a reducer as a function and pass the name of that function
