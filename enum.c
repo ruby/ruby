@@ -886,7 +886,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *
  *  as being
  *
- *      fn(d, fn(c, fn(b, fn(i, a))))
+ *      fn(fn(fn(fn(i, a), b), c), d)
  *
  *  In a way the +inject+ function _injects_ the function
  *  between the elements of the enumerable.
