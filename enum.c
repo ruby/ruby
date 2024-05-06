@@ -952,7 +952,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *               "com"=>15, ...
  *
  *  Note that the last line of the block is just the word +counts+. This ensures the
- *  return value of the block is the result taht's being calculated.
+ *  return value of the block is the result that's being calculated.
  *
  *  <b>Second Shortcut: a Reducer function</b>
  *
