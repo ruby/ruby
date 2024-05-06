@@ -1,7 +1,4 @@
 exclude(:test__END___cr, "unknown")
-exclude(:test_anonymous_block_forwarding, "unknown")
-exclude(:test_anonymous_keyword_rest_forwarding, "unknown")
-exclude(:test_anonymous_rest_forwarding, "unknown")
 exclude(:test_argument_forwarding_with_super, "unknown")
 exclude(:test_argument_forwarding, "unknown")
 exclude(:test_dedented_heredoc_concatenation, "unknown")
