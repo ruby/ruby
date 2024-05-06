@@ -453,7 +453,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     FileUtils.rm_rf @tempdir
 
-    restore_env
+    ENV.replace(@orig_env)
 
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
@@ -1526,23 +1526,6 @@ Also, a list:
     PUBLIC_KEY  = nil
     PUBLIC_CERT = nil
   end if Gem::HAVE_OPENSSL
-
-  private
-
-  def restore_env
-    unless Gem.win_platform?
-      ENV.replace(@orig_env)
-      return
-    end
-
-    # Fallback logic for Windows below to workaround
-    # https://bugs.ruby-lang.org/issues/16798. Can be dropped once all
-    # supported rubies include the fix for that.
-
-    ENV.clear
-
-    @orig_env.each {|k, v| ENV[k] = v }
-  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192
