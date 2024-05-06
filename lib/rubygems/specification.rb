@@ -906,9 +906,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the directories that Specification uses to find specs.
 
   def self.dirs
-    @@dirs ||= Gem.path.collect do |dir|
-      File.join dir, "specifications"
-    end
+    @@dirs ||= Gem::SpecificationRecord.dirs_from(Gem.path)
   end
 
   ##
@@ -918,7 +916,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.dirs=(dirs)
     reset
 
-    @@dirs = Array(dirs).map {|dir| File.join dir, "specifications" }
+    @@dirs = Gem::SpecificationRecord.dirs_from(Array(dirs))
   end
 
   extend Enumerable

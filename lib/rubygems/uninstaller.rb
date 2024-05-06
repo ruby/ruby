@@ -49,7 +49,8 @@ class Gem::Uninstaller
     # TODO: document the valid options
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
-    @gem_home           = File.realpath(options[:install_dir] || Gem.dir)
+    @install_dir        = options[:install_dir]
+    @gem_home           = File.realpath(@install_dir || Gem.dir)
     @force_executables  = options[:executables]
     @force_all          = options[:all]
     @force_ignore       = options[:ignore]
@@ -69,7 +70,7 @@ class Gem::Uninstaller
 
     # only add user directory if install_dir is not set
     @user_install = false
-    @user_install = options[:user_install] unless options[:install_dir]
+    @user_install = options[:user_install] unless @install_dir
 
     # Optimization: populated during #uninstall
     @default_specs_matching_uninstall_params = []
@@ -290,7 +291,8 @@ class Gem::Uninstaller
   # Regenerates plugin wrappers after removal.
 
   def regenerate_plugins
-    latest = Gem::Specification.latest_spec_for(@spec.name)
+    specification_record = @install_dir ? Gem::SpecificationRecord.from_path(@install_dir) : Gem::Specification.specification_record
+    latest = specification_record.latest_spec_for(@spec.name)
     return if latest.nil?
 
     regenerate_plugins_for(latest, plugin_dir_for(@spec))

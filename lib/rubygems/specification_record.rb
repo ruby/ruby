@@ -2,6 +2,16 @@
 
 module Gem
   class SpecificationRecord
+    def self.dirs_from(paths)
+      paths.map do |path|
+        File.join(path, "specifications")
+      end
+    end
+
+    def self.from_path(path)
+      new(dirs_from([path]))
+    end
+
     def initialize(dirs)
       @all = nil
       @stubs = nil
