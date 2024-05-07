@@ -1217,6 +1217,19 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 }
 
 /*
+ *  call-seq:
+ *     enumerator.eager -> enumerator
+ *
+ *  Returns self.
+ */
+
+static VALUE
+enumerator_eager(VALUE obj)
+{
+    return obj;
+}
+
+/*
  * call-seq:
  *   e.inspect  -> string
  *
@@ -4477,6 +4490,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
     rb_define_method(rb_cEnumerator, "size", enumerator_size, 0);
     rb_define_method(rb_cEnumerator, "+", enumerator_plus, 1);
+    rb_define_method(rb_mEnumerable, "eager", enumerator_eager, 0);
     rb_define_method(rb_mEnumerable, "chain", enum_chain, -1);
 
     /* Lazy */
