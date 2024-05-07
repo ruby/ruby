@@ -16,6 +16,19 @@ class PPTest < Test::Unit::TestCase
     assert_equal("[0,\n 1,\n 2,\n 3]\n", PP.pp([0,1,2,3], ''.dup, 11))
   end
 
+  def test_hash_eval_symbol_bug_20433
+    [:a!, :a?, :*, :==, :<].each do |key|
+      h = {key => 1}
+      assert_equal(h, eval(PP.pp(h, ''.dup)), "eval(PP.pp(#{h.inspect})) != #{h.inspect}")
+    end
+
+    assert_equal("{:a! => 1}\n", PP.pp({ :a! => 1 }, ''.dup))
+    assert_equal("{:a? => 1}\n", PP.pp({ :a? => 1 }, ''.dup))
+    assert_equal("{:* => 1}\n", PP.pp({ :* => 1 }, ''.dup))
+    assert_equal("{:== => 1}\n", PP.pp({ :== => 1 }, ''.dup))
+    assert_equal("{:< => 1}\n", PP.pp({ :< => 1 }, ''.dup))
+  end
+
   OverriddenStruct = Struct.new("OverriddenStruct", :members, :class)
   def test_struct_override_members # [ruby-core:7865]
     a = OverriddenStruct.new(1,2)

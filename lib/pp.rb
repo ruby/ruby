@@ -295,7 +295,12 @@ class PP < PrettyPrint
     # A pretty print for a pair of Hash
     def pp_hash_pair(k, v)
       pp k
-      text '=>'
+      if Symbol === k && k.match?(/[!?*=<]\z/)
+        sep = ' => '
+      else
+        sep = '=>'
+      end
+      text sep
       group(1) {
         breakable ''
         pp v
