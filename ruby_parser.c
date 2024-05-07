@@ -674,7 +674,7 @@ parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_pa
         enc = rb_enc_get(fname);
     }
 
-    ast = rb_parser_compile(p, gets, ptr, len, enc, input, line);
+    ast = rb_parser_compile(p, gets, ptr, len, (void *)enc, input, line);
     parser_aset_script_lines_for(fname, ast->body.script_lines);
     return ast;
 }
