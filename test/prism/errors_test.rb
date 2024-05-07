@@ -1241,7 +1241,7 @@ module Prism
       expected = CallNode(0, receiver, Location(), :foo, Location(), nil, nil, nil, nil)
 
       assert_errors expected, "<<~FOO.foo\n", [
-        ["unterminated heredoc; can't find string \"FOO\"", 3..6]
+        ["unterminated heredoc; can't find string \"FOO\" anywhere before EOF", 3..6]
       ]
     end
 
