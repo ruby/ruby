@@ -9280,6 +9280,9 @@ pm_parse_process_error(const pm_parse_result_t *result)
     return error;
 }
 
+void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
+void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
+
 /**
  * Parse the parse result and raise a Ruby error if there are any syntax errors.
  * It returns an error if one should be raised. It is assumed that the parse
@@ -9298,6 +9301,9 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     pm_scope_node_init(node, scope_node, NULL);
     scope_node->filepath_encoding = filepath_encoding;
 
+    scope_node->encoding = rb_enc_find(parser->encoding->name);
+    if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
+
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;
     const char *warning_filepath = (const char *) pm_string_source(&parser->filepath);
@@ -9306,10 +9312,10 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
         int line = pm_location_line_number(parser, &warning->location);
 
         if (warning->level == PM_WARNING_LEVEL_VERBOSE) {
-            rb_compile_warning(warning_filepath, line, "%s", warning->message);
+            rb_enc_compile_warning(scope_node->encoding, warning_filepath, line, "%s", warning->message);
         }
         else {
-            rb_compile_warn(warning_filepath, line, "%s", warning->message);
+            rb_enc_compile_warn(scope_node->encoding, warning_filepath, line, "%s", warning->message);
         }
     }
 
@@ -9324,9 +9330,6 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
 
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
-    scope_node->encoding = rb_enc_find(parser->encoding->name);
-    if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
-
     scope_node->parser = parser;
     scope_node->constants = calloc(parser->constant_pool.size, sizeof(ID));
 
