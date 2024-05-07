@@ -16240,7 +16240,8 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             // If we get anything else, then this is an error. For this we'll
             // create a missing node for the value and create an assoc node for
             // the first node in the list.
-            pm_parser_err_node(parser, first_node, PM_ERR_PATTERN_HASH_KEY_LABEL);
+            pm_diagnostic_id_t diag_id = PM_NODE_TYPE_P(first_node, PM_INTERPOLATED_SYMBOL_NODE) ? PM_ERR_PATTERN_HASH_KEY_INTERPOLATED : PM_ERR_PATTERN_HASH_KEY_LABEL;
+            pm_parser_err_node(parser, first_node, diag_id);
 
             pm_token_t operator = not_provided(parser);
             pm_node_t *value = (pm_node_t *) pm_missing_node_create(parser, first_node->location.start, first_node->location.end);
