@@ -15916,8 +15916,12 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_w
     nodes->size = write_index;
 }
 
+#define PM_PARSE_PATTERN_SINGLE 0
+#define PM_PARSE_PATTERN_TOP 1
+#define PM_PARSE_PATTERN_MULTI 2
+
 static pm_node_t *
-parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, bool top_pattern, pm_diagnostic_id_t diag_id);
+parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id);
 
 /**
  * Add the newly created local to the list of captures for this pattern matching
@@ -15965,7 +15969,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
         accept1(parser, PM_TOKEN_NEWLINE);
 
         if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-            inner = parse_pattern(parser, captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET);
+            inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET);
             accept1(parser, PM_TOKEN_NEWLINE);
             expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET);
         }
@@ -15977,7 +15981,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
         accept1(parser, PM_TOKEN_NEWLINE);
 
         if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-            inner = parse_pattern(parser, captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
+            inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
             accept1(parser, PM_TOKEN_NEWLINE);
             expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
         }
@@ -16225,7 +16229,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 } else {
                     // Here we have a value for the first assoc in the list, so
                     // we will parse it now.
-                    value = parse_pattern(parser, captures, false, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
+                    value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
                 }
 
                 pm_token_t operator = not_provided(parser);
@@ -16278,7 +16282,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
                 value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
             } else {
-                value = parse_pattern(parser, captures, false, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
+                value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
             }
 
             pm_token_t operator = not_provided(parser);
@@ -16335,7 +16339,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
             // Otherwise, we'll parse the inner pattern, then deal with it depending
             // on the type it returns.
-            pm_node_t *inner = parse_pattern(parser, captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET);
+            pm_node_t *inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET);
 
             accept1(parser, PM_TOKEN_NEWLINE);
             expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET);
@@ -16608,7 +16612,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 pm_token_t opening = parser->current;
                 parser_lex(parser);
 
-                pm_node_t *body = parse_pattern(parser, captures, false, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
+                pm_node_t *body = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
                 accept1(parser, PM_TOKEN_NEWLINE);
                 expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
                 pm_node_t *right = (pm_node_t *) pm_parentheses_node_create(parser, &opening, body, &parser->previous);
@@ -16667,7 +16671,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
  * Parse a pattern matching expression.
  */
 static pm_node_t *
-parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, bool top_pattern, pm_diagnostic_id_t diag_id) {
+parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id) {
     pm_node_t *node = NULL;
 
     bool leading_rest = false;
@@ -16677,14 +16681,26 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, bool top_pat
         case PM_TOKEN_LABEL: {
             parser_lex(parser);
             pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
-            return (pm_node_t *) parse_pattern_hash(parser, captures, key);
+            node = (pm_node_t *) parse_pattern_hash(parser, captures, key);
+
+            if (!(flags & PM_PARSE_PATTERN_TOP)) {
+                pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
+            }
+
+            return node;
         }
         case PM_TOKEN_USTAR_STAR: {
             node = parse_pattern_keyword_rest(parser, captures);
-            return (pm_node_t *) parse_pattern_hash(parser, captures, node);
+            node = (pm_node_t *) parse_pattern_hash(parser, captures, node);
+
+            if (!(flags & PM_PARSE_PATTERN_TOP)) {
+                pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
+            }
+
+            return node;
         }
         case PM_TOKEN_USTAR: {
-            if (top_pattern) {
+            if (flags & (PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI)) {
                 parser_lex(parser);
                 node = (pm_node_t *) parse_pattern_rest(parser, captures);
                 leading_rest = true;
@@ -16703,7 +16719,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, bool top_pat
         return (pm_node_t *) parse_pattern_hash(parser, captures, node);
     }
 
-    if (top_pattern && match1(parser, PM_TOKEN_COMMA)) {
+    if ((flags & PM_PARSE_PATTERN_MULTI) && match1(parser, PM_TOKEN_COMMA)) {
         // If we have a comma, then we are now parsing either an array pattern or a
         // find pattern. We need to parse all of the patterns, put them into a big
         // list, and then determine which type of node we have.
@@ -17989,7 +18005,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_token_t in_keyword = parser->previous;
 
                     pm_constant_id_list_t captures = { 0 };
-                    pm_node_t *pattern = parse_pattern(parser, &captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_IN);
+                    pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN);
 
                     parser->pattern_matching_newlines = previous_pattern_matching_newlines;
                     pm_constant_id_list_free(&captures);
@@ -18018,7 +18034,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             then_keyword = not_provided(parser);
                         }
                     } else {
-                        expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_EXPECT_WHEN_DELIMITER);
+                        expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_EXPECT_IN_DELIMITER);
                         then_keyword = parser->previous;
                     }
 
@@ -20668,7 +20684,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             parser_lex(parser);
 
             pm_constant_id_list_t captures = { 0 };
-            pm_node_t *pattern = parse_pattern(parser, &captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_IN);
+            pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN);
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
             pm_constant_id_list_free(&captures);
@@ -20685,7 +20701,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             parser_lex(parser);
 
             pm_constant_id_list_t captures = { 0 };
-            pm_node_t *pattern = parse_pattern(parser, &captures, true, PM_ERR_PATTERN_EXPRESSION_AFTER_HROCKET);
+            pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_HROCKET);
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
             pm_constant_id_list_free(&captures);
@@ -20697,6 +20713,10 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             return NULL;
     }
 }
+
+#undef PM_PARSE_PATTERN_SINGLE
+#undef PM_PARSE_PATTERN_TOP
+#undef PM_PARSE_PATTERN_MULTI
 
 /**
  * Parse an expression at the given point of the parser using the given binding
