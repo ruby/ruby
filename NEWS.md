@@ -73,7 +73,7 @@ The following bundled gems are promoted from default gems.
 * mutex_m 0.2.0
 * getoptlong 0.2.1
 * base64 0.2.0
-* bigdecimal 3.1.7
+* bigdecimal 3.1.8
 * observer 0.1.2
 * abbrev 0.1.2
 * resolv-replace 0.1.1
