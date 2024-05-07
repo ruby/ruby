@@ -1758,7 +1758,7 @@ char_is_identifier_utf8(const uint8_t *b, const uint8_t *end) {
  * it's important that it be as fast as possible.
  */
 static inline size_t
-char_is_identifier(pm_parser_t *parser, const uint8_t *b) {
+char_is_identifier(const pm_parser_t *parser, const uint8_t *b) {
     if (parser->encoding_changed) {
         size_t width;
         if ((width = parser->encoding->alnum_char(b, parser->end - b)) != 0) {
@@ -16126,20 +16126,51 @@ parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures)
 }
 
 /**
+ * Check that the slice of the source given by the bounds parameters constitutes
+ * a valid local variable name.
+ */
+static bool
+pm_slice_is_valid_local(const pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    ptrdiff_t length = end - start;
+    if (length == 0) return false;
+
+    // First ensure that it starts with a valid identifier starting character.
+    size_t width = char_is_identifier_start(parser, start);
+    if (width == 0) return false;
+
+    // Next, ensure that it's not an uppercase character.
+    if (parser->encoding_changed) {
+        if (parser->encoding->isupper_char(start, length)) return false;
+    } else {
+        if (pm_encoding_utf_8_isupper_char(start, length)) return false;
+    }
+
+    // Next, iterate through all of the bytes of the string to ensure that they
+    // are all valid identifier characters.
+    const uint8_t *cursor = start + width;
+    while ((cursor < end) && (width = char_is_identifier(parser, cursor))) cursor += width;
+    return cursor == end;
+}
+
+/**
  * Create an implicit node for the value of a hash pattern that has omitted the
  * value. This will use an implicit local variable target.
  */
 static pm_node_t *
 parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_symbol_node_t *key) {
     const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
-    pm_constant_id_t constant_id = pm_parser_constant_id_location(parser, value_loc->start, value_loc->end);
 
+    pm_constant_id_t constant_id = pm_parser_constant_id_location(parser, value_loc->start, value_loc->end);
     int depth = -1;
-    if (value_loc->end[-1] == '!' || value_loc->end[-1] == '?') {
-        pm_parser_err(parser, key->base.location.start, key->base.location.end, PM_ERR_PATTERN_HASH_KEY_LOCALS);
-        PM_PARSER_ERR_LOCATION_FORMAT(parser, value_loc, PM_ERR_INVALID_LOCAL_VARIABLE_WRITE, (int) (value_loc->end - value_loc->start), (const char *) value_loc->start);
-    } else {
+
+    if (pm_slice_is_valid_local(parser, value_loc->start, value_loc->end)) {
         depth = pm_parser_local_depth_constant_id(parser, constant_id);
+    } else {
+        pm_parser_err(parser, key->base.location.start, key->base.location.end, PM_ERR_PATTERN_HASH_KEY_LOCALS);
+
+        if ((value_loc->end > value_loc->start) && ((value_loc->end[-1] == '!') || (value_loc->end[-1] == '?'))) {
+            PM_PARSER_ERR_LOCATION_FORMAT(parser, value_loc, PM_ERR_INVALID_LOCAL_VARIABLE_WRITE, (int) (value_loc->end - value_loc->start), (const char *) value_loc->start);
+        }
     }
 
     if (depth == -1) {
@@ -19771,39 +19802,6 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
 }
 
 /**
- * Returns true if the name of the capture group is a valid local variable that
- * can be written to.
- */
-static bool
-parse_regular_expression_named_capture(pm_parser_t *parser, const uint8_t *source, size_t length) {
-    if (length == 0) {
-        return false;
-    }
-
-    // First ensure that it starts with a valid identifier starting character.
-    size_t width = char_is_identifier_start(parser, source);
-    if (!width) {
-        return false;
-    }
-
-    // Next, ensure that it's not an uppercase character.
-    if (parser->encoding_changed) {
-        if (parser->encoding->isupper_char(source, (ptrdiff_t) length)) return false;
-    } else {
-        if (pm_encoding_utf_8_isupper_char(source, (ptrdiff_t) length)) return false;
-    }
-
-    // Next, iterate through all of the bytes of the string to ensure that they
-    // are all valid identifier characters.
-    const uint8_t *cursor = source + width;
-    while (cursor < source + length && (width = char_is_identifier(parser, cursor))) {
-        cursor += width;
-    }
-
-    return cursor == source + length;
-}
-
-/**
  * Potentially change a =~ with a regular expression with named captures into a
  * match write node.
  */
@@ -19829,7 +19827,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
             // If the name of the capture group isn't a valid identifier, we do
             // not add it to the local table.
-            if (!parse_regular_expression_named_capture(parser, source, length)) continue;
+            if (!pm_slice_is_valid_local(parser, source, source + length)) continue;
 
             if (content->type == PM_STRING_SHARED) {
                 // If the unescaped string is a slice of the source, then we can
