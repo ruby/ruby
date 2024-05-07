@@ -3440,6 +3440,7 @@ static int
 inspect_i(VALUE key, VALUE value, VALUE str)
 {
     VALUE str2;
+    bool spaces = false;
 
     str2 = rb_inspect(key);
     if (RSTRING_LEN(str) > 1) {
@@ -3449,7 +3450,18 @@ inspect_i(VALUE key, VALUE value, VALUE str)
         rb_enc_copy(str, str2);
     }
     rb_str_buf_append(str, str2);
-    rb_str_buf_cat_ascii(str, "=>");
+    if (RB_SYMBOL_P(key)) {
+        switch (*(RSTRING_PTR(str) + RSTRING_LEN(str) - 1)) {
+          case '!':
+          case '?':
+          case '*':
+          case '=':
+          case '<':
+            spaces = true;
+          /* no default */
+        }
+    }
+    rb_str_buf_cat_ascii(str, spaces ? " => " : "=>");
     str2 = rb_inspect(value);
     rb_str_buf_append(str, str2);
 

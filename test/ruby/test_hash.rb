@@ -869,6 +869,19 @@ class TestHash < Test::Unit::TestCase
     $, = nil
   end
 
+  def test_inspect_eval_symbol_bug_20433
+    [:a!, :a?, :*, :==, :<].each do |key|
+      h = {key => 1}
+      assert_equal(h, eval(h.inspect), "eval(#{h.inspect.inspect}) != #{h.inspect}")
+    end
+
+    assert_equal("{:a! => 1}", { :a! => 1 }.inspect)
+    assert_equal("{:a? => 1}", { :a? => 1 }.inspect)
+    assert_equal("{:* => 1}", { :* => 1 }.inspect)
+    assert_equal("{:== => 1}", { :== => 1 }.inspect)
+    assert_equal("{:< => 1}", { :< => 1 }.inspect)
+  end
+
   def test_update
     h1 = @cls[ 1 => 2, 2 => 3, 3 => 4 ]
     h2 = @cls[ 2 => 'two', 4 => 'four' ]
