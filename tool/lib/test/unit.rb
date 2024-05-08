@@ -37,6 +37,26 @@ module Test
 
     class PendedError < AssertionFailedError; end
 
+    class << self
+      ##
+      # Extract the location where the last assertion method was
+      # called.  Returns "<empty>" if _e_ does not have backtrace, or
+      # an empty string if no assertion method location was found.
+
+      def location e
+        last_before_assertion = nil
+
+        return '<empty>' unless e&.backtrace # SystemStackError can return nil.
+
+        e.backtrace.reverse_each do |s|
+          break if s =~ /:in \W(?:.*\#)?(?:assert|refute|flunk|pass|fail|raise|must|wont)/
+          last_before_assertion = s
+        end
+        return "" unless last_before_assertion
+        /:in / =~ last_before_assertion ? $` : last_before_assertion
+      end
+    end
+
     module Order
       class NoSort
         def initialize(seed)
@@ -1778,15 +1798,7 @@ module Test
       end
 
       def location e # :nodoc:
-        last_before_assertion = ""
-
-        return '<empty>' unless e&.backtrace # SystemStackError can return nil.
-
-        e.backtrace.reverse_each do |s|
-          break if s =~ /in .(?:Test::Unit::(?:Core)?Assertions#)?(assert|refute|flunk|pass|fail|raise|must|wont)/
-          last_before_assertion = s
-        end
-        last_before_assertion.sub(/:in .*$/, '')
+        Test::Unit.location e
       end
 
       ##

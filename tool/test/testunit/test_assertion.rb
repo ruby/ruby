@@ -50,4 +50,17 @@ class TestAssertion < Test::Unit::TestCase
       assert_pattern_list(pattern_list, actual, message)
     end
   end
+
+  def test_caller_bactrace_location
+    begin
+      line = __LINE__; assert_fail_for_backtrace_location
+    rescue Test::Unit::AssertionFailedError => e
+    end
+    location = Test::Unit::Runner.new.location(e)
+    assert_equal "#{__FILE__}:#{line}", location
+  end
+
+  def assert_fail_for_backtrace_location
+    assert false
+  end
 end
