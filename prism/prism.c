@@ -14326,7 +14326,9 @@ parse_parameters(
                 pm_token_t local = name;
                 local.end -= 1;
 
-                if (local.end[-1] == '!' || local.end[-1] == '?') {
+                if (parser->encoding_changed ? parser->encoding->isupper_char(local.start, local.end - local.start) : pm_encoding_utf_8_isupper_char(local.start, local.end - local.start)) {
+                    pm_parser_err(parser, local.start, local.end, PM_ERR_ARGUMENT_FORMAL_CONSTANT);
+                } else if (local.end[-1] == '!' || local.end[-1] == '?') {
                     PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, local, PM_ERR_INVALID_LOCAL_VARIABLE_WRITE);
                 }
 
