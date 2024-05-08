@@ -429,14 +429,19 @@ endif
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
+BRANCH_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) symbolic-ref --short HEAD 2>/dev/null)
 else
 REVISION_LATEST := update
+BRANCH_LATEST :=
 endif
-REVISION_IN_HEADER := $(shell sed '/^\#define RUBY_FULL_REVISION "\(.*\)"/!d;s//\1/;q' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
-ifeq ($(REVISION_IN_HEADER),)
-REVISION_IN_HEADER := none
-endif
-ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
+revision.h := $(wildcard $(srcdir)/revision.h revision.h)
+REVISION_IN_HEADER := $(if $(revision.h),\
+	$(shell sed '/^\#define RUBY_FULL_REVISION "\(.*\)"/!d;s//\1/;q' $(revision.h)))
+BRANCH_IN_HEADER := $(if $(revision.h),\
+	$(shell sed '/^\#define RUBY_BRANCH_NAME \(".*"\)/!d;s//\1/;s,.* // ,,;s/"//g;q' $(revision.h)))
+REVISION_IN_HEADER := $(if $(REVISION_IN_HEADER),$(REVISION_IN_HEADER),none)
+BRANCH_IN_HEADER := $(if $(BRANCH_IN_HEADER),$(BRANCH_IN_HEADER),...)
+ifneq ($(REVISION_IN_HEADER):$(BRANCH_IN_HEADER),$(REVISION_LATEST):$(BRANCH_LATEST))
 $(REVISION_H): PHONY
 endif
 

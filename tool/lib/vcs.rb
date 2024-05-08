@@ -256,8 +256,9 @@ class VCS
     if branch
       e = '..'
       name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
-      name = name.dump.sub(/\\#/, '#')
-      code << "#define RUBY_BRANCH_NAME #{name}"
+      (name = name.dump).gsub!(/\\#/, '#')
+      comment = " // #{branch}" unless name == %["#{branch}"]
+      code << "#define RUBY_BRANCH_NAME #{name}#{comment}"
     end
     if title
       title = title.dump.sub(/\\#/, '#')
