@@ -1,1 +1,1 @@
-exclude(:test_basic, "unknown")
+exclude(:test_basic, "should raise mixed encoding error")
