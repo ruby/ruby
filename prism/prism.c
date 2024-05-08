@@ -6946,7 +6946,7 @@ pm_statements_node_body_append(pm_parser_t *parser, pm_statements_node_t *node, 
             case PM_REDO_NODE:
             case PM_RETRY_NODE:
             case PM_RETURN_NODE:
-                pm_parser_warn_node(parser, previous, PM_WARN_UNREACHABLE_STATEMENT);
+                pm_parser_warn_node(parser, statement, PM_WARN_UNREACHABLE_STATEMENT);
                 break;
             default:
                 break;
