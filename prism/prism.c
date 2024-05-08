@@ -14326,6 +14326,10 @@ parse_parameters(
                 pm_token_t local = name;
                 local.end -= 1;
 
+                if (local.end[-1] == '!' || local.end[-1] == '?') {
+                    PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, local, PM_ERR_INVALID_LOCAL_VARIABLE_WRITE);
+                }
+
                 bool repeated = pm_parser_parameter_name_check(parser, &local);
                 pm_parser_local_add_token(parser, &local, 1);
 
