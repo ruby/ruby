@@ -8578,6 +8578,10 @@ parser_update_heredoc_indent(struct parser_params *p, int c)
             }
             p->heredoc_line_indent = -1;
         }
+        else {
+            /* Whitespace only line has no indentation */
+            p->heredoc_line_indent = 0;
+        }
     }
     return FALSE;
 }
