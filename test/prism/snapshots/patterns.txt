@@ -86,10 +86,9 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RationalNode (location: (5,7)-(5,9))
-        │   │   └── numeric:
-        │   │       @ IntegerNode (location: (5,7)-(5,8))
-        │   │       ├── flags: decimal
-        │   │       └── value: 1
+        │   │   ├── flags: decimal
+        │   │   ├── numerator: 1
+        │   │   └── denominator: 1
         │   └── operator_loc: (5,4)-(5,6) = "=>"
         ├── @ MatchRequiredNode (location: (6,0)-(6,11))
         │   ├── value:
@@ -598,16 +597,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ RationalNode (location: (31,7)-(31,9))
-        │   │   │   └── numeric:
-        │   │   │       @ IntegerNode (location: (31,7)-(31,8))
-        │   │   │       ├── flags: decimal
-        │   │   │       └── value: 1
+        │   │   │   ├── flags: decimal
+        │   │   │   ├── numerator: 1
+        │   │   │   └── denominator: 1
         │   │   ├── right:
         │   │   │   @ RationalNode (location: (31,13)-(31,15))
-        │   │   │   └── numeric:
-        │   │   │       @ IntegerNode (location: (31,13)-(31,14))
-        │   │   │       ├── flags: decimal
-        │   │   │       └── value: 1
+        │   │   │   ├── flags: decimal
+        │   │   │   ├── numerator: 1
+        │   │   │   └── denominator: 1
         │   │   └── operator_loc: (31,10)-(31,12) = ".."
         │   └── operator_loc: (31,4)-(31,6) = "=>"
         ├── @ MatchRequiredNode (location: (32,0)-(32,19))
@@ -2461,10 +2458,9 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RationalNode (location: (108,7)-(108,9))
-        │   │   └── numeric:
-        │   │       @ IntegerNode (location: (108,7)-(108,8))
-        │   │       ├── flags: decimal
-        │   │       └── value: 1
+        │   │   ├── flags: decimal
+        │   │   ├── numerator: 1
+        │   │   └── denominator: 1
         │   └── operator_loc: (108,4)-(108,6) = "in"
         ├── @ MatchPredicateNode (location: (109,0)-(109,11))
         │   ├── value:
@@ -3017,10 +3013,9 @@
         │   │   └── @ InNode (location: (139,10)-(139,20))
         │   │       ├── pattern:
         │   │       │   @ RationalNode (location: (139,13)-(139,15))
-        │   │       │   └── numeric:
-        │   │       │       @ IntegerNode (location: (139,13)-(139,14))
-        │   │       │       ├── flags: decimal
-        │   │       │       └── value: 1
+        │   │       │   ├── flags: decimal
+        │   │       │   ├── numerator: 1
+        │   │       │   └── denominator: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (139,10)-(139,12) = "in"
         │   │       └── then_loc: (139,16)-(139,20) = "then"
@@ -3758,10 +3753,9 @@
         │   │       │   │   @ StatementsNode (location: (166,13)-(166,15))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ RationalNode (location: (166,13)-(166,15))
-        │   │       │   │           └── numeric:
-        │   │       │   │               @ IntegerNode (location: (166,13)-(166,14))
-        │   │       │   │               ├── flags: decimal
-        │   │       │   │               └── value: 1
+        │   │       │   │           ├── flags: decimal
+        │   │       │   │           ├── numerator: 1
+        │   │       │   │           └── denominator: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅

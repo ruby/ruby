@@ -316,18 +316,17 @@
         │   ├── flags: decimal
         │   └── value: 1
         ├── @ RationalNode (location: (19,0)-(19,2))
-        │   └── numeric:
-        │       @ IntegerNode (location: (19,0)-(19,1))
-        │       ├── flags: decimal
-        │       └── value: 1
+        │   ├── flags: decimal
+        │   ├── numerator: 1
+        │   └── denominator: 1
         ├── @ RationalNode (location: (20,0)-(20,4))
-        │   └── numeric:
-        │       @ FloatNode (location: (20,0)-(20,3))
-        │       └── value: 1.5
+        │   ├── flags: decimal
+        │   ├── numerator: 3
+        │   └── denominator: 2
         ├── @ RationalNode (location: (21,0)-(21,4))
-        │   └── numeric:
-        │       @ FloatNode (location: (21,0)-(21,3))
-        │       └── value: 1.3
+        │   ├── flags: decimal
+        │   ├── numerator: 13
+        │   └── denominator: 10
         ├── @ ImaginaryNode (location: (22,0)-(22,2))
         │   └── numeric:
         │       @ IntegerNode (location: (22,0)-(22,1))
@@ -354,10 +353,9 @@
         ├── @ ImaginaryNode (location: (27,0)-(27,3))
         │   └── numeric:
         │       @ RationalNode (location: (27,0)-(27,2))
-        │       └── numeric:
-        │           @ IntegerNode (location: (27,0)-(27,1))
-        │           ├── flags: decimal
-        │           └── value: 1
+        │       ├── flags: decimal
+        │       ├── numerator: 1
+        │       └── denominator: 1
         ├── @ InterpolatedStringNode (location: (28,0)-(28,11))
         │   ├── flags: ∅
         │   ├── opening_loc: ∅

@@ -4290,7 +4290,7 @@ pm_float_node_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
 }
 
 /**
- * Allocate and initialize a new FloatNode node from a FLOAT_RATIONAL token.
+ * Allocate and initialize a new RationalNode node from a FLOAT_RATIONAL token.
  */
 static pm_rational_node_t *
 pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
@@ -4300,16 +4300,44 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     *node = (pm_rational_node_t) {
         {
             .type = PM_RATIONAL_NODE,
-            .flags = PM_NODE_FLAG_STATIC_LITERAL,
+            .flags = PM_INTEGER_BASE_FLAGS_DECIMAL | PM_NODE_FLAG_STATIC_LITERAL,
             .location = PM_LOCATION_TOKEN_VALUE(token)
         },
-        .numeric = (pm_node_t *) pm_float_node_create(parser, &((pm_token_t) {
-            .type = PM_TOKEN_FLOAT,
-            .start = token->start,
-            .end = token->end - 1
-        }))
+        .numerator = { 0 },
+        .denominator = { 0 }
     };
 
+    const uint8_t *start = token->start;
+    const uint8_t *end = token->end - 1; // r
+
+    while (start < end && *start == '0') start++; // 0.1 -> .1
+    while (end > start && end[-1] == '0') end--; // 1.0 -> 1.
+
+    size_t length = (size_t) (end - start);
+    if (length == 1) {
+        node->denominator.value = 1;
+        return node;
+    }
+
+    const uint8_t *point = memchr(start, '.', length);
+    assert(point && "should have a decimal point");
+
+    uint8_t *digits = malloc(length - 1);
+    if (digits == NULL) {
+        fputs("[pm_float_node_rational_create] Failed to allocate memory", stderr);
+        abort();
+    }
+
+    memcpy(digits, start, (unsigned long) (point - start));
+    memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
+    pm_integer_parse(&node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
+
+    digits[0] = '1';
+    memset(digits + 1, '0', (size_t) (end - point - 1));
+    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + (end - point));
+    free(digits);
+
+    pm_integers_reduce(&node->numerator, &node->denominator);
     return node;
 }
 
@@ -4943,7 +4971,7 @@ pm_integer_node_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, cons
 }
 
 /**
- * Allocate and initialize a new IntegerNode node from an INTEGER_RATIONAL
+ * Allocate and initialize a new RationalNode node from an INTEGER_RATIONAL
  * token.
  */
 static pm_rational_node_t *
@@ -4954,15 +4982,23 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
     *node = (pm_rational_node_t) {
         {
             .type = PM_RATIONAL_NODE,
-            .flags = PM_NODE_FLAG_STATIC_LITERAL,
+            .flags = base | PM_NODE_FLAG_STATIC_LITERAL,
             .location = PM_LOCATION_TOKEN_VALUE(token)
         },
-        .numeric = (pm_node_t *) pm_integer_node_create(parser, base, &((pm_token_t) {
-            .type = PM_TOKEN_INTEGER,
-            .start = token->start,
-            .end = token->end - 1
-        }))
+        .numerator = { 0 },
+        .denominator = { .value = 1, 0 }
     };
+
+    pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
+    switch (base) {
+        case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
+        case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
+        case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
+        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
+        default: assert(false && "unreachable"); break;
+    }
+
+    pm_integer_parse(&node->numerator, integer_base, token->start, token->end - 1);
 
     return node;
 }
@@ -16887,10 +16923,12 @@ parse_negative_numeric(pm_node_t *node) {
             cast->value = -cast->value;
             break;
         }
-        case PM_RATIONAL_NODE:
-            node->location.start--;
-            parse_negative_numeric(((pm_rational_node_t *) node)->numeric);
+        case PM_RATIONAL_NODE: {
+            pm_rational_node_t *cast = (pm_rational_node_t *) node;
+            cast->base.location.start--;
+            cast->numerator.negative = true;
             break;
+        }
         case PM_IMAGINARY_NODE:
             node->location.start--;
             parse_negative_numeric(((pm_imaginary_node_t *) node)->numeric);

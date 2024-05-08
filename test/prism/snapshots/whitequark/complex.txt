@@ -10,9 +10,9 @@
         ├── @ ImaginaryNode (location: (3,0)-(3,6))
         │   └── numeric:
         │       @ RationalNode (location: (3,0)-(3,5))
-        │       └── numeric:
-        │           @ FloatNode (location: (3,0)-(3,4))
-        │           └── value: 42.1
+        │       ├── flags: decimal
+        │       ├── numerator: 421
+        │       └── denominator: 10
         ├── @ ImaginaryNode (location: (5,0)-(5,3))
         │   └── numeric:
         │       @ IntegerNode (location: (5,0)-(5,2))
@@ -21,7 +21,6 @@
         └── @ ImaginaryNode (location: (7,0)-(7,4))
             └── numeric:
                 @ RationalNode (location: (7,0)-(7,3))
-                └── numeric:
-                    @ IntegerNode (location: (7,0)-(7,2))
-                    ├── flags: decimal
-                    └── value: 42
+                ├── flags: decimal
+                ├── numerator: 42
+                └── denominator: 1

@@ -146,10 +146,9 @@
         │   │   ├── @ FloatNode (location: (29,4)-(29,7))
         │   │   │   └── value: 1.0
         │   │   ├── @ RationalNode (location: (29,9)-(29,11))
-        │   │   │   └── numeric:
-        │   │   │       @ IntegerNode (location: (29,9)-(29,10))
-        │   │   │       ├── flags: decimal
-        │   │   │       └── value: 1
+        │   │   │   ├── flags: decimal
+        │   │   │   ├── numerator: 1
+        │   │   │   └── denominator: 1
         │   │   └── @ ImaginaryNode (location: (29,13)-(29,15))
         │   │       └── numeric:
         │   │           @ IntegerNode (location: (29,13)-(29,14))

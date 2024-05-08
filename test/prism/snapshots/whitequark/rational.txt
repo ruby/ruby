@@ -4,11 +4,10 @@
     @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 2)
         ├── @ RationalNode (location: (1,0)-(1,5))
-        │   └── numeric:
-        │       @ FloatNode (location: (1,0)-(1,4))
-        │       └── value: 42.1
+        │   ├── flags: decimal
+        │   ├── numerator: 421
+        │   └── denominator: 10
         └── @ RationalNode (location: (3,0)-(3,3))
-            └── numeric:
-                @ IntegerNode (location: (3,0)-(3,2))
-                ├── flags: decimal
-                └── value: 42
+            ├── flags: decimal
+            ├── numerator: 42
+            └── denominator: 1

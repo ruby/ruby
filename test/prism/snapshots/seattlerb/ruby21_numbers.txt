@@ -12,16 +12,14 @@
             │   │       ├── flags: decimal
             │   │       └── value: 1
             │   ├── @ RationalNode (location: (1,5)-(1,7))
-            │   │   └── numeric:
-            │   │       @ IntegerNode (location: (1,5)-(1,6))
-            │   │       ├── flags: decimal
-            │   │       └── value: 2
+            │   │   ├── flags: decimal
+            │   │   ├── numerator: 2
+            │   │   └── denominator: 1
             │   └── @ ImaginaryNode (location: (1,9)-(1,12))
             │       └── numeric:
             │           @ RationalNode (location: (1,9)-(1,11))
-            │           └── numeric:
-            │               @ IntegerNode (location: (1,9)-(1,10))
-            │               ├── flags: decimal
-            │               └── value: 3
+            │           ├── flags: decimal
+            │           ├── numerator: 3
+            │           └── denominator: 1
             ├── opening_loc: (1,0)-(1,1) = "["
             └── closing_loc: (1,12)-(1,13) = "]"
