@@ -9707,6 +9707,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 }
             }
 
+            if (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) {
+                pm_parser_err(parser, start, parser->current.end, PM_ERR_INVALID_ESCAPE_CHARACTER);
+            }
+
             return;
         }
         case 'c': {
