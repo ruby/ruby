@@ -543,15 +543,10 @@ begin
       EOC
     end
 
-    def test_enable_bracketed_paste
+    def test_bracketed_paste
       omit if Reline.core.io_gate.win?
-      write_inputrc <<~LINES
-        set enable-bracketed-paste on
-      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("\e[200~,")
-      write("def hoge\n  3\nend")
-      write("\e[200~.")
+      write("\e[200~def hoge\r\t3\rend\e[201~")
       close
       assert_screen(<<~EOC)
         Multiline REPL.

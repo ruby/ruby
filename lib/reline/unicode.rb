@@ -43,11 +43,13 @@ class Reline::Unicode
 
   def self.escape_for_print(str)
     str.chars.map! { |gr|
-      escaped = EscapedPairs[gr.ord]
-      if escaped && gr != -"\n" && gr != -"\t"
-        escaped
-      else
+      case gr
+      when -"\n"
         gr
+      when -"\t"
+        -'  '
+      else
+        EscapedPairs[gr.ord] || gr
       end
     }.join
   end

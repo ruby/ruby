@@ -51,6 +51,7 @@ class Reline::Config
     @autocompletion = false
     @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
     @loaded = false
+    @enable_bracketed_paste = true
   end
 
   def reset

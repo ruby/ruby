@@ -283,7 +283,7 @@ class Reline::LineEditor
           indent1 = @auto_indent_proc.(@buffer_of_lines.take(@line_index - 1).push(''), @line_index - 1, 0, true)
           indent2 = @auto_indent_proc.(@buffer_of_lines.take(@line_index), @line_index - 1, @buffer_of_lines[@line_index - 1].bytesize, false)
           indent = indent2 || indent1
-          @buffer_of_lines[@line_index - 1] = ' ' * indent + @buffer_of_lines[@line_index - 1].gsub(/\A */, '')
+          @buffer_of_lines[@line_index - 1] = ' ' * indent + @buffer_of_lines[@line_index - 1].gsub(/\A\s*/, '')
         )
         process_auto_indent @line_index, add_newline: true
       else
@@ -1303,6 +1303,16 @@ class Reline::LineEditor
   def confirm_multiline_termination
     temp_buffer = @buffer_of_lines.dup
     @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
+  end
+
+  def insert_pasted_text(text)
+    pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
+    post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
+    lines = (pre + text.gsub(/\r\n?/, "\n") + post).split("\n", -1)
+    lines << '' if lines.empty?
+    @buffer_of_lines[@line_index, 1] = lines
+    @line_index += lines.size - 1
+    @byte_pointer = @buffer_of_lines[@line_index].bytesize - post.bytesize
   end
 
   def insert_text(text)

@@ -312,6 +312,10 @@ module Reline
         $stderr.sync = true
         $stderr.puts "Reline is used by #{Process.pid}"
       end
+      unless config.test_mode or config.loaded?
+        config.read
+        io_gate.set_default_key_bindings(config)
+      end
       otio = io_gate.prep
 
       may_req_ambiguous_char_width
@@ -338,11 +342,6 @@ module Reline
         end
       end
 
-      unless config.test_mode or config.loaded?
-        config.read
-        io_gate.set_default_key_bindings(config)
-      end
-
       line_editor.print_nomultiline_prompt(prompt)
       line_editor.update_dialogs
       line_editor.rerender
@@ -352,7 +351,15 @@ module Reline
         loop do
           read_io(config.keyseq_timeout) { |inputs|
             line_editor.set_pasting_state(io_gate.in_pasting?)
-            inputs.each { |key| line_editor.update(key) }
+            inputs.each do |key|
+              if key.char == :bracketed_paste_start
+                text = io_gate.read_bracketed_paste
+                line_editor.insert_pasted_text(text)
+                line_editor.scroll_into_view
+              else
+                line_editor.update(key)
+              end
+            end
           }
           if line_editor.finished?
             line_editor.render_finished

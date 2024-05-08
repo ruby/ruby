@@ -45,6 +45,7 @@ class Reline::ANSI
   end
 
   def self.set_default_key_bindings(config, allow_terminfo: true)
+    set_bracketed_paste_key_bindings(config)
     set_default_key_bindings_ansi_cursor(config)
     if allow_terminfo && Reline::Terminfo.enabled?
       set_default_key_bindings_terminfo(config)
@@ -63,6 +64,12 @@ class Reline::ANSI
       [24, 24] => :em_exchange_mark,        # C-x C-x
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
+
+  def self.set_bracketed_paste_key_bindings(config)
+    [:emacs, :vi_insert, :vi_command].each do |keymap|
+      config.add_default_key_binding_by_keymap(keymap, START_BRACKETED_PASTE.bytes, :bracketed_paste_start)
     end
   end
 
@@ -178,46 +185,26 @@ class Reline::ANSI
     nil
   end
 
-  @@in_bracketed_paste_mode = false
-  START_BRACKETED_PASTE = String.new("\e[200~,", encoding: Encoding::ASCII_8BIT)
-  END_BRACKETED_PASTE = String.new("\e[200~.", encoding: Encoding::ASCII_8BIT)
-  def self.getc_with_bracketed_paste(timeout_second)
+  START_BRACKETED_PASTE = String.new("\e[200~", encoding: Encoding::ASCII_8BIT)
+  END_BRACKETED_PASTE = String.new("\e[201~", encoding: Encoding::ASCII_8BIT)
+  def self.read_bracketed_paste
     buffer = String.new(encoding: Encoding::ASCII_8BIT)
-    buffer << inner_getc(timeout_second)
-    while START_BRACKETED_PASTE.start_with?(buffer) or END_BRACKETED_PASTE.start_with?(buffer) do
-      if START_BRACKETED_PASTE == buffer
-        @@in_bracketed_paste_mode = true
-        return inner_getc(timeout_second)
-      elsif END_BRACKETED_PASTE == buffer
-        @@in_bracketed_paste_mode = false
-        ungetc(-1)
-        return inner_getc(timeout_second)
-      end
-      succ_c = inner_getc(Reline.core.config.keyseq_timeout)
-
-      if succ_c
-        buffer << succ_c
-      else
-        break
-      end
+    until buffer.end_with?(END_BRACKETED_PASTE)
+      c = inner_getc(Float::INFINITY)
+      break unless c
+      buffer << c
     end
-    buffer.bytes.reverse_each do |ch|
-      ungetc ch
-    end
-    inner_getc(timeout_second)
+    string = buffer.delete_suffix(END_BRACKETED_PASTE).force_encoding(encoding)
+    string.valid_encoding? ? string : ''
   end
 
   # if the usage expects to wait indefinitely, use Float::INFINITY for timeout_second
   def self.getc(timeout_second)
-    if Reline.core.config.enable_bracketed_paste
-      getc_with_bracketed_paste(timeout_second)
-    else
-      inner_getc(timeout_second)
-    end
+    inner_getc(timeout_second)
   end
 
   def self.in_pasting?
-    @@in_bracketed_paste_mode or (not empty_buffer?)
+    not empty_buffer?
   end
 
   def self.empty_buffer?
@@ -361,11 +348,15 @@ class Reline::ANSI
   end
 
   def self.prep
+    # Enable bracketed paste
+    @@output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste
     retrieve_keybuffer
     nil
   end
 
   def self.deprep(otio)
+    # Disable bracketed paste
+    @@output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end
