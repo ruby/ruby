@@ -3231,8 +3231,21 @@ nodes:
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   - name: RationalNode
     fields:
-      - name: numeric
-        type: node
+      - name: flags
+        type: flags
+        kind: IntegerBaseFlags
+      - name: numerator
+        type: integer
+        comment: |
+          The numerator of the rational number.
+
+              1.5r # numerator 3
+      - name: denominator
+        type: integer
+        comment: |
+          The denominator of the rational number.
+
+              1.5r # denominator 2
     comment: |
       Represents a rational number literal.
 

@@ -473,13 +473,16 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
  */
 PRISM_EXPORTED_FUNCTION void
 pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
-    // Ignore unary +. Unary + is parsed differently and will not end up here.
+    // Ignore unary +. Unary - is parsed differently and will not end up here.
     // Instead, it will modify the parsed integer later.
     if (*start == '+') start++;
 
     // Determine the multiplier from the base, and skip past any prefixes.
     uint32_t multiplier = 10;
     switch (base) {
+        case PM_INTEGER_BASE_DEFAULT:
+            while (*start == '0') start++; // 01 -> 1
+            break;
         case PM_INTEGER_BASE_BINARY:
             start += 2; // 0b
             multiplier = 2;
@@ -570,6 +573,39 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     }
 
     return 0;
+}
+
+/**
+ * Reduce a ratio of integers to its simplest form.
+ */
+void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
+    // If either the numerator or denominator do not fit into a 32-bit integer,
+    // then this function is a no-op. In the future, we may consider reducing
+    // even the larger numbers, but for now we're going to keep it simple.
+    if (
+        // If the numerator doesn't fit into a 32-bit integer, return early.
+        numerator->length != 0 ||
+        // If the denominator doesn't fit into a 32-bit integer, return early.
+        denominator->length != 0 ||
+        // If the numerator is 0, then return early.
+        numerator->value == 0 ||
+        // If the denominator is 1, then return early.
+        denominator->value == 1
+    ) return;
+
+    // Find the greatest common divisor of the numerator and denominator.
+    uint32_t divisor = numerator->value;
+    uint32_t remainder = denominator->value;
+
+    while (remainder != 0) {
+        uint32_t temporary = remainder;
+        remainder = divisor % remainder;
+        divisor = temporary;
+    }
+
+    // Divide the numerator and denominator by the greatest common divisor.
+    numerator->value /= divisor;
+    denominator->value /= divisor;
 }
 
 /**

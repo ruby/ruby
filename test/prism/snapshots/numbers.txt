@@ -65,52 +65,48 @@
         │       ├── flags: decimal
         │       └── value: 1
         ├── @ RationalNode (location: (41,0)-(41,2))
-        │   └── numeric:
-        │       @ IntegerNode (location: (41,0)-(41,1))
-        │       ├── flags: decimal
-        │       └── value: 1
+        │   ├── flags: decimal
+        │   ├── numerator: 1
+        │   └── denominator: 1
         ├── @ IntegerNode (location: (43,0)-(43,2))
         │   ├── flags: decimal
         │   └── value: -1
         ├── @ ImaginaryNode (location: (45,0)-(45,3))
         │   └── numeric:
         │       @ RationalNode (location: (45,0)-(45,2))
-        │       └── numeric:
-        │           @ IntegerNode (location: (45,0)-(45,1))
-        │           ├── flags: decimal
-        │           └── value: 1
+        │       ├── flags: decimal
+        │       ├── numerator: 1
+        │       └── denominator: 1
         ├── @ RationalNode (location: (47,0)-(47,4))
-        │   └── numeric:
-        │       @ FloatNode (location: (47,0)-(47,3))
-        │       └── value: 1.2
+        │   ├── flags: decimal
+        │   ├── numerator: 6
+        │   └── denominator: 5
         ├── @ ImaginaryNode (location: (49,0)-(49,5))
         │   └── numeric:
         │       @ RationalNode (location: (49,0)-(49,4))
-        │       └── numeric:
-        │           @ FloatNode (location: (49,0)-(49,3))
-        │           └── value: 1.2
+        │       ├── flags: decimal
+        │       ├── numerator: 6
+        │       └── denominator: 5
         ├── @ ImaginaryNode (location: (51,0)-(51,4))
         │   └── numeric:
         │       @ RationalNode (location: (51,0)-(51,3))
-        │       └── numeric:
-        │           @ IntegerNode (location: (51,0)-(51,2))
-        │           ├── flags: decimal
-        │           └── value: -1
+        │       ├── flags: decimal
+        │       ├── numerator: -1
+        │       └── denominator: 1
         ├── @ RationalNode (location: (53,0)-(53,5))
-        │   └── numeric:
-        │       @ FloatNode (location: (53,0)-(53,4))
-        │       └── value: -1.2
+        │   ├── flags: decimal
+        │   ├── numerator: -6
+        │   └── denominator: 5
         ├── @ ImaginaryNode (location: (55,0)-(55,6))
         │   └── numeric:
         │       @ RationalNode (location: (55,0)-(55,5))
-        │       └── numeric:
-        │           @ FloatNode (location: (55,0)-(55,4))
-        │           └── value: -1.2
+        │       ├── flags: decimal
+        │       ├── numerator: -6
+        │       └── denominator: 5
         ├── @ RationalNode (location: (57,0)-(57,4))
-        │   └── numeric:
-        │       @ IntegerNode (location: (57,0)-(57,3))
-        │       ├── flags: octal
-        │       └── value: 1
+        │   ├── flags: octal
+        │   ├── numerator: 1
+        │   └── denominator: 1
         ├── @ ImaginaryNode (location: (59,0)-(59,4))
         │   └── numeric:
         │       @ IntegerNode (location: (59,0)-(59,3))
@@ -119,15 +115,13 @@
         ├── @ ImaginaryNode (location: (61,0)-(61,5))
         │   └── numeric:
         │       @ RationalNode (location: (61,0)-(61,4))
-        │       └── numeric:
-        │           @ IntegerNode (location: (61,0)-(61,3))
-        │           ├── flags: octal
-        │           └── value: 1
+        │       ├── flags: octal
+        │       ├── numerator: 1
+        │       └── denominator: 1
         ├── @ RationalNode (location: (63,0)-(63,4))
-        │   └── numeric:
-        │       @ IntegerNode (location: (63,0)-(63,3))
-        │       ├── flags: decimal
-        │       └── value: 1
+        │   ├── flags: decimal
+        │   ├── numerator: 1
+        │   └── denominator: 1
         ├── @ ImaginaryNode (location: (65,0)-(65,4))
         │   └── numeric:
         │       @ IntegerNode (location: (65,0)-(65,3))
@@ -136,7 +130,6 @@
         └── @ ImaginaryNode (location: (67,0)-(67,5))
             └── numeric:
                 @ RationalNode (location: (67,0)-(67,4))
-                └── numeric:
-                    @ IntegerNode (location: (67,0)-(67,3))
-                    ├── flags: binary
-                    └── value: 1
+                ├── flags: binary
+                ├── numerator: 1
+                └── denominator: 1

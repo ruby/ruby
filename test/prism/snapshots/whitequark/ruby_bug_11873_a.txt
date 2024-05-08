@@ -225,9 +225,9 @@
         │   │       │   ├── closing_loc: (7,7)-(7,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RationalNode (location: (7,10)-(7,14))
-        │   │           └── numeric:
-        │   │               @ FloatNode (location: (7,10)-(7,13))
-        │   │               └── value: 1.0
+        │   │           ├── flags: decimal
+        │   │           ├── numerator: 1
+        │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,15)-(7,21))
@@ -519,9 +519,9 @@
         │   │       │   ├── closing_loc: (17,8)-(17,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RationalNode (location: (17,11)-(17,15))
-        │   │           └── numeric:
-        │   │               @ FloatNode (location: (17,11)-(17,14))
-        │   │               └── value: 1.0
+        │   │           ├── flags: decimal
+        │   │           ├── numerator: 1
+        │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (17,16)-(17,22))
@@ -833,9 +833,9 @@
         │   │       │       ├── opening_loc: (27,3)-(27,4) = "{"
         │   │       │       └── closing_loc: (27,7)-(27,8) = "}"
         │   │       └── @ RationalNode (location: (27,10)-(27,14))
-        │   │           └── numeric:
-        │   │               @ FloatNode (location: (27,10)-(27,13))
-        │   │               └── value: 1.0
+        │   │           ├── flags: decimal
+        │   │           ├── numerator: 1
+        │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (27,15)-(27,21))
@@ -1152,9 +1152,9 @@
         │   │       │       ├── opening_loc: (37,3)-(37,4) = "{"
         │   │       │       └── closing_loc: (37,8)-(37,9) = "}"
         │   │       └── @ RationalNode (location: (37,11)-(37,15))
-        │   │           └── numeric:
-        │   │               @ FloatNode (location: (37,11)-(37,14))
-        │   │               └── value: 1.0
+        │   │           ├── flags: decimal
+        │   │           ├── numerator: 1
+        │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (37,16)-(37,22))
