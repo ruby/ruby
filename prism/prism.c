@@ -18508,7 +18508,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     lex_state_set(parser, PM_LEX_STATE_BEG);
                     parser->command_start = true;
 
-                    expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_DEF_PARAMS_TERM_PAREN);
+                    if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_DEF_PARAMS_TERM_PAREN, pm_token_type_human(parser->current.type));
+                        parser->previous.start = parser->previous.end;
+                        parser->previous.type = PM_TOKEN_MISSING;
+                    }
+
                     rparen = parser->previous;
                     break;
                 }
