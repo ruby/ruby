@@ -1248,6 +1248,13 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
+  def test_invalid_loop_var
+    assert_syntax_error("for X in []; end", /loop variable cannot be a constant/)
+    assert_syntax_error("for ::X in []; end", /loop variable cannot be a constant/)
+    assert_syntax_error("for self::X in []; end", /loop variable cannot be a constant/)
+    assert_syntax_error("for a&.x in []; end", /in loop variable/)
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")

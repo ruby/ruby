@@ -1343,6 +1343,16 @@ anddot_multiple_assignment_check(struct parser_params* p, const YYLTYPE *loc, ID
     }
 }
 
+static bool
+anddot_loop_variable_check(struct parser_params* p, const YYLTYPE *loc, ID id)
+{
+    if (id == tANDDOT) {
+        yyerror1(loc, "&. in loop variable");
+        return false;
+    }
+    return true;
+}
+
 static inline void
 set_line_body(NODE *body, int line)
 {
@@ -2694,6 +2704,19 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 }
 
 #endif /* !RIPPER */
+
+static NODE *
+loop_variable_error(struct parser_params *p, const YYLTYPE *loc, int idx)
+{
+    static const char mesg[] = "loop variable cannot be a constant";
+#ifdef RIPPER
+    set_value(dispatch2(param_error, STR_NEW2(mesg), get_value(idx)));
+    p->error_p = 1;
+#else
+    yyerror1(loc, mesg);
+#endif
+    return NEW_ERROR(loc);
+}
 %}
 
 %expect 0
@@ -2878,7 +2901,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
 %type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
-%type <id>   keyword_variable user_variable sym operation operation2 operation3
+%type <id>   keyword_variable user_variable sym operation operation2 operation3 for_variable
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
@@ -5024,7 +5047,64 @@ opt_else	: none
                     }
                 ;
 
-for_var		: lhs
+for_variable	: tIDENTIFIER
+                | nonlocal_var
+                | keyword_variable
+                ;
+
+for_var 	: for_variable
+                    {
+                        $$ = assignable(p, $1, 0, &@$);
+                    /*% ripper: ripper_assignable(p, $1, var_field(p, get_value($:1))) %*/
+                    }
+                | primary_value '[' opt_call_args rbracket
+                    {
+                        $$ = aryset(p, $1, $3, &@$);
+                    /*% ripper: aref_field!($:1, $:3) %*/
+                    }
+                | primary_value call_op tIDENTIFIER
+                    {
+                        if (anddot_loop_variable_check(p, &@2, $2)) {
+                            $$ = attrset(p, $1, $2, $3, &@$);
+                        /*% ripper: field!($:1, $:2, $:3) %*/
+                        }
+                        else {
+                            $$ = NEW_ERROR(&@$);
+                        }
+                    }
+                | primary_value tCOLON2 tIDENTIFIER
+                    {
+                        $$ = attrset(p, $1, idCOLON2, $3, &@$);
+                    /*% ripper: field!($:1, $:2, $:3) %*/
+                    }
+                | primary_value call_op tCONSTANT
+                    {
+                        anddot_loop_variable_check(p, &@2, $2);
+                    /*% ripper[error]: field!($:1, $:2, $:3) %*/
+                    }
+                | primary_value tCOLON2 tCONSTANT
+                    {
+                        $$ = loop_variable_error(p, &@$, $:3);
+                    /*% ripper: ripper_const_decl(p, const_path_field!($:1, $:3)) %*/
+                    }
+                | tCOLON3 tCONSTANT
+                    {
+                        $$ = loop_variable_error(p, &@$, $:2);
+                    /*% ripper: ripper_const_decl(p, top_const_field!($:2)) %*/
+                    }
+                | tCONSTANT
+                    {
+                        $$ = loop_variable_error(p, &@$, $:1);
+                    /*% ripper: ripper_const_decl(p, var_field!($:1)) %*/
+                    }
+                | backref
+                    {
+                    /*%%%*/
+                        rb_backref_error(p, $1);
+                    /*% %*/
+                        $$ = NEW_ERROR(&@$);
+                    /*% ripper[error]: backref_error(p, $1, var_field(p, get_value($:1))) %*/
+                    }
                 | mlhs
                 ;
 

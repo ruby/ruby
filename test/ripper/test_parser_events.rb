@@ -1061,6 +1061,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_param_error = false
     parse('def foo(@@a) end', :on_param_error) {thru_param_error = true}
     assert_equal true, thru_param_error
+    thru_param_error = false
+    parse('for Foo in []; end', :on_param_error) {thru_param_error = true}
+    assert_equal true, thru_param_error
   end
 
   def test_params
