@@ -210,7 +210,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_HASH_KEY]                           = { "unexpected %s, expecting '}' or a key in the hash literal", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_ROCKET]                        = { "expected a `=>` between the hash key and value", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HASH_TERM]                          = { "expected a `}` to close the hash literal", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_HASH_VALUE]                         = { "expected a value in the hash literal", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_HASH_VALUE]                         = { "unexpected %s; expected a value in the hash literal", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HEREDOC_IDENTIFIER]                 = { "unterminated here document identifier", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_HEREDOC_TERM]                       = { "unterminated heredoc; can't find string \"%.*s\" anywhere before EOF", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INCOMPLETE_QUESTION_MARK]           = { "incomplete expression at `?`", PM_ERROR_LEVEL_SYNTAX },
