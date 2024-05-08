@@ -9367,12 +9367,20 @@ escape_hexadecimal_digit(const uint8_t value) {
  * validated.
  */
 static inline uint32_t
-escape_unicode(const uint8_t *string, size_t length) {
+escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
     uint32_t value = 0;
     for (size_t index = 0; index < length; index++) {
         if (index != 0) value <<= 4;
         value |= escape_hexadecimal_digit(string[index]);
     }
+
+    // Here we're going to verify that the value is actually a valid Unicode
+    // codepoint and not a surrogate pair.
+    if (value >= 0xD800 && value <= 0xDFFF) {
+        pm_parser_err(parser, string, string + length, PM_ERR_ESCAPE_INVALID_UNICODE);
+        return 0xFFFD;
+    }
+
     return value;
 }
 
@@ -9660,7 +9668,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         extra_codepoints_start = unicode_start;
                     }
 
-                    uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
+                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
                     parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
@@ -9685,7 +9693,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 size_t length = pm_strspn_hexadecimal_digit(parser->current.end, MIN(parser->end - parser->current.end, 4));
 
                 if (length == 4) {
-                    uint32_t value = escape_unicode(parser->current.end, 4);
+                    uint32_t value = escape_unicode(parser, parser->current.end, 4);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
                         pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
