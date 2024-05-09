@@ -265,6 +265,15 @@ describe "String#rindex with Regexp" do
     $~.should == nil
   end
 
+  it "always clear $~" do
+    "a".rindex(/a/)
+    $~.should_not == nil
+
+    string = "blablabla"
+    string.rindex(/bla/, -(string.length + 1))
+    $~.should == nil
+  end
+
   it "starts the search at the given offset" do
     "blablabla".rindex(/.{0}/, 5).should == 5
     "blablabla".rindex(/.{1}/, 5).should == 5
