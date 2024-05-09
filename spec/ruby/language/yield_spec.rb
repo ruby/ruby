@@ -206,3 +206,15 @@ describe "Using yield in non-lambda block" do
     -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
   end
 end
+
+describe "Using yield in a module literal" do
+  it 'raises a SyntaxError' do
+    code = <<~RUBY
+      module YieldSpecs::ModuleWithYield
+        yield
+      end
+    RUBY
+
+    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
+  end
+end

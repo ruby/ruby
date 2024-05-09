@@ -79,6 +79,10 @@ static VALUE class_spec_rb_class_real(VALUE self, VALUE object) {
   }
 }
 
+static VALUE class_spec_rb_class_get_superclass(VALUE self, VALUE klass) {
+  return rb_class_get_superclass(klass);
+}
+
 static VALUE class_spec_rb_class_superclass(VALUE self, VALUE klass) {
   return rb_class_superclass(klass);
 }
@@ -160,6 +164,7 @@ void Init_class_spec(void) {
   rb_define_method(cls, "rb_class_new_instance_kw", class_spec_rb_class_new_instance_kw, 2);
 #endif
   rb_define_method(cls, "rb_class_real", class_spec_rb_class_real, 1);
+  rb_define_method(cls, "rb_class_get_superclass", class_spec_rb_class_get_superclass, 1);
   rb_define_method(cls, "rb_class_superclass", class_spec_rb_class_superclass, 1);
   rb_define_method(cls, "rb_cvar_defined", class_spec_cvar_defined, 2);
   rb_define_method(cls, "rb_cvar_get", class_spec_cvar_get, 2);

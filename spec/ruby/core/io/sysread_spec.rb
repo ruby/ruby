@@ -97,7 +97,7 @@ describe "IO#sysread on a file" do
 
   it "discards the existing buffer content upon successful read" do
     buffer = +"existing content"
-    @file.sysread(11, buffer)
+    @file.sysread(11, buffer).should.equal?(buffer)
     buffer.should == "01234567890"
   end
 
@@ -106,6 +106,13 @@ describe "IO#sysread on a file" do
     @file.seek(0, :END)
     -> { @file.sysread(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty
+  end
+
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    string = @file.sysread(10, buffer)
+
+    buffer.encoding.should == Encoding::ISO_8859_1
   end
 end
 
