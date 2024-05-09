@@ -1,5 +1,5 @@
 
-require_relative '../../spec_helper'
+require_relative '../../../spec_helper'
 require 'time'
 
 describe "Time#to_date" do

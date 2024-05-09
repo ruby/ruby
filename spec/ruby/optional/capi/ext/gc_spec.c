@@ -16,6 +16,8 @@ VALUE registered_after_rb_global_variable_bignum;
 VALUE registered_after_rb_global_variable_float;
 VALUE rb_gc_register_address_outside_init;
 
+VALUE rb_gc_register_mark_object_not_referenced_float;
+
 static VALUE registered_tagged_address(VALUE self) {
   return registered_tagged_value;
 }
@@ -90,6 +92,10 @@ static VALUE gc_spec_rb_gc_register_mark_object(VALUE self, VALUE obj) {
   return Qnil;
 }
 
+static VALUE gc_spec_rb_gc_register_mark_object_not_referenced_float(VALUE self) {
+  return rb_gc_register_mark_object_not_referenced_float;
+}
+
 void Init_gc_spec(void) {
   VALUE cls = rb_define_class("CApiGCSpecs", rb_cObject);
 
@@ -115,6 +121,9 @@ void Init_gc_spec(void) {
   registered_after_rb_global_variable_float = DBL2NUM(6.28);
   rb_global_variable(&registered_after_rb_global_variable_float);
 
+  rb_gc_register_mark_object_not_referenced_float = DBL2NUM(1.61);
+  rb_gc_register_mark_object(rb_gc_register_mark_object_not_referenced_float);
+
   rb_define_method(cls, "registered_tagged_address", registered_tagged_address, 0);
   rb_define_method(cls, "registered_reference_address", registered_reference_address, 0);
   rb_define_method(cls, "registered_before_rb_gc_register_address", get_registered_before_rb_gc_register_address, 0);
@@ -131,6 +140,7 @@ void Init_gc_spec(void) {
   rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
   rb_define_method(cls, "rb_gc_adjust_memory_usage", gc_spec_rb_gc_adjust_memory_usage, 1);
   rb_define_method(cls, "rb_gc_register_mark_object", gc_spec_rb_gc_register_mark_object, 1);
+  rb_define_method(cls, "rb_gc_register_mark_object_not_referenced_float", gc_spec_rb_gc_register_mark_object_not_referenced_float, 0);
   rb_define_method(cls, "rb_gc_latest_gc_info", gc_spec_rb_gc_latest_gc_info, 1);
 }
 

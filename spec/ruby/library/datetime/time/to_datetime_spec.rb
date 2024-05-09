@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative '../../../spec_helper'
 require 'time'
 require 'date'
 date_version = defined?(Date::VERSION) ? Date::VERSION : '3.1.0'
