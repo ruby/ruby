@@ -9629,7 +9629,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
                 }
 
-                escape_write_byte_encoded(parser, buffer, value);
+                escape_write_byte_encoded(parser, buffer, escape_byte(value, flags));
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
             }
