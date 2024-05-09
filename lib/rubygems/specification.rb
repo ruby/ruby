@@ -937,9 +937,19 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns every spec that matches +name+ and optional +requirements+.
 
   def self.find_all_by_name(name, *requirements)
-    requirements = Gem::Requirement.default if requirements.empty?
+    req = Gem::Requirement.create(*requirements)
+    env_req = Gem.env_requirement(name)
 
-    Gem::Dependency.new(name, *requirements).matching_specs
+    matches = stubs_for(name).find_all do |spec|
+      req.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
+    end.map(&:to_spec)
+
+    if name == "bundler" && !req.specific?
+      require_relative "bundler_version_finder"
+      Gem::BundlerVersionFinder.prioritize!(matches)
+    end
+
+    matches
   end
 
   ##
