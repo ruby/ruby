@@ -4056,12 +4056,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                 | tUMINUS_NUM simple_numeric tPOW arg
                     {
                         $$ = call_uni_op(p, call_bin_op(p, $2, idPow, $4, &@2, &@$), idUMinus, &@1, &@$);
-                    /*%%%*/
-                    /*%
-                        VALUE val = dispatch3(binary, get_value($:2), ID2VAL(idPow), get_value($:4));
-                        val = dispatch2(unary, ID2VAL(idUMinus), val);
-                        set_value(val);
-                    %*/
+                    /*% ripper: unary!(ID2VAL(idUMinus), binary!($:2, ID2VAL(idPow), $:4)) %*/
                     }
                 | tUPLUS arg
                     {
@@ -5226,12 +5221,7 @@ block_param_def	: '|' opt_bv_decl '|'
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
                         $$ = 0;
-                    /*%%%*/
-                    /*%
-                        VALUE val = dispatch7(params, Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil);
-                        val = dispatch2(block_var, val, get_value($:2));
-                        set_value(val);
-                    %*/
+                    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), $:2) %*/
                     }
                 | '|' block_param opt_bv_decl '|'
                     {
