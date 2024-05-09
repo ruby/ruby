@@ -28,6 +28,7 @@ module Gem::BUNDLED_GEMS
     "syslog" => "3.4.0",
     "ostruct" => "3.5.0",
     "pstore" => "3.5.0",
+    "rdoc" => "3.5.0",
   }.freeze
 
   EXACT = {
@@ -45,6 +46,7 @@ module Gem::BUNDLED_GEMS
     "syslog" => true,
     "ostruct" => true,
     "pstore" => true,
+    "rdoc" => true,
   }.freeze
 
   PREFIXED = {
