@@ -231,6 +231,17 @@ describe "String#index with Regexp" do
     $~.should == nil
   end
 
+  ruby_bug "#20421", ""..."3.3" do
+    it "always clear $~" do
+      "a".index(/a/)
+      $~.should_not == nil
+
+      string = "blablabla"
+      string.index(/bla/, string.length + 1)
+      $~.should == nil
+    end
+  end
+
   it "starts the search at the given offset" do
     "blablabla".index(/.{0}/, 5).should == 5
     "blablabla".index(/.{1}/, 5).should == 5
