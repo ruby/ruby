@@ -585,6 +585,8 @@ abort "#{deprecation_message}"
 
     args = %w[--all --only-executables --silent]
     args << "--bindir=#{bindir}"
+    args << "--install-dir=#{default_dir}"
+
     if options[:env_shebang]
       args << "--env-shebang"
     end

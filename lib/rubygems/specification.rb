@@ -925,31 +925,15 @@ class Gem::Specification < Gem::BasicSpecification
   # Enumerate every known spec.  See ::dirs= and ::add_spec to set the list of
   # specs.
 
-  def self.each
-    return enum_for(:each) unless block_given?
-
-    _all.each do |x|
-      yield x
-    end
+  def self.each(&block)
+    specification_record.each(&block)
   end
 
   ##
   # Returns every spec that matches +name+ and optional +requirements+.
 
   def self.find_all_by_name(name, *requirements)
-    req = Gem::Requirement.create(*requirements)
-    env_req = Gem.env_requirement(name)
-
-    matches = stubs_for(name).find_all do |spec|
-      req.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
-    end.map(&:to_spec)
-
-    if name == "bundler" && !req.specific?
-      require_relative "bundler_version_finder"
-      Gem::BundlerVersionFinder.prioritize!(matches)
-    end
-
-    matches
+    specification_record.find_all_by_name(name, *requirements)
   end
 
   ##

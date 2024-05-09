@@ -344,7 +344,7 @@ class Gem::Installer
 
     say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
 
-    Gem::Specification.add_spec(spec)
+    Gem::Specification.add_spec(spec) unless @install_dir
 
     load_plugin
 
