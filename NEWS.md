@@ -62,7 +62,7 @@ The following bundled gems are updated.
 * rake 13.2.1
 * test-unit 3.6.2
 * net-ftp 0.3.4
-* net-imap 0.4.10
+* net-imap 0.4.11
 * net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11
