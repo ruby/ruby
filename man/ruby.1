@@ -448,18 +448,20 @@ Check syntax (same as
 .El
 .Pp
 Or one of the following, which are intended for debugging the interpreter:
-.Bl -hang -offset indent -tag -width "parsetree_with_comment"
+.Bl -hang -offset indent -tag -width "+error-tolerant"
 .It Sy yydebug
 Enable compiler debug mode (same as
 .Fl -yydebug).
 .It Sy parsetree
 Print a textual representation of the Ruby AST for the program.
-.It Sy parsetree_with_comment
-Print a textual representation of the Ruby AST for the program, but with each node annotated with the associated Ruby source code.
 .It Sy insns
 Print a list of disassembled bytecode instructions.
-.It Sy insns_without_opt
-Print the list of disassembled bytecode instructions before various optimizations have been applied.
+.It Sy -optimize
+Disable various optimizations to print a list disassembled bytecode instructions.
+.It Sy +error-tolerant
+Enable error-tolerant parsing, when yydebug or parsetree.
+.It Sy +comment
+Annotate a textual representation of the Ruby AST for the program with the associated Ruby source code.
 .El
 .Pp
 .It Fl -verbose
