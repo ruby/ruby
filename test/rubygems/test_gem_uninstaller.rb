@@ -429,7 +429,7 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_user_install
-    @user_spec = Gem::Specification.find_by_name "b"
+    Gem::Specification.dirs = [Gem.user_dir]
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
                                        executables: true,
