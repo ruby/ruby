@@ -1620,30 +1620,8 @@ yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
 	$(ACTIONS_ENDGROUP)
 no-test-bundled-gems-spec:
 
-test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
-no-test-syntax-suggest-precheck:
-yes-test-syntax-suggest-precheck: main
 
-test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
-no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
-yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
-	$(ACTIONS_GROUP)
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3"
-	$(ACTIONS_ENDGROUP)
-
-RSPECOPTS =
-SYNTAX_SUGGEST_SPECS =
-PREPARE_SYNTAX_SUGGEST = $(TEST_RUNNABLE)-test-syntax-suggest-prepare
-test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
-yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
-	$(ACTIONS_GROUP)
-	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest:spec/lib .bundle/bin/rspec \
-		--require rspec/expectations \
-		--require spec_helper --require formatter_overrides --require spec_coverage \
-		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
-	$(ACTIONS_ENDGROUP)
-no-test-syntax-suggest:
+test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
 
