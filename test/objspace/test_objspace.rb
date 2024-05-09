@@ -416,7 +416,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('true', ObjectSpace.dump(true))
     assert_equal('false', ObjectSpace.dump(false))
     assert_equal('0', ObjectSpace.dump(0))
-    assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+    assert_equal('{"type":"SYMBOL", "value":"test_dump_special_consts"}', ObjectSpace.dump(:test_dump_special_consts))
   end
 
   def test_dump_singleton_class
