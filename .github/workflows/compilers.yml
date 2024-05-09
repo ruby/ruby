@@ -4,7 +4,7 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
-      - '**/man'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
@@ -12,7 +12,7 @@ on:
   pull_request:
     paths-ignore:
       - 'doc/**'
-      - '**/man'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'

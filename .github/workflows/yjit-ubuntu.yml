@@ -3,7 +3,7 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
-      - '**/man'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
