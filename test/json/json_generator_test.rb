@@ -67,6 +67,25 @@ EOT
 
   def test_dump_strict
     assert_equal '{}', dump({}, strict: true)
+
+    assert_equal '{"array":[42,4.2,"forty-two",true,false,null]}', dump({
+      "array" => [42, 4.2, "forty-two", true, false, nil] 
+    }, strict: true)
+
+    assert_equal '{"int":42,"float":4.2,"string":"forty-two","true":true,"false":false,"nil":null,"hash":{}}', dump({
+      "int" => 42,
+      "float" => 4.2,
+      "string" => "forty-two",
+      "true" => true,
+      "false" => false,
+      "nil" => nil,
+      "hash" => {},
+    }, strict: true)
+
+    assert_equal '[]', dump([], strict: true)
+
+    assert_equal '42', dump(42, strict: true)
+    assert_equal 'true', dump(true, strict: true)
   end
 
   def test_generate_pretty
