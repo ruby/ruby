@@ -385,7 +385,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
     .str_vcatf = rb_str_vcatf,
-    .string_value_cstr = rb_string_value_cstr,
     .rb_sprintf = rb_sprintf,
     .rstring_ptr = RSTRING_PTR,
     .rstring_end = RSTRING_END,
