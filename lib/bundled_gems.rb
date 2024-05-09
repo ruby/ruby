@@ -28,6 +28,7 @@ module Gem::BUNDLED_GEMS
     "syslog" => "3.4.0",
     "ostruct" => "3.5.0",
     "pstore" => "3.5.0",
+    "rdoc" => "3.5.0",
   }.freeze
 
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
@@ -47,6 +48,7 @@ module Gem::BUNDLED_GEMS
     "syslog" => true,
     "ostruct" => true,
     "pstore" => true,
+    "rdoc" => true,
   }.freeze
 
   PREFIXED = {
