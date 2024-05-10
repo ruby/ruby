@@ -73,11 +73,12 @@ module IRB
 
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
-      if IRB.conf[:SINGLE_IRB] or !defined?(IRB::JobManager)
-        @irb_name = IRB.conf[:IRB_NAME]
-      else
-        @irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
+      @irb_name = IRB.conf[:IRB_NAME]
+
+      unless IRB.conf[:SINGLE_IRB] or !defined?(IRB::JobManager)
+        @irb_name = @irb_name + "#" + IRB.JobManager.n_jobs.to_s
       end
+
       self.irb_path = "(" + @irb_name + ")"
 
       case input_method
