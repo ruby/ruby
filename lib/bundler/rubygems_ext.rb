@@ -4,8 +4,6 @@ require "pathname"
 
 require "rubygems" unless defined?(Gem)
 
-require "rubygems/specification"
-
 # We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`
 # redefinition below, so we need to load it upfront. The reason is that if
 # Bundler monkeypatches are loaded before RubyGems activates an executable (for
@@ -17,10 +15,6 @@ require "rubygems/specification"
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
-require_relative "match_metadata"
-require_relative "force_platform"
-require_relative "match_platform"
-
 # Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
 # versions and ignore patchlevels
 # (https://github.com/rubygems/rubygems/pull/5472,
@@ -31,7 +25,12 @@ unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
 end
 
 module Gem
+  require "rubygems/specification"
+
   class Specification
+    require_relative "match_metadata"
+    require_relative "match_platform"
+
     include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
 
@@ -148,17 +147,23 @@ module Gem
 
   module BetterPermissionError
     def data
+      require_relative "shared_helpers"
+
       Bundler::SharedHelpers.filesystem_access(loaded_from, :read) do
         super
       end
     end
   end
 
+  require "rubygems/stub_specification"
+
   class StubSpecification
     prepend BetterPermissionError
   end
 
   class Dependency
+    require_relative "force_platform"
+
     include ::Bundler::ForcePlatform
 
     attr_accessor :source, :groups
