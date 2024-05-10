@@ -26,6 +26,18 @@ class DSL
     end
   end
 
+  using Module.new {
+    refine Array do
+      def to_s
+        if empty?
+          "rb_ary_new()"
+        else
+          "rb_ary_new_from_args(#{size}, #{map(&:to_s).join(', ')})"
+        end
+      end
+    end
+  }
+
   def initialize(code, options, lineno = nil)
     @lineno = lineno
     @events = {}
@@ -100,7 +112,7 @@ class DSL
     elsif args.empty? and /\Aid[A-Z_]/ =~ event.to_s
       event
     else
-      "#{ event }(#{ args.join(", ") })"
+      "#{ event }(#{ args.map(&:to_s).join(", ") })"
     end
   end
 
