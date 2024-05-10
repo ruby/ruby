@@ -28,13 +28,13 @@
         │   ├── value:
         │   │   @ LocalVariableOperatorWriteNode (location: (3,9)-(3,15))
         │   │   ├── name_loc: (3,9)-(3,10) = "x"
-        │   │   ├── operator_loc: (3,11)-(3,13) = "%="
+        │   │   ├── binary_operator_loc: (3,11)-(3,13) = "%="
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (3,14)-(3,15))
         │   │   │   ├── flags: decimal
         │   │   │   └── value: 2
         │   │   ├── name: :x
-        │   │   ├── operator: :%
+        │   │   ├── binary_operator: :%
         │   │   └── depth: 0
         │   ├── rparen_loc: (3,15)-(3,16) = ")"
         │   └── keyword_loc: (3,0)-(3,8) = "defined?"

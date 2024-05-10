@@ -20,8 +20,8 @@
         │   ├── message_loc: (1,4)-(1,5) = "A"
         │   ├── read_name: :A
         │   ├── write_name: :A=
-        │   ├── operator: :+
-        │   ├── operator_loc: (1,6)-(1,8) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (1,6)-(1,8) = "+="
         │   └── value:
         │       @ CallNode (location: (1,9)-(1,14))
         │       ├── flags: ignore_visibility
@@ -63,8 +63,8 @@
         │   ├── message_loc: (3,4)-(3,5) = "a"
         │   ├── read_name: :a
         │   ├── write_name: :a=
-        │   ├── operator: :+
-        │   ├── operator_loc: (3,6)-(3,8) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (3,6)-(3,8) = "+="
         │   └── value:
         │       @ CallNode (location: (3,9)-(3,14))
         │       ├── flags: ignore_visibility
@@ -106,7 +106,7 @@
         │   │   ├── name: :A
         │   │   ├── delimiter_loc: (5,3)-(5,5) = "::"
         │   │   └── name_loc: (5,5)-(5,6) = "A"
-        │   ├── operator_loc: (5,7)-(5,9) = "+="
+        │   ├── binary_operator_loc: (5,7)-(5,9) = "+="
         │   ├── value:
         │   │   @ CallNode (location: (5,10)-(5,15))
         │   │   ├── flags: ignore_visibility
@@ -131,7 +131,7 @@
         │   │   │           └── block: ∅
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
-        │   └── operator: :+
+        │   └── binary_operator: :+
         └── @ CallOperatorWriteNode (location: (7,0)-(7,15))
             ├── flags: ∅
             ├── receiver:
@@ -149,8 +149,8 @@
             ├── message_loc: (7,5)-(7,6) = "a"
             ├── read_name: :a
             ├── write_name: :a=
-            ├── operator: :+
-            ├── operator_loc: (7,7)-(7,9) = "+="
+            ├── binary_operator: :+
+            ├── binary_operator_loc: (7,7)-(7,9) = "+="
             └── value:
                 @ CallNode (location: (7,10)-(7,15))
                 ├── flags: ignore_visibility

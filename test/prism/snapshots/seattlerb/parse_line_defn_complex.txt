@@ -40,13 +40,13 @@
             │       │   └── block: ∅
             │       ├── @ LocalVariableOperatorWriteNode (location: (3,2)-(3,8))
             │       │   ├── name_loc: (3,2)-(3,3) = "y"
-            │       │   ├── operator_loc: (3,4)-(3,6) = "*="
+            │       │   ├── binary_operator_loc: (3,4)-(3,6) = "*="
             │       │   ├── value:
             │       │   │   @ IntegerNode (location: (3,7)-(3,8))
             │       │   │   ├── flags: decimal
             │       │   │   └── value: 2
             │       │   ├── name: :y
-            │       │   ├── operator: :*
+            │       │   ├── binary_operator: :*
             │       │   └── depth: 0
             │       └── @ ReturnNode (location: (4,2)-(4,10))
             │           ├── flags: redundant

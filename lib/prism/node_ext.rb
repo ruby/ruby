@@ -3,6 +3,17 @@
 # Here we are reopening the prism module to provide methods on nodes that aren't
 # templated and are meant as convenience methods.
 module Prism
+  class Node
+    def deprecated(*replacements) # :nodoc:
+      suggest = replacements.map { |replacement| "#{self.class}##{replacement}" }
+      warn(<<~MSG, category: :deprecated)
+        [deprecation]: #{self.class}##{caller_locations(1, 1)[0].label} is deprecated \
+        and will be removed in the next major version. Use #{suggest.join("/")} instead.
+        #{(caller(1, 3) || []).join("\n")}
+      MSG
+    end
+  end
+
   module RegularExpressionOptions # :nodoc:
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
@@ -168,13 +179,7 @@ module Prism
     # constant read or a missing node. To not cause a breaking change, we
     # continue to supply that API.
     def child
-      warn(<<~MSG, category: :deprecated)
-        DEPRECATED: ConstantPathNode#child is deprecated and will be removed \
-        in the next major version. Use \
-        ConstantPathNode#name/ConstantPathNode#name_loc instead. Called from \
-        #{caller(1, 1)&.first}.
-      MSG
-
+      deprecated("name", "name_loc")
       name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
     end
   end
@@ -210,13 +215,7 @@ module Prism
     # constant read or a missing node. To not cause a breaking change, we
     # continue to supply that API.
     def child
-      warn(<<~MSG, category: :deprecated)
-        DEPRECATED: ConstantPathTargetNode#child is deprecated and will be \
-        removed in the next major version. Use \
-        ConstantPathTargetNode#name/ConstantPathTargetNode#name_loc instead. \
-        Called from #{caller(1, 1)&.first}.
-      MSG
-
+      deprecated("name", "name_loc")
       name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
     end
   end
@@ -299,6 +298,134 @@ module Prism
     # space and the = sign. This method provides that.
     def full_message_loc
       attribute_write? ? message_loc&.adjoin("=") : message_loc
+    end
+  end
+
+  class CallOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class ClassVariableOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class ConstantOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class ConstantPathOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class GlobalVariableOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class IndexOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class InstanceVariableOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
+    end
+  end
+
+  class LocalVariableOperatorWriteNode < Node
+    # Returns the binary operator used to modify the receiver. This method is
+    # deprecated in favor of #binary_operator.
+    def operator
+      deprecated("binary_operator")
+      binary_operator
+    end
+
+    # Returns the location of the binary operator used to modify the receiver.
+    # This method is deprecated in favor of #binary_operator_loc.
+    def operator_loc
+      deprecated("binary_operator_loc")
+      binary_operator_loc
     end
   end
 end
