@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Prism
-  class ParseResult
+  class ParseResult < Result
     # The :line tracepoint event gets fired whenever the Ruby VM encounters an
     # expression on a new line. The types of expressions that can trigger this
     # event are:

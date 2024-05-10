@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Prism
-  class ParseResult
+  class ParseResult < Result
     # When we've parsed the source, we have both the syntax tree and the list of
     # comments that we found in the source. This class is responsible for
     # walking the tree and finding the nearest location to attach each comment.
