@@ -42,7 +42,15 @@ class DSL
     p = p = "p"
 
     @code = +""
-    code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K(\$|\$:|@)#{TAG_PATTERN}?#{NAME_PATTERN}]o, '"\&"')
+    code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K(\$|\$:|@)#{TAG_PATTERN}?#{NAME_PATTERN}]o) {
+      if (arg = $&) == "$:$"
+        '"p->s_lvalue"'
+      elsif arg.start_with?("$:")
+        %["get_value(#{arg})"]
+      else
+        arg.dump
+      end
+    }
     @last_value = eval(code)
   rescue SyntaxError
     $stderr.puts "error on line #{@lineno}" if @lineno
@@ -77,11 +85,7 @@ class DSL
     vars = []
     args.each do |arg|
       vars << v = new_var
-      if arg =~ /\A\$:#{NAME_PATTERN}\z/
-        @code << "#{ v }=get_value(#{arg});"
-      else
-        @code << "#{ v }=#{ arg };"
-      end
+      @code << "#{ v }=#{ arg };"
     end
     v = new_var
     d = "dispatch#{ args.size }(#{ [event, *vars].join(",") })"
