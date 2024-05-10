@@ -6,30 +6,30 @@
         ├── @ ClassVariableOperatorWriteNode (location: (1,0)-(1,11))
         │   ├── name: :@@var
         │   ├── name_loc: (1,0)-(1,5) = "@@var"
-        │   ├── operator_loc: (1,6)-(1,8) = "|="
+        │   ├── binary_operator_loc: (1,6)-(1,8) = "|="
         │   ├── value:
         │   │   @ IntegerNode (location: (1,9)-(1,11))
         │   │   ├── flags: decimal
         │   │   └── value: 10
-        │   └── operator: :|
+        │   └── binary_operator: :|
         ├── @ InstanceVariableOperatorWriteNode (location: (3,0)-(3,7))
         │   ├── name: :@a
         │   ├── name_loc: (3,0)-(3,2) = "@a"
-        │   ├── operator_loc: (3,3)-(3,5) = "|="
+        │   ├── binary_operator_loc: (3,3)-(3,5) = "|="
         │   ├── value:
         │   │   @ IntegerNode (location: (3,6)-(3,7))
         │   │   ├── flags: decimal
         │   │   └── value: 1
-        │   └── operator: :|
+        │   └── binary_operator: :|
         ├── @ LocalVariableOperatorWriteNode (location: (5,0)-(5,6))
         │   ├── name_loc: (5,0)-(5,1) = "a"
-        │   ├── operator_loc: (5,2)-(5,4) = "+="
+        │   ├── binary_operator_loc: (5,2)-(5,4) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (5,5)-(5,6))
         │   │   ├── flags: decimal
         │   │   └── value: 1
         │   ├── name: :a
-        │   ├── operator: :+
+        │   ├── binary_operator: :+
         │   └── depth: 0
         └── @ DefNode (location: (7,0)-(7,23))
             ├── name: :a
@@ -42,12 +42,12 @@
             │       └── @ ClassVariableOperatorWriteNode (location: (7,7)-(7,18))
             │           ├── name: :@@var
             │           ├── name_loc: (7,7)-(7,12) = "@@var"
-            │           ├── operator_loc: (7,13)-(7,15) = "|="
+            │           ├── binary_operator_loc: (7,13)-(7,15) = "|="
             │           ├── value:
             │           │   @ IntegerNode (location: (7,16)-(7,18))
             │           │   ├── flags: decimal
             │           │   └── value: 10
-            │           └── operator: :|
+            │           └── binary_operator: :|
             ├── locals: []
             ├── def_keyword_loc: (7,0)-(7,3) = "def"
             ├── operator_loc: ∅

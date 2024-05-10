@@ -30,8 +30,8 @@
             │           └── value: 1
             ├── closing_loc: (1,8)-(1,9) = "]"
             ├── block: ∅
-            ├── operator: :+
-            ├── operator_loc: (1,10)-(1,12) = "+="
+            ├── binary_operator: :+
+            ├── binary_operator_loc: (1,10)-(1,12) = "+="
             └── value:
                 @ IntegerNode (location: (1,13)-(1,14))
                 ├── flags: decimal

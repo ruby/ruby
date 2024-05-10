@@ -1181,8 +1181,8 @@ module Prism
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1339,8 +1339,8 @@ module Prism
         bounds(node.name_loc)
         target = on_var_field(on_cvar(node.name.to_s))
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1409,8 +1409,8 @@ module Prism
         bounds(node.name_loc)
         target = on_var_field(on_const(node.name.to_s))
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1510,8 +1510,8 @@ module Prism
         target = visit_constant_path_write_node_target(node.target)
         value = visit(node.value)
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1802,8 +1802,8 @@ module Prism
         bounds(node.name_loc)
         target = on_var_field(on_gvar(node.name.to_s))
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1983,8 +1983,8 @@ module Prism
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -2059,8 +2059,8 @@ module Prism
         bounds(node.name_loc)
         target = on_var_field(on_ivar(node.name.to_s))
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -2337,8 +2337,8 @@ module Prism
         bounds(node.name_loc)
         target = on_var_field(on_ident(node.name_loc.slice))
 
-        bounds(node.operator_loc)
-        operator = on_op("#{node.operator}=")
+        bounds(node.binary_operator_loc)
+        operator = on_op("#{node.binary_operator}=")
         value = visit_write_value(node.value)
 
         bounds(node.location)

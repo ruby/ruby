@@ -27,7 +27,7 @@
             │           │           │   ├── name: :C
             │           │           │   ├── delimiter_loc: (1,4)-(1,6) = "::"
             │           │           │   └── name_loc: (1,6)-(1,7) = "C"
-            │           │           ├── operator_loc: (1,8)-(1,10) = "*="
+            │           │           ├── binary_operator_loc: (1,8)-(1,10) = "*="
             │           │           ├── value:
             │           │           │   @ CallNode (location: (1,11)-(1,14))
             │           │           │   ├── flags: ignore_visibility
@@ -52,7 +52,7 @@
             │           │           │   │           └── block: ∅
             │           │           │   ├── closing_loc: ∅
             │           │           │   └── block: ∅
-            │           │           └── operator: :*
+            │           │           └── binary_operator: :*
             │           ├── opening_loc: (1,2)-(1,3) = "("
             │           └── closing_loc: (1,14)-(1,15) = ")"
             ├── closing_loc: ∅

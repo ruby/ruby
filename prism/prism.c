@@ -3080,8 +3080,8 @@ pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, 
         .message_loc = target->message_loc,
         .read_name = 0,
         .write_name = target->name,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
 
@@ -3119,8 +3119,8 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
         .arguments = target->arguments,
         .closing_loc = target->closing_loc,
         .block = target->block,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
 
@@ -3464,9 +3464,9 @@ pm_class_variable_operator_write_node_create(pm_parser_t *parser, pm_class_varia
         },
         .name = target->name,
         .name_loc = target->base.location,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
     };
 
     return node;
@@ -3580,9 +3580,9 @@ pm_constant_path_operator_write_node_create(pm_parser_t *parser, pm_constant_pat
             }
         },
         .target = target,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
     };
 
     return node;
@@ -3707,9 +3707,9 @@ pm_constant_operator_write_node_create(pm_parser_t *parser, pm_constant_read_nod
         },
         .name = target->name,
         .name_loc = target->base.location,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
     };
 
     return node;
@@ -4560,9 +4560,9 @@ pm_global_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *ta
         },
         .name = pm_global_variable_write_name(parser, target),
         .name_loc = target->location,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
     };
 
     return node;
@@ -5068,9 +5068,9 @@ pm_instance_variable_operator_write_node_create(pm_parser_t *parser, pm_instance
         },
         .name = target->name,
         .name_loc = target->base.location,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1)
     };
 
     return node;
@@ -5664,10 +5664,10 @@ pm_local_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *tar
             }
         },
         .name_loc = target->location,
-        .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
+        .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value,
         .name = name,
-        .operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
+        .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
         .depth = depth
     };
 
