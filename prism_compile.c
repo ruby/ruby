@@ -1737,7 +1737,7 @@ pm_compile_index_operator_write_node(rb_iseq_t *iseq, const pm_index_operator_wr
     PUSH_SEND_R(ret, location, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
     PM_COMPILE_NOT_POPPED(node->value);
 
-    ID id_operator = pm_constant_id_lookup(scope_node, node->operator);
+    ID id_operator = pm_constant_id_lookup(scope_node, node->binary_operator);
     PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
     if (!popped) {
@@ -4820,7 +4820,7 @@ pm_compile_constant_operator_write_node(rb_iseq_t *iseq, const pm_constant_opera
     const pm_line_column_t location = *node_location;
 
     VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, node->name));
-    ID method_id = pm_constant_id_lookup(scope_node, node->operator);
+    ID method_id = pm_constant_id_lookup(scope_node, node->binary_operator);
 
     pm_compile_constant_read(iseq, name, &node->name_loc, ret, scope_node);
 
@@ -5020,7 +5020,7 @@ pm_compile_constant_path_operator_write_node(rb_iseq_t *iseq, const pm_constant_
     const pm_line_column_t location = *node_location;
     const pm_constant_path_node_t *target = node->target;
 
-    ID method_id = pm_constant_id_lookup(scope_node, node->operator);
+    ID method_id = pm_constant_id_lookup(scope_node, node->binary_operator);
     VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
 
     if (target->parent) {
@@ -5542,7 +5542,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_SEND_WITH_FLAG(ret, location, id_read_name, INT2FIX(0), INT2FIX(flag));
 
         PM_COMPILE_NOT_POPPED(cast->value);
-        ID id_operator = pm_constant_id_lookup(scope_node, cast->operator);
+        ID id_operator = pm_constant_id_lookup(scope_node, cast->binary_operator);
         PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
         if (!popped) {
@@ -6046,7 +6046,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN2(ret, location, getclassvariable, name, get_cvar_ic_value(iseq, name_id));
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -6537,7 +6537,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN1(ret, location, getglobal, name);
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -6735,7 +6735,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN2(ret, location, getinstancevariable, name, get_ivar_ic_value(iseq, name_id));
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -6985,7 +6985,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
 
         if (!popped) PUSH_INSN(ret, location, dup);
