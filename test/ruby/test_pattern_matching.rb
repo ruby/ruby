@@ -1331,7 +1331,7 @@ END
     end
 
     assert_block do
-      case {}
+      case C.new({})
       in {}
         C.keys == nil
       end
