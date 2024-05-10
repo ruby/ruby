@@ -230,7 +230,7 @@ module IRB
           #   example:
           #     '
           return :recoverable_error
-        when /syntax error, unexpected end-of-input/
+        when /unexpected end-of-input/
           # "syntax error, unexpected end-of-input, expecting keyword_end"
           #
           #   example:
@@ -240,7 +240,7 @@ module IRB
           #         fuga
           #       end
           return :recoverable_error
-        when /syntax error, unexpected keyword_end/
+        when /unexpected keyword_end/
           # "syntax error, unexpected keyword_end"
           #
           #   example:
@@ -250,7 +250,7 @@ module IRB
           #   example:
           #     end
           return :unrecoverable_error
-        when /syntax error, unexpected '\.'/
+        when /unexpected '\.'/
           # "syntax error, unexpected '.'"
           #
           #   example:
