@@ -75,7 +75,7 @@ class Reline::LineEditor
   def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
-    @screen_size = Reline::IOGate.get_screen_size
+    @screen_size = [0, 0] # Should be initialized with actual winsize in LineEditor#reset
     reset_variables(encoding: encoding)
   end
 
