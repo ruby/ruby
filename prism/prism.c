@@ -14118,31 +14118,37 @@ static pm_parameters_order_t parameters_ordering[PM_TOKEN_MAXIMUM] = {
  * Check if current parameter follows valid parameters ordering. If not it adds
  * an error to the list without stopping the parsing, otherwise sets the
  * parameters state to the one corresponding to the current parameter.
+ *
+ * It returns true if it was successful, and false otherwise.
  */
-static void
+static bool
 update_parameter_state(pm_parser_t *parser, pm_token_t *token, pm_parameters_order_t *current) {
     pm_parameters_order_t state = parameters_ordering[token->type];
-    if (state == PM_PARAMETERS_NO_CHANGE) return;
+    if (state == PM_PARAMETERS_NO_CHANGE) return true;
 
     // If we see another ordered argument after a optional argument
     // we only continue parsing ordered arguments until we stop seeing ordered arguments.
     if (*current == PM_PARAMETERS_ORDER_OPTIONAL && state == PM_PARAMETERS_ORDER_NAMED) {
         *current = PM_PARAMETERS_ORDER_AFTER_OPTIONAL;
-        return;
+        return true;
     } else if (*current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL && state == PM_PARAMETERS_ORDER_NAMED) {
-        return;
+        return true;
     }
 
     if (token->type == PM_TOKEN_USTAR && *current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL) {
         pm_parser_err_token(parser, token, PM_ERR_PARAMETER_STAR);
-    }
-
-    if (*current == PM_PARAMETERS_ORDER_NOTHING_AFTER || state > *current) {
+        return false;
+    } else if (token->type == PM_TOKEN_UDOT_DOT_DOT && (*current >= PM_PARAMETERS_ORDER_KEYWORDS_REST && *current <= PM_PARAMETERS_ORDER_AFTER_OPTIONAL)) {
+        pm_parser_err_token(parser, token, *current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL ? PM_ERR_PARAMETER_FORWARDING_AFTER_REST : PM_ERR_PARAMETER_ORDER);
+        return false;
+    } else if (*current == PM_PARAMETERS_ORDER_NOTHING_AFTER || state > *current) {
         // We know what transition we failed on, so we can provide a better error here.
         pm_parser_err_token(parser, token, PM_ERR_PARAMETER_ORDER);
-    } else if (state < *current) {
-        *current = state;
+        return false;
     }
+
+    if (state < *current) *current = state;
+    return true;
 }
 
 /**
@@ -14211,27 +14217,22 @@ parse_parameters(
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
                 }
 
-                if (order > PM_PARAMETERS_ORDER_NOTHING_AFTER) {
-                    update_parameter_state(parser, &parser->current, &order);
-                    parser_lex(parser);
+                bool succeeded = update_parameter_state(parser, &parser->current, &order);
+                parser_lex(parser);
 
-                    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_ALL;
+                parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_ALL;
+                pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
 
-                    pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
-                    if (params->keyword_rest != NULL) {
-                        // If we already have a keyword rest parameter, then we replace it with the
-                        // forwarding parameter and move the keyword rest parameter to the posts list.
-                        pm_node_t *keyword_rest = params->keyword_rest;
-                        pm_parameters_node_posts_append(params, keyword_rest);
-                        pm_parser_err_previous(parser, PM_ERR_PARAMETER_UNEXPECTED_FWD);
-                        params->keyword_rest = NULL;
-                    }
-                    pm_parameters_node_keyword_rest_set(params, (pm_node_t *)param);
-                } else {
-                    update_parameter_state(parser, &parser->current, &order);
-                    parser_lex(parser);
+                if (params->keyword_rest != NULL) {
+                    // If we already have a keyword rest parameter, then we replace it with the
+                    // forwarding parameter and move the keyword rest parameter to the posts list.
+                    pm_node_t *keyword_rest = params->keyword_rest;
+                    pm_parameters_node_posts_append(params, keyword_rest);
+                    if (succeeded) pm_parser_err_previous(parser, PM_ERR_PARAMETER_UNEXPECTED_FWD);
+                    params->keyword_rest = NULL;
                 }
 
+                pm_parameters_node_keyword_rest_set(params, (pm_node_t *) param);
                 break;
             }
             case PM_TOKEN_CLASS_VARIABLE:
@@ -14896,7 +14897,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             arguments->closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
         } else {
             pm_accepts_block_stack_push(parser, true);
-            parse_arguments(parser, arguments, true, PM_TOKEN_PARENTHESIS_RIGHT);
+            parse_arguments(parser, arguments, accepts_block, PM_TOKEN_PARENTHESIS_RIGHT);
 
             if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_ARGUMENT_TERM_PAREN, pm_token_type_human(parser->current.type));
@@ -14914,7 +14915,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // If we get here, then the subsequent token cannot be used as an infix
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
-        parse_arguments(parser, arguments, true, PM_TOKEN_EOF);
+        parse_arguments(parser, arguments, accepts_block, PM_TOKEN_EOF);
 
         // If we have done with the arguments and still not consumed the comma,
         // then we have a trailing comma where we need to check whether it is
@@ -14945,11 +14946,8 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             if (arguments->block == NULL && !arguments->has_forwarding) {
                 arguments->block = (pm_node_t *) block;
             } else {
-                if (arguments->has_forwarding) {
-                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
-                } else {
-                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
-                }
+                pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
+
                 if (arguments->block != NULL) {
                     if (arguments->arguments == NULL) {
                         arguments->arguments = pm_arguments_node_create(parser);
@@ -17048,7 +17046,8 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, diag_id, pm_token_type_human(parser->previous.type));
             break;
         }
-        case PM_ERR_HASH_VALUE: {
+        case PM_ERR_HASH_VALUE:
+        case PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR: {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, pm_token_type_human(parser->current.type));
             break;
         }
@@ -20329,7 +20328,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // In this case we have an operator but we don't know what it's for.
                     // We need to treat it as an error. For now, we'll mark it as an error
                     // and just skip right past it.
-                    pm_parser_err_previous(parser, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, pm_token_type_human(parser->current.type));
                     return node;
             }
         }

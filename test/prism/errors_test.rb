@@ -99,7 +99,7 @@ module Prism
       )
 
       assert_errors expected, "BEGIN { 1 + }", [
-        ["expected an expression after the operator", 10..11],
+        ["unexpected '}'; expected an expression after the operator", 12..13],
         ["unexpected '}', assuming it is closing the parent 'BEGIN' block", 12..13]
       ]
     end
@@ -210,7 +210,7 @@ module Prism
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
         ["invalid `%` token", 2..3],
-        ["expected an expression after the operator", 2..3],
+        ["unexpected end of file; expected an expression after the operator", 3..3],
         ["unexpected end of file, assuming it is closing the parent top level context", 3..3]
       ]
     end
@@ -864,7 +864,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil),
+        ParametersNode([], [], nil, [ForwardingParameterNode()], [], ForwardingParameterNode(), nil),
         nil,
         [],
         Location(),
@@ -1466,7 +1466,7 @@ module Prism
     def test_forwarding_arg_after_keyword_rest
       source = "def f(**,...);end"
       assert_errors expression(source), source, [
-        ["unexpected `...` in parameters", 9..12],
+        ["unexpected parameter order", 9..12]
       ]
     end
 
@@ -1942,10 +1942,10 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["unexpected '..', expecting end-of-input", 3..5],
-        ["unexpected '..', ignoring it", 3..5],
-        ["unexpected '..', expecting end-of-input", 10..12],
-        ["unexpected '..', ignoring it", 10..12]
+        ["unexpected .., expecting end-of-input", 3..5],
+        ["unexpected .., ignoring it", 3..5],
+        ["unexpected .., expecting end-of-input", 10..12],
+        ["unexpected .., ignoring it", 10..12]
       ]
     end
 
@@ -2082,7 +2082,7 @@ module Prism
     def test_forwarding_arg_and_block
       source = 'def foo(...) = foo(...) { }'
       assert_errors expression(source), source, [
-        ['both a block argument and a forwarding argument; only one block is allowed', 24..27]
+        ['both block arg and actual block given; only one block is allowed', 24..27]
       ]
     end
 

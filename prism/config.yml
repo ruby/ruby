@@ -193,6 +193,7 @@ errors:
   - PARAMETER_ASSOC_SPLAT_MULTI
   - PARAMETER_BLOCK_MULTI
   - PARAMETER_CIRCULAR
+  - PARAMETER_FORWARDING_AFTER_REST
   - PARAMETER_METHOD_NAME
   - PARAMETER_NAME_DUPLICATED
   - PARAMETER_NO_DEFAULT
@@ -3084,6 +3085,8 @@ nodes:
           # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
           - KeywordRestParameterNode
           - NoKeywordsParameterNode
+          # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
+          - ForwardingParameterNode
       - name: keywords
         type: node[]
         kind:
