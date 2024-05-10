@@ -1,6 +1,4 @@
 exclude(:test__END___cr, "error message format")
-exclude(:test_argument_forwarding_with_super, "error message format")
-exclude(:test_argument_forwarding, "error message format")
 exclude(:test_dedented_heredoc_continued_line, "heredoc line continuation dedent calculation")
 exclude(:test_duplicated_when, "error message format")
 exclude(:test_error_message_encoding, "syntax error message encoding")
