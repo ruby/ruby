@@ -121,6 +121,7 @@ Gem::Specification.new do |spec|
     "sig/prism/dot_visitor.rbs",
     "sig/prism/dsl.rbs",
     "sig/prism/inspect_visitor.rbs",
+    "sig/prism/lex_compat.rbs",
     "sig/prism/mutation_compiler.rbs",
     "sig/prism/node_ext.rbs",
     "sig/prism/node.rbs",
