@@ -100,7 +100,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "none(**empty_hash, **empty_hash#{block})")
         check_allocations(1, 1, "none(*empty_array, *empty_array, **empty_hash, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, #{block.empty?} ? 0 : 1, "none(*r2k_empty_array#{block})")
+        check_allocations(#{block.empty?} ? 0 : 1, 0, "none(*r2k_empty_array#{block})")
       RUBY
     end
 
@@ -120,7 +120,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "required(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "required(*array1, *empty_array, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, #{block.empty?} ? 0 : 1, "required(*r2k_empty_array1#{block})")
+        check_allocations(#{block.empty?} ? 0 : 1, 0, "required(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "required(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
@@ -144,8 +144,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "optional(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "optional(*array1, *empty_array, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, #{block.empty?} ? 0 : 1, "optional(*r2k_empty_array#{block})")
-        check_allocations(#{block.empty?} ? 0 : 1, #{block.empty?} ? 0 : 1, "optional(*r2k_empty_array1#{block})")
+        check_allocations(#{block.empty?} ? 0 : 1, 0, "optional(*r2k_empty_array#{block})")
+        check_allocations(#{block.empty?} ? 0 : 1, 0, "optional(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "optional(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
@@ -180,8 +180,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "splat(*array1, *empty_array, **empty_hash#{block})")
         check_allocations(1, 1, "splat(*empty_array, **hash1, **empty_hash#{block})")
 
-        check_allocations(1, 1, "splat(*r2k_empty_array#{block})")
-        check_allocations(1, 1, "splat(*r2k_empty_array1#{block})")
+        check_allocations(1, 0, "splat(*r2k_empty_array#{block})")
+        check_allocations(1, 0, "splat(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "splat(*r2k_array#{block})")
         check_allocations(1, 1, "splat(*r2k_array1#{block})")
       RUBY
@@ -214,7 +214,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "req_splat(*array1, *empty_array, **empty_hash#{block})")
         check_allocations(1, 1, "req_splat(*empty_array, **hash1, **empty_hash#{block})")
 
-        check_allocations(1, 1, "req_splat(*r2k_empty_array1#{block})")
+        check_allocations(1, 0, "req_splat(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "req_splat(*r2k_array#{block})")
         check_allocations(1, 1, "req_splat(*r2k_array1#{block})")
       RUBY
@@ -247,7 +247,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "splat_post(*array1, *empty_array, **empty_hash#{block})")
         check_allocations(1, 1, "splat_post(*empty_array, **hash1, **empty_hash#{block})")
 
-        check_allocations(1, 1, "splat_post(*r2k_empty_array1#{block})")
+        check_allocations(1, 0, "splat_post(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "splat_post(*r2k_array#{block})")
         check_allocations(1, 1, "splat_post(*r2k_array1#{block})")
       RUBY
@@ -277,7 +277,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "keyword(*empty_array, *empty_array, **empty_hash#{block})")
 
-        check_allocations(1, 1, "keyword(*r2k_empty_array#{block})")
+        check_allocations(1, 0, "keyword(*r2k_empty_array#{block})")
         check_allocations(1, 1, "keyword(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
@@ -385,7 +385,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "required_and_keyword(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "required_and_keyword(*array1, *empty_array, **hash1, **empty_hash#{block})")
 
-        check_allocations(1, 1, "required_and_keyword(*r2k_empty_array1#{block})")
+        check_allocations(1, 0, "required_and_keyword(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "required_and_keyword(*r2k_array1#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
@@ -436,9 +436,9 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "splat_and_keyword(*array1, **hash1, **empty_hash#{block})")
         check_allocations(1, 0, "splat_and_keyword(*array1, **nil#{block})")
 
-        check_allocations(1, 1, "splat_and_keyword(*r2k_empty_array#{block})")
+        check_allocations(1, 0, "splat_and_keyword(*r2k_empty_array#{block})")
         check_allocations(1, 1, "splat_and_keyword(*r2k_array#{block})")
-        check_allocations(1, 1, "splat_and_keyword(*r2k_empty_array1#{block})")
+        check_allocations(1, 0, "splat_and_keyword(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "splat_and_keyword(*r2k_array1#{block})")
       RUBY
     end
@@ -758,11 +758,11 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "r2k(*array1, **hash1, **empty_hash#{block})")
         check_allocations(1, 0, "r2k(*array1, **nil#{block})")
 
-        check_allocations(1, 1, "r2k(*r2k_empty_array#{block})")
+        check_allocations(1, 0, "r2k(*r2k_empty_array#{block})")
         check_allocations(1, 1, "r2k(*r2k_array#{block})")
         unless defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
           # YJIT may or may not allocate depending on arch?
-          check_allocations(1, 1, "r2k(*r2k_empty_array1#{block})")
+          check_allocations(1, 0, "r2k(*r2k_empty_array1#{block})")
           check_allocations(1, 1, "r2k(*r2k_array1#{block})")
         end
       RUBY
