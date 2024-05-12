@@ -43,54 +43,115 @@ class DSL
     end
   }
 
+  class Var
+    class Table < Hash
+      def initialize(&block)
+        super() {|tbl, arg|
+          tbl.fetch(arg, &block)
+        }
+      end
+
+      def fetch(arg, &block)
+        super {
+          self[arg] = Var.new(self, arg, &block)
+        }
+      end
+
+      def add(&block)
+        v = new_var
+        self[v] = Var.new(self, v, &block)
+      end
+
+      def defined?(name)
+        name = name.to_s
+        any? {|_, v| v.var == name}
+      end
+
+      def new_var
+        "v#{size+1}"
+      end
+    end
+
+    attr_reader :var, :value
+
+    PRETTY_PRINT_INSTANCE_VARIABLES = instance_methods(false).freeze
+
+    def pretty_print_instance_variables
+      PRETTY_PRINT_INSTANCE_VARIABLES
+    end
+
+    alias to_s var
+
+    def initialize(table, arg, &block)
+      @var = table.new_var
+      @value = yield arg
+      @table = table
+    end
+
+    # Indexing.
+    #
+    #   $:1 -> v1=get_value($:1)
+    #   $:1[0] -> rb_ary_entry(v1, 0)
+    #   $:1[0..1] -> [rb_ary_entry(v1, 0), rb_ary_entry(v1, 1)]
+    #   *$:1[0..1] -> rb_ary_entry(v1, 0), rb_ary_entry(v1, 1)
+    #
+    # Splat needs `[range]` because `Var` does not have the length info.
+    def [](idx)
+      if ::Range === idx
+        idx.map {|i| self[i]}
+      else
+        @table.fetch("#@var[#{idx}]") {"rb_ary_entry(#{@var}, #{idx})"}
+      end
+    end
+  end
+
   def initialize(code, options, lineno = nil, indent: "\t\t\t")
     @lineno = lineno
     @indent = indent
     @events = {}
     @error = options.include?("error")
-    @brace = options.include?("brace")
     if options.include?("final")
       @final = "p->result"
     else
       @final = (options.grep(/\A\$#{NAME_PATTERN}\z/o)[0] || "p->s_lvalue")
     end
-    @vars = 0
 
-    # struct parser_params *p
-    p = p = "p"
-
-    @code = +""
+    bind = dsl_binding
+    @var_table = Var::Table.new {|arg| "get_value(#{arg})"}
     code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K(\$|\$:|@)#{TAG_PATTERN}?#{NAME_PATTERN}]o) {
       if (arg = $&) == "$:$"
         '"p->s_lvalue"'
       elsif arg.start_with?("$:")
-        %["get_value(#{arg})"]
+        "(#{@var_table[arg]}=@var_table[#{arg.dump}])"
       else
         arg.dump
       end
     }
-    @last_value = eval(code)
+    @last_value = bind.eval(code)
   rescue SyntaxError
     $stderr.puts "error on line #{@lineno}" if @lineno
     raise
+  end
+
+  def dsl_binding(p = "p")
+    # struct parser_params *p
+    binding
   end
 
   attr_reader :events
 
   undef lambda
   undef hash
-  undef class
+  undef :class
 
   def generate
-    s = "#@code#@final=#@last_value;"
-    s = "{VALUE #{ (1..@vars).map {|v| "v#{ v }" }.join(",") };#{ s }}" if @vars > 0
+    s = "#@final=#@last_value;"
     s << "ripper_error(p);" if @error
-    s = "{#{ s }}" if @brace
-    "#{@indent}#{s}"
-  end
-
-  def new_var
-    "v#{ @vars += 1 }"
+    unless @var_table.empty?
+      vars = @var_table.map {|_, v| "#{v.var}=#{v.value}"}.join(", ")
+      s = "VALUE #{ vars }; #{ s }"
+    end
+    "#{@indent}{#{s}}"
   end
 
   def add_event(event, args)
@@ -98,19 +159,16 @@ class DSL
     @events[event] = args.size
     vars = []
     args.each do |arg|
-      vars << v = new_var
-      @code << "#{ v }=#{ arg };"
+      arg = @var_table.add {arg} unless Var === arg
+      vars << arg
     end
-    v = new_var
-    d = "dispatch#{ args.size }(#{ [event, *vars].join(",") })"
-    @code << "#{ v }=#{ d };"
-    v
+    @var_table.add {"dispatch#{ args.size }(#{ [event, *vars].join(",") })"}
   end
 
   def method_missing(event, *args)
     if event.to_s =~ /!\z/
       add_event(event, args)
-    elsif args.empty? and /\Aid[A-Z_]/ =~ event.to_s
+    elsif args.empty? and (/\Aid[A-Z_]/ =~ event or @var_table.defined?(event))
       event
     else
       "#{ event }(#{ args.map(&:to_s).join(", ") })"
