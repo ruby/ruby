@@ -20,9 +20,9 @@ class DSL
   NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])(?>(?:\.|->)[a-zA-Z_][a-zA-Z0-9_]*)*/.source
   NOT_REF_PATTERN = /(?>\#.*|[^\"$@]*|"(?>\\.|[^\"])*")/.source
 
-  def self.line?(line, lineno = nil)
-    if %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/> =~ line
-      new($2, $1&.split(",") || [], lineno)
+  def self.line?(line, lineno = nil, indent: nil)
+    if %r<(?<space>\s*)/\*% *ripper(?:\[(?<option>.*?)\])?: *(?<code>.*?) *%\*/> =~ line
+      new(code, option&.split(",") || [], lineno, indent: indent || space)
     end
   end
 
@@ -38,8 +38,9 @@ class DSL
     end
   }
 
-  def initialize(code, options, lineno = nil)
+  def initialize(code, options, lineno = nil, indent: "\t\t\t")
     @lineno = lineno
+    @indent = indent
     @events = {}
     @error = options.include?("error")
     @brace = options.include?("brace")
@@ -80,7 +81,7 @@ class DSL
     s = "{VALUE #{ (1..@vars).map {|v| "v#{ v }" }.join(",") };#{ s }}" if @vars > 0
     s << "ripper_error(p);" if @error
     s = "{#{ s }}" if @brace
-    "\t\t\t#{s}"
+    "#{@indent}#{s}"
   end
 
   def new_var
