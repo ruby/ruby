@@ -1495,7 +1495,6 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 static VALUE defs(struct parser_params *p, VALUE head, VALUE args, VALUE bodystmt);
 static VALUE backref_error(struct parser_params*, NODE *, VALUE);
 static VALUE ripper_assignable(struct parser_params *p, ID id, VALUE lhs);
-static VALUE ripper_const_decl(struct parser_params *p, VALUE path);
 static VALUE assign_error(struct parser_params *p, const char *mesg, VALUE a);
 static int id_is_var(struct parser_params *p, ID id);
 #endif
@@ -3726,13 +3725,13 @@ mlhs_node	: user_variable
                     }
                 | primary_value tCOLON2 tCONSTANT
                     {
+                    /*% ripper: const_path_field!($:1, $:3) %*/
                         $$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
-                    /*% ripper: ripper_const_decl(p, const_path_field!($:1, $:3)) %*/
                     }
                 | tCOLON3 tCONSTANT
                     {
+                    /*% ripper: top_const_field!($:2) %*/
                         $$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
-                    /*% ripper: ripper_const_decl(p, top_const_field!($:2)) %*/
                     }
                 | backref
                     {
@@ -3776,13 +3775,13 @@ lhs		: user_variable
                     }
                 | primary_value tCOLON2 tCONSTANT
                     {
+                    /*% ripper: const_path_field!($:1, $:3) %*/
                         $$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
-                    /*% ripper: ripper_const_decl(p, const_path_field!($:1, $:3)) %*/
                     }
                 | tCOLON3 tCONSTANT
                     {
+                    /*% ripper: top_const_field!($:2) %*/
                         $$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
-                    /*% ripper: ripper_const_decl(p, top_const_field!($:2)) %*/
                     }
                 | backref
                     {
@@ -14969,20 +14968,16 @@ static NODE *
 const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
 {
     if (p->ctxt.in_def) {
+#ifndef RIPPER
         yyerror1(loc, "dynamic constant assignment");
+#else
+        set_value(assign_error(p, "dynamic constant assignment", p->s_lvalue));
+#endif
     }
     return NEW_CDECL(0, 0, (path), p->ctxt.shareable_constant_value, loc);
 }
-#ifdef RIPPER
-static VALUE
-ripper_const_decl(struct parser_params *p, VALUE path)
-{
-    if (p->ctxt.in_def) {
-        path = assign_error(p, "dynamic constant assignment", path);
-    }
-    return path;
-}
 
+#ifdef RIPPER
 static VALUE
 assign_error(struct parser_params *p, const char *mesg, VALUE a)
 {
