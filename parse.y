@@ -1494,7 +1494,6 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #define set_value(val) (p->s_lvalue = val)
 static VALUE defs(struct parser_params *p, VALUE head, VALUE args, VALUE bodystmt);
 static VALUE backref_error(struct parser_params*, NODE *, VALUE);
-static VALUE ripper_assignable(struct parser_params *p, ID id, VALUE lhs);
 static VALUE assign_error(struct parser_params *p, const char *mesg, VALUE a);
 static int id_is_var(struct parser_params *p, ID id);
 #endif
@@ -2965,7 +2964,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                                         p->cur_arg = 0;
                                         p->ctxt.in_argdef = 1;
                                         $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, $:1), $:3) %*/
+                                    /*% ripper: [$:$, $:3] %*/
                                     }
                                 ;
 
@@ -3693,13 +3692,13 @@ mlhs_post	: mlhs_item
 
 mlhs_node	: user_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 | keyword_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
@@ -3745,13 +3744,13 @@ mlhs_node	: user_variable
 
 lhs		: user_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 | keyword_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
@@ -4988,7 +4987,6 @@ f_marg		: f_norm_arg
                     {
                         $$ = assignable(p, $1, 0, &@$);
                         mark_lvar_used(p, $$);
-                    /*% ripper: ripper_assignable(p, $1, $:1) %*/
                     }
                 | tLPAREN f_margs rparen
                     {
@@ -5038,9 +5036,9 @@ f_margs		: f_marg_list
 
 f_rest_marg	: tSTAR f_norm_arg
                     {
+                    /*% ripper: $:2 %*/
                         $$ = assignable(p, $2, 0, &@$);
                         mark_lvar_used(p, $$);
-                    /*% ripper: ripper_assignable(p, $2, $:2) %*/
                     }
                 | tSTAR
                     {
@@ -5773,8 +5771,8 @@ p_find		: p_rest ',' p_args_post ',' p_rest
 p_rest		: tSTAR tIDENTIFIER
                     {
                         error_duplicate_pattern_variable(p, $2, &@2);
+                    /*% ripper: var_field!($:2) %*/
                         $$ = assignable(p, $2, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $2, var_field!($:2)) %*/
                     }
                 | tSTAR
                     {
@@ -5843,7 +5841,7 @@ p_kw		: p_kw_label p_expr
                         }
                         error_duplicate_pattern_variable(p, $1, &@1);
                         $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@$), &@$), assignable(p, $1, 0, &@$));
-                    /*% ripper: [ripper_assignable(p, $1, $:1), Qnil] %*/
+                    /*% ripper: [$:1, Qnil] %*/
                     }
                 ;
 
@@ -5952,8 +5950,8 @@ p_primitive	: literal
 p_variable	: tIDENTIFIER
                     {
                         error_duplicate_pattern_variable(p, $1, &@1);
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 ;
 
@@ -6389,13 +6387,13 @@ var_ref		: user_variable
 
 var_lhs		: user_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 | keyword_variable
                     {
+                    /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
-                    /*% ripper: ripper_assignable(p, $1, var_field!($:1)) %*/
                     }
                 ;
 
@@ -6687,14 +6685,14 @@ f_kw		: f_label arg_value
                         p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, $:1), $:2) %*/
+                    /*% ripper: [$:$, $:2] %*/
                     }
                 | f_label
                     {
                         p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, $:1), 0) %*/
+                    /*% ripper: [$:$, 0] %*/
                     }
                 ;
 
@@ -6702,13 +6700,13 @@ f_block_kw	: f_label primary_value
                     {
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, $:1), $:2) %*/
+                    /*% ripper: [$:$, $:2] %*/
                     }
                 | f_label
                     {
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, $:1), 0) %*/
+                    /*% ripper: [$:$, 0] %*/
                     }
                 ;
 
@@ -13664,19 +13662,11 @@ assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
 /* TODO: FIXME */
 #ifndef RIPPER
     if (err) yyerror1(loc, err);
+#else
+    if (err) set_value(assign_error(p, err, p->s_lvalue));
 #endif
     return NEW_ERROR(loc);
 }
-#ifdef RIPPER
-static VALUE
-ripper_assignable(struct parser_params *p, ID id, VALUE lhs)
-{
-    const char *err = 0;
-    assignable0(p, id, &err);
-    if (err) lhs = assign_error(p, err, lhs);
-    return lhs;
-}
-#endif
 
 static int
 is_private_local_id(struct parser_params *p, ID name)
