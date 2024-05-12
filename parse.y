@@ -1492,7 +1492,6 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #ifdef RIPPER
 #define get_value(idx) (rb_ary_entry(p->s_value_stack, idx))
 #define set_value(val) (p->s_lvalue = val)
-static VALUE defs(struct parser_params *p, VALUE head, VALUE args, VALUE bodystmt);
 static VALUE backref_error(struct parser_params*, NODE *, VALUE);
 static VALUE assign_error(struct parser_params *p, const char *mesg, VALUE a);
 static int id_is_var(struct parser_params *p, ID id);
@@ -3343,7 +3342,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         ($$ = $head->nd_def)->nd_loc = @$;
                         RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: defs(p, $:head, $:args, $:$) %*/
+                    /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
                     }
                 | backref tOP_ASGN lex_ctxt command_rhs
@@ -4141,7 +4140,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         ($$ = $head->nd_def)->nd_loc = @$;
                         RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: defs(p, $:head, $:args, $:$) %*/
+                    /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
                     }
                 | primary
@@ -4742,7 +4741,7 @@ primary		: literal
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                         ($$ = $head->nd_def)->nd_loc = @$;
                         RNODE_DEFS($$)->nd_defn = $bodystmt;
-                    /*% ripper: defs(p, $:head, $:args, $:bodystmt) %*/
+                    /*% ripper: defs!(*$:head[0..2], $:args, $:bodystmt) %*/
                         local_pop(p);
                     }
                 | keyword_break
@@ -13789,17 +13788,6 @@ rb_backref_error(struct parser_params *p, NODE *node)
 }
 
 #ifdef RIPPER
-static VALUE
-defs(struct parser_params *p, VALUE head, VALUE args, VALUE bodystmt)
-{
-    return dispatch5(defs,
-                     rb_ary_entry(head, 0), /* nd_recv */
-                     rb_ary_entry(head, 1), /* dot_or_colon */
-                     rb_ary_entry(head, 2), /* nd_mid */
-                     args,
-                     bodystmt);
-}
-
 static VALUE
 backref_error(struct parser_params *p, NODE *node, VALUE expr)
 {
