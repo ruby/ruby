@@ -22,8 +22,13 @@ class DSL
 
   def self.line?(line, lineno = nil, indent: nil)
     if %r<(?<space>\s*)/\*% *ripper(?:\[(?<option>.*?)\])?: *(?<code>.*?) *%\*/> =~ line
-      new(code, option&.split(",") || [], lineno, indent: indent || space)
+      new(code, comma_split(option), lineno, indent: indent || space)
     end
+  end
+
+  def self.comma_split(str)
+    str or return []
+    str.scan(/(([^(,)]+|\((?:,|\g<0>)*\))+)/).map(&:first)
   end
 
   using Module.new {
