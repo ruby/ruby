@@ -1611,12 +1611,8 @@ void ripper_error(struct parser_params *p);
 static VALUE ripper_formal_argument(struct parser_params *p, ID id, VALUE lhs);
 
 static VALUE
-ripper_new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn)
+aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
 {
-    VALUE pre_args  = rb_ary_entry(aryptn, 0);
-    VALUE rest_arg  = rb_ary_entry(aryptn, 1);
-    VALUE post_args = rb_ary_entry(aryptn, 2);
-
     if (!NIL_P(pre_arg)) {
         if (!NIL_P(pre_args)) {
             rb_ary_unshift(pre_args, pre_arg);
@@ -1625,7 +1621,7 @@ ripper_new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg,
             pre_args = rb_ary_new_from_args(1, pre_arg);
         }
     }
-    return dispatch4(aryptn, constant, pre_args, rest_arg, post_args);
+    return pre_args;
 }
 
 static VALUE
@@ -5543,13 +5539,13 @@ p_top_expr_body : p_expr
                     {
                         $$ = new_array_pattern_tail(p, 0, 1, 0, 0, &@$);
                         $$ = new_array_pattern(p, 0, $1, $$, &@$);
-                    /*% ripper: ripper_new_array_pattern(p, Qnil, $:1, rb_ary_new()) %*/
+                    /*% ripper: aryptn!(Qnil, [$:1], Qnil, Qnil) %*/
                     }
                 | p_expr ',' p_args
                     {
                         $$ = new_array_pattern(p, 0, $1, $3, &@$);
                         nd_set_first_loc($$, @1.beg_pos);
-                    /*% ripper: ripper_new_array_pattern(p, Qnil, $:1, $:3) %*/
+                    /*% ripper: aryptn!(Qnil, aryptn_pre_args(p, $:1, $:3[0]), *$:3[1..2]) %*/
                     }
                 | p_find
                     {
@@ -5559,7 +5555,7 @@ p_top_expr_body : p_expr
                 | p_args_tail
                     {
                         $$ = new_array_pattern(p, 0, 0, $1, &@$);
-                    /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, $:1) %*/
+                    /*% ripper: aryptn!(Qnil, *$:1[0..2]) %*/
                     }
                 | p_kwargs
                     {
@@ -5610,7 +5606,7 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_array_pattern(p, $p_const, 0, $p_args, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_array_pattern(p, $:p_const, Qnil, $:p_args) %*/
+                    /*% ripper: aryptn!($:p_const, *$:p_args[0..2]) %*/
                     }
                 | p_const p_lparen[p_pktbl] p_find rparen
                     {
@@ -5630,14 +5626,14 @@ p_expr_basic	: p_value
                     {
                         $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
                         $$ = new_array_pattern(p, $p_const, 0, $$, &@$);
-                        /*% ripper: ripper_new_array_pattern(p, $:p_const, Qnil, rb_ary_new()) %*/
+                        /*% ripper: aryptn!($:p_const, Qnil, Qnil, Qnil) %*/
                     }
                 | p_const p_lbracket[p_pktbl] p_args rbracket
                     {
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_array_pattern(p, $p_const, 0, $p_args, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_array_pattern(p, $:p_const, Qnil, $:p_args) %*/
+                    /*% ripper: aryptn!($:p_const, *$:p_args[0..2]) %*/
                     }
                 | p_const p_lbracket[p_pktbl] p_find rbracket
                     {
@@ -5657,12 +5653,12 @@ p_expr_basic	: p_value
                     {
                         $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
                         $$ = new_array_pattern(p, $1, 0, $$, &@$);
-                    /*% ripper: ripper_new_array_pattern(p, $:1, Qnil, rb_ary_new()) %*/
+                    /*% ripper: aryptn!($:1, Qnil, Qnil, Qnil) %*/
                     }
                 | tLBRACK p_args rbracket
                     {
                         $$ = new_array_pattern(p, 0, 0, $p_args, &@$);
-                    /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, $:p_args) %*/
+                    /*% ripper: aryptn!(Qnil, *$:p_args[0..2]) %*/
                     }
                 | tLBRACK p_find rbracket
                     {
@@ -5673,7 +5669,7 @@ p_expr_basic	: p_value
                     {
                         $$ = new_array_pattern_tail(p, 0, 0, 0, 0, &@$);
                         $$ = new_array_pattern(p, 0, 0, $$, &@$);
-                    /*% ripper: ripper_new_array_pattern(p, Qnil, Qnil, rb_ary_new()) %*/
+                    /*% ripper: aryptn!(Qnil, Qnil, Qnil, Qnil) %*/
                     }
                 | tLBRACE p_pktbl lex_ctxt[ctxt]
                     {
