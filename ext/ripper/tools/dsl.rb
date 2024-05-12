@@ -87,11 +87,7 @@ class DSL
     "v#{ @vars += 1 }"
   end
 
-  def opt_event(event, default, addend)
-    add_event(event, [default, addend], true)
-  end
-
-  def add_event(event, args, qundef_check = false)
+  def add_event(event, args)
     event = event.to_s.sub(/!\z/, "")
     @events[event] = args.size
     vars = []
@@ -101,7 +97,6 @@ class DSL
     end
     v = new_var
     d = "dispatch#{ args.size }(#{ [event, *vars].join(",") })"
-    d = "#{ vars.last }==rb_ripper_none ? #{ vars.first } : #{ d }" if qundef_check
     @code << "#{ v }=#{ d };"
     v
   end

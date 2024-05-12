@@ -83,6 +83,9 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 #define compile_callback rb_suppress_tracing
 #endif /* !UNIVERSAL_PARSER */
 
+#define NODE_SPECIAL_EMPTY_ARGS ((NODE *)-1)
+#define NODE_EMPTY_ARGS_P(node) ((node) == NODE_SPECIAL_EMPTY_ARGS)
+
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
 static rb_parser_string_t *rb_parser_string_deep_copy(struct parser_params *p, const rb_parser_string_t *original);
 
@@ -294,7 +297,6 @@ parse_isxdigit(int c)
 #define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
 
 #ifdef RIPPER
-VALUE rb_ripper_none;
 #include "ripper_init.h"
 #endif
 
@@ -4268,13 +4270,16 @@ paren_args	: '(' opt_call_args rparen
 
 opt_paren_args	: none
                 | paren_args
+                    {
+                        $$ = $1 ? $1 : NODE_SPECIAL_EMPTY_ARGS;
+                    }
                 ;
 
 opt_call_args	: none
                 | call_args
                 | args ','
                     {
-                      $$ = $1;
+                        $$ = $1;
                     }
                 | args ',' assocs ','
                     {
@@ -5324,13 +5329,23 @@ block_call	: command do_block
                     }
                 | block_call call_op2 operation2 opt_paren_args
                     {
+                        bool has_args = $4 != 0;
+                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
-                    /*% ripper: opt_event(:method_add_arg!, call!($:1, $:2, $:3), $:4) %*/
+                    /*% ripper: call!($:1, $:2, $:3) %*/
+                        if (has_args) {
+                        /*% ripper: method_add_arg!($:$, $:4) %*/
+                        }
                     }
                 | block_call call_op2 operation2 opt_paren_args brace_block
                     {
+                        bool has_args = $5 != 0;
+                        if (NODE_EMPTY_ARGS_P($5)) $5 = 0;
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
-                    /*% ripper: opt_event(:method_add_block!, command_call!($:1, $:2, $:3, $:4), $:5) %*/
+                    /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
+                        if (has_args) {
+                        /*% ripper: method_add_block!($:$, $:5) %*/
+                        }
                     }
                 | block_call call_op2 operation2 command_args do_block
                     {
@@ -5348,9 +5363,14 @@ method_call	: fcall paren_args
                     }
                 | primary_value call_op operation2 opt_paren_args
                     {
+                        bool has_args = $4 != 0;
+                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
                         nd_set_line($$, @3.end_pos.lineno);
-                    /*% ripper: opt_event(:method_add_arg!, call!($:1, $:2, $:3), $:4) %*/
+                    /*% ripper: call!($:1, $:2, $:3) %*/
+                        if (has_args) {
+                        /*% ripper: method_add_arg!($:$, $:4) %*/
+                        }
                     }
                 | primary_value tCOLON2 operation2 paren_args
                     {
@@ -6928,10 +6948,6 @@ terms		: term
 none		: /* none */
                     {
                         $$ = 0;
-                    /*%%%*/
-                    /*%
-                        set_value(rb_ripper_none);
-                    %*/
                     }
                 ;
 %%
@@ -16160,7 +16176,7 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 #endif
 
 #ifdef RIPPER
-#define validate(x) ((x) = (x) == rb_ripper_none ? Qnil : x)
+#define validate(x) (void)(x)
 
 static VALUE
 ripper_dispatch0(struct parser_params *p, ID mid)
