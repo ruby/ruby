@@ -634,10 +634,10 @@ static void
 after_reduce(int len, struct parser_params *p)
 {
     for (int i = 0; i < len; i++) {
+        VALUE tos = rb_ary_pop(p->s_value_stack);
         if (p->debug) {
-            rb_parser_printf(p, "after-reduce pop: %+"PRIsVALUE"\n", rb_ary_entry(p->s_value_stack, -1));
+            rb_parser_printf(p, "after-reduce pop: %+"PRIsVALUE"\n", tos);
         }
-        rb_ary_pop(p->s_value_stack);
     }
     if (p->debug) {
         rb_parser_printf(p, "after-reduce push: %+"PRIsVALUE"\n", p->s_lvalue);
@@ -659,10 +659,10 @@ static void
 after_pop_stack(int len, struct parser_params *p)
 {
     for (int i = 0; i < len; i++) {
+        VALUE tos = rb_ary_pop(p->s_value_stack);
         if (p->debug) {
-            rb_parser_printf(p, "after-pop-stack pop: %+"PRIsVALUE"\n", rb_ary_entry(p->s_value_stack, -1));
+            rb_parser_printf(p, "after-pop-stack pop: %+"PRIsVALUE"\n", tos);
         }
-        rb_ary_pop(p->s_value_stack);
     }
 }
 #else
