@@ -1743,8 +1743,10 @@ endless_method_name(struct parser_params *p, ID mid, const YYLTYPE *loc)
 
 #ifndef RIPPER
 # define ifndef_ripper(x) (x)
+# define ifdef_ripper(r,x) (x)
 #else
 # define ifndef_ripper(x)
+# define ifdef_ripper(r,x) (r)
 #endif
 
 # define rb_warn0(fmt)         WARN_CALL(WARN_ARGS(fmt, 1))
@@ -6366,17 +6368,12 @@ keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
 var_ref		: user_variable
                     {
                         if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
-                    /*%%%*/
-                    /*%
-                        if (id_is_var(p, $1)) {
-                            VALUE val = dispatch1(var_ref, get_value($:1));
-                            set_value(val);
+                        if (ifdef_ripper(id_is_var(p, $1), false)) {
+                        /*% ripper: var_ref!($:1) %*/
                         }
                         else {
-                            VALUE val = dispatch1(vcall, get_value($:1));
-                            set_value(val);
+                        /*% ripper: vcall!($:1) %*/
                         }
-                    %*/
                     }
                 | keyword_variable
                     {
