@@ -32,12 +32,6 @@
 #include "vm_core.h"
 #include "symbol.h"
 
-static int
-is_ascii_string2(VALUE str)
-{
-    return is_ascii_string(str);
-}
-
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
@@ -140,12 +134,6 @@ static void *
 utf8_encoding(void)
 {
     return (void *)rb_utf8_encoding();
-}
-
-static VALUE
-enc_associate(VALUE obj, void *enc)
-{
-    return rb_enc_associate(obj, (rb_encoding *)enc);
 }
 
 static void *
@@ -382,7 +370,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_new = rb_str_new,
     .str_new_cstr = rb_str_new_cstr,
     .str_to_interned_str = rb_str_to_interned_str,
-    .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
     .str_vcatf = rb_str_vcatf,
     .string_value_cstr = rb_string_value_cstr,
@@ -413,7 +400,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_get = enc_get,
     .enc_asciicompat = enc_asciicompat,
     .utf8_encoding = utf8_encoding,
-    .enc_associate = enc_associate,
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
