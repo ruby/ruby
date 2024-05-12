@@ -3382,7 +3382,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         rb_backref_error(p, $1);
                     /*% %*/
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, $1, assign!(var_field(p, get_value($:1)), $:4)) %*/
+                    /*% ripper[error]: backref_error(p, $1, opassign!(var_field(p, get_value($:1)), $:2, $:4)) %*/
                     }
                 ;
 

@@ -289,7 +289,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     result =
       parse('$& += cmd 1, 2', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
-    assert_equal '[assign_error(assign(var_field($&),command(cmd,[1,2])))]', result
+    assert_equal '[assign_error(opassign(var_field($&),+=,command(cmd,[1,2])))]', result
   end
 
   def test_assign_error_const_qualified
