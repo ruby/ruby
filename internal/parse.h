@@ -13,7 +13,7 @@
 #include "internal/static_assert.h"
 
 #ifdef UNIVERSAL_PARSER
-#define rb_encoding void
+#define rb_encoding const void
 #endif
 
 struct rb_iseq_struct;          /* in vm_core.h */
