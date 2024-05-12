@@ -1625,15 +1625,6 @@ aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
 }
 
 static VALUE
-ripper_new_hash_pattern(struct parser_params *p, VALUE constant, VALUE hshptn)
-{
-    VALUE kw_args     = rb_ary_entry(hshptn, 0);
-    VALUE kw_rest_arg = rb_ary_entry(hshptn, 1);
-
-    return dispatch3(hshptn, constant, kw_args, kw_rest_arg);
-}
-
-static VALUE
 ripper_new_find_pattern(struct parser_params *p, VALUE constant, VALUE fndptn)
 {
     VALUE pre_rest_arg  = rb_ary_entry(fndptn, 0);
@@ -5560,7 +5551,7 @@ p_top_expr_body : p_expr
                 | p_kwargs
                     {
                         $$ = new_hash_pattern(p, 0, $1, &@$);
-                    /*% ripper: ripper_new_hash_pattern(p, Qnil, $:1) %*/
+                    /*% ripper: hshptn!(Qnil, *$:1[0..1]) %*/
                     }
                 ;
 
@@ -5620,7 +5611,7 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_hash_pattern(p, $p_const, $p_kwargs, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_hash_pattern(p, $:p_const, $:p_kwargs) %*/
+                    /*% ripper: hshptn!($:p_const, *$:p_kwargs[0..1]) %*/
                     }
                 | p_const '(' rparen
                     {
@@ -5647,7 +5638,7 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_hash_pattern(p, $p_const, $p_kwargs, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_hash_pattern(p, $:p_const, $:p_kwargs) %*/
+                    /*% ripper: hshptn!($:p_const, *$:p_kwargs[0..1]) %*/
                     }
                 | p_const '[' rbracket
                     {
@@ -5680,13 +5671,13 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                         $$ = new_hash_pattern(p, 0, $p_kwargs, &@$);
-                    /*% ripper: ripper_new_hash_pattern(p, Qnil, $:p_kwargs) %*/
+                    /*% ripper: hshptn!(Qnil, *$:p_kwargs[0..1]) %*/
                     }
                 | tLBRACE rbrace
                     {
                         $$ = new_hash_pattern_tail(p, 0, 0, &@$);
                         $$ = new_hash_pattern(p, 0, $$, &@$);
-                    /*% ripper: ripper_new_hash_pattern(p, Qnil, [Qnil, Qnil]) %*/
+                    /*% ripper: hshptn!(Qnil, Qnil, Qnil) %*/
                     }
                 | tLPAREN p_pktbl p_expr rparen
                     {
