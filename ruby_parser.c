@@ -32,6 +32,8 @@
 #include "vm_core.h"
 #include "symbol.h"
 
+#define parser_encoding const void
+
 static int
 is_ascii_string2(VALUE str)
 {
@@ -41,9 +43,9 @@ is_ascii_string2(VALUE str)
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
-                       void *enc, const char *fmt, va_list args)
+                    parser_encoding *enc, const char *fmt, va_list args)
 {
-    return rb_syntax_error_append(exc, file, line, column, (rb_encoding *)enc, fmt, args);
+    return rb_syntax_error_append(exc, file, line, column, enc, fmt, args);
 }
 
 static int
@@ -59,9 +61,9 @@ dvar_defined(ID id, const void *p)
 }
 
 static int
-is_usascii_enc(void *enc)
+is_usascii_enc(parser_encoding *enc)
 {
-    return rb_is_usascii_enc((rb_encoding *)enc);
+    return rb_is_usascii_enc(enc);
 }
 
 static int
@@ -83,21 +85,21 @@ is_notop_id2(ID id)
 }
 
 static VALUE
-enc_str_new(const char *ptr, long len, void *enc)
+enc_str_new(const char *ptr, long len, parser_encoding *enc)
 {
-    return rb_enc_str_new(ptr, len, (rb_encoding *)enc);
+    return rb_enc_str_new(ptr, len, enc);
 }
 
 static int
-enc_isalnum(OnigCodePoint c, void *enc)
+enc_isalnum(OnigCodePoint c, parser_encoding *enc)
 {
-    return rb_enc_isalnum(c, (rb_encoding *)enc);
+    return rb_enc_isalnum(c, enc);
 }
 
 static int
-enc_precise_mbclen(const char *p, const char *e, void *enc)
+enc_precise_mbclen(const char *p, const char *e, parser_encoding *enc)
 {
-    return rb_enc_precise_mbclen(p, e, (rb_encoding *)enc);
+    return rb_enc_precise_mbclen(p, e, enc);
 }
 
 static int
@@ -113,93 +115,93 @@ mbclen_charfound_len(int len)
 }
 
 static const char *
-enc_name(void *enc)
+enc_name(parser_encoding *enc)
 {
-    return rb_enc_name((rb_encoding *)enc);
+    return rb_enc_name(enc);
 }
 
 static char *
-enc_prev_char(const char *s, const char *p, const char *e, void *enc)
+enc_prev_char(const char *s, const char *p, const char *e, parser_encoding *enc)
 {
-    return rb_enc_prev_char(s, p, e, (rb_encoding *)enc);
+    return rb_enc_prev_char(s, p, e, enc);
 }
 
-static void *
+static parser_encoding *
 enc_get(VALUE obj)
 {
-    return (void *)rb_enc_get(obj);
+    return rb_enc_get(obj);
 }
 
 static int
-enc_asciicompat(void *enc)
+enc_asciicompat(parser_encoding *enc)
 {
-    return rb_enc_asciicompat((rb_encoding *)enc);
+    return rb_enc_asciicompat(enc);
 }
 
-static void *
+static parser_encoding *
 utf8_encoding(void)
 {
-    return (void *)rb_utf8_encoding();
+    return rb_utf8_encoding();
 }
 
 static VALUE
-enc_associate(VALUE obj, void *enc)
+enc_associate(VALUE obj, parser_encoding *enc)
 {
-    return rb_enc_associate(obj, (rb_encoding *)enc);
+    return rb_enc_associate(obj, enc);
 }
 
-static void *
+static parser_encoding *
 ascii8bit_encoding(void)
 {
-    return (void *)rb_ascii8bit_encoding();
+    return rb_ascii8bit_encoding();
 }
 
 static int
-enc_codelen(int c, void *enc)
+enc_codelen(int c, parser_encoding *enc)
 {
-    return rb_enc_codelen(c, (rb_encoding *)enc);
+    return rb_enc_codelen(c, enc);
 }
 
 static int
-enc_mbcput(unsigned int c, void *buf, void *enc)
+enc_mbcput(unsigned int c, void *buf, parser_encoding *enc)
 {
-    return rb_enc_mbcput(c, buf, (rb_encoding *)enc);
+    return rb_enc_mbcput(c, buf, enc);
 }
 
 static int
-enc_mbclen(const char *p, const char *e, void *enc)
+enc_mbclen(const char *p, const char *e, parser_encoding *enc)
 {
-    return rb_enc_mbclen(p, e, (rb_encoding *)enc);
+    return rb_enc_mbclen(p, e, enc);
 }
 
-static void *
+static parser_encoding *
 enc_from_index(int idx)
 {
-    return (void *)rb_enc_from_index(idx);
+    return rb_enc_from_index(idx);
 }
 
 static int
-enc_isspace(OnigCodePoint c, void *enc)
+enc_isspace(OnigCodePoint c, parser_encoding *enc)
 {
-    return rb_enc_isspace(c, (rb_encoding *)enc);
+    return rb_enc_isspace(c, enc);
 }
 
 static ID
-intern3(const char *name, long len, void *enc)
+intern3(const char *name, long len, parser_encoding *enc)
 {
-    return rb_intern3(name, len, (rb_encoding *)enc);
+    return rb_intern3(name, len, enc);
 }
 
-static void *
+static parser_encoding *
 usascii_encoding(void)
 {
-    return (void *)rb_usascii_encoding();
+    return rb_usascii_encoding();
 }
 
 static int
-enc_symname_type(const char *name, long len, void *enc, unsigned int allowed_attrset)
+enc_symname_type(const char *name, long len, parser_encoding *enc, unsigned int allowed_attrset)
 {
-    return rb_enc_symname_type(name, len, (rb_encoding *)enc, allowed_attrset);
+    return rb_enc_symname_type(name, len, enc, allowed_attrset);
 }
 
 typedef struct {
@@ -220,7 +222,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     long len = name_end - name;
     const char *s = (const char *)name;
 
-    return rb_reg_named_capture_assign_iter_impl(p, s, len, (void *)enc, &arg->succ_block, loc);
+    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc);
 }
 
 static NODE *
@@ -305,25 +307,25 @@ static_id2sym(ID id)
 }
 
 static long
-str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
+str_coderange_scan_restartable(const char *s, const char *e, parser_encoding *enc, int *cr)
 {
-    return rb_str_coderange_scan_restartable(s, e, (rb_encoding *)enc, cr);
+    return rb_str_coderange_scan_restartable(s, e, enc, cr);
 }
 
 static int
-enc_mbminlen(void *enc)
+enc_mbminlen(parser_encoding *enc)
 {
-    return rb_enc_mbminlen((rb_encoding *)enc);
+    return rb_enc_mbminlen(enc);
 }
 
 static bool
-enc_isascii(OnigCodePoint c, void *enc)
+enc_isascii(OnigCodePoint c, parser_encoding *enc)
 {
-    return rb_enc_isascii(c, (rb_encoding *)enc);
+    return rb_enc_isascii(c, enc);
 }
 
 static OnigCodePoint
-enc_mbc_to_codepoint(const char *p, const char *e, void *enc)
+enc_mbc_to_codepoint(const char *p, const char *e, parser_encoding *enc)
 {
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
     const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);

@@ -59,7 +59,7 @@
 #undef st_lookup
 #define st_lookup rb_parser_st_lookup
 
-#define rb_encoding void
+#define rb_encoding const void
 
 #undef xmalloc
 #define xmalloc p->config->malloc
