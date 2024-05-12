@@ -1611,15 +1611,6 @@ void ripper_error(struct parser_params *p);
 static VALUE ripper_formal_argument(struct parser_params *p, ID id, VALUE lhs);
 
 static VALUE
-ripper_new_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg, VALUE post_args, VALUE tail)
-{
-    VALUE kw_args = rb_ary_entry(tail, 0);
-    VALUE kw_rest_arg = rb_ary_entry(tail, 1);
-    VALUE block = rb_ary_entry(tail, 2);
-    return dispatch7(params, pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, block);
-}
-
-static VALUE
 ripper_new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn)
 {
     VALUE pre_args  = rb_ary_entry(aryptn, 0);
@@ -5091,27 +5082,27 @@ excessed_comma	: ','
 block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, $:5, Qnil, $:6) %*/
+                    /*% ripper: params!($:1, $:3, $:5, Qnil, *$:6[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(primary_value) ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, $7, $8, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, $:5, $:7, $:8) %*/
+                    /*% ripper: params!($:1, $:3, $:5, $:7, *$:8[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(primary_value) opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, Qnil, Qnil, $:4) %*/
+                    /*% ripper: params!($:1, $:3, Qnil, Qnil, *$:4[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(primary_value) ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, Qnil, $:5, $:6) %*/
+                    /*% ripper: params!($:1, $:3, Qnil, $:5, *$:6[0..2]) %*/
                     }
                 | f_arg ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, $:3, Qnil, $:4) %*/
+                    /*% ripper: params!($:1, Qnil, $:3, Qnil, *$:4[0..2]) %*/
                     }
                 | f_arg excessed_comma
                     {
@@ -5122,47 +5113,47 @@ block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(blo
                 | f_arg ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, $:3, $:5, $:6) %*/
+                    /*% ripper: params!($:1, Qnil, $:3, $:5, *$:6[0..2]) %*/
                     }
                 | f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, Qnil, Qnil, $:2) %*/
+                    /*% ripper: params!($:1, Qnil, Qnil, Qnil, *$:2[0..2]) %*/
                     }
                 | f_optarg(primary_value) ',' f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, $:3, Qnil, $:4) %*/
+                    /*% ripper: params!(Qnil, $:1, $:3, Qnil, *$:4[0..2]) %*/
                     }
                 | f_optarg(primary_value) ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, $:3, $:5, $:6) %*/
+                    /*% ripper: params!(Qnil, $:1, $:3, $:5, *$:6[0..2]) %*/
                     }
                 | f_optarg(primary_value) opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, Qnil, Qnil, $:2) %*/
+                    /*% ripper: params!(Qnil, $:1, Qnil, Qnil, *$:2[0..2]) %*/
                     }
                 | f_optarg(primary_value) ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, Qnil, $:3, $:4) %*/
+                    /*% ripper: params!(Qnil, $:1, Qnil, $:3, *$:4[0..2]) %*/
                     }
                 | f_rest_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, $:1, Qnil, $:2) %*/
+                    /*% ripper: params!(Qnil, Qnil, $:1, Qnil, *$:2[0..2]) %*/
                     }
                 | f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, $:1, $:3, $:4) %*/
+                    /*% ripper: params!(Qnil, Qnil, $:1, $:3, *$:4[0..2]) %*/
                     }
                 | block_args_tail
                     {
                         $$ = new_args(p, 0, 0, 0, 0, $1, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, $:1) %*/
+                    /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, *$:1[0..2]) %*/
                     }
                 ;
 
@@ -6484,72 +6475,72 @@ args_tail	: f_kwarg(f_kw) ',' f_kwrest opt_f_block_arg
 f_args		: f_arg ',' f_optarg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, 0, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, $:5, Qnil, $:6) %*/
+                    /*% ripper: params!($:1, $:3, $:5, Qnil, *$:6[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(arg_value) ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, $5, $7, $8, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, $:5, $:7, $:8) %*/
+                    /*% ripper: params!($:1, $:3, $:5, $:7, *$:8[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(arg_value) opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, Qnil, Qnil, $:4) %*/
+                    /*% ripper: params!($:1, $:3, Qnil, Qnil, *$:4[0..2]) %*/
                     }
                 | f_arg ',' f_optarg(arg_value) ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, $3, 0, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, $:3, Qnil, $:5, $:6) %*/
+                    /*% ripper: params!($:1, $:3, Qnil, $:5, *$:6[0..2]) %*/
                     }
                 | f_arg ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, $:3, Qnil, $:4) %*/
+                    /*% ripper: params!($:1, Qnil, $:3, Qnil, *$:4[0..2]) %*/
                     }
                 | f_arg ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, $:3, $:5, $:6) %*/
+                    /*% ripper: params!($:1, Qnil, $:3, $:5, *$:6[0..2]) %*/
                     }
                 | f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, $1, 0, 0, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, $:1, Qnil, Qnil, Qnil, $:2) %*/
+                    /*% ripper: params!($:1, Qnil, Qnil, Qnil, *$:2[0..2]) %*/
                     }
                 | f_optarg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, 0, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, $:3, Qnil, $:4) %*/
+                    /*% ripper: params!(Qnil, $:1, $:3, Qnil, *$:4[0..2]) %*/
                     }
                 | f_optarg(arg_value) ',' f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, $3, $5, $6, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, $:3, $:5, $:6) %*/
+                    /*% ripper: params!(Qnil, $:1, $:3, $:5, *$:6[0..2]) %*/
                     }
                 | f_optarg(arg_value) opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, Qnil, Qnil, $:2) %*/
+                    /*% ripper: params!(Qnil, $:1, Qnil, Qnil, *$:2[0..2]) %*/
                     }
                 | f_optarg(arg_value) ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, $1, 0, $3, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, $:1, Qnil, $:3, $:4) %*/
+                    /*% ripper: params!(Qnil, $:1, Qnil, $:3, *$:4[0..2]) %*/
                     }
                 | f_rest_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, 0, $2, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, $:1, Qnil, $:2) %*/
+                    /*% ripper: params!(Qnil, Qnil, $:1, Qnil, *$:2[0..2]) %*/
                     }
                 | f_rest_arg ',' f_arg opt_args_tail(args_tail)
                     {
                         $$ = new_args(p, 0, 0, $1, $3, $4, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, $:1, $:3, $:4) %*/
+                    /*% ripper: params!(Qnil, Qnil, $:1, $:3, *$:4[0..2]) %*/
                     }
                 | args_tail
                     {
                         $$ = new_args(p, 0, 0, 0, 0, $1, &@$);
-                    /*% ripper: ripper_new_args(p, Qnil, Qnil, Qnil, Qnil, $:1) %*/
+                    /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, *$:1[0..2]) %*/
                     }
                 | /* none */
                     {
