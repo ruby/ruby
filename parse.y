@@ -1624,16 +1624,6 @@ aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
     return pre_args;
 }
 
-static VALUE
-ripper_new_find_pattern(struct parser_params *p, VALUE constant, VALUE fndptn)
-{
-    VALUE pre_rest_arg  = rb_ary_entry(fndptn, 0);
-    VALUE args          = rb_ary_entry(fndptn, 1);
-    VALUE post_rest_arg = rb_ary_entry(fndptn, 2);
-
-    return dispatch4(fndptn, constant, pre_rest_arg, args, post_rest_arg);
-}
-
 #define ID2VAL(id) STATIC_ID2SYM(id)
 #define TOKEN2VAL(t) ID2VAL(TOKEN2ID(t))
 #endif /* RIPPER */
@@ -5541,7 +5531,7 @@ p_top_expr_body : p_expr
                 | p_find
                     {
                         $$ = new_find_pattern(p, 0, $1, &@$);
-                    /*% ripper: ripper_new_find_pattern(p, Qnil, $:1) %*/
+                    /*% ripper: fndptn!(Qnil, *$:1[0..2]) %*/
                     }
                 | p_args_tail
                     {
@@ -5604,7 +5594,7 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_find_pattern(p, $p_const, $p_find, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_find_pattern(p, $:p_const, $:p_find) %*/
+                    /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
                 | p_const p_lparen[p_pktbl] p_kwargs rparen
                     {
@@ -5631,7 +5621,7 @@ p_expr_basic	: p_value
                         pop_pktbl(p, $p_pktbl);
                         $$ = new_find_pattern(p, $p_const, $p_find, &@$);
                         nd_set_first_loc($$, @p_const.beg_pos);
-                    /*% ripper: ripper_new_find_pattern(p, $:p_const, $:p_find) %*/
+                    /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
                 | p_const p_lbracket[p_pktbl] p_kwargs rbracket
                     {
@@ -5654,7 +5644,7 @@ p_expr_basic	: p_value
                 | tLBRACK p_find rbracket
                     {
                         $$ = new_find_pattern(p, 0, $p_find, &@$);
-                    /*% ripper: ripper_new_find_pattern(p, Qnil, $:p_find) %*/
+                    /*% ripper: fndptn!(Qnil, *$:p_find[0..2]) %*/
                     }
                 | tLBRACK rbracket
                     {
