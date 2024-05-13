@@ -4,7 +4,9 @@ require "rubygems" unless defined?(Gem)
 
 module Bundler
   class RubygemsIntegration
-    autoload :Monitor, "monitor"
+    require "monitor"
+
+    EXT_LOCK = Monitor.new
 
     def initialize
       @replaced_methods = {}
@@ -171,7 +173,7 @@ module Bundler
     end
 
     def ext_lock
-      @ext_lock ||= Monitor.new
+      EXT_LOCK
     end
 
     def spec_from_gem(path)
