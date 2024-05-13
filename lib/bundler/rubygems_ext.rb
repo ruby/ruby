@@ -145,11 +145,9 @@ module Gem
 
   module BetterPermissionError
     def data
-      require_relative "shared_helpers"
-
-      Bundler::SharedHelpers.filesystem_access(loaded_from, :read) do
-        super
-      end
+      super
+    rescue Errno::EACCES
+      raise Bundler::PermissionError.new(loaded_from, :read)
     end
   end
 
