@@ -181,15 +181,15 @@ module Bundler
 
             if err.include?("Could not find remote branch")
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
-            elsif err.include?("dumb http transport does not support shallow capabilities")
+            else
               idx = command.index("--depth")
               if idx
                 command.delete_at(idx)
                 command.delete_at(idx)
+                command_with_no_credentials = check_allowed(command)
+
                 err += "Retrying without --depth argument."
               end
-              raise GitCommandError.new(command_with_no_credentials, path, err)
-            else
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
           end
