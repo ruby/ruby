@@ -1128,29 +1128,61 @@ module Net   #:nodoc:
       http
     end
 
+    class << HTTP
+      # Allows to set the default configuration that will be used
+      # when creating a new connection.
+      #
+      # Example:
+      #
+      #   Net::HTTP.default_configuration = {
+      #     read_timeout: 1,
+      #     write_timeout: 1
+      #   }
+      #   http = Net::HTTP.new(hostname)
+      #   http.open_timeout   # => 60
+      #   http.read_timeout   # => 1
+      #   http.write_timeout  # => 1
+      #
+      attr_accessor :default_configuration
+    end
+
     # Creates a new \Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil) # :nodoc:
+      defaults = {
+        keep_alive_timeout: 2,
+        close_on_empty_response: false,
+        open_timeout: 60,
+        read_timeout: 60,
+        write_timeout: 60,
+        continue_timeout: nil,
+        max_retries: 1,
+        debug_output: nil,
+        response_body_encoding: false,
+        ignore_eof: true
+      }
+      options = defaults.merge(self.class.default_configuration || {})
+
       @address = address
       @port    = (port || HTTP.default_port)
       @ipaddr = nil
       @local_host = nil
       @local_port = nil
       @curr_http_version = HTTPVersion
-      @keep_alive_timeout = 2
+      @keep_alive_timeout = options[:keep_alive_timeout]
       @last_communicated = nil
-      @close_on_empty_response = false
+      @close_on_empty_response = options[:close_on_empty_response]
       @socket  = nil
       @started = false
-      @open_timeout = 60
-      @read_timeout = 60
-      @write_timeout = 60
-      @continue_timeout = nil
-      @max_retries = 1
-      @debug_output = nil
-      @response_body_encoding = false
-      @ignore_eof = true
+      @open_timeout = options[:open_timeout]
+      @read_timeout = options[:read_timeout]
+      @write_timeout = options[:write_timeout]
+      @continue_timeout = options[:continue_timeout]
+      @max_retries = options[:max_retries]
+      @debug_output = options[:debug_output]
+      @response_body_encoding = options[:response_body_encoding]
+      @ignore_eof = options[:ignore_eof]
 
       @proxy_from_env = false
       @proxy_uri      = nil

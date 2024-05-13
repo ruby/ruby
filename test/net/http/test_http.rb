@@ -254,6 +254,18 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_default_configuration
+    Net::HTTP.default_configuration = { open_timeout: 5 }
+    http = Net::HTTP.new 'hostname.example'
+    assert_equal 5, http.open_timeout
+    assert_equal 60, http.read_timeout
+
+    http.open_timeout = 10
+    assert_equal 10, http.open_timeout
+  ensure
+    Net::HTTP.default_configuration = nil
+  end
+
 end
 
 module TestNetHTTP_version_1_1_methods
