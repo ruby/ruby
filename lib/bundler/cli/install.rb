@@ -14,7 +14,7 @@ module Bundler
 
       Bundler.self_manager.install_locked_bundler_and_restart_with_it_if_needed
 
-      Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
+      Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Gem.freebsd_platform?
 
       # Disable color in deployment mode
       Bundler.ui.shell = Thor::Shell::Basic.new if options[:deployment]

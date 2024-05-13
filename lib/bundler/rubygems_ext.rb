@@ -23,6 +23,13 @@ unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
 end
 
 module Gem
+  # Can be removed once RubyGems 3.5.11 support is dropped
+  unless Gem.respond_to?(:freebsd_platform?)
+    def self.freebsd_platform?
+      RbConfig::CONFIG["host_os"].to_s.include?("bsd")
+    end
+  end
+
   require "rubygems/specification"
 
   class Specification
