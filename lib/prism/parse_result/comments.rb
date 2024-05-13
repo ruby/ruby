@@ -183,12 +183,5 @@ module Prism
         [preceding, NodeTarget.new(node), following]
       end
     end
-
-    private_constant :Comments
-
-    # Attach the list of comments to their respective locations in the tree.
-    def attach_comments!
-      Comments.new(self).attach! # steep:ignore
-    end
   end
 end

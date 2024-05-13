@@ -574,6 +574,12 @@ module Prism
 
   # This is a result specific to the `parse` and `parse_file` methods.
   class ParseResult < Result
+    autoload :Comments, "prism/parse_result/comments"
+    autoload :Newlines, "prism/parse_result/newlines"
+
+    private_constant :Comments
+    private_constant :Newlines
+
     # The syntax tree that was parsed from the source code.
     attr_reader :value
 
@@ -586,6 +592,17 @@ module Prism
     # Implement the hash pattern matching interface for ParseResult.
     def deconstruct_keys(keys)
       super.merge!(value: value)
+    end
+
+    # Attach the list of comments to their respective locations in the tree.
+    def attach_comments!
+      Comments.new(self).attach! # steep:ignore
+    end
+
+    # Walk the tree and mark nodes that are on a new line, loosely emulating
+    # the behavior of CRuby's `:line` tracepoint event.
+    def mark_newlines!
+      value.accept(Newlines.new(source.offsets.size)) # steep:ignore
     end
   end
 

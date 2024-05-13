@@ -28,18 +28,6 @@ module Prism
       location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
     end
 
-    def newline? # :nodoc:
-      @newline ? true : false
-    end
-
-    def set_newline_flag(newline_marked) # :nodoc:
-      line = location.start_line
-      unless newline_marked[line]
-        newline_marked[line] = true
-        @newline = true
-      end
-    end
-
     # Returns all of the lines of the source code associated with this node.
     def source_lines
       location.source_lines
@@ -181,7 +169,6 @@ module Prism
     # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
     def initialize(source, <%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
       @source = source
-      @newline = false
       @location = location
       <%- node.fields.each do |field| -%>
       <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
@@ -195,25 +182,6 @@ module Prism
     def accept(visitor)
       visitor.visit_<%= node.human %>(self)
     end
-    <%- if node.newline == false -%>
-
-    def set_newline_flag(newline_marked) # :nodoc:
-      # Never mark <%= node.name %> with a newline flag, mark children instead
-    end
-    <%- elsif node.newline.is_a?(String) -%>
-
-    def set_newline_flag(newline_marked) # :nodoc:
-      <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
-      <%- case field -%>
-      <%- when Prism::Template::NodeField -%>
-      <%= field.name %>.set_newline_flag(newline_marked)
-      <%- when Prism::Template::NodeListField -%>
-      first = <%= field.name %>.first
-      first.set_newline_flag(newline_marked) if first
-      <%- else raise field.class.name -%>
-      <%- end -%>
-    end
-    <%- end -%>
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
