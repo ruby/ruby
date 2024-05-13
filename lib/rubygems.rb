@@ -1013,6 +1013,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Is this platform FreeBSD
+
+  def self.freebsd_platform?
+    RbConfig::CONFIG["host_os"].to_s.include?("bsd")
+  end
+
+  ##
   # Load +plugins+ as Ruby files
 
   def self.load_plugin_files(plugins) # :nodoc:
