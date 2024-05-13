@@ -2,9 +2,9 @@
 
 begin
   require "parser"
-rescue LoadError => e
-  warn 'Error: Unable to load parser. Add `gem "parser"` to your Gemfile.'
-  exit!
+rescue LoadError
+  warn(%q{Error: Unable to load parser. Add `gem "parser"` to your Gemfile.})
+  exit(1)
 end
 
 module Prism
