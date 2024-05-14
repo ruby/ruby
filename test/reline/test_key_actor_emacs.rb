@@ -1437,4 +1437,72 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @line_editor.__send__(:vi_editing_mode, nil)
     assert(@config.editing_mode_is?(:vi_insert))
   end
+
+  def test_undo
+    input_keys("\C-_", false)
+    assert_line_around_cursor('', '')
+    input_keys("aあb\C-h\C-h\C-h", false)
+    assert_line_around_cursor('', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('a', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('aあ', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('aあb', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('aあ', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('a', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('', '')
+  end
+
+  def test_undo_with_cursor_position
+    input_keys("abc\C-b\C-h", false)
+    assert_line_around_cursor('a', 'c')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('ab', 'c')
+    input_keys("あいう\C-b\C-h", false)
+    assert_line_around_cursor('abあ', 'うc')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('abあい', 'うc')
+  end
+
+  def test_undo_with_multiline
+    @line_editor.multiline_on
+    @line_editor.confirm_multiline_termination_proc = proc {}
+    input_keys("1\n2\n3", false)
+    assert_whole_lines(["1", "2", "3"])
+    assert_line_index(2)
+    assert_line_around_cursor('3', '')
+    input_keys("\C-p\C-h\C-h", false)
+    assert_whole_lines(["1", "3"])
+    assert_line_index(0)
+    assert_line_around_cursor('1', '')
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('', '')
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('2', '')
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2", ""])
+    assert_line_index(2)
+    assert_line_around_cursor('', '')
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2"])
+    assert_line_index(1)
+    assert_line_around_cursor('2', '')
+  end
+
+  def test_undo_with_many_times
+    str = "a" + "b" * 100
+    input_keys(str, false)
+    100.times { input_keys("\C-_", false) }
+    assert_line_around_cursor('a', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('a', '')
+  end
 end

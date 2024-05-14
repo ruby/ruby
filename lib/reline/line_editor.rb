@@ -4,7 +4,6 @@ require 'reline/unicode'
 require 'tempfile'
 
 class Reline::LineEditor
-  # TODO: undo
   # TODO: Use "private alias_method" idiom after drop Ruby 2.5.
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
@@ -251,6 +250,8 @@ class Reline::LineEditor
     @resized = false
     @cache = {}
     @rendered_screen = RenderedScreen.new(base_y: 0, lines: [], cursor_y: 0)
+    @past_lines = []
+    @undoing = false
     reset_line
   end
 
@@ -948,7 +949,8 @@ class Reline::LineEditor
         unless @waiting_proc
           byte_pointer_diff = @byte_pointer - old_byte_pointer
           @byte_pointer = old_byte_pointer
-          send(@vi_waiting_operator, byte_pointer_diff)
+          method_obj = method(@vi_waiting_operator)
+          wrap_method_call(@vi_waiting_operator, method_obj, byte_pointer_diff)
           cleanup_waiting
         end
       else
@@ -1009,7 +1011,8 @@ class Reline::LineEditor
       if @vi_waiting_operator
         byte_pointer_diff = @byte_pointer - old_byte_pointer
         @byte_pointer = old_byte_pointer
-        send(@vi_waiting_operator, byte_pointer_diff)
+        method_obj = method(@vi_waiting_operator)
+        wrap_method_call(@vi_waiting_operator, method_obj, byte_pointer_diff)
         cleanup_waiting
       end
       @kill_ring.process
@@ -1106,6 +1109,7 @@ class Reline::LineEditor
   end
 
   def input_key(key)
+    save_old_buffer
     @config.reset_oneshot_key_bindings
     @dialogs.each do |dialog|
       if key.char.instance_of?(Symbol) and key.char == dialog.name
@@ -1120,7 +1124,6 @@ class Reline::LineEditor
       finish
       return
     end
-    old_lines = @buffer_of_lines.dup
     @first_char = false
     @completion_occurs = false
 
@@ -1134,18 +1137,41 @@ class Reline::LineEditor
       @completion_journey_state = nil
     end
 
+    push_past_lines unless @undoing
+    @undoing = false
+
     if @in_pasting
       clear_dialogs
       return
     end
 
-    modified = old_lines != @buffer_of_lines
+    modified = @old_buffer_of_lines != @buffer_of_lines
     if !@completion_occurs && modified && !@config.disable_completion && @config.autocompletion
       # Auto complete starts only when edited
       process_insert(force: true)
       @completion_journey_state = retrieve_completion_journey_state
     end
     modified
+  end
+
+  def save_old_buffer
+    @old_buffer_of_lines = @buffer_of_lines.dup
+    @old_byte_pointer = @byte_pointer.dup
+    @old_line_index = @line_index.dup
+  end
+
+  def push_past_lines
+    if @old_buffer_of_lines != @buffer_of_lines
+      @past_lines.push([@old_buffer_of_lines, @old_byte_pointer, @old_line_index])
+    end
+    trim_past_lines
+  end
+
+  MAX_PAST_LINES = 100
+  def trim_past_lines
+    if @past_lines.size > MAX_PAST_LINES
+      @past_lines.shift
+    end
   end
 
   def scroll_into_view
@@ -1216,6 +1242,18 @@ class Reline::LineEditor
   def set_current_line(line, byte_pointer = nil)
     cursor = current_byte_pointer_cursor
     @buffer_of_lines[@line_index] = line
+    if byte_pointer
+      @byte_pointer = byte_pointer
+    else
+      calculate_nearest_cursor(cursor)
+    end
+    process_auto_indent
+  end
+
+  def set_current_lines(lines, byte_pointer = nil, line_index = 0)
+    cursor = current_byte_pointer_cursor
+    @buffer_of_lines = lines
+    @line_index = line_index
     if byte_pointer
       @byte_pointer = byte_pointer
     else
@@ -1306,6 +1344,7 @@ class Reline::LineEditor
   end
 
   def insert_pasted_text(text)
+    save_old_buffer
     pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
     post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
     lines = (pre + text.gsub(/\r\n?/, "\n") + post).split("\n", -1)
@@ -1313,6 +1352,7 @@ class Reline::LineEditor
     @buffer_of_lines[@line_index, 1] = lines
     @line_index += lines.size - 1
     @byte_pointer = @buffer_of_lines[@line_index].bytesize - post.bytesize
+    push_past_lines
   end
 
   def insert_text(text)
@@ -2486,5 +2526,16 @@ class Reline::LineEditor
 
   private def vi_editing_mode(key)
     @config.editing_mode = :vi_insert
+  end
+
+  private def undo(_key)
+    return if @past_lines.empty?
+
+    @undoing = true
+
+    target_lines, target_cursor_x, target_cursor_y = @past_lines.last
+    set_current_lines(target_lines, target_cursor_x, target_cursor_y)
+
+    @past_lines.pop
   end
 end

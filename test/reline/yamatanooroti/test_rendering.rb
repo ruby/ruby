@@ -556,6 +556,19 @@ begin
       EOC
     end
 
+    def test_bracketed_paste_with_undo
+      omit if Reline.core.io_gate.win?
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("abc")
+      write("\e[200~def hoge\r\t3\rend\e[201~")
+      write("\C-_")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> abc
+      EOC
+    end
+
     def test_backspace_until_returns_to_initial
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("ABC")
