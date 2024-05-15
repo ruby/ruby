@@ -1336,9 +1336,9 @@ x = __ENCODING__
   end
 
   def test_unexpected_token_after_numeric
-    assert_syntax_error('0000xyz', /^    \^~~\Z/)
-    assert_syntax_error('1.2i1.1', /^    \^~~\Z/)
-    assert_syntax_error('1.2.3', /^   \^~\Z/)
+    assert_syntax_error('0000xyz', /(^|\| )    \^~~(?!~)/)
+    assert_syntax_error('1.2i1.1', /(^|\| )    \^~~(?!~)/)
+    assert_syntax_error('1.2.3', /(^|\| )   \^~(?!~)/)
     assert_syntax_error('1.', /unexpected end-of-input/)
     assert_syntax_error('1e', /expecting end-of-input/)
   end
