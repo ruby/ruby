@@ -875,7 +875,8 @@ x = __ENCODING__
     $test_parse_foobarbazqux = nil
     assert_equal(nil, $&)
     assert_equal(nil, eval('alias $& $preserve_last_match'))
-    assert_syntax_error('a = $#', /as a global variable name\na = \$\#\n    \^~$/)
+    assert_syntax_error('a = $#', /as a global variable name/)
+    assert_syntax_error('a = $#', /a = \$\#\n(^|.+?\| )    \^~(?!~)/)
   end
 
   def test_invalid_instance_variable
