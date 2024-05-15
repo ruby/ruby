@@ -45,7 +45,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      if Gem.install_extension_in_lib && lib_dir
+      is_cross_compiling = target_rbconfig["platform"] != RbConfig::CONFIG["platform"]
+      # Do not copy extension libraries by default when cross-compiling
+      # not to conflict with the one already built for the host platform.
+      if Gem.install_extension_in_lib && lib_dir && !is_cross_compiling
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]
         entries = entries.map {|entry| File.join full_tmp_dest, entry }

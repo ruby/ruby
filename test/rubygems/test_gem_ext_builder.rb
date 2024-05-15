@@ -330,6 +330,7 @@ install:
       end
       f.puts "RbConfig::CONFIG['host_os'] = 'fake_os'"
       f.puts "RbConfig::CONFIG['arch'] = 'fake_arch'"
+      f.puts "RbConfig::CONFIG['platform'] = 'fake_platform'"
     end
 
     system(Gem.ruby, "-rmkmf", "-e", "exit MakeMakefile::RbConfig::CONFIG['host_os'] == 'fake_os'",
@@ -340,6 +341,9 @@ install:
     @builder = Gem::Ext::Builder.new @spec, "", Gem::TargetRbConfig.from_path(fake_rbconfig)
 
     FileUtils.mkdir_p @spec.gem_dir
+    lib_dir = File.join(@spec.gem_dir, "lib")
+
+    FileUtils.mkdir lib_dir
 
     File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
       f.write <<-'RUBY'
@@ -367,6 +371,7 @@ install:
     arch=fake_arch
     DUMP
     assert_path_exist @spec.extension_dir
+    assert_equal [], Dir.glob(File.join(lib_dir, "*"))
   end
 
   def test_initialize
