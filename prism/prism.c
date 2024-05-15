@@ -13737,7 +13737,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
  */
 static void
 pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    const pm_node_t *duplicated = pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node);
+    const pm_node_t *duplicated = pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node, true);
 
     if (duplicated != NULL) {
         pm_buffer_t buffer = { 0 };
@@ -13763,13 +13763,16 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
  */
 static void
 pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    if (pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node) != NULL) {
+    pm_node_t *previous;
+
+    if ((previous = pm_static_literals_add(&parser->newline_list, parser->start_line, literals, node, false)) != NULL) {
         pm_diagnostic_list_append_format(
             &parser->warning_list,
             node->location.start,
             node->location.end,
             PM_WARN_DUPLICATED_WHEN_CLAUSE,
-            pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line
+            pm_newline_list_line_column(&parser->newline_list, node->location.start, parser->start_line).line,
+            pm_newline_list_line_column(&parser->newline_list, previous->location.start, parser->start_line).line
         );
     }
 }
@@ -16370,7 +16373,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
  */
 static void
 parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
-    if (pm_static_literals_add(&parser->newline_list, parser->start_line, keys, node) != NULL) {
+    if (pm_static_literals_add(&parser->newline_list, parser->start_line, keys, node, true) != NULL) {
         pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_KEY_DUPLICATE);
     }
 }
@@ -18132,6 +18135,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                             // as frozen because when clause strings are frozen.
                             if (PM_NODE_TYPE_P(condition, PM_STRING_NODE)) {
                                 pm_node_flag_set(condition, PM_STRING_FLAGS_FROZEN | PM_NODE_FLAG_STATIC_LITERAL);
+                            } else if (PM_NODE_TYPE_P(condition, PM_SOURCE_FILE_NODE)) {
+                                pm_node_flag_set(condition, PM_NODE_FLAG_STATIC_LITERAL);
                             }
 
                             pm_when_clause_static_literals_add(parser, &literals, condition);

@@ -65,7 +65,7 @@ module Prism
     end
 
     def test_duplicated_when_clause
-      assert_warning("case 1; when 1, 1; end", "clause with line")
+      assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
     def test_float_out_of_range
