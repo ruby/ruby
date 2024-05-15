@@ -693,8 +693,11 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 args->rest_dupped = false;
 
                 if (ignore_keyword_hash_p(rest_last, iseq, &kw_flag, &converted_keyword_hash)) {
-                    arg_rest_dup(args);
-                    rb_ary_pop(args->rest);
+                    if (ISEQ_BODY(iseq)->param.flags.has_rest || arg_setup_type != arg_setup_method) {
+                        // Only duplicate/modify splat array if it will be used
+                        arg_rest_dup(args);
+                        rb_ary_pop(args->rest);
+                    }
                     given_argc--;
                     kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
                 }

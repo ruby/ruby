@@ -100,7 +100,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "none(**empty_hash, **empty_hash#{block})")
         check_allocations(1, 1, "none(*empty_array, *empty_array, **empty_hash, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, 0, "none(*r2k_empty_array#{block})")
+        check_allocations(0, 0, "none(*r2k_empty_array#{block})")
       RUBY
     end
 
@@ -120,7 +120,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "required(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "required(*array1, *empty_array, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, 0, "required(*r2k_empty_array1#{block})")
+        check_allocations(0, 0, "required(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "required(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
@@ -144,8 +144,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "optional(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "optional(*array1, *empty_array, **empty_hash#{block})")
 
-        check_allocations(#{block.empty?} ? 0 : 1, 0, "optional(*r2k_empty_array#{block})")
-        check_allocations(#{block.empty?} ? 0 : 1, 0, "optional(*r2k_empty_array1#{block})")
+        check_allocations(0, 0, "optional(*r2k_empty_array#{block})")
+        check_allocations(0, 0, "optional(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "optional(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
