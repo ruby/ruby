@@ -8995,8 +8995,8 @@ lex_global_variable(pm_parser_t *parser) {
                 // If we get here, then we have a $ followed by something that
                 // isn't recognized as a global variable.
                 pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
-                size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, (int) ((parser->current.end + width) - parser->current.start), (const char *) parser->current.start);
+                const uint8_t *end = parser->current.end + parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+                PM_PARSER_ERR_FORMAT(parser, parser->current.start, end, diag_id, (int) (end - parser->current.start), (const char *) parser->current.start);
             }
 
             return PM_TOKEN_GLOBAL_VARIABLE;
