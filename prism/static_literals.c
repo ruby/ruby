@@ -154,7 +154,7 @@ node_hash(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) 
  * and must be able to compare all node types that will be stored in this hash.
  */
 static pm_node_t *
-pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *metadata, pm_node_t *node, int (*compare)(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right)) {
+pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *metadata, pm_node_t *node, bool replace, int (*compare)(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right)) {
     // If we are out of space, we need to resize the hash. This will cause all
     // of the nodes to be rehashed and reinserted into the new hash.
     if (hash->size * 2 >= hash->capacity) {
@@ -202,9 +202,14 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *m
     // already in the hash. Otherwise, we can just increment the size and insert
     // the new node.
     pm_node_t *result = hash->nodes[index];
-    if (result == NULL) hash->size++;
 
-    hash->nodes[index] = node;
+    if (result == NULL) {
+        hash->size++;
+        hash->nodes[index] = node;
+    } else if (replace) {
+        hash->nodes[index] = node;
+    }
+
     return result;
 }
 
@@ -348,7 +353,7 @@ pm_compare_regular_expression_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_liter
  * Add a node to the set of static literals.
  */
 pm_node_t *
-pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node) {
+pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
@@ -360,6 +365,7 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_integer_nodes
             );
         case PM_FLOAT_NODE:
@@ -371,6 +377,7 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_float_nodes
             );
         case PM_RATIONAL_NODE:
@@ -383,6 +390,7 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_number_nodes
             );
         case PM_STRING_NODE:
@@ -395,6 +403,7 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_string_nodes
             );
         case PM_REGULAR_EXPRESSION_NODE:
@@ -406,6 +415,7 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_regular_expression_nodes
             );
         case PM_SYMBOL_NODE:
@@ -417,26 +427,27 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
                     .encoding_name = NULL
                 },
                 node,
+                replace,
                 pm_compare_string_nodes
             );
         case PM_TRUE_NODE: {
             pm_node_t *duplicated = literals->true_node;
-            literals->true_node = node;
+            if ((duplicated == NULL) || replace) literals->true_node = node;
             return duplicated;
         }
         case PM_FALSE_NODE: {
             pm_node_t *duplicated = literals->false_node;
-            literals->false_node = node;
+            if ((duplicated == NULL) || replace) literals->false_node = node;
             return duplicated;
         }
         case PM_NIL_NODE: {
             pm_node_t *duplicated = literals->nil_node;
-            literals->nil_node = node;
+            if ((duplicated == NULL) || replace) literals->nil_node = node;
             return duplicated;
         }
         case PM_SOURCE_ENCODING_NODE: {
             pm_node_t *duplicated = literals->source_encoding_node;
-            literals->source_encoding_node = node;
+            if ((duplicated == NULL) || replace) literals->source_encoding_node = node;
             return duplicated;
         }
         default:
