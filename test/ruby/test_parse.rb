@@ -1394,7 +1394,7 @@ x = __ENCODING__
   end
 
   def test_location_of_invalid_token
-    assert_syntax_error('class xxx end', /^      \^~~\Z/)
+    assert_syntax_error('class xxx end', /(^|\| )      \^~~(?!~)/)
   end
 
   def test_whitespace_warning
