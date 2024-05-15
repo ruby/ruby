@@ -2922,6 +2922,9 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                             | tCONSTANT
                             ;
 
+%rule %inline inline_operation : ident_or_const
+                               | tFID
+                               ;
 /*
  *	parameterizing rules
  */
@@ -3775,8 +3778,7 @@ cpath		: tCOLON3 cname
                     }
                 ;
 
-fname		: ident_or_const
-                | tFID
+fname		: inline_operation
                 | op
                     {
                         SET_LEX_STATE(EXPR_ENDFN);
@@ -6840,8 +6842,7 @@ assoc		: arg_value tASSOC arg_value
                     }
                 ;
 
-operation	: ident_or_const
-                | tFID
+operation	: inline_operation
                 ;
 
 operation2	: operation
