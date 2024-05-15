@@ -2659,7 +2659,7 @@ EOS
     end;
   end if Process.respond_to?(:_fork)
 
-  def test_concurrent_group_and_pid_wait
+  def _test_concurrent_group_and_pid_wait(nohang)
     # Use a pair of pipes that will make long_pid exit when this test exits, to avoid
     # leaking temp processes.
     long_rpipe, long_wpipe = IO.pipe
@@ -2683,8 +2683,23 @@ EOS
       Thread.pass until t1.stop?
       short_wpipe.close # Make short_pid exit
 
-      # The short pid has exited, so -1 should pick that up.
-      assert_equal short_pid, Process.waitpid(-1)
+      # The short pid has exited, so waitpid(-1) should pick that up.
+      exited_pid =
+        unless nohang
+          Process.waitpid(-1)
+        else
+          EnvUtil.timeout(5) do
+            loop do
+              pid = Process.waitpid(-1, Process::WNOHANG)
+
+              break pid if pid
+
+              sleep 0.1
+            end
+          end
+        end
+
+      assert_equal short_pid, exited_pid
 
       # Terminate t1 for the next phase of the test.
       t1.kill
@@ -2712,5 +2727,13 @@ EOS
     [t1, t2, t3].each { _1&.kill rescue nil }
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
+  end if defined?(fork)
+
+  def test_concurrent_group_and_pid_wait
+    _test_concurrent_group_and_pid_wait(false)
+  end if defined?(fork)
+
+  def test_concurrent_group_and_pid_wait_nohang
+    _test_concurrent_group_and_pid_wait(true)
   end if defined?(fork)
 end
