@@ -1390,7 +1390,7 @@ x = __ENCODING__
   end
 
   def test_unexpected_eof
-    assert_syntax_error('unless', /^      \^\Z/)
+    assert_syntax_error('unless', /(^|\| )      \^(?!~)/)
   end
 
   def test_location_of_invalid_token
