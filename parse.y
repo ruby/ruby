@@ -13334,8 +13334,8 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
     else {
         st_data_t line;
         if (st_lookup(p->case_labels, (st_data_t)arg, &line)) {
-            rb_warning1("duplicated 'when' clause with line %d is ignored",
-                        WARN_I((int)line));
+            rb_warning2("'when' clause on line %d duplicates 'when' clause on line %d and is ignored",
+                        WARN_I((int)nd_line(arg)), WARN_I((int)line));
             return;
         }
     }
