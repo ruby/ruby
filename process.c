@@ -1292,7 +1292,7 @@ waitpid_wait(struct waitpid_state *w)
     if (w->ret) {
         if (w->ret == -1) w->errnum = errno;
     }
-    else if (w->options & WNOHANG) {
+    else if (w->options & WNOHANG && w->pid > 0) {
     }
     else {
         need_sleep = TRUE;
