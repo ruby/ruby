@@ -1,4 +1,3 @@
-exclude(:test_global_variable, "error message format")
 exclude(:test_invalid_char, "error message format")
 exclude(:test_percent, "error message format")
 exclude(:test_question, "error message format")
