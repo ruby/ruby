@@ -1694,8 +1694,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       else
       end
     STR
-    assert_match(/duplicated 'when' clause/, fmt)
-    assert_equal([3], args)
+    assert_match(/duplicates 'when' clause/, fmt)
+    assert_equal([4, 3], args)
   end
 
   def test_warn_duplicated_hash_keys

@@ -713,8 +713,8 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated \'when\' clause with line 3 is ignored'
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    w = ->(line) { "warning: 'when' clause on line #{line} duplicates 'when' clause on line 3 and is ignored" }
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       eval %q{
         case 1
         when 1, 1
@@ -723,7 +723,7 @@ class TestSyntax < Test::Unit::TestCase
         end
       }
     }
-    assert_warning(/#{w}/) {#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       a = a = 1
       eval %q{
         case 1
@@ -733,7 +733,7 @@ class TestSyntax < Test::Unit::TestCase
         end
       }
     }
-    assert_warning(/3: #{w}/m) {
+    assert_warning(/#{w[3]}/) {
       eval %q{
         case 1
         when __LINE__, __LINE__
@@ -742,7 +742,7 @@ class TestSyntax < Test::Unit::TestCase
         end
       }
     }
-    assert_warning(/3: #{w}/m) {
+    assert_warning(/#{w[3]}/) {
       eval %q{
         case 1
         when __FILE__, __FILE__
@@ -754,7 +754,7 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_duplicated_when_check_option
-    w = /duplicated \'when\' clause with line 3 is ignored/
+    w = /'when' clause on line 4 duplicates 'when' clause on line 3 and is ignored/
     assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
     begin;
       case 1
