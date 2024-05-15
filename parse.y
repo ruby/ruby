@@ -3613,14 +3613,14 @@ command		: fcall command_args       %prec tLOWEST
                     {
                         NODE *args = 0;
                         args = ret_args(p, $2);
-                        $<node>$ = add_block_exit(p, NEW_BREAK(args, &@$));
+                        $$ = add_block_exit(p, NEW_BREAK(args, &@$));
                     /*% ripper: break!($:2) %*/
                     }
                 | keyword_next call_args
                     {
                         NODE *args = 0;
                         args = ret_args(p, $2);
-                        $<node>$ = add_block_exit(p, NEW_NEXT(args, &@$));
+                        $$ = add_block_exit(p, NEW_NEXT(args, &@$));
                     /*% ripper: next!($:2) %*/
                     }
                 ;
@@ -4790,17 +4790,17 @@ primary		: literal
                     }
                 | keyword_break
                     {
-                        $<node>$ = add_block_exit(p, NEW_BREAK(0, &@$));
+                        $$ = add_block_exit(p, NEW_BREAK(0, &@$));
                     /*% ripper: break!(args_new!) %*/
                     }
                 | keyword_next
                     {
-                        $<node>$ = add_block_exit(p, NEW_NEXT(0, &@$));
+                        $$ = add_block_exit(p, NEW_NEXT(0, &@$));
                     /*% ripper: next!(args_new!) %*/
                     }
                 | keyword_redo
                     {
-                        $<node>$ = add_block_exit(p, NEW_REDO(&@$));
+                        $$ = add_block_exit(p, NEW_REDO(&@$));
                     /*% ripper: redo! %*/
                     }
                 | keyword_retry
