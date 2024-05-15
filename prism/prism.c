@@ -13552,8 +13552,8 @@ parse_targets_validate(pm_parser_t *parser, pm_node_t *first_target, pm_binding_
  */
 static pm_statements_node_t *
 parse_statements(pm_parser_t *parser, pm_context_t context) {
-    // First, skip past any optional terminators that might be at the beginning of
-    // the statements.
+    // First, skip past any optional terminators that might be at the beginning
+    // of the statements.
     while (accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE));
 
     // If we have a terminator, then we can just return NULL.
@@ -13569,20 +13569,20 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
         pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, true, PM_ERR_CANNOT_PARSE_EXPRESSION);
         pm_statements_node_body_append(parser, statements, node);
 
-        // If we're recovering from a syntax error, then we need to stop parsing the
-        // statements now.
+        // If we're recovering from a syntax error, then we need to stop parsing
+        // the statements now.
         if (parser->recovering) {
-            // If this is the level of context where the recovery has happened, then
-            // we can mark the parser as done recovering.
+            // If this is the level of context where the recovery has happened,
+            // then we can mark the parser as done recovering.
             if (context_terminator(context, &parser->current)) parser->recovering = false;
             break;
         }
 
-        // If we have a terminator, then we will parse all consecutive terminators
-        // and then continue parsing the statements list.
+        // If we have a terminator, then we will parse all consecutive
+        // terminators and then continue parsing the statements list.
         if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-            // If we have a terminator, then we will continue parsing the statements
-            // list.
+            // If we have a terminator, then we will continue parsing the
+            // statements list.
             while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
             if (context_terminator(context, &parser->current)) break;
 
@@ -13590,27 +13590,28 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
             continue;
         }
 
-        // At this point we have a list of statements that are not terminated by a
-        // newline or semicolon. At this point we need to check if we're at the end
-        // of the statements list. If we are, then we should break out of the loop.
+        // At this point we have a list of statements that are not terminated by
+        // a newline or semicolon. At this point we need to check if we're at
+        // the end of the statements list. If we are, then we should break out
+        // of the loop.
         if (context_terminator(context, &parser->current)) break;
 
         // At this point, we have a syntax error, because the statement was not
         // terminated by a newline or semicolon, and we're not at the end of the
-        // statements list. Ideally we should scan forward to determine if we should
-        // insert a missing terminator or break out of parsing the statements list
-        // at this point.
+        // statements list. Ideally we should scan forward to determine if we
+        // should insert a missing terminator or break out of parsing the
+        // statements list at this point.
         //
-        // We don't have that yet, so instead we'll do a more naive approach. If we
-        // were unable to parse an expression, then we will skip past this token and
-        // continue parsing the statements list. Otherwise we'll add an error and
-        // continue parsing the statements list.
+        // We don't have that yet, so instead we'll do a more naive approach. If
+        // we were unable to parse an expression, then we will skip past this
+        // token and continue parsing the statements list. Otherwise we'll add
+        // an error and continue parsing the statements list.
         if (PM_NODE_TYPE_P(node, PM_MISSING_NODE)) {
             parser_lex(parser);
 
             while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
             if (context_terminator(context, &parser->current)) break;
-        } else if (!accept1(parser, PM_TOKEN_NEWLINE)) {
+        } else if (!accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_EOF)) {
             // This is an inlined version of accept1 because the error that we
             // want to add has varargs. If this happens again, we should
             // probably extract a helper function.
@@ -17428,7 +17429,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             // If we didn't find a terminator and we didn't find a right
             // parenthesis, then this is a syntax error.
-            if (!terminator_found) {
+            if (!terminator_found && !match1(parser, PM_TOKEN_EOF)) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
             }
 
@@ -17457,7 +17458,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) break;
                 } else if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                     break;
-                } else {
+                } else if (!match1(parser, PM_TOKEN_EOF)) {
+                    // If we're at the end of the file, then we're going to add
+                    // an error after this for the ) anyway.
                     PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
                 }
             }

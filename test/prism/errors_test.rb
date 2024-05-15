@@ -195,8 +195,7 @@ module Prism
 
     def test_unterminated_parenthesized_expression
       assert_errors expression('(1 + 2'), '(1 + 2', [
-        ["unexpected end of file, expecting end-of-input", 6..6],
-        ["unexpected end of file, assuming it is closing the parent top level context", 6..6],
+        ["unexpected end-of-input, assuming it is closing the parent top level context", 6..6],
         ["expected a matching `)`", 6..6]
       ]
     end
@@ -210,8 +209,8 @@ module Prism
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
         ["invalid `%` token", 2..3],
-        ["unexpected end of file; expected an expression after the operator", 3..3],
-        ["unexpected end of file, assuming it is closing the parent top level context", 3..3]
+        ["unexpected end-of-input; expected an expression after the operator", 3..3],
+        ["unexpected end-of-input, assuming it is closing the parent top level context", 3..3]
       ]
     end
 
@@ -365,7 +364,7 @@ module Prism
       assert_error_messages "x.each { x end", [
         "unexpected 'end', expecting end-of-input",
         "unexpected 'end', ignoring it",
-        "unexpected end of file, assuming it is closing the parent top level context",
+        "unexpected end-of-input, assuming it is closing the parent top level context",
         "expected a block beginning with `{` to end with `}`"
       ]
     end
@@ -1482,8 +1481,7 @@ module Prism
 
       assert_errors expression(source), source, [
         ["expected a `do` keyword or a `{` to open the lambda block", 3..3],
-        ["unexpected end of file, expecting end-of-input", 7..7],
-        ["unexpected end of file, assuming it is closing the parent top level context", 7..7],
+        ["unexpected end-of-input, assuming it is closing the parent top level context", 7..7],
         ["expected a lambda block beginning with `do` to end with `end`", 7..7]
       ]
     end
@@ -1541,7 +1539,7 @@ module Prism
 
       assert_errors expression(source), source, [
         ["expected a predicate expression for the `while` statement", 22..22],
-        ["unexpected end of file, assuming it is closing the parent top level context", 22..22],
+        ["unexpected end-of-input, assuming it is closing the parent top level context", 22..22],
         ["expected an `end` to close the `while` statement", 22..22]
       ]
     end
