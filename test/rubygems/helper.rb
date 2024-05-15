@@ -535,12 +535,12 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   def with_env(overrides, &block)
-    @orig_env = ENV.to_h
+    orig_env = ENV.to_h
     ENV.replace(overrides)
     begin
       block.call
     ensure
-      ENV.replace(@orig_env)
+      ENV.replace(orig_env)
     end
   end
 
