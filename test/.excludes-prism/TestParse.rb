@@ -1,5 +1,4 @@
 exclude(:test_invalid_char, "error message format")
-exclude(:test_percent, "error message format")
 exclude(:test_question, "error message format")
 exclude(:test_string, "error message format")
 exclude(:test_truncated_source_line, "truncate error message")
