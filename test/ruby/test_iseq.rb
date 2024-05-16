@@ -347,11 +347,17 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    message = e1.message.each_line
-    message.with_index(1) do |line, i|
-      next if /^ / =~ line
-      assert_send([line, :start_with?, __FILE__],
-                  proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+
+    if e1.message.lines[0] == "#{__FILE__}:#{line}: syntax errors found\n"
+      # Prism lays out the error messages in line with the source, so the
+      # following assertions do not make sense in that context.
+    else
+      message = e1.message.each_line
+      message.with_index(1) do |line, i|
+        next if /^ / =~ line
+        assert_send([line, :start_with?, __FILE__],
+                    proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+      end
     end
   end
 
