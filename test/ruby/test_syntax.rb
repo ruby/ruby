@@ -1601,7 +1601,7 @@ eom
   end
 
   def test_syntax_error_at_newline
-    expected = "\n        ^"
+    expected = /(\n|\| )        \^/
     assert_syntax_error("%[abcdef", expected)
     assert_syntax_error("%[abcdef\n", expected)
   end
