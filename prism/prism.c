@@ -11375,10 +11375,7 @@ parser_lex(pm_parser_t *parser) {
 
                             const uint8_t delimiter = pm_lex_percent_delimiter(parser);
                             lex_mode_push_string(parser, true, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
-
-                            if (parser->current.end < parser->end) {
-                                LEX(PM_TOKEN_STRING_BEGIN);
-                            }
+                            LEX(PM_TOKEN_STRING_BEGIN);
                         }
 
                         // Delimiters for %-literals cannot be alphanumeric. We

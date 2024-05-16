@@ -222,7 +222,7 @@ module Prism
 
     def test_cr_without_lf_in_percent_expression
       assert_errors expression("%\r"), "%\r", [
-        ["invalid `%` token", 0..2],
+        ["unterminated string meets end of file", 2..2],
       ]
     end
 
