@@ -9658,7 +9658,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         pm_parser_err(parser, unicode_start, unicode_start + hexadecimal_length, PM_ERR_ESCAPE_INVALID_UNICODE_LONG);
                     } else if (hexadecimal_length == 0) {
                         // there are not hexadecimal characters
-                        pm_parser_err(parser, unicode_start, unicode_start + hexadecimal_length, PM_ERR_ESCAPE_INVALID_UNICODE);
+                        pm_parser_err(parser, parser->current.end, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE);
+                        pm_parser_err(parser, parser->current.end, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
                         return;
                     }
 
@@ -9707,10 +9708,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 }
             }
 
-            if (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) {
-                pm_parser_err(parser, start, parser->current.end, PM_ERR_INVALID_ESCAPE_CHARACTER);
-            }
-
             return;
         }
         case 'c': {
@@ -9733,6 +9730,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
                     parser->current.end++;
+
+                    if (match(parser, 'u') || match(parser, 'U')) {
+                        pm_parser_err(parser, parser->current.start, parser->current.end, PM_ERR_INVALID_ESCAPE_CHARACTER);
+                        return;
+                    }
+
                     escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
                 case ' ':
@@ -9760,7 +9763,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         case 'C': {
             parser->current.end++;
             if (peek(parser) != '-') {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+                pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_CONTROL);
                 return;
             }
 
@@ -9783,6 +9787,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
                     parser->current.end++;
+
+                    if (match(parser, 'u') || match(parser, 'U')) {
+                        pm_parser_err(parser, parser->current.start, parser->current.end, PM_ERR_INVALID_ESCAPE_CHARACTER);
+                        return;
+                    }
+
                     escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
                 case ' ':
@@ -9797,7 +9807,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                        size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+                        pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_CONTROL);
                         return;
                     }
 
@@ -9810,7 +9821,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         case 'M': {
             parser->current.end++;
             if (peek(parser) != '-') {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+                pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_META);
                 return;
             }
 
@@ -9828,6 +9840,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
                     parser->current.end++;
+
+                    if (match(parser, 'u') || match(parser, 'U')) {
+                        pm_parser_err(parser, parser->current.start, parser->current.end, PM_ERR_INVALID_ESCAPE_CHARACTER);
+                        return;
+                    }
+
                     escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
                     return;
                 case ' ':
@@ -9842,7 +9860,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     return;
                 default:
                     if (!char_is_ascii_printable(peeked)) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                        size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+                        pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_META);
                         return;
                     }
 

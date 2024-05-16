@@ -216,7 +216,7 @@ module Prism
 
     def test_unterminated_interpolated_symbol
       assert_error_messages ":\"#", [
-        "expected a closing delimiter for the interpolated symbol"
+        "unterminated symbol; expected a closing delimiter for the interpolated symbol"
       ]
     end
 
@@ -715,12 +715,13 @@ module Prism
 
       assert_errors expected, '"\u{000z}"', [
         ["invalid Unicode escape sequence", 7..7],
+        ["unterminated Unicode escape", 7..7]
       ]
     end
 
     def test_unterminated_unicode_brackets_should_be_a_syntax_error
       assert_errors expression('?\\u{3'), '?\\u{3', [
-        ["invalid Unicode escape sequence; needs closing `}`", 1..5],
+        ["unterminated Unicode escape", 1..5],
       ]
     end
 
