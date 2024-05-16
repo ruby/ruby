@@ -32,7 +32,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    assert_equal %w[a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
+    assert_equal %w[a-4 a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
                  Gem::Specification.all_names.sort
   end
 
