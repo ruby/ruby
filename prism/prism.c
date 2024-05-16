@@ -15382,6 +15382,10 @@ parse_string_part(pm_parser_t *parser) {
         //     "aaa #{bbb} #@ccc ddd"
         //          ^^^^^^
         case PM_TOKEN_EMBEXPR_BEGIN: {
+            // Ruby disallows seeing encoding around interpolation in strings,
+            // even though it is known at parse time.
+            parser->explicit_encoding = NULL;
+
             pm_lex_state_t state = parser->lex_state;
             int brace_nesting = parser->brace_nesting;
 
@@ -15414,6 +15418,10 @@ parse_string_part(pm_parser_t *parser) {
         //     "aaa #{bbb} #@ccc ddd"
         //                 ^^^^^
         case PM_TOKEN_EMBVAR: {
+            // Ruby disallows seeing encoding around interpolation in strings,
+            // even though it is known at parse time.
+            parser->explicit_encoding = NULL;
+
             lex_state_set(parser, PM_LEX_STATE_BEG);
             parser_lex(parser);
 
