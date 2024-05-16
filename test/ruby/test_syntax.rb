@@ -1248,6 +1248,20 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
+  def test_safe_call_in_for_variable
+    assert_valid_syntax("for x&.bar in []; end")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      foo = nil
+      for foo&.bar in [1]; end
+      assert_nil(foo)
+
+      foo = Struct.new(:bar).new
+      for foo&.bar in [1]; end
+      assert_equal(1, foo.bar)
+    end;
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
