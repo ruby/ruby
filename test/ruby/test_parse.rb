@@ -1353,9 +1353,13 @@ x = __ENCODING__
   end
 
   def test_truncated_source_line
-    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789",
+    lineno = __LINE__ + 1
+    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 123456789012345678901234567890123456789",
                             /unexpected local variable or method/)
+
     line = e.message.lines[1]
+    line.delete_prefix!("> #{lineno} | ") if line.start_with?(">")
+
     assert_operator(line, :start_with?, "...")
     assert_operator(line, :end_with?, "...\n")
   end
