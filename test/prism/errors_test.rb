@@ -208,7 +208,7 @@ module Prism
 
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
-        ["unknown type of %string", 2..3],
+        ["unterminated quoted string meets end of file", 2..3],
         ["unexpected end-of-input; expected an expression after the operator", 3..3],
         ["unexpected end-of-input, assuming it is closing the parent top level context", 3..3]
       ]

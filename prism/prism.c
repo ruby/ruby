@@ -11356,7 +11356,7 @@ parser_lex(pm_parser_t *parser) {
                     // operator because we don't want to move into the string
                     // lex mode unnecessarily.
                     if ((lex_state_beg_p(parser) || lex_state_arg_p(parser)) && (parser->current.end >= parser->end)) {
-                        pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
+                        pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT_EOF);
                         LEX(PM_TOKEN_PERCENT);
                     }
 
