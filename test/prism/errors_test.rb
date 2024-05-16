@@ -208,7 +208,7 @@ module Prism
 
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
-        ["invalid `%` token", 2..3],
+        ["unknown type of %string", 2..3],
         ["unexpected end-of-input; expected an expression after the operator", 3..3],
         ["unexpected end-of-input, assuming it is closing the parent top level context", 3..3]
       ]
@@ -1400,7 +1400,7 @@ module Prism
     end
 
     def test_alnum_delimiters
-      error_messages = ["invalid `%` token"]
+      error_messages = ["unknown type of %string"]
 
       assert_error_messages "%qXfooX", error_messages
       assert_error_messages "%QXfooX", error_messages
