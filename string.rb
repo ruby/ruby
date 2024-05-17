@@ -311,7 +311,7 @@
 #  - {Comparing}[rdoc-ref:String@Methods+for+Comparing]
 #  - {Modifying a String}[rdoc-ref:String@Methods+for+Modifying+a+String]
 #  - {Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String]
-#  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non--5CString]
+#  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non-String]
 #  - {Iterating}[rdoc-ref:String@Methods+for+Iterating]
 #
 #  === Methods for Creating a +String+
