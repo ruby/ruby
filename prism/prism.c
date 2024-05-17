@@ -7482,7 +7482,7 @@ pm_true_node_synthesized_create(pm_parser_t *parser) {
     *node = (pm_true_node_t) {{
         .type = PM_TRUE_NODE,
         .flags = PM_NODE_FLAG_STATIC_LITERAL,
-        .location = PM_LOCATION_NULL_VALUE(parser)
+        .location = { .start = parser->start, .end = parser->end }
     }};
 
     return node;
