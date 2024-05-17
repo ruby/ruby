@@ -116,13 +116,8 @@ module Prism
 
     # Compose a header for the given node.
     def inspect_node(name, node)
-      result = +"@ #{name} ("
-
       location = node.location
-      result << "location: (#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
-      result << ", newline: true" if node.newline?
-
-      result << ")\n"
+      "@ #{name} (location: (#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column}))\n"
     end
 
     # Compose a string representing the given inner location field.

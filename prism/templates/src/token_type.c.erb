@@ -30,7 +30,7 @@ const char *
 pm_token_type_human(pm_token_type_t token_type) {
     switch (token_type) {
         case PM_TOKEN_EOF:
-            return "end of file";
+            return "end-of-input";
         case PM_TOKEN_MISSING:
             return "missing token";
         case PM_TOKEN_NOT_PROVIDED:
@@ -90,9 +90,9 @@ pm_token_type_human(pm_token_type_t token_type) {
         case PM_TOKEN_DOT:
             return "'.'";
         case PM_TOKEN_DOT_DOT:
-            return "'..'";
+            return "..";
         case PM_TOKEN_DOT_DOT_DOT:
-            return "'...'";
+            return "...";
         case PM_TOKEN_EMBDOC_BEGIN:
             return "'=begin'";
         case PM_TOKEN_EMBDOC_END:

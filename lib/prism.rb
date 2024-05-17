@@ -71,8 +71,6 @@ require_relative "prism/polyfill/byteindex"
 require_relative "prism/node"
 require_relative "prism/node_ext"
 require_relative "prism/parse_result"
-require_relative "prism/parse_result/comments"
-require_relative "prism/parse_result/newlines"
 
 # This is a Ruby implementation of the prism parser. If we're running on CRuby
 # and we haven't explicitly set the PRISM_FFI_BACKEND environment variable, then

@@ -3382,7 +3382,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         rb_backref_error(p, $1);
                     /*% %*/
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, RNODE($:1), assign!(var_field(p, get_value($:1)), $:4)) %*/
+                    /*% ripper[error]: backref_error(p, $1, opassign!(var_field(p, get_value($:1)), $:2, $:4)) %*/
                     }
                 ;
 
@@ -3981,7 +3981,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*%%%*/
                         $$ = NEW_ERROR(&@$);
                     /*% %*/
-                    /*% ripper[error]: backref_error(p, RNODE($:1), opassign!(var_field(p, get_value($:1)), $:2, $:4)) %*/
+                    /*% ripper[error]: backref_error(p, $1, opassign!(var_field(p, get_value($:1)), $:2, $:4)) %*/
                     }
                 | arg tDOT2 arg
                     {
@@ -8577,6 +8577,10 @@ parser_update_heredoc_indent(struct parser_params *p, int c)
                 p->heredoc_indent = p->heredoc_line_indent;
             }
             p->heredoc_line_indent = -1;
+        }
+        else {
+            /* Whitespace only line has no indentation */
+            p->heredoc_line_indent = 0;
         }
     }
     return FALSE;

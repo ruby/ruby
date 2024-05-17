@@ -21,7 +21,7 @@
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,6))
         │   ├── name_loc: (3,0)-(3,1) = "a"
-        │   ├── operator_loc: (3,2)-(3,4) = "+="
+        │   ├── binary_operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
         │   │   @ CallNode (location: (3,5)-(3,6))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -34,7 +34,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── name: :a
-        │   ├── operator: :+
+        │   ├── binary_operator: :+
         │   └── depth: 0
         └── @ LocalVariableOrWriteNode (location: (5,0)-(5,7))
             ├── name_loc: (5,0)-(5,1) = "a"

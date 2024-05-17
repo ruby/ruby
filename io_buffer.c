@@ -260,7 +260,7 @@ io_buffer_free(struct rb_io_buffer *buffer)
     if (buffer->mapping) {
         if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_free:CloseHandle -> %p\n", buffer->mapping);
         if (!CloseHandle(buffer->mapping)) {
-            fprintf(stderr, "io_buffer_free:GetLastError -> %d\n", GetLastError());
+            fprintf(stderr, "io_buffer_free:GetLastError -> %lu\n", GetLastError());
         }
         buffer->mapping = NULL;
     }

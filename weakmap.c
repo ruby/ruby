@@ -985,7 +985,7 @@ wkmap_inspect(VALUE self)
  *
  *  Keys in the map are compared by identity.
  *
- *     m = ObjectSpace::WeekMap.new
+ *     m = ObjectSpace::WeakMap.new
  *     key1 = "foo"
  *     val1 = Object.new
  *     m[key1] = val1
@@ -1041,13 +1041,13 @@ wkmap_inspect(VALUE self)
  *
  *       val = nil
  *       GC.start
- *       # There is no more references to `val`, yet the pair isn't
+ *       # There are no more references to `val`, yet the pair isn't
  *       # garbage-collected.
  *       map["name"] #=> 2023-12-07 00:00:00 +0200
  *
  *       key = nil
  *       GC.start
- *       # There is no more references to `key`, key and value are
+ *       # There are no more references to `key`, key and value are
  *       # garbage-collected.
  *       map["name"] #=> nil
  *

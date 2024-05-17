@@ -5,53 +5,53 @@
     └── body: (length: 24)
         ├── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,6))
         │   ├── name_loc: (1,0)-(1,1) = "a"
-        │   ├── operator_loc: (1,2)-(1,4) = "+="
+        │   ├── binary_operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (1,5)-(1,6))
         │   │   ├── flags: decimal
         │   │   └── value: 2
         │   ├── name: :a
-        │   ├── operator: :+
+        │   ├── binary_operator: :+
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (2,0)-(2,6))
         │   ├── name_loc: (2,0)-(2,1) = "a"
-        │   ├── operator_loc: (2,2)-(2,4) = "-="
+        │   ├── binary_operator_loc: (2,2)-(2,4) = "-="
         │   ├── value:
         │   │   @ IntegerNode (location: (2,5)-(2,6))
         │   │   ├── flags: decimal
         │   │   └── value: 2
         │   ├── name: :a
-        │   ├── operator: :-
+        │   ├── binary_operator: :-
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,7))
         │   ├── name_loc: (3,0)-(3,1) = "a"
-        │   ├── operator_loc: (3,2)-(3,5) = "**="
+        │   ├── binary_operator_loc: (3,2)-(3,5) = "**="
         │   ├── value:
         │   │   @ IntegerNode (location: (3,6)-(3,7))
         │   │   ├── flags: decimal
         │   │   └── value: 2
         │   ├── name: :a
-        │   ├── operator: :**
+        │   ├── binary_operator: :**
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (4,0)-(4,6))
         │   ├── name_loc: (4,0)-(4,1) = "a"
-        │   ├── operator_loc: (4,2)-(4,4) = "*="
+        │   ├── binary_operator_loc: (4,2)-(4,4) = "*="
         │   ├── value:
         │   │   @ IntegerNode (location: (4,5)-(4,6))
         │   │   ├── flags: decimal
         │   │   └── value: 2
         │   ├── name: :a
-        │   ├── operator: :*
+        │   ├── binary_operator: :*
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (5,0)-(5,6))
         │   ├── name_loc: (5,0)-(5,1) = "a"
-        │   ├── operator_loc: (5,2)-(5,4) = "/="
+        │   ├── binary_operator_loc: (5,2)-(5,4) = "/="
         │   ├── value:
         │   │   @ IntegerNode (location: (5,5)-(5,6))
         │   │   ├── flags: decimal
         │   │   └── value: 2
         │   ├── name: :a
-        │   ├── operator: :/
+        │   ├── binary_operator: :/
         │   └── depth: 0
         ├── @ LocalVariableAndWriteNode (location: (6,0)-(6,7))
         │   ├── name_loc: (6,0)-(6,1) = "a"
@@ -162,8 +162,8 @@
         │   ├── message_loc: (10,2)-(10,3) = "b"
         │   ├── read_name: :b
         │   ├── write_name: :b=
-        │   ├── operator: :+
-        │   ├── operator_loc: (10,4)-(10,6) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (10,4)-(10,6) = "+="
         │   └── value:
         │       @ IntegerNode (location: (10,7)-(10,8))
         │       ├── flags: decimal
@@ -178,8 +178,8 @@
         │   ├── message_loc: (11,2)-(11,3) = "b"
         │   ├── read_name: :b
         │   ├── write_name: :b=
-        │   ├── operator: :-
-        │   ├── operator_loc: (11,4)-(11,6) = "-="
+        │   ├── binary_operator: :-
+        │   ├── binary_operator_loc: (11,4)-(11,6) = "-="
         │   └── value:
         │       @ IntegerNode (location: (11,7)-(11,8))
         │       ├── flags: decimal
@@ -194,8 +194,8 @@
         │   ├── message_loc: (12,2)-(12,3) = "b"
         │   ├── read_name: :b
         │   ├── write_name: :b=
-        │   ├── operator: :**
-        │   ├── operator_loc: (12,4)-(12,7) = "**="
+        │   ├── binary_operator: :**
+        │   ├── binary_operator_loc: (12,4)-(12,7) = "**="
         │   └── value:
         │       @ IntegerNode (location: (12,8)-(12,9))
         │       ├── flags: decimal
@@ -210,8 +210,8 @@
         │   ├── message_loc: (13,2)-(13,3) = "b"
         │   ├── read_name: :b
         │   ├── write_name: :b=
-        │   ├── operator: :*
-        │   ├── operator_loc: (13,4)-(13,6) = "*="
+        │   ├── binary_operator: :*
+        │   ├── binary_operator_loc: (13,4)-(13,6) = "*="
         │   └── value:
         │       @ IntegerNode (location: (13,7)-(13,8))
         │       ├── flags: decimal
@@ -226,8 +226,8 @@
         │   ├── message_loc: (14,2)-(14,3) = "b"
         │   ├── read_name: :b
         │   ├── write_name: :b=
-        │   ├── operator: :/
-        │   ├── operator_loc: (14,4)-(14,6) = "/="
+        │   ├── binary_operator: :/
+        │   ├── binary_operator_loc: (14,4)-(14,6) = "/="
         │   └── value:
         │       @ IntegerNode (location: (14,7)-(14,8))
         │       ├── flags: decimal
@@ -293,8 +293,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (17,3)-(17,4) = "]"
         │   ├── block: ∅
-        │   ├── operator: :+
-        │   ├── operator_loc: (17,5)-(17,7) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (17,5)-(17,7) = "+="
         │   └── value:
         │       @ IntegerNode (location: (17,8)-(17,9))
         │       ├── flags: decimal
@@ -323,8 +323,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (18,3)-(18,4) = "]"
         │   ├── block: ∅
-        │   ├── operator: :-
-        │   ├── operator_loc: (18,5)-(18,7) = "-="
+        │   ├── binary_operator: :-
+        │   ├── binary_operator_loc: (18,5)-(18,7) = "-="
         │   └── value:
         │       @ IntegerNode (location: (18,8)-(18,9))
         │       ├── flags: decimal
@@ -353,8 +353,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (19,3)-(19,4) = "]"
         │   ├── block: ∅
-        │   ├── operator: :**
-        │   ├── operator_loc: (19,5)-(19,8) = "**="
+        │   ├── binary_operator: :**
+        │   ├── binary_operator_loc: (19,5)-(19,8) = "**="
         │   └── value:
         │       @ IntegerNode (location: (19,9)-(19,10))
         │       ├── flags: decimal
@@ -383,8 +383,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (20,3)-(20,4) = "]"
         │   ├── block: ∅
-        │   ├── operator: :*
-        │   ├── operator_loc: (20,5)-(20,7) = "*="
+        │   ├── binary_operator: :*
+        │   ├── binary_operator_loc: (20,5)-(20,7) = "*="
         │   └── value:
         │       @ IntegerNode (location: (20,8)-(20,9))
         │       ├── flags: decimal
@@ -413,8 +413,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (21,3)-(21,4) = "]"
         │   ├── block: ∅
-        │   ├── operator: :/
-        │   ├── operator_loc: (21,5)-(21,7) = "/="
+        │   ├── binary_operator: :/
+        │   ├── binary_operator_loc: (21,5)-(21,7) = "/="
         │   └── value:
         │       @ IntegerNode (location: (21,8)-(21,9))
         │       ├── flags: decimal
@@ -501,8 +501,8 @@
             ├── message_loc: (24,4)-(24,5) = "A"
             ├── read_name: :A
             ├── write_name: :A=
-            ├── operator: :+
-            ├── operator_loc: (24,6)-(24,8) = "+="
+            ├── binary_operator: :+
+            ├── binary_operator_loc: (24,6)-(24,8) = "+="
             └── value:
                 @ IntegerNode (location: (24,9)-(24,10))
                 ├── flags: decimal

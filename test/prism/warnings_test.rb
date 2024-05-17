@@ -64,6 +64,15 @@ module Prism
       assert_warning("if true\nelsif\nfalse; end", "end of line")
     end
 
+    def test_shareable_constant_value
+      assert_warning("foo # shareable_constant_value: none", "ignored")
+      assert_warning("\v  # shareable_constant_value: none", "ignored")
+
+      refute_warning("# shareable_constant_value: none")
+      refute_warning("    # shareable_constant_value: none")
+      refute_warning("\t\t# shareable_constant_value: none")
+    end
+
     def test_string_in_predicate
       assert_warning("if 'foo'; end", "string")
       assert_warning("if \"\#{foo}\"; end", "string")

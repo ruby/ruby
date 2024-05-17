@@ -73,7 +73,7 @@ module Prism
 
     # Desugar `x += y` to `x = x + y`
     def compile
-      operator_loc = node.operator_loc.chop
+      binary_operator_loc = node.binary_operator_loc.chop
 
       write_class.new(
         source,
@@ -84,15 +84,15 @@ module Prism
           0,
           read_class.new(source, *arguments, node.name_loc),
           nil,
-          operator_loc.slice.to_sym,
-          operator_loc,
+          binary_operator_loc.slice.to_sym,
+          binary_operator_loc,
           nil,
           ArgumentsNode.new(source, 0, [node.value], node.value.location),
           nil,
           nil,
           node.location
         ),
-        node.operator_loc.copy(start_offset: node.operator_loc.end_offset - 1, length: 1),
+        node.binary_operator_loc.copy(start_offset: node.binary_operator_loc.end_offset - 1, length: 1),
         node.location
       )
     end

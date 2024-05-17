@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.27.0"
+  spec.version = "0.29.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -121,6 +121,7 @@ Gem::Specification.new do |spec|
     "sig/prism/dot_visitor.rbs",
     "sig/prism/dsl.rbs",
     "sig/prism/inspect_visitor.rbs",
+    "sig/prism/lex_compat.rbs",
     "sig/prism/mutation_compiler.rbs",
     "sig/prism/node_ext.rbs",
     "sig/prism/node.rbs",

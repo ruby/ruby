@@ -516,7 +516,10 @@ class TestGem < Gem::TestCase
 
     Gem.clear_paths
 
-    assert_nil Gem::Specification.send(:class_variable_get, :@@all)
+    with_env("GEM_HOME" => "foo", "GEM_PATH" => "bar") do
+      assert_equal("foo", Gem.dir)
+      assert_equal("bar", Gem.path.first)
+    end
   end
 
   def test_self_configuration

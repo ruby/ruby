@@ -5,11 +5,11 @@
     └── body: (length: 4)
         ├── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,18))
         │   ├── name_loc: (1,0)-(1,1) = "a"
-        │   ├── operator_loc: (1,2)-(1,4) = "+="
+        │   ├── binary_operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
         │   │   @ LocalVariableOperatorWriteNode (location: (1,5)-(1,18))
         │   │   ├── name_loc: (1,5)-(1,6) = "b"
-        │   │   ├── operator_loc: (1,7)-(1,9) = "+="
+        │   │   ├── binary_operator_loc: (1,7)-(1,9) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (1,10)-(1,18))
         │   │   │   ├── flags: ignore_visibility
@@ -31,14 +31,14 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block: ∅
         │   │   ├── name: :b
-        │   │   ├── operator: :+
+        │   │   ├── binary_operator: :+
         │   │   └── depth: 0
         │   ├── name: :a
-        │   ├── operator: :+
+        │   ├── binary_operator: :+
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,17))
         │   ├── name_loc: (3,0)-(3,1) = "a"
-        │   ├── operator_loc: (3,2)-(3,4) = "+="
+        │   ├── binary_operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
         │   │   @ LocalVariableWriteNode (location: (3,5)-(3,17))
         │   │   ├── name: :b
@@ -66,7 +66,7 @@
         │   │   │   └── block: ∅
         │   │   └── operator_loc: (3,7)-(3,8) = "="
         │   ├── name: :a
-        │   ├── operator: :+
+        │   ├── binary_operator: :+
         │   └── depth: 0
         ├── @ LocalVariableWriteNode (location: (5,0)-(5,17))
         │   ├── name: :a
@@ -75,7 +75,7 @@
         │   ├── value:
         │   │   @ LocalVariableOperatorWriteNode (location: (5,4)-(5,17))
         │   │   ├── name_loc: (5,4)-(5,5) = "b"
-        │   │   ├── operator_loc: (5,6)-(5,8) = "+="
+        │   │   ├── binary_operator_loc: (5,6)-(5,8) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (5,9)-(5,17))
         │   │   │   ├── flags: ignore_visibility
@@ -97,7 +97,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block: ∅
         │   │   ├── name: :b
-        │   │   ├── operator: :+
+        │   │   ├── binary_operator: :+
         │   │   └── depth: 0
         │   └── operator_loc: (5,2)-(5,3) = "="
         └── @ LocalVariableWriteNode (location: (7,0)-(7,16))

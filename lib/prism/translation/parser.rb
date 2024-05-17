@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-require "parser"
+begin
+  require "parser"
+rescue LoadError
+  warn(%q{Error: Unable to load parser. Add `gem "parser"` to your Gemfile.})
+  exit(1)
+end
 
 module Prism
   module Translation

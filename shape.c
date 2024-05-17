@@ -118,6 +118,7 @@ redblack_value(redblack_node_t * node)
     return (rb_shape_t *)((uintptr_t)node->value & (((uintptr_t)-1) - 1));
 }
 
+#ifdef HAVE_MMAP
 static redblack_id_t
 redblack_id_for(redblack_node_t * node)
 {
@@ -292,6 +293,7 @@ redblack_insert(redblack_node_t * tree, ID key, rb_shape_t * value)
         return root;
     }
 }
+#endif
 
 rb_shape_tree_t *rb_shape_tree_ptr = NULL;
 

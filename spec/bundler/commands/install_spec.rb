@@ -1407,4 +1407,33 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app(".bundle/config")).not_to exist
     end
   end
+
+  context "when bundler installation is corrupt" do
+    before do
+      system_gems "bundler-9.99.8"
+
+      replace_version_file("9.99.9", dir: system_gem_path("gems/bundler-9.99.8"))
+    end
+
+    it "shows a proper error" do
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           9.99.8
+      L
+
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\"", env: { "BUNDLER_VERSION" => "9.99.8" }, raise_on_error: false
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+      expect(err).to include("The running version of Bundler (9.99.9) does not match the version of the specification installed for it (9.99.8)")
+    end
+  end
 end

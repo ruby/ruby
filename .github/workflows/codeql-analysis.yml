@@ -5,7 +5,7 @@ on:
     branches: ['master']
     paths-ignore:
       - 'doc/**'
-      - '**/man'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
@@ -13,7 +13,7 @@ on:
   pull_request:
     paths-ignore:
       - 'doc/**'
-      - '**/man'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Install libraries
         if: ${{ contains(matrix.os, 'macos') }}
@@ -80,15 +80,15 @@ jobs:
         run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@d39d31e687223d841ef683f52467bd88e9b21c14 # v3.25.3
+        uses: github/codeql-action/init@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@d39d31e687223d841ef683f52467bd88e9b21c14 # v3.25.3
+        uses: github/codeql-action/autobuild@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@d39d31e687223d841ef683f52467bd88e9b21c14 # v3.25.3
+        uses: github/codeql-action/analyze@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
         with:
           category: '/language:${{ matrix.language }}'
           upload: False
@@ -118,7 +118,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@d39d31e687223d841ef683f52467bd88e9b21c14 # v3.25.3
+        uses: github/codeql-action/upload-sarif@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true

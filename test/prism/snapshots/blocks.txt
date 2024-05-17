@@ -158,13 +158,13 @@
         │       │   └── body: (length: 1)
         │       │       └── @ LocalVariableOperatorWriteNode (location: (7,24)-(7,33))
         │       │           ├── name_loc: (7,24)-(7,28) = "memo"
-        │       │           ├── operator_loc: (7,29)-(7,31) = "+="
+        │       │           ├── binary_operator_loc: (7,29)-(7,31) = "+="
         │       │           ├── value:
         │       │           │   @ LocalVariableReadNode (location: (7,32)-(7,33))
         │       │           │   ├── name: :x
         │       │           │   └── depth: 0
         │       │           ├── name: :memo
-        │       │           ├── operator: :+
+        │       │           ├── binary_operator: :+
         │       │           └── depth: 0
         │       ├── opening_loc: (7,12)-(7,13) = "{"
         │       └── closing_loc: (7,34)-(7,35) = "}"

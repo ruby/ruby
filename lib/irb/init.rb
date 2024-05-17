@@ -52,6 +52,7 @@ module IRB # :nodoc:
     IRB.init_error
     IRB.parse_opts(argv: argv)
     IRB.run_config
+    IRB.validate_config
     IRB.load_modules
 
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
@@ -425,6 +426,40 @@ module IRB # :nodoc:
   def IRB.irbrc_files
     prepare_irbrc_name_generators
     @irbrc_files
+  end
+
+  def IRB.validate_config
+    conf[:IRB_NAME] = conf[:IRB_NAME].to_s
+
+    irb_rc = conf[:IRB_RC]
+    unless irb_rc.nil? || irb_rc.respond_to?(:call)
+      raise_validation_error "IRB.conf[:IRB_RC] should be a callable object. Got #{irb_rc.inspect}."
+    end
+
+    back_trace_limit = conf[:BACK_TRACE_LIMIT]
+    unless back_trace_limit.is_a?(Integer)
+      raise_validation_error "IRB.conf[:BACK_TRACE_LIMIT] should be an integer. Got #{back_trace_limit.inspect}."
+    end
+
+    prompt = conf[:PROMPT]
+    unless prompt.is_a?(Hash)
+      msg = "IRB.conf[:PROMPT] should be a Hash. Got #{prompt.inspect}."
+
+      if prompt.is_a?(Symbol)
+        msg += " Did you mean to set `IRB.conf[:PROMPT_MODE]`?"
+      end
+
+      raise_validation_error msg
+    end
+
+    eval_history = conf[:EVAL_HISTORY]
+    unless eval_history.nil? || eval_history.is_a?(Integer)
+      raise_validation_error "IRB.conf[:EVAL_HISTORY] should be an integer. Got #{eval_history.inspect}."
+    end
+  end
+
+  def IRB.raise_validation_error(msg)
+    raise TypeError, msg, @irbrc_files
   end
 
   # loading modules

@@ -5,7 +5,7 @@
     └── body: (length: 1)
         └── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,12))
             ├── name_loc: (1,0)-(1,3) = "foo"
-            ├── operator_loc: (1,4)-(1,6) = "+="
+            ├── binary_operator_loc: (1,4)-(1,6) = "+="
             ├── value:
             │   @ CallNode (location: (1,7)-(1,12))
             │   ├── flags: ignore_visibility
@@ -24,5 +24,5 @@
             │   ├── closing_loc: ∅
             │   └── block: ∅
             ├── name: :foo
-            ├── operator: :+
+            ├── binary_operator: :+
             └── depth: 0

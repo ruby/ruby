@@ -386,6 +386,66 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "uses cached gems for secondary sources when cache_all_platforms configured" do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem "foo", "1.0.0" do |s|
+          s.platform = "arm64-darwin"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gems.repo2"
+
+        source "https://gems.repo4" do
+        gem "foo"
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gems.repo2/
+          specs:
+
+        GEM
+          remote: https://gems.repo4/
+          specs:
+            foo (1.0.0-x86_64-linux)
+            foo (1.0.0-arm64-darwin)
+
+        PLATFORMS
+          arm64-darwin
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          foo
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "config set cache_all_platforms true"
+        bundle "config set path vendor/bundle"
+        bundle :cache, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+        build_repo4 do
+          # simulate removal of all remote gems
+        end
+
+        # delete compact index cache
+        FileUtils.rm_rf home(".bundle/cache/compact_index")
+
+        bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+        expect(the_bundle).to include_gems "foo 1.0.0 x86_64-linux"
+      end
+    end
+
     it "does not reinstall already-installed gems" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

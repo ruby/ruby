@@ -227,6 +227,12 @@ END
     assert_equal(p7.to_der, OpenSSL::PKCS7.read_smime(smime).to_der)
   end
 
+  def test_to_text
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "signed"
+    assert_match(/signed/, p7.to_text)
+  end
+
   def test_degenerate_pkcs7
     ca_cert_pem = <<END
 -----BEGIN CERTIFICATE-----

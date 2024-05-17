@@ -49,9 +49,9 @@ The following default gems are updated.
 * json 2.7.2
 * net-http 0.4.1
 * optparse 0.5.0
-* prism 0.27.0
+* prism 0.29.0
 * rdoc 6.6.3.1
-* reline 0.5.5
+* reline 0.5.7
 * resolv 0.4.0
 * stringio 3.1.1
 * strscan 3.1.1
@@ -62,7 +62,7 @@ The following bundled gems are updated.
 * rake 13.2.1
 * test-unit 3.6.2
 * net-ftp 0.3.4
-* net-imap 0.4.10
+* net-imap 0.4.11
 * net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11
@@ -73,7 +73,7 @@ The following bundled gems are promoted from default gems.
 * mutex_m 0.2.0
 * getoptlong 0.2.1
 * base64 0.2.0
-* bigdecimal 3.1.7
+* bigdecimal 3.1.8
 * observer 0.1.2
 * abbrev 0.1.2
 * resolv-replace 0.1.1

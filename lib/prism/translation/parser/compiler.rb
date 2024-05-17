@@ -328,18 +328,48 @@ module Prism
               [],
               nil
             ),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # foo.bar &&= baz
         # ^^^^^^^^^^^^^^^
-        alias visit_call_and_write_node visit_call_operator_write_node
+        def visit_call_and_write_node(node)
+          call_operator_loc = node.call_operator_loc
+
+          builder.op_assign(
+            builder.call_method(
+              visit(node.receiver),
+              call_operator_loc.nil? ? nil : [{ "." => :dot, "&." => :anddot, "::" => "::" }.fetch(call_operator_loc.slice), srange(call_operator_loc)],
+              node.message_loc ? [node.read_name, srange(node.message_loc)] : nil,
+              nil,
+              [],
+              nil
+            ),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo.bar ||= baz
         # ^^^^^^^^^^^^^^^
-        alias visit_call_or_write_node visit_call_operator_write_node
+        def visit_call_or_write_node(node)
+          call_operator_loc = node.call_operator_loc
+
+          builder.op_assign(
+            builder.call_method(
+              visit(node.receiver),
+              call_operator_loc.nil? ? nil : [{ "." => :dot, "&." => :anddot, "::" => "::" }.fetch(call_operator_loc.slice), srange(call_operator_loc)],
+              node.message_loc ? [node.read_name, srange(node.message_loc)] : nil,
+              nil,
+              [],
+              nil
+            ),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo.bar, = 1
         # ^^^^^^^
@@ -419,18 +449,30 @@ module Prism
         def visit_class_variable_operator_write_node(node)
           builder.op_assign(
             builder.assignable(builder.cvar(token(node.name_loc))),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # @@foo &&= bar
         # ^^^^^^^^^^^^^
-        alias visit_class_variable_and_write_node visit_class_variable_operator_write_node
+        def visit_class_variable_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.cvar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # @@foo ||= bar
         # ^^^^^^^^^^^^^
-        alias visit_class_variable_or_write_node visit_class_variable_operator_write_node
+        def visit_class_variable_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.cvar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # @@foo, = bar
         # ^^^^^
@@ -458,18 +500,30 @@ module Prism
         def visit_constant_operator_write_node(node)
           builder.op_assign(
             builder.assignable(builder.const([node.name, srange(node.name_loc)])),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # Foo &&= bar
         # ^^^^^^^^^^^^
-        alias visit_constant_and_write_node visit_constant_operator_write_node
+        def visit_constant_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.const([node.name, srange(node.name_loc)])),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # Foo ||= bar
         # ^^^^^^^^^^^^
-        alias visit_constant_or_write_node visit_constant_operator_write_node
+        def visit_constant_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.const([node.name, srange(node.name_loc)])),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # Foo, = bar
         # ^^^
@@ -512,18 +566,30 @@ module Prism
         def visit_constant_path_operator_write_node(node)
           builder.op_assign(
             builder.assignable(visit(node.target)),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # Foo::Bar &&= baz
         # ^^^^^^^^^^^^^^^^
-        alias visit_constant_path_and_write_node visit_constant_path_operator_write_node
+        def visit_constant_path_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(visit(node.target)),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # Foo::Bar ||= baz
         # ^^^^^^^^^^^^^^^^
-        alias visit_constant_path_or_write_node visit_constant_path_operator_write_node
+        def visit_constant_path_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(visit(node.target)),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # Foo::Bar, = baz
         # ^^^^^^^^
@@ -711,18 +777,30 @@ module Prism
         def visit_global_variable_operator_write_node(node)
           builder.op_assign(
             builder.assignable(builder.gvar(token(node.name_loc))),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # $foo &&= bar
         # ^^^^^^^^^^^^
-        alias visit_global_variable_and_write_node visit_global_variable_operator_write_node
+        def visit_global_variable_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.gvar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # $foo ||= bar
         # ^^^^^^^^^^^^
-        alias visit_global_variable_or_write_node visit_global_variable_operator_write_node
+        def visit_global_variable_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.gvar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # $foo, = bar
         # ^^^^
@@ -857,18 +935,46 @@ module Prism
               visit_all(arguments),
               token(node.closing_loc)
             ),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # foo[bar] &&= baz
         # ^^^^^^^^^^^^^^^^
-        alias visit_index_and_write_node visit_index_operator_write_node
+        def visit_index_and_write_node(node)
+          arguments = node.arguments&.arguments || []
+          arguments << node.block if node.block
+
+          builder.op_assign(
+            builder.index(
+              visit(node.receiver),
+              token(node.opening_loc),
+              visit_all(arguments),
+              token(node.closing_loc)
+            ),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo[bar] ||= baz
         # ^^^^^^^^^^^^^^^^
-        alias visit_index_or_write_node visit_index_operator_write_node
+        def visit_index_or_write_node(node)
+          arguments = node.arguments&.arguments || []
+          arguments << node.block if node.block
+
+          builder.op_assign(
+            builder.index(
+              visit(node.receiver),
+              token(node.opening_loc),
+              visit_all(arguments),
+              token(node.closing_loc)
+            ),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo[bar], = 1
         # ^^^^^^^^
@@ -902,18 +1008,30 @@ module Prism
         def visit_instance_variable_operator_write_node(node)
           builder.op_assign(
             builder.assignable(builder.ivar(token(node.name_loc))),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # @foo &&= bar
         # ^^^^^^^^^^^^
-        alias visit_instance_variable_and_write_node visit_instance_variable_operator_write_node
+        def visit_instance_variable_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.ivar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # @foo ||= bar
         # ^^^^^^^^^^^^
-        alias visit_instance_variable_or_write_node visit_instance_variable_operator_write_node
+        def visit_instance_variable_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.ivar(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # @foo, = bar
         # ^^^^
@@ -1108,18 +1226,30 @@ module Prism
         def visit_local_variable_operator_write_node(node)
           builder.op_assign(
             builder.assignable(builder.ident(token(node.name_loc))),
-            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            [node.binary_operator_loc.slice.chomp("="), srange(node.binary_operator_loc)],
             visit(node.value)
           )
         end
 
         # foo &&= bar
         # ^^^^^^^^^^^
-        alias visit_local_variable_and_write_node visit_local_variable_operator_write_node
+        def visit_local_variable_and_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.ident(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo ||= bar
         # ^^^^^^^^^^^
-        alias visit_local_variable_or_write_node visit_local_variable_operator_write_node
+        def visit_local_variable_or_write_node(node)
+          builder.op_assign(
+            builder.assignable(builder.ident(token(node.name_loc))),
+            [node.operator_loc.slice.chomp("="), srange(node.operator_loc)],
+            visit(node.value)
+          )
+        end
 
         # foo, = bar
         # ^^^

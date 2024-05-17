@@ -301,10 +301,10 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
 {
     rb_encoding *encoding;
 
-    if (node->flags & PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING) {
+    if (node->flags & PM_STRING_FLAGS_FORCED_BINARY_ENCODING) {
         encoding = rb_ascii8bit_encoding();
     }
-    else if (node->flags & PM_ENCODING_FLAGS_FORCED_UTF8_ENCODING) {
+    else if (node->flags & PM_STRING_FLAGS_FORCED_UTF8_ENCODING) {
         encoding = rb_utf8_encoding();
     }
     else {
@@ -1737,7 +1737,7 @@ pm_compile_index_operator_write_node(rb_iseq_t *iseq, const pm_index_operator_wr
     PUSH_SEND_R(ret, location, idAREF, INT2FIX(argc), NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT_MUT)), keywords);
     PM_COMPILE_NOT_POPPED(node->value);
 
-    ID id_operator = pm_constant_id_lookup(scope_node, node->operator);
+    ID id_operator = pm_constant_id_lookup(scope_node, node->binary_operator);
     PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
     if (!popped) {
@@ -4563,7 +4563,496 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
     return dispatch;
 }
 
-/*
+/**
+ * Return the object that will be pushed onto the stack for the given node.
+ */
+static VALUE
+pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_node_t *scope_node)
+{
+    switch (PM_NODE_TYPE(node)) {
+      case PM_TRUE_NODE:
+      case PM_FALSE_NODE:
+      case PM_NIL_NODE:
+      case PM_SYMBOL_NODE:
+      case PM_REGULAR_EXPRESSION_NODE:
+      case PM_SOURCE_LINE_NODE:
+      case PM_INTEGER_NODE:
+      case PM_FLOAT_NODE:
+      case PM_RATIONAL_NODE:
+      case PM_IMAGINARY_NODE:
+      case PM_SOURCE_ENCODING_NODE:
+        return pm_static_literal_value(iseq, node, scope_node);
+      case PM_STRING_NODE:
+        return parse_static_literal_string(iseq, scope_node, node, &((const pm_string_node_t *) node)->unescaped);
+      case PM_SOURCE_FILE_NODE:
+        return pm_source_file_value((const pm_source_file_node_t *) node, scope_node);
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        VALUE result = rb_ary_new_capa(cast->elements.size);
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            VALUE element = pm_compile_shareable_constant_literal(iseq, cast->elements.nodes[index], scope_node);
+            if (element == Qundef) return Qundef;
+
+            rb_ary_push(result, element);
+        }
+
+        return rb_ractor_make_shareable(result);
+      }
+      case PM_HASH_NODE: {
+        const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+        VALUE result = rb_hash_new_capa(cast->elements.size);
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            const pm_node_t *element = cast->elements.nodes[index];
+            if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) return Qundef;
+
+            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+
+            VALUE key = pm_compile_shareable_constant_literal(iseq, assoc->key, scope_node);
+            if (key == Qundef) return Qundef;
+
+            VALUE value = pm_compile_shareable_constant_literal(iseq, assoc->value, scope_node);
+            if (value == Qundef) return Qundef;
+
+            rb_hash_aset(result, key, value);
+        }
+
+        return rb_ractor_make_shareable(result);
+      }
+      default:
+        return Qundef;
+    }
+}
+
+/**
+ * Compile the instructions for pushing the value that will be written to a
+ * shared constant.
+ */
+static void
+pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_flags_t shareability, VALUE path, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, bool top)
+{
+    VALUE literal = pm_compile_shareable_constant_literal(iseq, node, scope_node);
+    if (literal != Qundef) {
+        const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+        PUSH_INSN1(ret, location, putobject, literal);
+        return;
+    }
+
+    const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
+    switch (PM_NODE_TYPE(node)) {
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+
+        if (top) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        }
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            pm_compile_shareable_constant_value(iseq, cast->elements.nodes[index], shareability, path, ret, scope_node, false);
+        }
+
+        PUSH_INSN1(ret, location, newarray, INT2FIX(cast->elements.size));
+
+        if (top) {
+            ID method_id = (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) ? rb_intern("make_shareable_copy") : rb_intern("make_shareable");
+            PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        return;
+      }
+      case PM_HASH_NODE: {
+        const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+
+        if (top) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        }
+
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            const pm_node_t *element = cast->elements.nodes[index];
+
+            if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) {
+                COMPILE_ERROR(ERROR_ARGS "Ractor constant writes do not support **");
+            }
+
+            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+            pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, ret, scope_node, false);
+            pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, ret, scope_node, false);
+        }
+
+        PUSH_INSN1(ret, location, newhash, INT2FIX(cast->elements.size * 2));
+
+        if (top) {
+            ID method_id = (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) ? rb_intern("make_shareable_copy") : rb_intern("make_shareable");
+            PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        return;
+      }
+      default: {
+        DECL_ANCHOR(value_seq);
+        INIT_ANCHOR(value_seq);
+
+        pm_compile_node(iseq, node, value_seq, false, scope_node);
+        if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
+            PUSH_SEND_WITH_FLAG(value_seq, location, idUMinus, INT2FIX(0), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            PUSH_INSN1(ret, location, putobject, path);
+            PUSH_SEND_WITH_FLAG(ret, location, rb_intern("ensure_shareable"), INT2FIX(2), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+        else if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) {
+            if (top) PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            if (top) PUSH_SEND_WITH_FLAG(ret, location, rb_intern("make_shareable_copy"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+        else if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING) {
+            if (top) PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_SEQ(ret, value_seq);
+            if (top) PUSH_SEND_WITH_FLAG(ret, location, rb_intern("make_shareable"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        }
+
+        break;
+      }
+    }
+}
+
+/**
+ * Compile a constant write node, either in the context of a ractor pragma or
+ * not.
+ */
+static void
+pm_compile_constant_write_node(rb_iseq_t *iseq, const pm_constant_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    ID name_id = pm_constant_id_lookup(scope_node, node->name);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, rb_id2str(name_id), ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (!popped) PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+    PUSH_INSN1(ret, location, setconstant, ID2SYM(name_id));
+}
+
+/**
+ * Compile a constant and write node, either in the context of a ractor pragma
+ * or not.
+ */
+static void
+pm_compile_constant_and_write_node(rb_iseq_t *iseq, const pm_constant_and_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, node->name));
+    LABEL *end_label = NEW_LABEL(location.line);
+
+    pm_compile_constant_read(iseq, name, &node->name_loc, ret, scope_node);
+    if (!popped) PUSH_INSN(ret, location, dup);
+
+    PUSH_INSNL(ret, location, branchunless, end_label);
+    if (!popped) PUSH_INSN(ret, location, pop);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (!popped) PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+    PUSH_INSN1(ret, location, setconstant, name);
+    PUSH_LABEL(ret, end_label);
+}
+
+/**
+ * Compile a constant or write node, either in the context of a ractor pragma or
+ * not.
+ */
+static void
+pm_compile_constant_or_write_node(rb_iseq_t *iseq, const pm_constant_or_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, node->name));
+
+    LABEL *set_label = NEW_LABEL(location.line);
+    LABEL *end_label = NEW_LABEL(location.line);
+
+    PUSH_INSN(ret, location, putnil);
+    PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST), name, Qtrue);
+    PUSH_INSNL(ret, location, branchunless, set_label);
+
+    pm_compile_constant_read(iseq, name, &node->name_loc, ret, scope_node);
+    if (!popped) PUSH_INSN(ret, location, dup);
+
+    PUSH_INSNL(ret, location, branchif, end_label);
+    if (!popped) PUSH_INSN(ret, location, pop);
+    PUSH_LABEL(ret, set_label);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (!popped) PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+    PUSH_INSN1(ret, location, setconstant, name);
+    PUSH_LABEL(ret, end_label);
+}
+
+/**
+ * Compile a constant operator write node, either in the context of a ractor
+ * pragma or not.
+ */
+static void
+pm_compile_constant_operator_write_node(rb_iseq_t *iseq, const pm_constant_operator_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, node->name));
+    ID method_id = pm_constant_id_lookup(scope_node, node->binary_operator);
+
+    pm_compile_constant_read(iseq, name, &node->name_loc, ret, scope_node);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+    if (!popped) PUSH_INSN(ret, location, dup);
+
+    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+    PUSH_INSN1(ret, location, setconstant, name);
+}
+
+/**
+ * Creates a string that is used in ractor error messages to describe the
+ * constant path being written.
+ */
+static VALUE
+pm_constant_path_path(const pm_constant_path_node_t *node, const pm_scope_node_t *scope_node)
+{
+    VALUE parts = rb_ary_new();
+    rb_ary_push(parts, rb_id2str(pm_constant_id_lookup(scope_node, node->name)));
+
+    const pm_node_t *current = node->parent;
+    while (current != NULL && PM_NODE_TYPE_P(current, PM_CONSTANT_PATH_NODE)) {
+        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) current;
+        rb_ary_unshift(parts, rb_id2str(pm_constant_id_lookup(scope_node, cast->name)));
+        current = cast->parent;
+    }
+
+    if (current == NULL) {
+        rb_ary_unshift(parts, rb_id2str(idNULL));
+    }
+    else if (PM_NODE_TYPE_P(current, PM_CONSTANT_READ_NODE)) {
+        rb_ary_unshift(parts, rb_id2str(pm_constant_id_lookup(scope_node, ((const pm_constant_read_node_t *) current)->name)));
+    }
+    else {
+        rb_ary_unshift(parts, rb_str_new_cstr("..."));
+    }
+
+    return rb_ary_join(parts, rb_str_new_cstr("::"));
+}
+
+/**
+ * Compile a constant path write node, either in the context of a ractor pragma
+ * or not.
+ */
+static void
+pm_compile_constant_path_write_node(rb_iseq_t *iseq, const pm_constant_path_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    const pm_constant_path_node_t *target = node->target;
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
+
+    if (target->parent) {
+        PM_COMPILE_NOT_POPPED((const pm_node_t *) target->parent);
+    }
+    else {
+        PUSH_INSN1(ret, location, putobject, rb_cObject);
+    }
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, pm_constant_path_path(node->target, scope_node), ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (!popped) {
+        PUSH_INSN(ret, location, swap);
+        PUSH_INSN1(ret, location, topn, INT2FIX(1));
+    }
+
+    PUSH_INSN(ret, location, swap);
+    PUSH_INSN1(ret, location, setconstant, name);
+}
+
+/**
+ * Compile a constant path and write node, either in the context of a ractor
+ * pragma or not.
+ */
+static void
+pm_compile_constant_path_and_write_node(rb_iseq_t *iseq, const pm_constant_path_and_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    const pm_constant_path_node_t *target = node->target;
+
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
+    LABEL *lfin = NEW_LABEL(location.line);
+
+    if (target->parent) {
+        PM_COMPILE_NOT_POPPED(target->parent);
+    }
+    else {
+        PUSH_INSN1(ret, location, putobject, rb_cObject);
+    }
+
+    PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putobject, Qtrue);
+    PUSH_INSN1(ret, location, getconstant, name);
+
+    if (!popped) PUSH_INSN(ret, location, dup);
+    PUSH_INSNL(ret, location, branchunless, lfin);
+
+    if (!popped) PUSH_INSN(ret, location, pop);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, pm_constant_path_path(node->target, scope_node), ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (popped) {
+        PUSH_INSN1(ret, location, topn, INT2FIX(1));
+    }
+    else {
+        PUSH_INSN1(ret, location, dupn, INT2FIX(2));
+        PUSH_INSN(ret, location, swap);
+    }
+
+    PUSH_INSN1(ret, location, setconstant, name);
+    PUSH_LABEL(ret, lfin);
+
+    if (!popped) PUSH_INSN(ret, location, swap);
+    PUSH_INSN(ret, location, pop);
+}
+
+/**
+ * Compile a constant path or write node, either in the context of a ractor
+ * pragma or not.
+ */
+static void
+pm_compile_constant_path_or_write_node(rb_iseq_t *iseq, const pm_constant_path_or_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    const pm_constant_path_node_t *target = node->target;
+
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
+    LABEL *lassign = NEW_LABEL(location.line);
+    LABEL *lfin = NEW_LABEL(location.line);
+
+    if (target->parent) {
+        PM_COMPILE_NOT_POPPED(target->parent);
+    }
+    else {
+        PUSH_INSN1(ret, location, putobject, rb_cObject);
+    }
+
+    PUSH_INSN(ret, location, dup);
+    PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST_FROM), name, Qtrue);
+    PUSH_INSNL(ret, location, branchunless, lassign);
+
+    PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putobject, Qtrue);
+    PUSH_INSN1(ret, location, getconstant, name);
+
+    if (!popped) PUSH_INSN(ret, location, dup);
+    PUSH_INSNL(ret, location, branchif, lfin);
+
+    if (!popped) PUSH_INSN(ret, location, pop);
+    PUSH_LABEL(ret, lassign);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, pm_constant_path_path(node->target, scope_node), ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    if (popped) {
+        PUSH_INSN1(ret, location, topn, INT2FIX(1));
+    }
+    else {
+        PUSH_INSN1(ret, location, dupn, INT2FIX(2));
+        PUSH_INSN(ret, location, swap);
+    }
+
+    PUSH_INSN1(ret, location, setconstant, name);
+    PUSH_LABEL(ret, lfin);
+
+    if (!popped) PUSH_INSN(ret, location, swap);
+    PUSH_INSN(ret, location, pop);
+}
+
+/**
+ * Compile a constant path operator write node, either in the context of a
+ * ractor pragma or not.
+ */
+static void
+pm_compile_constant_path_operator_write_node(rb_iseq_t *iseq, const pm_constant_path_operator_write_node_t *node, const pm_node_flags_t shareability, const pm_line_column_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_line_column_t location = *node_location;
+    const pm_constant_path_node_t *target = node->target;
+
+    ID method_id = pm_constant_id_lookup(scope_node, node->binary_operator);
+    VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
+
+    if (target->parent) {
+        PM_COMPILE_NOT_POPPED(target->parent);
+    }
+    else {
+        PUSH_INSN1(ret, location, putobject, rb_cObject);
+    }
+
+    PUSH_INSN(ret, location, dup);
+    PUSH_INSN1(ret, location, putobject, Qtrue);
+    PUSH_INSN1(ret, location, getconstant, name);
+
+    if (shareability != 0) {
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, pm_constant_path_path(node->target, scope_node), ret, scope_node, true);
+    }
+    else {
+        PM_COMPILE_NOT_POPPED(node->value);
+    }
+
+    PUSH_CALL(ret, location, method_id, INT2FIX(1));
+    PUSH_INSN(ret, location, swap);
+
+    if (!popped) {
+        PUSH_INSN1(ret, location, topn, INT2FIX(1));
+        PUSH_INSN(ret, location, swap);
+    }
+
+    PUSH_INSN1(ret, location, setconstant, name);
+}
+
+/**
  * Compiles a prism node into instruction sequences.
  *
  * iseq -            The current instruction sequence object (used for locals)
@@ -5053,7 +5542,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_SEND_WITH_FLAG(ret, location, id_read_name, INT2FIX(0), INT2FIX(flag));
 
         PM_COMPILE_NOT_POPPED(cast->value);
-        ID id_operator = pm_constant_id_lookup(scope_node, cast->operator);
+        ID id_operator = pm_constant_id_lookup(scope_node, cast->binary_operator);
         PUSH_SEND(ret, location, id_operator, INT2FIX(1));
 
         if (!popped) {
@@ -5557,7 +6046,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN2(ret, location, getclassvariable, name, get_cvar_ic_value(iseq, name_id));
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -5651,147 +6140,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Foo::Bar &&= baz
         // ^^^^^^^^^^^^^^^^
         const pm_constant_path_and_write_node_t *cast = (const pm_constant_path_and_write_node_t *) node;
-        const pm_constant_path_node_t *target = cast->target;
-
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
-        LABEL *lfin = NEW_LABEL(location.line);
-
-        if (target->parent) {
-            PM_COMPILE_NOT_POPPED(target->parent);
-        }
-        else {
-            PUSH_INSN1(ret, location, putobject, rb_cObject);
-        }
-
-        PUSH_INSN(ret, location, dup);
-        PUSH_INSN1(ret, location, putobject, Qtrue);
-        PUSH_INSN1(ret, location, getconstant, name);
-
-        if (!popped) PUSH_INSN(ret, location, dup);
-        PUSH_INSNL(ret, location, branchunless, lfin);
-
-        if (!popped) PUSH_INSN(ret, location, pop);
-        PM_COMPILE_NOT_POPPED(cast->value);
-
-        if (popped) {
-            PUSH_INSN1(ret, location, topn, INT2FIX(1));
-        }
-        else {
-            PUSH_INSN1(ret, location, dupn, INT2FIX(2));
-            PUSH_INSN(ret, location, swap);
-        }
-
-        PUSH_INSN1(ret, location, setconstant, name);
-        PUSH_LABEL(ret, lfin);
-
-        if (!popped) PUSH_INSN(ret, location, swap);
-        PUSH_INSN(ret, location, pop);
-
+        pm_compile_constant_path_and_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_PATH_OR_WRITE_NODE: {
         // Foo::Bar ||= baz
         // ^^^^^^^^^^^^^^^^
         const pm_constant_path_or_write_node_t *cast = (const pm_constant_path_or_write_node_t *) node;
-        const pm_constant_path_node_t *target = cast->target;
-
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
-        LABEL *lassign = NEW_LABEL(location.line);
-        LABEL *lfin = NEW_LABEL(location.line);
-
-        if (target->parent) {
-            PM_COMPILE_NOT_POPPED(target->parent);
-        }
-        else {
-            PUSH_INSN1(ret, location, putobject, rb_cObject);
-        }
-
-        PUSH_INSN(ret, location, dup);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST_FROM), name, Qtrue);
-        PUSH_INSNL(ret, location, branchunless, lassign);
-
-        PUSH_INSN(ret, location, dup);
-        PUSH_INSN1(ret, location, putobject, Qtrue);
-        PUSH_INSN1(ret, location, getconstant, name);
-
-        if (!popped) PUSH_INSN(ret, location, dup);
-        PUSH_INSNL(ret, location, branchif, lfin);
-
-        if (!popped) PUSH_INSN(ret, location, pop);
-        PUSH_LABEL(ret, lassign);
-        PM_COMPILE_NOT_POPPED(cast->value);
-
-        if (popped) {
-            PUSH_INSN1(ret, location, topn, INT2FIX(1));
-        }
-        else {
-            PUSH_INSN1(ret, location, dupn, INT2FIX(2));
-            PUSH_INSN(ret, location, swap);
-        }
-
-        PUSH_INSN1(ret, location, setconstant, name);
-        PUSH_LABEL(ret, lfin);
-
-        if (!popped) PUSH_INSN(ret, location, swap);
-        PUSH_INSN(ret, location, pop);
-
+        pm_compile_constant_path_or_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
         // Foo::Bar += baz
         // ^^^^^^^^^^^^^^^
         const pm_constant_path_operator_write_node_t *cast = (const pm_constant_path_operator_write_node_t *) node;
-        const pm_constant_path_node_t *target = cast->target;
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
-
-        if (target->parent) {
-            PM_COMPILE_NOT_POPPED(target->parent);
-        }
-        else {
-            PUSH_INSN1(ret, location, putobject, rb_cObject);
-        }
-
-        PUSH_INSN(ret, location, dup);
-        PUSH_INSN1(ret, location, putobject, Qtrue);
-        PUSH_INSN1(ret, location, getconstant, name);
-
-        PM_COMPILE_NOT_POPPED(cast->value);
-        PUSH_CALL(ret, location, method_id, INT2FIX(1));
-        PUSH_INSN(ret, location, swap);
-
-        if (!popped) {
-            PUSH_INSN1(ret, location, topn, INT2FIX(1));
-            PUSH_INSN(ret, location, swap);
-        }
-
-        PUSH_INSN1(ret, location, setconstant, name);
+        pm_compile_constant_path_operator_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_PATH_WRITE_NODE: {
         // Foo::Bar = 1
         // ^^^^^^^^^^^^
         const pm_constant_path_write_node_t *cast = (const pm_constant_path_write_node_t *) node;
-        const pm_constant_path_node_t *target = cast->target;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, target->name));
-
-        if (target->parent) {
-            PM_COMPILE_NOT_POPPED((const pm_node_t *) target->parent);
-        }
-        else {
-            PUSH_INSN1(ret, location, putobject, rb_cObject);
-        }
-
-        PM_COMPILE_NOT_POPPED(cast->value);
-
-        if (!popped) {
-            PUSH_INSN(ret, location, swap);
-            PUSH_INSN1(ret, location, topn, INT2FIX(1));
-        }
-
-        PUSH_INSN(ret, location, swap);
-        PUSH_INSN1(ret, location, setconstant, name);
-
+        pm_compile_constant_path_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_READ_NODE: {
@@ -5809,82 +6179,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Foo &&= bar
         // ^^^^^^^^^^^
         const pm_constant_and_write_node_t *cast = (const pm_constant_and_write_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-        LABEL *end_label = NEW_LABEL(location.line);
-
-        pm_compile_constant_read(iseq, name, &cast->name_loc, ret, scope_node);
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSNL(ret, location, branchunless, end_label);
-        if (!popped) PUSH_INSN(ret, location, pop);
-
-        PM_COMPILE_NOT_POPPED(cast->value);
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        PUSH_INSN1(ret, location, setconstant, name);
-        PUSH_LABEL(ret, end_label);
-
+        pm_compile_constant_and_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_OR_WRITE_NODE: {
         // Foo ||= bar
         // ^^^^^^^^^^^
         const pm_constant_or_write_node_t *cast = (const pm_constant_or_write_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-        LABEL *set_label = NEW_LABEL(location.line);
-        LABEL *end_label = NEW_LABEL(location.line);
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST), name, Qtrue);
-        PUSH_INSNL(ret, location, branchunless, set_label);
-
-        pm_compile_constant_read(iseq, name, &cast->name_loc, ret, scope_node);
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSNL(ret, location, branchif, end_label);
-        if (!popped) PUSH_INSN(ret, location, pop);
-
-        PUSH_LABEL(ret, set_label);
-        PM_COMPILE_NOT_POPPED(cast->value);
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        PUSH_INSN1(ret, location, setconstant, name);
-        PUSH_LABEL(ret, end_label);
-
+        pm_compile_constant_or_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_OPERATOR_WRITE_NODE: {
         // Foo += bar
         // ^^^^^^^^^^
         const pm_constant_operator_write_node_t *cast = (const pm_constant_operator_write_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
-
-        pm_compile_constant_read(iseq, name, &cast->name_loc, ret, scope_node);
-        PM_COMPILE_NOT_POPPED(cast->value);
-
-        PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        PUSH_INSN1(ret, location, setconstant, name);
-
+        pm_compile_constant_operator_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_CONSTANT_WRITE_NODE: {
         // Foo = 1
         // ^^^^^^^
         const pm_constant_write_node_t *cast = (const pm_constant_write_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-
-        PM_COMPILE_NOT_POPPED(cast->value);
-        if (!popped) PUSH_INSN(ret, location, dup);
-
-        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        PUSH_INSN1(ret, location, setconstant, name);
-
+        pm_compile_constant_write_node(iseq, cast, 0, &location, ret, popped, scope_node);
         return;
       }
       case PM_DEF_NODE: {
@@ -6221,7 +6537,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN1(ret, location, getglobal, name);
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -6419,7 +6735,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN2(ret, location, getinstancevariable, name, get_ivar_ic_value(iseq, name_id));
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         int flags = VM_CALL_ARGS_SIMPLE;
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(flags));
 
@@ -6669,7 +6985,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PM_COMPILE_NOT_POPPED(cast->value);
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->operator);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->binary_operator);
         PUSH_SEND_WITH_FLAG(ret, location, method_id, INT2NUM(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
 
         if (!popped) PUSH_INSN(ret, location, dup);
@@ -8453,7 +8769,38 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_SHAREABLE_CONSTANT_NODE: {
         // A value that is being written to a constant that is being marked as
         // shared depending on the current lexical context.
-        PM_COMPILE(((const pm_shareable_constant_node_t *) node)->write);
+        const pm_shareable_constant_node_t *cast = (const pm_shareable_constant_node_t *) node;
+
+        switch (PM_NODE_TYPE(cast->write)) {
+          case PM_CONSTANT_WRITE_NODE:
+            pm_compile_constant_write_node(iseq, (const pm_constant_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_AND_WRITE_NODE:
+            pm_compile_constant_and_write_node(iseq, (const pm_constant_and_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_OR_WRITE_NODE:
+            pm_compile_constant_or_write_node(iseq, (const pm_constant_or_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_OPERATOR_WRITE_NODE:
+            pm_compile_constant_operator_write_node(iseq, (const pm_constant_operator_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_PATH_WRITE_NODE:
+            pm_compile_constant_path_write_node(iseq, (const pm_constant_path_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_PATH_AND_WRITE_NODE:
+            pm_compile_constant_path_and_write_node(iseq, (const pm_constant_path_and_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_PATH_OR_WRITE_NODE:
+            pm_compile_constant_path_or_write_node(iseq, (const pm_constant_path_or_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE:
+            pm_compile_constant_path_operator_write_node(iseq, (const pm_constant_path_operator_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            break;
+          default:
+            rb_bug("Unexpected node type for shareable constant write: %s", pm_node_type_to_str(PM_NODE_TYPE(cast->write)));
+            break;
+        }
+
         return;
       }
       case PM_SINGLETON_CLASS_NODE: {
@@ -8933,6 +9280,9 @@ pm_parse_process_error(const pm_parse_result_t *result)
     return error;
 }
 
+void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
+void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
+
 /**
  * Parse the parse result and raise a Ruby error if there are any syntax errors.
  * It returns an error if one should be raised. It is assumed that the parse
@@ -8951,6 +9301,9 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     pm_scope_node_init(node, scope_node, NULL);
     scope_node->filepath_encoding = filepath_encoding;
 
+    scope_node->encoding = rb_enc_find(parser->encoding->name);
+    if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
+
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;
     const char *warning_filepath = (const char *) pm_string_source(&parser->filepath);
@@ -8959,10 +9312,10 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
         int line = pm_location_line_number(parser, &warning->location);
 
         if (warning->level == PM_WARNING_LEVEL_VERBOSE) {
-            rb_compile_warning(warning_filepath, line, "%s", warning->message);
+            rb_enc_compile_warning(scope_node->encoding, warning_filepath, line, "%s", warning->message);
         }
         else {
-            rb_compile_warn(warning_filepath, line, "%s", warning->message);
+            rb_enc_compile_warn(scope_node->encoding, warning_filepath, line, "%s", warning->message);
         }
     }
 
@@ -8977,9 +9330,6 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
 
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
-    scope_node->encoding = rb_enc_find(parser->encoding->name);
-    if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
-
     scope_node->parser = parser;
     scope_node->constants = calloc(parser->constant_pool.size, sizeof(ID));
 

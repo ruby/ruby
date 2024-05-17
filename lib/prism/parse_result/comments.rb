@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Prism
-  class ParseResult
+  class ParseResult < Result
     # When we've parsed the source, we have both the syntax tree and the list of
     # comments that we found in the source. This class is responsible for
     # walking the tree and finding the nearest location to attach each comment.
@@ -182,13 +182,6 @@ module Prism
 
         [preceding, NodeTarget.new(node), following]
       end
-    end
-
-    private_constant :Comments
-
-    # Attach the list of comments to their respective locations in the tree.
-    def attach_comments!
-      Comments.new(self).attach! # steep:ignore
     end
   end
 end

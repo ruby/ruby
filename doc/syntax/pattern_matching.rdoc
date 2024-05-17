@@ -422,7 +422,8 @@ These core and library classes implement deconstruction:
 
 == Guard clauses
 
-+if+ can be used to attach an additional condition (guard clause) when the pattern matches. This condition may use bound variables:
++if+ can be used to attach an additional condition (guard clause) when the pattern matches in +case+/+in+ expressions.
+This condition may use bound variables:
 
   case [1, 2]
   in a, b if b == a*2
@@ -449,6 +450,11 @@ These core and library classes implement deconstruction:
     "not matched"
   end
   #=> "matched"
+
+Note that <code>=></code> and +in+ operator can not have a guard clause.
+The following examples is parsed as a standalone expression with modifier +if+.
+
+  [1, 2] in a, b if b == a*2
 
 == Appendix A. Pattern syntax
 

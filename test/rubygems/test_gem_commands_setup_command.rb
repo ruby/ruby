@@ -159,6 +159,23 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
   end
 
+  def test_destdir_flag_regenerates_binstubs
+    # install to destdir
+    destdir = File.join(@tempdir, "foo")
+    gem_bin_path = gem_install "destdir-only-gem", install_dir: destdir
+
+    # change binstub manually
+    write_file gem_bin_path do |io|
+      io.puts "I changed it!"
+    end
+
+    @cmd.options[:destdir] = destdir
+    @cmd.options[:prefix] = "/"
+    @cmd.execute
+
+    assert_match(/\A#!/, File.read(gem_bin_path))
+  end
+
   def test_files_in
     assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.files_in("lib").sort
@@ -412,7 +429,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
   end
 
-  def gem_install(name)
+  def gem_install(name, **options)
     gem = util_spec name do |s|
       s.executables = [name]
       s.files = %W[bin/#{name}]
@@ -420,8 +437,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     write_file File.join @tempdir, "bin", name do |f|
       f.puts "#!/usr/bin/ruby"
     end
-    install_gem gem
-    File.join @gemhome, "bin", name
+    install_gem gem, **options
+    File.join options[:install_dir] || @gemhome, "bin", name
   end
 
   def gem_install_with_plugin(name)

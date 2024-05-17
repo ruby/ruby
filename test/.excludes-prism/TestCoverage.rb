@@ -1,1 +1,1 @@
-exclude(:test_eval, "unknown")
+exclude(:test_eval, "respect eval coverage setting")

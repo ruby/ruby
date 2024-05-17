@@ -9,7 +9,7 @@
 
 #ifdef UNIVERSAL_PARSER
 
-#define rb_encoding void
+#define rb_encoding const void
 #define OnigCodePoint unsigned int
 #include "parser_st.h"
 #ifndef RUBY_RUBY_H

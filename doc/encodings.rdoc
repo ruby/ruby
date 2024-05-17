@@ -419,7 +419,7 @@ These keyword-value pairs specify encoding options:
 
     hash = {"\u3042" => 'xyzzy'}
     hash.default = 'XYZZY'
-    s.encode('ASCII', fallback: h) # => "xyzzyfooXYZZY"
+    s.encode('ASCII', fallback: hash) # => "xyzzyfooXYZZY"
 
     def (fallback = "U+%.4X").escape(x)
       self % x.unpack("U")

@@ -230,4 +230,18 @@ module Bundler
 
     status_code(38)
   end
+
+  class CorruptBundlerInstallError < BundlerError
+    def initialize(loaded_spec)
+      @loaded_spec = loaded_spec
+    end
+
+    def message
+      "The running version of Bundler (#{Bundler::VERSION}) does not match the version of the specification installed for it (#{@loaded_spec.version}). " \
+      "This can be caused by reinstalling Ruby without removing previous installation, leaving around an upgraded default version of Bundler. " \
+      "Reinstalling Ruby from scratch should fix the problem."
+    end
+
+    status_code(39)
+  end
 end

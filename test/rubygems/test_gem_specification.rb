@@ -967,7 +967,10 @@ dependencies: []
 
   def test_self_stubs_for_lazy_loading
     Gem.loaded_specs.clear
-    Gem::Specification.class_variable_set(:@@stubs, nil)
+
+    specification_record = Gem::Specification.specification_record
+
+    specification_record.instance_variable_set(:@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, "specifications"
 
@@ -975,9 +978,9 @@ dependencies: []
     save_gemspec("b-1", "1", dir_standard_specs) {|s| s.name = "b" }
 
     assert_equal ["a-1"], Gem::Specification.stubs_for("a").map(&:full_name)
-    assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal 1, specification_record.instance_variable_get(:@stubs_by_name).length
     assert_equal ["b-1"], Gem::Specification.stubs_for("b").map(&:full_name)
-    assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal 2, specification_record.instance_variable_get(:@stubs_by_name).length
 
     assert_equal(
       Gem::Specification.stubs_for("a").map(&:object_id),
@@ -986,7 +989,7 @@ dependencies: []
 
     Gem.loaded_specs.delete "a"
     Gem.loaded_specs.delete "b"
-    Gem::Specification.class_variable_set(:@@stubs, nil)
+    specification_record.instance_variable_set(:@stubs, nil)
   end
 
   def test_self_stubs_for_no_lazy_loading_after_all_specs_setup

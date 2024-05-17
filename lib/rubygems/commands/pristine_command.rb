@@ -57,7 +57,7 @@ class Gem::Commands::PristineCommand < Gem::Command
     end
 
     add_option("-i", "--install-dir DIR",
-               "Gem repository to get binstubs and plugins installed") do |value, options|
+               "Gem repository to get gems restored") do |value, options|
       options[:install_dir] = File.expand_path(value)
     end
 
@@ -103,21 +103,25 @@ extensions will be restored.
   end
 
   def execute
+    install_dir = options[:install_dir]
+
+    specification_record = install_dir ? Gem::SpecificationRecord.from_path(install_dir) : Gem::Specification.specification_record
+
     specs = if options[:all]
-      Gem::Specification.map
+      specification_record.map
 
     # `--extensions` must be explicitly given to pristine only gems
     # with extensions.
     elsif options[:extensions_set] &&
           options[:extensions] && options[:args].empty?
-      Gem::Specification.select do |spec|
+      specification_record.select do |spec|
         spec.extensions && !spec.extensions.empty?
       end
     elsif options[:only_missing_extensions]
-      Gem::Specification.select(&:missing_extensions?)
+      specification_record.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
-        Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
+        specification_record.find_all_by_name(gem_name, options[:version]).reverse
       end.flatten
     end
 
@@ -176,7 +180,6 @@ extensions will be restored.
         end
 
       bin_dir = options[:bin_dir] if options[:bin_dir]
-      install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
         wrappers: true,

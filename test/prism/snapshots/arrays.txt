@@ -960,8 +960,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (84,4)-(84,5) = "]"
         │   ├── block: ∅
-        │   ├── operator: :+
-        │   ├── operator_loc: (84,6)-(84,8) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (84,6)-(84,8) = "+="
         │   └── value:
         │       @ IntegerNode (location: (84,9)-(84,10))
         │       ├── flags: decimal
@@ -1040,8 +1040,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (90,8)-(90,9) = "]"
         │   ├── block: ∅
-        │   ├── operator: :+
-        │   ├── operator_loc: (90,10)-(90,12) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (90,10)-(90,12) = "+="
         │   └── value:
         │       @ IntegerNode (location: (90,13)-(90,14))
         │       ├── flags: decimal
@@ -1143,8 +1143,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (96,7)-(96,8) = "]"
         │   ├── block: ∅
-        │   ├── operator: :+
-        │   ├── operator_loc: (96,9)-(96,11) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (96,9)-(96,11) = "+="
         │   └── value:
         │       @ IntegerNode (location: (96,12)-(96,13))
         │       ├── flags: decimal
@@ -1262,8 +1262,8 @@
         │   │           └── block: ∅
         │   ├── closing_loc: (102,11)-(102,12) = "]"
         │   ├── block: ∅
-        │   ├── operator: :+
-        │   ├── operator_loc: (102,13)-(102,15) = "+="
+        │   ├── binary_operator: :+
+        │   ├── binary_operator_loc: (102,13)-(102,15) = "+="
         │   └── value:
         │       @ IntegerNode (location: (102,16)-(102,17))
         │       ├── flags: decimal
@@ -1633,8 +1633,8 @@
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (116,13)-(116,14) = "]"
         │   │           ├── block: ∅
-        │   │           ├── operator: :+
-        │   │           ├── operator_loc: (116,15)-(116,17) = "+="
+        │   │           ├── binary_operator: :+
+        │   │           ├── binary_operator_loc: (116,15)-(116,17) = "+="
         │   │           └── value:
         │   │               @ IntegerNode (location: (116,18)-(116,19))
         │   │               ├── flags: decimal

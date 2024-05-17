@@ -768,7 +768,14 @@ EOT
           e = assert_raise(SyntaxError, mesg) do
             syntax_check(src, fname, line)
           end
-          assert_match(error, e.message, mesg)
+
+          # Prism adds ANSI escape sequences to syntax error messages to
+          # colorize and format them. We strip them out here to make them easier
+          # to match against in tests.
+          message = e.message
+          message.gsub!(/\e\[.*?m/, "")
+
+          assert_match(error, message, mesg)
           e
         end
       end

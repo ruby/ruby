@@ -185,7 +185,7 @@ Using the address sanitizer (ASAN) is a great way to detect memory issues. It ca
 ``` shell
 ./autogen.sh
 mkdir build && cd build
-../configure CC=clang cflags="-fsanitize=address -fno-omit-frame-pointer -DUSE_MN_THREADS=0" # and any other options you might like
+../configure CC=clang-18 cflags="-fsanitize=address -fno-omit-frame-pointer -DUSE_MN_THREADS=0" # and any other options you might like
 make
 ```
 The compiled Ruby will now automatically crash with a report and a backtrace if ASAN detects a memory safety issue. To run Ruby's test suite under ASAN, issue the following command. Note that this will take quite a long time (over two hours on my laptop); the `RUBY_TEST_TIMEOUT_SCALE` and `SYNTAX_SUGEST_TIMEOUT` variables are required to make sure tests don't spuriously fail with timeouts when in fact they're just slow.
@@ -198,7 +198,7 @@ Please note, however, the following caveats!
 
 * ASAN will not work properly on any currently released version of Ruby; the necessary support is currently only present on Ruby's master branch (and the whole test suite passes only as of commit [9d0a5148ae062a0481a4a18fbeb9cfd01dc10428](https://bugs.ruby-lang.org/projects/ruby-master/repository/git/revisions/9d0a5148ae062a0481a4a18fbeb9cfd01dc10428))
 * Due to [this bug](https://bugs.ruby-lang.org/issues/20243), Clang generates code for threadlocal variables which doesn't work with M:N threading. Thus, it's necessary to disable M:N threading support at build time for now (with the `-DUSE_MN_THREADS=0` configure argument).
-* Currently, ASAN will only work correctly when using a recent head build of LLVM/Clang - it requires [this bugfix](https://github.com/llvm/llvm-project/pull/75290) related to multithreaded `fork`, which is not yet in any released version. See [here](https://llvm.org/docs/CMake.html) for instructions on how to build LLVM/Clang from source (note you will need at least the `clang` and `compiler-rt` projects enabled). Then, you will need to replace `CC=clang` in the instructions with an explicit path to your built Clang binary.
+* ASAN will only work when using Clang version 18 or later - it requires [this bugfix](https://github.com/llvm/llvm-project/pull/75290) related to multithreaded `fork`.
 * ASAN has only been tested so far with Clang on Linux. It may or may not work with other compilers or on other platforms - please file an issue on [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if you run into problems with such configurations (or, to report that they actually work properly!)
 * In particular, although I have not yet tried it, I have reason to believe ASAN will _not_ work properly on macOS yet - the fix for the multithreaded fork issue was actually reverted for macOS (see [here](https://github.com/llvm/llvm-project/commit/2a03854e4ce9bb1bcd79a211063bc63c4657f92c)). Please open an issue on [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if this is a problem for you.
 

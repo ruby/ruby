@@ -44,8 +44,8 @@
             │           └── closing_loc: (1,10)-(1,11) = "\""
             ├── closing_loc: (1,11)-(1,12) = "]"
             ├── block: ∅
-            ├── operator: :+
-            ├── operator_loc: (1,13)-(1,15) = "+="
+            ├── binary_operator: :+
+            ├── binary_operator_loc: (1,13)-(1,15) = "+="
             └── value:
                 @ InterpolatedStringNode (location: (1,16)-(1,25))
                 ├── flags: ∅
