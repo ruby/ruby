@@ -58,9 +58,10 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.22.3
+* minitest 5.23.0
 * rake 13.2.1
 * test-unit 3.6.2
+* rexml 3.2.8
 * net-ftp 0.3.4
 * net-imap 0.4.11
 * net-smtp 0.5.0
