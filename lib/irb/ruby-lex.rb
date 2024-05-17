@@ -219,27 +219,6 @@ module IRB
         :unrecoverable_error
       rescue SyntaxError => e
         case e.message
-        when /unterminated (?:string|regexp) meets end of file/
-          # "unterminated regexp meets end of file"
-          #
-          #   example:
-          #     /
-          #
-          # "unterminated string meets end of file"
-          #
-          #   example:
-          #     '
-          return :recoverable_error
-        when /unexpected end-of-input/
-          # "syntax error, unexpected end-of-input, expecting keyword_end"
-          #
-          #   example:
-          #     if true
-          #       hoge
-          #       if false
-          #         fuga
-          #       end
-          return :recoverable_error
         when /unexpected keyword_end/
           # "syntax error, unexpected keyword_end"
           #
@@ -262,6 +241,27 @@ module IRB
           #   example:
           #     method / f /
           return :unrecoverable_error
+        when /unterminated (?:string|regexp) meets end of file/
+          # "unterminated regexp meets end of file"
+          #
+          #   example:
+          #     /
+          #
+          # "unterminated string meets end of file"
+          #
+          #   example:
+          #     '
+          return :recoverable_error
+        when /unexpected end-of-input/
+          # "syntax error, unexpected end-of-input, expecting keyword_end"
+          #
+          #   example:
+          #     if true
+          #       hoge
+          #       if false
+          #         fuga
+          #       end
+          return :recoverable_error
         else
           return :other_error
         end
