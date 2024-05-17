@@ -9269,7 +9269,8 @@ pm_parse_process_error(const pm_parse_result_t *result)
         }
     }
 
-    VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+    VALUE message = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), result->node.encoding);
+    VALUE error = rb_exc_new_str(rb_eSyntaxError, message);
 
     rb_encoding *filepath_encoding = result->node.filepath_encoding != NULL ? result->node.filepath_encoding : rb_utf8_encoding();
     VALUE path = rb_enc_str_new((const char *) pm_string_source(filepath), pm_string_length(filepath), filepath_encoding);
