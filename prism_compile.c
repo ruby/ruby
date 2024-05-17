@@ -9454,6 +9454,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
+    result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
