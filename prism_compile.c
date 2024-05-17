@@ -3978,9 +3978,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         // Index targets have a parent expression that is the receiver of the
         // method being called and any additional arguments that are being
         // passed along with the value being written. The receiver and arguments
-        // both need to be on the stack. Note that this is even more complicated
-        // by the fact that these nodes can hold a block using the unary &
-        // operator.
+        // both need to be on the stack.
         //
         //     for i[:j] in []; end
         //
@@ -3989,8 +3987,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         pm_compile_node(iseq, cast->receiver, parents, false, scope_node);
 
         int flags = 0;
-        struct rb_callinfo_kwarg *kwargs = NULL;
-        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &kwargs, iseq, parents, scope_node, &location);
+        int argc = pm_setup_args(cast->arguments, NULL, &flags, NULL, iseq, parents, scope_node, &location);
 
         if (state != NULL) {
             PUSH_INSN1(writes, location, topn, INT2FIX(argc + 1));
@@ -4018,7 +4015,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
             PUSH_INSN(writes, location, concatarray);
         }
 
-        PUSH_SEND_R(writes, location, idASET, INT2NUM(ci_argc), NULL, INT2FIX(flags), kwargs);
+        PUSH_SEND_WITH_FLAG(writes, location, idASET, INT2NUM(ci_argc), INT2FIX(flags));
         PUSH_INSN(writes, location, pop);
 
         if (state != NULL) {
