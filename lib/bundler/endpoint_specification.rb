@@ -92,6 +92,17 @@ module Bundler
       end
     end
 
+    # needed for `bundle fund`
+    def metadata
+      if @remote_specification
+        @remote_specification.metadata
+      elsif _local_specification
+        _local_specification.metadata
+      else
+        super
+      end
+    end
+
     def _local_specification
       return unless @loaded_from && File.exist?(local_specification_path)
       eval(File.read(local_specification_path), nil, local_specification_path).tap do |spec|
