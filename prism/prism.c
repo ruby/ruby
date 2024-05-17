@@ -1630,7 +1630,7 @@ not_provided(pm_parser_t *parser) {
     return (pm_token_t) { .type = PM_TOKEN_NOT_PROVIDED, .start = parser->start, .end = parser->start };
 }
 
-#define PM_LOCATION_NULL_VALUE(parser) ((pm_location_t) { .start = parser->start, .end = parser->start })
+#define PM_LOCATION_NULL_VALUE(parser) ((pm_location_t) { .start = (parser)->start, .end = (parser)->start })
 #define PM_LOCATION_TOKEN_VALUE(token) ((pm_location_t) { .start = (token)->start, .end = (token)->end })
 #define PM_LOCATION_NODE_VALUE(node) ((pm_location_t) { .start = (node)->location.start, .end = (node)->location.end })
 #define PM_LOCATION_NODE_BASE_VALUE(node) ((pm_location_t) { .start = (node)->base.location.start, .end = (node)->base.location.end })
@@ -2827,8 +2827,7 @@ static pm_call_node_t *
 pm_call_node_fcall_synthesized_create(pm_parser_t *parser, pm_arguments_node_t *arguments, pm_constant_id_t name) {
     pm_call_node_t *node = pm_call_node_create(parser, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY);
 
-    node->base.location.start = parser->start;
-    node->base.location.end = parser->start;
+    node->base.location = PM_LOCATION_NULL_VALUE(parser);
     node->arguments = arguments;
 
     node->name = name;
@@ -4621,7 +4620,7 @@ pm_global_variable_read_node_synthesized_create(pm_parser_t *parser, pm_constant
     *node = (pm_global_variable_read_node_t) {
         {
             .type = PM_GLOBAL_VARIABLE_READ_NODE,
-            .location = { .start = parser->start, .end = parser->start }
+            .location = PM_LOCATION_NULL_VALUE(parser)
         },
         .name = name
     };
@@ -4663,11 +4662,11 @@ pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constan
     *node = (pm_global_variable_write_node_t) {
         {
             .type = PM_GLOBAL_VARIABLE_WRITE_NODE,
-            .location = { .start = parser->start, .end = parser->start }
+            .location = PM_LOCATION_NULL_VALUE(parser)
         },
         .name = name,
-        .name_loc = { .start = parser->start, .end = parser->start },
-        .operator_loc = { .start = parser->start, .end = parser->start },
+        .name_loc = PM_LOCATION_NULL_VALUE(parser),
+        .operator_loc = PM_LOCATION_NULL_VALUE(parser),
         .value = value
     };
 
@@ -7355,9 +7354,9 @@ pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
         {
             .type = PM_SYMBOL_NODE,
             .flags = PM_NODE_FLAG_STATIC_LITERAL | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING,
-            .location = { .start = parser->start, .end = parser->start }
+            .location = PM_LOCATION_NULL_VALUE(parser)
         },
-        .value_loc = { .start = parser->start, .end = parser->start },
+        .value_loc = PM_LOCATION_NULL_VALUE(parser),
         .unescaped = { 0 }
     };
 
@@ -7483,7 +7482,7 @@ pm_true_node_synthesized_create(pm_parser_t *parser) {
     *node = (pm_true_node_t) {{
         .type = PM_TRUE_NODE,
         .flags = PM_NODE_FLAG_STATIC_LITERAL,
-        .location = { .start = parser->start, .end = parser->end }
+        .location = PM_LOCATION_NULL_VALUE(parser)
     }};
 
     return node;
@@ -7758,10 +7757,10 @@ pm_while_node_synthesized_create(pm_parser_t *parser, pm_node_t *predicate, pm_s
     *node = (pm_while_node_t) {
         {
             .type = PM_WHILE_NODE,
-            .location = { .start = parser->start, .end = parser->start }
+            .location = PM_LOCATION_NULL_VALUE(parser)
         },
-        .keyword_loc = { .start = parser->start, .end = parser->start },
-        .closing_loc = { .start = parser->start, .end = parser->start },
+        .keyword_loc = PM_LOCATION_NULL_VALUE(parser),
+        .closing_loc = PM_LOCATION_NULL_VALUE(parser),
         .predicate = predicate,
         .statements = statements
     };
