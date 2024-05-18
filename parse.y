@@ -10490,7 +10490,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
       case '.': 	/* $.: last read line number */
       case '=': 	/* $=: ignorecase */
       case ':': 	/* $:: load path */
-      case '<': 	/* $<: reading filename */
+      case '<': 	/* $<: default input handle */
       case '>': 	/* $>: default output handle */
       case '\"':	/* $": already loaded files */
         tokadd(p, '$');
