@@ -2770,6 +2770,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
     struct lex_context ctxt;
+    enum lex_state_e state;
 }
 
 %token <id>
@@ -2934,7 +2935,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tSTAR		"*"
 %token tDSTAR		"**arg"
 %token tAMPER		"&"
-%token tLAMBDA		"->"
+%token <num> tLAMBDA	"->"
 %token tSYMBEG		"symbol literal"
 %token tSTRING_BEG	"string literal"
 %token tXSTRING_BEG	"backtick literal"
@@ -2945,7 +2946,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tQSYMBOLS_BEG	"verbatim symbol list"
 %token tSTRING_END	"terminator"
 %token tSTRING_DEND	"'}'"
-%token tSTRING_DBEG tSTRING_DVAR tLAMBEG tLABEL_END
+%token <state> tSTRING_DBEG "'#{'"
+%token tSTRING_DVAR tLAMBEG tLABEL_END
 
 %token tIGNORED_NL tCOMMENT tEMBDOC_BEG tEMBDOC tEMBDOC_END
 %token tHEREDOC_BEG tHEREDOC_END k__END__
@@ -4641,7 +4643,7 @@ primary		: literal
                   k_end
                     {
                         if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
-                        p->case_labels = $<labels>4;
+                        p->case_labels = $4;
                         $$ = NEW_CASE($2, $5, &@$);
                         fixpos($$, $2);
                     /*% ripper: case!($:2, $:5) %*/
@@ -4655,7 +4657,7 @@ primary		: literal
                   k_end
                     {
                         if (p->case_labels) st_free_table(p->case_labels);
-                        p->case_labels = $<labels>3;
+                        p->case_labels = $3;
                         $$ = NEW_CASE2($4, &@$);
                     /*% ripper: case!(Qnil, $:4) %*/
                     }
@@ -5288,13 +5290,12 @@ it_id           :   {
                     }
                 ;
 
-lambda		: tLAMBDA[dyna]
+lambda		: tLAMBDA[lpar]
                     {
                         token_info_push(p, "->", &@1);
-                        $<vars>dyna = dyna_push(p);
-                        $<num>$ = p->lex.lpar_beg;
+                        $$ = dyna_push(p);
                         p->lex.lpar_beg = p->lex.paren_nest;
-                    }[lpar]
+                    }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
                   f_larglist[args]
                     {
@@ -5304,7 +5305,7 @@ lambda		: tLAMBDA[dyna]
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
-                        p->lex.lpar_beg = $<num>lpar;
+                        p->lex.lpar_beg = $lpar;
                         p->max_numparam = $max_numparam;
                         p->it_id = $it_id;
                         restore_block_exit(p, $allow_exits);
@@ -5319,7 +5320,7 @@ lambda		: tLAMBDA[dyna]
                         }
                     /*% ripper: lambda!($:args, $:body) %*/
                         numparam_pop(p, $numparam);
-                        dyna_pop(p, $<vars>dyna);
+                        dyna_pop(p, $dyna);
                     }
                 ;
 
@@ -5461,7 +5462,7 @@ brace_block	: '{' brace_body '}'
                     }
                 ;
 
-brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
+brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                   max_numparam numparam it_id allow_exits
                   opt_block_param[args] compstmt
                     {
@@ -5474,28 +5475,28 @@ brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
                     /*% ripper: brace_block!($:args, $:compstmt) %*/
                         restore_block_exit(p, $allow_exits);
                         numparam_pop(p, $numparam);
-                        dyna_pop(p, $<vars>dyna);
+                        dyna_pop(p, $dyna);
                     }
                 ;
 
 do_body 	:   {
-                        $<vars>$ = dyna_push(p);
+                        $$ = dyna_push(p);
                         CMDARG_PUSH(0);
-                    }[dyna]
+                    }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
                   opt_block_param[args] bodystmt
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
                         p->max_numparam = $max_numparam;
-                        p->it_id = $<id>it_id;
+                        p->it_id = $it_id;
                         $args = args_with_numbered(p, $args, max_numparam, it_id);
                         $$ = NEW_ITER($args, $bodystmt, &@$);
                     /*% ripper: do_block!($:args, $:bodystmt) %*/
                         CMDARG_POP();
                         restore_block_exit(p, $allow_exits);
                         numparam_pop(p, $numparam);
-                        dyna_pop(p, $<vars>dyna);
+                        dyna_pop(p, $dyna);
                     }
                 ;
 
@@ -6318,32 +6319,31 @@ string_content	: tSTRING_CONTENT
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: string_dvar!($:3) %*/
                     }
-                | tSTRING_DBEG[term]
+                | tSTRING_DBEG[state]
                     {
                         CMDARG_PUSH(0);
                         COND_PUSH(0);
                         /* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
-                        $<strterm>term = p->lex.strterm;
+                        $$ = p->lex.strterm;
                         p->lex.strterm = 0;
-                        $<num>$ = p->lex.state;
                         SET_LEX_STATE(EXPR_BEG);
-                    }[state]
+                    }[term]<strterm>
                     {
-                        $<num>$ = p->lex.brace_nest;
+                        $$ = p->lex.brace_nest;
                         p->lex.brace_nest = 0;
-                    }[brace]
+                    }[brace]<num>
                     {
-                        $<num>$ = p->heredoc_indent;
+                        $$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
-                    }[indent]
+                    }[indent]<num>
                   compstmt string_dend
                     {
                         COND_POP();
                         CMDARG_POP();
-                        p->lex.strterm = $<strterm>term;
-                        SET_LEX_STATE($<num>state);
-                        p->lex.brace_nest = $<num>brace;
-                        p->heredoc_indent = $<num>indent;
+                        p->lex.strterm = $term;
+                        SET_LEX_STATE($state);
+                        p->lex.brace_nest = $brace;
+                        p->heredoc_indent = $indent;
                         p->heredoc_line_indent = -1;
                         if ($compstmt) nd_unset_fl_newline($compstmt);
                         $$ = new_evstr(p, $compstmt, &@$);
@@ -6506,14 +6506,14 @@ f_paren_args	: '(' f_args rparen
 
 f_arglist	: f_paren_args
                 |   {
-                        $<ctxt>$ = p->ctxt;
+                        $$ = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         p->ctxt.in_argdef = 1;
                         SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
-                    }
+                    }<ctxt>
                   f_args term
                     {
-                        p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+                        p->ctxt.in_kwarg = $1.in_kwarg;
                         p->ctxt.in_argdef = 0;
                         $$ = $2;
                         SET_LEX_STATE(EXPR_BEG);
@@ -8837,6 +8837,7 @@ parser_peek_variable_name(struct parser_params *p)
       case '{':
         p->lex.pcur = ptr;
         p->command_start = TRUE;
+        yylval.state = p->lex.state;
         return tSTRING_DBEG;
       default:
         return 0;
@@ -11219,6 +11220,7 @@ parser_yylex(struct parser_params *p)
         }
         if (c == '>') {
             SET_LEX_STATE(EXPR_ENDFN);
+            yylval.num = p->lex.lpar_beg;
             return tLAMBDA;
         }
         if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous(p, '-'))) {
