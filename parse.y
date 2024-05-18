@@ -6308,13 +6308,13 @@ string_content	: tSTRING_CONTENT
                 | tSTRING_DVAR
                     {
                         /* need to backup p->lex.strterm so that a string literal `%&foo,#$&,bar&` can be parsed */
-                        $<strterm>$ = p->lex.strterm;
+                        $$ = p->lex.strterm;
                         p->lex.strterm = 0;
                         SET_LEX_STATE(EXPR_BEG);
-                    }
+                    }<strterm>
                   string_dvar
                     {
-                        p->lex.strterm = $<strterm>2;
+                        p->lex.strterm = $2;
                         $$ = NEW_EVSTR($3, &@$);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: string_dvar!($:3) %*/
