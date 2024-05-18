@@ -197,6 +197,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     if (blocking_region_begin(th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
         /* always return true unless fail_if_interrupted */ \
         !only_if_constant(fail_if_interrupted, TRUE)) { \
+        /* Important that this is inlined into the macro, and not part of \
+         * blocking_region_begin - see bug #20493 */ \
+        RB_VM_SAVE_MACHINE_CONTEXT(th); \
+        thread_sched_to_waiting(TH_SCHED(th), th); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -1482,9 +1486,6 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
         RUBY_DEBUG_LOG("thread_id:%p", (void *)th->nt->thread_id);
-
-        RB_VM_SAVE_MACHINE_CONTEXT(th);
-        thread_sched_to_waiting(TH_SCHED(th), th);
         return TRUE;
     }
     else {
@@ -1893,6 +1894,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* leave from Ruby world: You can not access Ruby values, etc. */
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
+    RB_VM_SAVE_MACHINE_CONTEXT(th);
+    thread_sched_to_waiting(TH_SCHED(th), th);
     return r;
 }
 
