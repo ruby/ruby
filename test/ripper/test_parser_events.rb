@@ -267,28 +267,28 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_assign_error_backref
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$& = 1', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+      parse('$& = 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
     assert_equal '[assign(assign_error(var_field($&)),1)]', result
 
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$&, _ = 1', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+      parse('$&, _ = 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
     assert_equal '[massign([assign_error(var_field($&)),var_field(_)],1)]', result
 
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$& += 1', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+      parse('$& += 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
     assert_equal '[assign_error(opassign(var_field($&),+=,1))]', result
 
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$& += cmd 1, 2', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+      parse('$& += cmd 1, 2', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
     assert_equal '[assign_error(opassign(var_field($&),+=,command(cmd,[1,2])))]', result
   end
 

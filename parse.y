@@ -1448,7 +1448,9 @@ static NODE *assignable(struct parser_params*,ID,NODE*,const YYLTYPE*);
 static NODE *aryset(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 
+#ifndef RIPPER
 static void rb_backref_error(struct parser_params*,NODE*);
+#endif
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
@@ -3875,10 +3877,10 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 | backref tOP_ASGN lex_ctxt arg_rhs
                     {
-                        rb_backref_error(p, $1);
                     /*%%%*/
-                        $$ = NEW_ERROR(&@$);
+                        rb_backref_error(p, $1);
                     /*% %*/
+                        $$ = NEW_ERROR(&@$);
                     /*% ripper[error]: backref_error(p, $1, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 | arg tDOT2 arg
@@ -6114,8 +6116,6 @@ qsym_list	: /* none */
 string_contents : /* none */
                     {
                         $$ = 0;
-                    /*%%%*/
-                    /*% %*/
                     /*% ripper: string_content! %*/
                     }
                 | string_contents string_content
@@ -13671,6 +13671,7 @@ attrset(struct parser_params *p, NODE *recv, ID atype, ID id, const YYLTYPE *loc
     return NEW_ATTRASGN(recv, id, 0, loc);
 }
 
+#ifndef RIPPER
 static void
 rb_backref_error(struct parser_params *p, NODE *node)
 {
@@ -13683,6 +13684,7 @@ rb_backref_error(struct parser_params *p, NODE *node)
         break;
     }
 }
+#endif
 
 #ifdef RIPPER
 static VALUE
