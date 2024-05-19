@@ -9280,9 +9280,6 @@ pm_parse_process_error(const pm_parse_result_t *result)
     return error;
 }
 
-void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
-void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
-
 /**
  * Parse the parse result and raise a Ruby error if there are any syntax errors.
  * It returns an error if one should be raised. It is assumed that the parse
