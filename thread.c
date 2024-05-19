@@ -1768,7 +1768,7 @@ rb_thread_mn_schedulable(VALUE thval)
 VALUE
 rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events)
 {
-    rb_execution_context_t * volatile ec = GET_EC();
+    rb_execution_context_t *volatile ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
@@ -1796,6 +1796,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
                 saved_errno = errno;
             }, ubf_select, waiting_fd.th, FALSE);
 
+            th = rb_ec_thread_ptr(ec);
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
@@ -1805,6 +1806,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
         }
         EC_POP_TAG();
 
+        th = rb_ec_thread_ptr(ec);
         th->mn_schedulable = prev_mn_schedulable;
     }
     /*
@@ -4208,9 +4210,10 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
+wait_retryable(volatile int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
 {
-    if (*result < 0) {
+    int r = *result;
+    if (r < 0) {
         switch (errnum) {
           case EINTR:
 #ifdef ERESTART
@@ -4224,7 +4227,7 @@ wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
         }
         return FALSE;
     }
-    else if (*result == 0) {
+    else if (r == 0) {
         /* check for spurious wakeup */
         if (rel) {
             return !hrtime_update_expire(rel, end);
@@ -4262,11 +4265,12 @@ static VALUE
 do_select(VALUE p)
 {
     struct select_set *set = (struct select_set *)p;
-    int result = 0;
+    volatile int result = 0;
     int lerrno;
     rb_hrtime_t *to, rel, end = 0;
 
     timeout_prepare(&to, &rel, &end, set->timeout);
+    volatile rb_hrtime_t endtime = end;
 #define restore_fdset(dst, src) \
     ((dst) ? rb_fd_dup(dst, src) : (void)0)
 #define do_select_update() \
@@ -4282,15 +4286,15 @@ do_select(VALUE p)
             struct timeval tv;
 
             if (!RUBY_VM_INTERRUPTED(set->th->ec)) {
-               result = native_fd_select(set->max,
-                                         set->rset, set->wset, set->eset,
-                                         rb_hrtime2timeval(&tv, to), set->th);
+                result = native_fd_select(set->max,
+                                          set->rset, set->wset, set->eset,
+                                          rb_hrtime2timeval(&tv, to), set->th);
                 if (result < 0) lerrno = errno;
             }
         }, ubf_select, set->th, TRUE);
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
-    } while (wait_retryable(&result, lerrno, to, end) && do_select_update());
+    } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
     if (result < 0) {
         errno = lerrno;
@@ -4352,6 +4356,23 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 #  define POLLERR_SET (0)
 #endif
 
+static int
+wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t nfds,
+                                   rb_hrtime_t *const to, volatile int *lerrno)
+{
+    struct timespec ts;
+    volatile int result = 0;
+
+    *lerrno = 0;
+    BLOCKING_REGION(th, {
+        if (!RUBY_VM_INTERRUPTED(th->ec)) {
+            result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
+            if (result < 0) *lerrno = errno;
+        }
+    }, ubf_select, th, TRUE);
+    return result;
+}
+
 /*
  * returns a mask of events
  */
@@ -4363,7 +4384,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         .events = (short)events,
         .revents = 0,
     }};
-    int result = 0;
+    volatile int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
     enum ruby_tag_type state;
@@ -4387,17 +4408,8 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
             timeout_prepare(&to, &rel, &end, timeout);
             do {
-                nfds = 1;
-
-                lerrno = 0;
-                BLOCKING_REGION(wfd.th, {
-                    struct timespec ts;
-
-                    if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
-                        result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-                        if (result < 0) lerrno = errno;
-                    }
-                }, ubf_select, wfd.th, TRUE);
+                nfds = numberof(fds);
+                result = wait_for_single_fd_blocking_region(wfd.th, fds, nfds, to, &lerrno);
 
                 RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
             } while (wait_retryable(&result, lerrno, to, end));
