@@ -5406,7 +5406,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             COMPILE_ERROR(ERROR_ARGS "Invalid break");
-            rb_bug("Invalid break");
         }
         return;
       }
