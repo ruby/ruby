@@ -490,6 +490,7 @@ end
 #   tmpio.puts "foo"
 #   tmpio.rewind
 #   tmpio.read                  # => "foo\n"
+#   tmpio.close
 #
 # Argument +basename+, +tmpdir+, keyword arguments +mode+ and +options+ are same as
 # Tempfile.create.
