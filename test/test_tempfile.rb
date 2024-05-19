@@ -416,6 +416,7 @@ puts Tempfile.new('foo').path
     end
   end
 
+
   def assert_mktmpdir_traversal
     Dir.mktmpdir do |target|
       target = target.chomp('/') + '/'
@@ -424,5 +425,17 @@ puts Tempfile.new('foo').path
       actual = yield traversal_path
       assert_not_send([File.absolute_path(actual), :start_with?, target])
     end
+  end
+
+  def test_create_io
+    tmpio = Tempfile.create_io
+    assert_equal(IO, tmpio.class)
+    assert_equal(nil, tmpio.path)
+    assert_equal(0600, tmpio.stat.mode & 0777)
+    tmpio.puts "foo"
+    tmpio.rewind
+    assert_equal("foo\n", tmpio.read)
+  ensure
+    tmpio.close if tmpio
   end
 end

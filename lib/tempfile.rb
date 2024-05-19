@@ -464,3 +464,65 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
     tmpfile
   end
 end
+
+# Creates an unnamed temporary file in the underlying file system;
+# returns a new \IO object based on that file.
+#
+# This method removes the file before returning the \IO object.
+# Thus, no need to remove the file.
+#
+# This method doesn't take a block.
+#
+# With no arguments, creates and returns file whose:
+#
+# - Class is {IO}[rdoc-ref:IO] (not \Tempfile).
+# - Directory is the system temporary directory (system-dependent).
+# - Permissions are <tt>0600</tt>;
+#   see {File Permissions}[rdoc-ref:File@File+Permissions].
+# - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
+#
+# Example:
+#
+#   tmpio = Tempfile.create_io  # => #<IO:fd 5>
+#   tmpio.class                 # => IO
+#   tmpio.path                  # => nil
+#   tmpio.stat.mode.to_s(8)     # => "100600"
+#   tmpio.puts "foo"
+#   tmpio.rewind
+#   tmpio.read                  # => "foo\n"
+#
+# Argument +basename+, +tmpdir+, keyword arguments +mode+ and +options+ are same as
+# Tempfile.create.
+#
+# Implementation:
+#
+# On POSIX systems, Tempfile.create_io calls Tempfile.create and the created
+# file is unlinked.
+# Thus Tempfile.create_io needs arguments same as Tempfile.create.
+#
+# On Linux, O_TMPFILE flag is used to create an unnamed file.
+# O_TMPFILE makes possible to create a file without filename.
+# The argument +tmpdir+ is still used to create the unnamed file.
+# If the filesystem which is specified by +tmpdir+ doesn't support O_TMPFILE,
+# this method fallbacks to create-and-unlink as on POSIX.
+#
+# Related: Tempfile.create.
+def Tempfile.create_io(basename="", tmpdir=nil, **options)
+  if defined? File::TMPFILE # O_TMPFILE since Linux 3.11
+    tmpfile_supported = true
+    tmpdir = Dir.tmpdir() if tmpdir.nil?
+    begin
+      fd = IO.sysopen(tmpdir, File::RDWR | File::TMPFILE, 0600)
+    rescue Errno::EISDIR, Errno::ENOENT, Errno::EOPNOTSUPP # kernel or the filesystem does not support O_TMPFILE
+      tmpfile_supported = false
+    end
+    if tmpfile_supported
+      return IO.new(fd, File::RDWR)
+    end
+  end
+  tmpfile = Tempfile.create(basename, tmpdir, **options)
+  File.unlink(tmpfile.path)
+  tmpfile.autoclose = false
+  tmpio = IO.new(tmpfile.fileno, File::RDWR) # change File to IO to drop path.
+  tmpio
+end
