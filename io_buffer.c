@@ -3572,25 +3572,23 @@ io_buffer_not_inplace(VALUE self)
  *  \Buffer from string:
  *
  *    string = 'data'
- *    buffer = IO::Buffer.for(string)
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # ...
- *    buffer
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # 0x00000000  64 61 74 61                                     data
+ *    IO::Buffer.for(string) do |buffer|
+ *      buffer
+ *      # =>
+ *      # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *      # 0x00000000  64 61 74 61                                     data
  *
- *    buffer.get_string(2)  # read content starting from offset 2
- *    # => "ta"
- *    buffer.set_string('---', 1) # write content, starting from offset 1
- *    # => 3
- *    buffer
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # 0x00000000  64 2d 2d 2d                                     d---
- *    string  # original string changed, too
- *    # => "d---"
+ *      buffer.get_string(2)  # read content starting from offset 2
+ *      # => "ta"
+ *      buffer.set_string('---', 1) # write content, starting from offset 1
+ *      # => 3
+ *      buffer
+ *      # =>
+ *      # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *      # 0x00000000  64 2d 2d 2d                                     d---
+ *      string  # original string changed, too
+ *      # => "d---"
+ *    end
  *
  *  \Buffer from file:
  *
