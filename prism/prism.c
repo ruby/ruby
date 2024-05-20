@@ -9396,7 +9396,7 @@ escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
  */
 static inline uint8_t
 escape_byte(uint8_t value, const uint8_t flags) {
-    if (flags & PM_ESCAPE_FLAG_CONTROL) value &= 0x1f;
+    if (flags & PM_ESCAPE_FLAG_CONTROL) value &= 0x9f;
     if (flags & PM_ESCAPE_FLAG_META) value |= 0x80;
     return value;
 }
@@ -9632,11 +9632,16 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     parser->current.end++;
                 }
 
+                value = escape_byte(value, flags);
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                    if (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) {
+                        pm_buffer_append_format(regular_expression_buffer, "\\x%02X", value);
+                    } else {
+                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                    }
                 }
 
-                escape_write_byte_encoded(parser, buffer, escape_byte(value, flags));
+                escape_write_byte_encoded(parser, buffer, value);
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
             }
