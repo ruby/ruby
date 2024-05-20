@@ -534,7 +534,7 @@ def Tempfile.create_io(basename="", tmpdir=nil, mode: 0, **options, &block)
     end
   end
   if tmpio.nil?
-    mode |= File::SHARE_DELETE
+    mode |= File::SHARE_DELETE | File::BINARY
     tmpfile = Tempfile.create(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
     tmpfile.autoclose = false
