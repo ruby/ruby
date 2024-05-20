@@ -1029,7 +1029,12 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     ISEQ_BODY(iseq)->prism = true;
     ISEQ_BODY(iseq)->param.flags.use_block = true; // unused block warning is not supported yet
 
+    rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
+
+    next_option = *option;
+    next_option.coverage_enabled = node->coverage_enabled < 0 ? 0 : node->coverage_enabled > 0;
+    option = &next_option;
 
     pm_location_t *location = &node->base.location;
     int32_t start_line = node->parser->start_line;
@@ -1273,6 +1278,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
+    result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
@@ -1708,6 +1714,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parse_result_t result = { 0 };
     result.options.line = 1;
+    result.node.coverage_enabled = 1;
 
     VALUE error = pm_load_parse_file(&result, file);
 

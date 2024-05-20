@@ -2868,6 +2868,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->encoding = previous->encoding;
         scope->filepath_encoding = previous->filepath_encoding;
         scope->constants = previous->constants;
+        scope->coverage_enabled = previous->coverage_enabled;
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -9299,12 +9300,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     // freed regardless of whether or we return an error.
     pm_scope_node_t *scope_node = &result->node;
     rb_encoding *filepath_encoding = scope_node->filepath_encoding;
+    int coverage_enabled = scope_node->coverage_enabled;
 
     pm_scope_node_init(node, scope_node, NULL);
     scope_node->filepath_encoding = filepath_encoding;
 
     scope_node->encoding = rb_enc_find(parser->encoding->name);
     if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
+
+    scope_node->coverage_enabled = coverage_enabled;
 
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;

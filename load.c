@@ -746,6 +746,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         if (*rb_ruby_prism_ptr()) {
             pm_parse_result_t result = { 0 };
             result.options.line = 1;
+            result.node.coverage_enabled = 1;
 
             VALUE error = pm_load_parse_file(&result, fname);
 

@@ -2155,6 +2155,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         pm_options_command_line_set(options, command_line);
 
         prism_opt_init(opt);
+        result->node.coverage_enabled = 0;
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
     }
     else {
