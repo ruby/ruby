@@ -576,7 +576,7 @@ static void
 release_crypt(void *p)
 {
     HCRYPTPROV *ptr = p;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*((char *)ptr), (char *)INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
         CryptReleaseContext(prov, 0);
     }
@@ -591,7 +591,7 @@ fill_random_bytes_crypt(void *seed, size_t size)
         if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
             prov = INVALID_HCRYPTPROV;
         }
-        old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(*((char *)&perm_prov), 0, (char *)prov);
         if (LIKELY(!old_prov)) { /* no other threads acquired */
             if (prov != INVALID_HCRYPTPROV) {
 #undef RUBY_UNTYPED_DATA_WARNING
