@@ -570,6 +570,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
 
     if (parts_size > 0) {
         VALUE current_string = Qnil;
+        pm_line_column_t current_location = *node_location;
 
         for (size_t index = 0; index < parts_size; index++) {
             const pm_node_t *part = parts->nodes[index];
@@ -590,6 +591,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                 }
                 else {
                     current_string = string_value;
+                    if (index != 0) current_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, part);
                 }
             }
             else {
@@ -616,6 +618,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                     }
                     else {
                         current_string = string_value;
+                        current_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, part);
                     }
                 }
                 else {
@@ -640,11 +643,13 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                         current_string = rb_enc_str_new(NULL, 0, encoding);
                     }
 
-                    PUSH_INSN1(ret, *node_location, putobject, rb_fstring(current_string));
+                    PUSH_INSN1(ret, current_location, putobject, rb_fstring(current_string));
                     PM_COMPILE_NOT_POPPED(part);
-                    PUSH_INSN(ret, *node_location, dup);
-                    PUSH_INSN1(ret, *node_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                    PUSH_INSN(ret, *node_location, anytostring);
+
+                    const pm_line_column_t current_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, part);
+                    PUSH_INSN(ret, current_location, dup);
+                    PUSH_INSN1(ret, current_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE, NULL, FALSE));
+                    PUSH_INSN(ret, current_location, anytostring);
 
                     current_string = Qnil;
                     stack_size += 2;
@@ -656,10 +661,10 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
             current_string = rb_fstring(current_string);
 
             if (stack_size == 0 && interpolated) {
-                PUSH_INSN1(ret, *node_location, putstring, current_string);
+                PUSH_INSN1(ret, current_location, putstring, current_string);
             }
             else {
-                PUSH_INSN1(ret, *node_location, putobject, current_string);
+                PUSH_INSN1(ret, current_location, putobject, current_string);
             }
 
             current_string = Qnil;

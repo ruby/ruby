@@ -15460,6 +15460,13 @@ parse_string_part(pm_parser_t *parser) {
             expect1(parser, PM_TOKEN_EMBEXPR_END, PM_ERR_EMBEXPR_END);
             pm_token_t closing = parser->previous;
 
+            // If this set of embedded statements only contains a single
+            // statement, then Ruby does not consider it as a possible statement
+            // that could emit a line event.
+            if (statements != NULL && statements->body.size == 1) {
+                pm_node_flag_unset(statements->body.nodes[0], PM_NODE_FLAG_NEWLINE);
+            }
+
             return (pm_node_t *) pm_embedded_statements_node_create(parser, &opening, statements, &closing);
         }
 
