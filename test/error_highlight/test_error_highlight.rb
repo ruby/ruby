@@ -1,6 +1,7 @@
 require "test/unit"
 
 require "error_highlight"
+require "did_you_mean"
 require "tempfile"
 
 class ErrorHighlightTest < Test::Unit::TestCase
