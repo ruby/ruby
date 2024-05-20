@@ -471,9 +471,16 @@ end
 # This method removes the file before returning the \IO object.
 # Thus, no need to remove the file.
 #
-# This method doesn't take a block.
+# Argument +basename+, +tmpdir+, keyword arguments +mode+ and +options+ are same as
+# Tempfile.create.
 #
-# With no arguments, creates and returns file whose:
+# This method may take a block.
+# If the block is not given, the created \IO object is returned.
+# The caller should close it.
+# If the block is given, the created \IO object is yielded.
+# It is closed afeter the block is finished.
+#
+# With no arguments, creates an \IO object whose:
 #
 # - Class is {IO}[rdoc-ref:IO] (not \Tempfile).
 # - Directory is the system temporary directory (system-dependent).
@@ -492,8 +499,6 @@ end
 #   tmpio.read                  # => "foo\n"
 #   tmpio.close
 #
-# Argument +basename+, +tmpdir+, keyword arguments +mode+ and +options+ are same as
-# Tempfile.create.
 #
 # Implementation:
 #
@@ -508,7 +513,8 @@ end
 # this method fallbacks to create-and-unlink as on POSIX.
 #
 # Related: Tempfile.create.
-def Tempfile.create_io(basename="", tmpdir=nil, **options)
+def Tempfile.create_io(basename="", tmpdir=nil, **options, &block)
+  tmpio = nil
   if defined? File::TMPFILE # O_TMPFILE since Linux 3.11
     tmpfile_supported = true
     tmpdir = Dir.tmpdir() if tmpdir.nil?
@@ -518,12 +524,22 @@ def Tempfile.create_io(basename="", tmpdir=nil, **options)
       tmpfile_supported = false
     end
     if tmpfile_supported
-      return IO.new(fd, File::RDWR)
+      tmpio = IO.new(fd, File::RDWR)
     end
   end
-  tmpfile = Tempfile.create(basename, tmpdir, **options)
-  File.unlink(tmpfile.path)
-  tmpfile.autoclose = false
-  tmpio = IO.new(tmpfile.fileno, File::RDWR) # change File to IO to drop path.
-  tmpio
+  if tmpio.nil?
+    tmpfile = Tempfile.create(basename, tmpdir, **options)
+    File.unlink(tmpfile.path)
+    tmpfile.autoclose = false
+    tmpio = IO.new(tmpfile.fileno, File::RDWR) # change File to IO to drop path.
+  end
+  if block
+    begin
+      yield tmpio
+    ensure
+      tmpio.close
+    end
+  else
+    tmpio
+  end
 end

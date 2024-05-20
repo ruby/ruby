@@ -427,7 +427,7 @@ puts Tempfile.new('foo').path
     end
   end
 
-  def test_create_io
+  def test_create_io_without_block
     tmpio = Tempfile.create_io
     assert_equal(IO, tmpio.class)
     assert_equal(nil, tmpio.path)
@@ -435,7 +435,29 @@ puts Tempfile.new('foo').path
     tmpio.puts "foo"
     tmpio.rewind
     assert_equal("foo\n", tmpio.read)
+    tmpio.close
   ensure
     tmpio.close if tmpio
+  end
+
+  def test_create_io_with_block
+    result = Tempfile.create_io {|tmpio|
+      assert_equal(IO, tmpio.class)
+      assert_equal(nil, tmpio.path)
+      assert_equal(0600, tmpio.stat.mode & 0777)
+      tmpio.puts "foo"
+      tmpio.rewind
+      assert_equal("foo\n", tmpio.read)
+      :result
+    }
+    assert_equal(:result, result)
+  end
+
+  def test_create_io_removes_file
+    Dir.mktmpdir {|d|
+      tmpio = Tempfile.create_io(nil, d)
+      tmpio.close # The temporary file may exists until here on Windows.
+      assert_equal([], Dir.children(d))
+    }
   end
 end
