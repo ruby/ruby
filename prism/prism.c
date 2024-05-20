@@ -427,14 +427,6 @@ lex_state_p(const pm_parser_t *parser, pm_lex_state_t state) {
     return parser->lex_state & state;
 }
 
-/**
- * This is equivalent to the predicate of warn_balanced in CRuby.
- */
-static inline bool
-ambiguous_operator_p(const pm_parser_t *parser, bool space_seen) {
-    return !lex_state_p(parser, PM_LEX_STATE_CLASS | PM_LEX_STATE_DOT | PM_LEX_STATE_FNAME | PM_LEX_STATE_ENDFN) && space_seen && !pm_char_is_whitespace(*parser->current.end);
-}
-
 typedef enum {
     PM_IGNORED_NEWLINE_NONE = 0,
     PM_IGNORED_NEWLINE_ALL,
@@ -8074,7 +8066,7 @@ pm_do_loop_stack_p(pm_parser_t *parser) {
  * is beyond the end of the source then return '\0'.
  */
 static inline uint8_t
-peek_at(pm_parser_t *parser, const uint8_t *cursor) {
+peek_at(const pm_parser_t *parser, const uint8_t *cursor) {
     if (cursor < parser->end) {
         return *cursor;
     } else {
@@ -8097,7 +8089,7 @@ peek_offset(pm_parser_t *parser, ptrdiff_t offset) {
  * that position is beyond the end of the source then return '\0'.
  */
 static inline uint8_t
-peek(pm_parser_t *parser) {
+peek(const pm_parser_t *parser) {
     return peek_at(parser, parser->current.end);
 }
 
@@ -8160,6 +8152,14 @@ next_newline(const uint8_t *cursor, ptrdiff_t length) {
     // of the encodings that we support have \n as a component of a multi-byte
     // character.
     return memchr(cursor, '\n', (size_t) length);
+}
+
+/**
+ * This is equivalent to the predicate of warn_balanced in CRuby.
+ */
+static inline bool
+ambiguous_operator_p(const pm_parser_t *parser, bool space_seen) {
+    return !lex_state_p(parser, PM_LEX_STATE_CLASS | PM_LEX_STATE_DOT | PM_LEX_STATE_FNAME | PM_LEX_STATE_ENDFN) && space_seen && !pm_char_is_whitespace(peek(parser));
 }
 
 /**
