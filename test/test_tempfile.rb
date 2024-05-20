@@ -416,7 +416,6 @@ puts Tempfile.new('foo').path
     end
   end
 
-
   def assert_mktmpdir_traversal
     Dir.mktmpdir do |target|
       target = target.chomp('/') + '/'
