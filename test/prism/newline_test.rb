@@ -15,6 +15,7 @@ module Prism
       regexp_test.rb
       static_literals_test.rb
       unescape_test.rb
+      warnings_test.rb
     ]
 
     filepaths.each do |relative|

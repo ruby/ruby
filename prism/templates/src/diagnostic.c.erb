@@ -356,6 +356,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_XSTRING_TERM]                       = { "expected a closing delimiter for the `%x` or backtick string", PM_ERROR_LEVEL_SYNTAX },
 
     // Warnings
+    [PM_WARN_AMBIGUOUS_BINARY_OPERATOR]         = { "'%s' after local variable or literal is interpreted as binary operator even though it seems like %s", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_MINUS]    = { "ambiguous first argument; put parentheses or a space even after `-` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = { "ambiguous first argument; put parentheses or a space even after `+` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND]        = { "ambiguous `&` has been interpreted as an argument prefix", PM_WARNING_LEVEL_VERBOSE },

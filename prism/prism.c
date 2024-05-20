@@ -423,8 +423,16 @@ lex_mode_pop(pm_parser_t *parser) {
  * This is the equivalent of IS_lex_state is CRuby.
  */
 static inline bool
-lex_state_p(pm_parser_t *parser, pm_lex_state_t state) {
+lex_state_p(const pm_parser_t *parser, pm_lex_state_t state) {
     return parser->lex_state & state;
+}
+
+/**
+ * This is equivalent to the predicate of warn_balanced in CRuby.
+ */
+static inline bool
+ambiguous_operator_p(const pm_parser_t *parser, bool space_seen) {
+    return !lex_state_p(parser, PM_LEX_STATE_CLASS | PM_LEX_STATE_DOT | PM_LEX_STATE_FNAME | PM_LEX_STATE_ENDFN) && space_seen && !pm_char_is_whitespace(*parser->current.end);
 }
 
 typedef enum {
@@ -10821,6 +10829,8 @@ parser_lex(pm_parser_t *parser) {
                             type = PM_TOKEN_USTAR_STAR;
                         } else if (lex_state_beg_p(parser)) {
                             type = PM_TOKEN_USTAR_STAR;
+                        } else if (ambiguous_operator_p(parser, space_seen)) {
+                            PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "**", "argument prefix");
                         }
 
                         if (lex_state_operator_p(parser)) {
@@ -10844,6 +10854,8 @@ parser_lex(pm_parser_t *parser) {
                         type = PM_TOKEN_USTAR;
                     } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_USTAR;
+                    } else if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "*", "argument prefix");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -11017,6 +11029,10 @@ parser_lex(pm_parser_t *parser) {
                             LEX(PM_TOKEN_LESS_LESS_EQUAL);
                         }
 
+                        if (ambiguous_operator_p(parser, space_seen)) {
+                            PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "<<", "here document");
+                        }
+
                         if (lex_state_operator_p(parser)) {
                             lex_state_set(parser, PM_LEX_STATE_ARG);
                         } else {
@@ -11130,6 +11146,8 @@ parser_lex(pm_parser_t *parser) {
                         type = PM_TOKEN_UAMPERSAND;
                     } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_UAMPERSAND;
+                    } else if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "&", "argument prefix");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -11204,6 +11222,10 @@ parser_lex(pm_parser_t *parser) {
                         LEX(PM_TOKEN_UPLUS);
                     }
 
+                    if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "+", "unary operator");
+                    }
+
                     lex_state_set(parser, PM_LEX_STATE_BEG);
                     LEX(PM_TOKEN_PLUS);
                 }
@@ -11239,6 +11261,10 @@ parser_lex(pm_parser_t *parser) {
                     if (is_beg || spcarg) {
                         lex_state_set(parser, PM_LEX_STATE_BEG);
                         LEX(pm_char_is_decimal_digit(peek(parser)) ? PM_TOKEN_UMINUS_NUM : PM_TOKEN_UMINUS);
+                    }
+
+                    if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "-", "unary operator");
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -11337,6 +11363,10 @@ parser_lex(pm_parser_t *parser) {
                         pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_SLASH);
                         lex_mode_push_regexp(parser, '\0', '/');
                         LEX(PM_TOKEN_REGEXP_BEGIN);
+                    }
+
+                    if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "/", "regexp literal");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -11518,6 +11548,10 @@ parser_lex(pm_parser_t *parser) {
                                 pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
                                 goto lex_next_token;
                         }
+                    }
+
+                    if (ambiguous_operator_p(parser, space_seen)) {
+                        PM_PARSER_WARN_TOKEN_FORMAT(parser, parser->current, PM_WARN_AMBIGUOUS_BINARY_OPERATOR, "%", "string literal");
                     }
 
                     lex_state_set(parser, lex_state_operator_p(parser) ? PM_LEX_STATE_ARG : PM_LEX_STATE_BEG);
