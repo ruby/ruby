@@ -513,7 +513,7 @@ end
 # this method fallbacks to create-and-unlink as on POSIX.
 #
 # Related: Tempfile.create.
-def Tempfile.create_io(basename="", tmpdir=nil, **options, &block)
+def Tempfile.create_io(basename="", tmpdir=nil, mode: 0, **options, &block)
   tmpio = nil
   if defined? File::TMPFILE # O_TMPFILE since Linux 3.11
     tmpfile_supported = true
@@ -528,7 +528,8 @@ def Tempfile.create_io(basename="", tmpdir=nil, **options, &block)
     end
   end
   if tmpio.nil?
-    tmpfile = Tempfile.create(basename, tmpdir, **options)
+    mode |= File::SHARE_DELETE
+    tmpfile = Tempfile.create(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
     tmpfile.autoclose = false
     tmpio = IO.new(tmpfile.fileno, File::RDWR) # change File to IO to drop path.
