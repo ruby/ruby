@@ -95,9 +95,9 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb" --exclude="prism/encoding_test.rb"'
           RUN_OPTS: ${{ matrix.run_opts }}
 
-      - name: make test-prism-spec
+      - name: make test-spec
         run: |
-          $SETARCH make -s test-prism-spec SPECOPTS="$SPECOPTS"
+          $SETARCH make -s test-spec SPECOPTS="$SPECOPTS"
         timeout-minutes: 10
         env:
           GNUMAKEFLAGS: ''
