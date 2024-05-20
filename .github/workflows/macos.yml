@@ -71,7 +71,7 @@ jobs:
           fetch-depth: 10
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
