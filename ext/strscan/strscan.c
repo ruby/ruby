@@ -218,16 +218,28 @@ strscan_s_allocate(VALUE klass)
 }
 
 /*
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
  * call-seq:
- *    StringScanner.new(string, fixed_anchor: false)
- *    StringScanner.new(string, dup = false)
+ *   StringScanner.new(string, fixed_anchor: false) -> string_scanner
  *
- * Creates a new StringScanner object to scan over the given +string+.
+ * Returns a new `StringScanner` object whose [stored string][1]
+ * is the given `string`;
+ * sets the [fixed-anchor property][10]:
  *
- * If +fixed_anchor+ is +true+, +\A+ always matches the beginning of
- * the string. Otherwise, +\A+ always matches the current position.
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.string        # => "foobarbaz"
+ * scanner.fixed_anchor? # => false
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       0
+ * #   charpos:   0
+ * #   rest:      "foobarbaz"
+ * #   rest_size: 9
+ * ```
  *
- * +dup+ argument is obsolete and not used now.
  */
 static VALUE
 strscan_initialize(int argc, VALUE *argv, VALUE self)
@@ -266,11 +278,14 @@ check_strscan(VALUE obj)
 }
 
 /*
- * call-seq:
- *   dup
- *   clone
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Duplicates a StringScanner object.
+ * call-seq:
+ *   dup -> shallow_copy
+ *
+ * Returns a shallow copy of `self`;
+ * the [stored string][1] in the copy is the same string as in `self`.
  */
 static VALUE
 strscan_init_copy(VALUE vself, VALUE vorig)
@@ -297,10 +312,13 @@ strscan_init_copy(VALUE vself, VALUE vorig)
    ======================================================================= */
 
 /*
- * call-seq: StringScanner.must_C_version
+ * call-seq:
+ *   StringScanner.must_C_version -> self
  *
- * This method is defined for backward compatibility.
+ * Returns +self+; defined for backward compatibility.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_s_mustc(VALUE self)
 {
@@ -308,7 +326,30 @@ strscan_s_mustc(VALUE self)
 }
 
 /*
- * Reset the scan pointer (index 0) and clear matching data.
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
+ * call-seq:
+ *   reset -> self
+ *
+ * Sets both [byte position][2] and [character position][7] to zero,
+ * and clears [match values][9];
+ * returns +self+:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.exist?(/bar/)          # => 6
+ * scanner.reset                  # => #<StringScanner 0/9 @ "fooba...">
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       0
+ * #   charpos:   0
+ * #   rest:      "foobarbaz"
+ * #   rest_size: 9
+ * # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_reset(VALUE self)
@@ -322,11 +363,40 @@ strscan_reset(VALUE self)
 }
 
 /*
- * call-seq:
- *   terminate
- *   clear
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Sets the scan pointer to the end of the string and clear matching data.
+ * call-seq:
+ *   terminate -> self
+ *
+ * Sets the scanner to end-of-string;
+ * returns +self+:
+ *
+ * - Sets both [positions][11] to end-of-stream.
+ * - Clears [match values][9].
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string                 # => "こんにちは"
+ * scanner.scan_until(/に/)
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       9
+ * #   charpos:   3
+ * #   rest:      "ちは"
+ * #   rest_size: 6
+ * match_values_cleared?(scanner) # => false
+ *
+ * scanner.terminate              # => #<StringScanner fin>
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       15
+ * #   charpos:   5
+ * #   rest:      ""
+ * #   rest_size: 0
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_terminate(VALUE self)
@@ -340,9 +410,13 @@ strscan_terminate(VALUE self)
 }
 
 /*
- * Equivalent to #terminate.
- * This method is obsolete; use #terminate instead.
+ * call-seq:
+ *   clear -> self
+ *
+ * This method is obsolete; use the equivalent method StringScanner#terminate.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_clear(VALUE self)
 {
@@ -351,7 +425,21 @@ strscan_clear(VALUE self)
 }
 
 /*
- * Returns the string being scanned.
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
+ * call-seq:
+ *   string -> stored_string
+ *
+ * Returns the [stored string][1]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobar')
+ * scanner.string # => "foobar"
+ * scanner.concat('baz')
+ * scanner.string # => "foobarbaz"
+ * ```
+ *
  */
 static VALUE
 strscan_get_string(VALUE self)
@@ -363,10 +451,39 @@ strscan_get_string(VALUE self)
 }
 
 /*
- * call-seq: string=(str)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Changes the string being scanned to +str+ and resets the scanner.
- * Returns +str+.
+ * call-seq:
+ *   string = other_string -> other_string
+ *
+ * Replaces the [stored string][1] with the given `other_string`:
+ *
+ * - Sets both [positions][11] to zero.
+ * - Clears [match values][9].
+ * - Returns `other_string`.
+ *
+ * ```
+ * scanner = StringScanner.new('foobar')
+ * scanner.scan(/foo/)
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       3
+ * #   charpos:   3
+ * #   rest:      "bar"
+ * #   rest_size: 3
+ * match_values_cleared?(scanner) # => false
+ *
+ * scanner.string = 'baz'         # => "baz"
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       0
+ * #   charpos:   0
+ * #   rest:      "baz"
+ * #   rest_size: 3
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_set_string(VALUE self, VALUE str)
@@ -381,18 +498,33 @@ strscan_set_string(VALUE self, VALUE str)
 }
 
 /*
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
  * call-seq:
- *   concat(str)
- *   <<(str)
+ *   concat(more_string) -> self
  *
- * Appends +str+ to the string being scanned.
- * This method does not affect scan pointer.
+ * - Appends the given `more_string`
+ *   to the [stored string][1].
+ * - Returns `self`.
+ * - Does not affect the [positions][11]
+ *   or [match values][9].
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/Fri /)
- *   s << " +1000 GMT"
- *   s.string            # -> "Fri Dec 12 1975 14:39 +1000 GMT"
- *   s.scan(/Dec/)       # -> "Dec"
+ *
+ * ```
+ * scanner = StringScanner.new('foo')
+ * scanner.string           # => "foo"
+ * scanner.terminate
+ * scanner.concat('barbaz') # => #<StringScanner 3/9 "foo" @ "barba...">
+ * scanner.string           # => "foobarbaz"
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       3
+ * #   charpos:   3
+ * #   rest:      "barbaz"
+ * #   rest_size: 6
+ * ```
+ *
  */
 static VALUE
 strscan_concat(VALUE self, VALUE str)
@@ -406,18 +538,24 @@ strscan_concat(VALUE self, VALUE str)
 }
 
 /*
- * Returns the byte position of the scan pointer.  In the 'reset' position, this
- * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
- * this value is the bytesize of the string.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * In short, it's a 0-based index into bytes of the string.
+ * call-seq:
+ *   pos -> byte_position
  *
- *   s = StringScanner.new('test string')
- *   s.pos               # -> 0
- *   s.scan_until /str/  # -> "test str"
- *   s.pos               # -> 8
- *   s.terminate         # -> #<StringScanner fin>
- *   s.pos               # -> 11
+ * Returns the integer [byte position][2],
+ * which may be different from the [character position][7]:
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string  # => "こんにちは"
+ * scanner.pos     # => 0
+ * scanner.getch   # => "こ" # 3-byte character.
+ * scanner.charpos # => 1
+ * scanner.pos     # => 3
+ * ```
+ *
  */
 static VALUE
 strscan_get_pos(VALUE self)
@@ -429,17 +567,29 @@ strscan_get_pos(VALUE self)
 }
 
 /*
- * Returns the character position of the scan pointer.  In the 'reset' position, this
- * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
- * this value is the size of the string.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * In short, it's a 0-based index into the string.
+ * call-seq:
+ *   charpos -> character_position
  *
- *   s = StringScanner.new("abc\u00e4def\u00f6ghi")
- *   s.charpos                # -> 0
- *   s.scan_until(/\u00e4/)   # -> "abc\u00E4"
- *   s.pos                    # -> 5
- *   s.charpos                # -> 4
+ * Returns the [character position][7] (initially zero),
+ * which may be different from the [byte position][2]
+ * given by method #pos:
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string # => "こんにちは"
+ * scanner.getch  # => "こ" # 3-byte character.
+ * scanner.getch  # => "ん" # 3-byte character.
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       6
+ * #   charpos:   2
+ * #   rest:      "にちは"
+ * #   rest_size: 9
+ * ```
+ *
  */
 static VALUE
 strscan_get_charpos(VALUE self)
@@ -452,13 +602,36 @@ strscan_get_charpos(VALUE self)
 }
 
 /*
- * call-seq: pos=(n)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Sets the byte position of the scan pointer.
+ * call-seq:
+ *   pos = n -> n
  *
- *   s = StringScanner.new('test string')
- *   s.pos = 7            # -> 7
- *   s.rest               # -> "ring"
+ * Sets the [byte position][2] and the [character position][11];
+ * returns `n`.
+ *
+ * Does not affect [match values][9].
+ *
+ * For non-negative `n`, sets the position to `n`:
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string  # => "こんにちは"
+ * scanner.pos = 3 # => 3
+ * scanner.rest    # => "んにちは"
+ * scanner.charpos # => 1
+ * ```
+ *
+ * For negative `n`, counts from the end of the [stored string][1]:
+ *
+ * ```
+ * scanner.pos = -9 # => -9
+ * scanner.pos      # => 6
+ * scanner.rest     # => "にちは"
+ * scanner.charpos  # => 2
+ * ```
+ *
  */
 static VALUE
 strscan_set_pos(VALUE self, VALUE v)
@@ -662,19 +835,60 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 }
 
 /*
- * call-seq: scan(pattern) => String
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Tries to match with +pattern+ at the current position. If there's a match,
- * the scanner advances the "scan pointer" and returns the matched string.
- * Otherwise, the scanner returns +nil+.
+ * call-seq:
+ *   scan(pattern) -> substring or nil
  *
- *   s = StringScanner.new('test string')
- *   p s.scan(/\w+/)   # -> "test"
- *   p s.scan(/\w+/)   # -> nil
- *   p s.scan(/\s+/)   # -> " "
- *   p s.scan("str")   # -> "str"
- *   p s.scan(/\w+/)   # -> "ing"
- *   p s.scan(/./)     # -> nil
+ * Attempts to [match][17] the given `pattern`
+ * at the beginning of the [target substring][3].
+ *
+ * If the match succeeds:
+ *
+ * - Returns the matched substring.
+ * - Increments the [byte position][2] by <tt>substring.bytesize</tt>,
+ *   and may increment the [character position][7].
+ * - Sets [match values][9].
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string     # => "こんにちは"
+ * scanner.pos = 6
+ * scanner.scan(/に/) # => "に"
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "こん"
+ * #   matched  :      "に"
+ * #   post_match:     "ちは"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["に", nil]
+ * #   []:
+ * #     [0]:          "に"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       9
+ * #   charpos:   3
+ * #   rest:      "ちは"
+ * #   rest_size: 6
+ * ```
+ *
+ * If the match fails:
+ *
+ * - Returns `nil`.
+ * - Does not increment byte and character positions.
+ * - Clears match values.
+ *
+ * ```
+ * scanner.scan(/nope/)           # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
  *
  */
 static VALUE
@@ -684,16 +898,60 @@ strscan_scan(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: match?(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Tests whether the given +pattern+ is matched from the current scan pointer.
- * Returns the length of the match, or +nil+.  The scan pointer is not advanced.
+ * call-seq:
+ *   match?(pattern) -> updated_position or nil
  *
- *   s = StringScanner.new('test string')
- *   p s.match?(/\w+/)   # -> 4
- *   p s.match?(/\w+/)   # -> 4
- *   p s.match?("test")  # -> 4
- *   p s.match?(/\s+/)   # -> nil
+ * Attempts to [match][17] the given `pattern`
+ * at the beginning of the [target substring][3];
+ * does not modify the [positions][11].
+ *
+ * If the match succeeds:
+ *
+ * - Sets [match values][9].
+ * - Returns the size in bytes of the matched substring.
+ *
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.pos = 3
+ * scanner.match?(/bar/) => 3
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "foo"
+ * #   matched  :      "bar"
+ * #   post_match:     "baz"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["bar", nil]
+ * #   []:
+ * #     [0]:          "bar"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       3
+ * #   charpos:   3
+ * #   rest:      "barbaz"
+ * #   rest_size: 6
+ * ```
+ *
+ * If the match fails:
+ *
+ * - Clears match values.
+ * - Returns `nil`.
+ * - Does not increment positions.
+ *
+ * ```
+ * scanner.match?(/nope/)         # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_match_p(VALUE self, VALUE re)
@@ -702,21 +960,52 @@ strscan_match_p(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: skip(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Attempts to skip over the given +pattern+ beginning with the scan pointer.
- * If it matches, the scan pointer is advanced to the end of the match, and the
- * length of the match is returned.  Otherwise, +nil+ is returned.
+ * call-seq:
+ *   skip(pattern) match_size or nil
  *
- * It's similar to #scan, but without returning the matched string.
+ * Attempts to [match][17] the given `pattern`
+ * at the beginning of the [target substring][3];
  *
- *   s = StringScanner.new('test string')
- *   p s.skip(/\w+/)   # -> 4
- *   p s.skip(/\w+/)   # -> nil
- *   p s.skip(/\s+/)   # -> 1
- *   p s.skip("st")    # -> 2
- *   p s.skip(/\w+/)   # -> 4
- *   p s.skip(/./)     # -> nil
+ * If the match succeeds:
+ *
+ * - Increments the [byte position][2] by substring.bytesize,
+ *   and may increment the [character position][7].
+ * - Sets [match values][9].
+ * - Returns the size (bytes) of the matched substring.
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string                  # => "こんにちは"
+ * scanner.pos = 6
+ * scanner.skip(/に/)              # => 3
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "こん"
+ * #   matched  :      "に"
+ * #   post_match:     "ちは"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["に", nil]
+ * #   []:
+ * #     [0]:          "に"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       9
+ * #   charpos:   3
+ * #   rest:      "ちは"
+ * #   rest_size: 6
+ *
+ * scanner.skip(/nope/)            # => nil
+ * match_values_cleared?(scanner)  # => true
+ * ```
  *
  */
 static VALUE
@@ -726,19 +1015,59 @@ strscan_skip(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: check(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * This returns the value that #scan would return, without advancing the scan
- * pointer.  The match register is affected, though.
+ * call-seq:
+ *   check(pattern) -> matched_substring or nil
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.check /Fri/               # -> "Fri"
- *   s.pos                       # -> 0
- *   s.matched                   # -> "Fri"
- *   s.check /12/                # -> nil
- *   s.matched                   # -> nil
+ * Attempts to [match][17] the given `pattern`
+ * at the beginning of the [target substring][3];
+ * does not modify the [positions][11].
  *
- * Mnemonic: it "checks" to see whether a #scan will return a value.
+ * If the match succeeds:
+ *
+ * - Returns the matched substring.
+ * - Sets all [match values][9].
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.pos = 3
+ * scanner.check('bar') # => "bar"
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "foo"
+ * #   matched  :      "bar"
+ * #   post_match:     "baz"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["bar", nil]
+ * #   []:
+ * #     [0]:          "bar"
+ * #     [1]:          nil
+ * # => 0..1
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       3
+ * #   charpos:   3
+ * #   rest:      "barbaz"
+ * #   rest_size: 6
+ * ```
+ *
+ * If the match fails:
+ *
+ * - Returns `nil`.
+ * - Clears all [match values][9].
+ *
+ * ```
+ * scanner.check(/nope/)          # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_check(VALUE self, VALUE re)
@@ -747,15 +1076,24 @@ strscan_check(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: scan_full(pattern, advance_pointer_p, return_string_p)
+ * call-seq:
+ *   scan_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or nil
  *
- * Tests whether the given +pattern+ is matched from the current scan pointer.
- * Advances the scan pointer if +advance_pointer_p+ is true.
- * Returns the matched string if +return_string_p+ is true.
- * The match register is affected.
+ * Equivalent to one of the following:
  *
- * "full" means "#scan with full parameters".
+ * - +advance_pointer_p+ +true+:
+ *
+ *   - +return_string_p+ +true+: StringScanner#scan(pattern).
+ *   - +return_string_p+ +false+: StringScanner#skip(pattern).
+ *
+ * - +advance_pointer_p+ +false+:
+ *
+ *   - +return_string_p+ +true+: StringScanner#check(pattern).
+ *   - +return_string_p+ +false+: StringScanner#match?(pattern).
+ *
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_scan_full(VALUE self, VALUE re, VALUE s, VALUE f)
 {
@@ -763,16 +1101,62 @@ strscan_scan_full(VALUE self, VALUE re, VALUE s, VALUE f)
 }
 
 /*
- * call-seq: scan_until(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Scans the string _until_ the +pattern+ is matched.  Returns the substring up
- * to and including the end of the match, advancing the scan pointer to that
- * location. If there is no match, +nil+ is returned.
+ * call-seq:
+ *   scan_until(pattern) -> substring or nil
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan_until(/1/)        # -> "Fri Dec 1"
- *   s.pre_match              # -> "Fri Dec "
- *   s.scan_until(/XYZ/)      # -> nil
+ * Attempts to [match][17] the given `pattern`
+ * anywhere (at any [position][2]) in the [target substring][3].
+ *
+ * If the match attempt succeeds:
+ *
+ * - Sets [match values][9].
+ * - Sets the [byte position][2] to the end of the matched substring;
+ *   may adjust the [character position][7].
+ * - Returns the matched substring.
+ *
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string           # => "こんにちは"
+ * scanner.pos = 6
+ * scanner.scan_until(/ち/) # => "にち"
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "こんに"
+ * #   matched  :      "ち"
+ * #   post_match:     "は"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["ち", nil]
+ * #   []:
+ * #     [0]:          "ち"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       12
+ * #   charpos:   4
+ * #   rest:      "は"
+ * #   rest_size: 3
+ * ```
+ *
+ * If the match attempt fails:
+ *
+ * - Clears match data.
+ * - Returns `nil`.
+ * - Does not update positions.
+ *
+ * ```
+ * scanner.scan_until(/nope/)     # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_scan_until(VALUE self, VALUE re)
@@ -781,17 +1165,61 @@ strscan_scan_until(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: exist?(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Looks _ahead_ to see if the +pattern+ exists _anywhere_ in the string,
- * without advancing the scan pointer.  This predicates whether a #scan_until
- * will return a value.
+ * call-seq:
+ *   exist?(pattern) -> byte_offset or nil
  *
- *   s = StringScanner.new('test string')
- *   s.exist? /s/            # -> 3
- *   s.scan /test/           # -> "test"
- *   s.exist? /s/            # -> 2
- *   s.exist? /e/            # -> nil
+ * Attempts to [match][17] the given `pattern`
+ * anywhere (at any [position][2])
+ * n the [target substring][3];
+ * does not modify the [positions][11].
+ *
+ * If the match succeeds:
+ *
+ * - Returns a byte offset:
+ *   the distance in bytes between the current [position][2]
+ *   and the end of the matched substring.
+ * - Sets all [match values][9].
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbazbatbam')
+ * scanner.pos = 6
+ * scanner.exist?(/bat/) # => 6
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "foobarbaz"
+ * #   matched  :      "bat"
+ * #   post_match:     "bam"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["bat", nil]
+ * #   []:
+ * #     [0]:          "bat"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       6
+ * #   charpos:   6
+ * #   rest:      "bazbatbam"
+ * #   rest_size: 9
+ * ```
+ *
+ * If the match fails:
+ *
+ * - Returns `nil`.
+ * - Clears all [match values][9].
+ *
+ * ```
+ * scanner.exist?(/nope/)         # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_exist_p(VALUE self, VALUE re)
@@ -800,20 +1228,59 @@ strscan_exist_p(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: skip_until(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Advances the scan pointer until +pattern+ is matched and consumed.  Returns
- * the number of bytes advanced, or +nil+ if no match was found.
+ * call-seq:
+ *   skip_until(pattern) -> matched_substring_size or nil
  *
- * Look ahead to match +pattern+, and advance the scan pointer to the _end_
- * of the match.  Return the number of characters advanced, or +nil+ if the
- * match was unsuccessful.
+ * Attempts to [match][17] the given `pattern`
+ * anywhere (at any [position][2]) in the [target substring][3];
+ * does not modify the positions.
  *
- * It's similar to #scan_until, but without returning the intervening string.
+ * If the match attempt succeeds:
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.skip_until /12/           # -> 10
- *   s                           #
+ * - Sets [match values][9].
+ * - Returns the size of the matched substring.
+ *
+ * ```
+ * scanner = StringScanner.new(HIRAGANA_TEXT)
+ * scanner.string           # => "こんにちは"
+ * scanner.pos = 6
+ * scanner.skip_until(/ち/) # => 6
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "こんに"
+ * #   matched  :      "ち"
+ * #   post_match:     "は"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["ち", nil]
+ * #   []:
+ * #     [0]:          "ち"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       12
+ * #   charpos:   4
+ * #   rest:      "は"
+ * #   rest_size: 3
+ * ```
+ *
+ * If the match attempt fails:
+ *
+ * - Clears match values.
+ * - Returns `nil`.
+ *
+ * ```
+ * scanner.skip_until(/nope/)     # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_skip_until(VALUE self, VALUE re)
@@ -822,17 +1289,61 @@ strscan_skip_until(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: check_until(pattern)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * This returns the value that #scan_until would return, without advancing the
- * scan pointer.  The match register is affected, though.
+ * call-seq:
+ *   check_until(pattern) -> substring or nil
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.check_until /12/          # -> "Fri Dec 12"
- *   s.pos                       # -> 0
- *   s.matched                   # -> 12
+ * Attempts to [match][17] the given `pattern`
+ * anywhere (at any [position][2])
+ * in the [target substring][3];
+ * does not modify the [positions][11].
  *
- * Mnemonic: it "checks" to see whether a #scan_until will return a value.
+ * If the match succeeds:
+ *
+ * - Sets all [match values][9].
+ * - Returns the matched substring,
+ *   which extends from the current [position][2]
+ *   to the end of the matched substring.
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbazbatbam')
+ * scanner.pos = 6
+ * scanner.check_until(/bat/) # => "bazbat"
+ * put_match_values(scanner)
+ * # Basic match values:
+ * #   matched?:       true
+ * #   matched_size:   3
+ * #   pre_match:      "foobarbaz"
+ * #   matched  :      "bat"
+ * #   post_match:     "bam"
+ * # Captured match values:
+ * #   size:           1
+ * #   captures:       []
+ * #   named_captures: {}
+ * #   values_at:      ["bat", nil]
+ * #   []:
+ * #     [0]:          "bat"
+ * #     [1]:          nil
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       6
+ * #   charpos:   6
+ * #   rest:      "bazbatbam"
+ * #   rest_size: 9
+ * ```
+ *
+ * If the match fails:
+ *
+ * - Clears all [match values][9].
+ * - Returns `nil`.
+ *
+ * ```
+ * scanner.check_until(/nope/)    # => nil
+ * match_values_cleared?(scanner) # => true
+ * ```
+ *
  */
 static VALUE
 strscan_check_until(VALUE self, VALUE re)
@@ -841,14 +1352,24 @@ strscan_check_until(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: search_full(pattern, advance_pointer_p, return_string_p)
+ * call-seq:
+ *   search_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or position_delta or nil
  *
- * Scans the string _until_ the +pattern+ is matched.
- * Advances the scan pointer if +advance_pointer_p+, otherwise not.
- * Returns the matched string if +return_string_p+ is true, otherwise
- * returns the number of bytes advanced.
- * This method does affect the match register.
+ * Equivalent to one of the following:
+ *
+ * - +advance_pointer_p+ +true+:
+ *
+ *   - +return_string_p+ +true+: StringScanner#scan_until(pattern).
+ *   - +return_string_p+ +false+: StringScanner#skip_until(pattern).
+ *
+ * - +advance_pointer_p+ +false+:
+ *
+ *   - +return_string_p+ +true+: StringScanner#check_until(pattern).
+ *   - +return_string_p+ +false+: StringScanner#exist?(pattern).
+ *
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_search_full(VALUE self, VALUE re, VALUE s, VALUE f)
 {
@@ -868,17 +1389,53 @@ adjust_registers_to_matched(struct strscanner *p)
 }
 
 /*
- * Scans one character and returns it.
- * This method is multibyte character sensitive.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new("ab")
- *   s.getch           # => "a"
- *   s.getch           # => "b"
- *   s.getch           # => nil
+ * call-seq:
+ *   getch -> character or nil
  *
- *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
- *   s.getch           # => "\x{A4A2}"   # Japanese hira-kana "A" in EUC-JP
- *   s.getch           # => nil
+ * Returns the next (possibly multibyte) character,
+ * if available:
+ *
+ * - If the [position][2]
+ *   is at the beginning of a character:
+ *
+ *     - Returns the character.
+ *     - Increments the [character position][7] by 1.
+ *     - Increments the [byte position][2]
+ *       by the size (in bytes) of the character.
+ *
+ *     ```
+ *     scanner = StringScanner.new(HIRAGANA_TEXT)
+ *     scanner.string                                # => "こんにちは"
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["こ", 3, 1]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["ん", 6, 2]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["に", 9, 3]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["ち", 12, 4]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["は", 15, 5]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => [nil, 15, 5]
+ *     ```
+ *
+ * - If the [position][2] is within a multi-byte character
+ *   (that is, not at its beginning),
+ *   behaves like #get_byte (returns a 1-byte character):
+ *
+ *     ```
+ *     scanner.pos = 1
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["\x81", 2, 2]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["\x93", 3, 1]
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => ["ん", 6, 2]
+ *     ```
+ *
+ * - If the [position][2] is at the end of the [stored string][1],
+ *   returns `nil` and does not modify the positions:
+ *
+ *     ```
+ *     scanner.terminate
+ *     [scanner.getch, scanner.pos, scanner.charpos] # => [nil, 15, 5]
+ *     ```
+ *
  */
 static VALUE
 strscan_getch(VALUE self)
@@ -903,19 +1460,13 @@ strscan_getch(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   scan_byte -> integer_byte
+ *
  * Scans one byte and returns it as an integer.
  * This method is not multibyte character sensitive.
  * See also: #getch.
  *
- *   s = StringScanner.new('ab')
- *   s.scan_byte         # => 97
- *   s.scan_byte         # => 98
- *   s.scan_byte         # => nil
- *
- *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
- *   s.scan_byte         # => 0xA4
- *   s.scan_byte         # => 0xA2
- *   s.scan_byte         # => nil
  */
 static VALUE
 strscan_scan_byte(VALUE self)
@@ -954,19 +1505,40 @@ strscan_peek_byte(VALUE self)
 }
 
 /*
- * Scans one byte and returns it.
- * This method is not multibyte character sensitive.
- * See also: #getch.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('ab')
- *   s.get_byte         # => "a"
- *   s.get_byte         # => "b"
- *   s.get_byte         # => nil
+ * call-seq:
+ *   get_byte -> byte_as_character or nil
  *
- *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
- *   s.get_byte         # => "\xA4"
- *   s.get_byte         # => "\xA2"
- *   s.get_byte         # => nil
+ * Returns the next byte, if available:
+ *
+ * - If the [position][2]
+ *   is not at the end of the [stored string][1]:
+ *
+ *     - Returns the next byte.
+ *     - Increments the [byte position][2].
+ *     - Adjusts the [character position][7].
+ *
+ *     ```
+ *     scanner = StringScanner.new(HIRAGANA_TEXT)
+ *     # => #<StringScanner 0/15 @ "\xE3\x81\x93\xE3\x82...">
+ *     scanner.string                                   # => "こんにちは"
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\xE3", 1, 1]
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\x81", 2, 2]
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\x93", 3, 1]
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\xE3", 4, 2]
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\x82", 5, 3]
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => ["\x93", 6, 2]
+ *     ```
+
+ * - Otherwise, returns `nil`, and does not change the positions.
+ *
+ *     ```
+ *     scanner.terminate
+ *     [scanner.get_byte, scanner.pos, scanner.charpos] # => [nil, 15, 5]
+ *     ```
+ *
  */
 static VALUE
 strscan_get_byte(VALUE self)
@@ -988,9 +1560,14 @@ strscan_get_byte(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   getbyte
+ *
  * Equivalent to #get_byte.
  * This method is obsolete; use #get_byte instead.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_getbyte(VALUE self)
 {
@@ -999,14 +1576,22 @@ strscan_getbyte(VALUE self)
 }
 
 /*
- * call-seq: peek(len)
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Extracts a string corresponding to <tt>string[pos,len]</tt>, without
- * advancing the scan pointer.
+ * call-seq:
+ *   peek(length) -> substring
  *
- *   s = StringScanner.new('test string')
- *   s.peek(7)          # => "test st"
- *   s.peek(7)          # => "test st"
+ * Returns the substring `string[pos, length]`;
+ * does not update [match values][9] or [positions][11]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.pos = 3
+ * scanner.peek(3)   # => "bar"
+ * scanner.terminate
+ * scanner.peek(3)   # => ""
+ * ```
  *
  */
 static VALUE
@@ -1026,9 +1611,14 @@ strscan_peek(VALUE self, VALUE vlen)
 }
 
 /*
+ * call-seq:
+ *   peep
+ *
  * Equivalent to #peek.
  * This method is obsolete; use #peek instead.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_peep(VALUE self, VALUE vlen)
 {
@@ -1037,15 +1627,42 @@ strscan_peep(VALUE self, VALUE vlen)
 }
 
 /*
- * Sets the scan pointer to the previous position.  Only one previous position is
- * remembered, and it changes with each scanning operation.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.scan(/\w+/)        # => "test"
- *   s.unscan
- *   s.scan(/../)         # => "te"
- *   s.scan(/\d/)         # => nil
- *   s.unscan             # ScanError: unscan failed: previous match record not exist
+ * call-seq:
+ *   unscan -> self
+ *
+ * Sets the [position][2] to its value previous to the recent successful
+ * [match][17] attempt:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.scan(/foo/)
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       3
+ * #   charpos:   3
+ * #   rest:      "barbaz"
+ * #   rest_size: 6
+ * scanner.unscan
+ * # => #<StringScanner 0/9 @ "fooba...">
+ * put_situation(scanner)
+ * # Situation:
+ * #   pos:       0
+ * #   charpos:   0
+ * #   rest:      "foobarbaz"
+ * #   rest_size: 9
+ * ```
+ *
+ * Raises an exception if match values are clear:
+ *
+ * ```
+ * scanner.scan(/nope/)           # => nil
+ * match_values_cleared?(scanner) # => true
+ * scanner.unscan                 # Raises StringScanner::Error.
+ * ```
+ *
  */
 static VALUE
 strscan_unscan(VALUE self)
@@ -1061,16 +1678,37 @@ strscan_unscan(VALUE self)
 }
 
 /*
- * Returns +true+ if and only if the scan pointer is at the beginning of the line.
  *
- *   s = StringScanner.new("test\ntest\n")
- *   s.bol?           # => true
- *   s.scan(/te/)
- *   s.bol?           # => false
- *   s.scan(/st\n/)
- *   s.bol?           # => true
- *   s.terminate
- *   s.bol?           # => true
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
+ * call-seq:
+ *   beginning_of_line? -> true or false
+ *
+ * Returns whether the [position][2] is at the beginning of a line;
+ * that is, at the beginning of the [stored string][1]
+ * or immediately after a newline:
+ *
+ *     scanner = StringScanner.new(MULTILINE_TEXT)
+ *     scanner.string
+ *     # => "Go placidly amid the noise and haste,\nand remember what peace there may be in silence.\n"
+ *     scanner.pos                # => 0
+ *     scanner.beginning_of_line? # => true
+ *
+ *     scanner.scan_until(/,/)    # => "Go placidly amid the noise and haste,"
+ *     scanner.beginning_of_line? # => false
+ *
+ *     scanner.scan(/\n/)         # => "\n"
+ *     scanner.beginning_of_line? # => true
+ *
+ *     scanner.terminate
+ *     scanner.beginning_of_line? # => true
+ *
+ *     scanner.concat('x')
+ *     scanner.terminate
+ *     scanner.beginning_of_line? # => false
+ *
+ * StringScanner#bol? is an alias for StringScanner#beginning_of_line?.
  */
 static VALUE
 strscan_bol_p(VALUE self)
@@ -1084,14 +1722,24 @@ strscan_bol_p(VALUE self)
 }
 
 /*
- * Returns +true+ if the scan pointer is at the end of the string.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   p s.eos?          # => false
- *   s.scan(/test/)
- *   p s.eos?          # => false
- *   s.terminate
- *   p s.eos?          # => true
+ * call-seq:
+ *   eos? -> true or false
+ *
+ * Returns whether the [position][2]
+ * is at the end of the [stored string][1]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.eos? # => false
+ * pos = 3
+ * scanner.eos? # => false
+ * scanner.terminate
+ * scanner.eos? # => true
+ * ```
+ *
  */
 static VALUE
 strscan_eos_p(VALUE self)
@@ -1103,9 +1751,14 @@ strscan_eos_p(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   empty?
+ *
  * Equivalent to #eos?.
  * This method is obsolete, use #eos? instead.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_empty_p(VALUE self)
 {
@@ -1114,6 +1767,9 @@ strscan_empty_p(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   rest?
+ *
  * Returns true if and only if there is more data in the string.  See #eos?.
  * This method is obsolete; use #eos? instead.
  *
@@ -1122,6 +1778,8 @@ strscan_empty_p(VALUE self)
  *   s.eos? # => false
  *   s.rest? # => true
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_rest_p(VALUE self)
 {
@@ -1132,13 +1790,26 @@ strscan_rest_p(VALUE self)
 }
 
 /*
- * Returns +true+ if and only if the last match was successful.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.match?(/\w+/)     # => 4
- *   s.matched?          # => true
- *   s.match?(/\d+/)     # => nil
- *   s.matched?          # => false
+ * call-seq:
+ *   matched? -> true or false
+ *
+ * Returns `true` of the most recent [match attempt][17] was successful,
+ * `false` otherwise;
+ * see [Basic Matched Values][18]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.matched?       # => false
+ * scanner.pos = 3
+ * scanner.exist?(/baz/)  # => 6
+ * scanner.matched?       # => true
+ * scanner.exist?(/nope/) # => nil
+ * scanner.matched?       # => false
+ * ```
+ *
  */
 static VALUE
 strscan_matched_p(VALUE self)
@@ -1150,11 +1821,27 @@ strscan_matched_p(VALUE self)
 }
 
 /*
- * Returns the last matched string.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.match?(/\w+/)     # -> 4
- *   s.matched           # -> "test"
+ * call-seq:
+ *   matched -> matched_substring or nil
+ *
+ * Returns the matched substring from the most recent [match][17] attempt
+ * if it was successful,
+ * or `nil` otherwise;
+ * see [Basic Matched Values][18]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.matched        # => nil
+ * scanner.pos = 3
+ * scanner.match?(/bar/)  # => 3
+ * scanner.matched        # => "bar"
+ * scanner.match?(/nope/) # => nil
+ * scanner.matched        # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_matched(VALUE self)
@@ -1169,15 +1856,29 @@ strscan_matched(VALUE self)
 }
 
 /*
- * Returns the size of the most recent match in bytes, or +nil+ if there
- * was no recent match.  This is different than <tt>matched.size</tt>,
- * which will return the size in characters.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.check /\w+/           # -> "test"
- *   s.matched_size          # -> 4
- *   s.check /\d+/           # -> nil
- *   s.matched_size          # -> nil
+ * call-seq:
+ *   matched_size -> substring_size or nil
+ *
+ * Returns the size (in bytes) of the matched substring
+ * from the most recent match [match attempt][17] if it was successful,
+ * or `nil` otherwise;
+ * see [Basic Matched Values][18]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.matched_size   # => nil
+ *
+ * pos = 3
+ * scanner.exist?(/baz/)  # => 9
+ * scanner.matched_size   # => 3
+ *
+ * scanner.exist?(/nope/) # => nil
+ * scanner.matched_size   # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_matched_size(VALUE self)
@@ -1208,30 +1909,75 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 }
 
 /*
- * call-seq: [](n)
  *
- * Returns the n-th subgroup in the most recent match.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
- *   s[0]                               # -> "Fri Dec 12 "
- *   s[1]                               # -> "Fri"
- *   s[2]                               # -> "Dec"
- *   s[3]                               # -> "12"
- *   s.post_match                       # -> "1975 14:39"
- *   s.pre_match                        # -> ""
+ * call-seq:
+ *   [](specifier) -> substring or nil
  *
- *   s.reset
- *   s.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)       # -> "Fri Dec 12 "
- *   s[0]                               # -> "Fri Dec 12 "
- *   s[1]                               # -> "Fri"
- *   s[2]                               # -> "Dec"
- *   s[3]                               # -> "12"
- *   s[:wday]                           # -> "Fri"
- *   s[:month]                          # -> "Dec"
- *   s[:day]                            # -> "12"
- *   s.post_match                       # -> "1975 14:39"
- *   s.pre_match                        # -> ""
+ * Returns a captured substring or `nil`;
+ * see [Captured Match Values][13].
+ *
+ * When there are captures:
+ *
+ * ```
+ * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
+ * scanner.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)
+ * ```
+ *
+ * - `specifier` zero: returns the entire matched substring:
+ *
+ *     ```
+ *     scanner[0]         # => "Fri Dec 12 "
+ *     scanner.pre_match  # => ""
+ *     scanner.post_match # => "1975 14:39"
+ *     ```
+ *
+ * - `specifier` positive integer. returns the `n`th capture, or `nil` if out of range:
+ *
+ *     ```
+ *     scanner[1] # => "Fri"
+ *     scanner[2] # => "Dec"
+ *     scanner[3] # => "12"
+ *     scanner[4] # => nil
+ *     ```
+ *
+ * - `specifier` negative integer. counts backward from the last subgroup:
+ *
+ *     ```
+ *     scanner[-1] # => "12"
+ *     scanner[-4] # => "Fri Dec 12 "
+ *     scanner[-5] # => nil
+ *     ```
+ *
+ * - `specifier` symbol or string. returns the named subgroup, or `nil` if no such:
+ *
+ *     ```
+ *     scanner[:wday]  # => "Fri"
+ *     scanner['wday'] # => "Fri"
+ *     scanner[:month] # => "Dec"
+ *     scanner[:day]   # => "12"
+ *     scanner[:nope]  # => nil
+ *     ```
+ *
+ * When there are no captures, only `[0]` returns non-`nil`:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.exist?(/bar/)
+ * scanner[0] # => "bar"
+ * scanner[1] # => nil
+ * ```
+ *
+ * For a failed match, even `[0]` returns `nil`:
+ *
+ * ```
+ * scanner.scan(/nope/) # => nil
+ * scanner[0]           # => nil
+ * scanner[1]           # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_aref(VALUE self, VALUE idx)
@@ -1268,14 +2014,28 @@ strscan_aref(VALUE self, VALUE idx)
 }
 
 /*
- * call-seq: size
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Returns the amount of subgroups in the most recent match.
- * The full match counts as a subgroup.
+ * call-seq:
+ *   size -> captures_count
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
- *   s.size                             # -> 4
+ * Returns the count of captures if the most recent match attempt succeeded, `nil` otherwise;
+ * see [Captures Match Values][13]:
+ *
+ * ```
+ * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
+ * scanner.size                        # => nil
+ *
+ * pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
+ * scanner.match?(pattern)
+ * scanner.values_at(*0..scanner.size) # => ["Fri Dec 12 ", "Fri", "Dec", "12", nil]
+ * scanner.size                        # => 4
+ *
+ * scanner.match?(/nope/)              # => nil
+ * scanner.size                        # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_size(VALUE self)
@@ -1288,16 +2048,30 @@ strscan_size(VALUE self)
 }
 
 /*
- * call-seq: captures
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Returns the subgroups in the most recent match (not including the full match).
- * If nothing was priorly matched, it returns nil.
+ * call-seq:
+ *   captures -> substring_array or nil
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> "Fri Dec 12 "
- *   s.captures                                # -> ["Fri", "Dec", "12", nil]
- *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> nil
- *   s.captures                                # -> nil
+ * Returns the array of [captured match values][13] at indexes `(1..)`
+ * if the most recent match attempt succeeded, or `nil` otherwise:
+ *
+ * ```
+ * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
+ * scanner.captures         # => nil
+ *
+ * scanner.exist?(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)
+ * scanner.captures         # => ["Fri", "Dec", "12"]
+ * scanner.values_at(*0..4) # => ["Fri Dec 12 ", "Fri", "Dec", "12", nil]
+ *
+ * scanner.exist?(/Fri/)
+ * scanner.captures         # => []
+ *
+ * scanner.scan(/nope/)
+ * scanner.captures         # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_captures(VALUE self)
@@ -1327,17 +2101,25 @@ strscan_captures(VALUE self)
 }
 
 /*
- *  call-seq:
- *     scanner.values_at( i1, i2, ... iN )   -> an_array
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- * Returns the subgroups in the most recent match at the given indices.
- * If nothing was priorly matched, it returns nil.
+ * call-seq:
+ *   values_at(*specifiers) -> array_of_captures or nil
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
- *   s.values_at 0, -1, 5, 2            # -> ["Fri Dec 12 ", "12", nil, "Dec"]
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> nil
- *   s.values_at 0, -1, 5, 2            # -> nil
+ * Returns an array of captured substrings, or `nil` of none.
+ *
+ * For each `specifier`, the returned substring is `[specifier]`;
+ * see #[].
+ *
+ * ```
+ * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
+ * pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
+ * scanner.match?(pattern)
+ * scanner.values_at(*0..3)               # => ["Fri Dec 12 ", "Fri", "Dec", "12"]
+ * scanner.values_at(*%i[wday month day]) # => ["Fri", "Dec", "12"]
+ * ```
+ *
  */
 
 static VALUE
@@ -1359,13 +2141,29 @@ strscan_values_at(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Returns the <i><b>pre</b>-match</i> (in the regular expression sense) of the last scan.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.scan(/\w+/)           # -> "test"
- *   s.scan(/\s+/)           # -> " "
- *   s.pre_match             # -> "test"
- *   s.post_match            # -> "string"
+ * call-seq:
+ *   pre_match -> substring
+ *
+ * Returns the substring that precedes the matched substring
+ * from the most recent match attempt if it was successful,
+ * or `nil` otherwise;
+ * see [Basic Match Values][18]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.pre_match      # => nil
+ *
+ * scanner.pos = 3
+ * scanner.exist?(/baz/)  # => 6
+ * scanner.pre_match      # => "foobar" # Substring of entire string, not just target string.
+ *
+ * scanner.exist?(/nope/) # => nil
+ * scanner.pre_match      # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_pre_match(VALUE self)
@@ -1380,13 +2178,29 @@ strscan_pre_match(VALUE self)
 }
 
 /*
- * Returns the <i><b>post</b>-match</i> (in the regular expression sense) of the last scan.
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new('test string')
- *   s.scan(/\w+/)           # -> "test"
- *   s.scan(/\s+/)           # -> " "
- *   s.pre_match             # -> "test"
- *   s.post_match            # -> "string"
+ * call-seq:
+ *   post_match -> substring
+ *
+ * Returns the substring that follows the matched substring
+ * from the most recent match attempt if it was successful,
+ * or `nil` otherwise;
+ * see [Basic Match Values][18]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.post_match     # => nil
+ *
+ * scanner.pos = 3
+ * scanner.match?(/bar/)  # => 3
+ * scanner.post_match     # => "baz"
+ *
+ * scanner.match?(/nope/) # => nil
+ * scanner.post_match     # => nil
+ * ```
+ *
  */
 static VALUE
 strscan_post_match(VALUE self)
@@ -1401,8 +2215,24 @@ strscan_post_match(VALUE self)
 }
 
 /*
- * Returns the "rest" of the string (i.e. everything after the scan pointer).
- * If there is no more data (eos? = true), it returns <tt>""</tt>.
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
+ * call-seq:
+ *   rest -> target_substring
+ *
+ * Returns the 'rest' of the [stored string][1] (all after the current [position][2]),
+ * which is the [target substring][3]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.rest # => "foobarbaz"
+ * scanner.pos = 3
+ * scanner.rest # => "barbaz"
+ * scanner.terminate
+ * scanner.rest # => ""
+ * ```
+ *
  */
 static VALUE
 strscan_rest(VALUE self)
@@ -1417,7 +2247,26 @@ strscan_rest(VALUE self)
 }
 
 /*
- * <tt>s.rest_size</tt> is equivalent to <tt>s.rest.size</tt>.
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
+ * call-seq:
+ *   rest_size -> integer
+ *
+ * Returns the size (in bytes) of the #rest of the [stored string][1]:
+ *
+ * ```
+ * scanner = StringScanner.new('foobarbaz')
+ * scanner.rest      # => "foobarbaz"
+ * scanner.rest_size # => 9
+ * scanner.pos = 3
+ * scanner.rest      # => "barbaz"
+ * scanner.rest_size # => 6
+ * scanner.terminate
+ * scanner.rest      # => ""
+ * scanner.rest_size # => 0
+ * ```
+ *
  */
 static VALUE
 strscan_rest_size(VALUE self)
@@ -1434,9 +2283,14 @@ strscan_rest_size(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   restsize
+ *
  * <tt>s.restsize</tt> is equivalent to <tt>s.rest_size</tt>.
  * This method is obsolete; use #rest_size instead.
  */
+
+ /* :nodoc: */
 static VALUE
 strscan_restsize(VALUE self)
 {
@@ -1447,15 +2301,39 @@ strscan_restsize(VALUE self)
 #define INSPECT_LENGTH 5
 
 /*
- * Returns a string that represents the StringScanner object, showing:
- * - the current position
- * - the size of the string
- * - the characters surrounding the scan pointer
+ * :markup: markdown
+ * :include: link_refs.txt
  *
- *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.inspect            # -> '#<StringScanner 0/21 @ "Fri D...">'
- *   s.scan_until /12/    # -> "Fri Dec 12"
- *   s.inspect            # -> '#<StringScanner 10/21 "...ec 12" @ " 1975...">'
+ * call-seq:
+ *   inspect -> string
+ *
+ * Returns a string representation of `self` that may show:
+ *
+ * 1. The current [position][2].
+ * 2. The size (in bytes) of the [stored string][1].
+ * 3. The substring preceding the current position.
+ * 4. The substring following the current position (which is also the [target substring][3]).
+ *
+ * ```
+ * scanner = StringScanner.new("Fri Dec 12 1975 14:39")
+ * scanner.pos = 11
+ * scanner.inspect # => "#<StringScanner 11/21 \"...c 12 \" @ \"1975 ...\">"
+ * ```
+ *
+ * If at beginning-of-string, item 4 above (following substring) is omitted:
+ *
+ * ```
+ * scanner.reset
+ * scanner.inspect # => "#<StringScanner 0/21 @ \"Fri D...\">"
+ * ```
+ *
+ * If at end-of-string, all items above are omitted:
+ *
+ * ```
+ * scanner.terminate
+ * scanner.inspect # => "#<StringScanner fin>"
+ * ```
+ *
  */
 static VALUE
 strscan_inspect(VALUE self)
@@ -1527,13 +2405,13 @@ inspect2(struct strscanner *p)
 }
 
 /*
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
  * call-seq:
- *    scanner.fixed_anchor? -> true or false
+ *   fixed_anchor? -> true or false
  *
- * Whether +scanner+ uses fixed anchor mode or not.
- *
- * If fixed anchor mode is used, +\A+ always matches the beginning of
- * the string. Otherwise, +\A+ always matches the current position.
+ * Returns whether the [fixed-anchor property][10] is set.
  */
 static VALUE
 strscan_fixed_anchor_p(VALUE self)
@@ -1569,14 +2447,32 @@ named_captures_iter(const OnigUChar *name,
 }
 
 /*
+ * :markup: markdown
+ * :include: link_refs.txt
+ *
  * call-seq:
- *   scanner.named_captures -> hash
+ *   named_captures -> hash
  *
- * Returns a hash of string variables matching the regular expression.
+ * Returns the array of captured match values at indexes (1..)
+ * if the most recent match attempt succeeded, or nil otherwise;
+ * see [Captured Match Values][13]:
  *
- *   scan = StringScanner.new('foobarbaz')
- *   scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/)
- *   scan.named_captures # -> {"f"=>"foo", "r"=>"bar", "z"=>"baz"}
+ * ```
+ * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
+ * scanner.named_captures # => {}
+ *
+ * pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
+ * scanner.match?(pattern)
+ * scanner.named_captures # => {"wday"=>"Fri", "month"=>"Dec", "day"=>"12"}
+ *
+ * scanner.string = 'nope'
+ * scanner.match?(pattern)
+ * scanner.named_captures # => {"wday"=>nil, "month"=>nil, "day"=>nil}
+ *
+ * scanner.match?(/nosuch/)
+ * scanner.named_captures # => {}
+ * ```
+ *
  */
 static VALUE
 strscan_named_captures(VALUE self)
@@ -1600,109 +2496,11 @@ strscan_named_captures(VALUE self)
 /*
  * Document-class: StringScanner
  *
- * StringScanner provides for lexical scanning operations on a String.  Here is
- * an example of its usage:
+ * :markup: markdown
  *
- *   require 'strscan'
+ * :include: link_refs.txt
+ * :include: strscan.md
  *
- *   s = StringScanner.new('This is an example string')
- *   s.eos?               # -> false
- *
- *   p s.scan(/\w+/)      # -> "This"
- *   p s.scan(/\w+/)      # -> nil
- *   p s.scan(/\s+/)      # -> " "
- *   p s.scan(/\s+/)      # -> nil
- *   p s.scan(/\w+/)      # -> "is"
- *   s.eos?               # -> false
- *
- *   p s.scan(/\s+/)      # -> " "
- *   p s.scan(/\w+/)      # -> "an"
- *   p s.scan(/\s+/)      # -> " "
- *   p s.scan(/\w+/)      # -> "example"
- *   p s.scan(/\s+/)      # -> " "
- *   p s.scan(/\w+/)      # -> "string"
- *   s.eos?               # -> true
- *
- *   p s.scan(/\s+/)      # -> nil
- *   p s.scan(/\w+/)      # -> nil
- *
- * Scanning a string means remembering the position of a <i>scan pointer</i>,
- * which is just an index.  The point of scanning is to move forward a bit at
- * a time, so matches are sought after the scan pointer; usually immediately
- * after it.
- *
- * Given the string "test string", here are the pertinent scan pointer
- * positions:
- *
- *     t e s t   s t r i n g
- *   0 1 2 ...             1
- *                         0
- *
- * When you #scan for a pattern (a regular expression), the match must occur
- * at the character after the scan pointer.  If you use #scan_until, then the
- * match can occur anywhere after the scan pointer.  In both cases, the scan
- * pointer moves <i>just beyond</i> the last character of the match, ready to
- * scan again from the next character onwards.  This is demonstrated by the
- * example above.
- *
- * == Method Categories
- *
- * There are other methods besides the plain scanners.  You can look ahead in
- * the string without actually scanning.  You can access the most recent match.
- * You can modify the string being scanned, reset or terminate the scanner,
- * find out or change the position of the scan pointer, skip ahead, and so on.
- *
- * === Advancing the Scan Pointer
- *
- * - #getch
- * - #get_byte
- * - #scan_byte
- * - #scan
- * - #scan_until
- * - #skip
- * - #skip_until
- *
- * === Looking Ahead
- *
- * - #check
- * - #check_until
- * - #exist?
- * - #match?
- * - #peek
- * - #peek_byte
- *
- * === Finding Where we Are
- *
- * - #beginning_of_line? (<tt>#bol?</tt>)
- * - #eos?
- * - #rest?
- * - #rest_size
- * - #pos
- *
- * === Setting Where we Are
- *
- * - #reset
- * - #terminate
- * - #pos=
- *
- * === Match Data
- *
- * - #matched
- * - #matched?
- * - #matched_size
- * - <tt>#[]</tt>
- * - #pre_match
- * - #post_match
- *
- * === Miscellaneous
- *
- * - <tt><<</tt>
- * - #concat
- * - #string
- * - #string=
- * - #unscan
- *
- * There are aliases to several of the methods.
  */
 void
 Init_strscan(void)
