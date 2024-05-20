@@ -70,6 +70,11 @@ jobs:
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 10
 
+      - name: make sure that kern.coredump=1
+        run: |
+          sysctl -n kern.coredump
+          sudo sysctl -w kern.coredump=1
+
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
 
