@@ -1018,15 +1018,6 @@ yes-test-spec: yes-test-spec-precheck
 	$(ACTIONS_ENDGROUP)
 no-test-spec:
 
-test-prism-spec: $(TEST_RUNNABLE)-test-prism-spec
-yes-test-prism-spec: yes-test-spec-precheck
-	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
-		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec -B $(srcdir)/spec/prism.mspec $(MSPECOPT) $(SPECOPTS)
-	$(ACTIONS_ENDGROUP)
-no-test-prism-spec:
-
 check: $(DOT_WAIT) test-spec
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
