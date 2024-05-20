@@ -129,6 +129,36 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
+      - name: Resolve job ID
+        id: job_id
+        uses: actions/github-script@main
+        env:
+          matrix: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const { data: workflow_run } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            const matrix = JSON.parse(process.env.matrix);
+            const job_name = `${context.job}${matrix ? ` (${Object.values(matrix).join(", ")})` : ""}`;
+            return workflow_run.jobs.find((job) => job.name === job_name).id;
+
+      - name: upload /cores
+        run: |
+          ls -l /cores
+          CORES_TAR_GZ="cores-${{ github.run_id }}-${{ steps.job_id.outputs.result }}.tar.gz"
+          echo "test: $CORES_TAR_GZ"
+          if [ -n "$(ls /cores)" ]; then
+            tar czf /cores "$CORES_TAR_GZ"
+            aws s3 cp "$CORES_TAR_GZ" "s3://ruby-core-files/$CORES_TAR_GZ"
+          fi
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUBY_CORE_FILES_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUBY_CORE_FILES_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
