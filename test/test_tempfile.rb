@@ -454,7 +454,7 @@ puts Tempfile.new('foo').path
 
   def test_create_io_removes_file
     Dir.mktmpdir {|d|
-      tmpio = Tempfile.create_io(nil, d)
+      tmpio = Tempfile.create_io("", d)
       tmpio.close # The temporary file may exists until here on Windows.
       assert_equal([], Dir.children(d))
     }
