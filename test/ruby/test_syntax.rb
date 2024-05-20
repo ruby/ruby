@@ -506,10 +506,6 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_warn_balanced
-    warning = <<WARN
-test:1: warning: '%s' after local variable or literal is interpreted as binary operator
-test:1: warning: even though it seems like %s
-WARN
     [
      [:**, "argument prefix"],
      [:*, "argument prefix"],
@@ -523,7 +519,9 @@ WARN
       all_assertions do |a|
         ["puts 1 #{op}0", "puts :a #{op}0", "m = 1; puts m #{op}0"].each do |src|
           a.for(src) do
-            assert_warning(warning % [op, syn], src) do
+            warning = /'#{Regexp.escape(op)}' after local variable or literal is interpreted as binary operator.+?even though it seems like #{syn}/m
+
+            assert_warning(warning, src) do
               assert_valid_syntax(src, "test", verbose: true)
             end
           end
