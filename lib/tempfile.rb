@@ -490,6 +490,12 @@ end
 #
 # Example:
 #
+#   Tempfile.create_io {|tmpio|
+#     tmpio.puts "foo"
+#     tmpio.rewind
+#     p tmpio.read              # => "foo\n"
+#   }
+#
 #   tmpio = Tempfile.create_io  # => #<IO:fd 5>
 #   tmpio.class                 # => IO
 #   tmpio.path                  # => nil
