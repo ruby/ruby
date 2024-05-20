@@ -942,9 +942,9 @@ end
     G
 
     run <<-R
-      puts Bundler.rubygems.all_specs.map(&:name)
+      puts Bundler.rubygems.installed_specs.map(&:name)
       Gem.refresh
-      puts Bundler.rubygems.all_specs.map(&:name)
+      puts Bundler.rubygems.installed_specs.map(&:name)
     R
 
     expect(out).to eq("activesupport\nbundler\nactivesupport\nbundler")
@@ -1374,6 +1374,24 @@ end
         puts defined?(URI) || "undefined"
       RUBY
       expect(out).to eq("undefined\nconstant")
+    end
+
+    it "activates default gems when they are part of the bundle, but not installed explicitly", :ruby_repo do
+      default_json_version = ruby "gem 'json'; require 'json'; puts JSON::VERSION"
+
+      build_repo2 do
+        build_gem "json", default_json_version
+      end
+
+      gemfile "source \"#{file_uri_for(gem_repo2)}\"; gem 'json'"
+
+      ruby <<-RUBY
+        require "bundler/setup"
+        require "json"
+        puts defined?(::JSON) ? "JSON defined" : "JSON undefined"
+      RUBY
+
+      expect(err).to be_empty
     end
 
     describe "default gem activation" do

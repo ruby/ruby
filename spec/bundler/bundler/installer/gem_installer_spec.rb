@@ -14,7 +14,7 @@ RSpec.describe Bundler::GemInstaller do
     it "invokes install method with empty build_args" do
       allow(spec_source).to receive(:install).with(
         spec,
-        { force: false, ensure_builtin_gems_cached: false, build_args: [], previous_spec: nil }
+        { force: false, build_args: [], previous_spec: nil }
       )
       subject.install_from_spec
     end
@@ -28,7 +28,7 @@ RSpec.describe Bundler::GemInstaller do
       allow(Bundler.settings).to receive(:[]).with("build.dummy").and_return("--with-dummy-config=dummy")
       expect(spec_source).to receive(:install).with(
         spec,
-        { force: false, ensure_builtin_gems_cached: false, build_args: ["--with-dummy-config=dummy"], previous_spec: nil }
+        { force: false, build_args: ["--with-dummy-config=dummy"], previous_spec: nil }
       )
       subject.install_from_spec
     end
@@ -42,7 +42,7 @@ RSpec.describe Bundler::GemInstaller do
       allow(Bundler.settings).to receive(:[]).with("build.dummy").and_return("--with-dummy-config=dummy --with-another-dummy-config")
       expect(spec_source).to receive(:install).with(
         spec,
-        { force: false, ensure_builtin_gems_cached: false, build_args: ["--with-dummy-config=dummy", "--with-another-dummy-config"], previous_spec: nil }
+        { force: false, build_args: ["--with-dummy-config=dummy", "--with-another-dummy-config"], previous_spec: nil }
       )
       subject.install_from_spec
     end

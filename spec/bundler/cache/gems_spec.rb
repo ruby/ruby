@@ -93,68 +93,80 @@ RSpec.describe "bundle cache" do
     let(:default_json_version) { ruby "gem 'json'; require 'json'; puts JSON::VERSION" }
 
     before :each do
-      build_repo2 do
-        build_gem "json", default_json_version
-      end
-
       build_gem "json", default_json_version, to_system: true, default: true
     end
 
-    it "uses builtin gems when installing to system gems" do
-      bundle "config set path.system true"
-      install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'json', '#{default_json_version}'), verbose: true
-      expect(out).to include("Using json #{default_json_version}")
-    end
-
-    it "caches remote and builtin gems" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-        gem 'json', '#{default_json_version}'
-        gem 'rack', '1.0.0'
-      G
-
-      bundle :cache
-      expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
-      expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
-    end
-
-    it "caches builtin gems when cache_all_platforms is set" do
-      gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-        gem "json"
-      G
-
-      bundle "config set cache_all_platforms true"
-
-      bundle :cache
-      expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
-    end
-
-    it "doesn't make remote request after caching the gem" do
-      build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
-        s.summary = "This builtin_gem is bundled with Ruby"
+    context "when a remote gem is available for caching" do
+      before do
+        build_repo2 do
+          build_gem "json", default_json_version
+        end
       end
 
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-        gem 'builtin_gem_2', '1.0.2'
-      G
+      it "uses remote gems when installing to system gems" do
+        bundle "config set path.system true"
+        install_gemfile %(source "#{file_uri_for(gem_repo2)}"; gem 'json', '#{default_json_version}'), verbose: true
+        expect(out).to include("Installing json #{default_json_version}")
+      end
 
-      bundle "install --local"
-      expect(the_bundle).to include_gems("builtin_gem_2 1.0.2")
+      it "caches remote and builtin gems" do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem 'json', '#{default_json_version}'
+          gem 'rack', '1.0.0'
+        G
+
+        bundle :cache
+        expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
+        expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
+      end
+
+      it "caches builtin gems when cache_all_platforms is set" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem "json"
+        G
+
+        bundle "config set cache_all_platforms true"
+
+        bundle :cache
+        expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
+      end
+
+      it "doesn't make remote request after caching the gem" do
+        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
+          s.summary = "This builtin_gem is bundled with Ruby"
+        end
+
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem 'builtin_gem_2', '1.0.2'
+        G
+
+        bundle "install --local"
+        expect(the_bundle).to include_gems("builtin_gem_2 1.0.2")
+      end
     end
 
-    it "errors if the builtin gem isn't available to cache" do
-      bundle "config set path.system true"
+    context "when a remote gem is not available for caching" do
+      it "uses builtin gems when installing to system gems" do
+        bundle "config set path.system true"
+        install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'json', '#{default_json_version}'), verbose: true
+        expect(out).to include("Using json #{default_json_version}")
+      end
 
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem 'json', '#{default_json_version}'
-      G
+      it "errors when explicitly caching" do
+        bundle "config set path.system true"
 
-      bundle :cache, raise_on_error: false
-      expect(exitstatus).to_not eq(0)
-      expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem 'json', '#{default_json_version}'
+        G
+
+        bundle :cache, raise_on_error: false
+        expect(exitstatus).to_not eq(0)
+        expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
+      end
     end
   end
 
