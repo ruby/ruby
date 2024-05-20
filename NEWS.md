@@ -68,6 +68,7 @@ The following bundled gems are updated.
 * rbs 3.4.4
 * typeprof 0.21.11
 * debug 1.9.2
+* racc 1.8.0
 
 The following bundled gems are promoted from default gems.
 
