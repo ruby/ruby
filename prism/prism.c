@@ -9496,22 +9496,7 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer) {
 static inline void
 escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags, uint8_t byte) {
     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-        pm_buffer_append_bytes(regular_expression_buffer, (const uint8_t *) "\\x", 2);
-
-        uint8_t byte1 = (uint8_t) ((byte >> 4) & 0xF);
-        uint8_t byte2 = (uint8_t) (byte & 0xF);
-
-        if (byte1 >= 0xA) {
-            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
-        } else {
-            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte1 + '0'));
-        }
-
-        if (byte2 >= 0xA) {
-            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte2 - 0xA + 'A'));
-        } else {
-            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte2 + '0'));
-        }
+        pm_buffer_append_format(regular_expression_buffer, "\\x%02X", byte);
     }
 
     escape_write_byte_encoded(parser, buffer, byte);
@@ -9546,57 +9531,57 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
     switch (peek(parser)) {
         case '\\': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\\', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\\', flags));
             return;
         }
         case '\'': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\'', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\'', flags));
             return;
         }
         case 'a': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\a', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\a', flags));
             return;
         }
         case 'b': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\b', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\b', flags));
             return;
         }
         case 'e': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\033', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\033', flags));
             return;
         }
         case 'f': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\f', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\f', flags));
             return;
         }
         case 'n': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\n', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\n', flags));
             return;
         }
         case 'r': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\r', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\r', flags));
             return;
         }
         case 's': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte(' ', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(' ', flags));
             return;
         }
         case 't': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\t', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\t', flags));
             return;
         }
         case 'v': {
             parser->current.end++;
-            escape_write_byte_encoded(parser, buffer, escape_byte('\v', flags));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\v', flags));
             return;
         }
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
@@ -9613,7 +9598,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 }
             }
 
-            escape_write_byte_encoded(parser, buffer, value);
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, value);
             return;
         }
         case 'x': {
