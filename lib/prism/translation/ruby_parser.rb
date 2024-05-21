@@ -905,8 +905,13 @@ module Prism
                 results << result
                 state = :interpolated_content
               end
-            else
-              results << result
+            when :interpolated_content
+              if result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
+                results[-1][1] << result[1]
+                results[-1].line_max = result.line_max
+              else
+                results << result
+              end
             end
           end
         end
