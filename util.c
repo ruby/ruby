@@ -218,6 +218,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
+#if !defined HAVE_GNU_QSORT_R
 #if defined HAVE_QSORT_S && defined RUBY_MSVCRT_VERSION
 /* In contrast to its name, Visual Studio qsort_s is incompatible with
  * C11 in the order of the comparison function's arguments, and same
@@ -263,7 +264,7 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     qsort_s(base, nel, size, cmp, d);
 }
 # define HAVE_GNU_QSORT_R 1
-#elif !defined HAVE_GNU_QSORT_R
+#else
 /* mm.c */
 
 #define mmtype long
@@ -530,7 +531,8 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     else goto nxt;                         /* need not to sort both sides */
   }
 }
-#endif /* HAVE_GNU_QSORT_R */
+#endif
+#endif /* !HAVE_GNU_QSORT_R */
 
 char *
 ruby_strdup(const char *str)
