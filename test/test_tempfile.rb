@@ -430,7 +430,7 @@ puts Tempfile.new('foo').path
     tmpio = Tempfile.create_io
     assert_equal(IO, tmpio.class)
     assert_equal(nil, tmpio.path)
-    assert_equal(0600, tmpio.stat.mode & 0777)
+    assert_equal(0600, tmpio.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
     tmpio.puts "foo"
     tmpio.rewind
     assert_equal("foo\n", tmpio.read)
@@ -443,7 +443,7 @@ puts Tempfile.new('foo').path
     result = Tempfile.create_io {|tmpio|
       assert_equal(IO, tmpio.class)
       assert_equal(nil, tmpio.path)
-      assert_equal(0600, tmpio.stat.mode & 0777)
+      assert_equal(0600, tmpio.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
       tmpio.puts "foo"
       tmpio.rewind
       assert_equal("foo\n", tmpio.read)
