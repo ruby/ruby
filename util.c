@@ -203,15 +203,15 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 }
 
+#if !defined HAVE_GNU_QSORT_R
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <stdint.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
-#if !defined HAVE_GNU_QSORT_R
 #if defined HAVE_QSORT_S && defined RUBY_MSVCRT_VERSION
 /* In contrast to its name, Visual Studio qsort_s is incompatible with
  * C11 in the order of the comparison function's arguments, and same
