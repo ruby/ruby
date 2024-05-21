@@ -3962,6 +3962,13 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         pm_compile_node(iseq, cast->receiver, parents, false, scope_node);
 
+        LABEL *safe_label = NULL;
+        if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+            safe_label = NEW_LABEL(location.line);
+            PUSH_INSN(parents, location, dup);
+            PUSH_INSNL(parents, location, branchnil, safe_label);
+        }
+
         if (state != NULL) {
             PUSH_INSN1(writes, location, topn, INT2FIX(1));
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), 1);
@@ -3972,7 +3979,9 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY)) flags |= VM_CALL_FCALL;
 
         PUSH_SEND_WITH_FLAG(writes, location, method_id, INT2FIX(1), INT2FIX(flags));
+        if (safe_label != NULL && state == NULL) PUSH_LABEL(writes, safe_label);
         PUSH_INSN(writes, location, pop);
+        if (safe_label != NULL && state != NULL) PUSH_LABEL(writes, safe_label);
 
         if (state != NULL) {
             PUSH_INSN(cleanup, location, pop);
