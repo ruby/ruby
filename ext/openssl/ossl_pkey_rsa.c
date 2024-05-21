@@ -495,42 +495,6 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq:
- *   rsa.params => hash
- *
- * THIS METHOD IS INSECURE, PRIVATE INFORMATION CAN LEAK OUT!!!
- *
- * Stores all parameters of key to the hash.  The hash has keys 'n', 'e', 'd',
- * 'p', 'q', 'dmp1', 'dmq1', 'iqmp'.
- *
- * Don't use :-)) (It's up to you)
- */
-static VALUE
-ossl_rsa_get_params(VALUE self)
-{
-    OSSL_3_const RSA *rsa;
-    VALUE hash;
-    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &n, &e, &d);
-    RSA_get0_factors(rsa, &p, &q);
-    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-
-    hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("n"), ossl_bn_new(n));
-    rb_hash_aset(hash, rb_str_new2("e"), ossl_bn_new(e));
-    rb_hash_aset(hash, rb_str_new2("d"), ossl_bn_new(d));
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
-    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
-    rb_hash_aset(hash, rb_str_new2("dmp1"), ossl_bn_new(dmp1));
-    rb_hash_aset(hash, rb_str_new2("dmq1"), ossl_bn_new(dmq1));
-    rb_hash_aset(hash, rb_str_new2("iqmp"), ossl_bn_new(iqmp));
-
-    return hash;
-}
-
-/*
  * Document-method: OpenSSL::PKey::RSA#set_key
  * call-seq:
  *   rsa.set_key(n, e, d) -> self
@@ -616,8 +580,6 @@ Init_ossl_rsa(void)
     rb_define_method(cRSA, "set_key", ossl_rsa_set_key, 3);
     rb_define_method(cRSA, "set_factors", ossl_rsa_set_factors, 2);
     rb_define_method(cRSA, "set_crt_params", ossl_rsa_set_crt_params, 3);
-
-    rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
 
 /*
  * TODO: Test it

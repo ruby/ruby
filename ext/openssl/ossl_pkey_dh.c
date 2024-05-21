@@ -286,35 +286,6 @@ ossl_dh_to_der(VALUE self)
 
 /*
  *  call-seq:
- *     dh.params -> hash
- *
- * Stores all parameters of key to the hash
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dh_get_params(VALUE self)
-{
-    OSSL_3_const DH *dh;
-    VALUE hash;
-    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
-
-    GetDH(self, dh);
-    DH_get0_pqg(dh, &p, &q, &g);
-    DH_get0_key(dh, &pub_key, &priv_key);
-
-    hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
-    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
-    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(g));
-    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pub_key));
-    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(priv_key));
-
-    return hash;
-}
-
-/*
- *  call-seq:
  *     dh.params_ok? -> true | false
  *
  * Validates the Diffie-Hellman parameters associated with this instance.
@@ -443,8 +414,6 @@ Init_ossl_dh(void)
     DEF_OSSL_PKEY_BN(cDH, dh, priv_key);
     rb_define_method(cDH, "set_pqg", ossl_dh_set_pqg, 3);
     rb_define_method(cDH, "set_key", ossl_dh_set_key, 2);
-
-    rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }
 
 #else /* defined NO_DH */

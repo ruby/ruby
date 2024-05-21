@@ -304,35 +304,6 @@ ossl_dsa_to_der(VALUE self)
 
 
 /*
- *  call-seq:
- *    dsa.params -> hash
- *
- * Stores all parameters of key to the hash
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dsa_get_params(VALUE self)
-{
-    OSSL_3_const DSA *dsa;
-    VALUE hash;
-    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
-
-    GetDSA(self, dsa);
-    DSA_get0_pqg(dsa, &p, &q, &g);
-    DSA_get0_key(dsa, &pub_key, &priv_key);
-
-    hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
-    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
-    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(g));
-    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pub_key));
-    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(priv_key));
-
-    return hash;
-}
-
-/*
  * Document-method: OpenSSL::PKey::DSA#set_pqg
  * call-seq:
  *   dsa.set_pqg(p, q, g) -> self
@@ -396,8 +367,6 @@ Init_ossl_dsa(void)
     DEF_OSSL_PKEY_BN(cDSA, dsa, priv_key);
     rb_define_method(cDSA, "set_pqg", ossl_dsa_set_pqg, 3);
     rb_define_method(cDSA, "set_key", ossl_dsa_set_key, 2);
-
-    rb_define_method(cDSA, "params", ossl_dsa_get_params, 0);
 }
 
 #else /* defined NO_DSA */
