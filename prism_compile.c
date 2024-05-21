@@ -152,12 +152,11 @@ pm_location_line_number(const pm_parser_t *parser, const pm_location_t *location
 }
 
 /**
- * Convert the value of an integer node into a Ruby Integer.
+ * Parse the value of a pm_integer_t into a Ruby Integer.
  */
 static VALUE
-parse_integer(const pm_integer_node_t *node)
+parse_integer_value(const pm_integer_t *integer)
 {
-    const pm_integer_t *integer = &node->value;
     VALUE result;
 
     if (integer->values == NULL) {
@@ -188,6 +187,15 @@ parse_integer(const pm_integer_node_t *node)
 }
 
 /**
+ * Convert the value of an integer node into a Ruby Integer.
+ */
+static inline VALUE
+parse_integer(const pm_integer_node_t *node)
+{
+    return parse_integer_value(&node->value);
+}
+
+/**
  * Convert the value of a float node into a Ruby Float.
  */
 static VALUE
@@ -205,36 +213,9 @@ parse_float(const pm_float_node_t *node)
 static VALUE
 parse_rational(const pm_rational_node_t *node)
 {
-    VALUE result;
-
-    if (PM_NODE_TYPE_P(node->numeric, PM_FLOAT_NODE)) {
-        const uint8_t *start = node->base.location.start;
-        const uint8_t *end = node->base.location.end - 1;
-        size_t length = end - start;
-
-        char *buffer = malloc(length + 1);
-        memcpy(buffer, start, length);
-
-        buffer[length] = '\0';
-
-        char *decimal = memchr(buffer, '.', length);
-        RUBY_ASSERT(decimal);
-        size_t seen_decimal = decimal - buffer;
-        size_t fraclen = length - seen_decimal - 1;
-        memmove(decimal, decimal + 1, fraclen + 1);
-
-        VALUE numerator = rb_cstr_to_inum(buffer, 10, false);
-        result = rb_rational_new(numerator, rb_int_positive_pow(10, fraclen));
-
-        free(buffer);
-    }
-    else {
-        RUBY_ASSERT(PM_NODE_TYPE_P(node->numeric, PM_INTEGER_NODE));
-        VALUE numerator = parse_integer((const pm_integer_node_t *) node->numeric);
-        result = rb_rational_raw(numerator, INT2FIX(1));
-    }
-
-    return result;
+    VALUE numerator = parse_integer_value(&node->numerator);
+    VALUE denominator = parse_integer_value(&node->denominator);
+    return rb_rational_new(numerator, denominator);
 }
 
 /**
