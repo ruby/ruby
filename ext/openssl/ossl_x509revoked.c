@@ -54,14 +54,9 @@ ossl_x509revoked_new(X509_REVOKED *rev)
     VALUE obj;
 
     obj = NewX509Rev(cX509Rev);
-    if (!rev) {
-	new = X509_REVOKED_new();
-    } else {
-	new = X509_REVOKED_dup(rev);
-    }
-    if (!new) {
-	ossl_raise(eX509RevError, NULL);
-    }
+    new = X509_REVOKED_dup(rev);
+    if (!new)
+	ossl_raise(eX509RevError, "X509_REVOKED_dup");
     SetX509Rev(obj, new);
 
     return obj;
