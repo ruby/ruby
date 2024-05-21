@@ -105,6 +105,18 @@ module Prism
     def value
       Rational(numerator, denominator)
     end
+
+    # Returns the value of the node as an IntegerNode or a FloatNode. This
+    # method is deprecated in favor of #value or #numerator/#denominator.
+    def numeric
+      deprecated("value", "numerator", "denominator")
+
+      if denominator == 1
+        IntegerNode.new(source, flags, numerator, location.chop)
+      else
+        FloatNode.new(source, numerator.to_f / denominator, location.chop)
+      end
+    end
   end
 
   class ConstantReadNode < Node
