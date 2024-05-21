@@ -940,7 +940,7 @@ ossl_ocspbres_get_status(VALUE self)
     return ret;
 }
 
-static VALUE ossl_ocspsres_new(OCSP_SINGLERESP *);
+static VALUE ossl_ocspsres_new(const OCSP_SINGLERESP *);
 
 /*
  * call-seq:
@@ -958,17 +958,10 @@ ossl_ocspbres_get_responses(VALUE self)
 
     GetOCSPBasicRes(self, bs);
     count = OCSP_resp_count(bs);
-    ret = rb_ary_new2(count);
+    ret = rb_ary_new_capa(count);
 
     for (i = 0; i < count; i++) {
-	OCSP_SINGLERESP *sres, *sres_new;
-
-	sres = OCSP_resp_get0(bs, i);
-	sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
-	if (!sres_new)
-	    ossl_raise(eOCSPError, "ASN1_item_dup");
-
-	rb_ary_push(ret, ossl_ocspsres_new(sres_new));
+        rb_ary_push(ret, ossl_ocspsres_new(OCSP_resp_get0(bs, i)));
     }
 
     return ret;
@@ -986,7 +979,6 @@ static VALUE
 ossl_ocspbres_find_response(VALUE self, VALUE target)
 {
     OCSP_BASICRESP *bs;
-    OCSP_SINGLERESP *sres, *sres_new;
     OCSP_CERTID *id;
     int n;
 
@@ -995,13 +987,7 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
 
     if ((n = OCSP_resp_find(bs, id, -1)) == -1)
 	return Qnil;
-
-    sres = OCSP_resp_get0(bs, n);
-    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
-    if (!sres_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    return ossl_ocspsres_new(sres_new);
+    return ossl_ocspsres_new(OCSP_resp_get0(bs, n));
 }
 
 /*
@@ -1110,12 +1096,18 @@ ossl_ocspbres_to_der(VALUE self)
  * OCSP::SingleResponse
  */
 static VALUE
-ossl_ocspsres_new(OCSP_SINGLERESP *sres)
+ossl_ocspsres_new(const OCSP_SINGLERESP *sres)
 {
     VALUE obj;
+    OCSP_SINGLERESP *sres_new;
 
     obj = NewOCSPSingleRes(cOCSPSingleRes);
-    SetOCSPSingleRes(obj, sres);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP),
+                             (OCSP_SINGLERESP *)sres);
+    if (!sres_new)
+        ossl_raise(eOCSPError, "ASN1_item_dup");
+    SetOCSPSingleRes(obj, sres_new);
 
     return obj;
 }
