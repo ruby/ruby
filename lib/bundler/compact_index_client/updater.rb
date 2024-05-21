@@ -28,7 +28,6 @@ module Bundler
 
         CacheFile.copy(local_path) do |file|
           etag = etag_path.read.tap(&:chomp!) if etag_path.file?
-          etag ||= generate_etag(etag_path, file) # Remove this after 2.5.0 has been out for a while.
 
           # Subtract a byte to ensure the range won't be empty.
           # Avoids 416 (Range Not Satisfiable) responses.
@@ -65,16 +64,6 @@ module Bundler
 
       def etag_for_request(etag_path)
         etag_path.read.tap(&:chomp!) if etag_path.file?
-      end
-
-      # When first releasing this opaque etag feature, we want to generate the old MD5 etag
-      # based on the content of the file. After that it will always use the saved opaque etag.
-      # This transparently saves existing users with good caches from updating a bunch of files.
-      # Remove this behavior after 2.5.0 has been out for a while.
-      def generate_etag(etag_path, file)
-        etag = file.md5.hexdigest
-        CacheFile.write(etag_path, etag)
-        etag
       end
 
       def etag_from_response(response)
