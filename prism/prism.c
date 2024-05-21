@@ -13365,14 +13365,20 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             return (pm_node_t *) node;
         }
         case PM_LOCAL_VARIABLE_READ_NODE: {
-            pm_refute_numbered_parameter(parser, target->location.start, target->location.end);
             pm_local_variable_read_node_t *local_read = (pm_local_variable_read_node_t *) target;
 
             pm_constant_id_t name = local_read->name;
-            uint32_t depth = local_read->depth;
-            pm_locals_unread(&pm_parser_scope_find(parser, depth)->locals, name);
-
             pm_location_t name_loc = target->location;
+
+            uint32_t depth = local_read->depth;
+            pm_scope_t *scope = pm_parser_scope_find(parser, depth);
+
+            if (pm_token_is_numbered_parameter(target->location.start, target->location.end)) {
+                pm_diagnostic_id_t diag_id = scope->parameters > PM_SCOPE_NUMBERED_PARAMETERS_NONE ? PM_ERR_EXPRESSION_NOT_WRITABLE_NUMBERED : PM_ERR_PARAMETER_NUMBERED_RESERVED;
+                PM_PARSER_ERR_FORMAT(parser, target->location.start, target->location.end, diag_id, target->location.start);
+            }
+
+            pm_locals_unread(&scope->locals, name);
             pm_node_destroy(parser, target);
 
             return (pm_node_t *) pm_local_variable_write_node_create(parser, name, depth, value, &name_loc, operator);
@@ -15829,17 +15835,34 @@ parse_variable(pm_parser_t *parser) {
         } else if (current_scope->parameters & PM_SCOPE_PARAMETERS_IT) {
             pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_IT);
         } else if (outer_scope_using_numbered_parameters_p(parser)) {
-            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE);
+            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_OUTER_BLOCK);
+        } else if (current_scope->numbered_parameters == PM_SCOPE_NUMBERED_PARAMETERS_INNER) {
+            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_INNER_BLOCK);
         } else {
             // Indicate that this scope is using numbered params so that child
             // scopes cannot. We subtract the value for the character '0' to get
             // the actual integer value of the number (only _1 through _9 are
             // valid).
             int8_t numbered_parameters = (int8_t) (parser->previous.start[1] - '0');
-            current_scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED;
 
-            if (numbered_parameters > current_scope->numbered_parameters) {
-                current_scope->numbered_parameters = numbered_parameters;
+            // If we're about to match an =, then this is an invalid use of
+            // numbered parameters. We'll create all of the necessary
+            // infrastructure around it, but not actually mark the scope as
+            // using numbered parameters so that we can get the right error
+            // message.
+            if (!match1(parser, PM_TOKEN_EQUAL)) {
+                current_scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED;
+
+                if (numbered_parameters > current_scope->numbered_parameters) {
+                    current_scope->numbered_parameters = numbered_parameters;
+                }
+
+                // Go through the parent scopes and mark them as being
+                // disallowed from using numbered parameters because this inner
+                // scope is using them.
+                for (pm_scope_t *scope = current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
+                    scope->numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_INNER;
+                }
             }
 
             // When you use a numbered parameter, it implies the existence

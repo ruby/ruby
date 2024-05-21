@@ -1377,7 +1377,7 @@ module Prism
 
     def test_double_scope_numbered_parameters
       source = "-> { _1 + -> { _2 } }"
-      errors = [["numbered parameter is already used in outer scope", 15..17]]
+      errors = [["numbered parameter is already used in outer block", 15..17]]
 
       assert_errors expression(source), source, errors
     end
