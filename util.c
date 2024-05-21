@@ -208,13 +208,6 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif
-
-#ifndef S_ISDIR
-#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-#endif
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
