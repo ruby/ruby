@@ -916,6 +916,12 @@ module Prism
           end
         end
 
+        # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          s(node, :call, nil, :it)
+        end
+
         # foo(bar: baz)
         #     ^^^^^^^^
         def visit_keyword_hash_node(node)

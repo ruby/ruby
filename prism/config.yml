@@ -2570,6 +2570,12 @@ nodes:
 
           `foo #{bar} baz`
           ^^^^^^^^^^^^^^^^
+  - name: ItLocalVariableReadNode
+    comment: |
+      Represents reading from the implicit `it` local variable.
+
+          -> { it }
+               ^^
   - name: ItParametersNode
     comment: |
       Represents an implicit set of parameters through the use of the `it` keyword within a block or lambda.
@@ -2694,10 +2700,6 @@ nodes:
           Note that this can also be an underscore followed by a number for the default block parameters.
 
               _1     # name `:_1`
-
-          Finally, for the default `it` block parameter, the name is `0it`. This is to distinguish it from an `it` local variable that is explicitly declared.
-
-              it     # name `:0it`
 
       - name: depth
         type: uint32
