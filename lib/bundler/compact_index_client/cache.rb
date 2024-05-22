@@ -7,123 +7,89 @@ module Bundler
     class Cache
       attr_reader :directory
 
-      def initialize(directory)
+      def initialize(directory, fetcher = nil)
         @directory = Pathname.new(directory).expand_path
-        info_roots.each {|dir| mkdir(dir) }
-        mkdir(info_etag_root)
+        @updater = Updater.new(fetcher) if fetcher
+        @mutex = Thread::Mutex.new
+        @endpoints = Set.new
+
+        @info_root = mkdir("info")
+        @special_characters_info_root = mkdir("info-special-characters")
+        @info_etag_root = mkdir("info-etags")
       end
 
       def names
-        lines(names_path)
-      end
-
-      def names_path
-        directory.join("names")
-      end
-
-      def names_etag_path
-        directory.join("names.etag")
+        fetch("names", names_path, names_etag_path)
       end
 
       def versions
-        versions_by_name = Hash.new {|hash, key| hash[key] = [] }
-        info_checksums_by_name = {}
-
-        lines(versions_path).each do |line|
-          name, versions_string, info_checksum = line.split(" ", 3)
-          info_checksums_by_name[name] = info_checksum || ""
-          versions_string.split(",") do |version|
-            delete = version.delete_prefix!("-")
-            version = version.split("-", 2).unshift(name)
-            if delete
-              versions_by_name[name].delete(version)
-            else
-              versions_by_name[name] << version
-            end
-          end
-        end
-
-        [versions_by_name, info_checksums_by_name]
+        fetch("versions", versions_path, versions_etag_path)
       end
 
-      def versions_path
-        directory.join("versions")
-      end
+      def info(name, remote_checksum = nil)
+        path = info_path(name)
 
-      def versions_etag_path
-        directory.join("versions.etag")
-      end
-
-      def checksums
-        lines(versions_path).each_with_object({}) do |line, checksums|
-          parse_version_checksum(line, checksums)
+        if remote_checksum && remote_checksum != SharedHelpers.checksum_for_file(path, :MD5)
+          fetch("info/#{name}", path, info_etag_path(name))
+        else
+          Bundler::CompactIndexClient.debug { "update skipped info/#{name} (#{remote_checksum ? "versions index checksum is nil" : "versions index checksum matches local"})" }
+          read(path)
         end
       end
 
-      def dependencies(name)
-        lines(info_path(name)).map do |line|
-          parse_gem(line)
-        end
+      def reset!
+        @mutex.synchronize { @endpoints.clear }
       end
+
+      private
+
+      def names_path = directory.join("names")
+      def names_etag_path = directory.join("names.etag")
+      def versions_path = directory.join("versions")
+      def versions_etag_path = directory.join("versions.etag")
 
       def info_path(name)
         name = name.to_s
+        # TODO: converge this into the info_root by hashing all filenames like info_etag_path
         if /[^a-z0-9_-]/.match?(name)
           name += "-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}"
-          info_roots.last.join(name)
+          @special_characters_info_root.join(name)
         else
-          info_roots.first.join(name)
+          @info_root.join(name)
         end
       end
 
       def info_etag_path(name)
         name = name.to_s
-        info_etag_root.join("#{name}-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}")
+        @info_etag_root.join("#{name}-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}")
       end
 
-      private
-
-      def mkdir(dir)
-        SharedHelpers.filesystem_access(dir) do
-          FileUtils.mkdir_p(dir)
+      def mkdir(name)
+        directory.join(name).tap do |dir|
+          SharedHelpers.filesystem_access(dir) do
+            FileUtils.mkdir_p(dir)
+          end
         end
       end
 
-      def lines(path)
-        return [] unless path.file?
-        lines = SharedHelpers.filesystem_access(path, :read, &:read).split("\n")
-        header = lines.index("---")
-        header ? lines[header + 1..-1] : lines
+      def fetch(remote_path, path, etag_path)
+        if already_fetched?(remote_path)
+          Bundler::CompactIndexClient.debug { "already fetched #{remote_path}" }
+        else
+          Bundler::CompactIndexClient.debug { "fetching #{remote_path}" }
+          @updater&.update(remote_path, path, etag_path)
+        end
+
+        read(path)
       end
 
-      def parse_gem(line)
-        @dependency_parser ||= GemParser.new
-        @dependency_parser.parse(line)
+      def already_fetched?(remote_path)
+        @mutex.synchronize { !@endpoints.add?(remote_path) }
       end
 
-      # This is mostly the same as `split(" ", 3)` but it avoids allocating extra objects.
-      # This method gets called at least once for every gem when parsing versions.
-      def parse_version_checksum(line, checksums)
-        line.freeze # allows slicing into the string to not allocate a copy of the line
-        name_end = line.index(" ")
-        checksum_start = line.index(" ", name_end + 1) + 1
-        checksum_end = line.size - checksum_start
-        # freeze name since it is used as a hash key
-        # pre-freezing means a frozen copy isn't created
-        name = line[0, name_end].freeze
-        checksum = line[checksum_start, checksum_end]
-        checksums[name] = checksum
-      end
-
-      def info_roots
-        [
-          directory.join("info"),
-          directory.join("info-special-characters"),
-        ]
-      end
-
-      def info_etag_root
-        directory.join("info-etags")
+      def read(path)
+        return unless path.file?
+        SharedHelpers.filesystem_access(path, :read, &:read)
       end
     end
   end
