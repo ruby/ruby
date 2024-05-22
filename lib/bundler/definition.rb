@@ -310,7 +310,12 @@ module Bundler
           end
         end
       else
-        Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
+        if lockfile_exists?
+          Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
+        else
+          Bundler.ui.debug "Resolving dependencies because there's no lockfile"
+        end
+
         start_resolution
       end
     end
@@ -483,6 +488,8 @@ module Bundler
     private :sources
 
     def nothing_changed?
+      return false unless lockfile_exists?
+
       !@source_changes &&
         !@dependency_changes &&
         !@new_platform &&

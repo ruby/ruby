@@ -237,7 +237,7 @@ module Bundler
     def resolve_if_needed(options)
       @definition.resolution_mode = options
 
-      if !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file? && @definition.no_resolve_needed? && !@definition.missing_specs?
+      if !options["force"] && !Bundler.settings[:inline] && @definition.no_resolve_needed? && !@definition.missing_specs?
         false
       else
         @definition.setup_sources_for_resolve
