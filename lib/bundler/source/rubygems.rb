@@ -50,6 +50,8 @@ module Bundler
       end
 
       def cached!
+        return unless File.exist?(cache_path)
+
         return if @allow_cached
 
         @specs = nil
