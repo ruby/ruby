@@ -708,7 +708,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
         .previous = parser->current_scope,
         .locals = { 0 },
         .parameters = PM_SCOPE_PARAMETERS_NONE,
-        .numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_NONE,
+        .implicit_parameters = { 0 },
         .shareable_constant = (closed || parser->current_scope == NULL) ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
         .closed = closed
     };
@@ -5502,18 +5502,6 @@ pm_interpolated_xstring_node_closing_set(pm_interpolated_x_string_node_t *node, 
  */
 static pm_it_local_variable_read_node_t *
 pm_it_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_ORDINARY) {
-        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
-        return NULL;
-    }
-
-    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED) {
-        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_NUMBERED);
-        return NULL;
-    }
-
-    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IT;
-
     pm_it_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_it_local_variable_read_node_t);
 
     *node = (pm_it_local_variable_read_node_t) {
@@ -5836,28 +5824,6 @@ pm_local_variable_write_node_create(pm_parser_t *parser, pm_constant_id_t name, 
 static inline bool
 pm_token_is_it(const uint8_t *start, const uint8_t *end) {
     return (end - start == 2) && (start[0] == 'i') && (start[1] == 't');
-}
-
-/**
- * Returns true if the given node is `it` default parameter.
- */
-static inline bool
-pm_node_is_it(pm_parser_t *parser, pm_node_t *node) {
-    // Check if it's a local variable reference
-    if (node->type != PM_CALL_NODE) {
-        return false;
-    }
-
-    // Check if it's a variable call
-    pm_call_node_t *call_node = (pm_call_node_t *) node;
-    if (!PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
-        return false;
-    }
-
-    // Check if it's called `it`
-    pm_constant_id_t id = ((pm_call_node_t *)node)->name;
-    pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, id);
-    return pm_token_is_it(constant->start, constant->start + constant->length);
 }
 
 /**
@@ -7981,28 +7947,6 @@ pm_parser_local_add_constant(pm_parser_t *parser, const char *start, size_t leng
 }
 
 /**
- * Convert a `it` variable call node to a node for `it` default parameter.
- */
-static pm_node_t *
-pm_node_check_it(pm_parser_t *parser, pm_node_t *node) {
-    if (
-        (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) &&
-        !parser->current_scope->closed &&
-        (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
-        pm_node_is_it(parser, node)
-    ) {
-        pm_it_local_variable_read_node_t *read = pm_it_local_variable_read_node_create(parser, &parser->previous);
-
-        if (read != NULL) {
-            pm_node_destroy(parser, node);
-            node = (pm_node_t *) read;
-        }
-    }
-
-    return node;
-}
-
-/**
  * Add a parameter name to the current scope and check whether the name of the
  * parameter is unique or not.
  *
@@ -8037,6 +7981,7 @@ pm_parser_scope_pop(pm_parser_t *parser) {
     pm_scope_t *scope = parser->current_scope;
     parser->current_scope = scope->previous;
     pm_locals_free(&scope->locals);
+    pm_node_list_free(&scope->implicit_parameters);
     xfree(scope);
 }
 
@@ -13194,6 +13139,32 @@ parse_unwriteable_target(pm_parser_t *parser, pm_node_t *target) {
 }
 
 /**
+ * When an `it` implicit local variable is written to or targeted, it becomes a
+ * regular, named local variable. This function removes it from the list of
+ * implicit parameters when that happens.
+ */
+static void
+parse_target_it(pm_parser_t *parser, pm_node_t *node) {
+    pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
+
+    for (size_t index = 0; index < implicit_parameters->size; index++) {
+        if (implicit_parameters->nodes[index] == node) {
+            // If the node is not the last one in the list, we need to shift the
+            // remaining nodes down to fill the gap. This is extremely unlikely
+            // to happen.
+            if (index != implicit_parameters->size - 1) {
+                memcpy(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
+            }
+
+            implicit_parameters->size--;
+            break;
+        }
+    }
+
+    pm_node_destroy(parser, node);
+}
+
+/**
  * Convert the given node into a valid target node.
  */
 static pm_node_t *
@@ -13254,6 +13225,12 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple) {
             target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
 
             return target;
+        }
+        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+            pm_constant_id_t name = pm_parser_local_add_constant(parser, "it", 2);
+            pm_node_t *node = (pm_node_t *) pm_local_variable_target_node_create(parser, &target->location, name, 0);
+            parse_target_it(parser, target);
+            return node;
         }
         case PM_INSTANCE_VARIABLE_READ_NODE:
             assert(sizeof(pm_instance_variable_target_node_t) == sizeof(pm_instance_variable_read_node_t));
@@ -13416,7 +13393,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             pm_scope_t *scope = pm_parser_scope_find(parser, depth);
 
             if (pm_token_is_numbered_parameter(target->location.start, target->location.end)) {
-                pm_diagnostic_id_t diag_id = scope->parameters > PM_SCOPE_NUMBERED_PARAMETERS_NONE ? PM_ERR_EXPRESSION_NOT_WRITABLE_NUMBERED : PM_ERR_PARAMETER_NUMBERED_RESERVED;
+                pm_diagnostic_id_t diag_id = (scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED_FOUND) ? PM_ERR_EXPRESSION_NOT_WRITABLE_NUMBERED : PM_ERR_PARAMETER_NUMBERED_RESERVED;
                 PM_PARSER_ERR_FORMAT(parser, target->location.start, target->location.end, diag_id, target->location.start);
             }
 
@@ -13424,6 +13401,12 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             pm_node_destroy(parser, target);
 
             return (pm_node_t *) pm_local_variable_write_node_create(parser, name, depth, value, &name_loc, operator);
+        }
+        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+            pm_constant_id_t name = pm_parser_local_add_constant(parser, "it", 2);
+            pm_node_t *node = (pm_node_t *) pm_local_variable_write_node_create(parser, name, 0, value, &target->location, operator);
+            parse_target_it(parser, target);
+            return node;
         }
         case PM_INSTANCE_VARIABLE_READ_NODE: {
             pm_node_t *write_node = (pm_node_t *) pm_instance_variable_write_node_create(parser, (pm_instance_variable_read_node_t *) target, operator, value);
@@ -14867,37 +14850,100 @@ parse_block_parameters(
 }
 
 /**
+ * Return true if any of the visible scopes to the current context are using
+ * numbered parameters.
+ */
+static bool
+outer_scope_using_numbered_parameters_p(pm_parser_t *parser) {
+    for (pm_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
+        if (scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED_FOUND) return true;
+    }
+
+    return false;
+}
+
+/**
+ * These are the names of the various numbered parameters. We have them here so
+ * that when we insert them into the constant pool we can use a constant string
+ * and not have to allocate.
+ */
+static const char * const pm_numbered_parameter_names[] = {
+    "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9"
+};
+
+/**
  * Return the node that should be used in the parameters field of a block-like
  * (block or lambda) node, depending on the kind of parameters that were
  * declared in the current scope.
  */
 static pm_node_t *
 parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_token_t *opening, const pm_token_t *closing) {
-    uint8_t masked = parser->current_scope->parameters & PM_SCOPE_PARAMETERS_TYPE_MASK;
+    pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
 
-    if (masked == PM_SCOPE_PARAMETERS_NONE) {
-        assert(parameters == NULL);
-        return NULL;
-    } else if (masked == PM_SCOPE_PARAMETERS_ORDINARY) {
-        assert(parameters != NULL);
-        return parameters;
-    } else if (masked == PM_SCOPE_PARAMETERS_NUMBERED) {
-        assert(parameters == NULL);
+    // If we have ordinary parameters, then we will return them as the set of
+    // parameters.
+    if (parameters != NULL) {
+        // If we also have implicit parameters, then this is an error.
+        if (implicit_parameters->size > 0) {
+            pm_node_t *node = implicit_parameters->nodes[0];
 
-        int8_t maximum = parser->current_scope->numbered_parameters;
-        if (maximum > 0) {
-            const pm_location_t location = { .start = opening->start, .end = closing->end };
-            return (pm_node_t *) pm_numbered_parameters_node_create(parser, &location, (uint8_t) maximum);
+            if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
+                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
+            } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+                pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
+            } else {
+                assert(false && "unreachable");
+            }
         }
 
-        return NULL;
-    } else if (masked == PM_SCOPE_PARAMETERS_IT) {
-        assert(parameters == NULL);
-        return (pm_node_t *) pm_it_parameters_node_create(parser, opening, closing);
-    } else {
-        assert(false && "unreachable");
-        return NULL;
+        return parameters;
     }
+
+    // If we don't have ordinary parameters, then we now must validate our set
+    // of implicit parameters. We can only have numbered parameters or it, but
+    // they cannot be mixed.
+    uint8_t numbered_parameter = 0;
+    bool it_parameter = false;
+
+    for (size_t index = 0; index < implicit_parameters->size; index++) {
+        pm_node_t *node = implicit_parameters->nodes[index];
+
+        if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
+            if (it_parameter) {
+                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_IT);
+            } else if (outer_scope_using_numbered_parameters_p(parser)) {
+                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_OUTER_BLOCK);
+            } else if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED_INNER) {
+                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_INNER_BLOCK);
+            } else {
+                assert(pm_char_is_decimal_digit(node->location.start[1]));
+                numbered_parameter = MAX(numbered_parameter, (uint8_t) (node->location.start[1] - '0'));
+            }
+        } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+            if (numbered_parameter > 0) {
+                pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_NUMBERED);
+            } else {
+                it_parameter = true;
+            }
+        }
+    }
+
+    if (numbered_parameter > 0) {
+        // Go through the parent scopes and mark them as being disallowed from
+        // using numbered parameters because this inner scope is using them.
+        for (pm_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
+            scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED_INNER;
+        }
+
+        const pm_location_t location = { .start = opening->start, .end = closing->end };
+        return (pm_node_t *) pm_numbered_parameters_node_create(parser, &location, numbered_parameter);
+    }
+
+    if (it_parameter) {
+        return (pm_node_t *) pm_it_parameters_node_create(parser, opening, closing);
+    }
+
+    return NULL;
 }
 
 /**
@@ -14914,9 +14960,6 @@ parse_block(pm_parser_t *parser) {
     pm_block_parameters_node_t *block_parameters = NULL;
 
     if (accept1(parser, PM_TOKEN_PIPE)) {
-        assert(parser->current_scope->parameters == PM_SCOPE_PARAMETERS_NONE);
-        parser->current_scope->parameters = PM_SCOPE_PARAMETERS_ORDINARY;
-
         pm_token_t block_parameters_opening = parser->previous;
         if (match1(parser, PM_TOKEN_PIPE)) {
             block_parameters = pm_block_parameters_node_create(parser, NULL, &block_parameters_opening);
@@ -15414,7 +15457,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
 #define PM_CASE_WRITABLE PM_CLASS_VARIABLE_READ_NODE: case PM_CONSTANT_PATH_NODE: \
     case PM_CONSTANT_READ_NODE: case PM_GLOBAL_VARIABLE_READ_NODE: case PM_LOCAL_VARIABLE_READ_NODE: \
     case PM_INSTANCE_VARIABLE_READ_NODE: case PM_MULTI_TARGET_NODE: case PM_BACK_REFERENCE_READ_NODE: \
-    case PM_NUMBERED_REFERENCE_READ_NODE
+    case PM_NUMBERED_REFERENCE_READ_NODE: case PM_IT_LOCAL_VARIABLE_READ_NODE
 
 // Assert here that the flags are the same so that we can safely switch the type
 // of the node without having to move the flags.
@@ -15834,91 +15877,43 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
 }
 
 /**
- * Return true if any of the visible scopes to the current context are using
- * numbered parameters.
- */
-static bool
-outer_scope_using_numbered_parameters_p(pm_parser_t *parser) {
-    for (pm_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
-        if (scope->numbered_parameters > 0) return true;
-    }
-
-    return false;
-}
-
-/**
- * These are the names of the various numbered parameters. We have them here so
- * that when we insert them into the constant pool we can use a constant string
- * and not have to allocate.
- */
-static const char * const pm_numbered_parameter_names[] = {
-    "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9"
-};
-
-/**
  * Parse an identifier into either a local variable read. If the local variable
  * is not found, it returns NULL instead.
  */
-static pm_local_variable_read_node_t *
+static pm_node_t *
 parse_variable(pm_parser_t *parser) {
+    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &parser->previous);
     int depth;
-    if ((depth = pm_parser_local_depth(parser, &parser->previous)) != -1) {
-        return pm_local_variable_read_node_create(parser, &parser->previous, (uint32_t) depth);
+
+    if ((depth = pm_parser_local_depth_constant_id(parser, name_id)) != -1) {
+        return (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, (uint32_t) depth, false);
     }
 
     pm_scope_t *current_scope = parser->current_scope;
-    if (!current_scope->closed && current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED && pm_token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
-        // Now that we know we have a numbered parameter, we need to check
-        // if it's allowed in this context. If it is, then we will create a
-        // local variable read. If it's not, then we'll create a normal call
-        // node but add an error.
-        if (current_scope->parameters & PM_SCOPE_PARAMETERS_ORDINARY) {
-            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
-        } else if (current_scope->parameters & PM_SCOPE_PARAMETERS_IT) {
-            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_IT);
-        } else if (outer_scope_using_numbered_parameters_p(parser)) {
-            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_OUTER_BLOCK);
-        } else if (current_scope->numbered_parameters == PM_SCOPE_NUMBERED_PARAMETERS_INNER) {
-            pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_INNER_BLOCK);
-        } else {
-            // Indicate that this scope is using numbered params so that child
-            // scopes cannot. We subtract the value for the character '0' to get
-            // the actual integer value of the number (only _1 through _9 are
-            // valid).
-            int8_t numbered_parameters = (int8_t) (parser->previous.start[1] - '0');
+    if (!current_scope->closed && !(current_scope->parameters & PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED)) {
+        if (pm_token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
+            // When you use a numbered parameter, it implies the existence of
+            // all of the locals that exist before it. For example, referencing
+            // _2 means that _1 must exist. Therefore here we loop through all
+            // of the possibilities and add them into the constant pool.
+            uint8_t maximum = parser->previous.start[1] - '0';
+            for (uint8_t number = 1; number <= maximum; number++) {
+                pm_parser_local_add_constant(parser, pm_numbered_parameter_names[number - 1], 2);
+            }
 
-            // If we're about to match an =, then this is an invalid use of
-            // numbered parameters. We'll create all of the necessary
-            // infrastructure around it, but not actually mark the scope as
-            // using numbered parameters so that we can get the right error
-            // message.
             if (!match1(parser, PM_TOKEN_EQUAL)) {
-                current_scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED;
-
-                if (numbered_parameters > current_scope->numbered_parameters) {
-                    current_scope->numbered_parameters = numbered_parameters;
-                }
-
-                // Go through the parent scopes and mark them as being
-                // disallowed from using numbered parameters because this inner
-                // scope is using them.
-                for (pm_scope_t *scope = current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
-                    scope->numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_INNER;
-                }
+                parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED_FOUND;
             }
 
-            // When you use a numbered parameter, it implies the existence
-            // of all of the locals that exist before it. For example,
-            // referencing _2 means that _1 must exist. Therefore here we
-            // loop through all of the possibilities and add them into the
-            // constant pool.
-            for (int8_t numbered_param = 1; numbered_param <= numbered_parameters - 1; numbered_param++) {
-                pm_parser_local_add_constant(parser, pm_numbered_parameter_names[numbered_param - 1], 2);
-            }
+            pm_node_t *node = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false);
+            pm_node_list_append(&current_scope->implicit_parameters, node);
 
-            // Finally we can create the local variable read node.
-            pm_constant_id_t name_id = pm_parser_local_add_constant(parser, pm_numbered_parameter_names[numbered_parameters - 1], 2);
-            return pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false);
+            return node;
+        } else if ((parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
+            pm_node_t *node = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
+            pm_node_list_append(&current_scope->implicit_parameters, node);
+
+            return node;
         }
     }
 
@@ -15933,8 +15928,8 @@ parse_variable_call(pm_parser_t *parser) {
     pm_node_flags_t flags = 0;
 
     if (!match1(parser, PM_TOKEN_PARENTHESIS_LEFT) && (parser->previous.end[-1] != '!') && (parser->previous.end[-1] != '?')) {
-        pm_local_variable_read_node_t *node = parse_variable(parser);
-        if (node != NULL) return (pm_node_t *) node;
+        pm_node_t *node = parse_variable(parser);
+        if (node != NULL) return node;
         flags |= PM_CALL_NODE_FLAGS_VARIABLE_CALL;
     }
 
@@ -16622,19 +16617,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                     pm_node_t *variable = (pm_node_t *) parse_variable(parser);
 
                     if (variable == NULL) {
-                        if (
-                            (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) &&
-                            !parser->current_scope->closed &&
-                            (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
-                            pm_token_is_it(parser->previous.start, parser->previous.end)
-                        ) {
-                            pm_node_t *read = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
-                            if (read == NULL) read = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
-                            variable = (pm_node_t *) read;
-                        } else {
-                            PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE);
-                            variable = (pm_node_t *) pm_local_variable_read_node_missing_create(parser, &parser->previous, 0);
-                        }
+                        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE);
+                        variable = (pm_node_t *) pm_local_variable_read_node_missing_create(parser, &parser->previous, 0);
                     }
 
                     return (pm_node_t *) pm_pinned_variable_node_create(parser, &operator, variable);
@@ -17384,8 +17368,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     break;
                 }
 
-                if (pm_array_node_size(array) != 0) {
-                    expect1(parser, PM_TOKEN_COMMA, PM_ERR_ARRAY_SEPARATOR);
+                // Ensure that we have a comma between elements in the array.
+                if ((pm_array_node_size(array) != 0) && !accept1(parser, PM_TOKEN_COMMA)) {
+                    const uint8_t *location = parser->previous.end;
+                    PM_PARSER_ERR_FORMAT(parser, location, location, PM_ERR_ARRAY_SEPARATOR, pm_token_type_human(parser->current.type));
+
+                    parser->previous.start = location;
+                    parser->previous.type = PM_TOKEN_MISSING;
                 }
 
                 // If we have a right bracket immediately following a comma,
@@ -17822,31 +17811,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
                 node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX);
-            } else {
-                // Check if `it` is not going to be assigned.
-                switch (parser->current.type) {
-                    case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
-                    case PM_TOKEN_AMPERSAND_EQUAL:
-                    case PM_TOKEN_CARET_EQUAL:
-                    case PM_TOKEN_EQUAL:
-                    case PM_TOKEN_GREATER_GREATER_EQUAL:
-                    case PM_TOKEN_LESS_LESS_EQUAL:
-                    case PM_TOKEN_MINUS_EQUAL:
-                    case PM_TOKEN_PARENTHESIS_RIGHT:
-                    case PM_TOKEN_PERCENT_EQUAL:
-                    case PM_TOKEN_PIPE_EQUAL:
-                    case PM_TOKEN_PIPE_PIPE_EQUAL:
-                    case PM_TOKEN_PLUS_EQUAL:
-                    case PM_TOKEN_SLASH_EQUAL:
-                    case PM_TOKEN_STAR_EQUAL:
-                    case PM_TOKEN_STAR_STAR_EQUAL:
-                        break;
-                    default:
-                        // Once we know it's neither a method call nor an
-                        // assignment, we can finally create `it` default
-                        // parameter.
-                        node = pm_node_check_it(parser, node);
-                }
             }
 
             return node;
@@ -18512,7 +18476,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
                         receiver = parse_variable_call(parser);
-                        receiver = pm_node_check_it(parser, receiver);
+                        // receiver = pm_node_check_it(parser, receiver);
 
                         pm_parser_scope_push(parser, true);
                         lex_state_set(parser, PM_LEX_STATE_FNAME);
@@ -19708,9 +19672,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             switch (parser->current.type) {
                 case PM_TOKEN_PARENTHESIS_LEFT: {
-                    assert(parser->current_scope->parameters == PM_SCOPE_PARAMETERS_NONE);
-                    parser->current_scope->parameters = PM_SCOPE_PARAMETERS_ORDINARY;
-
                     pm_token_t opening = parser->current;
                     parser_lex(parser);
 
@@ -19727,9 +19688,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     break;
                 }
                 case PM_CASE_PARAMETER: {
-                    assert(parser->current_scope->parameters == PM_SCOPE_PARAMETERS_NONE);
-                    parser->current_scope->parameters = PM_SCOPE_PARAMETERS_ORDINARY;
-
                     pm_accepts_block_stack_push(parser, false);
                     pm_token_t opening = not_provided(parser);
                     block_parameters = parse_block_parameters(parser, false, &opening, true);
@@ -21264,7 +21222,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
             // Scopes given from the outside are not allowed to have numbered
             // parameters.
-            parser->current_scope->numbered_parameters = PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED;
+            parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED;
 
             for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
                 const pm_string_t *local = pm_options_scope_local_get(scope, local_index);
