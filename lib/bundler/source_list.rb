@@ -22,6 +22,7 @@ module Bundler
       @metadata_source        = Source::Metadata.new
 
       @merged_gem_lockfile_sections = false
+      @local_mode = true
     end
 
     def merged_gem_lockfile_sections?
@@ -71,6 +72,10 @@ module Bundler
     def add_global_rubygems_remote(uri)
       global_rubygems_source.add_remote(uri)
       global_rubygems_source
+    end
+
+    def local_mode?
+      @local_mode
     end
 
     def default_source
@@ -145,6 +150,8 @@ module Bundler
     end
 
     def remote!
+      @local_mode = false
+
       all_sources.each(&:remote!)
     end
 
