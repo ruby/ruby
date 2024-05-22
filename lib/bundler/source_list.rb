@@ -9,7 +9,7 @@ module Bundler
       :metadata_source
 
     def global_rubygems_source
-      @global_rubygems_source ||= rubygems_aggregate_class.new("allow_local" => true, "allow_cached" => true)
+      @global_rubygems_source ||= rubygems_aggregate_class.new("allow_local" => true)
     end
 
     def initialize
@@ -145,6 +145,10 @@ module Bundler
       all_sources.each(&:local_only!)
     end
 
+    def local!
+      all_sources.each(&:local!)
+    end
+
     def cached!
       all_sources.each(&:cached!)
     end
@@ -185,7 +189,7 @@ module Bundler
       replacement_source = replace_rubygems_source(replacement_sources, global_rubygems_source)
       return global_rubygems_source unless replacement_source
 
-      replacement_source.cached!
+      replacement_source.local!
       replacement_source
     end
 

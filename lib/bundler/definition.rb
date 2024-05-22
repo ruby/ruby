@@ -168,11 +168,13 @@ module Bundler
     end
 
     def resolve_with_cache!
+      sources.local!
       sources.cached!
       resolve
     end
 
     def resolve_remotely!
+      sources.cached!
       sources.remote!
       resolve
     end
