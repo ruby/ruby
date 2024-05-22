@@ -1149,6 +1149,12 @@ module Prism
         end
 
         # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          builder.ident([:it, srange(node.location)]).updated(:lvar)
+        end
+
+        # -> { it }
         # ^^^^^^^^^
         def visit_it_parameters_node(node)
           builder.args(nil, [], nil, false)
@@ -1201,14 +1207,7 @@ module Prism
         # foo
         # ^^^
         def visit_local_variable_read_node(node)
-          name = node.name
-
-          # This is just a guess. parser doesn't have support for the implicit
-          # `it` variable yet, so we'll probably have to visit this once it
-          # does.
-          name = :it if name == :"0it"
-
-          builder.ident([name, srange(node.location)]).updated(:lvar)
+          builder.ident([node.name, srange(node.location)]).updated(:lvar)
         end
 
         # foo = 1

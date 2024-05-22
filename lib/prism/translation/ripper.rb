@@ -2218,6 +2218,13 @@ module Prism
       end
 
       # -> { it }
+      #      ^^
+      def visit_it_local_variable_read_node(node)
+        bounds(node.location)
+        on_vcall(on_ident(node.slice))
+      end
+
+      # -> { it }
       # ^^^^^^^^^
       def visit_it_parameters_node(node)
       end
@@ -2312,12 +2319,7 @@ module Prism
       # ^^^
       def visit_local_variable_read_node(node)
         bounds(node.location)
-
-        if node.name == :"0it"
-          on_vcall(on_ident(node.slice))
-        else
-          on_var_ref(on_ident(node.slice))
-        end
+        on_var_ref(on_ident(node.slice))
       end
 
       # foo = 1

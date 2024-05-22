@@ -5498,6 +5498,35 @@ pm_interpolated_xstring_node_closing_set(pm_interpolated_x_string_node_t *node, 
 }
 
 /**
+ * Create a local variable read that is reading the implicit 'it' variable.
+ */
+static pm_it_local_variable_read_node_t *
+pm_it_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
+    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_ORDINARY) {
+        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
+        return NULL;
+    }
+
+    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED) {
+        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_NUMBERED);
+        return NULL;
+    }
+
+    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IT;
+
+    pm_it_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_it_local_variable_read_node_t);
+
+    *node = (pm_it_local_variable_read_node_t) {
+        {
+            .type = PM_IT_LOCAL_VARIABLE_READ_NODE,
+            .location = PM_LOCATION_TOKEN_VALUE(name)
+        }
+    };
+
+    return node;
+}
+
+/**
  * Allocate and initialize a new ItParametersNode node.
  */
 static pm_it_parameters_node_t *
@@ -7952,29 +7981,6 @@ pm_parser_local_add_constant(pm_parser_t *parser, const char *start, size_t leng
 }
 
 /**
- * Create a local variable read that is reading the implicit 'it' variable.
- */
-static pm_local_variable_read_node_t *
-pm_local_variable_read_node_create_it(pm_parser_t *parser, const pm_token_t *name) {
-    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_ORDINARY) {
-        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
-        return NULL;
-    }
-
-    if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED) {
-        pm_parser_err_token(parser, name, PM_ERR_IT_NOT_ALLOWED_NUMBERED);
-        return NULL;
-    }
-
-    parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IT;
-
-    pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
-    pm_parser_local_add(parser, name_id, name->start, name->end, 0);
-
-    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, 0, false);
-}
-
-/**
  * Convert a `it` variable call node to a node for `it` default parameter.
  */
 static pm_node_t *
@@ -7985,7 +7991,7 @@ pm_node_check_it(pm_parser_t *parser, pm_node_t *node) {
         (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
         pm_node_is_it(parser, node)
     ) {
-        pm_local_variable_read_node_t *read = pm_local_variable_read_node_create_it(parser, &parser->previous);
+        pm_it_local_variable_read_node_t *read = pm_it_local_variable_read_node_create(parser, &parser->previous);
 
         if (read != NULL) {
             pm_node_destroy(parser, node);
@@ -16622,8 +16628,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                             (parser->current_scope->numbered_parameters != PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED) &&
                             pm_token_is_it(parser->previous.start, parser->previous.end)
                         ) {
-                            pm_local_variable_read_node_t *read = pm_local_variable_read_node_create_it(parser, &parser->previous);
-                            if (read == NULL) read = pm_local_variable_read_node_create(parser, &parser->previous, 0);
+                            pm_node_t *read = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
+                            if (read == NULL) read = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
                             variable = (pm_node_t *) read;
                         } else {
                             PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE);
