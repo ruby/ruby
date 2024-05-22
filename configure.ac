@@ -248,16 +248,10 @@ AS_CASE(["${build_os}"],
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
 ],
 [darwin*], [
-    # As Apple Xcode is relocatable and selectable with `xcode-select`,
-    # use consistent versions of commands in the same location.
-    AC_MSG_CHECKING([Xcode tools])
-    AS_CASE([$ac_cv_prog_ac_ct_CC],
-        [/*], [],
-        [ac_cv_prog_ac_ct_CC=`command -v $ac_cv_prog_ac_ct_CC`])
-    AC_MSG_RESULT(CC=$ac_cv_prog_ac_ct_CC)
-    ac_cv_prog_ac_ct_AR=${ac_cv_prog_ac_ct_CC%/*}/ar
-    ac_cv_prog_ac_ct_LD=${ac_cv_prog_ac_ct_CC%/*}/ld
-    ac_cv_prog_ac_ct_NM=${ac_cv_prog_ac_ct_CC%/*}/nm
+    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
+    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
+    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
+    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
