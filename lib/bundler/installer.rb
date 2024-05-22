@@ -237,13 +237,12 @@ module Bundler
     def resolve_if_needed(options)
       @definition.resolution_mode = options
 
-      if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
-        return false if @definition.nothing_changed? && !@definition.missing_specs?
+      if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file? && @definition.nothing_changed? && !@definition.missing_specs?
+        false
+      else
+        @definition.setup_sources_for_resolve
+        true
       end
-
-      @definition.setup_sources_for_resolve
-
-      true
     end
 
     def lock
