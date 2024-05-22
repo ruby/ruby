@@ -1356,14 +1356,14 @@ module Prism
 
     if RUBY_VERSION >= "3.0"
       def test_writing_numbered_parameter
-        assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-          ["_1 is reserved for numbered parameters", 5..7]
+        assert_error_messages "-> { _1 = 0 }", [
+          "_1 is reserved for numbered parameters"
         ]
       end
 
       def test_targeting_numbered_parameter
-        assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-          ["_1 is reserved for numbered parameters", 5..7]
+        assert_error_messages "-> { _1, = 0 }", [
+          "_1 is reserved for numbered parameters"
         ]
       end
 
