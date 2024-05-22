@@ -18511,7 +18511,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
                         receiver = parse_variable_call(parser);
-                        receiver = pm_node_check_it(parser, receiver);
 
                         pm_parser_scope_push(parser, true);
                         lex_state_set(parser, PM_LEX_STATE_FNAME);
