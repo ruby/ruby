@@ -1922,7 +1922,7 @@ eom
       ]
     end
     assert_valid_syntax('proc {def foo(_);end;it}')
-    assert_syntax_error('p { [it **2] }', /unexpected \*\*arg/)
+    assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
   end
 
   def test_value_expr_in_condition

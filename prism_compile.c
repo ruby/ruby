@@ -6915,6 +6915,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+        // -> { it }
+        //      ^^
+        if (!popped) {
+            PUSH_GETLOCAL(ret, location, scope_node->local_table_for_iseq_size, 0);
+        }
+
+        return;
+      }
       case PM_KEYWORD_HASH_NODE: {
         // foo(bar: baz)
         //     ^^^^^^^^
@@ -7018,9 +7027,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_LOCAL_VARIABLE_READ_NODE: {
         // foo
         // ^^^
-        const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) node;
-
         if (!popped) {
+            const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) node;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
             PUSH_GETLOCAL(ret, location, index.index, index.level);
         }
@@ -7962,6 +7970,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        // If we have the `it` implicit local variable, we need to account for
+        // it in the local table size.
+        if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+            table_size++;
+        }
+
         // Ensure there is enough room in the local table for any
         // parameters that have been repeated
         // ex: def underscore_parameters(_, _ = 1, _ = 2); _; end
@@ -8108,6 +8122,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             body->param.lead_num = (int) requireds_list->size;
             body->param.flags.has_lead = true;
+        }
+
+        if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+            ID local = rb_make_temporary_id(local_index);
+            local_table_for_iseq->ids[local_index++] = local;
         }
 
         // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
@@ -8468,18 +8487,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
             body->param.lead_num = maximum;
             body->param.flags.has_lead = true;
-        }
-
-        // Fill in the it variable, if it exists
-        if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
-            const uint8_t param_name[] = { '0', 'i', 't' };
-            pm_constant_id_t constant_id = pm_constant_pool_find(&parser->constant_pool, param_name, 3);
-            RUBY_ASSERT(constant_id && "parser should have inserted 0it for 'it' local");
-
-            ID local = rb_make_temporary_id(local_index);
-            local_table_for_iseq->ids[local_index] = local;
-            st_insert(index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
-            local_index++;
         }
 
         //********END OF STEP 3**********
