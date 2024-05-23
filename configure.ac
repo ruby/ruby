@@ -1388,6 +1388,8 @@ AC_ARG_WITH([jemalloc],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" != xno],[
   # find jemalloc header first
+  save_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${INCFLAGS} ${CPPFLAGS}"
   malloc_header=
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [malloc_header=jemalloc/jemalloc.h], [
     AC_CHECK_HEADER(jemalloc.h, [malloc_header=jemalloc.h])
@@ -1419,6 +1421,8 @@ AS_IF([test "x$with_jemalloc" != xno],[
       done
     done
   ])
+  CPPFLAGS="${save_CPPFLAGS}"
+  unset save_CPPFLAGS
   with_jemalloc=${rb_cv_jemalloc_library}
   AS_CASE(["$with_jemalloc"],
   [no],
