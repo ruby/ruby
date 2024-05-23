@@ -3796,7 +3796,7 @@ pm_multi_target_state_update(pm_multi_target_state_t *state)
     }
 }
 
-static size_t
+static void
 pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state);
 
 /**
@@ -4052,7 +4052,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
  * on the stack that correspond to the parent expressions of the various
  * targets.
  */
-static size_t
+static void
 pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
 {
     const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
@@ -4092,26 +4092,28 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     // going through the targets because we will need to revisit them once
     // we know how many values are being pushed onto the stack.
     pm_multi_target_state_t target_state = { 0 };
-    size_t base_position = state == NULL ? 0 : state->position;
+    if (state == NULL) state = &target_state;
+
+    size_t base_position = state->position;
     size_t splat_position = has_rest ? 1 : 0;
 
     // Next, we'll iterate through all of the leading targets.
     for (size_t index = 0; index < lefts->size; index++) {
         const pm_node_t *target = lefts->nodes[index];
-        target_state.position = lefts->size - index + splat_position + base_position;
-        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+        state->position = lefts->size - index + splat_position + base_position;
+        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
     }
 
     // Next, we'll compile the rest target if there is one.
     if (has_rest) {
         const pm_node_t *target = ((const pm_splat_node_t *) rest)->expression;
-        target_state.position = 1 + rights->size + base_position;
+        state->position = 1 + rights->size + base_position;
 
         if (has_posts) {
             PUSH_INSN2(writes, location, expandarray, INT2FIX(rights->size), INT2FIX(3));
         }
 
-        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
     }
 
     // Finally, we'll compile the trailing targets.
@@ -4122,18 +4124,10 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 
         for (size_t index = 0; index < rights->size; index++) {
             const pm_node_t *target = rights->nodes[index];
-            target_state.position = rights->size - index + base_position;
-            pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+            state->position = rights->size - index + base_position;
+            pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
         }
     }
-
-    // Now, we need to go back and modify the topn instructions in order to
-    // ensure they can correctly retrieve the parent expressions.
-    pm_multi_target_state_update(&target_state);
-
-    if (state != NULL) state->stack_size += target_state.stack_size;
-
-    return target_state.stack_size;
 }
 
 /**
@@ -7289,17 +7283,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_multi_target_state_t state = { 0 };
         state.position = popped ? 0 : 1;
-        size_t stack_size = pm_compile_multi_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
+        pm_compile_multi_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
 
         PM_COMPILE_NOT_POPPED(cast->value);
         if (!popped) PUSH_INSN(ret, location, dup);
 
         PUSH_SEQ(ret, writes);
-        if (!popped && stack_size >= 1) {
+        if (!popped && state.stack_size >= 1) {
             // Make sure the value on the right-hand side of the = operator is
             // being returned before we pop the parent expressions.
-            PUSH_INSN1(ret, location, setn, INT2FIX(stack_size));
+            PUSH_INSN1(ret, location, setn, INT2FIX(state.stack_size));
         }
+
+        // Now, we need to go back and modify the topn instructions in order to
+        // ensure they can correctly retrieve the parent expressions.
+        pm_multi_target_state_update(&state);
 
         PUSH_SEQ(ret, cleanup);
         return;
