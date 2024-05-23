@@ -8,6 +8,8 @@ module Spec
   module Helpers
     include Spec::Path
 
+    class TimeoutExceeded < StandardError; end
+
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
         next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
@@ -183,7 +185,7 @@ module Spec
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       dir = options[:dir] || bundled_app
-      command_execution = CommandExecution.new(cmd.to_s, dir)
+      command_execution = CommandExecution.new(cmd.to_s, working_directory: dir, timeout: 60)
 
       require "open3"
       require "shellwords"
@@ -191,10 +193,14 @@ module Spec
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 
-        stdout_read_thread = Thread.new { stdout.read }
-        stderr_read_thread = Thread.new { stderr.read }
-        command_execution.original_stdout = stdout_read_thread.value.strip
-        command_execution.original_stderr = stderr_read_thread.value.strip
+        stdout_handler = ->(data) { command_execution.original_stdout << data }
+        stderr_handler = ->(data) { command_execution.original_stderr << data }
+
+        stdout_thread = read_stream(stdout, stdout_handler, timeout: command_execution.timeout)
+        stderr_thread = read_stream(stderr, stderr_handler, timeout: command_execution.timeout)
+
+        stdout_thread.join
+        stderr_thread.join
 
         status = wait_thr.value
         command_execution.exitstatus = if status.exited?
@@ -202,21 +208,46 @@ module Spec
         elsif status.signaled?
           exit_status_for_signal(status.termsig)
         end
+      rescue TimeoutExceeded
+        command_execution.failure_reason = :timeout
+        command_execution.exitstatus = exit_status_for_signal(Signal.list["INT"])
       end
 
       unless options[:raise_on_error] == false || command_execution.success?
-        raise <<~ERROR
-
-          Invoking `#{cmd}` failed with output:
-          ----------------------------------------------------------------------
-          #{command_execution.stdboth}
-          ----------------------------------------------------------------------
-        ERROR
+        command_execution.raise_error!
       end
 
       command_executions << command_execution
 
       command_execution.stdout
+    end
+
+    # Mostly copied from https://github.com/piotrmurach/tty-command/blob/49c37a895ccea107e8b78d20e4cb29de6a1a53c8/lib/tty/command/process_runner.rb#L165-L193
+    def read_stream(stream, handler, timeout:)
+      Thread.new do
+        Thread.current.report_on_exception = false
+        cmd_start = Time.now
+        readers = [stream]
+
+        while readers.any?
+          ready = IO.select(readers, nil, readers, timeout)
+          raise TimeoutExceeded if ready.nil?
+
+          ready[0].each do |reader|
+            chunk = reader.readpartial(16 * 1024)
+            handler.call(chunk)
+
+            # control total time spent reading
+            runtime = Time.now - cmd_start
+            time_left = timeout - runtime
+            raise TimeoutExceeded if time_left < 0.0
+          rescue Errno::EAGAIN, Errno::EINTR
+          rescue EOFError, Errno::EPIPE, Errno::EIO
+            readers.delete(reader)
+            reader.close
+          end
+        end
+      end
     end
 
     def all_commands_output

@@ -849,8 +849,7 @@ RSpec.describe "bundle update" do
     end
 
     bundle "update", all: true
-    out.sub!("Removing foo (1.0)\n", "")
-    expect(out).to match(/Resolving dependencies\.\.\.\.*\nFetching foo 2\.0 \(was 1\.0\)\nInstalling foo 2\.0 \(was 1\.0\)\nBundle updated/)
+    expect(out.sub("Removing foo (1.0)\n", "")).to match(/Resolving dependencies\.\.\.\.*\nFetching foo 2\.0 \(was 1\.0\)\nInstalling foo 2\.0 \(was 1\.0\)\nBundle updated/)
   end
 
   it "shows error message when Gemfile.lock is not preset and gem is specified" do
