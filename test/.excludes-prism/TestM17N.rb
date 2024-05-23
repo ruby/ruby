@@ -1,1 +1,1 @@
-exclude(:test_regexp_usascii, "x80 should raise syntax error")
+exclude(:test_regexp_usascii, "https://bugs.ruby-lang.org/issues/20504")
