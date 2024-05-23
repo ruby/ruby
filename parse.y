@@ -14941,9 +14941,6 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
         result = NEW_RESCUE(head, rescue, rescue_else, &rescue_loc);
         nd_set_line(result, rescue->nd_loc.beg_pos.lineno);
     }
-    else if (rescue_else) {
-        result = block_append(p, result, rescue_else);
-    }
     if (ensure) {
         result = NEW_ENSURE(result, ensure, loc);
     }
