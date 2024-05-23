@@ -4235,9 +4235,48 @@ fn gen_opt_newarray_send(
         gen_opt_newarray_max(jit, asm, _ocb)
     } else if method == ID!(hash) {
         gen_opt_newarray_hash(jit, asm, _ocb)
+    } else if method == ID!(pack) {
+        gen_opt_newarray_pack(jit, asm, _ocb)
     } else {
         None
     }
+}
+
+fn gen_opt_newarray_pack(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    // num == 4 ( for this code )
+    let num = jit.get_arg(0).as_u32();
+
+    // Save the PC and SP because we may call #pack
+    jit_prepare_non_leaf_call(jit, asm);
+
+    extern "C" {
+        fn rb_vm_opt_newarray_pack(ec: EcPtr, num: u32, elts: *const VALUE, fmt: VALUE) -> VALUE;
+    }
+
+    let values_opnd = asm.ctx.sp_opnd(-(num as i32));
+    let values_ptr = asm.lea(values_opnd);
+
+    let fmt_string = asm.ctx.sp_opnd(-1);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_newarray_pack as *const u8,
+        vec![
+            EC,
+            (num - 1).into(),
+            values_ptr,
+            fmt_string
+        ],
+    );
+
+    asm.stack_pop(num.as_usize());
+    let stack_ret = asm.stack_push(Type::CString);
+    asm.mov(stack_ret, val_opnd);
+
+    Some(KeepCompiling)
 }
 
 fn gen_opt_newarray_hash(
