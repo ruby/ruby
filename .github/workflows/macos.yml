@@ -21,8 +21,8 @@ jobs:
       matrix:
         test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
         os:
-          - macos-11
           - macos-12
+          - macos-13
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
