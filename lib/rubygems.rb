@@ -807,9 +807,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if Thread.main != Thread.current
       raise
     else
-      File.open(path, flags) do |io|
-        yield io
-      end
+      File.open(path, flags, &block)
     end
   end
 
