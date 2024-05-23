@@ -880,6 +880,19 @@ rb_ary_free(VALUE ary)
     }
 }
 
+VALUE
+rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze)
+{
+    fake_ary->basic.flags = T_ARRAY;
+    VALUE ary = (VALUE)fake_ary;
+    RBASIC_CLEAR_CLASS(ary);
+    ARY_SET_PTR(ary, list);
+    ARY_SET_HEAP_LEN(ary, len);
+    ARY_SET_CAPA(ary, len);
+    if (freeze) OBJ_FREEZE(ary);
+    return ary;
+}
+
 size_t
 rb_ary_memsize(VALUE ary)
 {

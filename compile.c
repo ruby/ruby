@@ -4048,6 +4048,8 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     return COMPILE_OK;
 }
 
+#define vm_ci_simple(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)
+
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
@@ -4059,22 +4061,41 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         INSN *niobj = (INSN *)iobj->link.next;
         if (IS_INSN_ID(niobj, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(niobj, 0);
-            if ((vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) && vm_ci_argc(ci) == 0) {
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0) {
                 switch (vm_ci_mid(ci)) {
                   case idMax:
                   case idMin:
                   case idHash:
                     {
                         VALUE num = iobj->operands[0];
+                        int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
                         iobj->insn_id = BIN(opt_newarray_send);
-                        iobj->operands = compile_data_calloc2(iseq, insn_len(iobj->insn_id) - 1, sizeof(VALUE));
+                        iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
                         iobj->operands[0] = num;
                         iobj->operands[1] = rb_id2sym(vm_ci_mid(ci));
-                        iobj->operand_size = insn_len(iobj->insn_id) - 1;
+                        iobj->operand_size = operand_len;
                         ELEM_REMOVE(&niobj->link);
                         return COMPILE_OK;
                     }
                 }
+            }
+        }
+        else if ((IS_INSN_ID(niobj, putstring) ||
+                  (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
+                 IS_NEXT_INSN_ID(&niobj->link, send)) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)niobj->link.next, 0);
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idPack) {
+                VALUE num = iobj->operands[0];
+                int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
+                iobj->insn_id = BIN(opt_newarray_send);
+                iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
+                iobj->operands[0] = FIXNUM_INC(num, 1);
+                iobj->operands[1] = rb_id2sym(vm_ci_mid(ci));
+                iobj->operand_size = operand_len;
+                ELEM_REMOVE(&iobj->link);
+                ELEM_REMOVE(niobj->link.next);
+                ELEM_INSERT_NEXT(&niobj->link, &iobj->link);
+                return COMPILE_OK;
             }
         }
     }
@@ -4084,7 +4105,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
 
 #define SP_INSN(opt) insn_set_specialized_instruction(iseq, iobj, BIN(opt_##opt))
-        if (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) {
+        if (vm_ci_simple(ci)) {
             switch (vm_ci_argc(ci)) {
               case 0:
                 switch (vm_ci_mid(ci)) {

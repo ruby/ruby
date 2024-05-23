@@ -2278,6 +2278,7 @@ vm_redefinition_bop_for_id(ID mid)
     OP(NilP, NIL_P);
     OP(Cmp, CMP);
     OP(Default, DEFAULT);
+    OP(Pack, PACK);
 #undef OP
     }
     return -1;
