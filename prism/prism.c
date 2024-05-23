@@ -10949,6 +10949,7 @@ parser_lex(pm_parser_t *parser) {
                                     // If we have quotes, then we're going to go until we find the
                                     // end quote.
                                     while ((parser->current.end < parser->end) && quote != (pm_heredoc_quote_t) (*parser->current.end)) {
+                                        if (*parser->current.end == '\r' || *parser->current.end == '\n') break;
                                         parser->current.end++;
                                     }
                                 }
