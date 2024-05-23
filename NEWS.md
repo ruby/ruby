@@ -50,7 +50,7 @@ The following default gems are updated.
 * net-http 0.4.1
 * optparse 0.5.0
 * prism 0.29.0
-* rdoc 6.6.3.1
+* rdoc 6.7.0
 * reline 0.5.7
 * resolv 0.4.0
 * stringio 3.1.1
