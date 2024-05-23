@@ -2082,7 +2082,9 @@ rb_parser_string_t *
 rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 {
     /* Type check */
-    return rb_parser_encoding_string_new(p, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    rb_parser_string_t *ret = rb_parser_encoding_string_new(p, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    RB_GC_GUARD(str);
+    return ret;
 }
 #endif
 
