@@ -1,1 +1,1 @@
-exclude(:test_dregexp, "x80 should raise syntax error")
+exclude(:test_dregexp, "https://bugs.ruby-lang.org/issues/20504")
