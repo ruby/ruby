@@ -136,6 +136,14 @@ def extract_makefile(makefile, keep = true)
   true
 end
 
+def create_makefile(target, srcprefix = nil)
+  if $static and target.include?("/")
+    base = File.basename(target)
+    $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+  end
+  super
+end
+
 def extmake(target, basedir = 'ext', maybestatic = true)
   FileUtils.mkpath target unless File.directory?(target)
   begin
@@ -546,7 +554,13 @@ extend Module.new {
   end
 
   def create_makefile(*args, &block)
-    return super unless @gemname
+    unless @gemname
+      if $static and (target = args.first).include?("/")
+        base = File.basename(target)
+        $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+      end
+      return super
+    end
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(%r(^(srcdir *= *)\$\(top_srcdir\)/\.bundle/gems/[^/]+(?=/))) {
