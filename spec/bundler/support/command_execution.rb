@@ -15,13 +15,8 @@ module Spec
       original_stdout
     end
 
-    # Can be removed once/if https://github.com/oneclick/rubyinstaller2/pull/369 is resolved
     def stderr
-      return original_stderr unless Gem.win_platform?
-
-      original_stderr.split("\n").reject do |l|
-        l.include?("operating_system_defaults")
-      end.join("\n")
+      original_stderr
     end
 
     def to_s_verbose
