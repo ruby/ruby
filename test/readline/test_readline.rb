@@ -496,8 +496,8 @@ module BasetestReadline
     # Maybe the same issue: https://github.com/facebookresearch/nle/issues/120
     omit if /i[3-6]86-linux/ =~ RUBY_PLATFORM
 
-    # Skip arm32-linux (Travis CI).
-    omit "Skip arm32-linux" if /armv.+l-linux/ =~ RUBY_PLATFORM
+    # Skip arm32-linux (Travis CI).  See aefc988 in main ruby repo.
+    omit "Skip arm32-linux" if /armv[0-9+][a-z]-linux/ =~ RUBY_PLATFORM
 
     if defined?(TestReadline) && self.class == TestReadline
       use = "use_ext_readline"
