@@ -215,7 +215,12 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
                 *reg_cfp->sp++ = argv[i];
             }
 
-            vm_call_iseq_setup(ec, reg_cfp, calling);
+            if (ISEQ_BODY(def_iseq_ptr(vm_cc_cme(cc)->def))->param.flags.forwardable) {
+                vm_call_iseq_fwd_setup(ec, reg_cfp, calling);
+            }
+            else {
+                vm_call_iseq_setup(ec, reg_cfp, calling);
+            }
             VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
             return vm_exec(ec); // CHECK_INTS in this function
         }

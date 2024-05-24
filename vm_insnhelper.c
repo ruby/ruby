@@ -3306,11 +3306,27 @@ vm_call_iseq_setup(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct r
     int param_size = ISEQ_BODY(iseq)->param.size;
     int local_size = ISEQ_BODY(iseq)->local_table_size;
 
+    RUBY_ASSERT(!ISEQ_BODY(iseq)->param.flags.forwardable);
+
+    const int opt_pc = vm_callee_setup_arg(ec, calling, iseq, cfp->sp - calling->argc, param_size, local_size);
+    return vm_call_iseq_setup_2(ec, cfp, calling, opt_pc, param_size, local_size);
+}
+
+static VALUE
+vm_call_iseq_fwd_setup(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
+{
+    RB_DEBUG_COUNTER_INC(ccf_iseq_setup);
+
+    const struct rb_callcache *cc = calling->cc;
+    const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
+    int param_size = ISEQ_BODY(iseq)->param.size;
+    int local_size = ISEQ_BODY(iseq)->local_table_size;
+
+    RUBY_ASSERT(ISEQ_BODY(iseq)->param.flags.forwardable);
+
     // Setting up local size and param size
-    if (ISEQ_BODY(iseq)->param.flags.forwardable) {
-        local_size = local_size + vm_ci_argc(calling->cd->ci);
-        param_size = param_size + vm_ci_argc(calling->cd->ci);
-    }
+    local_size = local_size + vm_ci_argc(calling->cd->ci);
+    param_size = param_size + vm_ci_argc(calling->cd->ci);
 
     const int opt_pc = vm_callee_setup_arg(ec, calling, iseq, cfp->sp - calling->argc, param_size, local_size);
     return vm_call_iseq_setup_2(ec, cfp, calling, opt_pc, param_size, local_size);
@@ -4690,8 +4706,14 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
     switch (cme->def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        CC_SET_FASTPATH(cc, vm_call_iseq_setup, TRUE);
-        return vm_call_iseq_setup(ec, cfp, calling);
+        if (ISEQ_BODY(def_iseq_ptr(cme->def))->param.flags.forwardable) {
+            CC_SET_FASTPATH(cc, vm_call_iseq_fwd_setup, TRUE);
+            return vm_call_iseq_fwd_setup(ec, cfp, calling);
+        }
+        else {
+            CC_SET_FASTPATH(cc, vm_call_iseq_setup, TRUE);
+            return vm_call_iseq_setup(ec, cfp, calling);
+        }
 
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
