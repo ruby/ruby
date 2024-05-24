@@ -9622,7 +9622,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     );
 
     if (valid_utf8) {
-        pm_parser_errors_format(parser, &parser->error_list, &buffer, rb_stderr_tty_p(), true);
+        pm_parse_errors_format(parser, &parser->error_list, &buffer, rb_stderr_tty_p(), true);
     }
     else {
         for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
