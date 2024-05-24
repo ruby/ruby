@@ -121,14 +121,6 @@ PRISM_EXPORTED_FUNCTION bool pm_string_mapped_init(pm_string_t *string, const ch
 PRISM_EXPORTED_FUNCTION bool pm_string_file_init(pm_string_t *string, const char *filepath);
 
 /**
- * Returns the memory size associated with the string.
- *
- * @param string The string to get the memory size of.
- * @return The size of the memory associated with the string.
- */
-size_t pm_string_memsize(const pm_string_t *string);
-
-/**
  * Ensure the string is owned. If it is not, then reinitialize it as owned and
  * copy over the previous source.
  *

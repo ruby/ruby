@@ -537,14 +537,6 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
 }
 
 /**
- * Return the memory size of the integer.
- */
-size_t
-pm_integer_memsize(const pm_integer_t *integer) {
-    return sizeof(pm_integer_t) + integer->length * sizeof(uint32_t);
-}
-
-/**
  * Compare two integers. This function returns -1 if the left integer is less
  * than the right integer, 0 if they are equal, and 1 if the left integer is
  * greater than the right integer.

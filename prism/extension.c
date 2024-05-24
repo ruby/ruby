@@ -1067,32 +1067,6 @@ named_captures(VALUE self, VALUE source) {
 
 /**
  * call-seq:
- *   Debug::memsize(source) -> { length: xx, memsize: xx, node_count: xx }
- *
- * Return a hash of information about the given source string's memory usage.
- */
-static VALUE
-memsize(VALUE self, VALUE string) {
-    pm_parser_t parser;
-    size_t length = RSTRING_LEN(string);
-    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(string), length, NULL);
-
-    pm_node_t *node = pm_parse(&parser);
-    pm_memsize_t memsize;
-    pm_node_memsize(node, &memsize);
-
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
-
-    VALUE result = rb_hash_new();
-    rb_hash_aset(result, ID2SYM(rb_intern("length")), INT2FIX(length));
-    rb_hash_aset(result, ID2SYM(rb_intern("memsize")), INT2FIX(memsize.memsize));
-    rb_hash_aset(result, ID2SYM(rb_intern("node_count")), INT2FIX(memsize.node_count));
-    return result;
-}
-
-/**
- * call-seq:
  *   Debug::profile_file(filepath) -> nil
  *
  * Parse the file, but do nothing with the result. This is used to profile the
@@ -1347,7 +1321,6 @@ Init_prism(void) {
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
     rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
 

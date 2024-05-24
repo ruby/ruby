@@ -1,19 +1,6 @@
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
 #include "prism/node.h"
 
-static void
-pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
-
-/**
- * Calculate the size of the node list in bytes.
- */
-static size_t
-pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
-    pm_node_t *node;
-    PM_NODE_LIST_FOREACH(node_list, index, node) pm_node_memsize_node(node, memsize);
-    return sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
-}
-
 /**
  * Attempts to grow the node list to the next size. If there is already
  * capacity in the list, this function does nothing. Otherwise it reallocates
@@ -154,57 +141,6 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
             break;
     }
     xfree(node);
-}
-
-static void
-pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
-    memsize->node_count++;
-
-    switch (PM_NODE_TYPE(node)) {
-        // We do not calculate memsize of a ScopeNode
-        // as it should never be generated
-        case PM_SCOPE_NODE:
-            return;
-        <%- nodes.each do |node| -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-        case <%= node.type %>: {
-            pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
-            memsize->memsize += sizeof(*cast);
-            <%- node.fields.each do |field| -%>
-            <%- case field -%>
-            <%- when Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::DoubleField -%>
-            <%- when Prism::Template::NodeField -%>
-            pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
-            <%- when Prism::Template::OptionalNodeField -%>
-            if (cast-><%= field.name %> != NULL) {
-                pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
-            }
-            <%- when Prism::Template::StringField -%>
-            memsize->memsize += (pm_string_memsize(&cast-><%= field.name %>) - sizeof(pm_string_t));
-            <%- when Prism::Template::NodeListField -%>
-            memsize->memsize += (pm_node_list_memsize(&cast-><%= field.name %>, memsize) - sizeof(pm_node_list_t));
-            <%- when Prism::Template::ConstantListField -%>
-            memsize->memsize += (pm_constant_id_list_memsize(&cast-><%= field.name %>) - sizeof(pm_constant_id_list_t));
-            <%- when Prism::Template::IntegerField -%>
-            memsize->memsize += (pm_integer_memsize(&cast-><%= field.name %>) - sizeof(pm_integer_t));
-            <%- else -%>
-            <%- raise -%>
-            <%- end -%>
-            <%- end -%>
-            break;
-        }
-        <%- end -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-    }
-}
-
-/**
- * Calculates the memory footprint of a given node.
- */
-PRISM_EXPORTED_FUNCTION void
-pm_node_memsize(pm_node_t *node, pm_memsize_t *memsize) {
-    *memsize = (pm_memsize_t) { .memsize = 0, .node_count = 0 };
-    pm_node_memsize_node(node, memsize);
 }
 
 /**
