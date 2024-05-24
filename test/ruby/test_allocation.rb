@@ -665,10 +665,10 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
         check_allocations(1, 0, "argument_forwarding(*array1, **nil#{block})")
 
-        check_allocations(1, 1, "argument_forwarding(*r2k_empty_array#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_array#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_empty_array1#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_array1#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_empty_array#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_array#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_empty_array1#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_array1#{block})")
       RUBY
     end
 
@@ -711,10 +711,10 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
         check_allocations(1, 0, "argument_forwarding(*array1, **nil#{block})")
 
-        check_allocations(1, 1, "argument_forwarding(*r2k_empty_array#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_array#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_empty_array1#{block})")
-        check_allocations(1, 1, "argument_forwarding(*r2k_array1#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_empty_array#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_array#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_empty_array1#{block})")
+        check_allocations(0, 0, "argument_forwarding(*r2k_array1#{block})")
       RUBY
     end
 
