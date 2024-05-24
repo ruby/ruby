@@ -1128,36 +1128,6 @@ inspect_node(VALUE self, VALUE source) {
 #endif
 
 /**
- * call-seq:
- *   Debug::format_errors(source, colorize) -> String
- *
- * Format the errors that are found when parsing the given source string.
- */
-static VALUE
-format_errors(VALUE self, VALUE source, VALUE colorize) {
-    pm_string_t input;
-    input_load_string(&input, source);
-
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), NULL);
-
-    pm_node_t *node = pm_parse(&parser);
-    pm_buffer_t buffer = { 0 };
-
-    pm_parser_errors_format(&parser, &parser.error_list, &buffer, RTEST(colorize), true);
-
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
-    VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
-
-    pm_buffer_free(&buffer);
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
-    pm_string_free(&input);
-
-    return result;
-}
-
-/**
  * call-seq: Debug::Encoding.all -> Array[Debug::Encoding]
  *
  * Return an array of all of the encodings that prism knows about.
@@ -1309,7 +1279,6 @@ Init_prism(void) {
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
-    rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
 
 #ifndef PRISM_EXCLUDE_PRETTYPRINT
     rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);

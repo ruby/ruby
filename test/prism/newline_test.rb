@@ -10,7 +10,6 @@ module Prism
     filepaths = Dir["*.rb", base: base] - %w[
       encoding_test.rb
       errors_test.rb
-      format_errors_test.rb
       parser_test.rb
       regexp_test.rb
       static_literals_test.rb
