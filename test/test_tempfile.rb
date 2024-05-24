@@ -426,37 +426,50 @@ puts Tempfile.new('foo').path
     end
   end
 
-  def test_create_io_without_block
-    tmpio = Tempfile.create_io
-    assert_equal(IO, tmpio.class)
-    assert_equal(nil, tmpio.path)
-    assert_equal(0600, tmpio.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
-    tmpio.puts "foo"
-    tmpio.rewind
-    assert_equal("foo\n", tmpio.read)
-    tmpio.close
+  def test_create_unlink_without_block
+    t = Tempfile.create(unlink_first: true)
+    assert_equal(File, t.class)
+    assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+    t.puts "foo"
+    t.rewind
+    assert_equal("foo\n", t.read)
+    t.close
   ensure
-    tmpio.close if tmpio
+    t.close if t
   end
 
-  def test_create_io_with_block
-    result = Tempfile.create_io {|tmpio|
-      assert_equal(IO, tmpio.class)
-      assert_equal(nil, tmpio.path)
-      assert_equal(0600, tmpio.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
-      tmpio.puts "foo"
-      tmpio.rewind
-      assert_equal("foo\n", tmpio.read)
+  def test_create_unlink_with_block
+    result = Tempfile.create(unlink_first: true) {|t|
+      assert_equal(File, t.class)
+      assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+      t.puts "foo"
+      t.rewind
+      assert_equal("foo\n", t.read)
       :result
     }
     assert_equal(:result, result)
   end
 
-  def test_create_io_removes_file
+  def test_create_unlink_removes_file
     Dir.mktmpdir {|d|
-      tmpio = Tempfile.create_io("", d)
-      tmpio.close # The temporary file may exists until here on Windows.
+      t = Tempfile.create("", d, unlink_first: true)
+      t.close # The temporary file may exists until here on Windows.
       assert_equal([], Dir.children(d))
     }
   end
+
+  def test_create_unlink_path
+    Dir.mktmpdir {|d|
+      t = Tempfile.create("", d, unlink_first: true)
+      assert_equal(nil, t.path)
+      t.close
+    }
+  end
+
+  def test_create_unlink_autoclose
+    Tempfile.create(unlink_first: true) {|t|
+      assert_equal(true, t.autoclose?)
+    }
+  end
+
 end

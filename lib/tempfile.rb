@@ -392,8 +392,9 @@ end
 #   see {File Permissions}[rdoc-ref:File@File+Permissions].
 # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
 #
-# With no block, the file is not removed automatically,
-# and so should be explicitly removed.
+# The temporary file removal depends on the keyword argument +unlink_first+ and
+# whether a block is given or not.
+# See the description about the +unlink_first+ keyword argument later.
 #
 # Example:
 #
@@ -401,11 +402,36 @@ end
 #   f.class                 # => File
 #   f.path                  # => "/tmp/20220505-9795-17ky6f6"
 #   f.stat.mode.to_s(8)     # => "100600"
+#   f.close
 #   File.exist?(f.path)     # => true
 #   File.unlink(f.path)
 #   File.exist?(f.path)     # => false
 #
-# Argument +basename+, if given, may be one of:
+#   Tempfile.create {|f|
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#     f.path                # => "/tmp/20240524-380207-oma0ny"
+#     File.exist?(f.path)   # => true
+#   }                       # The file is removed at block exit.
+#
+#   f = Tempfile.create(unlink_first: true)
+#   # The file is already removed because unlink_first
+#   f.path                  # => nil            (no path since no file)
+#   f.puts "foo"
+#   f.rewind
+#   f.read                  # => "foo\n"
+#   f.close
+#
+#   Tempfile.create(unlink_first: true) {|f|
+#     # The file is already removed because unlink_first
+#     f.path                # => nil            (no path since no file)
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#   }
+#
+# The argument +basename+, if given, may be one of the following:
 #
 # - A string: the generated filename begins with +basename+:
 #
@@ -416,27 +442,56 @@ end
 #
 #     Tempfile.create(%w/foo .jpg/) # => #<File:/tmp/foo20220505-17839-tnjchh.jpg>
 #
-# With arguments +basename+ and +tmpdir+, the file is created in directory +tmpdir+:
+# With arguments +basename+ and +tmpdir+, the file is created in the directory +tmpdir+:
 #
 #   Tempfile.create('foo', '.') # => #<File:./foo20220505-9795-1emu6g8>
 #
-# Keyword arguments +mode+ and +options+ are passed directly to method
+# Keyword arguments +mode+ and +options+ are passed directly to the method
 # {File.open}[rdoc-ref:File.open]:
 #
-# - The value given with +mode+ must be an integer,
+# - The value given for +mode+ must be an integer
 #   and may be expressed as the logical OR of constants defined in
 #   {File::Constants}[rdoc-ref:File::Constants].
 # - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
 #
-# With a block given, creates the file as above, passes it to the block,
-# and returns the block's value;
-# before the return, the file object is closed and the underlying file is removed:
+# The keyword argument +unlink_first+ specifies when the file is removed.
+#
+# - +unlink_first=false+ (default) without a block: the file is not removed.
+# - +unlink_first=false+ (default) with a block: the file is removed after the block exits.
+# - +unlink_first=true+ without a block: the file is removed before returning.
+# - +unlink_first=true+ with a block: the file is removed before the block is called.
+#
+# In the first case (+unlink_first=false+ without a block),
+# the file is not removed automatically.
+# It should be explicitly closed.
+# It can be used to rename to the desired filename.
+# If the file is not needed, it should be explicitly removed.
+#
+# The +File#path+ method of the created file object returns nil when +unlink_first+ is true.
+#
+# When a block is given, it creates the file as described above, passes it to the block,
+# and returns the block's value.
+# Before the returning, the file object is closed and the underlying file is removed:
 #
 #   Tempfile.create {|file| file.path } # => "/tmp/20220505-9795-rkists"
 #
+# Implementation note:
+#
+# The keyword argument +unlink_first=true+ is implemented using FILE_SHARE_DELETE on Windows.
+# O_TMPFILE is used on Linux.
+#
 # Related: Tempfile.new.
 #
-def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
+def Tempfile.create(basename="", tmpdir=nil, mode: 0, unlink_first: false, **options, &block)
+  if unlink_first
+    create_without_file(basename, tmpdir, mode: mode, **options, &block)
+  else
+    create_with_file(basename, tmpdir, mode: mode, **options, &block)
+  end
+end
+
+class << Tempfile
+private def create_with_file(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
@@ -465,88 +520,35 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
-# Creates an unnamed temporary file in the underlying file system;
-# returns a new \IO object based on that file.
-#
-# This method removes the file before returning the \IO object.
-# Thus, no need to remove the file.
-#
-# Argument +basename+, +tmpdir+, keyword arguments +mode+ and +options+ are same as
-# Tempfile.create.
-#
-# This method may take a block.
-# If the block is not given, the created \IO object is returned.
-# The caller should close it.
-# If the block is given, the created \IO object is yielded.
-# It is closed afeter the block is finished.
-#
-# With no arguments, creates an \IO object whose:
-#
-# - Class is {IO}[rdoc-ref:IO] (not \Tempfile).
-# - Directory is the system temporary directory (system-dependent).
-# - Permissions are <tt>0600</tt>;
-#   see {File Permissions}[rdoc-ref:File@File+Permissions].
-# - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
-#
-# Example:
-#
-#   Tempfile.create_io {|tmpio|
-#     tmpio.puts "foo"
-#     tmpio.rewind
-#     p tmpio.read              # => "foo\n"
-#   }
-#
-#   tmpio = Tempfile.create_io  # => #<IO:fd 5>
-#   tmpio.class                 # => IO
-#   tmpio.path                  # => nil
-#   tmpio.stat.mode.to_s(8)     # => "100600"
-#   tmpio.puts "foo"
-#   tmpio.rewind
-#   tmpio.read                  # => "foo\n"
-#   tmpio.close
-#
-#
-# Implementation:
-#
-# On POSIX systems, Tempfile.create_io calls Tempfile.create and the created
-# file is unlinked.
-# Thus Tempfile.create_io needs arguments same as Tempfile.create.
-#
-# On Linux, O_TMPFILE flag is used to create an unnamed file.
-# O_TMPFILE makes possible to create a file without filename.
-# The argument +tmpdir+ is still used to create the unnamed file.
-# If the filesystem which is specified by +tmpdir+ doesn't support O_TMPFILE,
-# this method fallbacks to create-and-unlink as on POSIX.
-#
-# Related: Tempfile.create.
-def Tempfile.create_io(basename="", tmpdir=nil, mode: 0, **options, &block)
-  tmpio = nil
-  if defined? File::TMPFILE # O_TMPFILE since Linux 3.11
-    tmpfile_supported = true
-    tmpdir = Dir.tmpdir() if tmpdir.nil?
+private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &block)
+  tmpfile = nil
+  tmpdir = Dir.tmpdir() if tmpdir.nil?
+  if defined?(File::TMPFILE) # O_TMPFILE since Linux 3.11
     begin
-      fd = IO.sysopen(tmpdir, File::RDWR | File::TMPFILE, 0600)
-    rescue Errno::EISDIR, Errno::ENOENT, Errno::EOPNOTSUPP # kernel or the filesystem does not support O_TMPFILE
-      tmpfile_supported = false
-    end
-    if tmpfile_supported
-      tmpio = IO.new(fd, File::RDWR)
+      tmpfile = File.open(tmpdir, File::RDWR | File::TMPFILE, 0600)
+    rescue Errno::EISDIR, Errno::ENOENT, Errno::EOPNOTSUPP
+      # kernel or the filesystem does not support O_TMPFILE
+      # fallback to create-and-unlink
     end
   end
-  if tmpio.nil?
-    mode |= File::SHARE_DELETE | File::BINARY
-    tmpfile = Tempfile.create(basename, tmpdir, mode: mode, **options)
-    File.unlink(tmpfile.path)
+  if tmpfile.nil?
+    mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
+    tmpfile = create_with_file(basename, tmpdir, mode: mode, **options)
+    File.unlink(tmpfile.path) # Windows defers deleting the file until closing.
+  end
+  if tmpfile.path != nil
+    # clear path.
     tmpfile.autoclose = false
-    tmpio = IO.new(tmpfile.fileno, File::RDWR) # change File to IO to drop path.
+    tmpfile = File.new(tmpfile.fileno, path: nil)
   end
   if block
     begin
-      yield tmpio
+      yield tmpfile
     ensure
-      tmpio.close
+      tmpfile.close
     end
   else
-    tmpio
+    tmpfile
   end
+end
 end
