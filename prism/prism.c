@@ -20204,7 +20204,6 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return result;
                 }
                 case PM_CALL_NODE: {
-                    parser_lex(parser);
                     pm_call_node_t *cast = (pm_call_node_t *) node;
 
                     // If we have a vcall (a method with no arguments and no
@@ -20215,12 +20214,18 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
                         pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 1);
+                        parser_lex(parser);
+
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_and_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
                         pm_node_destroy(parser, (pm_node_t *) cast);
                         return result;
                     }
+
+                    // Move past the token here so that we have already added
+                    // the local variable by this point.
+                    parser_lex(parser);
 
                     // If there is no call operator and the message is "[]" then
                     // this is an aref expression, and we can transform it into
@@ -20317,7 +20322,6 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return result;
                 }
                 case PM_CALL_NODE: {
-                    parser_lex(parser);
                     pm_call_node_t *cast = (pm_call_node_t *) node;
 
                     // If we have a vcall (a method with no arguments and no
@@ -20328,12 +20332,18 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_refute_numbered_parameter(parser, message_loc->start, message_loc->end);
 
                         pm_constant_id_t constant_id = pm_parser_local_add_location(parser, message_loc->start, message_loc->end, 1);
+                        parser_lex(parser);
+
                         pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_or_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
                         pm_node_destroy(parser, (pm_node_t *) cast);
                         return result;
                     }
+
+                    // Move past the token here so that we have already added
+                    // the local variable by this point.
+                    parser_lex(parser);
 
                     // If there is no call operator and the message is "[]" then
                     // this is an aref expression, and we can transform it into
