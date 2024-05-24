@@ -1093,33 +1093,6 @@ parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
 /* Utility functions exposed to make testing easier                           */
 /******************************************************************************/
 
-/**
- * call-seq:
- *   Debug::named_captures(source) -> Array
- *
- * Returns an array of strings corresponding to the named capture groups in the
- * given source string. If prism was unable to parse the regular expression,
- * this function returns nil.
- */
-static VALUE
-named_captures(VALUE self, VALUE source) {
-    pm_string_list_t string_list = { 0 };
-
-    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, PM_ENCODING_UTF_8_ENTRY)) {
-        pm_string_list_free(&string_list);
-        return Qnil;
-    }
-
-    VALUE names = rb_ary_new();
-    for (size_t index = 0; index < string_list.length; index++) {
-        const pm_string_t *string = &string_list.strings[index];
-        rb_ary_push(names, rb_str_new((const char *) pm_string_source(string), pm_string_length(string)));
-    }
-
-    pm_string_list_free(&string_list);
-    return names;
-}
-
 #ifndef PRISM_EXCLUDE_PRETTYPRINT
 
 /**
@@ -1336,7 +1309,6 @@ Init_prism(void) {
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
-    rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
 
 #ifndef PRISM_EXCLUDE_PRETTYPRINT
