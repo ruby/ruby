@@ -2,8 +2,6 @@
 
 require_relative "test_helper"
 
-return if Prism::BACKEND == :FFI
-
 module Prism
   class IntegerParseTest < TestCase
     def test_integer_parse
@@ -37,9 +35,7 @@ module Prism
     private
 
     def assert_integer_parse(expected, source = expected.to_s)
-      integer, string = Debug.integer_parse(source)
-      assert_equal expected, integer
-      assert_equal expected.to_s, string
+      assert_equal expected, Prism.parse(source).value.statements.body.first.value
     end
   end
 end

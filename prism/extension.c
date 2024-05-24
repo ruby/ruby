@@ -1067,35 +1067,6 @@ named_captures(VALUE self, VALUE source) {
 
 /**
  * call-seq:
- *   Debug::integer_parse(source) -> [Integer, String]
- *
- * Parses the given source string and returns the integer it represents, as well
- * as a decimal string representation.
- */
-static VALUE
-integer_parse(VALUE self, VALUE source) {
-    const uint8_t *start = (const uint8_t *) RSTRING_PTR(source);
-    size_t length = RSTRING_LEN(source);
-
-    pm_integer_t integer = { 0 };
-    pm_integer_parse(&integer, PM_INTEGER_BASE_UNKNOWN, start, start + length);
-
-    pm_buffer_t buffer = { 0 };
-    pm_integer_string(&buffer, &integer);
-
-    VALUE string = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-    pm_buffer_free(&buffer);
-
-    VALUE result = rb_ary_new_capa(2);
-    rb_ary_push(result, pm_integer_new(&integer));
-    rb_ary_push(result, string);
-    pm_integer_free(&integer);
-
-    return result;
-}
-
-/**
- * call-seq:
  *   Debug::memsize(source) -> { length: xx, memsize: xx, node_count: xx }
  *
  * Return a hash of information about the given source string's memory usage.
@@ -1376,7 +1347,6 @@ Init_prism(void) {
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
     rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "integer_parse", integer_parse, 1);
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);

@@ -471,7 +471,7 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
  * has already been validated, as internal validation checks are not performed
  * here.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
     // Ignore unary +. Unary - is parsed differently and will not end up here.
     // Instead, it will modify the parsed integer later.
