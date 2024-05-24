@@ -124,7 +124,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
   a warning on verbose mode (`-w`).
   [[Feature #15554]]
 
-* Redefining some core methods that are specially optimized by the interpeter
+* Redefining some core methods that are specially optimized by the interpreter
   and JIT like `String.freeze` or `Integer#+` now emits a performance class
   warning (`-W:performance` or `Warning[:performance] = true`).
   [[Feature #20429]]
