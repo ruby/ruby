@@ -1224,40 +1224,6 @@ format_errors(VALUE self, VALUE source, VALUE colorize) {
 }
 
 /**
- * call-seq:
- *   Debug::static_inspect(source) -> String
- *
- * Inspect the node as it would be inspected by the warnings used in static
- * literal sets.
- */
-static VALUE
-static_inspect(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
-
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
-
-    pm_node_t *program = pm_parse(&parser);
-    pm_node_t *node = ((pm_program_node_t *) program)->statements->body.nodes[0];
-
-    pm_buffer_t buffer = { 0 };
-    pm_static_literal_inspect(&buffer, &parser.newline_list, parser.start_line, parser.encoding->name, node);
-
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
-    VALUE result = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
-
-    pm_buffer_free(&buffer);
-    pm_node_destroy(&parser, program);
-    pm_parser_free(&parser);
-    pm_string_free(&input);
-    pm_options_free(&options);
-
-    return result;
-}
-
-/**
  * call-seq: Debug::Encoding.all -> Array[Debug::Encoding]
  *
  * Return an array of all of the encodings that prism knows about.
@@ -1414,7 +1380,6 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "format_errors", format_errors, 2);
-    rb_define_singleton_method(rb_cPrismDebug, "static_inspect", static_inspect, -1);
 
 #ifndef PRISM_EXCLUDE_PRETTYPRINT
     rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);

@@ -116,6 +116,6 @@ void pm_static_literals_free(pm_static_literals_t *literals);
  * @param encoding_name The name of the encoding of the source being parsed.
  * @param node The node to create a string representation of.
  */
-PRISM_EXPORTED_FUNCTION void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node);
+void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node);
 
 #endif

@@ -603,7 +603,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
 /**
  * Create a string-based representation of the given static literal.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node) {
     pm_static_literal_inspect_node(
         buffer,
