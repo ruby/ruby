@@ -394,7 +394,7 @@ module Prism
 
       template << "L"
       if (encoding = options[:encoding])
-        name = encoding.name
+        name = encoding.is_a?(Encoding) ? encoding.name : encoding
         values.push(name.bytesize, name.b)
         template << "A*"
       else
