@@ -52,7 +52,7 @@ check_string(VALUE value) {
 
     // Check if the value is a string. If it's not, then raise a type error.
     if (!RB_TYPE_P(value, T_STRING)) {
-        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(value));
+        rb_raise(rb_eTypeError, "wrong argument type %" PRIsVALUE " (expected String)", rb_obj_class(value));
     }
 
     // Otherwise, return the value as a C string.
@@ -66,7 +66,7 @@ static void
 input_load_string(pm_string_t *input, VALUE string) {
     // Check if the string is a string. If it's not, then raise a type error.
     if (!RB_TYPE_P(string, T_STRING)) {
-        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(string));
+        rb_raise(rb_eTypeError, "wrong argument type %" PRIsVALUE " (expected String)", rb_obj_class(string));
     }
 
     pm_string_constant_init(input, RSTRING_PTR(string), RSTRING_LEN(string));
@@ -1090,118 +1090,6 @@ parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /******************************************************************************/
-/* Utility functions exposed to make testing easier                           */
-/******************************************************************************/
-
-#ifndef PRISM_EXCLUDE_PRETTYPRINT
-
-/**
- * call-seq:
- *   Debug::inspect_node(source) -> inspected
- *
- * Inspect the AST that represents the given source using the prism pretty print
- * as opposed to the Ruby implementation.
- */
-static VALUE
-inspect_node(VALUE self, VALUE source) {
-    pm_string_t input;
-    input_load_string(&input, source);
-
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), NULL);
-
-    pm_node_t *node = pm_parse(&parser);
-    pm_buffer_t buffer = { 0 };
-
-    pm_prettyprint(&buffer, &parser, node);
-
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
-    VALUE string = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
-
-    pm_buffer_free(&buffer);
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
-
-    return string;
-}
-
-#endif
-
-/**
- * call-seq: Debug::Encoding.all -> Array[Debug::Encoding]
- *
- * Return an array of all of the encodings that prism knows about.
- */
-static VALUE
-encoding_all(VALUE self) {
-    VALUE encodings = rb_ary_new();
-
-    for (size_t index = 0; index < PM_ENCODING_MAXIMUM; index++) {
-        const pm_encoding_t *encoding = &pm_encodings[index];
-
-        VALUE encoding_argv[] = { rb_str_new_cstr(encoding->name), encoding->multibyte ? Qtrue : Qfalse };
-        rb_ary_push(encodings, rb_class_new_instance(2, encoding_argv, rb_cPrismDebugEncoding));
-    }
-
-    return encodings;
-}
-
-static const pm_encoding_t *
-encoding_find(VALUE name) {
-    const uint8_t *source = (const uint8_t *) RSTRING_PTR(name);
-    size_t length = RSTRING_LEN(name);
-
-    const pm_encoding_t *encoding = pm_encoding_find(source, source + length);
-    if (encoding == NULL) { rb_raise(rb_eArgError, "Unknown encoding: %s", source); }
-
-    return encoding;
-}
-
-/**
- * call-seq: Debug::Encoding.width(source) -> Integer
- *
- * Returns the width of the first character in the given string if it is valid
- * in the encoding. If it is not, this function returns 0.
- */
-static VALUE
-encoding_char_width(VALUE self, VALUE name, VALUE value) {
-    return ULONG2NUM(encoding_find(name)->char_width((const uint8_t *) RSTRING_PTR(value), RSTRING_LEN(value)));
-}
-
-/**
- * call-seq: Debug::Encoding.alnum?(source) -> true | false
- *
- * Returns true if the first character in the given string is an alphanumeric
- * character in the encoding.
- */
-static VALUE
-encoding_alnum_char(VALUE self, VALUE name, VALUE value) {
-    return encoding_find(name)->alnum_char((const uint8_t *) RSTRING_PTR(value), RSTRING_LEN(value)) > 0 ? Qtrue : Qfalse;
-}
-
-/**
- * call-seq: Debug::Encoding.alpha?(source) -> true | false
- *
- * Returns true if the first character in the given string is an alphabetic
- * character in the encoding.
- */
-static VALUE
-encoding_alpha_char(VALUE self, VALUE name, VALUE value) {
-    return encoding_find(name)->alpha_char((const uint8_t *) RSTRING_PTR(value), RSTRING_LEN(value)) > 0 ? Qtrue : Qfalse;
-}
-
-/**
- * call-seq: Debug::Encoding.upper?(source) -> true | false
- *
- * Returns true if the first character in the given string is an uppercase
- * character in the encoding.
- */
-static VALUE
-encoding_isupper_char(VALUE self, VALUE name, VALUE value) {
-    return encoding_find(name)->isupper_char((const uint8_t *) RSTRING_PTR(value), RSTRING_LEN(value)) ? Qtrue : Qfalse;
-}
-
-/******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
 
@@ -1275,23 +1163,6 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
     rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
 #endif
-
-    // Next, the functions that will be called by the parser to perform various
-    // internal tasks. We expose these to make them easier to test.
-    VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
-
-#ifndef PRISM_EXCLUDE_PRETTYPRINT
-    rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
-#endif
-
-    // Next, define the functions that are exposed through the private
-    // Debug::Encoding class.
-    rb_cPrismDebugEncoding = rb_define_class_under(rb_cPrismDebug, "Encoding", rb_cObject);
-    rb_define_singleton_method(rb_cPrismDebugEncoding, "all", encoding_all, 0);
-    rb_define_singleton_method(rb_cPrismDebugEncoding, "_width", encoding_char_width, 2);
-    rb_define_singleton_method(rb_cPrismDebugEncoding, "_alnum?", encoding_alnum_char, 2);
-    rb_define_singleton_method(rb_cPrismDebugEncoding, "_alpha?", encoding_alpha_char, 2);
-    rb_define_singleton_method(rb_cPrismDebugEncoding, "_upper?", encoding_isupper_char, 2);
 
     // Next, initialize the other APIs.
     Init_prism_api_node();
