@@ -875,6 +875,8 @@ module Prism
               else
                 visited << result
               end
+            elsif result[0] == :dstr
+              visited.concat(result[1..-1])
             else
               visited << result
             end

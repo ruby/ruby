@@ -34,18 +34,15 @@ module Prism
       seattlerb/masgn_colon3.txt
       seattlerb/messy_op_asgn_lineno.txt
       seattlerb/op_asgn_primary_colon_const_command_call.txt
-      seattlerb/parse_line_evstr_after_break.txt
       seattlerb/regexp_esc_C_slash.txt
       seattlerb/str_lit_concat_bad_encodings.txt
       unescaping.txt
       unparser/corpus/literal/kwbegin.txt
       unparser/corpus/literal/send.txt
-      unparser/corpus/semantic/dstr.txt
       whitequark/masgn_const.txt
       whitequark/ruby_bug_12402.txt
       whitequark/ruby_bug_14690.txt
       whitequark/space_args_block.txt
-      whitequark/string_concat.txt
     ]
 
     # https://github.com/seattlerb/ruby_parser/issues/344
