@@ -103,6 +103,7 @@ module Bundler
     def initialize(root = nil)
       @root            = root
       @local_config    = load_config(local_config_file)
+      @local_root      = root || Pathname.new(".bundle").expand_path
 
       @env_config      = ENV.to_h
       @env_config.select! {|key, _value| key.start_with?("BUNDLE_") }
@@ -142,7 +143,7 @@ module Bundler
     end
 
     def set_local(key, value)
-      local_config_file || raise(GemfileNotFound, "Could not locate Gemfile")
+      local_config_file = @local_root.join("config")
 
       set_key(key, value, @local_config, local_config_file)
     end
