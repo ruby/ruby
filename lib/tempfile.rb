@@ -534,7 +534,7 @@ private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &bl
   if tmpfile.nil?
     mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
     tmpfile = create_with_file(basename, tmpdir, mode: mode, **options)
-    File.unlink(tmpfile.path) # Windows defers deleting the file until closing.
+    File.unlink(tmpfile.path)
   end
   if tmpfile.path != nil
     # clear path.
