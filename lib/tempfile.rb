@@ -539,7 +539,7 @@ private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &bl
   if tmpfile.path != nil
     # clear path.
     tmpfile.autoclose = false
-    tmpfile = File.new(tmpfile.fileno, path: nil)
+    tmpfile = File.new(tmpfile.fileno, 'w+', path: nil)
   end
   if block
     begin
