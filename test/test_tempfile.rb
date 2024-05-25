@@ -453,16 +453,19 @@ puts Tempfile.new('foo').path
   def test_create_unlink_removes_file
     Dir.mktmpdir {|d|
       t = Tempfile.create("", d, unlink_first: true)
-      t.close # The temporary file may exists until here on Windows.
+      t.close
       assert_equal([], Dir.children(d))
     }
   end
 
   def test_create_unlink_path
     Dir.mktmpdir {|d|
-      t = Tempfile.create("", d, unlink_first: true)
-      assert_equal(nil, t.path)
-      t.close
+      begin
+        t = Tempfile.create("", d, unlink_first: true)
+        assert_equal(File.join(d, ""), t.path)
+      ensure
+        t.close if t
+      end
     }
   end
 

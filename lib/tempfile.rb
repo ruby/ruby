@@ -417,7 +417,7 @@ end
 #
 #   f = Tempfile.create(unlink_first: true)
 #   # The file is already removed because unlink_first
-#   f.path                  # => nil            (no path since no file)
+#   f.path                  # => "/tmp/"  (no filename since no file)
 #   f.puts "foo"
 #   f.rewind
 #   f.read                  # => "foo\n"
@@ -425,7 +425,7 @@ end
 #
 #   Tempfile.create(unlink_first: true) {|f|
 #     # The file is already removed because unlink_first
-#     f.path                # => nil            (no path since no file)
+#     f.path                # => "/tmp/"  (no filename since no file)
 #     f.puts "foo"
 #     f.rewind
 #     f.read                # => "foo\n"
@@ -467,7 +467,8 @@ end
 # It can be used to rename to the desired filename.
 # If the file is not needed, it should be explicitly removed.
 #
-# The +File#path+ method of the created file object returns nil when +unlink_first+ is true.
+# The +File#path+ method of the created file object returns the temporary directory with a trailing slash
+# when +unlink_first+ is true.
 #
 # When a block is given, it creates the file as described above, passes it to the block,
 # and returns the block's value.
@@ -536,10 +537,11 @@ private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &bl
     tmpfile = create_with_file(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
   end
-  if tmpfile.path != nil
+  path = File.join(tmpdir, '')
+  if tmpfile.path != path
     # clear path.
     tmpfile.autoclose = false
-    tmpfile = File.new(tmpfile.fileno, mode: File::RDWR, path: nil)
+    tmpfile = File.new(tmpfile.fileno, mode: File::RDWR, path: path)
   end
   if block
     begin
