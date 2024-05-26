@@ -1591,7 +1591,7 @@ yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
-test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(TEST_RUNNABLE)-test-bundled-gems-spec
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems: test-bundled-gems-run
 no-test-bundled-gems:
 
@@ -1599,8 +1599,10 @@ no-test-bundled-gems:
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 BUNDLED_GEMS =
-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
+test-bundled-gems-run: $(TEST_RUNNABLE)-test-bundled-gems-run
+yes-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(gnumake_recursive)$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
+no-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
