@@ -12,8 +12,4 @@ class Reline::KeyActor::Base
   def default_key_bindings
     @default_key_bindings
   end
-
-  def reset_default_key_bindings
-    @default_key_bindings.clear
-  end
 end

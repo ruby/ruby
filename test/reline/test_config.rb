@@ -216,6 +216,38 @@ class Reline::Config::Test < Reline::TestCase
     end
   end
 
+  def test_nested_if_else
+    @config.read_lines(<<~LINES.lines)
+      $if Ruby
+        "\x1": "O"
+        $if NotRuby
+          "\x2": "X"
+        $else
+          "\x3": "O"
+          $if Ruby
+            "\x4": "O"
+          $else
+            "\x5": "X"
+          $endif
+          "\x6": "O"
+        $endif
+        "\x7": "O"
+      $else
+        "\x8": "X"
+        $if NotRuby
+          "\x9": "X"
+        $else
+          "\xA": "X"
+        $endif
+        "\xB": "X"
+      $endif
+      "\xC": "O"
+    LINES
+    keys = [0x1, 0x3, 0x4, 0x6, 0x7, 0xC]
+    key_bindings = keys.to_h { |k| [[k.ord], ['O'.ord]] }
+    assert_equal(key_bindings, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+  end
+
   def test_unclosed_if
     e = assert_raise(Reline::Config::InvalidInputrc) do
       @config.read_lines(<<~LINES.lines, "INPUTRC")
@@ -241,6 +273,78 @@ class Reline::Config::Test < Reline::TestCase
       LINES
     end
     assert_equal "INPUTRC:1: unmatched endif", e.message
+  end
+
+  def test_if_with_mode
+    @config.read_lines(<<~LINES.lines)
+      $if mode=emacs
+        "\C-e": history-search-backward # comment
+      $else
+        "\C-f": history-search-forward
+      $endif
+    LINES
+
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+  end
+
+  def test_else
+    @config.read_lines(<<~LINES.lines)
+      $if mode=vi
+        "\C-e": history-search-backward # comment
+      $else
+        "\C-f": history-search-forward
+      $endif
+    LINES
+
+    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+  end
+
+  def test_if_with_invalid_mode
+    @config.read_lines(<<~LINES.lines)
+      $if mode=vim
+        "\C-e": history-search-backward
+      $else
+        "\C-f": history-search-forward # comment
+      $endif
+    LINES
+
+    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+  end
+
+  def test_mode_label_differs_from_keymap_label
+    @config.read_lines(<<~LINES.lines)
+      # Sets mode_label and keymap_label to vi
+      set editing-mode vi
+      # Change keymap_label to emacs. mode_label is still vi.
+      set keymap emacs
+      # condition=true because current mode_label is vi
+      $if mode=vi
+        # sets keybinding to current keymap_label=emacs
+        "\C-e": history-search-backward
+      $endif
+    LINES
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+  end
+
+  def test_if_without_else_condition
+    @config.read_lines(<<~LINES.lines)
+      set editing-mode vi
+      $if mode=vi
+        "\C-e": history-search-backward
+      $endif
+    LINES
+
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
   end
 
   def test_default_key_bindings
@@ -310,6 +414,18 @@ class Reline::Config::Test < Reline::TestCase
       "\C-xef".bytes => 'EF'.bytes,
       "\egh".bytes => 'GH'.bytes,
     }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_key_bindings_with_reset
+    # @config.reset is called after each readline.
+    # inputrc file is read once, so key binding shouldn't be cleared by @config.reset
+    @config.add_default_key_binding('default'.bytes, 'DEFAULT'.bytes)
+    @config.read_lines(<<~'LINES'.lines)
+      "additional": "ADDITIONAL"
+    LINES
+    @config.reset
+    expected = { 'default'.bytes => 'DEFAULT'.bytes, 'additional'.bytes => 'ADDITIONAL'.bytes }
     assert_equal expected, @config.key_bindings
   end
 

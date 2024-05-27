@@ -75,10 +75,10 @@ module Reline
 
     def initialize
       self.output = STDOUT
+      @mutex = Mutex.new
       @dialog_proc_list = {}
       yield self
       @completion_quote_character = nil
-      @bracketed_paste_finished = false
     end
 
     def io_gate
@@ -220,32 +220,25 @@ module Reline
 
     Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
       # autocomplete
-      return nil unless config.autocompletion
-      if just_cursor_moving and completion_journey_data.nil?
-        # Auto complete starts only when edited
-        return nil
-      end
-      pre, target, post = retrieve_completion_block(true)
-      if target.nil? or target.empty? or (completion_journey_data&.pointer == -1 and target.size <= 3)
-        return nil
-      end
-      if completion_journey_data and completion_journey_data.list
-        result = completion_journey_data.list.dup
-        result.shift
-        pointer = completion_journey_data.pointer - 1
-      else
-        result = call_completion_proc_with_checking_args(pre, target, post)
-        pointer = nil
-      end
-      if result and result.size == 1 and result[0] == target and pointer != 0
-        result = nil
-      end
+      return unless config.autocompletion
+
+      journey_data = completion_journey_data
+      return unless journey_data
+
+      target = journey_data.list.first
+      completed = journey_data.list[journey_data.pointer]
+      result = journey_data.list.drop(1)
+      pointer = journey_data.pointer - 1
+      return if completed.empty? || (result == [completed] && pointer < 0)
+
       target_width = Reline::Unicode.calculate_width(target)
-      x = cursor_pos.x - target_width
-      if x < 0
-        x = screen_width + x
+      completed_width = Reline::Unicode.calculate_width(completed)
+      if cursor_pos.x <= completed_width - target_width
+        # When target is rendered on the line above cursor position
+        x = screen_width - completed_width
         y = -1
       else
+        x = [cursor_pos.x - completed_width, 0].max
         y = 0
       end
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
@@ -265,12 +258,15 @@ module Reline
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
-      Reline.update_iogate
-      io_gate.with_raw_input do
+      @mutex.synchronize do
         unless confirm_multiline_termination
           raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
         end
-        inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
+
+        Reline.update_iogate
+        io_gate.with_raw_input do
+          inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
+        end
 
         whole_buffer = line_editor.whole_buffer.dup
         whole_buffer.taint if RUBY_VERSION < '2.7'
@@ -278,23 +274,32 @@ module Reline
           Reline::HISTORY << whole_buffer
         end
 
-        line_editor.reset_line if line_editor.whole_buffer.nil?
-        whole_buffer
+        if line_editor.eof?
+          line_editor.reset_line
+          # Return nil if the input is aborted by C-d.
+          nil
+        else
+          whole_buffer
+        end
       end
     end
 
     def readline(prompt = '', add_hist = false)
-      Reline.update_iogate
-      inner_readline(prompt, add_hist, false)
+      @mutex.synchronize do
+        Reline.update_iogate
+        io_gate.with_raw_input do
+          inner_readline(prompt, add_hist, false)
+        end
 
-      line = line_editor.line.dup
-      line.taint if RUBY_VERSION < '2.7'
-      if add_hist and line and line.chomp("\n").size > 0
-        Reline::HISTORY << line.chomp("\n")
+        line = line_editor.line.dup
+        line.taint if RUBY_VERSION < '2.7'
+        if add_hist and line and line.chomp("\n").size > 0
+          Reline::HISTORY << line.chomp("\n")
+        end
+
+        line_editor.reset_line if line_editor.line.nil?
+        line
       end
-
-      line_editor.reset_line if line_editor.line.nil?
-      line
     end
 
     private def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
@@ -306,6 +311,10 @@ module Reline
         end
         $stderr.sync = true
         $stderr.puts "Reline is used by #{Process.pid}"
+      end
+      unless config.test_mode or config.loaded?
+        config.read
+        io_gate.set_default_key_bindings(config)
       end
       otio = io_gate.prep
 
@@ -326,58 +335,47 @@ module Reline
       line_editor.prompt_proc = prompt_proc
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
-      line_editor.pre_input_hook = pre_input_hook
-      @dialog_proc_list.each_pair do |name_sym, d|
-        line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
+      pre_input_hook&.call
+      unless Reline::IOGate == Reline::GeneralIO
+        @dialog_proc_list.each_pair do |name_sym, d|
+          line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
+        end
       end
 
-      unless config.test_mode
-        config.read
-        config.reset_default_key_bindings
-        io_gate.set_default_key_bindings(config)
-      end
-
+      line_editor.print_nomultiline_prompt(prompt)
+      line_editor.update_dialogs
       line_editor.rerender
 
       begin
         line_editor.set_signal_handlers
-        prev_pasting_state = false
         loop do
-          prev_pasting_state = io_gate.in_pasting?
           read_io(config.keyseq_timeout) { |inputs|
             line_editor.set_pasting_state(io_gate.in_pasting?)
-            inputs.each { |c|
-              line_editor.input_key(c)
-              line_editor.rerender
-            }
-            if @bracketed_paste_finished
-              line_editor.rerender_all
-              @bracketed_paste_finished = false
+            inputs.each do |key|
+              if key.char == :bracketed_paste_start
+                text = io_gate.read_bracketed_paste
+                line_editor.insert_pasted_text(text)
+                line_editor.scroll_into_view
+              else
+                line_editor.update(key)
+              end
             end
           }
-          if prev_pasting_state == true and not io_gate.in_pasting? and not line_editor.finished?
-            line_editor.set_pasting_state(false)
-            prev_pasting_state = false
-            line_editor.rerender_all
+          if line_editor.finished?
+            line_editor.render_finished
+            break
+          else
+            line_editor.set_pasting_state(io_gate.in_pasting?)
+            line_editor.rerender
           end
-          break if line_editor.finished?
         end
         io_gate.move_cursor_column(0)
       rescue Errno::EIO
         # Maybe the I/O has been closed.
-      rescue StandardError => e
+      ensure
         line_editor.finalize
         io_gate.deprep(otio)
-        raise e
-      rescue Exception
-        # Including Interrupt
-        line_editor.finalize
-        io_gate.deprep(otio)
-        raise
       end
-
-      line_editor.finalize
-      io_gate.deprep(otio)
     end
 
     # GNU Readline waits for "keyseq-timeout" milliseconds to see if the ESC
@@ -395,7 +393,6 @@ module Reline
         c = io_gate.getc(Float::INFINITY)
         if c == -1
           result = :unmatched
-          @bracketed_paste_finished = true
         else
           buffer << c
           result = key_stroke.match_status(buffer)

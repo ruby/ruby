@@ -14,7 +14,7 @@ class Reline::KillRing
     end
 
     def ==(other)
-      object_id == other.object_id
+      equal?(other)
     end
   end
 
@@ -68,7 +68,7 @@ class Reline::KillRing
   def append(string, before_p = false)
     case @state
     when State::FRESH, State::YANK
-      @ring << RingPoint.new(string)
+      @ring << RingPoint.new(+string)
       @state = State::CONTINUED
     when State::CONTINUED, State::PROCESSED
       if before_p

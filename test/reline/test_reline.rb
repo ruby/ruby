@@ -378,10 +378,28 @@ class Reline::Test < Reline::TestCase
     assert_equal("Reline::GeneralIO", out.chomp)
   end
 
+  def test_require_reline_should_not_trigger_winsize
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = <<~RUBY
+      require "io/console"
+      def STDIN.tty?; true; end
+      def STDOUT.tty?; true; end
+      def STDIN.winsize; raise; end
+      require("reline") && p(Reline.core.io_gate)
+    RUBY
+    out = IO.popen([{}, Reline.test_rubybin, "-I#{lib}", "-e", code], &:read)
+    assert_equal("Reline::ANSI", out.chomp)
+  end
+
+  def win?
+    /mswin|mingw/.match?(RUBY_PLATFORM)
+  end
+
   def get_reline_encoding
     if encoding = Reline.core.encoding
       encoding
-    elsif RUBY_PLATFORM =~ /mswin|mingw/
+    elsif win?
       Encoding::UTF_8
     else
       Encoding::default_external

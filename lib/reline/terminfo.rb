@@ -80,23 +80,11 @@ module Reline::Terminfo
   def self.setupterm(term, fildes)
     errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
     ret = @setupterm.(term, fildes, errret_int)
-    errret = errret_int[0, Fiddle::SIZEOF_INT].unpack1('i')
     case ret
     when 0 # OK
-      0
+      @term_supported = true
     when -1 # ERR
-      case errret
-      when 1
-        raise TerminfoError.new('The terminal is hardcopy, cannot be used for curses applications.')
-      when 0
-        raise TerminfoError.new('The terminal could not be found, or that it is a generic type, having too little information for curses applications to run.')
-      when -1
-        raise TerminfoError.new('The terminfo database could not be found.')
-      else # unknown
-        -1
-      end
-    else # unknown
-      -2
+      @term_supported = false
     end
   end
 
@@ -148,8 +136,13 @@ module Reline::Terminfo
     num
   end
 
+  # NOTE: This means Fiddle and curses are enabled.
   def self.enabled?
     true
+  end
+
+  def self.term_supported?
+    @term_supported
   end
 end if Reline::Terminfo.curses_dl
 
