@@ -53,16 +53,20 @@ module Timeout
   QUEUE_MUTEX = Mutex.new
   TIMEOUT_THREAD_MUTEX = Mutex.new
   @timeout_thread = nil
+  @@request_stacks = {}
   private_constant :CONDVAR, :QUEUE, :QUEUE_MUTEX, :TIMEOUT_THREAD_MUTEX
 
   class Request
     attr_reader :deadline
+    attr_accessor :inner_request
 
     def initialize(thread, timeout, exception_class, message)
       @thread = thread
       @deadline = GET_TIME.call(Process::CLOCK_MONOTONIC) + timeout
       @exception_class = exception_class
       @message = message
+
+      @inner_request = nil
 
       @done = false
     end
@@ -76,10 +80,29 @@ module Timeout
     end
 
     def interrupt
-      unless @done
-        @thread.raise @exception_class, @message
-        @done = true
+      return if @done
+
+      # Important note:
+      # The check to see if any inner requests is done and the process to make
+      # all inner requests finished must be done atomically.
+      # This is guaranteed by the fact that there is only one timer thread.
+
+      # If any inner request is already fired, do nothing
+      inner = @inner_request
+      while inner
+        return if inner.done?
+        inner = inner.inner_request
       end
+
+      # Finish all inner requests
+      inner = @inner_request
+      while inner
+        inner.finished
+        inner = inner.inner_request
+      end
+
+      @thread.raise @exception_class, @message
+      @done = true
     end
 
     def finished
@@ -172,6 +195,12 @@ module Timeout
     Timeout.ensure_timeout_thread_created
     perform = Proc.new do |exc|
       request = Request.new(Thread.current, sec, exc, message)
+
+      stack = (@@request_stacks[Thread.current] ||= [])
+      prev_request = stack.last
+      prev_request.inner_request = request if prev_request
+      stack << request
+
       QUEUE_MUTEX.synchronize do
         QUEUE << request
         CONDVAR.signal
@@ -179,6 +208,7 @@ module Timeout
       begin
         return yield(sec)
       ensure
+        stack.pop
         request.finished
       end
     end
