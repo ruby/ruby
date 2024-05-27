@@ -64,14 +64,11 @@ module Timeout
       @exception_class = exception_class
       @message = message
 
-      @mutex = Mutex.new
-      @done = false # protected by @mutex
+      @done = false
     end
 
     def done?
-      @mutex.synchronize do
-        @done
-      end
+      @done
     end
 
     def expired?(now)
@@ -79,18 +76,14 @@ module Timeout
     end
 
     def interrupt
-      @mutex.synchronize do
-        unless @done
-          @thread.raise @exception_class, @message
-          @done = true
-        end
+      unless @done
+        @thread.raise @exception_class, @message
+        @done = true
       end
     end
 
     def finished
-      @mutex.synchronize do
-        @done = true
-      end
+      @done = true
     end
   end
   private_constant :Request
