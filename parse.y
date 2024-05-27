@@ -13245,15 +13245,17 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
       case NODE_DSTR:
         nd_set_type(node, NODE_DREGX);
         nd_set_loc(node, loc);
-        RNODE_DREGX(node)->as.nd_cflag = options & RE_OPTION_MASK;
-        if (RNODE_DREGX(node)->string) reg_fragment_check(p, RNODE_DREGX(node)->string, options);
-        for (list = RNODE_DREGX(prev = node)->nd_next; list; list = RNODE_LIST(list->nd_next)) {
+        rb_node_dregx_t *const dreg = RNODE_DREGX(node);
+        dreg->as.nd_cflag = options & RE_OPTION_MASK;
+        if (dreg->string) reg_fragment_check(p, dreg->string, options);
+        prev = node;
+        for (list = dreg->nd_next; list; list = RNODE_LIST(list->nd_next)) {
             NODE *frag = list->nd_head;
             enum node_type type = nd_type(frag);
             if (type == NODE_STR || (type == NODE_DSTR && !RNODE_DSTR(frag)->nd_next)) {
                 rb_parser_string_t *tail = RNODE_STR(frag)->string;
                 if (reg_fragment_check(p, tail, options) && prev && RNODE_DREGX(prev)->string) {
-                    rb_parser_string_t *lit = prev == node ? RNODE_DREGX(prev)->string : RNODE_STR(RNODE_LIST(prev)->nd_head)->string;
+                    rb_parser_string_t *lit = prev == node ? dreg->string : RNODE_STR(RNODE_LIST(prev)->nd_head)->string;
                     if (!literal_concat0(p, lit, tail)) {
                         return NEW_NIL(loc); /* dummy node on error */
                     }
@@ -13271,9 +13273,9 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
                 prev = 0;
             }
         }
-        if (!RNODE_DREGX(node)->nd_next) {
+        if (!dreg->nd_next) {
             /* Check string is valid regex */
-            reg_compile(p, RNODE_DREGX(node)->string, options);
+            reg_compile(p, dreg->string, options);
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
