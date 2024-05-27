@@ -3280,7 +3280,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  * NoMemoryError
  *  * ScriptError
- *    * LoadError
+ *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
  *    * NotImplementedError
  *    * SyntaxError
  *  * SecurityError
@@ -3312,7 +3312,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * ZeroDivisionError
  *  * SystemExit
  *  * SystemStackError
- *  * fatal
+ *  * {fatal}[https://docs.ruby-lang.org/en/master/fatal.html]
  */
 
 static VALUE
