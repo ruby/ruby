@@ -223,6 +223,7 @@ fn main() {
         .allowlist_function("rb_float_div")
 
         // From internal/string.h
+        .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
         .allowlist_function("rb_obj_as_string_result")

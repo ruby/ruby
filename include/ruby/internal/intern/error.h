@@ -190,6 +190,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 void rb_error_frozen(const char *what);
 
+RBIMPL_ATTR_NORETURN()
 /**
  * Identical  to  rb_error_frozen(),  except  it takes  arbitrary  Ruby  object
  * instead of C's string.
@@ -236,6 +237,9 @@ RBIMPL_ATTR_NORETURN()
  */
 void rb_error_arity(int argc, int min, int max);
 
+bool rb_str_chilled_p(VALUE str);
+void rb_str_modify(VALUE str);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 /**
@@ -248,12 +252,18 @@ RBIMPL_SYMBOL_EXPORT_END()
         if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
             rb_error_frozen_object(frozen_obj); \
         } \
+        if (RB_UNLIKELY(rb_str_chilled_p(frozen_obj))) { \
+            rb_str_modify(frozen_obj); \
+        } \
     } while (0)
 
 /** @alias{rb_check_frozen} */
 static inline void
 rb_check_frozen_inline(VALUE obj)
 {
+    if (rb_str_chilled_p(obj)) {
+        rb_str_modify(obj);
+    }
     if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
         rb_error_frozen_object(obj);
     }

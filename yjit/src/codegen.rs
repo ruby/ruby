@@ -5611,7 +5611,7 @@ fn jit_rb_str_uplus(
     let recv_opnd = asm.stack_pop(1);
     let recv_opnd = asm.load(recv_opnd);
     let flags_opnd = asm.load(Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags_opnd, Opnd::Imm(RUBY_FL_FREEZE as i64));
+    asm.test(flags_opnd, Opnd::Imm(RUBY_FL_FREEZE as i64 | RSTRING_CHILLED as i64));
 
     let ret_label = asm.new_label("stack_ret");
 

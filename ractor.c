@@ -2984,10 +2984,7 @@ rb_obj_traverse(VALUE obj,
 static int
 frozen_shareable_p(VALUE obj, bool *made_shareable)
 {
-    if (CHILLED_STRING_P(obj)) {
-        return false;
-    }
-    else if (!RB_TYPE_P(obj, T_DATA)) {
+    if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else if (RTYPEDDATA_P(obj)) {
@@ -3016,18 +3013,7 @@ make_shareable_check_shareable(VALUE obj)
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
-    else if (CHILLED_STRING_P(obj)) {
-        rb_funcall(obj, idFreeze, 0);
-
-        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
-        }
-
-        if (RB_OBJ_SHAREABLE_P(obj)) {
-            return traverse_skip;
-        }
-    }
-    else if (!frozen_shareable_p(obj, &made_shareable)) {
+    if (!frozen_shareable_p(obj, &made_shareable)) {
         if (made_shareable) {
             return traverse_skip;
         }

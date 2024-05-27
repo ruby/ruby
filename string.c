@@ -2453,6 +2453,9 @@ rb_check_lockedtmp(VALUE str)
 static inline void
 str_modifiable(VALUE str)
 {
+    if (CHILLED_STRING_P(str)) {
+        CHILLED_STRING_MUTATED(str);
+    }
     rb_check_lockedtmp(str);
     rb_check_frozen(str);
 }
@@ -3053,7 +3056,7 @@ rb_str_freeze(VALUE str)
 static VALUE
 str_uplus(VALUE str)
 {
-    if (OBJ_FROZEN(str)) {
+    if (OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
         return rb_str_dup(str);
     }
     else {
