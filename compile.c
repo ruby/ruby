@@ -3080,7 +3080,7 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 static int
 is_frozen_putstring(INSN *insn, VALUE *op)
 {
-    if (IS_INSN_ID(insn, putstring)) {
+    if (IS_INSN_ID(insn, putstring) || IS_INSN_ID(insn, putchilledstring)) {
         *op = OPERAND_AT(insn, 0);
         return 1;
     }
@@ -3122,6 +3122,7 @@ optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
 
     switch (INSN_OF(iobj)) {
       case BIN(putstring):
+      case BIN(putchilledstring):
         type = INT2FIX(T_STRING);
         break;
       case BIN(putnil):
@@ -3549,6 +3550,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
             if (previ == BIN(putobject) || previ == BIN(putnil) ||
                 previ == BIN(putself) || previ == BIN(putstring) ||
+                previ == BIN(putchilledstring) ||
                 previ == BIN(dup) ||
                 previ == BIN(getlocal) ||
                 previ == BIN(getblockparam) ||
@@ -3690,7 +3692,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
-    if (IS_INSN_ID(iobj, putstring) ||
+    if (IS_INSN_ID(iobj, putstring) || IS_INSN_ID(iobj, putchilledstring) ||
         (IS_INSN_ID(iobj, putobject) && RB_TYPE_P(OPERAND_AT(iobj, 0), T_STRING))) {
         /*
          *  putstring ""
@@ -4080,7 +4082,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 }
             }
         }
-        else if ((IS_INSN_ID(niobj, putstring) ||
+        else if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
                   (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
                  IS_NEXT_INSN_ID(&niobj->link, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)niobj->link.next, 0);
