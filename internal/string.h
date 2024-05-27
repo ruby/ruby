@@ -19,6 +19,10 @@
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
 #define STR_CHILLED      FL_USER3
 
+enum ruby_rstring_private_flags {
+    RSTRING_CHILLED = STR_CHILLED,
+};
+
 #ifdef rb_fstring_cstr
 # undef rb_fstring_cstr
 #endif
@@ -118,15 +122,14 @@ CHILLED_STRING_P(VALUE obj)
 static inline void
 CHILLED_STRING_MUTATED(VALUE str)
 {
+    FL_UNSET_RAW(str, STR_CHILLED);
     rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "literal string will be frozen in the future");
-    FL_UNSET_RAW(str, STR_CHILLED | FL_FREEZE);
 }
 
 static inline void
 STR_CHILL_RAW(VALUE str)
 {
-    // Chilled strings are always also frozen
-    FL_SET_RAW(str, STR_CHILLED | RUBY_FL_FREEZE);
+    FL_SET_RAW(str, STR_CHILLED);
 }
 
 static inline bool
