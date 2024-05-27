@@ -12113,7 +12113,7 @@ rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_a
 {
     rb_node_dxstr_t *n = NODE_NEWNODE(NODE_DXSTR, rb_node_dxstr_t, loc);
     n->string = string;
-    n->nd_alen = nd_alen;
+    n->as.nd_alen = nd_alen;
     n->nd_next = (rb_node_list_t *)nd_next;
 
     return n;
@@ -12133,7 +12133,7 @@ rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_al
 {
     rb_node_dsym_t *n = NODE_NEWNODE(NODE_DSYM, rb_node_dsym_t, loc);
     n->string = string;
-    n->nd_alen = nd_alen;
+    n->as.nd_alen = nd_alen;
     n->nd_next = (rb_node_list_t *)nd_next;
 
     return n;
@@ -13192,7 +13192,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
       case NODE_DSTR:
         nd_set_type(node, NODE_DREGX);
         nd_set_loc(node, loc);
-        RNODE_DREGX(node)->nd_cflag = options & RE_OPTION_MASK;
+        RNODE_DREGX(node)->as.nd_cflag = options & RE_OPTION_MASK;
         if (RNODE_DREGX(node)->string) reg_fragment_check(p, RNODE_DREGX(node)->string, options);
         for (list = RNODE_DREGX(prev = node)->nd_next; list; list = RNODE_LIST(list->nd_next)) {
             NODE *frag = list->nd_head;

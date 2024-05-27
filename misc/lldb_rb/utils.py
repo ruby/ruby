@@ -301,213 +301,213 @@ class RbInspector(LLDBInterface):
         self._append_expression("(node_type) %d" % nd_type)
 
         if nd_type == self.ruby_globals["NODE_SCOPE"]:
-            self._append_expression("*(struct RNode_SCOPE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_scope_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_BLOCK"]:
-            self._append_expression("*(struct RNode_BLOCK *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_block_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_IF"]:
-            self._append_expression("*(struct RNode_IF *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_if_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_UNLESS"]:
-            self._append_expression("*(struct RNode_UNLESS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_unless_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CASE"]:
-            self._append_expression("*(struct RNode_CASE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_case_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CASE2"]:
-            self._append_expression("*(struct RNode_CASE2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_case2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CASE3"]:
-            self._append_expression("*(struct RNode_CASE3 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_case3_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_WHEN"]:
-            self._append_expression("*(struct RNode_WHEN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_when_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_IN"]:
-            self._append_expression("*(struct RNode_IN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_in_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_WHILE"]:
-            self._append_expression("*(struct RNode_WHILE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_while_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_UNTIL"]:
-            self._append_expression("*(struct RNode_UNTIL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_until_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ITER"]:
-            self._append_expression("*(struct RNode_ITER *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_iter_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FOR"]:
-            self._append_expression("*(struct RNode_FOR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_for_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FOR_MASGN"]:
-            self._append_expression("*(struct RNode_FOR_MASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_for_masgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_BREAK"]:
-            self._append_expression("*(struct RNode_BREAK *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_break_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_NEXT"]:
-            self._append_expression("*(struct RNode_NEXT *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_next_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_REDO"]:
-            self._append_expression("*(struct RNode_REDO *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_redo_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_RETRY"]:
-            self._append_expression("*(struct RNode_RETRY *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_retry_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_BEGIN"]:
-            self._append_expression("*(struct RNode_BEGIN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_begin_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_RESCUE"]:
-            self._append_expression("*(struct RNode_RESCUE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_rescue_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_RESBODY"]:
-            self._append_expression("*(struct RNode_RESBODY *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_resbody_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ENSURE"]:
-            self._append_expression("*(struct RNode_ENSURE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_ensure_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_AND"]:
-            self._append_expression("*(struct RNode_AND *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_and_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OR"]:
-            self._append_expression("*(struct RNode_OR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_or_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_MASGN"]:
-            self._append_expression("*(struct RNode_MASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_masgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_LASGN"]:
-            self._append_expression("*(struct RNode_LASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_lasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DASGN"]:
-            self._append_expression("*(struct RNode_DASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_GASGN"]:
-            self._append_expression("*(struct RNode_GASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_gasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_IASGN"]:
-            self._append_expression("*(struct RNode_IASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_iasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CDECL"]:
-            self._append_expression("*(struct RNode_CDECL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_cdecl_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CVASGN"]:
-            self._append_expression("*(struct RNode_CVASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_cvasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OP_ASGN1"]:
-            self._append_expression("*(struct RNode_OP_ASGN1 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_op_asgn1_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OP_ASGN2"]:
-            self._append_expression("*(struct RNode_OP_ASGN2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_op_asgn2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OP_ASGN_AND"]:
-            self._append_expression("*(struct RNode_OP_ASGN_AND *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_op_asgn_and_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OP_ASGN_OR"]:
-            self._append_expression("*(struct RNode_OP_ASGN_OR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_op_asgn_or_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OP_CDECL"]:
-            self._append_expression("*(struct RNode_OP_CDECL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_op_cdecl_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CALL"]:
-            self._append_expression("*(struct RNode_CALL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_call_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OPCALL"]:
-            self._append_expression("*(struct RNode_OPCALL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_opcall_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FCALL"]:
-            self._append_expression("*(struct RNode_FCALL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_fcall_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_VCALL"]:
-            self._append_expression("*(struct RNode_VCALL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_vcall_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_QCALL"]:
-            self._append_expression("*(struct RNode_QCALL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_qcall_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_SUPER"]:
-            self._append_expression("*(struct RNode_SUPER *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_super_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ZSUPER"]:
-            self._append_expression("*(struct RNode_ZSUPER *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_zsuper_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_LIST"]:
-            self._append_expression("*(struct RNode_LIST *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_list_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ZLIST"]:
-            self._append_expression("*(struct RNode_ZLIST *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_zlist_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_HASH"]:
-            self._append_expression("*(struct RNode_HASH *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_hash_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_RETURN"]:
-            self._append_expression("*(struct RNode_RETURN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_return_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_YIELD"]:
-            self._append_expression("*(struct RNode_YIELD *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_yield_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_LVAR"]:
-            self._append_expression("*(struct RNode_LVAR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_lvar_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DVAR"]:
-            self._append_expression("*(struct RNode_DVAR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dvar_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_GVAR"]:
-            self._append_expression("*(struct RNode_GVAR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_gvar_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CONST"]:
-            self._append_expression("*(struct RNode_CONST *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_const_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CVAR"]:
-            self._append_expression("*(struct RNode_CVAR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_cvar_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_NTH_REF"]:
-            self._append_expression("*(struct RNode_NTH_REF *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_nth_ref_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_BACK_REF"]:
-            self._append_expression("*(struct RNode_BACK_REF *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_back_ref_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_MATCH"]:
-            self._append_expression("*(struct RNode_MATCH *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_match_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_MATCH2"]:
-            self._append_expression("*(struct RNode_MATCH2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_match2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_MATCH3"]:
-            self._append_expression("*(struct RNode_MATCH3 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_match3_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_STR"]:
-            self._append_expression("*(struct RNode_STR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_str_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DSTR"]:
-            self._append_expression("*(struct RNode_DSTR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dstr_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_XSTR"]:
-            self._append_expression("*(struct RNode_XSTR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_xstr_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DXSTR"]:
-            self._append_expression("*(struct RNode_DXSTR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dxstr_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_EVSTR"]:
-            self._append_expression("*(struct RNode_EVSTR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_evstr_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_REGX"]:
-            self._append_expression("*(struct RNode_REGX *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_regx_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DREGX"]:
-            self._append_expression("*(struct RNode_DREGX *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dregx_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ONCE"]:
-            self._append_expression("*(struct RNode_ONCE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_once_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ARGS"]:
-            self._append_expression("*(struct RNode_ARGS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_args_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ARGS_AUX"]:
-            self._append_expression("*(struct RNode_ARGS_AUX *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_args_aux_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_OPT_ARG"]:
-            self._append_expression("*(struct RNode_OPT_ARG *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_opt_arg_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_KW_ARG"]:
-            self._append_expression("*(struct RNode_KW_ARG *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_kw_arg_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_POSTARG"]:
-            self._append_expression("*(struct RNode_POSTARG *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_postarg_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ARGSCAT"]:
-            self._append_expression("*(struct RNode_ARGSCAT *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_argscat_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ARGSPUSH"]:
-            self._append_expression("*(struct RNode_ARGSPUSH *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_argspush_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_SPLAT"]:
-            self._append_expression("*(struct RNode_SPLAT *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_splat_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DEFN"]:
-            self._append_expression("*(struct RNode_DEFN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_defn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DEFS"]:
-            self._append_expression("*(struct RNode_DEFS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_defs_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ALIAS"]:
-            self._append_expression("*(struct RNode_ALIAS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_alias_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_VALIAS"]:
-            self._append_expression("*(struct RNode_VALIAS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_valias_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_UNDEF"]:
-            self._append_expression("*(struct RNode_UNDEF *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_undef_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_CLASS"]:
-            self._append_expression("*(struct RNode_CLASS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_class_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_MODULE"]:
-            self._append_expression("*(struct RNode_MODULE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_module_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_SCLASS"]:
-            self._append_expression("*(struct RNode_SCLASS *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_sclass_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_COLON2"]:
-            self._append_expression("*(struct RNode_COLON2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_colon2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_COLON3"]:
-            self._append_expression("*(struct RNode_COLON3 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_colon3_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DOT2"]:
-            self._append_expression("*(struct RNode_DOT2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dot2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DOT3"]:
-            self._append_expression("*(struct RNode_DOT3 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dot3_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FLIP2"]:
-            self._append_expression("*(struct RNode_FLIP2 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_flip2_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FLIP3"]:
-            self._append_expression("*(struct RNode_FLIP3 *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_flip3_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_SELF"]:
-            self._append_expression("*(struct RNode_SELF *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_self_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_NIL"]:
-            self._append_expression("*(struct RNode_NIL *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_nil_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_TRUE"]:
-            self._append_expression("*(struct RNode_TRUE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_true_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FALSE"]:
-            self._append_expression("*(struct RNode_FALSE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_false_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ERRINFO"]:
-            self._append_expression("*(struct RNode_ERRINFO *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_errinfo_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DEFINED"]:
-            self._append_expression("*(struct RNode_DEFINED *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_defined_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_POSTEXE"]:
-            self._append_expression("*(struct RNode_POSTEXE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_postexe_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_DSYM"]:
-            self._append_expression("*(struct RNode_DSYM *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_dsym_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ATTRASGN"]:
-            self._append_expression("*(struct RNode_ATTRASGN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_attrasgn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_LAMBDA"]:
-            self._append_expression("*(struct RNode_LAMBDA *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_lambda_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ARYPTN"]:
-            self._append_expression("*(struct RNode_ARYPTN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_aryptn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_HSHPTN"]:
-            self._append_expression("*(struct RNode_HSHPTN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_hshptn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FNDPTN"]:
-            self._append_expression("*(struct RNode_FNDPTN *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_fndptn_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_ERROR"]:
-            self._append_expression("*(struct RNode_ERROR *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_error_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_LINE"]:
-            self._append_expression("*(struct RNode_LINE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_line_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FILE"]:
-            self._append_expression("*(struct RNode_FILE *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(rb_node_file_t *) %0#x" % val.GetValueAsUnsigned())
         else:
-            self._append_expression("*(struct RNode *) %0#x" % val.GetValueAsUnsigned())
+            self._append_expression("*(NODE *) %0#x" % val.GetValueAsUnsigned())
         return True

@@ -4429,11 +4429,12 @@ static int
 compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     int cnt;
+    int cflag = (int)RNODE_DREGX(node)->as.nd_cflag;
 
     if (!RNODE_DREGX(node)->nd_next) {
         if (!popped) {
             VALUE src = rb_node_dregx_string_val(node);
-            VALUE match = rb_reg_compile(src, (int)RNODE_DREGX(node)->nd_cflag, NULL, 0);
+            VALUE match = rb_reg_compile(src, cflag, NULL, 0);
             ADD_INSN1(ret, node, putobject, match);
             RB_OBJ_WRITTEN(iseq, Qundef, match);
         }
@@ -4441,7 +4442,7 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
 
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
-    ADD_INSN2(ret, node, toregexp, INT2FIX(RNODE_DREGX(node)->nd_cflag), INT2FIX(cnt));
+    ADD_INSN2(ret, node, toregexp, INT2FIX(cflag), INT2FIX(cnt));
 
     if (popped) {
         ADD_INSN(ret, node, pop);
