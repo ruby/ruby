@@ -15,21 +15,23 @@ File.open('nope.txt') # Raises Errno::ENOENT: "No such file or directory"
 
 # Raised Exceptions
 
-A raised exception transfers program execution, one way or another:
+A raised exception transfers program execution, one way or another.
 
-- If the exception is _handled_ (see below),
-  execution transfers to an exception handler.
-- Otherwise,  execution transfers to code in the Ruby interpreter
-  that prints a message and exits the program (or thread):
+## Unhandled Exceptions
 
-    ```
-    $ ruby -e "raise"
-    -e:1:in `<main>': unhandled exception
-    ```
+If an exception is _unhandled_
+(see [Exception Handlers](#label-Exception+Handlers) below),
+execution transfers to code in the Ruby interpreter
+that prints a message and exits the program (or thread):
 
-# \Exception Handlers
+```
+$ ruby -e "raise"
+-e:1:in `<main>': unhandled exception
+```
 
-An exception handler may determine what is to happen
+## \Exception Handlers
+
+An <i>exception handler</i> may determine what is to happen
 when an exception is raised.
 
 A simple example:
@@ -56,12 +58,12 @@ An exception handler has several elements:
 | Element                     | Use                                                                                      |
 |-----------------------------|------------------------------------------------------------------------------------------|
 | Begin clause.               | Begins the handler and contains the code whose raised exception, if any, may be rescued. |
-| One or more rescue clauses. | Each contains "rescuing" code, which is to be executed in certain circumstances.         |
+| One or more rescue clauses. | Each contains "rescuing" code, which is to be executed for certain exceptions.           |
 | Else clause (optional).     | Contains code to be executed if no exception is rescued.                                 |
 | Ensure clause (optional).   | Contains code to be executed whether or not an exception is raised, or is rescued.       |
-| <tt>end</tt> statement.     | Ends the handler.  `                                                                      |
+| <tt>end</tt> statement.     | Ends the handler.  `                                                                     |
 
-## Begin Clause
+### Begin Clause
 
 The begin clause begins the exception handler:
 
@@ -71,42 +73,28 @@ The begin clause begins the exception handler:
   by the handler.
 - Ends with the first following `rescue` statement.
 
-## Rescue Clauses
+### Rescue Clauses
 
 A rescue clause:
 
 - Starts with a `rescue` statement.
-- Contains code that is to be executed for certain exceptions raised.
+- Contains code that is to be executed for certain raised exceptions.
 - Ends with the first following `rescue`,
   `else`, `ensure`, or `end` statement.
 
 A `rescue` statement may include one or more classes
 that are to be rescued;
-if none is given, StandardError is assumed:
+if none is given, StandardError is assumed.
 
-```
-begin
-  raise StandardError.new('Boom')
-rescue # Default is Standard Error.
-  puts "Rescued #{$!.class}"
-end
-```
-
-Output:
-
-```
-Rescued StandardError
-```
-
-The same rescue clause (with no class specified)
-also rescues any subclass of StandardError
+The rescue clause rescues both the specified class
+(or StandardError if none given) or any of its subclasses;
 (see [Built-In Exception Classes](rdoc-ref:Exception@Built-In+Exception+Classes)
 for the hierarchy of Ruby built-in exception classes):
 
 
 ```
 begin
-  1 / 0
+  1 / 0 # Raises ZeroDivisionError, a subclass of StandardError.
 rescue
   puts "Rescued #{$!.class}"
 end
@@ -121,7 +109,7 @@ Rescued ZeroDivisionError
 If the `rescue` statement specifies an exception class,
 only that class (or one of its subclasses) is rescued;
 this example exits with a ZeroDivisionError,
-which was not rescued:
+which was not rescued because it is not ArgumentError or one of its subclasses:
 
 ```
 begin
@@ -185,7 +173,7 @@ divided by 0
 ```
 
 
-## Else Clause
+### Else Clause
 
 The `else` clause:
 
@@ -202,6 +190,7 @@ rescue
 else
   puts 'No exception raised.'
 end
+
 foo(boom: true)
 foo(boom: false)
 ```
@@ -215,7 +204,7 @@ Begin.
 No exception raised.
 ```
 
-## Ensure Clause
+### Ensure Clause
 
 The ensure clause:
 
@@ -236,6 +225,7 @@ else
 ensure
   puts 'Always do this.'
 end
+
 foo(boom: true)
 foo(boom: false)
 ```
@@ -251,18 +241,14 @@ No exception raised.
 Always do this.
 ```
 
-## End Statement
+### End Statement
 
 The `end` statement ends the handler.
 
 Code following it is reached if and only if any raised exception is handled
 and not [re-raised](#label-Re-Raising+an+Exception).
 
-## Re-Raising an \Exception
-
-## Retrying
-
-## Begin-Less \Exception Handlers
+### Begin-Less \Exception Handlers
 
 As seen above, an exception handler may be implemented with `begin` and `end`.
 
@@ -293,6 +279,10 @@ as a:
     end                     # Serves as end of exception handler.
     ```
 
-# Raising an \Exception
+### Re-Raising an \Exception
+
+### Retrying
+
+# Raising Exceptions
 
 # Custom Exceptions
