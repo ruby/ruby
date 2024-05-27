@@ -14295,8 +14295,18 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         if (!top) break;
         RNODE_DOT2(node)->nd_beg = range_op(p, RNODE_DOT2(node)->nd_beg, loc);
         RNODE_DOT2(node)->nd_end = range_op(p, RNODE_DOT2(node)->nd_end, loc);
-        if (nd_type_p(node, NODE_DOT2)) nd_set_type(node,NODE_FLIP2);
-        else if (nd_type_p(node, NODE_DOT3)) nd_set_type(node, NODE_FLIP3);
+        switch (nd_type(node)) {
+          case NODE_DOT2:
+            nd_set_type(node,NODE_FLIP2);
+            rb_node_flip2_t *flip2 = RNODE_FLIP2(node); /* for debug info */
+            (void)flip2;
+            break;
+          case NODE_DOT3:
+            nd_set_type(node, NODE_FLIP3);
+            rb_node_flip3_t *flip3 = RNODE_FLIP3(node); /* for debug info */
+            (void)flip3;
+            break;
+        }
         break;
 
       case NODE_SYM:
