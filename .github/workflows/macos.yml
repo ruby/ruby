@@ -74,6 +74,7 @@ jobs:
         run: |
           sysctl -n kern.coredump
           sudo sysctl -w kern.coredump=1
+          sudo chmod -R +rwx /cores/
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
@@ -115,6 +116,7 @@ jobs:
 
       - name: make skipped tests
         run: |
+          ulimit -c unlimited
           make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
