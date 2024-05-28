@@ -48,11 +48,11 @@ install:
 
     results = results.join("\n").b
 
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} install$/, results)
 
-    unless /nmake/.match?(results)
+    unless results.include?("nmake")
       assert_match(/^clean: destination$/,   results)
       assert_match(/^all: destination$/,     results)
       assert_match(/^install: destination$/, results)
@@ -77,12 +77,14 @@ install:
 
     results = results.join("\n").b
 
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
-    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} install$/, results)
   end
 
   def test_custom_make_with_options
+    pend "native windows platform only provides nmake" if vc_windows?
+
     ENV["make"] = "make V=1"
     results = []
     File.open File.join(@ext, "Makefile"), "w" do |io|

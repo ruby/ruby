@@ -138,6 +138,7 @@ lcov*.info
 /test.rb
 /test-coverage.dat
 /tmp
+/vcpkg_installed
 /transdb.h
 /uncommon.mk
 /verconf.h
@@ -166,6 +167,7 @@ lcov*.info
 
 # /coroutine/
 !/coroutine/**/*.s
+!/coroutine/**/*.S
 
 # /enc/trans/
 /enc/trans/*.c
@@ -260,12 +262,16 @@ lcov*.info
 /lib/prism/dispatcher.rb
 /lib/prism/dot_visitor.rb
 /lib/prism/dsl.rb
+/lib/prism/inspect_visitor.rb
 /lib/prism/mutation_compiler.rb
 /lib/prism/node.rb
+/lib/prism/reflection.rb
 /lib/prism/serialize.rb
 /lib/prism/visitor.rb
 /prism/api_node.c
 /prism/ast.h
+/prism/diagnostic.c
+/prism/diagnostic.h
 /prism/node.c
 /prism/prettyprint.c
 /prism/serialize.c

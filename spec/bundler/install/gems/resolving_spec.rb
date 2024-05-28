@@ -434,7 +434,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
 
           nice_error = <<~E.strip
-            Could not find gems matching 'sorbet-static (= 0.5.10554)' valid for all resolution platforms (arm64-darwin-21, aarch64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+            Could not find gems matching 'sorbet-static (= 0.5.10554)' valid for all resolution platforms (arm64-darwin-21, aarch64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally.
 
             The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
               * sorbet-static-0.5.10554-universal-darwin-21
@@ -490,7 +490,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "raises a proper error" do
           nice_error = <<~E.strip
-            Could not find gems matching 'sorbet-static' valid for all resolution platforms (arm-linux, x86_64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+            Could not find gems matching 'sorbet-static' valid for all resolution platforms (arm-linux, x86_64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally.
 
             The source contains the following gems matching 'sorbet-static':
               * sorbet-static-0.5.10696-x86_64-linux

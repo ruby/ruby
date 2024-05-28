@@ -138,7 +138,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", raise_on_error: false
 
-    expect(err).to match(/locally installed gems/)
+    expect(err).to match(/cached gems or installed locally/)
   end
 
   it "does not fetch remote checksums with --local" do
@@ -390,6 +390,22 @@ RSpec.describe "bundle lock" do
       bundle "lock --update --minor --strict"
 
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
+    end
+
+    it "shows proper error when Gemfile changes forbid patch upgrades, and --patch --strict is given" do
+      # force next minor via Gemfile
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo', '1.5.0'
+        gem 'qux'
+      G
+
+      bundle "lock --update foo --patch --strict", raise_on_error: false
+
+      expect(err).to include(
+        "foo is locked to 1.4.3, while Gemfile is requesting foo (= 1.5.0). " \
+        "--strict --patch was specified, but there are no patch level upgrades from 1.4.3 satisfying foo (= 1.5.0), so version solving has failed"
+      )
     end
 
     context "pre" do
@@ -1211,7 +1227,7 @@ RSpec.describe "bundle lock" do
       Because rails >= 7.0.4 depends on railties = 7.0.4
         and rails < 7.0.4 depends on railties = 7.0.3.1,
         railties = 7.0.3.1 OR = 7.0.4 is required.
-      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally,
         version solving has failed.
     ERR
   end
@@ -1322,7 +1338,7 @@ RSpec.describe "bundle lock" do
       Thus, rails >= 7.0.2.3, < 7.0.4 cannot be used.
       And because rails >= 7.0.4 depends on activemodel = 7.0.4,
         rails >= 7.0.2.3 requires activemodel = 7.0.4.
-      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
+      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally
         and Gemfile depends on rails >= 7.0.2.3,
         version solving has failed.
     ERR

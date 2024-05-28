@@ -5,40 +5,37 @@ require "bundler/definition"
 RSpec.describe Bundler::Definition do
   describe "#lock" do
     before do
-      allow(Bundler).to receive(:settings) { Bundler::Settings.new(".") }
-      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { Pathname.new("Gemfile") }
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
       allow(Bundler).to receive(:ui) { double("UI", info: "", debug: "") }
     end
-    context "when it's not possible to write to the file" do
-      subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
 
+    subject { Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}) }
+
+    context "when it's not possible to write to the file" do
       it "raises an PermissionError with explanation" do
         allow(File).to receive(:open).and_call_original
-        expect(File).to receive(:open).with("Gemfile.lock", "wb").
+        expect(File).to receive(:open).with(bundled_app_lock, "wb").
           and_raise(Errno::EACCES)
-        expect { subject.lock("Gemfile.lock") }.
+        expect { subject.lock }.
           to raise_error(Bundler::PermissionError, /Gemfile\.lock/)
       end
     end
     context "when a temporary resource access issue occurs" do
-      subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
-
       it "raises a TemporaryResourceError with explanation" do
         allow(File).to receive(:open).and_call_original
-        expect(File).to receive(:open).with("Gemfile.lock", "wb").
+        expect(File).to receive(:open).with(bundled_app_lock, "wb").
           and_raise(Errno::EAGAIN)
-        expect { subject.lock("Gemfile.lock") }.
+        expect { subject.lock }.
           to raise_error(Bundler::TemporaryResourceError, /temporarily unavailable/)
       end
     end
     context "when Bundler::Definition.no_lock is set to true" do
-      subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
       before { Bundler::Definition.no_lock = true }
       after { Bundler::Definition.no_lock = false }
 
       it "does not create a lock file" do
-        subject.lock("Gemfile.lock")
-        expect(File.file?("Gemfile.lock")).to eq false
+        subject.lock
+        expect(bundled_app_lock).not_to be_file
       end
     end
   end

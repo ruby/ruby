@@ -90,6 +90,7 @@ end
     Gem.instance_variable_set(:'@default_source_date_epoch', nil)
 
     @a1 = util_spec "a", "1" do |s|
+      s.required_ruby_version = ">= 2.3.0"
       s.executable = "exec"
       s.test_file = "test/suite.rb"
       s.requirements << "A working computer"
@@ -1194,10 +1195,13 @@ dependencies: []
     assert_same spec.bindir, dup_spec.bindir
 
     assert_equal ">= 0", spec.required_ruby_version.to_s
-    assert_same spec.required_ruby_version, dup_spec.required_ruby_version
+    assert_equal spec.required_ruby_version, dup_spec.required_ruby_version
+    refute_same spec.required_ruby_version, dup_spec.required_ruby_version
 
     assert_equal ">= 0", spec.required_rubygems_version.to_s
-    assert_same spec.required_rubygems_version,
+    assert_equal spec.required_rubygems_version,
+                 dup_spec.required_rubygems_version
+    refute_same spec.required_rubygems_version,
                 dup_spec.required_rubygems_version
   end
 
@@ -2684,6 +2688,53 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_no_required_ruby_versions
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      use_ui @ui do
+        @a1.required_ruby_version = nil # reset
+        @a1.validate
+      end
+
+      assert_equal <<-EXPECTED, @ui.error
+#{w}:  make sure you specify the oldest ruby version constraint (like \">= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+    end
+  end
+
+  def test_validate_open_required_ruby_versions
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.required_ruby_version = ">= 0"
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal <<-EXPECTED, @ui.error
+#{w}:  make sure you specify the oldest ruby version constraint (like \">= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+    end
+  end
+
+  def test_validate_valid_required_ruby_versions
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.required_ruby_version = ">= 2.3.0"
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "", @ui.error, "warning"
+    end
+  end
+
   def test_validate_prerelease_dependencies_with_prerelease_version
     util_setup_validate
 
@@ -2727,7 +2778,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_match(/add rake as a dependency/, @ui.error)
+      assert_match(/add rake as a runtime dependency/, @ui.error)
     end
   end
 
@@ -2743,7 +2794,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      refute_match(/add rake as a dependency/, @ui.error)
+      refute_match(/add rake as a runtime dependency/, @ui.error)
     end
   end
 
@@ -3660,6 +3711,7 @@ Did you mean 'Ruby'?
 
     Dir.chdir @tempdir do
       @m2 = quick_gem "m", "2" do |s|
+        s.required_ruby_version = ">= 2.3.0"
         s.files = %w[lib/code.rb]
         s.licenses = "BSD-2-Clause"
         s.metadata = {
@@ -3796,6 +3848,13 @@ end
     install_specs q
 
     assert Gem::Specification.find_by_name "q"
+  end
+
+  def test_find_by_name_with_only_prereleases_with_requirements
+    q = util_spec "q", "2.a"
+    install_specs q
+
+    assert Gem::Specification.find_by_name "q", ">= 1"
   end
 
   def test_find_by_name_prerelease

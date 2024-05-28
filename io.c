@@ -1970,7 +1970,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (converted)
         OBJ_FREEZE(str);
 
-    tmp = rb_str_tmp_frozen_acquire(str);
+    tmp = rb_str_tmp_frozen_no_embed_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
     n = io_binwrite(tmp, ptr, len, fptr, nosync);
     rb_str_tmp_frozen_release(str, tmp);

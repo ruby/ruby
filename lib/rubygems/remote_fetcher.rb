@@ -74,9 +74,9 @@ class Gem::RemoteFetcher
 
   def initialize(proxy=nil, dns=nil, headers={})
     require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
-    require_relative "net/http"
+    require_relative "vendored_net_http"
     require "stringio"
-    require "uri"
+    require_relative "vendor/uri/lib/uri"
 
     Socket.do_not_reverse_lookup = true
 
@@ -135,7 +135,7 @@ class Gem::RemoteFetcher
 
     scheme = source_uri.scheme
 
-    # URI.parse gets confused by MS Windows paths with forward slashes.
+    # Gem::URI.parse gets confused by MS Windows paths with forward slashes.
     scheme = nil if /^[a-z]$/i.match?(scheme)
 
     # REFACTOR: split this up and dispatch on scheme (eg download_http)

@@ -471,7 +471,7 @@ EOF
 
     access_notice = "The existing key doesn't have access of remove_owner on RubyGems.org. Please sign in to update access."
     assert_match access_notice, @stub_ui.output
-    assert_match "Email:", @stub_ui.output
+    assert_match "Username/email:", @stub_ui.output
     assert_match "Password:", @stub_ui.output
     assert_match "Added remove_owner scope to the existing API key", @stub_ui.output
     assert_match response_success, @stub_ui.output
@@ -495,7 +495,7 @@ EOF
 
     access_notice = "The existing key doesn't have access of add_owner on RubyGems.org. Please sign in to update access."
     assert_match access_notice, @stub_ui.output
-    assert_match "Email:", @stub_ui.output
+    assert_match "Username/email:", @stub_ui.output
     assert_match "Password:", @stub_ui.output
     assert_match "Added add_owner scope to the existing API key", @stub_ui.output
     assert_match response_success, @stub_ui.output

@@ -52,10 +52,20 @@ class TestGemKernel < Gem::TestCase
     assert_equal 1, $:.count {|p| p.include?("a-1/lib") }
   end
 
-  def test_gem_prerelease
+  def test_gem_prerelease_is_the_only_available
     quick_gem "d", "1.1.a"
-    refute gem("d", ">= 1"),   "release requirement must not load prerelease"
-    assert gem("d", ">= 1.a"), "prerelease requirement may load prerelease"
+
+    assert gem("d", ">= 1"), "release requirement may load prerelease when sole option"
+    assert $:.one? {|p| p.include?("/d-1.1.a/lib") }
+  end
+
+  def test_release_favored_over_prerelease
+    quick_gem "d", "1.1.a"
+    quick_gem "d", "1.2"
+    gem("d", ">= 1")
+
+    refute $:.any? {|p| p.include?("/d-1.1.a/lib") }
+    assert $:.one? {|p| p.include?("/d-1.2/lib") }
   end
 
   def test_gem_env_req

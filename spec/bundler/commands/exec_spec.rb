@@ -831,8 +831,7 @@ RSpec.describe "bundle exec" do
       let(:executable) { super() << "\nraise 'ERROR'" }
       let(:exit_code) { 1 }
       let(:expected_err) do
-        "bundler: failed to load command: #{path} (#{path})" \
-        "\n#{path}:10:in `<top (required)>': ERROR (RuntimeError)"
+        /\Abundler: failed to load command: #{Regexp.quote(path.to_s)} \(#{Regexp.quote(path.to_s)}\)\n#{Regexp.quote(path.to_s)}:10:in [`']<top \(required\)>': ERROR \(RuntimeError\)/
       end
 
       it "runs like a normally executed executable" do
@@ -840,7 +839,7 @@ RSpec.describe "bundle exec" do
 
         subject
         expect(exitstatus).to eq(exit_code)
-        expect(err).to start_with(expected_err)
+        expect(err).to match(expected_err)
         expect(out).to eq(expected)
       end
     end
@@ -886,7 +885,7 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'rack (= 2)' in cached gems or installed locally.
 
 The source contains the following gems matching 'rack':
   * rack-0.9.1
@@ -916,7 +915,7 @@ Run `bundle install` to install missing gems.
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'rack (= 2)' in cached gems or installed locally.
 
 The source contains the following gems matching 'rack':
   * rack-1.0.0

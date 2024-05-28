@@ -197,7 +197,7 @@ RSpec.describe "bundle flex_install" do
         Could not find compatible versions
 
         Because rack-obama >= 2.0 depends on rack = 1.2
-          and rack = 1.2 could not be found in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally,
+          and rack = 1.2 could not be found in rubygems repository #{file_uri_for(gem_repo2)}/, cached gems or installed locally,
           rack-obama >= 2.0 cannot be used.
         So, because Gemfile depends on rack-obama = 2.0,
           version solving has failed.

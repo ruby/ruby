@@ -115,6 +115,7 @@ jobs:
       #     CHECK_LEAKS: true
 
       - run: make test-annocheck
+        continue-on-error: true # toomanyrequests: You have reached your pull rate limit.
 
       - uses: ./.github/actions/slack
         with:

@@ -10,13 +10,7 @@ require 'optparse'
 require 'abbrev'
 require 'pp'
 require 'shellwords'
-begin
-  require 'readline'
-rescue LoadError
-  module Readline; end
-end
-
-VERSION = '0.0.1'
+require 'reline'
 
 opts = OptionParser.new
 target_version = nil
@@ -24,10 +18,9 @@ repo_path = nil
 api_key = nil
 ssl_verify = true
 opts.on('-k REDMINE_API_KEY', '--key=REDMINE_API_KEY', 'specify your REDMINE_API_KEY') {|v| api_key = v}
-opts.on('-t TARGET_VERSION', '--target=TARGET_VARSION', /\A\d(?:\.\d)+\z/, 'specify target version (ex: 2.1)') {|v| target_version = v}
+opts.on('-t TARGET_VERSION', '--target=TARGET_VARSION', /\A\d(?:\.\d)+\z/, 'specify target version (ex: 3.1)') {|v| target_version = v}
 opts.on('-r RUBY_REPO_PATH', '--repository=RUBY_REPO_PATH', 'specify repository path') {|v| repo_path = v}
 opts.on('--[no-]ssl-verify', TrueClass, 'use / not use SSL verify') {|v| ssl_verify = v}
-opts.version = VERSION
 opts.parse!(ARGV)
 
 http_options = {use_ssl: true}
@@ -35,11 +28,11 @@ http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
 $openuri_options = {}
 $openuri_options[:ssl_verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
 
-TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (raise 'need to specify TARGET_VERSION')
+TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (puts opts.help; raise 'need to specify TARGET_VERSION')
 RUBY_REPO_PATH = repo_path || ENV['RUBY_REPO_PATH']
 BACKPORT_CF_KEY = 'cf_5'
 STATUS_CLOSE = 5
-REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (raise 'need to specify REDMINE_API_KEY')
+REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (puts opts.help; raise 'need to specify REDMINE_API_KEY')
 REDMINE_BASE = 'https://bugs.ruby-lang.org'
 
 @query = {
@@ -70,12 +63,12 @@ COLORS = {
 }
 
 class String
-  def color(fore=nil, back=nil, bold: false, underscore: false)
+  def color(fore=nil, back=nil, opts={}, bold: false, underscore: false)
     seq = ""
-    if bold
+    if bold || opts[:bold]
       seq << "\e[1m"
     end
-    if underscore
+    if underscore || opts[:underscore]
       seq << "\e[2m"
     end
     if fore
@@ -162,84 +155,6 @@ def more(sio)
   end
 end
 
-class << Readline
-  def readline(prompt = '')
-    console = IO.console
-    console.binmode
-    _, lx = console.winsize
-    if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
-      cls = "\r\e[2K"
-    else
-      cls = "\r" << (" " * lx)
-    end
-    cls << "\r" << prompt
-    console.print prompt
-    console.flush
-    line = ''
-    while true
-      case c = console.getch
-      when "\r", "\n"
-        puts
-        HISTORY << line
-        return line
-      when "\C-?", "\b" # DEL/BS
-        print "\b \b" if line.chop!
-      when "\C-u"
-        print cls
-        line.clear
-      when "\C-d"
-        return nil if line.empty?
-        line << c
-      when "\C-p"
-        HISTORY.pos -= 1
-        line = HISTORY.current
-        print cls
-        print line
-      when "\C-n"
-        HISTORY.pos += 1
-        line = HISTORY.current
-        print cls
-        print line
-      else
-        if c >= " "
-          print c
-          line << c
-        end
-      end
-    end
-  end
-
-  HISTORY = []
-  def HISTORY.<<(val)
-    HISTORY.push(val)
-    @pos = self.size
-    self
-  end
-  def HISTORY.pos
-    @pos ||= 0
-  end
-  def HISTORY.pos=(val)
-    @pos = val
-    if @pos < 0
-      @pos = -1
-    elsif @pos >= self.size
-      @pos = self.size
-    end
-  end
-  def HISTORY.current
-    @pos ||= 0
-    if @pos < 0 || @pos >= self.size
-      ''
-    else
-      self[@pos]
-    end
-  end
-end unless defined?(Readline.readline)
-
-def find_svn_log(pattern)
-  `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
-end
-
 def find_git_log(pattern)
   `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
@@ -294,7 +209,7 @@ end
 console = IO.console
 row, = console.winsize
 @query['limit'] = row - 2
-puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
+puts "Redmine Backporter".color(bold: true) + " for Ruby #{TARGET_VERSION}"
 
 class CommandSyntaxError < RuntimeError; end
 commands = {
@@ -306,10 +221,11 @@ commands = {
     @issues = issues = res["issues"]
     from = res["offset"] + 1
     total = res["total_count"]
+    closed = issues.count { |x, _| x["status"]["name"] == "Closed" }
     to = from + issues.size - 1
-    puts "#{from}-#{to} / #{total}"
+    puts "#{from}-#{to} / #{total} (closed: #{closed})"
     issues.each_with_index do |x, i|
-      id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]])
+      id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]], bold: x["status"]["name"] == "Closed")
       puts "#{'%2d' % i} #{id} #{x["priority"]["name"][0]} #{status_char(x["status"])} #{x["subject"][0,80]}"
     end
   },
@@ -376,9 +292,6 @@ eom
   "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
     case args
-    when /\Ar?(\d+)\z/ # SVN
-      rev = $1
-      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
       uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{rev}/issues.json")
@@ -436,23 +349,16 @@ eom
       next
     end
 
-    if rev
-    elsif system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
-      if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
-        rev = "r#{rev}"
-      end
-    else # Git
-      if log = find_git_log("##@issue]")
-        /^commit (?<rev>\h{40})$/ =~ log
-      end
+    if rev.nil? && log = find_git_log("##@issue]")
+      /^commit (?<rev>\h{40})$/ =~ log
     end
     if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       if str
-        str.insert(5, "d")
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+        str.sub!(/merge revision\(s\) /, "merged revision(s) commit:")
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev} #{str}."
       else
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev}."
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
       end
       if notes
         str << "\n"
@@ -571,7 +477,7 @@ list = Abbrev.abbrev(commands.keys)
 @changesets = nil
 while true
   begin
-    l = Readline.readline "#{('#' + @issue.to_s).color(bold: true) if @issue}> "
+    l = Reline.readline "#{('#' + @issue.to_s).color(bold: true) if @issue}> "
   rescue Interrupt
     break
   end

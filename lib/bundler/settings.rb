@@ -189,7 +189,7 @@ module Bundler
     def mirror_for(uri)
       if uri.is_a?(String)
         require_relative "vendored_uri"
-        uri = Bundler::URI(uri)
+        uri = Gem::URI(uri)
       end
 
       gem_mirrors.for(uri.to_s).uri
@@ -492,16 +492,19 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
-          if k.include?("-")
-            Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
-              "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
-              "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
+          unless k.start_with?("#")
+            if k.include?("-")
+              Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
+                "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
+                "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
 
-            # string hash keys are frozen
-            k = k.gsub("-", "___")
+              # string hash keys are frozen
+              k = k.gsub("-", "___")
+            end
+
+            config[k] = v
           end
 
-          config[k] = v
           config
         end
       end
@@ -549,7 +552,7 @@ module Bundler
       end
       uri = URINormalizer.normalize_suffix(uri)
       require_relative "vendored_uri"
-      uri = Bundler::URI(uri)
+      uri = Gem::URI(uri)
       unless uri.absolute?
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
@@ -564,7 +567,7 @@ module Bundler
           key
         when Symbol
           key.name
-        when Bundler::URI::HTTP
+        when Gem::URI::HTTP
           key.to_s
         else
           raise ArgumentError, "Invalid key: #{key.inspect}"
@@ -577,7 +580,7 @@ module Bundler
           key
         when Symbol
           key.to_s
-        when Bundler::URI::HTTP
+        when Gem::URI::HTTP
           key.to_s
         else
           raise ArgumentError, "Invalid key: #{key.inspect}"

@@ -8,7 +8,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def set(*specs)
-    source = Gem::Source.new URI @gem_repo
+    source = Gem::Source.new Gem::URI @gem_repo
 
     specs = specs.map do |spec|
       Gem::Resolver::SpecSpecification.new nil, spec, source

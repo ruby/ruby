@@ -6,7 +6,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "optparse"
+require_relative "vendored_optparse"
 require_relative "requirement"
 require_relative "user_interaction"
 

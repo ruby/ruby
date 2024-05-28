@@ -1,4 +1,5 @@
 require_relative 'package'
+require_relative 'rubygems'
 require_relative 'version_constraint'
 require_relative 'incompatibility'
 require_relative 'basic_package_source'

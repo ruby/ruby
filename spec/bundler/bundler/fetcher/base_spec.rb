@@ -37,7 +37,7 @@ RSpec.describe Bundler::Fetcher::Base do
   end
 
   describe "#fetch_uri" do
-    let(:remote_uri_obj) { Bundler::URI("http://rubygems.org") }
+    let(:remote_uri_obj) { Gem::URI("http://rubygems.org") }
 
     before { allow(subject).to receive(:remote_uri).and_return(remote_uri_obj) }
 
@@ -50,10 +50,10 @@ RSpec.describe Bundler::Fetcher::Base do
     end
 
     context "when the remote uri's host is not rubygems.org" do
-      let(:remote_uri_obj) { Bundler::URI("http://otherhost.org") }
+      let(:remote_uri_obj) { Gem::URI("http://otherhost.org") }
 
       it "should return the remote uri" do
-        expect(subject.fetch_uri).to eq(Bundler::URI("http://otherhost.org"))
+        expect(subject.fetch_uri).to eq(Gem::URI("http://otherhost.org"))
       end
     end
 

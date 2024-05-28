@@ -152,12 +152,16 @@ class TestGemExtCargoBuilder < Gem::TestCase
     require "fiddle"
     dylib_handle = Fiddle.dlopen bundle
     assert_nothing_raised { dylib_handle[name] }
+  ensure
+    dylib_handle&.close
   end
 
   def refute_ffi_handle(bundle, name)
     require "fiddle"
     dylib_handle = Fiddle.dlopen bundle
     assert_raise { dylib_handle[name] }
+  ensure
+    dylib_handle&.close
   end
 
   def replace_in_rust_file(name, from, to)

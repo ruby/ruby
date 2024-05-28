@@ -179,7 +179,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#mirror_for" do
-    let(:uri) { Bundler::URI("https://rubygems.org/") }
+    let(:uri) { Gem::URI("https://rubygems.org/") }
 
     context "with no configured mirror" do
       it "returns the original URI" do
@@ -192,7 +192,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     context "with a configured mirror" do
-      let(:mirror_uri) { Bundler::URI("https://rubygems-mirror.org/") }
+      let(:mirror_uri) { Gem::URI("https://rubygems-mirror.org/") }
 
       before { settings.set_local "mirror.https://rubygems.org/", mirror_uri.to_s }
 
@@ -213,7 +213,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
 
       context "with a file URI" do
-        let(:mirror_uri) { Bundler::URI("file:/foo/BAR/baz/qUx/") }
+        let(:mirror_uri) { Gem::URI("file:/foo/BAR/baz/qUx/") }
 
         it "returns the mirror URI" do
           expect(settings.mirror_for(uri)).to eq(mirror_uri)
@@ -231,7 +231,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#credentials_for" do
-    let(:uri) { Bundler::URI("https://gemserver.example.org/") }
+    let(:uri) { Gem::URI("https://gemserver.example.org/") }
     let(:credentials) { "username:password" }
 
     context "with no configured credentials" do
@@ -291,7 +291,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     it "reads older keys without trailing slashes" do
       settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
       expect(settings.mirror_for("https://rubygems.org/")).to eq(
-        Bundler::URI("http://rubygems-mirror.org/")
+        Gem::URI("http://rubygems-mirror.org/")
       )
     end
 
@@ -317,6 +317,15 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     it "converts older keys without trailing slashes and double underscore" do
       config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://rubygems-mirror.org")
       expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+    end
+
+    it "ignores commented out keys" do
+      create_file bundled_app(".bundle/config"), <<~C
+        # BUNDLE_MY-PERSONAL-SERVER__ORG: my-personal-server.org
+      C
+
+      expect(Bundler.ui).not_to receive(:warn)
+      expect(settings.all).to be_empty
     end
 
     it "converts older keys with dashes" do
