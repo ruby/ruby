@@ -29,6 +29,28 @@ assert_equal 'bar', %q{
   bar(Struct.new(:bar).new(:bar))
 }
 
+# AND with offset  DISP32
+assert_equal '2', %q{
+  def foo
+    a = 6;
+    b = {a: 1, b: 1, c: 1, d: 1, e: 1,  f: 1, g: 1, h: a&3}
+    b[:h]
+  end
+
+  foo
+}
+
+# OR with offset DISP32
+assert_equal '6', %q{
+  def foo
+    a = 4;
+    b = {a: 1, b: 1, c: 1, d: 1, e: 1,  f: 1, g: 1, h: a|2}
+    b[:h]
+  end
+
+  foo
+}
+
 # kwargs default w/ checkkeyword + locals (which shouldn't overwrite unspecified_bits)
 assert_equal '1', %q{
   def foo(bar: 1.to_s)
