@@ -447,7 +447,7 @@ E
     it "does not make bundler crash and ignores the configuration" do
       bundle "config list --parseable"
 
-      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(out).to be_empty
       expect(err).to be_empty
 
       ruby(<<~RUBY)

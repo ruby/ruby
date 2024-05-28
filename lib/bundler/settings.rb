@@ -538,7 +538,7 @@ module Bundler
       key.gsub!("-", "___")
       key.upcase!
 
-      key.prepend("BUNDLE_")
+      key.gsub(/\A([ #]*)/, '\1BUNDLE_')
     end
 
     # TODO: duplicates Rubygems#normalize_uri
