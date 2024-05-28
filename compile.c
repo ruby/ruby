@@ -8343,7 +8343,7 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
 static int
 compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    const int line = nd_line(node);
+    const int line = nd_line(RNODE_ENSURE(node)->nd_ensr);
     const NODE *line_node = node;
     DECL_ANCHOR(ensr);
     const rb_iseq_t *ensure = NEW_CHILD_ISEQ(RNODE_ENSURE(node)->nd_ensr,
