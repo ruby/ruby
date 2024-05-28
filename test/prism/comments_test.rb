@@ -6,7 +6,7 @@ module Prism
   class CommentsTest < TestCase
     def test_comment_inline
       source = "# comment"
-      assert_equal [0], Debug.newlines(source)
+      assert_equal [0], Prism.parse(source).source.offsets
 
       assert_comment(
         source,

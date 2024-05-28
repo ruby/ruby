@@ -1356,14 +1356,14 @@ module Prism
 
     if RUBY_VERSION >= "3.0"
       def test_writing_numbered_parameter
-        assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-          ["_1 is reserved for numbered parameters", 5..7]
+        assert_error_messages "-> { _1 = 0 }", [
+          "_1 is reserved for numbered parameters"
         ]
       end
 
       def test_targeting_numbered_parameter
-        assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-          ["_1 is reserved for numbered parameters", 5..7]
+        assert_error_messages "-> { _1, = 0 }", [
+          "_1 is reserved for numbered parameters"
         ]
       end
 
@@ -1377,7 +1377,7 @@ module Prism
 
     def test_double_scope_numbered_parameters
       source = "-> { _1 + -> { _2 } }"
-      errors = [["numbered parameter is already used in outer scope", 15..17]]
+      errors = [["numbered parameter is already used in outer block", 15..17]]
 
       assert_errors expression(source), source, errors
     end
@@ -1628,6 +1628,41 @@ module Prism
         [message, 132..138],
         [message, 154..160],
       ]
+    end
+
+    def test_void_value_expression_in_begin_statement
+      source = <<~RUBY
+        x = return 1
+        x = return, 1
+        x = 1, return
+        x, y = return
+        x = begin return ensure end
+        x = begin ensure return end
+        x = begin return ensure return end
+        x = begin return; rescue; return end
+        x = begin return; rescue; return; else return end
+        x = begin; return; rescue; retry; end
+      RUBY
+
+      message = 'unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..12],
+        [message, 17..23],
+        [message, 34..40],
+        [message, 48..54],
+        [message, 65..71],
+        [message, 100..106],
+        [message, 121..127],
+        [message, 156..162],
+        [message, 222..228],
+        [message, 244..250],
+      ]
+
+      refute_error_messages("x = begin return; rescue; end")
+      refute_error_messages("x = begin return; rescue; return; else end")
+      refute_error_messages("x = begin; rescue; retry; end")
+      refute_error_messages("x = begin 1; rescue; retry; ensure; end")
+      refute_error_messages("x = begin 1; rescue; return; end")
     end
 
     def test_void_value_expression_in_def

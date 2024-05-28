@@ -2,8 +2,6 @@
 
 require_relative "test_helper"
 
-return if Prism::BACKEND == :FFI
-
 module Prism
   class StaticInspectTest < TestCase
     def test_false
@@ -84,7 +82,8 @@ module Prism
     private
 
     def static_inspect(source, **options)
-      Debug.static_inspect(source, **options)
+      warnings = Prism.parse("{ #{source} => 1, #{source} => 1 }", **options).warnings
+      warnings.last.message[/^key (.+) is duplicated and overwritten on line \d/, 1]
     end
   end
 end

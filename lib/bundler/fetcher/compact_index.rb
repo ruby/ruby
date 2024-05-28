@@ -4,8 +4,6 @@ require_relative "base"
 require_relative "../worker"
 
 module Bundler
-  autoload :CompactIndexClient, File.expand_path("../compact_index_client", __dir__)
-
   class Fetcher
     class CompactIndex < Base
       def self.compact_index_request(method_name)
@@ -61,7 +59,7 @@ module Bundler
           return nil
         end
         # Read info file checksums out of /versions, so we can know if gems are up to date
-        compact_index_client.update_and_parse_checksums!
+        compact_index_client.available?
       rescue CompactIndexClient::Updater::MismatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil

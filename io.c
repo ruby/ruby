@@ -8026,37 +8026,18 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     return NULL;
 }
 
-static void
-rb_scan_open_args(int argc, const VALUE *argv,
-        VALUE *fname_p, int *oflags_p, int *fmode_p,
-        struct rb_io_encoding *convconfig_p, mode_t *perm_p)
+static VALUE
+rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
 {
-    VALUE opt, fname, vmode, vperm;
+    struct rb_io_encoding convconfig;
     int oflags, fmode;
     mode_t perm;
 
-    argc = rb_scan_args(argc, argv, "12:", &fname, &vmode, &vperm, &opt);
     FilePathValue(fname);
 
-    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
+    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
+    perm = NIL_P(vperm) ? 0666 : NUM2MODET(vperm);
 
-    perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
-
-    *fname_p = fname;
-    *oflags_p = oflags;
-    *fmode_p = fmode;
-    *perm_p = perm;
-}
-
-static VALUE
-rb_open_file(int argc, const VALUE *argv, VALUE io)
-{
-    VALUE fname;
-    int oflags, fmode;
-    struct rb_io_encoding convconfig;
-    mode_t perm;
-
-    rb_scan_open_args(argc, argv, &fname, &oflags, &fmode, &convconfig, &perm);
     rb_file_open_generic(io, fname, oflags, fmode, &convconfig, perm);
 
     return io;
@@ -9379,6 +9360,8 @@ rb_io_make_open_file(VALUE obj)
     return fp;
 }
 
+static VALUE io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt);
+
 /*
  *  call-seq:
  *    IO.new(fd, mode = 'r', **opts) -> io
@@ -9424,18 +9407,24 @@ static VALUE
 rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
     VALUE fnum, vmode;
+    VALUE opt;
+
+    rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
+    return io_initialize(io, fnum, vmode, opt);
+}
+
+static VALUE
+io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
+{
     rb_io_t *fp;
     int fd, fmode, oflags = O_RDONLY;
     struct rb_io_encoding convconfig;
-    VALUE opt;
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     int ofmode;
 #else
     struct stat st;
 #endif
 
-
-    argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
@@ -9584,17 +9573,16 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
     if (RFILE(io)->fptr) {
         rb_raise(rb_eRuntimeError, "reinitializing File");
     }
-    if (0 < argc && argc < 3) {
-        VALUE fd = rb_check_to_int(argv[0]);
+    VALUE fname, vmode, vperm, opt;
+    int posargc = rb_scan_args(argc, argv, "12:", &fname, &vmode, &vperm, &opt);
+    if (posargc < 3) {          /* perm is File only */
+        VALUE fd = rb_check_to_int(fname);
 
         if (!NIL_P(fd)) {
-            argv[0] = fd;
-            return rb_io_initialize(argc, argv, io);
+            return io_initialize(io, fd, vmode, opt);
         }
     }
-    rb_open_file(argc, argv, io);
-
-    return io;
+    return rb_open_file(io, fname, vmode, vperm, opt);
 }
 
 /* :nodoc: */

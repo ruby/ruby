@@ -22,7 +22,7 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
 
     it "accepts a length, an offset, and an output buffer" do
       buffer = +"foo"
-      @file.pread(3, 4, buffer)
+      @file.pread(3, 4, buffer).should.equal?(buffer)
       buffer.should == "567"
     end
 
@@ -36,6 +36,13 @@ guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
       buffer = +"foo"
       @file.pread(5, 0, buffer)
       buffer.should == "12345"
+    end
+
+    it "preserves the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @file.pread(10, 0, buffer)
+
+      buffer.encoding.should == Encoding::ISO_8859_1
     end
 
     it "does not advance the file pointer" do

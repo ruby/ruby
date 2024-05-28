@@ -62,7 +62,7 @@ describe "IO#readpartial" do
     buffer = +"existing content"
     @wr.write("hello world")
     @wr.close
-    @rd.readpartial(11, buffer)
+    @rd.readpartial(11, buffer).should.equal?(buffer)
     buffer.should == "hello world"
   end
 
@@ -106,6 +106,7 @@ describe "IO#readpartial" do
     @wr.write("abc")
     @wr.close
     @rd.readpartial(10, buffer)
+
     buffer.encoding.should == Encoding::ISO_8859_1
   end
 end

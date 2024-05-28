@@ -21,24 +21,17 @@ module Bundler
 
     require_relative "compact_index_client/cache"
     require_relative "compact_index_client/cache_file"
+    require_relative "compact_index_client/parser"
     require_relative "compact_index_client/updater"
 
-    attr_reader :directory
-
-    def initialize(directory, fetcher)
-      @directory = Pathname.new(directory)
-      @updater = Updater.new(fetcher)
-      @cache = Cache.new(@directory)
-      @endpoints = Set.new
-      @info_checksums_by_name = {}
-      @parsed_checksums = false
-      @mutex = Thread::Mutex.new
+    def initialize(directory, fetcher = nil)
+      @cache = Cache.new(directory, fetcher)
+      @parser = Parser.new(@cache)
     end
 
     def execution_mode=(block)
       Bundler::CompactIndexClient.debug { "execution_mode=" }
-      @endpoints = Set.new
-
+      @cache.reset!
       @execution_mode = block
     end
 
@@ -60,67 +53,28 @@ module Bundler
     end
 
     def names
-      Bundler::CompactIndexClient.debug { "/names" }
-      update("names", @cache.names_path, @cache.names_etag_path)
-      @cache.names
+      Bundler::CompactIndexClient.debug { "names" }
+      @parser.names
     end
 
     def versions
-      Bundler::CompactIndexClient.debug { "/versions" }
-      update("versions", @cache.versions_path, @cache.versions_etag_path)
-      versions, @info_checksums_by_name = @cache.versions
-      versions
+      Bundler::CompactIndexClient.debug { "versions" }
+      @parser.versions
     end
 
     def dependencies(names)
       Bundler::CompactIndexClient.debug { "dependencies(#{names})" }
-      execution_mode.call(names) do |name|
-        update_info(name)
-        @cache.dependencies(name).map {|d| d.unshift(name) }
-      end.flatten(1)
+      execution_mode.call(names) {|name| @parser.info(name) }.flatten(1)
     end
 
-    def update_and_parse_checksums!
-      Bundler::CompactIndexClient.debug { "update_and_parse_checksums!" }
-      return @info_checksums_by_name if @parsed_checksums
-      update("versions", @cache.versions_path, @cache.versions_etag_path)
-      @info_checksums_by_name = @cache.checksums
-      @parsed_checksums = true
+    def latest_version(name)
+      Bundler::CompactIndexClient.debug { "latest_version(#{name})" }
+      @parser.info(name).map {|d| Gem::Version.new(d[1]) }.max
     end
 
-    private
-
-    def update(remote_path, local_path, local_etag_path)
-      Bundler::CompactIndexClient.debug { "update(#{local_path}, #{remote_path})" }
-      unless synchronize { @endpoints.add?(remote_path) }
-        Bundler::CompactIndexClient.debug { "already fetched #{remote_path}" }
-        return
-      end
-      @updater.update(url(remote_path), local_path, local_etag_path)
-    end
-
-    def update_info(name)
-      Bundler::CompactIndexClient.debug { "update_info(#{name})" }
-      path = @cache.info_path(name)
-      unless existing = @info_checksums_by_name[name]
-        Bundler::CompactIndexClient.debug { "skipping updating info for #{name} since it is missing from versions" }
-        return
-      end
-      checksum = SharedHelpers.checksum_for_file(path, :MD5)
-      if checksum == existing
-        Bundler::CompactIndexClient.debug { "skipping updating info for #{name} since the versions checksum matches the local checksum" }
-        return
-      end
-      Bundler::CompactIndexClient.debug { "updating info for #{name} since the versions checksum #{existing} != the local checksum #{checksum}" }
-      update("info/#{name}", path, @cache.info_etag_path(name))
-    end
-
-    def url(path)
-      path
-    end
-
-    def synchronize
-      @mutex.synchronize { yield }
+    def available?
+      Bundler::CompactIndexClient.debug { "available?" }
+      @parser.available?
     end
   end
 end

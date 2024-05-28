@@ -881,7 +881,7 @@ module Prism
         # 1i
         # ^^
         def visit_imaginary_node(node)
-          visit_numeric(node, builder.complex([imaginary_value(node), srange(node.location)]))
+          visit_numeric(node, builder.complex([Complex(0, node.numeric.value), srange(node.location)]))
         end
 
         # { foo: }
@@ -1149,6 +1149,12 @@ module Prism
         end
 
         # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          builder.ident([:it, srange(node.location)]).updated(:lvar)
+        end
+
+        # -> { it }
         # ^^^^^^^^^
         def visit_it_parameters_node(node)
           builder.args(nil, [], nil, false)
@@ -1201,14 +1207,7 @@ module Prism
         # foo
         # ^^^
         def visit_local_variable_read_node(node)
-          name = node.name
-
-          # This is just a guess. parser doesn't have support for the implicit
-          # `it` variable yet, so we'll probably have to visit this once it
-          # does.
-          name = :it if name == :"0it"
-
-          builder.ident([name, srange(node.location)]).updated(:lvar)
+          builder.ident([node.name, srange(node.location)]).updated(:lvar)
         end
 
         # foo = 1
@@ -1514,7 +1513,7 @@ module Prism
         # 1r
         # ^^
         def visit_rational_node(node)
-          visit_numeric(node, builder.rational([rational_value(node), srange(node.location)]))
+          visit_numeric(node, builder.rational([node.value, srange(node.location)]))
         end
 
         # redo
@@ -1940,12 +1939,6 @@ module Prism
           forwarding
         end
 
-        # Because we have mutated the AST to allow for newlines in the middle of
-        # a rational, we need to manually handle the value here.
-        def imaginary_value(node)
-          Complex(0, node.numeric.is_a?(RationalNode) ? rational_value(node.numeric) : node.numeric.value)
-        end
-
         # Negate the value of a numeric node. This is a special case where you
         # have a negative sign on one line and then a number on the next line.
         # In normal Ruby, this will always be a method call. The parser gem,
@@ -1955,7 +1948,9 @@ module Prism
           case receiver.type
           when :integer_node, :float_node
             receiver.copy(value: -receiver.value, location: message_loc.join(receiver.location))
-          when :rational_node, :imaginary_node
+          when :rational_node
+            receiver.copy(numerator: -receiver.numerator, location: message_loc.join(receiver.location))
+          when :imaginary_node
             receiver.copy(numeric: numeric_negate(message_loc, receiver.numeric), location: message_loc.join(receiver.location))
           end
         end
@@ -1972,16 +1967,6 @@ module Prism
             parameters.keywords.empty? &&
             parameters.keyword_rest.nil? &&
             parameters.block.nil?
-        end
-
-        # Because we have mutated the AST to allow for newlines in the middle of
-        # a rational, we need to manually handle the value here.
-        def rational_value(node)
-          if node.numeric.is_a?(IntegerNode)
-            Rational(node.numeric.value)
-          else
-            Rational(node.slice.gsub(/\s/, "").chomp("r"))
-          end
         end
 
         # Locations in the parser gem AST are generated using this class. We

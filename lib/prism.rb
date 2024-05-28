@@ -13,7 +13,6 @@ module Prism
 
   autoload :BasicVisitor, "prism/visitor"
   autoload :Compiler, "prism/compiler"
-  autoload :Debug, "prism/debug"
   autoload :DesugarCompiler, "prism/desugar_compiler"
   autoload :Dispatcher, "prism/dispatcher"
   autoload :DotVisitor, "prism/dot_visitor"
@@ -32,7 +31,6 @@ module Prism
   # Some of these constants are not meant to be exposed, so marking them as
   # private here.
 
-  private_constant :Debug
   private_constant :LexCompat
   private_constant :LexRipper
 

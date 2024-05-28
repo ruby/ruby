@@ -23,6 +23,23 @@ module Prism
       assert_warning("a /b/", "wrap regexp in parentheses")
     end
 
+    def test_binary_operator
+      [
+        [:**, "argument prefix"],
+        [:*, "argument prefix"],
+        [:<<, "here document"],
+        [:&, "argument prefix"],
+        [:+, "unary operator"],
+        [:-, "unary operator"],
+        [:/, "regexp literal"],
+        [:%, "string literal"]
+      ].each do |(operator, warning)|
+        assert_warning("puts 1 #{operator}0", warning)
+        assert_warning("puts :a #{operator}0", warning)
+        assert_warning("m = 1; puts m #{operator}0", warning)
+      end
+    end
+
     def test_equal_in_conditional
       assert_warning("if a = 1; end; a = a", "should be ==")
     end
@@ -48,7 +65,7 @@ module Prism
     end
 
     def test_duplicated_when_clause
-      assert_warning("case 1; when 1, 1; end", "clause with line")
+      assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
     def test_float_out_of_range

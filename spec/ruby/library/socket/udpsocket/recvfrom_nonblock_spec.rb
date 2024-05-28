@@ -58,6 +58,15 @@ describe 'UDPSocket#recvfrom_nonblock' do
             buffer.should == 'h'
           end
 
+          it "preserves the encoding of the given buffer" do
+            buffer = ''.encode(Encoding::ISO_8859_1)
+            IO.select([@server])
+            message, = @server.recvfrom_nonblock(1, 0, buffer)
+
+            message.should.equal?(buffer)
+            buffer.encoding.should == Encoding::ISO_8859_1
+          end
+
           describe 'the returned Array' do
             before do
               IO.select([@server])

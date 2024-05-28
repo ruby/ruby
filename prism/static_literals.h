@@ -95,9 +95,10 @@ typedef struct {
  * @param start_line The line number that the parser starts on.
  * @param literals The set of static literals to add the node to.
  * @param node The node to add to the set.
+ * @param replace Whether to replace the previous node if one already exists.
  * @return A pointer to the node that is being overwritten, if there is one.
  */
-pm_node_t * pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node);
+pm_node_t * pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace);
 
 /**
  * Free the internal memory associated with the given static literals set.
@@ -115,6 +116,6 @@ void pm_static_literals_free(pm_static_literals_t *literals);
  * @param encoding_name The name of the encoding of the source being parsed.
  * @param node The node to create a string representation of.
  */
-PRISM_EXPORTED_FUNCTION void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node);
+void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node);
 
 #endif

@@ -1629,6 +1629,10 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
+
+    // Conditionally enable coverage depending on the current mode:
+    int coverage_enabled = ((rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0) ? 1 : 0;
+
     if (!fname) {
         fname = rb_source_location(&line);
     }
@@ -1638,10 +1642,12 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     }
     else {
         fname = get_eval_default_path();
+        coverage_enabled = 0;
     }
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, line);
+    result.node.coverage_enabled = coverage_enabled;
 
     // Cout scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
@@ -1703,6 +1709,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         RUBY_ASSERT(parent_scope != NULL);
 
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        parent_scope->coverage_enabled = coverage_enabled;
         parent_scope->parser = &result.parser;
         parent_scope->index_lookup_table = st_init_numtable();
 

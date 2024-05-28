@@ -618,7 +618,12 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful message", bundler: "3"
   end
 
-  describe "deprecating rubocop", :readline do
+  describe "deprecating rubocop" do
+    before do
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false",
+                    "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+    end
+
     context "bundle gem --rubocop" do
       before do
         bundle "gem my_new_gem --rubocop", raise_on_error: false

@@ -875,6 +875,8 @@ module Prism
               else
                 visited << result
               end
+            elsif result[0] == :dstr
+              visited.concat(result[1..-1])
             else
               visited << result
             end
@@ -905,10 +907,21 @@ module Prism
                 results << result
                 state = :interpolated_content
               end
-            else
-              results << result
+            when :interpolated_content
+              if result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
+                results[-1][1] << result[1]
+                results[-1].line_max = result.line_max
+              else
+                results << result
+              end
             end
           end
+        end
+
+        # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          s(node, :call, nil, :it)
         end
 
         # foo(bar: baz)

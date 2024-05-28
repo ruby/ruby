@@ -152,12 +152,11 @@ pm_location_line_number(const pm_parser_t *parser, const pm_location_t *location
 }
 
 /**
- * Convert the value of an integer node into a Ruby Integer.
+ * Parse the value of a pm_integer_t into a Ruby Integer.
  */
 static VALUE
-parse_integer(const pm_integer_node_t *node)
+parse_integer_value(const pm_integer_t *integer)
 {
-    const pm_integer_t *integer = &node->value;
     VALUE result;
 
     if (integer->values == NULL) {
@@ -188,6 +187,15 @@ parse_integer(const pm_integer_node_t *node)
 }
 
 /**
+ * Convert the value of an integer node into a Ruby Integer.
+ */
+static inline VALUE
+parse_integer(const pm_integer_node_t *node)
+{
+    return parse_integer_value(&node->value);
+}
+
+/**
  * Convert the value of a float node into a Ruby Float.
  */
 static VALUE
@@ -205,36 +213,9 @@ parse_float(const pm_float_node_t *node)
 static VALUE
 parse_rational(const pm_rational_node_t *node)
 {
-    VALUE result;
-
-    if (PM_NODE_TYPE_P(node->numeric, PM_FLOAT_NODE)) {
-        const uint8_t *start = node->base.location.start;
-        const uint8_t *end = node->base.location.end - 1;
-        size_t length = end - start;
-
-        char *buffer = malloc(length + 1);
-        memcpy(buffer, start, length);
-
-        buffer[length] = '\0';
-
-        char *decimal = memchr(buffer, '.', length);
-        RUBY_ASSERT(decimal);
-        size_t seen_decimal = decimal - buffer;
-        size_t fraclen = length - seen_decimal - 1;
-        memmove(decimal, decimal + 1, fraclen + 1);
-
-        VALUE numerator = rb_cstr_to_inum(buffer, 10, false);
-        result = rb_rational_new(numerator, rb_int_positive_pow(10, fraclen));
-
-        free(buffer);
-    }
-    else {
-        RUBY_ASSERT(PM_NODE_TYPE_P(node->numeric, PM_INTEGER_NODE));
-        VALUE numerator = parse_integer((const pm_integer_node_t *) node->numeric);
-        result = rb_rational_raw(numerator, INT2FIX(1));
-    }
-
-    return result;
+    VALUE numerator = parse_integer_value(&node->numerator);
+    VALUE denominator = parse_integer_value(&node->denominator);
+    return rb_rational_new(numerator, denominator);
 }
 
 /**
@@ -570,6 +551,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
 
     if (parts_size > 0) {
         VALUE current_string = Qnil;
+        pm_line_column_t current_location = *node_location;
 
         for (size_t index = 0; index < parts_size; index++) {
             const pm_node_t *part = parts->nodes[index];
@@ -590,6 +572,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                 }
                 else {
                     current_string = string_value;
+                    if (index != 0) current_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, part);
                 }
             }
             else {
@@ -616,6 +599,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                     }
                     else {
                         current_string = string_value;
+                        current_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, part);
                     }
                 }
                 else {
@@ -640,11 +624,13 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                         current_string = rb_enc_str_new(NULL, 0, encoding);
                     }
 
-                    PUSH_INSN1(ret, *node_location, putobject, rb_fstring(current_string));
+                    PUSH_INSN1(ret, current_location, putobject, rb_fstring(current_string));
                     PM_COMPILE_NOT_POPPED(part);
-                    PUSH_INSN(ret, *node_location, dup);
-                    PUSH_INSN1(ret, *node_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                    PUSH_INSN(ret, *node_location, anytostring);
+
+                    const pm_line_column_t current_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, part);
+                    PUSH_INSN(ret, current_location, dup);
+                    PUSH_INSN1(ret, current_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE, NULL, FALSE));
+                    PUSH_INSN(ret, current_location, anytostring);
 
                     current_string = Qnil;
                     stack_size += 2;
@@ -656,10 +642,10 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
             current_string = rb_fstring(current_string);
 
             if (stack_size == 0 && interpolated) {
-                PUSH_INSN1(ret, *node_location, putstring, current_string);
+                PUSH_INSN1(ret, current_location, putstring, current_string);
             }
             else {
-                PUSH_INSN1(ret, *node_location, putobject, current_string);
+                PUSH_INSN1(ret, current_location, putobject, current_string);
             }
 
             current_string = Qnil;
@@ -2863,6 +2849,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->encoding = previous->encoding;
         scope->filepath_encoding = previous->filepath_encoding;
         scope->constants = previous->constants;
+        scope->coverage_enabled = previous->coverage_enabled;
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -3809,7 +3796,7 @@ pm_multi_target_state_update(pm_multi_target_state_t *state)
     }
 }
 
-static size_t
+static void
 pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state);
 
 /**
@@ -3956,6 +3943,13 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         pm_compile_node(iseq, cast->receiver, parents, false, scope_node);
 
+        LABEL *safe_label = NULL;
+        if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+            safe_label = NEW_LABEL(location.line);
+            PUSH_INSN(parents, location, dup);
+            PUSH_INSNL(parents, location, branchnil, safe_label);
+        }
+
         if (state != NULL) {
             PUSH_INSN1(writes, location, topn, INT2FIX(1));
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), 1);
@@ -3966,7 +3960,9 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY)) flags |= VM_CALL_FCALL;
 
         PUSH_SEND_WITH_FLAG(writes, location, method_id, INT2FIX(1), INT2FIX(flags));
+        if (safe_label != NULL && state == NULL) PUSH_LABEL(writes, safe_label);
         PUSH_INSN(writes, location, pop);
+        if (safe_label != NULL && state != NULL) PUSH_LABEL(writes, safe_label);
 
         if (state != NULL) {
             PUSH_INSN(cleanup, location, pop);
@@ -4056,7 +4052,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
  * on the stack that correspond to the parent expressions of the various
  * targets.
  */
-static size_t
+static void
 pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
 {
     const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
@@ -4096,26 +4092,28 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     // going through the targets because we will need to revisit them once
     // we know how many values are being pushed onto the stack.
     pm_multi_target_state_t target_state = { 0 };
-    size_t base_position = state == NULL ? 0 : state->position;
+    if (state == NULL) state = &target_state;
+
+    size_t base_position = state->position;
     size_t splat_position = has_rest ? 1 : 0;
 
     // Next, we'll iterate through all of the leading targets.
     for (size_t index = 0; index < lefts->size; index++) {
         const pm_node_t *target = lefts->nodes[index];
-        target_state.position = lefts->size - index + splat_position + base_position;
-        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+        state->position = lefts->size - index + splat_position + base_position;
+        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
     }
 
     // Next, we'll compile the rest target if there is one.
     if (has_rest) {
         const pm_node_t *target = ((const pm_splat_node_t *) rest)->expression;
-        target_state.position = 1 + rights->size + base_position;
+        state->position = 1 + rights->size + base_position;
 
         if (has_posts) {
             PUSH_INSN2(writes, location, expandarray, INT2FIX(rights->size), INT2FIX(3));
         }
 
-        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+        pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
     }
 
     // Finally, we'll compile the trailing targets.
@@ -4126,18 +4124,10 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 
         for (size_t index = 0; index < rights->size; index++) {
             const pm_node_t *target = rights->nodes[index];
-            target_state.position = rights->size - index + base_position;
-            pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, &target_state);
+            state->position = rights->size - index + base_position;
+            pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
         }
     }
-
-    // Now, we need to go back and modify the topn instructions in order to
-    // ensure they can correctly retrieve the parent expressions.
-    pm_multi_target_state_update(&target_state);
-
-    if (state != NULL) state->stack_size += target_state.stack_size;
-
-    return target_state.stack_size;
 }
 
 /**
@@ -5406,7 +5396,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             COMPILE_ERROR(ERROR_ARGS "Invalid break");
-            rb_bug("Invalid break");
         }
         return;
       }
@@ -6920,6 +6909,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+        // -> { it }
+        //      ^^
+        if (!popped) {
+            PUSH_GETLOCAL(ret, location, scope_node->local_table_for_iseq_size, 0);
+        }
+
+        return;
+      }
       case PM_KEYWORD_HASH_NODE: {
         // foo(bar: baz)
         //     ^^^^^^^^
@@ -7023,9 +7021,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_LOCAL_VARIABLE_READ_NODE: {
         // foo
         // ^^^
-        const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) node;
-
         if (!popped) {
+            const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) node;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, cast->depth);
             PUSH_GETLOCAL(ret, location, index.index, index.level);
         }
@@ -7286,17 +7283,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_multi_target_state_t state = { 0 };
         state.position = popped ? 0 : 1;
-        size_t stack_size = pm_compile_multi_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
+        pm_compile_multi_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
 
         PM_COMPILE_NOT_POPPED(cast->value);
         if (!popped) PUSH_INSN(ret, location, dup);
 
         PUSH_SEQ(ret, writes);
-        if (!popped && stack_size >= 1) {
+        if (!popped && state.stack_size >= 1) {
             // Make sure the value on the right-hand side of the = operator is
             // being returned before we pop the parent expressions.
-            PUSH_INSN1(ret, location, setn, INT2FIX(stack_size));
+            PUSH_INSN1(ret, location, setn, INT2FIX(state.stack_size));
         }
+
+        // Now, we need to go back and modify the topn instructions in order to
+        // ensure they can correctly retrieve the parent expressions.
+        pm_multi_target_state_update(&state);
 
         PUSH_SEQ(ret, cleanup);
         return;
@@ -7967,6 +7968,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        // If we have the `it` implicit local variable, we need to account for
+        // it in the local table size.
+        if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+            table_size++;
+        }
+
         // Ensure there is enough room in the local table for any
         // parameters that have been repeated
         // ex: def underscore_parameters(_, _ = 1, _ = 2); _; end
@@ -8113,6 +8120,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             body->param.lead_num = (int) requireds_list->size;
             body->param.flags.has_lead = true;
+        }
+
+        if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+            ID local = rb_make_temporary_id(local_index);
+            local_table_for_iseq->ids[local_index++] = local;
         }
 
         // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
@@ -8475,18 +8487,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.flags.has_lead = true;
         }
 
-        // Fill in the it variable, if it exists
-        if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
-            const uint8_t param_name[] = { '0', 'i', 't' };
-            pm_constant_id_t constant_id = pm_constant_pool_find(&parser->constant_pool, param_name, 3);
-            RUBY_ASSERT(constant_id && "parser should have inserted 0it for 'it' local");
-
-            ID local = rb_make_temporary_id(local_index);
-            local_table_for_iseq->ids[local_index] = local;
-            st_insert(index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
-            local_index++;
-        }
-
         //********END OF STEP 3**********
 
         //********STEP 4**********
@@ -8745,7 +8745,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             break;
         }
 
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
             const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, scope_node->ast_node);
             ADD_TRACE(ret, RUBY_EVENT_END);
             ISEQ_COMPILE_DATA(iseq)->last_line = end_location.line;
@@ -9159,6 +9159,368 @@ pm_parse_result_free(pm_parse_result_t *result)
     pm_options_free(&result->options);
 }
 
+/** An error that is going to be formatted into the output. */
+typedef struct {
+    /** A pointer to the diagnostic that was generated during parsing. */
+    pm_diagnostic_t *error;
+
+    /** The start line of the diagnostic message. */
+    int32_t line;
+
+    /** The column start of the diagnostic message. */
+    uint32_t column_start;
+
+    /** The column end of the diagnostic message. */
+    uint32_t column_end;
+} pm_parse_error_t;
+
+/** The format that will be used to format the errors into the output. */
+typedef struct {
+    /** The prefix that will be used for line numbers. */
+    const char *number_prefix;
+
+    /** The prefix that will be used for blank lines. */
+    const char *blank_prefix;
+
+    /** The divider that will be used between sections of source code. */
+    const char *divider;
+
+    /** The length of the blank prefix. */
+    size_t blank_prefix_length;
+
+    /** The length of the divider. */
+    size_t divider_length;
+} pm_parse_error_format_t;
+
+#define PM_COLOR_GRAY "\033[38;5;102m"
+#define PM_COLOR_RED "\033[1;31m"
+#define PM_COLOR_RESET "\033[m"
+#define PM_ERROR_TRUNCATE 30
+
+static inline pm_parse_error_t *
+pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
+    pm_parse_error_t *errors = xcalloc(error_list->size, sizeof(pm_parse_error_t));
+    if (errors == NULL) return NULL;
+
+    int32_t start_line = parser->start_line;
+    for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+        pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
+        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
+
+        // We're going to insert this error into the array in sorted order. We
+        // do this by finding the first error that has a line number greater
+        // than the current error and then inserting the current error before
+        // that one.
+        size_t index = 0;
+        while (
+            (index < error_list->size) &&
+            (errors[index].error != NULL) &&
+            (
+                (errors[index].line < start.line) ||
+                ((errors[index].line == start.line) && (errors[index].column_start < start.column))
+            )
+        ) index++;
+
+        // Now we're going to shift all of the errors after this one down one
+        // index to make room for the new error.
+        if (index + 1 < error_list->size) {
+            memmove(&errors[index + 1], &errors[index], sizeof(pm_parse_error_t) * (error_list->size - index - 1));
+        }
+
+        // Finally, we'll insert the error into the array.
+        uint32_t column_end;
+        if (start.line == end.line) {
+            column_end = end.column;
+        } else {
+            column_end = (uint32_t) (newline_list->offsets[start.line - start_line + 1] - newline_list->offsets[start.line - start_line] - 1);
+        }
+
+        // Ensure we have at least one column of error.
+        if (start.column == column_end) column_end++;
+
+        errors[index] = (pm_parse_error_t) {
+            .error = error,
+            .line = start.line,
+            .column_start = start.column,
+            .column_end = column_end
+        };
+    }
+
+    return errors;
+}
+
+static inline void
+pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, int32_t line, uint32_t column_start, uint32_t column_end, pm_buffer_t *buffer) {
+    int32_t line_delta = line - parser->start_line;
+    assert(line_delta >= 0);
+
+    size_t index = (size_t) line_delta;
+    assert(index < newline_list->size);
+
+    const uint8_t *start = &parser->start[newline_list->offsets[index]];
+    const uint8_t *end;
+
+    if (index >= newline_list->size - 1) {
+        end = parser->end;
+    } else {
+        end = &parser->start[newline_list->offsets[index + 1]];
+    }
+
+    pm_buffer_append_format(buffer, number_prefix, line);
+
+    // Here we determine if we should truncate the end of the line.
+    bool truncate_end = false;
+    if ((column_end != 0) && ((end - (start + column_end)) >= PM_ERROR_TRUNCATE)) {
+        end = start + column_end + PM_ERROR_TRUNCATE;
+        truncate_end = true;
+    }
+
+    // Here we determine if we should truncate the start of the line.
+    if (column_start >= PM_ERROR_TRUNCATE) {
+        pm_buffer_append_string(buffer, "... ", 4);
+        start += column_start;
+    }
+
+    pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
+
+    if (truncate_end) {
+        pm_buffer_append_string(buffer, " ...\n", 5);
+    } else if (end == parser->end && end[-1] != '\n') {
+        pm_buffer_append_string(buffer, "\n", 1);
+    }
+}
+
+/**
+ * Format the errors on the parser into the given buffer.
+ */
+static void
+pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, bool colorize, bool inline_messages) {
+    assert(error_list->size != 0);
+
+    // First, we're going to sort all of the errors by line number using an
+    // insertion sort into a newly allocated array.
+    const int32_t start_line = parser->start_line;
+    const pm_newline_list_t *newline_list = &parser->newline_list;
+
+    pm_parse_error_t *errors = pm_parse_errors_format_sort(parser, error_list, newline_list);
+    if (errors == NULL) return;
+
+    // Now we're going to determine how we're going to format line numbers and
+    // blank lines based on the maximum number of digits in the line numbers
+    // that are going to be displaid.
+    pm_parse_error_format_t error_format;
+    int32_t first_line_number = errors[0].line;
+    int32_t last_line_number = errors[error_list->size - 1].line;
+
+    // If we have a maximum line number that is negative, then we're going to
+    // use the absolute value for comparison but multiple by 10 to additionally
+    // have a column for the negative sign.
+    if (first_line_number < 0) first_line_number = (-first_line_number) * 10;
+    if (last_line_number < 0) last_line_number = (-last_line_number) * 10;
+    int32_t max_line_number = first_line_number > last_line_number ? first_line_number : last_line_number;
+
+    if (max_line_number < 10) {
+        if (colorize) {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = PM_COLOR_GRAY "%1" PRIi32 " | " PM_COLOR_RESET,
+                .blank_prefix = PM_COLOR_GRAY "  | " PM_COLOR_RESET,
+                .divider = PM_COLOR_GRAY "  ~~~~~" PM_COLOR_RESET "\n"
+            };
+        } else {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = "%1" PRIi32 " | ",
+                .blank_prefix = "  | ",
+                .divider = "  ~~~~~\n"
+            };
+        }
+    } else if (max_line_number < 100) {
+        if (colorize) {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = PM_COLOR_GRAY "%2" PRIi32 " | " PM_COLOR_RESET,
+                .blank_prefix = PM_COLOR_GRAY "   | " PM_COLOR_RESET,
+                .divider = PM_COLOR_GRAY "  ~~~~~~" PM_COLOR_RESET "\n"
+            };
+        } else {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = "%2" PRIi32 " | ",
+                .blank_prefix = "   | ",
+                .divider = "  ~~~~~~\n"
+            };
+        }
+    } else if (max_line_number < 1000) {
+        if (colorize) {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = PM_COLOR_GRAY "%3" PRIi32 " | " PM_COLOR_RESET,
+                .blank_prefix = PM_COLOR_GRAY "    | " PM_COLOR_RESET,
+                .divider = PM_COLOR_GRAY "  ~~~~~~~" PM_COLOR_RESET "\n"
+            };
+        } else {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = "%3" PRIi32 " | ",
+                .blank_prefix = "    | ",
+                .divider = "  ~~~~~~~\n"
+            };
+        }
+    } else if (max_line_number < 10000) {
+        if (colorize) {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = PM_COLOR_GRAY "%4" PRIi32 " | " PM_COLOR_RESET,
+                .blank_prefix = PM_COLOR_GRAY "     | " PM_COLOR_RESET,
+                .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
+            };
+        } else {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = "%4" PRIi32 " | ",
+                .blank_prefix = "     | ",
+                .divider = "  ~~~~~~~~\n"
+            };
+        }
+    } else {
+        if (colorize) {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = PM_COLOR_GRAY "%5" PRIi32 " | " PM_COLOR_RESET,
+                .blank_prefix = PM_COLOR_GRAY "      | " PM_COLOR_RESET,
+                .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
+            };
+        } else {
+            error_format = (pm_parse_error_format_t) {
+                .number_prefix = "%5" PRIi32 " | ",
+                .blank_prefix = "      | ",
+                .divider = "  ~~~~~~~~\n"
+            };
+        }
+    }
+
+    error_format.blank_prefix_length = strlen(error_format.blank_prefix);
+    error_format.divider_length = strlen(error_format.divider);
+
+    // Now we're going to iterate through every error in our error list and
+    // display it. While we're iterating, we will display some padding lines of
+    // the source before the error to give some context. We'll be careful not to
+    // display the same line twice in case the errors are close enough in the
+    // source.
+    int32_t last_line = parser->start_line - 1;
+    uint32_t last_column_start = 0;
+    const pm_encoding_t *encoding = parser->encoding;
+
+    for (size_t index = 0; index < error_list->size; index++) {
+        pm_parse_error_t *error = &errors[index];
+
+        // Here we determine how many lines of padding of the source to display,
+        // based on the difference from the last line that was displaid.
+        if (error->line - last_line > 1) {
+            if (error->line - last_line > 2) {
+                if ((index != 0) && (error->line - last_line > 3)) {
+                    pm_buffer_append_string(buffer, error_format.divider, error_format.divider_length);
+                }
+
+                pm_buffer_append_string(buffer, "  ", 2);
+                pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line - 2, 0, 0, buffer);
+            }
+
+            pm_buffer_append_string(buffer, "  ", 2);
+            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line - 1, 0, 0, buffer);
+        }
+
+        // If this is the first error or we're on a new line, then we'll display
+        // the line that has the error in it.
+        if ((index == 0) || (error->line != last_line)) {
+            if (colorize) {
+                pm_buffer_append_string(buffer, PM_COLOR_RED "> " PM_COLOR_RESET, 12);
+            } else {
+                pm_buffer_append_string(buffer, "> ", 2);
+            }
+
+            last_column_start = error->column_start;
+
+            // Find the maximum column end of all the errors on this line.
+            uint32_t column_end = error->column_end;
+            for (size_t next_index = index + 1; next_index < error_list->size; next_index++) {
+                if (errors[next_index].line != error->line) break;
+                if (errors[next_index].column_end > column_end) column_end = errors[next_index].column_end;
+            }
+
+            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line, error->column_start, column_end, buffer);
+        }
+
+        const uint8_t *start = &parser->start[newline_list->offsets[error->line - start_line]];
+        if (start == parser->end) pm_buffer_append_byte(buffer, '\n');
+
+        // Now we'll display the actual error message. We'll do this by first
+        // putting the prefix to the line, then a bunch of blank spaces
+        // depending on the column, then as many carets as we need to display
+        // the width of the error, then the error message itself.
+        //
+        // Note that this doesn't take into account the width of the actual
+        // character when displaid in the terminal. For some east-asian
+        // languages or emoji, this means it can be thrown off pretty badly. We
+        // will need to solve this eventually.
+        pm_buffer_append_string(buffer, "  ", 2);
+        pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
+
+        size_t column = 0;
+        if (last_column_start >= PM_ERROR_TRUNCATE) {
+            pm_buffer_append_string(buffer, "    ", 4);
+            column = last_column_start;
+        }
+
+        while (column < error->column_start) {
+            pm_buffer_append_byte(buffer, ' ');
+
+            size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
+            column += (char_width == 0 ? 1 : char_width);
+        }
+
+        if (colorize) pm_buffer_append_string(buffer, PM_COLOR_RED, 7);
+        pm_buffer_append_byte(buffer, '^');
+
+        size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
+        column += (char_width == 0 ? 1 : char_width);
+
+        while (column < error->column_end) {
+            pm_buffer_append_byte(buffer, '~');
+
+            size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
+            column += (char_width == 0 ? 1 : char_width);
+        }
+
+        if (colorize) pm_buffer_append_string(buffer, PM_COLOR_RESET, 3);
+
+        if (inline_messages) {
+            pm_buffer_append_byte(buffer, ' ');
+            assert(error->error != NULL);
+
+            const char *message = error->error->message;
+            pm_buffer_append_string(buffer, message, strlen(message));
+        }
+
+        pm_buffer_append_byte(buffer, '\n');
+
+        // Here we determine how many lines of padding to display after the
+        // error, depending on where the next error is in source.
+        last_line = error->line;
+        int32_t next_line = (index == error_list->size - 1) ? (((int32_t) newline_list->size) + parser->start_line) : errors[index + 1].line;
+
+        if (next_line - last_line > 1) {
+            pm_buffer_append_string(buffer, "  ", 2);
+            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, ++last_line, 0, 0, buffer);
+        }
+
+        if (next_line - last_line > 1) {
+            pm_buffer_append_string(buffer, "  ", 2);
+            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, ++last_line, 0, 0, buffer);
+        }
+    }
+
+    // Finally, we'll free the array of errors that we allocated.
+    xfree(errors);
+}
+
+#undef PM_ERROR_TRUNCATE
+#undef PM_COLOR_GRAY
+#undef PM_COLOR_RED
+#undef PM_COLOR_RESET
+
 /**
  * Check if the given source slice is valid UTF-8. The location represents the
  * location of the error, but the slice of the source will include the content
@@ -9230,7 +9592,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
                 pm_list_node_t *list_node = (pm_list_node_t *) error;
                 pm_list_t error_list = { .size = 1, .head = list_node, .tail = list_node };
 
-                pm_parser_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
+                pm_parse_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
             }
 
             VALUE value = rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
@@ -9260,7 +9622,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     );
 
     if (valid_utf8) {
-        pm_parser_errors_format(parser, &parser->error_list, &buffer, rb_stderr_tty_p(), true);
+        pm_parse_errors_format(parser, &parser->error_list, &buffer, rb_stderr_tty_p(), true);
     }
     else {
         for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
@@ -9269,7 +9631,8 @@ pm_parse_process_error(const pm_parse_result_t *result)
         }
     }
 
-    VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+    VALUE message = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), result->node.encoding);
+    VALUE error = rb_exc_new_str(rb_eSyntaxError, message);
 
     rb_encoding *filepath_encoding = result->node.filepath_encoding != NULL ? result->node.filepath_encoding : rb_utf8_encoding();
     VALUE path = rb_enc_str_new((const char *) pm_string_source(filepath), pm_string_length(filepath), filepath_encoding);
@@ -9279,9 +9642,6 @@ pm_parse_process_error(const pm_parse_result_t *result)
 
     return error;
 }
-
-void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
-void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...);
 
 /**
  * Parse the parse result and raise a Ruby error if there are any syntax errors.
@@ -9297,12 +9657,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     // freed regardless of whether or we return an error.
     pm_scope_node_t *scope_node = &result->node;
     rb_encoding *filepath_encoding = scope_node->filepath_encoding;
+    int coverage_enabled = scope_node->coverage_enabled;
 
     pm_scope_node_init(node, scope_node, NULL);
     scope_node->filepath_encoding = filepath_encoding;
 
     scope_node->encoding = rb_enc_find(parser->encoding->name);
     if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
+
+    scope_node->coverage_enabled = coverage_enabled;
 
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;
@@ -9453,6 +9816,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
+    result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 

@@ -16,6 +16,7 @@ m4_include([tool/m4/ruby_append_option.m4])dnl
 m4_include([tool/m4/ruby_append_options.m4])dnl
 m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
 m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
+m4_include([tool/m4/ruby_check_header.m4])dnl
 m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
 m4_include([tool/m4/ruby_check_setjmp.m4])dnl
 m4_include([tool/m4/ruby_check_signedness.m4])dnl
@@ -227,15 +228,23 @@ AS_CASE(["/${rb_CC} "],
 [*clang*],            [
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
+
+    # Xcode has its own version tools that may be incompatible with
+    # genuine LLVM tools, use the tools in the same directory.
+
+    AS_IF([$rb_CC -E -dM -xc - < /dev/null | grep -F __apple_build_version__ > /dev/null],
+          [llvm_prefix=], [llvm_prefix=llvm-])
+    # AC_PREPROC_IFELSE cannot be used before AC_USE_SYSTEM_EXTENSIONS
+
     RUBY_CHECK_PROG_FOR_CC([LD],      [s/clang/ld/]) # ... maybe try lld ?
-    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
-#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
+    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/${llvm_prefix}ar/])
+#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/${llvm_prefix}as/])
     RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
-    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/llvm-nm/])
-    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/llvm-objcopy/])
-    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/llvm-objdump/])
-    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/llvm-ranlib/])
-    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/llvm-strip/])
+    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/${llvm_prefix}nm/])
+    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/${llvm_prefix}objcopy/])
+    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/${llvm_prefix}objdump/])
+    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/${llvm_prefix}ranlib/])
+    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/${llvm_prefix}strip/])
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -246,12 +255,6 @@ AS_CASE(["${build_os}"],
 ],
 [aix*], [
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
-],
-[darwin*], [
-    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
-    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
-    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
-    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
@@ -989,7 +992,6 @@ AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
-}
 
 AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
   rb_cv_have_stmt_and_decl_in_expr,
@@ -999,6 +1001,7 @@ AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
 AS_IF([test "$rb_cv_have_stmt_and_decl_in_expr" = yes], [
   AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR)
 ])
+}
 
 [begin]_group "header and library section" && {
 AC_ARG_WITH(winnt-ver,
@@ -1376,7 +1379,7 @@ AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
 RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
 
 AS_IF([test "x$with_gmp" != xno],
-  [AC_CHECK_HEADERS(gmp.h)
+  [RUBY_CHECK_HEADER(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
      AC_SEARCH_LIBS([__gmpz_init], [gmp],
        [AC_DEFINE(HAVE_LIBGMP, 1)]))])
@@ -1386,6 +1389,8 @@ AC_ARG_WITH([jemalloc],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" != xno],[
   # find jemalloc header first
+  save_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${INCFLAGS} ${CPPFLAGS}"
   malloc_header=
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [malloc_header=jemalloc/jemalloc.h], [
     AC_CHECK_HEADER(jemalloc.h, [malloc_header=jemalloc.h])
@@ -1417,6 +1422,8 @@ AS_IF([test "x$with_jemalloc" != xno],[
       done
     done
   ])
+  CPPFLAGS="${save_CPPFLAGS}"
+  unset save_CPPFLAGS
   with_jemalloc=${rb_cv_jemalloc_library}
   AS_CASE(["$with_jemalloc"],
   [no],

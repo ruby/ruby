@@ -17,7 +17,7 @@ module Bundler
         @remotes = []
         @dependency_names = []
         @allow_remote = false
-        @allow_cached = options["allow_cached"] || false
+        @allow_cached = false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
 
@@ -50,10 +50,11 @@ module Bundler
       end
 
       def cached!
+        return unless File.exist?(cache_path)
+
         return if @allow_cached
 
         @specs = nil
-        @allow_local = true
         @allow_cached = true
       end
 

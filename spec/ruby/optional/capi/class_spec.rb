@@ -487,4 +487,16 @@ describe "C-API Class function" do
       @s.rb_class_real(0).should == 0
     end
   end
+
+  describe "rb_class_get_superclass" do
+    it "returns parent class for a provided class" do
+      a = Class.new
+      @s.rb_class_get_superclass(Class.new(a)).should == a
+    end
+
+    it "returns false when there is no parent class" do
+      @s.rb_class_get_superclass(BasicObject).should == false
+      @s.rb_class_get_superclass(Module.new).should == false
+    end
+  end
 end

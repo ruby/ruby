@@ -506,10 +506,6 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_warn_balanced
-    warning = <<WARN
-test:1: warning: '%s' after local variable or literal is interpreted as binary operator
-test:1: warning: even though it seems like %s
-WARN
     [
      [:**, "argument prefix"],
      [:*, "argument prefix"],
@@ -523,7 +519,9 @@ WARN
       all_assertions do |a|
         ["puts 1 #{op}0", "puts :a #{op}0", "m = 1; puts m #{op}0"].each do |src|
           a.for(src) do
-            assert_warning(warning % [op, syn], src) do
+            warning = /'#{Regexp.escape(op)}' after local variable or literal is interpreted as binary operator.+?even though it seems like #{syn}/m
+
+            assert_warning(warning, src) do
               assert_valid_syntax(src, "test", verbose: true)
             end
           end
@@ -715,8 +713,8 @@ WARN
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated \'when\' clause with line 3 is ignored'
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    w = ->(line) { "warning: 'when' clause on line #{line} duplicates 'when' clause on line 3 and is ignored" }
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       eval %q{
         case 1
         when 1, 1
@@ -725,7 +723,7 @@ WARN
         end
       }
     }
-    assert_warning(/#{w}/) {#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       a = a = 1
       eval %q{
         case 1
@@ -735,7 +733,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}/m) {
+    assert_warning(/#{w[3]}/) {
       eval %q{
         case 1
         when __LINE__, __LINE__
@@ -744,7 +742,7 @@ WARN
         end
       }
     }
-    assert_warning(/3: #{w}/m) {
+    assert_warning(/#{w[3]}/) {
       eval %q{
         case 1
         when __FILE__, __FILE__
@@ -756,7 +754,7 @@ WARN
   end
 
   def test_duplicated_when_check_option
-    w = /duplicated \'when\' clause with line 3 is ignored/
+    w = /'when' clause on line 4 duplicates 'when' clause on line 3 and is ignored/
     assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
     begin;
       case 1
@@ -1924,7 +1922,7 @@ eom
       ]
     end
     assert_valid_syntax('proc {def foo(_);end;it}')
-    assert_syntax_error('p { [it **2] }', /unexpected \*\*arg/)
+    assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
   end
 
   def test_value_expr_in_condition

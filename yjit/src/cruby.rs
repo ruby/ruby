@@ -802,6 +802,7 @@ pub(crate) mod ids {
         name: min                content: b"min"
         name: max                content: b"max"
         name: hash               content: b"hash"
+        name: pack               content: b"pack"
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
         name: eq                 content: b"=="

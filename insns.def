@@ -977,6 +977,9 @@ opt_newarray_send
       case idMax:
         val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
+      case idPack:
+        val = rb_vm_opt_newarray_pack(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0));
+        break;
       default:
         rb_bug("unreachable");
     }

@@ -640,11 +640,20 @@ class TestRubyLiteral < Test::Unit::TestCase
           end
           begin
             r2 = eval(s)
-          rescue NameError, SyntaxError
+          rescue ArgumentError
+            # Debug log for a random failure: ArgumentError: SyntaxError#path changed
+            $stderr.puts "TestRubyLiteral#test_float failed: %p" % s
+            raise
+          rescue SyntaxError => e
+            r2 = :err
+          rescue NameError
             r2 = :err
           end
           r2 = :err if Range === r2
-          assert_equal(r1, r2, "Float(#{s.inspect}) != eval(#{s.inspect})")
+          s = s.inspect
+          mesg = "Float(#{s}) != eval(#{s})"
+          mesg << ":" << e.message if e
+          assert_equal(r1, r2, mesg)
         }
       }
     }

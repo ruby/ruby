@@ -2441,13 +2441,13 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *  #copy can be used to put buffer into strings associated with buffer:
  *
- *    string= "buffer:    "
- *    # => "buffer:    "
+ *    string= "data:    "
+ *    # => "data:    "
  *    buffer = IO::Buffer.for(string)
  *    buffer.copy(IO::Buffer.for("test"), 5)
  *    # => 4
  *    string
- *    # => "buffer:test"
+ *    # => "data:test"
  *
  *  Attempt to copy into a read-only buffer will fail:
  *
@@ -3571,30 +3571,28 @@ io_buffer_not_inplace(VALUE self)
  *
  *  \Buffer from string:
  *
- *    string = 'buffer'
- *    buffer = IO::Buffer.for(string)
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # ...
- *    buffer
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # 0x00000000  64 61 74 61                                     buffer
+ *    string = 'data'
+ *    IO::Buffer.for(string) do |buffer|
+ *      buffer
+ *      # =>
+ *      # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *      # 0x00000000  64 61 74 61                                     data
  *
- *    buffer.get_string(2)  # read content starting from offset 2
- *    # => "ta"
- *    buffer.set_string('---', 1) # write content, starting from offset 1
- *    # => 3
- *    buffer
- *    # =>
- *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
- *    # 0x00000000  64 2d 2d 2d                                     d---
- *    string  # original string changed, too
- *    # => "d---"
+ *      buffer.get_string(2)  # read content starting from offset 2
+ *      # => "ta"
+ *      buffer.set_string('---', 1) # write content, starting from offset 1
+ *      # => 3
+ *      buffer
+ *      # =>
+ *      # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *      # 0x00000000  64 2d 2d 2d                                     d---
+ *      string  # original string changed, too
+ *      # => "d---"
+ *    end
  *
  *  \Buffer from file:
  *
- *    File.write('test.txt', 'test buffer')
+ *    File.write('test.txt', 'test data')
  *    # => 9
  *    buffer = IO::Buffer.map(File.open('test.txt'))
  *    # =>
@@ -3611,7 +3609,7 @@ io_buffer_not_inplace(VALUE self)
  *    buffer.set_string('---', 1)
  *    # => 3 -- bytes written
  *    File.read('test.txt')
- *    # => "t--- buffer"
+ *    # => "t--- data"
  *
  *  <b>The class is experimental and the interface is subject to change, this
  *  is especially true of file mappings which may be removed entirely in

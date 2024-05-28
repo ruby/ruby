@@ -684,15 +684,20 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
-                rest_last = rb_hash_dup(rest_last);
+                if (!RHASH_EMPTY_P(rest_last) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
+                    rest_last = rb_hash_dup(rest_last);
+                }
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
                 // Unset rest_dupped set by anon_rest as we may need to modify splat in this case
                 args->rest_dupped = false;
 
                 if (ignore_keyword_hash_p(rest_last, iseq, &kw_flag, &converted_keyword_hash)) {
-                    arg_rest_dup(args);
-                    rb_ary_pop(args->rest);
+                    if (ISEQ_BODY(iseq)->param.flags.has_rest || arg_setup_type != arg_setup_method) {
+                        // Only duplicate/modify splat array if it will be used
+                        arg_rest_dup(args);
+                        rb_ary_pop(args->rest);
+                    }
                     given_argc--;
                     kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
                 }

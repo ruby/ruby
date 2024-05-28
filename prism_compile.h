@@ -36,13 +36,15 @@ typedef struct pm_scope_node {
      */
     rb_encoding *filepath_encoding;
 
-    // The size of the local table
-    // on the iseq which includes
-    // locals and hidden variables
+    // The size of the local table on the iseq which includes locals and hidden
+    // variables.
     int local_table_for_iseq_size;
 
     ID *constants;
     st_table *index_lookup_table;
+
+    // The current coverage setting, passed down through the various scopes.
+    int coverage_enabled;
 
     /**
      * This will only be set on the top-level scope node. It will contain all of

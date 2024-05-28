@@ -70,7 +70,6 @@ Gem::Specification.new do |spec|
     "include/prism/version.h",
     "lib/prism.rb",
     "lib/prism/compiler.rb",
-    "lib/prism/debug.rb",
     "lib/prism/desugar_compiler.rb",
     "lib/prism/dispatcher.rb",
     "lib/prism/dot_visitor.rb",

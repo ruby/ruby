@@ -86,6 +86,30 @@ describe "Hash literal" do
     -> { eval("{:a ==> 1}") }.should raise_error(SyntaxError)
   end
 
+  it "recognizes '!' at the end of the key" do
+    eval("{:a! =>1}").should == {:"a!" => 1}
+    eval("{:a! => 1}").should == {:"a!" => 1}
+
+    eval("{a!:1}").should == {:"a!" => 1}
+    eval("{a!: 1}").should == {:"a!" => 1}
+  end
+
+  it "raises a SyntaxError if there is no space between `!` and `=>`" do
+    -> { eval("{:a!=> 1}") }.should raise_error(SyntaxError)
+  end
+
+  it "recognizes '?' at the end of the key" do
+    eval("{:a? =>1}").should == {:"a?" => 1}
+    eval("{:a? => 1}").should == {:"a?" => 1}
+
+    eval("{a?:1}").should == {:"a?" => 1}
+    eval("{a?: 1}").should == {:"a?" => 1}
+  end
+
+  it "raises a SyntaxError if there is no space between `?` and `=>`" do
+    -> { eval("{:a?=> 1}") }.should raise_error(SyntaxError)
+  end
+
   it "constructs a new hash with the given elements" do
     {foo: 123}.should == {foo: 123}
     h = {rbx: :cool, specs: 'fail_sometimes'}
@@ -270,6 +294,14 @@ describe "The ** operator" do
         RUBY
 
         a.new.foo(1).should == {bar: "baz", val: 1}
+      end
+
+      it "raises a SyntaxError when the hash key ends with `!`" do
+        -> { eval("{a!:}") }.should raise_error(SyntaxError, /identifier a! is not valid to get/)
+      end
+
+      it "raises a SyntaxError when the hash key ends with `?`" do
+        -> { eval("{a?:}") }.should raise_error(SyntaxError, /identifier a\? is not valid to get/)
       end
     end
   end

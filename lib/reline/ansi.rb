@@ -235,7 +235,7 @@ class Reline::ANSI
     s = [ENV["LINES"].to_i, ENV["COLUMNS"].to_i]
     return s if s[0] > 0 && s[1] > 0
     [24, 80]
-  rescue Errno::ENOTTY
+  rescue Errno::ENOTTY, Errno::ENODEV
     [24, 80]
   end
 

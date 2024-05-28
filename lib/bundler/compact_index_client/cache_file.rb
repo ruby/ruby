@@ -86,11 +86,6 @@ module Bundler
         end
       end
 
-      # remove this method when we stop generating md5 digests for legacy etags
-      def md5
-        @digests && @digests["md5"]
-      end
-
       def digests?
         @digests&.any?
       end

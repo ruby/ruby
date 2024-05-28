@@ -2929,6 +2929,15 @@ class TestIO < Test::Unit::TestCase
       f.close
 
       assert_equal("FOO\n", File.read(t.path))
+
+      fd = IO.sysopen(t.path)
+      %w[w r+ w+ a+].each do |mode|
+        assert_raise(Errno::EINVAL, "#{mode} [ruby-dev:38571]") {IO.new(fd, mode)}
+      end
+      f = IO.new(fd, "r")
+      data = f.read
+      f.close
+      assert_equal("FOO\n", data)
     }
   end
 
