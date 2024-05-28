@@ -10,11 +10,7 @@ require 'optparse'
 require 'abbrev'
 require 'pp'
 require 'shellwords'
-begin
-  require 'readline'
-rescue LoadError
-  module Readline; end
-end
+require 'reline'
 
 opts = OptionParser.new
 target_version = nil
@@ -158,80 +154,6 @@ def more(sio)
     end
   end
 end
-
-class << Readline
-  def readline(prompt = '')
-    console = IO.console
-    console.binmode
-    _, lx = console.winsize
-    if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
-      cls = "\r\e[2K"
-    else
-      cls = "\r" << (" " * lx)
-    end
-    cls << "\r" << prompt
-    console.print prompt
-    console.flush
-    line = ''
-    while true
-      case c = console.getch
-      when "\r", "\n"
-        puts
-        HISTORY << line
-        return line
-      when "\C-?", "\b" # DEL/BS
-        print "\b \b" if line.chop!
-      when "\C-u"
-        print cls
-        line.clear
-      when "\C-d"
-        return nil if line.empty?
-        line << c
-      when "\C-p"
-        HISTORY.pos -= 1
-        line = HISTORY.current
-        print cls
-        print line
-      when "\C-n"
-        HISTORY.pos += 1
-        line = HISTORY.current
-        print cls
-        print line
-      else
-        if c >= " "
-          print c
-          line << c
-        end
-      end
-    end
-  end
-
-  HISTORY = []
-  def HISTORY.<<(val)
-    HISTORY.push(val)
-    @pos = self.size
-    self
-  end
-  def HISTORY.pos
-    @pos ||= 0
-  end
-  def HISTORY.pos=(val)
-    @pos = val
-    if @pos < 0
-      @pos = -1
-    elsif @pos >= self.size
-      @pos = self.size
-    end
-  end
-  def HISTORY.current
-    @pos ||= 0
-    if @pos < 0 || @pos >= self.size
-      ''
-    else
-      self[@pos]
-    end
-  end
-end unless defined?(Readline.readline)
 
 def find_svn_log(pattern)
   `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
@@ -568,7 +490,7 @@ list = Abbrev.abbrev(commands.keys)
 @changesets = nil
 while true
   begin
-    l = Readline.readline "#{('#' + @issue.to_s).color(bold: true) if @issue}> "
+    l = Reline.readline "#{('#' + @issue.to_s).color(bold: true) if @issue}> "
   rescue Interrupt
     break
   end
