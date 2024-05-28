@@ -821,7 +821,7 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
                 // Cap the number of counts reported to avoid
                 // bloating log files, etc.
-                pairs = pairs[0..20].to_vec();
+                pairs.truncate(20);
 
                 // Add the pairs to the dict
                 for (name, call_count) in pairs {
