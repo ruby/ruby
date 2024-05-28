@@ -5059,8 +5059,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(parser, node);
     int lineno = (int) location.line;
 
-    if (!PM_NODE_TYPE_P(node, PM_RETURN_NODE) || !PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) || ((const pm_return_node_t *) node)->arguments != NULL) {
+    if (PM_NODE_TYPE_P(node, PM_RETURN_NODE) && PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) && ((const pm_return_node_t *) node)->arguments == NULL) {
+        // If the node that we're compiling is a return node that is redundant,
+        // then it cannot be considered a line node because the other parser
+        // eliminates it from the parse tree. In this case we must replicate
+        // this behavior.
+    } else {
+        if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
+            // If this node is a begin node and it has empty statements and also
+            // has a rescue clause, then the other parser considers it as
+            // starting on the same line as the rescue, as opposed to the
+            // location of the begin keyword. We replicate that behavior here.
+            lineno = (int) PM_NODE_START_LINE_COLUMN(parser, ((const pm_begin_node_t *) node)->rescue_clause).line;
+        }
+
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+            // If this node has the newline flag set and it is on a new line
+            // from the previous nodes that have been compiled for this ISEQ,
+            // then we need to emit a newline event.
             int event = RUBY_EVENT_LINE;
 
             ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
