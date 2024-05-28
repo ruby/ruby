@@ -485,14 +485,14 @@ end
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **options, &block)
   if anonymous
-    create_without_file(basename, tmpdir, mode: mode, **options, &block)
+    create_anonymous(basename, tmpdir, mode: mode, **options, &block)
   else
-    create_with_file(basename, tmpdir, mode: mode, **options, &block)
+    create_with_filename(basename, tmpdir, mode: mode, **options, &block)
   end
 end
 
 class << Tempfile
-private def create_with_file(basename="", tmpdir=nil, mode: 0, **options)
+private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
@@ -521,7 +521,7 @@ private def create_with_file(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
-private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &block)
+private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block)
   tmpfile = nil
   tmpdir = Dir.tmpdir() if tmpdir.nil?
   if defined?(File::TMPFILE) # O_TMPFILE since Linux 3.11
@@ -534,7 +534,7 @@ private def create_without_file(basename="", tmpdir=nil, mode: 0, **options, &bl
   end
   if tmpfile.nil?
     mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
-    tmpfile = create_with_file(basename, tmpdir, mode: mode, **options)
+    tmpfile = create_with_filename(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
   end
   path = File.join(tmpdir, '')
