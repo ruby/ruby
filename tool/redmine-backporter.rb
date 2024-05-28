@@ -16,18 +16,15 @@ rescue LoadError
   module Readline; end
 end
 
-VERSION = '0.0.1'
-
 opts = OptionParser.new
 target_version = nil
 repo_path = nil
 api_key = nil
 ssl_verify = true
 opts.on('-k REDMINE_API_KEY', '--key=REDMINE_API_KEY', 'specify your REDMINE_API_KEY') {|v| api_key = v}
-opts.on('-t TARGET_VERSION', '--target=TARGET_VARSION', /\A\d(?:\.\d)+\z/, 'specify target version (ex: 2.1)') {|v| target_version = v}
+opts.on('-t TARGET_VERSION', '--target=TARGET_VARSION', /\A\d(?:\.\d)+\z/, 'specify target version (ex: 3.1)') {|v| target_version = v}
 opts.on('-r RUBY_REPO_PATH', '--repository=RUBY_REPO_PATH', 'specify repository path') {|v| repo_path = v}
 opts.on('--[no-]ssl-verify', TrueClass, 'use / not use SSL verify') {|v| ssl_verify = v}
-opts.version = VERSION
 opts.parse!(ARGV)
 
 http_options = {use_ssl: true}
@@ -294,7 +291,7 @@ end
 console = IO.console
 row, = console.winsize
 @query['limit'] = row - 2
-puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
+puts "Redmine Backporter".color(bold: true) + " for Ruby #{TARGET_VERSION}"
 
 class CommandSyntaxError < RuntimeError; end
 commands = {
