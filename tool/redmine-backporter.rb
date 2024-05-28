@@ -221,10 +221,11 @@ commands = {
     @issues = issues = res["issues"]
     from = res["offset"] + 1
     total = res["total_count"]
+    closed = issues.count { |x, _| x["status"]["name"] == "Closed" }
     to = from + issues.size - 1
-    puts "#{from}-#{to} / #{total}"
+    puts "#{from}-#{to} / #{total} (closed: #{closed})"
     issues.each_with_index do |x, i|
-      id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]])
+      id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]], bold: x["status"]["name"] == "Closed")
       puts "#{'%2d' % i} #{id} #{x["priority"]["name"][0]} #{status_char(x["status"])} #{x["subject"][0,80]}"
     end
   },
