@@ -5156,7 +5156,9 @@ rb_str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALU
 
         if (c > e || (excl && c == e)) return beg;
         for (;;) {
-            if ((*each)(rb_enc_str_new(&c, 1, enc), arg)) break;
+            VALUE str = rb_enc_str_new(&c, 1, enc);
+            ENC_CODERANGE_SET(str, RUBY_ENC_CODERANGE_7BIT);
+            if ((*each)(str, arg)) break;
             if (!excl && c == e) break;
             c++;
             if (excl && c == e) break;
