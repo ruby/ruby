@@ -18,10 +18,10 @@ class << Merger = Object.new
   def help
     puts <<-HELP
 \e[1msimple backport\e[0m
-  ruby #$0 1234
+  ruby #$0 1234abc
 
 \e[1mbackport from other branch\e[0m
-  ruby #$0 17502 mvm
+  ruby #$0 1234abc mvm
 
 \e[1mrevision increment\e[0m
   ruby #$0 revisionup
@@ -30,16 +30,16 @@ class << Merger = Object.new
   ruby #$0 teenyup
 
 \e[1mtagging major release\e[0m
-  ruby #$0 tag 2.2.0
+  ruby #$0 tag 3.2.0
 
-\e[1mtagging patch release\e[0m (about 2.1.0 or later, it means X.Y.Z (Z > 0) release)
+\e[1mtagging patch release\e[0m (for 2.1.0 or later, it means X.Y.Z (Z > 0) release)
   ruby #$0 tag
 
 \e[1mtagging preview/RC\e[0m
-  ruby #$0 tag 2.2.0-preview1
+  ruby #$0 tag 3.2.0-preview1
 
 \e[1mremove tag\e[0m
-  ruby #$0 removetag 2.2.9
+  ruby #$0 removetag 3.2.9
 
 \e[33;1m* all operations shall be applied to the working directory.\e[0m
     HELP
