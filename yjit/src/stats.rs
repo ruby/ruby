@@ -802,16 +802,31 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             rb_hash_aset(hash, key, value);
         }
 
+        // Set method call counts in a Ruby dict
         fn set_call_counts(
             calls_hash: VALUE,
             method_name_to_idx: &mut Option<HashMap<String, usize>>,
             method_call_count: &mut Option<Vec<u64>>,
         ) {
             if let (Some(name_to_idx), Some(call_counts)) = (method_name_to_idx, method_call_count) {
+                // Create a list of (name, call_count) pairs
+                let mut pairs = Vec::new();
                 for (name, idx) in name_to_idx {
                     let count = call_counts[*idx];
+                    pairs.push((name, count));
+                }
+
+                // Sort the vectors by decreasing call counts
+                pairs.sort_by_key(|e| -(e.1 as i64));
+
+                // Cap the number of counts reported to avoid
+                // bloating log files, etc.
+                pairs = pairs[0..20].to_vec();
+
+                // Add the pairs to the dict
+                for (name, call_count) in pairs {
                     let key = rust_str_to_sym(name);
-                    let value = VALUE::fixnum_from_usize(count as usize);
+                    let value = VALUE::fixnum_from_usize(call_count as usize);
                     unsafe { rb_hash_aset(calls_hash, key, value); }
                 }
             }
