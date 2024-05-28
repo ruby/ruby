@@ -138,6 +138,16 @@ class RbInspector(LLDBInterface):
                 else:
                     self.result.write('[enc=%d] ' % encidx)
 
+                coderange = rval.flags & self.ruby_globals["RUBY_ENC_CODERANGE_MASK"]
+                if coderange == self.ruby_globals["RUBY_ENC_CODERANGE_7BIT"]:
+                    self.result.write('[7BIT] ')
+                elif coderange == self.ruby_globals["RUBY_ENC_CODERANGE_VALID"]:
+                    self.result.write('[VALID] ')
+                elif coderange == self.ruby_globals["RUBY_ENC_CODERANGE_BROKEN"]:
+                    self.result.write('[BROKEN] ')
+                else:
+                    self.result.write('[UNKNOWN] ')
+
                 ptr, len = self.string2cstr(val.Cast(tRString))
                 if len == 0:
                     self.result.write("(empty)\n")
