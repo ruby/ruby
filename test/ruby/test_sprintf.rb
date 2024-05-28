@@ -266,8 +266,8 @@ class TestSprintf < Test::Unit::TestCase
     # Specifying the precision multiple times with negative star arguments:
     assert_raise(ArgumentError, "[ruby-core:11570]") {sprintf("%.*.*.*.*f", -1, -1, -1, 5, 1)}
 
-    # Null bytes after percent signs are removed:
-    assert_equal("%\0x hello", sprintf("%\0x hello"), "[ruby-core:11571]")
+    assert_raise(ArgumentError) {sprintf("%\0x hello")}
+    assert_raise(ArgumentError) {sprintf("%\nx hello")}
 
     assert_raise(ArgumentError, "[ruby-core:11573]") {sprintf("%.25555555555555555555555555555555555555s", "hello")}
 
@@ -279,10 +279,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
 
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_nothing_raised { sprintf("", 1) }
-  ensure
-    $VERBOSE = verbose
+    assert_warning(/too many arguments/) do
+      sprintf("", 1)
+    end
   end
 
   def test_float
