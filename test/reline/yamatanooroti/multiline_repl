@@ -9,14 +9,10 @@ require 'optparse'
 require_relative 'termination_checker'
 
 opt = OptionParser.new
-opt.on('--prompt-list-cache-timeout VAL') { |v|
-  Reline::LineEditor.__send__(:remove_const, :PROMPT_LIST_CACHE_TIMEOUT)
-  Reline::LineEditor::PROMPT_LIST_CACHE_TIMEOUT = v.to_f
-}
 opt.on('--dynamic-prompt') {
   Reline.prompt_proc = proc { |lines|
     lines.each_with_index.map { |l, i|
-      '[%04d]> ' % i
+      "\e[1m[%04d]>\e[m " % i
     }
   }
 }
@@ -147,11 +143,20 @@ opt.on('--complete') {
     %w{String ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
 }
+opt.on('--complete-menu-with-perfect-match') {
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
+    %w{abs abs2}.select{ |c| c.start_with?(target) }
+  }
+}
 opt.on('--autocomplete') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
     %w{String Struct Symbol ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
+}
+opt.on('--autocomplete-empty') {
+  Reline.autocompletion = true
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil| [] }
 }
 opt.on('--autocomplete-long') {
   Reline.autocompletion = true
@@ -183,7 +188,7 @@ opt.on('--autocomplete-long') {
 opt.on('--autocomplete-super-long') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    c = 'A'
+    c = +'A'
     2000.times.map{ s = "Str_#{c}"; c.succ!; s }.select{ |c| c.start_with?(target) }
   }
 }
@@ -217,7 +222,7 @@ rescue
 end
 
 begin
-  prompt = ENV['RELINE_TEST_PROMPT'] || 'prompt> '
+  prompt = ENV['RELINE_TEST_PROMPT'] || "\e[1mprompt>\e[m "
   puts 'Multiline REPL.'
   while code = Reline.readmultiline(prompt, true) { |code| TerminationChecker.terminated?(code) }
     case code.chomp

@@ -3,6 +3,8 @@ require 'io/wait'
 require_relative 'terminfo'
 
 class Reline::ANSI
+  RESET_COLOR = "\e[0m"
+
   CAPNAME_KEY_BINDINGS = {
     'khome' => :ed_move_to_beg,
     'kend'  => :ed_move_to_end,
@@ -43,6 +45,7 @@ class Reline::ANSI
   end
 
   def self.set_default_key_bindings(config, allow_terminfo: true)
+    set_bracketed_paste_key_bindings(config)
     set_default_key_bindings_ansi_cursor(config)
     if allow_terminfo && Reline::Terminfo.enabled?
       set_default_key_bindings_terminfo(config)
@@ -61,6 +64,12 @@ class Reline::ANSI
       [24, 24] => :em_exchange_mark,        # C-x C-x
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
+
+  def self.set_bracketed_paste_key_bindings(config)
+    [:emacs, :vi_insert, :vi_command].each do |keymap|
+      config.add_default_key_binding_by_keymap(keymap, START_BRACKETED_PASTE.bytes, :bracketed_paste_start)
     end
   end
 
@@ -149,7 +158,11 @@ class Reline::ANSI
   end
 
   def self.with_raw_input
-    @@input.raw { yield }
+    if @@input.tty?
+      @@input.raw(intr: true) { yield }
+    else
+      yield
+    end
   end
 
   @@buf = []
@@ -157,11 +170,13 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    until c = @@input.raw(intr: true) { @@input.wait_readable(0.1) && @@input.getbyte }
-      timeout_second -= 0.1
+    until @@input.wait_readable(0.01)
+      timeout_second -= 0.01
       return nil if timeout_second <= 0
-      Reline.core.line_editor.resize
+
+      Reline.core.line_editor.handle_signal
     end
+    c = @@input.getbyte
     (c == 0x16 && @@input.raw(min: 0, time: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
@@ -170,46 +185,26 @@ class Reline::ANSI
     nil
   end
 
-  @@in_bracketed_paste_mode = false
-  START_BRACKETED_PASTE = String.new("\e[200~,", encoding: Encoding::ASCII_8BIT)
-  END_BRACKETED_PASTE = String.new("\e[200~.", encoding: Encoding::ASCII_8BIT)
-  def self.getc_with_bracketed_paste(timeout_second)
+  START_BRACKETED_PASTE = String.new("\e[200~", encoding: Encoding::ASCII_8BIT)
+  END_BRACKETED_PASTE = String.new("\e[201~", encoding: Encoding::ASCII_8BIT)
+  def self.read_bracketed_paste
     buffer = String.new(encoding: Encoding::ASCII_8BIT)
-    buffer << inner_getc(timeout_second)
-    while START_BRACKETED_PASTE.start_with?(buffer) or END_BRACKETED_PASTE.start_with?(buffer) do
-      if START_BRACKETED_PASTE == buffer
-        @@in_bracketed_paste_mode = true
-        return inner_getc(timeout_second)
-      elsif END_BRACKETED_PASTE == buffer
-        @@in_bracketed_paste_mode = false
-        ungetc(-1)
-        return inner_getc(timeout_second)
-      end
-      succ_c = inner_getc(Reline.core.config.keyseq_timeout)
-
-      if succ_c
-        buffer << succ_c
-      else
-        break
-      end
+    until buffer.end_with?(END_BRACKETED_PASTE)
+      c = inner_getc(Float::INFINITY)
+      break unless c
+      buffer << c
     end
-    buffer.bytes.reverse_each do |ch|
-      ungetc ch
-    end
-    inner_getc(timeout_second)
+    string = buffer.delete_suffix(END_BRACKETED_PASTE).force_encoding(encoding)
+    string.valid_encoding? ? string : ''
   end
 
   # if the usage expects to wait indefinitely, use Float::INFINITY for timeout_second
   def self.getc(timeout_second)
-    if Reline.core.config.enable_bracketed_paste
-      getc_with_bracketed_paste(timeout_second)
-    else
-      inner_getc(timeout_second)
-    end
+    inner_getc(timeout_second)
   end
 
   def self.in_pasting?
-    @@in_bracketed_paste_mode or (not empty_buffer?)
+    not empty_buffer?
   end
 
   def self.empty_buffer?
@@ -276,7 +271,7 @@ class Reline::ANSI
         buf = @@output.pread(@@output.pos, 0)
         row = buf.count("\n")
         column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
-      rescue Errno::ESPIPE
+      rescue Errno::ESPIPE, IOError
         # Just returns column 1 for ambiguous width because this I/O is not
         # tty and can't seek.
         row = 0
@@ -307,7 +302,7 @@ class Reline::ANSI
   end
 
   def self.hide_cursor
-    if Reline::Terminfo.enabled?
+    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
         @@output.write Reline::Terminfo.tigetstr('civis')
       rescue Reline::Terminfo::TerminfoError
@@ -319,7 +314,7 @@ class Reline::ANSI
   end
 
   def self.show_cursor
-    if Reline::Terminfo.enabled?
+    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
         @@output.write Reline::Terminfo.tigetstr('cnorm')
       rescue Reline::Terminfo::TerminfoError
@@ -353,11 +348,15 @@ class Reline::ANSI
   end
 
   def self.prep
+    # Enable bracketed paste
+    @@output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste
     retrieve_keybuffer
     nil
   end
 
   def self.deprep(otio)
+    # Disable bracketed paste
+    @@output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end

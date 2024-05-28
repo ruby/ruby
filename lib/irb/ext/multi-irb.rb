@@ -1,11 +1,11 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/multi-irb.rb - multiple irb module
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
 module IRB
-  class JobManager
+  class JobManager # :nodoc:
 
     # Creates a new JobManager object
     def initialize
@@ -166,12 +166,12 @@ module IRB
   @JobManager = JobManager.new
 
   # The current JobManager in the session
-  def IRB.JobManager
+  def IRB.JobManager # :nodoc:
     @JobManager
   end
 
   # The current Context in this session
-  def IRB.CurrentContext
+  def IRB.CurrentContext # :nodoc:
     IRB.JobManager.irb(Thread.current).context
   end
 
@@ -179,7 +179,7 @@ module IRB
   #
   # The optional +file+ argument is given to Context.new, along with the
   # workspace created with the remaining arguments, see WorkSpace.new
-  def IRB.irb(file = nil, *main)
+  def IRB.irb(file = nil, *main) # :nodoc:
     workspace = WorkSpace.new(*main)
     parent_thread = Thread.current
     Thread.start do

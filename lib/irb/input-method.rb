@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/input-method.rb - input methods used irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -20,7 +20,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      fail NotImplementedError, "gets"
+      fail NotImplementedError
     end
     public :gets
 
@@ -44,6 +44,10 @@ module IRB
       false
     end
 
+    def prompting?
+      false
+    end
+
     # For debug message
     def inspect
       'Abstract InputMethod'
@@ -63,6 +67,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
+      puts if @stdout.tty? # workaround for debug compatibility test
       print @prompt
       line = @stdin.gets
       @line[@line_no += 1] = line
@@ -89,6 +94,10 @@ module IRB
     # See IO#eof for more information.
     def readable_after_eof?
       true
+    end
+
+    def prompting?
+      STDIN.tty?
     end
 
     # Returns the current line number for #io.
@@ -220,6 +229,10 @@ module IRB
       @eof
     end
 
+    def prompting?
+      true
+    end
+
     # For debug message
     def inspect
       readline_impl = (defined?(Reline) && Readline == Reline) ? 'Reline' : 'ext/readline'
@@ -291,11 +304,27 @@ module IRB
       @auto_indent_proc = block
     end
 
+    def retrieve_doc_namespace(matched)
+      preposing, _target, postposing, bind = @completion_params
+      @completor.doc_namespace(preposing, matched, postposing, bind: bind)
+    end
+
+    def rdoc_ri_driver
+      return @rdoc_ri_driver if defined?(@rdoc_ri_driver)
+
+      begin
+        require 'rdoc'
+      rescue LoadError
+        @rdoc_ri_driver = nil
+      else
+        options = {}
+        options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
+        @rdoc_ri_driver = RDoc::RI::Driver.new(options)
+      end
+    end
+
     def show_doc_dialog_proc
-      doc_namespace = ->(matched) {
-        preposing, _target, postposing, bind = @completion_params
-        @completor.doc_namespace(preposing, matched, postposing, bind: bind)
-      }
+      input_method = self # self is changed in the lambda below.
       ->() {
         dialog.trap_key = nil
         alt_d = [
@@ -311,15 +340,13 @@ module IRB
         cursor_pos_to_render, result, pointer, autocomplete_dialog = context.pop(4)
         return nil if result.nil? or pointer.nil? or pointer < 0
 
-        name = doc_namespace.call(result[pointer])
+        name = input_method.retrieve_doc_namespace(result[pointer])
         # Use first one because document dialog does not support multiple namespaces.
         name = name.first if name.is_a?(Array)
 
         show_easter_egg = name&.match?(/\ARubyVM/) && !ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
 
-        options = {}
-        options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
-        driver = RDoc::RI::Driver.new(options)
+        driver = input_method.rdoc_ri_driver
 
         if key.match?(dialog.name)
           if show_easter_egg
@@ -407,23 +434,18 @@ module IRB
       }
     end
 
-    def display_document(matched, driver: nil)
-      begin
-        require 'rdoc'
-      rescue LoadError
-        return
-      end
+    def display_document(matched)
+      driver = rdoc_ri_driver
+      return unless driver
 
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         IRB.__send__(:easter_egg)
         return
       end
 
-      _target, preposing, postposing, bind = @completion_params
-      namespace = @completor.doc_namespace(preposing, matched, postposing, bind: bind)
+      namespace = retrieve_doc_namespace(matched)
       return unless namespace
 
-      driver ||= RDoc::RI::Driver.new
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
         namespace.each do |m|
@@ -464,6 +486,10 @@ module IRB
     # See IO#eof? for more information.
     def eof?
       @eof
+    end
+
+    def prompting?
+      true
     end
 
     # For debug message

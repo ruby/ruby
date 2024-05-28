@@ -15,7 +15,7 @@ module TestIRB
     def teardown
       IRB.conf.replace(@conf_backup)
       restore_encodings
-      # Reset Reline configuration overrided by RelineInputMethod.
+      # Reset Reline configuration overridden by RelineInputMethod.
       Reline.instance_variable_set(:@core, nil)
     end
   end
@@ -88,17 +88,18 @@ module TestIRB
       @driver = RDoc::RI::Driver.new(use_stdout: true)
     end
 
-    def display_document(target, bind)
+    def display_document(target, bind, driver = nil)
       input_method = IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
-      input_method.instance_variable_set(:@completion_params, [target, '', '', bind])
-      input_method.display_document(target, driver: @driver)
+      input_method.instance_variable_set(:@rdoc_ri_driver, driver) if driver
+      input_method.instance_variable_set(:@completion_params, ['', target, '', bind])
+      input_method.display_document(target)
     end
 
     def test_perfectly_matched_namespace_triggers_document_display
       omit unless has_rdoc_content?
 
       out, err = capture_output do
-        display_document("String", binding)
+        display_document("String", binding, @driver)
       end
 
       assert_empty(err)
@@ -109,7 +110,7 @@ module TestIRB
     def test_perfectly_matched_multiple_namespaces_triggers_document_display
       result = nil
       out, err = capture_output do
-        result = display_document("{}.nil?", binding)
+        result = display_document("{}.nil?", binding, @driver)
       end
 
       assert_empty(err)
@@ -131,7 +132,7 @@ module TestIRB
     def test_not_matched_namespace_triggers_nothing
       result = nil
       out, err = capture_output do
-        result = display_document("Stri", binding)
+        result = display_document("Stri", binding, @driver)
       end
 
       assert_empty(err)
@@ -156,7 +157,7 @@ module TestIRB
     def test_perfect_matching_handles_nil_namespace
       out, err = capture_output do
         # symbol literal has `nil` doc namespace so it's a good test subject
-        assert_nil(display_document(":aiueo", binding))
+        assert_nil(display_document(":aiueo", binding, @driver))
       end
 
       assert_empty(err)
@@ -170,4 +171,3 @@ module TestIRB
     end
   end
 end
-

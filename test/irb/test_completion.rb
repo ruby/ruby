@@ -14,6 +14,13 @@ module TestIRB
       IRB::RegexpCompletor.new.doc_namespace('', target, '', bind: bind)
     end
 
+    class CommandCompletionTest < CompletionTest
+      def test_command_completion
+        assert_include(IRB::RegexpCompletor.new.completion_candidates('', 'show_s', '', bind: binding), 'show_source')
+        assert_not_include(IRB::RegexpCompletor.new.completion_candidates(';', 'show_s', '', bind: binding), 'show_source')
+      end
+    end
+
     class MethodCompletionTest < CompletionTest
       def test_complete_string
         assert_include(completion_candidates("'foo'.up", binding), "'foo'.upcase")
@@ -124,8 +131,9 @@ module TestIRB
       end
 
       def test_complete_require_library_name_first
-        candidates = IRB::RegexpCompletor.new.completion_candidates("require ", "'csv", "", bind: binding)
-        assert_equal "'csv", candidates.first
+        # Test that library name is completed first with subdirectories
+        candidates = IRB::RegexpCompletor.new.completion_candidates("require ", "'irb", "", bind: binding)
+        assert_equal "'irb", candidates.first
       end
 
       def test_complete_require_relative
@@ -202,6 +210,13 @@ module TestIRB
         assert_equal(["::Forwardable"], completion_candidates("::Fo", binding))
         assert_equal("Forwardable", doc_namespace("::Forwardable", binding))
       end
+    end
+
+    def test_not_completing_empty_string
+      assert_equal([], completion_candidates("", binding))
+      assert_equal([], completion_candidates(" ", binding))
+      assert_equal([], completion_candidates("\t", binding))
+      assert_equal(nil, doc_namespace("", binding))
     end
 
     def test_complete_symbol

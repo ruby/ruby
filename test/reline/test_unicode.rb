@@ -38,11 +38,16 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal [["ab\e]0;1\ac", nil, "\e]0;1\ad"], 2], Reline::Unicode.split_by_width("ab\e]0;1\acd", 3)
   end
 
+  def test_split_by_width_csi_reset_sgr_optimization
+    assert_equal [["\e[1ma\e[mb\e[2mc", nil, "\e[2md\e[0me\e[3mf", nil, "\e[3mg"], 3], Reline::Unicode.split_by_width("\e[1ma\e[mb\e[2mcd\e[0me\e[3mfg", 3)
+    assert_equal [["\e[1ma\1\e[mzero\e[0m\2\e[2mb", nil, "\e[1m\e[2mc"], 2], Reline::Unicode.split_by_width("\e[1ma\1\e[mzero\e[0m\2\e[2mbc", 2)
+  end
+
   def test_take_range
     assert_equal 'cdef', Reline::Unicode.take_range('abcdefghi', 2, 4)
     assert_equal 'あde', Reline::Unicode.take_range('abあdef', 2, 4)
-    assert_equal 'zerocdef', Reline::Unicode.take_range("ab\1zero\2cdef", 2, 4)
-    assert_equal 'bzerocde', Reline::Unicode.take_range("ab\1zero\2cdef", 1, 4)
+    assert_equal "\1zero\2cdef", Reline::Unicode.take_range("ab\1zero\2cdef", 2, 4)
+    assert_equal "b\1zero\2cde", Reline::Unicode.take_range("ab\1zero\2cdef", 1, 4)
     assert_equal "\e[31mcd\e[42mef", Reline::Unicode.take_range("\e[31mabcd\e[42mefg", 2, 4)
     assert_equal "\e]0;1\acd", Reline::Unicode.take_range("ab\e]0;1\acd", 2, 3)
     assert_equal 'いう', Reline::Unicode.take_range('あいうえお', 2, 4)
@@ -61,5 +66,27 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal 4, Reline::Unicode.calculate_width("ab\e]0;1\acd", true)
     assert_equal 10, Reline::Unicode.calculate_width('あいうえお')
     assert_equal 10, Reline::Unicode.calculate_width('あいうえお', true)
+  end
+
+  def test_take_mbchar_range
+    assert_equal ['cdef', 2, 4], Reline::Unicode.take_mbchar_range('abcdefghi', 2, 4)
+    assert_equal ['cdef', 2, 4], Reline::Unicode.take_mbchar_range('abcdefghi', 2, 4, padding: true)
+    assert_equal ['cdef', 2, 4], Reline::Unicode.take_mbchar_range('abcdefghi', 2, 4, cover_begin: true)
+    assert_equal ['cdef', 2, 4], Reline::Unicode.take_mbchar_range('abcdefghi', 2, 4, cover_end: true)
+    assert_equal ['いう', 2, 4], Reline::Unicode.take_mbchar_range('あいうえお', 2, 4)
+    assert_equal ['いう', 2, 4], Reline::Unicode.take_mbchar_range('あいうえお', 2, 4, padding: true)
+    assert_equal ['いう', 2, 4], Reline::Unicode.take_mbchar_range('あいうえお', 2, 4, cover_begin: true)
+    assert_equal ['いう', 2, 4], Reline::Unicode.take_mbchar_range('あいうえお', 2, 4, cover_end: true)
+    assert_equal ['う', 4, 2], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4)
+    assert_equal [' う ', 3, 4], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4, padding: true)
+    assert_equal ['いう', 2, 4], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4, cover_begin: true)
+    assert_equal ['うえ', 4, 4], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4, cover_end: true)
+    assert_equal ['いう ', 2, 5], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4, cover_begin: true, padding: true)
+    assert_equal [' うえ', 3, 5], Reline::Unicode.take_mbchar_range('あいうえお', 3, 4, cover_end: true, padding: true)
+    assert_equal [' うえお   ', 3, 10], Reline::Unicode.take_mbchar_range('あいうえお', 3, 10, padding: true)
+    assert_equal [" \e[41mうえお\e[0m   ", 3, 10], Reline::Unicode.take_mbchar_range("あい\e[41mうえお", 3, 10, padding: true)
+    assert_equal ["\e[41m \e[42mい\e[43m ", 1, 4], Reline::Unicode.take_mbchar_range("\e[41mあ\e[42mい\e[43mう", 1, 4, padding: true)
+    assert_equal ["\e[31mc\1ABC\2d\e[0mef", 2, 4], Reline::Unicode.take_mbchar_range("\e[31mabc\1ABC\2d\e[0mefghi", 2, 4)
+    assert_equal ["\e[41m \e[42mい\e[43m ", 1, 4], Reline::Unicode.take_mbchar_range("\e[41mあ\e[42mい\e[43mう", 1, 4, padding: true)
   end
 end

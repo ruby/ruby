@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/lc/ja/error.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -10,11 +10,6 @@ module IRB
   class UnrecognizedSwitch < StandardError
     def initialize(val)
       super("スイッチ(#{val})が分りません")
-    end
-  end
-  class NotImplementedError < StandardError
-    def initialize(val)
-      super("`#{val}'の定義が必要です")
     end
   end
   class CantReturnToNormalMode < StandardError
@@ -50,11 +45,6 @@ module IRB
   class UndefinedPromptMode < StandardError
     def initialize(val)
       super("プロンプトモード(#{val})は定義されていません.")
-    end
-  end
-  class IllegalRCGenerator < StandardError
-    def initialize
-      super("RC_NAME_GENERATORが正しく定義されていません.")
     end
   end
 
