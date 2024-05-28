@@ -35,11 +35,11 @@ http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
 $openuri_options = {}
 $openuri_options[:ssl_verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
 
-TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (raise 'need to specify TARGET_VERSION')
+TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (puts opts.help; raise 'need to specify TARGET_VERSION')
 RUBY_REPO_PATH = repo_path || ENV['RUBY_REPO_PATH']
 BACKPORT_CF_KEY = 'cf_5'
 STATUS_CLOSE = 5
-REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (raise 'need to specify REDMINE_API_KEY')
+REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (puts opts.help; raise 'need to specify REDMINE_API_KEY')
 REDMINE_BASE = 'https://bugs.ruby-lang.org'
 
 @query = {
