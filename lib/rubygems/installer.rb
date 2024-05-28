@@ -500,8 +500,7 @@ class Gem::Installer
       dir_mode = options[:prog_mode] || (mode | 0o111)
 
       unless dir_mode == mode
-        require "fileutils"
-        FileUtils.chmod dir_mode, bin_path
+        File.chmod dir_mode, bin_path
       end
 
       check_executable_overwrite filename
