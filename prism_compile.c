@@ -4257,7 +4257,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
         PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->statements);
     }
     else {
-        PUSH_INSN(ret, *node_location, putnil);
+        PUSH_SYNTHETIC_PUTNIL(ret, iseq);
     }
 
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
@@ -5310,7 +5310,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE((const pm_node_t *) cast->statements);
             }
             else if (!popped) {
-                PUSH_INSN(ret, location, putnil);
+                PUSH_SYNTHETIC_PUTNIL(ret, iseq);
             }
         }
         return;
@@ -5605,7 +5605,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    PUSH_INSN(body_seq, location, putnil);
+                    PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
                 }
 
                 PUSH_INSNL(body_seq, location, jump, end_label);
@@ -5754,7 +5754,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    PUSH_INSN(body_seq, clause_location, putnil);
+                    PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
                 }
 
                 PUSH_INSNL(body_seq, clause_location, jump, end_label);
@@ -5902,7 +5902,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE_INTO_ANCHOR(body_seq, (const pm_node_t *) in_node->statements);
             }
             else if (!popped) {
-                PUSH_INSN(body_seq, in_location, putnil);
+                PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
             }
 
             PUSH_INSNL(body_seq, in_location, jump, end_label);
@@ -6238,7 +6238,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((const pm_node_t *) (cast->statements));
         }
         else {
-            PUSH_INSN(ret, location, putnil);
+            PUSH_SYNTHETIC_PUTNIL(ret, iseq);
         }
 
         if (popped) PUSH_INSN(ret, location, pop);
