@@ -223,10 +223,11 @@ else
 
   case ARGV[0]
   when /--ticket=(.*)/
-    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}.join
+    tickets = $1.split(/,/)
     ARGV.shift
   else
-    tickets = ''
+    tickets = []
+    detect_ticket = true
   end
 
   revstr = ARGV[0].gsub(%r!https://github\.com/ruby/ruby/commit/|https://bugs\.ruby-lang\.org/projects/ruby-master/repository/git/revisions/!, '')
@@ -255,6 +256,10 @@ else
     end
     patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
 
+    if detect_ticket
+      tickets += patch.scan(/\[(?:Bug|Feature|Misc) #(\d+)\]/i).map(&:first)
+    end
+
     message = "#{(patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n")}"
     message.gsub!(/\G(.*)\n( .*)/, "\\1\\2")
     message = "\n\n#{message}"
@@ -271,7 +276,7 @@ else
 
   Merger.version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s", revstr, tickets
+  f.printf "merge revision(s) %s:%s", revstr, tickets.map{|num| " [Backport ##{num}]"}.join
   f.write commit_message
   f.flush
   f.close
