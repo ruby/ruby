@@ -5751,12 +5751,6 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 fn copy_splat_args_for_rest_callee(array: Opnd, num_args: u32, asm: &mut Assembler) {
     asm_comment!(asm, "copy_splat_args_for_rest_callee");
 
-    let array_len_opnd = get_array_len(asm, array);
-
-    asm_comment!(asm, "guard splat array large enough");
-    asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
-
     // Unused operands cause the backend to panic
     if num_args == 0 {
         return;
@@ -6287,6 +6281,28 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+        // Insert length guard for a call to copy_splat_args_for_rest_callee()
+        // that will come later. We will have made changes to
+        // the stack by spilling or handling __send__ shifting
+        // by the time we get to that code, so we need the
+        // guard here where we can still side exit.
+        let non_rest_arg_count = argc - 1;
+        if non_rest_arg_count < required_num + opt_num {
+            let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
+                .try_into().unwrap();
+
+            if take_count > 0 {
+                asm_comment!(asm, "guard splat_array_length >= {take_count}");
+
+                let splat_array = asm.stack_opnd(i32::from(block_arg) + kw_arg_num);
+                let array_len_opnd = get_array_len(asm, splat_array);
+                asm.cmp(array_len_opnd, take_count.into());
+                asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
+            }
+        }
+    }
+
     match block_arg_type {
         Some(Type::Nil) => {
             // We have a nil block arg, so let's pop it off the args
@@ -6397,14 +6413,14 @@ fn gen_send_iseq(
                 // from the array and move them to the stack.
                 asm_comment!(asm, "take items from splat array");
 
-                let diff: u32 = (required_num - non_rest_arg_count + opts_filled)
+                let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
                     .try_into().unwrap();
 
                 // Copy required arguments to the stack without modifying the array
-                copy_splat_args_for_rest_callee(array, diff, asm);
+                copy_splat_args_for_rest_callee(array, take_count, asm);
 
                 // We will now slice the array to give us a new array of the correct size
-                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
+                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(take_count.into())]);
 
                 sliced
             } else {
