@@ -73,6 +73,10 @@ module GC
   #  call-seq:
   #     GC.disable_major    -> true or false
   #
+  #  This function is implementation specific. Alternative Ruby implementations
+  #  as well as future GC implementations are not required to implement this
+  #  function.
+  #
   #  Disables major garbage collection, returning +true+ if major garbage
   #  collection was already disabled.
   #
@@ -84,6 +88,10 @@ module GC
 
   #  call-seq:
   #     GC.enable_major    -> true or false
+  #
+  #  This function is implementation specific. Alternative Ruby implementations
+  #  as well as future GC implementations are not required to implement this
+  #  function.
   #
   #  Enables major garbage collection, returning +true+ if garbage
   #  collection was previously disabled.
@@ -98,6 +106,10 @@ module GC
 
   #  call-seq:
   #     GC.needs_major?    -> true or false, nil
+  #
+  #  This function is implementation specific. Alternative Ruby implementations
+  #  as well as future GC implementations are not required to implement this
+  #  function.
   #
   #  Used in conjunction with `GC.disable_major`. If Major GC's are disabled,
   #  then `GC.needs_major?` will report whether manually running a major GC is
