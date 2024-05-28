@@ -931,6 +931,7 @@ empty_str_alloc(VALUE klass)
     RUBY_DTRACE_CREATE_HOOK(STRING, 0);
     VALUE str = str_alloc_embed(klass, 0);
     memset(RSTRING(str)->as.embed.ary, 0, str_embed_capa(str));
+    ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
     return str;
 }
 
@@ -1552,6 +1553,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             STR_SET_EMBED(str);
             memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), RSTRING_LEN(orig));
             STR_SET_LEN(str, RSTRING_LEN(orig));
+            ENC_CODERANGE_SET(str, ENC_CODERANGE(orig));
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
@@ -3199,7 +3201,11 @@ rb_str_set_len(VALUE str, long len)
     }
 
     int cr = ENC_CODERANGE(str);
-    if (cr == ENC_CODERANGE_UNKNOWN) {
+    if (len == 0) {
+        /* Empty string does not contain non-ASCII */
+        ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+    }
+    else if (cr == ENC_CODERANGE_UNKNOWN) {
         /* Leave unknown. */
     }
     else if (len > RSTRING_LEN(str)) {
