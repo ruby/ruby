@@ -443,7 +443,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
     }
 
   unexpected_type:
-    rb_unexpected_type(v, t);
+    rb_unexpected_type(v, RBIMPL_CAST((int)t));
 }
 
 #endif /* RBIMPL_VALUE_TYPE_H */
