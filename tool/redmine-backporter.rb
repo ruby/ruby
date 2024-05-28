@@ -356,9 +356,9 @@ eom
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       if str
         str.insert(5, "d")
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev} #{str}."
       else
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev}."
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
       end
       if notes
         str << "\n"
