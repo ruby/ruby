@@ -493,7 +493,7 @@ module Bundler
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
           k = k.dup
-          k << "/" if /https?:/i.match?(k) && !%r{/\Z}.match?(k)
+          k << "/" if /https?:/i.match?(k) && !k.end_with?("/", "__#{FALLBACK_TIMEOUT_URI_OPTION.upcase}")
           k.gsub!(".", "__")
 
           unless k.start_with?("#")
