@@ -20,9 +20,6 @@ class << Merger = Object.new
 \e[1msimple backport\e[0m
   ruby #$0 1234abc
 
-\e[1mbackport from other branch\e[0m
-  ruby #$0 1234abc mvm
-
 \e[1mrevision increment\e[0m
   ruby #$0 revisionup
 
