@@ -392,9 +392,9 @@ end
 #   see {File Permissions}[rdoc-ref:File@File+Permissions].
 # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
 #
-# The temporary file removal depends on the keyword argument +unlink_first+ and
+# The temporary file removal depends on the keyword argument +anonymous+ and
 # whether a block is given or not.
-# See the description about the +unlink_first+ keyword argument later.
+# See the description about the +anonymous+ keyword argument later.
 #
 # Example:
 #
@@ -415,16 +415,16 @@ end
 #     File.exist?(f.path)   # => true
 #   }                       # The file is removed at block exit.
 #
-#   f = Tempfile.create(unlink_first: true)
-#   # The file is already removed because unlink_first
+#   f = Tempfile.create(anonymous: true)
+#   # The file is already removed because anonymous
 #   f.path                  # => "/tmp/"  (no filename since no file)
 #   f.puts "foo"
 #   f.rewind
 #   f.read                  # => "foo\n"
 #   f.close
 #
-#   Tempfile.create(unlink_first: true) {|f|
-#     # The file is already removed because unlink_first
+#   Tempfile.create(anonymous: true) {|f|
+#     # The file is already removed because anonymous
 #     f.path                # => "/tmp/"  (no filename since no file)
 #     f.puts "foo"
 #     f.rewind
@@ -454,21 +454,21 @@ end
 #   {File::Constants}[rdoc-ref:File::Constants].
 # - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
 #
-# The keyword argument +unlink_first+ specifies when the file is removed.
+# The keyword argument +anonymous+ specifies when the file is removed.
 #
-# - +unlink_first=false+ (default) without a block: the file is not removed.
-# - +unlink_first=false+ (default) with a block: the file is removed after the block exits.
-# - +unlink_first=true+ without a block: the file is removed before returning.
-# - +unlink_first=true+ with a block: the file is removed before the block is called.
+# - +anonymous=false+ (default) without a block: the file is not removed.
+# - +anonymous=false+ (default) with a block: the file is removed after the block exits.
+# - +anonymous=true+ without a block: the file is removed before returning.
+# - +anonymous=true+ with a block: the file is removed before the block is called.
 #
-# In the first case (+unlink_first=false+ without a block),
+# In the first case (+anonymous=false+ without a block),
 # the file is not removed automatically.
 # It should be explicitly closed.
 # It can be used to rename to the desired filename.
 # If the file is not needed, it should be explicitly removed.
 #
 # The +File#path+ method of the created file object returns the temporary directory with a trailing slash
-# when +unlink_first+ is true.
+# when +anonymous+ is true.
 #
 # When a block is given, it creates the file as described above, passes it to the block,
 # and returns the block's value.
@@ -478,13 +478,13 @@ end
 #
 # Implementation note:
 #
-# The keyword argument +unlink_first=true+ is implemented using FILE_SHARE_DELETE on Windows.
+# The keyword argument +anonymous=true+ is implemented using FILE_SHARE_DELETE on Windows.
 # O_TMPFILE is used on Linux.
 #
 # Related: Tempfile.new.
 #
-def Tempfile.create(basename="", tmpdir=nil, mode: 0, unlink_first: false, **options, &block)
-  if unlink_first
+def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **options, &block)
+  if anonymous
     create_without_file(basename, tmpdir, mode: mode, **options, &block)
   else
     create_with_file(basename, tmpdir, mode: mode, **options, &block)

@@ -427,7 +427,7 @@ puts Tempfile.new('foo').path
   end
 
   def test_create_unlink_without_block
-    t = Tempfile.create(unlink_first: true)
+    t = Tempfile.create(anonymous: true)
     assert_equal(File, t.class)
     assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
     t.puts "foo"
@@ -439,7 +439,7 @@ puts Tempfile.new('foo').path
   end
 
   def test_create_unlink_with_block
-    result = Tempfile.create(unlink_first: true) {|t|
+    result = Tempfile.create(anonymous: true) {|t|
       assert_equal(File, t.class)
       assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
       t.puts "foo"
@@ -452,7 +452,7 @@ puts Tempfile.new('foo').path
 
   def test_create_unlink_removes_file
     Dir.mktmpdir {|d|
-      t = Tempfile.create("", d, unlink_first: true)
+      t = Tempfile.create("", d, anonymous: true)
       t.close
       assert_equal([], Dir.children(d))
     }
@@ -461,7 +461,7 @@ puts Tempfile.new('foo').path
   def test_create_unlink_path
     Dir.mktmpdir {|d|
       begin
-        t = Tempfile.create("", d, unlink_first: true)
+        t = Tempfile.create("", d, anonymous: true)
         assert_equal(File.join(d, ""), t.path)
       ensure
         t.close if t
@@ -470,7 +470,7 @@ puts Tempfile.new('foo').path
   end
 
   def test_create_unlink_autoclose
-    Tempfile.create(unlink_first: true) {|t|
+    Tempfile.create(anonymous: true) {|t|
       assert_equal(true, t.autoclose?)
     }
   end
