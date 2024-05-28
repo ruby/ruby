@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/completion.rb -
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -86,6 +86,14 @@ module IRB
         )
     end
 
+    def command_completions(preposing, target)
+      if preposing.empty? && !target.empty?
+        IRB::Command.command_names.select { _1.start_with?(target) }
+      else
+        []
+      end
+    end
+
     def retrieve_files_to_require_relative_from_current_dir
       @files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
         path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
@@ -103,9 +111,11 @@ module IRB
     end
 
     def completion_candidates(preposing, target, _postposing, bind:)
+      commands = command_completions(preposing, target)
       result = ReplTypeCompletor.analyze(preposing + target, binding: bind, filename: @context.irb_path)
-      return [] unless result
-      result.completion_candidates.map { target + _1 }
+      return commands unless result
+
+      commands | result.completion_candidates.map { target + _1 }
     end
 
     def doc_namespace(preposing, matched, _postposing, bind:)
@@ -181,7 +191,8 @@ module IRB
         result = complete_require_path(target, preposing, postposing)
         return result if result
       end
-      retrieve_completion_data(target, bind: bind, doc_namespace: false).compact.map{ |i| i.encode(Encoding.default_external) }
+      commands = command_completions(preposing || '', target)
+      commands | retrieve_completion_data(target, bind: bind, doc_namespace: false).compact.map{ |i| i.encode(Encoding.default_external) }
     end
 
     def doc_namespace(_preposing, matched, _postposing, bind:)
@@ -388,7 +399,7 @@ module IRB
 
         if doc_namespace
           rec_class = rec.is_a?(Module) ? rec : rec.class
-          "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}"
+          "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}" rescue nil
         else
           select_message(receiver, message, candidates, sep)
         end
@@ -406,13 +417,19 @@ module IRB
         else
           select_message(receiver, message, candidates.sort)
         end
-
+      when /^\s*$/
+        # empty input
+        if doc_namespace
+          nil
+        else
+          []
+        end
       else
         if doc_namespace
           vars = (bind.local_variables | bind.eval_instance_variables).collect{|m| m.to_s}
           perfect_match_var = vars.find{|m| m.to_s == input}
           if perfect_match_var
-            eval("#{perfect_match_var}.class.name", bind)
+            eval("#{perfect_match_var}.class.name", bind) rescue nil
           else
             candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
             candidates |= ReservedWords

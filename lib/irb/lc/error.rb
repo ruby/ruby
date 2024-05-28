@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/lc/error.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -10,11 +10,6 @@ module IRB
   class UnrecognizedSwitch < StandardError
     def initialize(val)
       super("Unrecognized switch: #{val}")
-    end
-  end
-  class NotImplementedError < StandardError
-    def initialize(val)
-      super("Need to define `#{val}'")
     end
   end
   class CantReturnToNormalMode < StandardError
@@ -50,11 +45,6 @@ module IRB
   class UndefinedPromptMode < StandardError
     def initialize(val)
       super("Undefined prompt mode(#{val}).")
-    end
-  end
-  class IllegalRCGenerator < StandardError
-    def initialize
-      super("Define illegal RC_NAME_GENERATOR.")
     end
   end
 

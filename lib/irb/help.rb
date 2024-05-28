@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/help.rb - print usage module
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -6,7 +6,7 @@
 
 module IRB
   # Outputs the irb help message, see IRB@Command-Line+Options.
-  def IRB.print_usage
+  def IRB.print_usage # :nodoc:
     lc = IRB.conf[:LC_MESSAGES]
     path = lc.find("irb/help-message")
     space_line = false

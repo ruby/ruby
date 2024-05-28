@@ -12,6 +12,8 @@ module IRB
         skip = false
         last_tok, state, args = opens.last
         case state
+        when :in_alias_undef
+          skip = t.event == :on_kw
         when :in_unquoted_symbol
           unless IGNORE_TOKENS.include?(t.event)
             opens.pop
@@ -61,17 +63,17 @@ module IRB
             if args.include?(:arg)
               case t.event
               when :on_nl, :on_semicolon
-                # def recever.f;
+                # def receiver.f;
                 body = :normal
               when :on_lparen
-                # def recever.f()
+                # def receiver.f()
                 next_args << :eq
               else
                 if t.event == :on_op && t.tok == '='
                   # def receiver.f =
                   body = :oneliner
                 else
-                  # def recever.f arg
+                  # def receiver.f arg
                   next_args << :arg_without_paren
                 end
               end
@@ -130,6 +132,10 @@ module IRB
                 opens.pop
                 opens << [t, nil]
               end
+            when 'alias'
+              opens << [t, :in_alias_undef, 2]
+            when 'undef'
+              opens << [t, :in_alias_undef, 1]
             when 'elsif', 'else', 'when'
               opens.pop
               opens << [t, nil]
@@ -173,6 +179,10 @@ module IRB
         if pending_heredocs.any? && t.tok.include?("\n")
           pending_heredocs.reverse_each { |t| opens << [t, nil] }
           pending_heredocs = []
+        end
+        if opens.last && opens.last[1] == :in_alias_undef && !IGNORE_TOKENS.include?(t.event) && t.event != :on_heredoc_end
+          tok, state, arg = opens.pop
+          opens << [tok, state, arg - 1] if arg >= 1
         end
         yield t, opens if block_given?
       end

@@ -16,8 +16,23 @@ module IRB
       raise NotImplementedError
     end
 
-    def evaluable_code
-      raise NotImplementedError
+    class EmptyInput < Statement
+      def is_assignment?
+        false
+      end
+
+      def suppresses_echo?
+        true
+      end
+
+      # Debugger takes empty input to repeat the last command
+      def should_be_handled_by_debugger?
+        true
+      end
+
+      def code
+        ""
+      end
     end
 
     class Expression < Statement
@@ -37,18 +52,15 @@ module IRB
       def is_assignment?
         @is_assignment
       end
-
-      def evaluable_code
-        @code
-      end
     end
 
     class Command < Statement
-      def initialize(code, command, arg, command_class)
-        @code = code
-        @command = command
-        @arg = arg
+      attr_reader :command_class, :arg
+
+      def initialize(original_code, command_class, arg)
+        @code = original_code
         @command_class = command_class
+        @arg = arg
       end
 
       def is_assignment?
@@ -60,20 +72,8 @@ module IRB
       end
 
       def should_be_handled_by_debugger?
-        require_relative 'cmd/help'
-        require_relative 'cmd/debug'
-        IRB::ExtendCommand::DebugCommand > @command_class || IRB::ExtendCommand::Help == @command_class
-      end
-
-      def evaluable_code
-        # Hook command-specific transformation to return valid Ruby code
-        if @command_class.respond_to?(:transform_args)
-          arg = @command_class.transform_args(@arg)
-        else
-          arg = @arg
-        end
-
-        [@command, arg].compact.join(' ')
+        require_relative 'command/debug'
+        IRB::Command::DebugCommand > @command_class
       end
     end
   end

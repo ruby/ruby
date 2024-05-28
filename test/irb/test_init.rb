@@ -11,13 +11,18 @@ module TestIRB
       @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|
         hash[env] = ENV.delete(env)
       end
-      ENV["HOME"] = @tmpdir = Dir.mktmpdir("test_irb_init_#{$$}")
+      ENV["HOME"] = @tmpdir = File.realpath(Dir.mktmpdir("test_irb_init_#{$$}"))
+    end
+
+    def reset_rc_name_generators
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
     end
 
     def teardown
       ENV.update(@backup_env)
       FileUtils.rm_rf(@tmpdir)
       IRB.conf.delete(:SCRIPT)
+      reset_rc_name_generators
     end
 
     def test_setup_with_argv_preserves_global_argv
@@ -34,42 +39,80 @@ module TestIRB
       assert_equal orig, $0
     end
 
-    def test_rc_file
+    def test_rc_files
       tmpdir = @tmpdir
       Dir.chdir(tmpdir) do
-        ENV["XDG_CONFIG_HOME"] = "#{tmpdir}/xdg"
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
-        assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-        assert_file.not_exist?(tmpdir+"/xdg")
-        IRB.conf[:RC_NAME_GENERATOR] = nil
-        FileUtils.touch(tmpdir+"/.irb#{IRB::IRBRC_EXT}")
-        assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
-        assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-        assert_file.not_exist?(tmpdir+"/xdg")
-      end
-    end
-
-    def test_rc_file_in_subdir
-      tmpdir = @tmpdir
-      Dir.chdir(tmpdir) do
-        FileUtils.mkdir_p("#{tmpdir}/mydir")
-        Dir.chdir("#{tmpdir}/mydir") do
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
-          assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-          IRB.conf[:RC_NAME_GENERATOR] = nil
-          FileUtils.touch(tmpdir+"/.irb#{IRB::IRBRC_EXT}")
-          assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
-          assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
+        home = ENV['HOME'] = "#{tmpdir}/home"
+        xdg_config_home = ENV['XDG_CONFIG_HOME'] = "#{tmpdir}/xdg"
+        reset_rc_name_generators
+        assert_empty(IRB.irbrc_files)
+        assert_equal("#{home}/.irb_history", IRB.rc_file('_history'))
+        FileUtils.mkdir_p(home)
+        FileUtils.mkdir_p("#{xdg_config_home}/irb")
+        FileUtils.mkdir_p("#{home}/.config/irb")
+        reset_rc_name_generators
+        assert_empty(IRB.irbrc_files)
+        assert_equal("#{xdg_config_home}/irb/irb_history", IRB.rc_file('_history'))
+        home_irbrc = "#{home}/.irbrc"
+        config_irbrc = "#{home}/.config/irb/irbrc"
+        xdg_config_irbrc = "#{xdg_config_home}/irb/irbrc"
+        [home_irbrc, config_irbrc, xdg_config_irbrc].each do |file|
+          FileUtils.touch(file)
         end
+        current_dir_irbrcs = %w[.irbrc irbrc _irbrc $irbrc].map { |file| "#{tmpdir}/#{file}" }
+        current_dir_irbrcs.each { |file| FileUtils.touch(file) }
+        reset_rc_name_generators
+        assert_equal([xdg_config_irbrc, home_irbrc, *current_dir_irbrcs], IRB.irbrc_files)
+        assert_equal(xdg_config_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = nil
+        reset_rc_name_generators
+        assert_equal([home_irbrc, config_irbrc, *current_dir_irbrcs], IRB.irbrc_files)
+        assert_equal(home_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = ''
+        reset_rc_name_generators
+        assert_equal([home_irbrc, config_irbrc] + current_dir_irbrcs, IRB.irbrc_files)
+        assert_equal(home_irbrc.sub(/rc$/, '_history'), IRB.rc_file('_history'))
+        ENV['XDG_CONFIG_HOME'] = xdg_config_home
+        ENV['IRBRC'] = "#{tmpdir}/.irbrc"
+        reset_rc_name_generators
+        assert_equal([ENV['IRBRC'], xdg_config_irbrc, home_irbrc] + (current_dir_irbrcs - [ENV['IRBRC']]), IRB.irbrc_files)
+        assert_equal(ENV['IRBRC'] + '_history', IRB.rc_file('_history'))
+        ENV['IRBRC'] = ENV['HOME'] = ENV['XDG_CONFIG_HOME'] = nil
+        reset_rc_name_generators
+        assert_equal(current_dir_irbrcs, IRB.irbrc_files)
+        assert_nil(IRB.rc_file('_history'))
       end
     end
 
-    def test_recovery_sigint
+    def test_duplicated_rc_files
+      tmpdir = @tmpdir
+      Dir.chdir(tmpdir) do
+        ENV['XDG_CONFIG_HOME'] = "#{ENV['HOME']}/.config"
+        FileUtils.mkdir_p("#{ENV['XDG_CONFIG_HOME']}/irb")
+        env_irbrc = ENV['IRBRC'] = "#{tmpdir}/_irbrc"
+        xdg_config_irbrc = "#{ENV['XDG_CONFIG_HOME']}/irb/irbrc"
+        home_irbrc = "#{ENV['HOME']}/.irbrc"
+        current_dir_irbrc = "#{tmpdir}/irbrc"
+        [env_irbrc, xdg_config_irbrc, home_irbrc, current_dir_irbrc].each do |file|
+          FileUtils.touch(file)
+        end
+        reset_rc_name_generators
+        assert_equal([env_irbrc, xdg_config_irbrc, home_irbrc, current_dir_irbrc], IRB.irbrc_files)
+      end
+    end
+
+    def test_sigint_restore_default
       pend "This test gets stuck on Solaris for unknown reason; contribution is welcome" if RUBY_PLATFORM =~ /solaris/
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e binding.irb;loop{Process.kill("SIGINT",$$)} -- -f --], "exit\n", //, //)
+      # IRB should restore SIGINT handler
+      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e Signal.trap("SIGINT","DEFAULT");binding.irb;loop{Process.kill("SIGINT",$$)} -- -f --], "exit\n", //, //)
+      Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
+    end
+
+    def test_sigint_restore_block
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      # IRB should restore SIGINT handler
+      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e x=false;Signal.trap("SIGINT"){x=true};binding.irb;loop{Process.kill("SIGINT",$$);if(x);break;end} -- -f --], "exit\n", //, //)
       Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
     end
 
@@ -206,6 +249,12 @@ module TestIRB
       IRB.setup(eval("__FILE__"), argv: argv)
       assert_equal('-', IRB.conf[:SCRIPT])
       assert_equal(['-f'], argv)
+    end
+
+    def test_option_tracer
+      argv = %w[--tracer]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal(true, IRB.conf[:USE_TRACER])
     end
 
     private

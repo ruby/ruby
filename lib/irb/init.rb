@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/init.rb - irb initialize module
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
@@ -6,6 +6,7 @@
 
 module IRB # :nodoc:
   @CONF = {}
+  @INITIALIZED = false
   # Displays current configuration.
   #
   # Modifying the configuration is achieved by sending a message to IRB.conf.
@@ -41,6 +42,10 @@ module IRB # :nodoc:
     format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
   end
 
+  def IRB.initialized?
+    !!@INITIALIZED
+  end
+
   # initialize config
   def IRB.setup(ap_path, argv: ::ARGV)
     IRB.init_config(ap_path)
@@ -52,13 +57,11 @@ module IRB # :nodoc:
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
       fail UndefinedPromptMode, @CONF[:PROMPT_MODE]
     end
+    @INITIALIZED = true
   end
 
   # @CONF default setting
   def IRB.init_config(ap_path)
-    # class instance variables
-    @TRACER_INITIALIZED = false
-
     # default configurations
     unless ap_path and @CONF[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")
@@ -392,56 +395,36 @@ module IRB # :nodoc:
   # Run the config file
   def IRB.run_config
     if @CONF[:RC]
-      begin
-        file = rc_file
-        # Because rc_file always returns `HOME/.irbrc` even if no rc file is present, we can't warn users about missing rc files.
-        # Otherwise, it'd be very noisy.
-        load file if File.exist?(file)
+      irbrc_files.each do |rc|
+        load rc
       rescue StandardError, ScriptError => e
-        warn "Error loading RC file '#{file}':\n#{e.full_message(highlight: false)}"
+        warn "Error loading RC file '#{rc}':\n#{e.full_message(highlight: false)}"
       end
     end
   end
 
   IRBRC_EXT = "rc"
-  def IRB.rc_file(ext = IRBRC_EXT)
-    if !@CONF[:RC_NAME_GENERATOR]
-      rc_file_generators do |rcgen|
-        @CONF[:RC_NAME_GENERATOR] ||= rcgen
-        if File.exist?(rcgen.call(IRBRC_EXT))
-          @CONF[:RC_NAME_GENERATOR] = rcgen
-          break
-        end
-      end
+
+  def IRB.rc_file(ext)
+    prepare_irbrc_name_generators
+
+    # When irbrc exist in default location
+    if (rcgen = @existing_rc_name_generators.first)
+      return rcgen.call(ext)
     end
-    case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
-    when String
-      rc_file
-    else
-      fail IllegalRCNameGenerator
+
+    # When irbrc does not exist in default location
+    rc_file_generators do |rcgen|
+      return rcgen.call(ext)
     end
+
+    # When HOME and XDG_CONFIG_HOME are not available
+    nil
   end
 
-  # enumerate possible rc-file base name generators
-  def IRB.rc_file_generators
-    if irbrc = ENV["IRBRC"]
-      yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
-    end
-    if xdg_config_home = ENV["XDG_CONFIG_HOME"]
-      irb_home = File.join(xdg_config_home, "irb")
-      if File.directory?(irb_home)
-        yield proc{|rc| irb_home + "/irb#{rc}"}
-      end
-    end
-    if home = ENV["HOME"]
-      yield proc{|rc| home+"/.irb#{rc}"}
-      yield proc{|rc| home+"/.config/irb/irb#{rc}"}
-    end
-    current_dir = Dir.pwd
-    yield proc{|rc| current_dir+"/.irb#{rc}"}
-    yield proc{|rc| current_dir+"/irb#{rc.sub(/\A_?/, '.')}"}
-    yield proc{|rc| current_dir+"/_irb#{rc}"}
-    yield proc{|rc| current_dir+"/$irb#{rc}"}
+  def IRB.irbrc_files
+    prepare_irbrc_name_generators
+    @irbrc_files
   end
 
   # loading modules
@@ -457,6 +440,50 @@ module IRB # :nodoc:
 
   class << IRB
     private
+
+    def prepare_irbrc_name_generators
+      return if @existing_rc_name_generators
+
+      @existing_rc_name_generators = []
+      @irbrc_files = []
+      rc_file_generators do |rcgen|
+        irbrc = rcgen.call(IRBRC_EXT)
+        if File.exist?(irbrc)
+          @irbrc_files << irbrc
+          @existing_rc_name_generators << rcgen
+        end
+      end
+      generate_current_dir_irbrc_files.each do |irbrc|
+        @irbrc_files << irbrc if File.exist?(irbrc)
+      end
+      @irbrc_files.uniq!
+    end
+
+    # enumerate possible rc-file base name generators
+    def rc_file_generators
+      if irbrc = ENV["IRBRC"]
+        yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
+      end
+      if xdg_config_home = ENV["XDG_CONFIG_HOME"]
+        irb_home = File.join(xdg_config_home, "irb")
+        if File.directory?(irb_home)
+          yield proc{|rc| irb_home + "/irb#{rc}"}
+        end
+      end
+      if home = ENV["HOME"]
+        yield proc{|rc| home+"/.irb#{rc}"}
+        if xdg_config_home.nil? || xdg_config_home.empty?
+          yield proc{|rc| home+"/.config/irb/irb#{rc}"}
+        end
+      end
+    end
+
+    # possible irbrc files in current directory
+    def generate_current_dir_irbrc_files
+      current_dir = Dir.pwd
+      %w[.irbrc irbrc _irbrc $irbrc].map { |file| "#{current_dir}/#{file}" }
+    end
+
     def set_encoding(extern, intern = nil, override: true)
       verbose, $VERBOSE = $VERBOSE, nil
       Encoding.default_external = extern unless extern.nil? || extern.empty?
