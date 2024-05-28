@@ -4036,9 +4036,15 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for i, j in []; end
         //
-        if (state != NULL) state->position--;
+        size_t before_position;
+        if (state != NULL) {
+            before_position = state->position;
+            state->position--;
+        }
+
         pm_compile_multi_target_node(iseq, node, parents, writes, cleanup, scope_node, state);
-        if (state != NULL) state->position++;
+        if (state != NULL) state->position = before_position;
+
         break;
       }
       default:
@@ -4095,7 +4101,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     if (state == NULL) state = &target_state;
 
     size_t base_position = state->position;
-    size_t splat_position = has_rest ? 1 : 0;
+    size_t splat_position = (has_rest || has_posts) ? 1 : 0;
 
     // Next, we'll iterate through all of the leading targets.
     for (size_t index = 0; index < lefts->size; index++) {
