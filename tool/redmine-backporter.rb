@@ -63,12 +63,12 @@ COLORS = {
 }
 
 class String
-  def color(fore=nil, back=nil, bold: false, underscore: false)
+  def color(fore=nil, back=nil, opts={}, bold: false, underscore: false)
     seq = ""
-    if bold
+    if bold || opts[:bold]
       seq << "\e[1m"
     end
-    if underscore
+    if underscore || opts[:underscore]
       seq << "\e[2m"
     end
     if fore
