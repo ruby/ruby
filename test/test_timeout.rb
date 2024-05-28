@@ -66,7 +66,7 @@ class TestTimeout < Test::Unit::TestCase
     a = nil
     assert_raise(Timeout::Error) do
       Timeout.timeout(0.1) {
-        Timeout.timeout(1) {
+        Timeout.timeout(30) {
           nil while true
         }
         a = 1
@@ -84,7 +84,7 @@ class TestTimeout < Test::Unit::TestCase
   def test_nested_timeout_error_identity
     begin
       Timeout.timeout(0.1, MyNewErrorOuter) {
-        Timeout.timeout(1, MyNewErrorInner) {
+        Timeout.timeout(30, MyNewErrorInner) {
           nil while true
         }
       }
