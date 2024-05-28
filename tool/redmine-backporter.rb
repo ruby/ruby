@@ -155,10 +155,6 @@ def more(sio)
   end
 end
 
-def find_svn_log(pattern)
-  `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
-end
-
 def find_git_log(pattern)
   `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
@@ -295,9 +291,6 @@ eom
   "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
     case args
-    when /\Ar?(\d+)\z/ # SVN
-      rev = $1
-      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
       uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{rev}/issues.json")
@@ -355,15 +348,8 @@ eom
       next
     end
 
-    if rev
-    elsif system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
-      if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
-        rev = "r#{rev}"
-      end
-    else # Git
-      if log = find_git_log("##@issue]")
-        /^commit (?<rev>\h{40})$/ =~ log
-      end
+    if rev.nil? && log = find_git_log("##@issue]")
+      /^commit (?<rev>\h{40})$/ =~ log
     end
     if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
