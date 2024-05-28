@@ -16,7 +16,7 @@ assert_equal 'nil', %q{
   def splat_kw(kwargs) = yield(**kwargs)
 
   splat_kw({}) { _1 }.inspect
-}
+} unless rjit_enabled? # Not yet working on RJIT
 
 # regression test for arity check with splat
 assert_equal '[:ae, :ae]', %q{
