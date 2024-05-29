@@ -134,6 +134,11 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
+      - uses: ruby/setup-ruby@943103cae7d3f1bb1e4951d5fcc7928b40e4b742 # v1.177.1
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
@@ -146,11 +151,6 @@ jobs:
       - name: Install Rust
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
-
-      - uses: ruby/setup-ruby@943103cae7d3f1bb1e4951d5fcc7928b40e4b742 # v1.177.1
-        with:
-          ruby-version: '3.0'
-          bundler: none
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
