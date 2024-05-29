@@ -533,7 +533,7 @@ module Bundler
       /ix
 
     def self.key_for(key)
-      key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
+      key = normalize_uri(key) if key.is_a?(String) && key.start_with?("http", "mirror.http")
       key = key_to_s(key).gsub(".", "__")
       key.gsub!("-", "___")
       key.upcase!
