@@ -31,3 +31,5 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+
+test_bytesplice(StringInstanceTest) Assertion Failed: ../src/internal/class.h:156:RCLASS_SET_M_TBL:!RB_OBJ_PROMOTED(klass)
