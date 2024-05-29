@@ -2783,4 +2783,25 @@ EOS
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;
   end
+
+  def test_handle_interrupt_with_fork
+    Thread.handle_interrupt(RuntimeError => :never) do
+      Thread.current.raise(RuntimeError, "Queued error")
+
+      assert_predicate Thread, :pending_interrupt?
+
+      pid = Process.fork do
+        if Thread.pending_interrupt?
+          exit 1
+        end
+      end
+
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+
+      assert_predicate Thread, :pending_interrupt?
+    end
+  rescue RuntimeError
+    # Ignore.
+  end if defined?(fork)
 end

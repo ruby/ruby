@@ -4701,6 +4701,7 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
     rb_fiber_atfork(th);
