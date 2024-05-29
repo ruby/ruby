@@ -355,7 +355,8 @@ eom
     if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       if str
-        str.sub!(/merge revision\(s\) /, "merged revision(s) commit:")
+        str.sub!(/\Amerge/, 'merged')
+        str.gsub!(/\h{40}/, 'commit:\0')
         str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev} #{str}."
       else
         str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
