@@ -1284,7 +1284,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    load_iseq_eval(ec, path);
+                    load_iseq_eval(saved.ec, path);
                     break;
 
                   case 's':

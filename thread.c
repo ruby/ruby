@@ -1790,6 +1790,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     {
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
             BLOCKING_REGION(waiting_fd.th, {
                 val = func(data1);
@@ -1803,6 +1804,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+            state = saved_state;
         }
         EC_POP_TAG();
 
