@@ -492,6 +492,10 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
+          k = k.dup
+          k << "/" if /https?:/i.match?(k) && !%r{/\Z}.match?(k)
+          k.gsub!(".", "__")
+
           unless k.start_with?("#")
             if k.include?("-")
               Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
