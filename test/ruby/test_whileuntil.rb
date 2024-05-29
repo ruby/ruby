@@ -73,6 +73,24 @@ class TestWhileuntil < Test::Unit::TestCase
     }
   end
 
+  def test_begin_while
+    i = 0
+    sum = 0
+    begin
+      i += 1
+      sum += i
+    end while i < 10
+    assert_equal([10, 55], [i, sum])
+
+    i = 0
+    sum = 0
+    (
+      i += 1
+      sum += i
+    ) while false
+    assert_equal([0, 0], [i, sum])
+  end
+
   def test_until
     i = 0
     until i>4
