@@ -2321,8 +2321,11 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
             return a1;
         /* should raise exception for consistency */
         if (!k_numeric_p(a1)) {
-            if (!raise)
-                return rb_protect(to_complex, a1, NULL);
+            if (!raise) {
+                a1 = rb_protect(to_complex, a1, NULL);
+                rb_set_errinfo(Qnil);
+                return a1;
+            }
             return to_complex(a1);
         }
     }
