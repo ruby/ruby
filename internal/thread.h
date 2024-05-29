@@ -46,6 +46,9 @@ VALUE rb_thread_shield_wait(VALUE self);
 VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);
 int rb_thread_to_be_killed(VALUE thread);
+void rb_thread_acquire_fork_lock(void);
+void rb_thread_release_fork_lock(void);
+void rb_thread_reset_fork_lock(void);
 void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
@@ -63,6 +66,8 @@ int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
 void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
 RUBY_SYMBOL_EXPORT_BEGIN
+
+void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */
 
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);

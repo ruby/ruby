@@ -3346,6 +3346,52 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     RUBY_DEBUG_LOG("wakeup");
 }
 
+// fork read-write lock (only for pthread)
+static pthread_rwlock_t rb_thread_fork_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+void
+rb_thread_release_fork_lock(void)
+{
+    int r;
+    if ((r = pthread_rwlock_unlock(&rb_thread_fork_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+}
+
+void
+rb_thread_reset_fork_lock(void)
+{
+    int r;
+    if ((r = pthread_rwlock_destroy(&rb_thread_fork_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_destroy", r);
+    }
+
+    if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
+      rb_bug_errno("pthread_rwlock_init", r);
+    }
+}
+
+void *
+rb_thread_prevent_fork(void *(*func)(void *), void *data)
+{
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_thread_fork_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+    void *result = func(data);
+    rb_thread_release_fork_lock();
+    return result;
+}
+
+void
+rb_thread_acquire_fork_lock(void)
+{
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_thread_fork_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+}
+
 // thread internal event hooks (only for pthread)
 
 struct rb_internal_thread_event_hook {
