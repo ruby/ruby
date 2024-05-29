@@ -1568,7 +1568,6 @@ class TestGem < Gem::TestCase
 
     tests.each do |name, paths, expected|
       Gem.use_paths paths.first, paths
-      Gem::Specification.reset
       Gem.searcher = nil
 
       assert_equal Gem::Dependency.new("m","1").to_specs,
