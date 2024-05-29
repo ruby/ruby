@@ -91,6 +91,40 @@ describe "Fiber#raise" do
 
     fiber_two.resume.should == [:yield_one, :rescued]
   end
+
+  ruby_version_is "3.4" do
+    it "raises on the resumed fiber" do
+      root_fiber = Fiber.current
+      f1 = Fiber.new { root_fiber.transfer }
+      f2 = Fiber.new { f1.resume }
+      f2.transfer
+
+      -> do
+        f2.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+
+    it "raises on itself" do
+      -> do
+        Fiber.current.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+
+    it "should raise on parent fiber" do
+      f2 = nil
+      f1 = Fiber.new do
+        # This is equivalent to Kernel#raise:
+        f2.raise(RuntimeError, "Expected error")
+      end
+      f2 = Fiber.new do
+        f1.resume
+      end
+
+      -> do
+        f2.resume
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+  end
 end
 
 

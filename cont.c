@@ -3223,7 +3223,13 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 static VALUE
 fiber_raise(rb_fiber_t *fiber, VALUE exception)
 {
-    if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
+    if (fiber == fiber_current()) {
+        rb_exc_raise(exception);
+    }
+    else if (fiber->resuming_fiber) {
+        return fiber_raise(fiber->resuming_fiber, exception);
+    }
+    else if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
         return fiber_transfer_kw(fiber, -1, &exception, RB_NO_KEYWORDS);
     }
     else {
