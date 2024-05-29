@@ -80,6 +80,13 @@ class TestString < Test::Unit::TestCase
     assert_equal("mystring", str.__send__(:initialize, "mystring", capacity: 1000))
     str = S("mystring")
     assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
+
+    if @cls == String
+      100.times {
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".
+          __send__(:initialize, capacity: -1)
+      }
+    end
   end
 
   def test_initialize_shared

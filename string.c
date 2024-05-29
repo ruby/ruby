@@ -1860,17 +1860,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 if (orig == str) n = 0;
             }
             str_modifiable(str);
-            if (STR_EMBED_P(str)) { /* make noembed always */
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
-                assert(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
-                memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_LEN(str) + 1);
-                RSTRING(str)->as.heap.ptr = new_ptr;
-            }
-            else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+            if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                /* make noembed always */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, size);
+                if (STR_EMBED_P(str)) RUBY_ASSERT(osize <= str_embed_capa(str));
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
