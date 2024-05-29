@@ -4172,7 +4172,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
+wait_retryable(volatile int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
 {
     if (*result < 0) {
         switch (errnum) {
@@ -4226,11 +4226,12 @@ static VALUE
 do_select(VALUE p)
 {
     struct select_set *set = (struct select_set *)p;
-    int result = 0;
+    volatile int result = 0;
     int lerrno;
     rb_hrtime_t *to, rel, end = 0;
 
     timeout_prepare(&to, &rel, &end, set->timeout);
+    volatile rb_hrtime_t endtime = end;
 #define restore_fdset(dst, src) \
     ((dst) ? rb_fd_dup(dst, src) : (void)0)
 #define do_select_update() \
@@ -4254,7 +4255,7 @@ do_select(VALUE p)
         }, ubf_select, set->th, TRUE);
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
-    } while (wait_retryable(&result, lerrno, to, end) && do_select_update());
+    } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
     if (result < 0) {
         errno = lerrno;
@@ -4323,7 +4324,7 @@ int
 rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1];
-    int result = 0;
+    volatile int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
     int state;
@@ -4343,6 +4344,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         rb_hrtime_t *to, rel, end = 0;
         RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
         timeout_prepare(&to, &rel, &end, timeout);
+        volatile rb_hrtime_t endtime = end;
         fds[0].fd = fd;
         fds[0].events = (short)events;
         fds[0].revents = 0;
@@ -4360,7 +4362,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             }, ubf_select, wfd.th, TRUE);
 
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        } while (wait_retryable(&result, lerrno, to, end));
+        } while (wait_retryable(&result, lerrno, to, endtime));
     }
     EC_POP_TAG();
 
