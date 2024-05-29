@@ -3008,7 +3008,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
 
     if (0) {
         fprintf(stderr, "SIZEOF_VALUE:%d\n", SIZEOF_VALUE);
-        fprintf(stderr, "pc:%p def:%p\n", pc, cme->def);
+        fprintf(stderr, "pc:%p def:%p\n", pc, (void *)cme->def);
         fprintf(stderr, "key:%p\n", (void *)key);
     }
 
