@@ -1880,19 +1880,56 @@ nodes:
     fields:
       - name: index
         type: node
+        comment: |
+          The index expression for `for` loops.
+
+              for i in a end
+                  ^
       - name: collection
         type: node
+        comment: |
+          The collection to iterate over.
+
+              for i in a end
+                       ^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the body of statements to execute for each iteration of the loop.
+
+              for i in a
+                foo(i)
+                ^^^^^^
+              end
       - name: for_keyword_loc
         type: location
+        comment: |
+          The location of the `for` keyword.
+
+              for i in a end
+              ^^^
       - name: in_keyword_loc
         type: location
+        comment: |
+          The location of the `in` keyword.
+
+              for i in a end
+                    ^^
       - name: do_keyword_loc
         type: location?
+        comment: |
+          The location of the `do` keyword, if present.
+
+              for i in a do end
+                         ^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          The location of the `end` keyword.
+
+              for i in a end
+                         ^^^
     comment: |
       Represents the use of the `for` keyword.
 
@@ -3586,7 +3623,7 @@ nodes:
                          ^^^^
       - name: then_keyword_loc
         type: location?
-        comment:
+        comment: |
           The location of the `then` keyword, if present.
 
               unless cond then bar end
