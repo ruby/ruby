@@ -2394,7 +2394,11 @@ rb_mmtk_st_update_dedup_table(st_table *tab)
     // Delete bins that point to deleted entries.
     for (st_index_t ind = 0; ind < num_bins; ind++) {
         st_index_t bin = get_bin(tab->bins, size_ind, ind);
-        if (DELETED_ENTRY_P(&tab->entries[bin])) {
+        if (EMPTY_OR_DELETED_BIN_P(bin)) {
+            continue;
+        }
+        st_table_entry *entry = &tab->entries[bin - ENTRY_BASE];
+        if (DELETED_ENTRY_P(entry)) {
             MARK_BIN_DELETED(tab, ind);
         }
     }
