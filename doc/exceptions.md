@@ -1,6 +1,6 @@
 # Exceptions
 
-Any Ruby code can raise an exception.
+Ruby code can raise exceptions.
 
 Most often, a raised exception is meant to alert the running program
 that an unusual (i.e., _exceptional_) situation has arisen,
