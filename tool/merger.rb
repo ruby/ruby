@@ -163,6 +163,17 @@ class << Merger = Object.new
     execute('git', 'add', '.') && execute('git', 'commit', '-F', file)
   end
 
+  def has_conflicts?
+    changes = IO.popen(%w[git status --porcelain -z]) { |io| io.readlines("\0", chomp: true) }
+    # Discover unmerged files
+    # AU: unmerged, added by us
+    # DU: unmerged, deleted by us
+    # UU: unmerged, both modified
+    # AA: unmerged, both added
+    conflict = changes.grep(/\A(?:.U|AA) /) {$'}
+    !conflict.empty?
+  end
+
   private
 
   # Prints the version of Ruby found in version.h
@@ -281,15 +292,17 @@ else
   f.flush
   f.close
 
-  Merger.interactive('conflicts resolved?', f.path) do
-    IO.popen(ENV['PAGER'] || ['less', '-R'], 'w') do |g|
-      g << Merger.stat
-      g << "\n\n"
-      f.open
-      g << f.read
-      f.close
-      g << "\n\n"
-      g << Merger.diff
+  if Merger.has_conflicts?
+    Merger.interactive('conflicts resolved?', f.path) do
+      IO.popen(ENV['PAGER'] || ['less', '-R'], 'w') do |g|
+        g << Merger.stat
+        g << "\n\n"
+        f.open
+        g << f.read
+        f.close
+        g << "\n\n"
+        g << Merger.diff
+      end
     end
   end
 
