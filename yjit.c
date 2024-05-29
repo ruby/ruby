@@ -871,10 +871,17 @@ rb_yjit_fix_mod_fix(VALUE recv, VALUE obj)
     return rb_fix_mod_fix(recv, obj);
 }
 
-VALUE
-rb_yjit_fix_mul_fix(VALUE recv, VALUE obj)
+// Return non-zero when `obj` is an array and its last item is a
+// `ruby2_keywords` hash. We don't support this kind of splat.
+size_t
+rb_yjit_ruby2_keywords_splat_p(VALUE obj)
 {
-    return rb_fix_mul_fix(recv, obj);
+    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
+    long len = RARRAY_LEN(obj);
+    if (len == 0) return 0;
+    VALUE last = RARRAY_AREF(obj, len - 1);
+    if (!RB_TYPE_P(last, T_HASH)) return 0;
+    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes

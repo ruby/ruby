@@ -5413,18 +5413,6 @@ fn gen_send_cfunc(
         return None;
     }
 
-    // In order to handle backwards compatibility between ruby 3 and 2
-    // ruby2_keywords was introduced. It is called only on methods
-    // with splat and changes they way they handle them.
-    // We are just going to not compile these.
-    // https://docs.ruby-lang.org/en/3.2/Module.html#method-i-ruby2_keywords
-    if unsafe {
-        get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
-    } {
-        gen_counter_incr(asm, Counter::send_args_splat_cfunc_ruby2_keywords);
-        return None;
-    }
-
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
         0
@@ -6004,7 +5992,6 @@ fn gen_send_iseq(
     exit_if_has_post(asm, iseq)?;
     exit_if_has_kwrest(asm, iseq)?;
     exit_if_kw_splat(asm, flags)?;
-    exit_if_splat_and_ruby2_keywords(asm, jit, flags)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
@@ -6282,6 +6269,8 @@ fn gen_send_iseq(
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
     if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+        let splat_pos = i32::from(block_arg) + kw_arg_num;
+
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
         // that will come later. We will have made changes to
         // the stack by spilling or handling __send__ shifting
@@ -6295,12 +6284,19 @@ fn gen_send_iseq(
             if take_count > 0 {
                 asm_comment!(asm, "guard splat_array_length >= {take_count}");
 
-                let splat_array = asm.stack_opnd(i32::from(block_arg) + kw_arg_num);
+                let splat_array = asm.stack_opnd(splat_pos);
                 let array_len_opnd = get_array_len(asm, splat_array);
                 asm.cmp(array_len_opnd, take_count.into());
                 asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
             }
         }
+
+        // All splats need to guard for ruby2_keywords hash. Check with a function call when
+        // splatting into a rest param since the index for the last item in the array is dynamic.
+        asm_comment!(asm, "guard no ruby2_keywords hash in splat");
+        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        asm.cmp(bad_splat, 0.into());
+        asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby_2_keywords));
     }
 
     match block_arg_type {
@@ -6843,20 +6839,6 @@ fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()>
 #[must_use]
 fn exit_if_kw_splat(asm: &mut Assembler, flags: u32) -> Option<()> {
     exit_if(asm, flags & VM_CALL_KW_SPLAT != 0, Counter::send_iseq_kw_splat)
-}
-
-#[must_use]
-fn exit_if_splat_and_ruby2_keywords(asm: &mut Assembler, jit: &mut JITState, flags: u32) -> Option<()> {
-    // In order to handle backwards compatibility between ruby 3 and 2
-    // ruby2_keywords was introduced. It is called only on methods
-    // with splat and changes they way they handle them.
-    // We are just going to not compile these.
-    // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
-    exit_if(
-        asm,
-        unsafe { get_iseq_flags_ruby2_keywords(jit.iseq) } && flags & VM_CALL_ARGS_SPLAT != 0,
-        Counter::send_iseq_ruby2_keywords,
-    )
 }
 
 #[must_use]

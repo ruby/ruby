@@ -4423,3 +4423,34 @@ assert_equal '0', %q{
 
   entry
 }
+
+# Integer succ and overflow
+assert_equal '[2, 4611686018427387904]', %q{
+  [1.succ, 4611686018427387903.succ]
+}
+
+# Integer right shift
+assert_equal '[0, 1, -4]', %q{
+  [0 >> 1, 2 >> 1, -7 >> 1]
+}
+
+assert_equal '[nil, "yield"]', %q{
+  def defined_yield = defined?(yield)
+  [defined_yield, defined_yield {}]
+}
+
+# splat with ruby2_keywords into rest parameter
+assert_equal '[[{:a=>1}], {}]', %q{
+  ruby2_keywords def foo(*args) = args
+
+  def bar(*args, **kw) = [args, kw]
+
+  def pass_bar(*args) = bar(*args)
+
+  def body
+    args = foo(a: 1)
+    pass_bar(*args)
+  end
+
+  body
+}

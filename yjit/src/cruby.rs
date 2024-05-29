@@ -139,7 +139,6 @@ extern "C" {
 
 // Renames
 pub use rb_insn_name as raw_insn_name;
-pub use rb_insn_len as raw_insn_len;
 pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
@@ -166,7 +165,6 @@ pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
 pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
 pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
 pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_ruby2_keywords as get_iseq_flags_ruby2_keywords;
 pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
 pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
 pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
@@ -185,7 +183,6 @@ pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
 pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
 pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
-pub use rb_yjit_fix_mul_fix as rb_fix_mul_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -222,7 +219,7 @@ pub fn insn_len(opcode: usize) -> u32 {
 
     #[cfg(not(test))]
     unsafe {
-        raw_insn_len(VALUE(opcode)).try_into().unwrap()
+        rb_insn_len(VALUE(opcode)).try_into().unwrap()
     }
 }
 
