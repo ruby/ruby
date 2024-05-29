@@ -21,13 +21,13 @@ bug_s_fstring_fake_str(VALUE self)
 VALUE
 bug_s_rb_enc_interned_str(VALUE self, VALUE encoding)
 {
-    return rb_enc_interned_str("foo", 3, RDATA(encoding)->data);
+    return rb_enc_interned_str("foo", 3, NIL_P(encoding) ? NULL : RDATA(encoding)->data);
 }
 
 VALUE
 bug_s_rb_enc_str_new(VALUE self, VALUE encoding)
 {
-    return rb_enc_str_new("foo", 3, RDATA(encoding)->data);
+    return rb_enc_str_new("foo", 3, NIL_P(encoding) ? NULL : RDATA(encoding)->data);
 }
 
 void

@@ -20,12 +20,20 @@ class Test_String_Fstring < Test::Unit::TestCase
     RUBY
   end
 
+  def test_rb_enc_interned_str_null_encoding
+    assert_equal Encoding::ASCII_8BIT, Bug::String.rb_enc_interned_str(nil).encoding
+  end
+
   def test_rb_enc_str_new_autoloaded_encoding
     assert_separately([], <<~RUBY)
       require '-test-/string'
       assert_include(Encoding::Windows_31J.inspect, 'autoload')
       Bug::String.rb_enc_str_new(Encoding::Windows_31J)
     RUBY
+  end
+
+  def test_rb_enc_str_new_null_encoding
+    assert_equal Encoding::ASCII_8BIT, Bug::String.rb_enc_str_new(nil).encoding
   end
 
   def test_instance_variable
