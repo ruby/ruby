@@ -244,8 +244,7 @@ Always do this.
 
 The `end` statement ends the handler.
 
-Code following it is reached if and only if any raised exception is handled
-and not [re-raised](#label-Re-Raising+an+Exception).
+Code following it is reached only if any raised exception is rescued.
 
 #### Begin-Less \Exception Handlers
 
@@ -278,8 +277,89 @@ An exception handler may also be implemented as:
 
 #### Re-Raising an \Exception
 
+It can be useful to rescue an exception, but allow its eventual effect;
+for example, a program can rescue an exception, log data about it,
+and then "reinstate" the exception.
+
+This may be done via the `raise` method, but in a special way;
+a rescuing clause:
+
+  - Captures an exception.
+  - Does whatever is needed concerning the exception (such as logging it).
+  - Calls method `raise` with no argument,
+    which raises the rescued exception:
+
+```
+begin
+  1 / 0
+rescue ZeroDivisionError
+  # Do needful things (like logging).
+  raise # Raised exception will be ZeroDivisionError, not RuntimeError.
+end
+```
+
+Output:
+
+```
+ruby t.rb
+t.rb:2:in `/': divided by 0 (ZeroDivisionError)
+        from t.rb:2:in `<main>'
+```
+
 #### Retrying
 
-## Raising AN \Exception
+It can be useful to retry a begin clause;
+for example, if it must access a possibly-volatile resource
+(such as a web page),
+it can be useful to try the access more than once
+(in the hope that it may become available):
+
+```
+require 'open-uri'
+begin
+  retries ||= 0
+  tempfile = URI.open("https://docs.ruby-lang.org/en/master/Exception.html")
+  # Do something with the retrieved data.
+rescue OpenURI::HTTPError
+  retry if (retries += 1) < 5
+else
+  puts "Got it, with #{retries} retries."
+end
+```
+
+```
+Got it, with 0 retries.
+```
+
+Note that the retry re-executes the entire begin clause,
+not just the part after the point of failure.
+
+## Raising an \Exception
+
+Raise an exception with method Kernel#raise.
 
 ## Custom Exceptions
+
+To provide additional or alternate information,
+you may create custom exception classes;
+each should be a subclass of one of the built-in exception classes.
+
+If you are building a library or gem (or even if you're not),
+it's good practice to start with a single “generic” exception class
+(commonly an immediate subclass of StandardError or RuntimeError),
+and have its other exception classes derive from that class.
+This allows an exception handler to rescue the generic exception,
+thus also rescuing all its derived exceptions.
+
+For example:
+
+```
+class MyLib
+  class Error < StandardError; end
+  class FooError < Error; end
+  class BarError < Error; end
+end
+```
+
+An exception handler rescue clause that rescues `MyLib::Error`
+will also rescue the derived classes `MyLib::FooError` and `MyLib::BarError`.
