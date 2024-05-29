@@ -17,14 +17,14 @@ require_relative "test_helper"
 
 module Prism
   class LocalsTest < TestCase
-    base = File.join(__dir__, "fixtures")
-    Dir["**/*.txt", base: base].each do |relative|
+    except = [
       # Skip this fixture because it has a different number of locals because
       # CRuby is eliminating dead code.
-      next if relative == "whitequark/ruby_bug_10653.txt"
+      "whitequark/ruby_bug_10653.txt"
+    ]
 
-      filepath = File.join(base, relative)
-      define_method("test_#{relative}") { assert_locals(filepath) }
+    Fixture.each(except: except) do |fixture|
+      define_method(fixture.test_name) { assert_locals(fixture) }
     end
 
     def setup
@@ -38,21 +38,13 @@ module Prism
 
     private
 
-    def assert_locals(filepath)
-      source = File.read(filepath)
+    def assert_locals(fixture)
+      source = fixture.read
 
       expected = cruby_locals(source)
       actual = prism_locals(source)
 
       assert_equal(expected, actual)
-    end
-
-    def ignore_warnings
-      previous_verbosity = $VERBOSE
-      $VERBOSE = nil
-      yield
-    ensure
-      $VERBOSE = previous_verbosity
     end
 
     # A wrapper around a RubyVM::InstructionSequence that provides a more
@@ -104,35 +96,29 @@ module Prism
     # For the given source, compiles with CRuby and returns a list of all of the
     # sets of local variables that were encountered.
     def cruby_locals(source)
-      verbose, $VERBOSE = $VERBOSE, nil
+      locals = [] #: Array[Array[Symbol | Integer]]
+      stack = [ISeq.new(ignore_warnings { RubyVM::InstructionSequence.compile(source) }.to_a)]
 
-      begin
-        locals = [] #: Array[Array[Symbol | Integer]]
-        stack = [ISeq.new(RubyVM::InstructionSequence.compile(source).to_a)]
-
-        while (iseq = stack.pop)
-          names = [*iseq.local_table]
-          names.map!.with_index do |name, index|
-            # When an anonymous local variable is present in the iseq's local
-            # table, it is represented as the stack offset from the top.
-            # However, when these are dumped to binary and read back in, they
-            # are replaced with the symbol :#arg_rest. To consistently handle
-            # this, we replace them here with their index.
-            if name == :"#arg_rest"
-              names.length - index + 1
-            else
-              name
-            end
+      while (iseq = stack.pop)
+        names = [*iseq.local_table]
+        names.map!.with_index do |name, index|
+          # When an anonymous local variable is present in the iseq's local
+          # table, it is represented as the stack offset from the top.
+          # However, when these are dumped to binary and read back in, they
+          # are replaced with the symbol :#arg_rest. To consistently handle
+          # this, we replace them here with their index.
+          if name == :"#arg_rest"
+            names.length - index + 1
+          else
+            name
           end
-
-          locals << names
-          iseq.each_child { |child| stack << child }
         end
 
-        locals
-      ensure
-        $VERBOSE = verbose
+        locals << names
+        iseq.each_child { |child| stack << child }
       end
+
+      locals
     end
 
     # For the given source, parses with prism and returns a list of all of the

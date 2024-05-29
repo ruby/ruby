@@ -1246,8 +1246,7 @@ module Prism
     end
 
     def test_invalid_message_name
-      result = Prism.parse("+.@foo,+=foo")
-      assert_equal :"", result.value.statements.body.first.write_name
+      assert_equal :"", Prism.parse_statement("+.@foo,+=foo").write_name
     end
 
     def test_invalid_operator_write_fcall

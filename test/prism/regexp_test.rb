@@ -223,12 +223,12 @@ module Prism
 
     def test_last_encoding_option_wins
       regex = "/foo/nu"
-      option = Prism.parse(regex).value.statements.body.first.options
+      option = Prism.parse_statement(regex).options
 
       assert_equal Regexp::FIXEDENCODING, option
 
       regex = "/foo/un"
-      option = Prism.parse(regex).value.statements.body.first.options
+      option = Prism.parse_statement(regex).options
 
       assert_equal Regexp::NOENCODING, option
     end
@@ -246,7 +246,7 @@ module Prism
     def options(flags)
       options =
         ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
-          Prism.parse(source).value.statements.body.first.options
+          Prism.parse_statement(source).options
         end
 
       # Check that we get the same set of options from both regular expressions

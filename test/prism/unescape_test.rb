@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-return if RUBY_VERSION < "3.1.0" || Prism::BACKEND == :FFI
+return if RUBY_VERSION < "3.1.0"
 
 module Prism
   class UnescapeTest < TestCase
@@ -41,7 +41,7 @@ module Prism
           result = Prism.parse(code(escape), encoding: "binary")
 
           if result.success?
-            yield result.value.statements.body.first
+            yield result.statement
           else
             :error
           end
