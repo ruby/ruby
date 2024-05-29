@@ -191,10 +191,12 @@ def backport_command_string
 
       # check if the Git revision is included in master
       has_commit(c, "master")
+    end.sort_by do |changeset|
+      Integer(IO.popen(%W[git show -s --format=%ct #{changeset}], &:read))
     end
     @changesets.define_singleton_method(:validated){true}
   end
-  "#{merger_path} --ticket=#{@issue} #{@changesets.sort.join(',')}"
+  "#{merger_path} --ticket=#{@issue} #{@changesets.join(',')}"
 end
 
 def status_char(obj)
