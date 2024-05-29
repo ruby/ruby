@@ -433,13 +433,11 @@ AS_CASE(["$build_os"],
     AC_MSG_CHECKING(for $CC linker warning)
     suppress_ld_waring=no
     echo 'int main(void) {return 0;}' > conftest.c
-    AS_IF([$CC -framework Foundation -o conftest -ggdb3 conftest.c 2>&1 |
+    AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep \
 	      -e '^ld: warning: ignoring duplicate libraries:' \
 	      -e '^ld: warning: text-based stub file' \
 	      -e '^ld: warning: -multiply_defined is obsolete' \
-	      -e "^warning: '\.debug_macinfo'" \
-	      -e '^note: while processing' \
 	   >/dev/null], [
 	suppress_ld_waring=yes
     ])
@@ -901,9 +899,9 @@ AS_IF([test "$GCC" = yes], [
     # suppress annoying -Wstrict-overflow warnings
     RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])
 
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb3, [debugflags=-ggdb3])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb, [debugflags=-ggdb])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-ggdb3, [debugflags=-ggdb3])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-ggdb, [debugflags=-ggdb])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-g3, [debugflags=-g3])}
 ])
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 
