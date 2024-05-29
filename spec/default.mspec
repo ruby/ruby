@@ -98,7 +98,7 @@ class DottedFormatter
         @columns = nil
       else
         columns = ENV["COLUMNS"]&.to_i
-        columns = 80 unless columns.nonzero?
+        columns = 80 unless columns&.nonzero?
         w = COUNT_WIDTH + 1
         round = 20
         @columns = (columns - w) / round * round + w
