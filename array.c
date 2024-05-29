@@ -3387,6 +3387,9 @@ rb_ary_sort_bang(VALUE ary)
                 rb_ary_unshare(ary);
                 FL_SET_EMBED(ary);
             }
+            if (ARY_EMBED_LEN(tmp) > ARY_CAPA(ary)) {
+                ary_resize_capa(ary, ARY_EMBED_LEN(tmp));
+            }
             ary_memcpy(ary, 0, ARY_EMBED_LEN(tmp), ARY_EMBED_PTR(tmp));
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
