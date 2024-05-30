@@ -113,6 +113,7 @@ char *strchr(char*,char);
 #include "internal/gc.h"
 #include "internal/io.h"
 #include "internal/object.h"
+#include "internal/imemo.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
@@ -1389,19 +1390,15 @@ rb_dir_getwd_ospath(void)
     VALUE cwd;
     VALUE path_guard;
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-    path_guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
+    path_guard = rb_imemo_tmpbuf_auto_free_pointer();
     path = ruby_getcwd();
-    DATA_PTR(path_guard) = path;
+    rb_imemo_tmpbuf_set_ptr(path_guard, path);
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
 #else
     cwd = rb_str_new2(path);
 #endif
-    DATA_PTR(path_guard) = 0;
-
-    xfree(path);
+    rb_free_tmp_buffer(&path_guard);
     return cwd;
 }
 #endif

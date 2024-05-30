@@ -6549,6 +6549,14 @@ rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
     return ary;
 }
 
+static const rb_data_type_t ary_sample_memo_type = {
+    .wrap_struct_name = "ary_sample_memo",
+    .function = {
+        .dfree = (RUBY_DATA_FUNC)st_free_table,
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE
 ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
 {
@@ -6630,11 +6638,9 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     }
     else if (n <= memo_threshold / 2) {
         long max_idx = 0;
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-        VALUE vmemo = Data_Wrap_Struct(0, 0, st_free_table, 0);
+        VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, 0);
         st_table *memo = st_init_numtable_with_size(n);
-        DATA_PTR(vmemo) = memo;
+        RTYPEDDATA_DATA(vmemo) = memo;
         result = rb_ary_new_capa(n);
         RARRAY_PTR_USE(result, ptr_result, {
             for (i=0; i<n; i++) {
@@ -6657,7 +6663,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
                 }
             });
         });
-        DATA_PTR(vmemo) = 0;
+        RTYPEDDATA_DATA(vmemo) = 0;
         st_free_table(memo);
         RB_GC_GUARD(vmemo);
     }

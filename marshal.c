@@ -128,22 +128,6 @@ static VALUE compat_allocator_tbl_wrapper;
 static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
 static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze);
 
-static int
-mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
-{
-    marshal_compat_t *p = (marshal_compat_t *)value;
-    rb_gc_mark(p->newclass);
-    rb_gc_mark(p->oldclass);
-    return ST_CONTINUE;
-}
-
-static void
-mark_marshal_compat_t(void *tbl)
-{
-    if (!tbl) return;
-    st_foreach(tbl, mark_marshal_compat_i, 0);
-}
-
 static st_table *compat_allocator_table(void);
 
 void
@@ -156,11 +140,10 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
         rb_raise(rb_eTypeError, "no allocator");
     }
 
+    compat_allocator_table();
     compat = ALLOC(marshal_compat_t);
-    compat->newclass = Qnil;
-    compat->oldclass = Qnil;
-    compat->newclass = newclass;
-    compat->oldclass = oldclass;
+    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->newclass, newclass);
+    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->oldclass, oldclass);
     compat->dumper = dumper;
     compat->loader = loader;
 
@@ -2525,28 +2508,75 @@ Init_marshal(void)
 }
 
 static int
-free_compat_i(st_data_t key, st_data_t value, st_data_t _)
+marshal_compat_table_mark_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    marshal_compat_t *p = (marshal_compat_t *)value;
+    rb_gc_mark_movable(p->newclass);
+    rb_gc_mark_movable(p->oldclass);
+    return ST_CONTINUE;
+}
+
+static void
+marshal_compat_table_mark(void *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, marshal_compat_table_mark_i, 0);
+}
+
+static int
+marshal_compat_table_free_i(st_data_t key, st_data_t value, st_data_t _)
 {
     xfree((marshal_compat_t *)value);
     return ST_CONTINUE;
 }
 
 static void
-free_compat_allocator_table(void *data)
+marshal_compat_table_free(void *data)
 {
-    st_foreach(data, free_compat_i, 0);
+    st_foreach(data, marshal_compat_table_free_i, 0);
     st_free_table(data);
 }
+
+static size_t
+marshal_compat_table_memsize(const void *data)
+{
+    return st_memsize(data) + sizeof(marshal_compat_t) * st_table_size(data);
+}
+
+static int
+marshal_compat_table_compact_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    marshal_compat_t *p = (marshal_compat_t *)value;
+    p->newclass = rb_gc_location(p->newclass);
+    p->oldclass = rb_gc_location(p->oldclass);
+    return ST_CONTINUE;
+}
+
+static void
+marshal_compat_table_compact(void *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, marshal_compat_table_compact_i, 0);
+}
+
+static const rb_data_type_t marshal_compat_type = {
+    .wrap_struct_name = "marshal_compat_table",
+    .function = {
+        .dmark = marshal_compat_table_mark,
+        .dfree = marshal_compat_table_free,
+        .dsize = marshal_compat_table_memsize,
+        .dcompact = marshal_compat_table_compact,
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static st_table *
 compat_allocator_table(void)
 {
     if (compat_allocator_tbl) return compat_allocator_tbl;
     compat_allocator_tbl = st_init_numtable();
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
-        Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
+        TypedData_Wrap_Struct(0, &marshal_compat_type, compat_allocator_tbl);
     rb_vm_register_global_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }
