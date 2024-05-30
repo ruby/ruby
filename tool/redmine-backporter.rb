@@ -66,25 +66,25 @@ class String
   def color(fore=nil, back=nil, opts={}, bold: false, underscore: false)
     seq = ""
     if bold || opts[:bold]
-      seq << "\e[1m"
+      seq = seq + "\e[1m"
     end
     if underscore || opts[:underscore]
-      seq << "\e[2m"
+      seq = seq + "\e[2m"
     end
     if fore
       c = COLORS[fore]
       raise "unknown foreground color #{fore}" unless c
-      seq << "\e[#{c}m"
+      seq = seq + "\e[#{c}m"
     end
     if back
       c = COLORS[back]
       raise "unknown background color #{back}" unless c
-      seq << "\e[#{c + 10}m"
+      seq = seq + "\e[#{c + 10}m"
     end
     if seq.empty?
       self
     else
-      seq << self << "\e[0m"
+      seq = seq + self + "\e[0m"
     end
   end
 end
