@@ -166,27 +166,14 @@ jobs:
       - run: make test
 
       - run: make install
-        if: ${{ matrix.entry.check }}
 
       - run: make test-tool
-        if: ${{ matrix.entry.check }}
 
       - run: make test-all TESTS='-- ruby -ext-'
-        if: ${{ matrix.entry.check }}
 
       - run: make test-spec
         env:
           CHECK_LEAKS: true
-        if: ${{ matrix.entry.check }}
-
-      - run: make test-annocheck
-        if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
-
-      - uses: ./.github/actions/slack
-        with:
-          label: ${{ matrix.entry.name }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
 
 defaults:
   run:
