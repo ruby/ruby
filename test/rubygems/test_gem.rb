@@ -1615,9 +1615,11 @@ class TestGem < Gem::TestCase
 
     Gem.use_paths Gem.dir, [Gem.dir, Gem.user_dir]
 
+    spec = Gem::Dependency.new("m", "1").to_spec
+
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),
-      Gem::Dependency.new("m","1").to_spec.gem_dir,
+      spec.gem_dir,
       "Wrong spec selected"
   end
 
