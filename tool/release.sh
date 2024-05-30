@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bash version 3.2+ is required for regexp
 
-EXTS='.tar.gz .tar.bz2 .tar.xz .zip'
+EXTS='.tar.gz .tar.xz .zip'
 
 ver=$1
 if [[ $ver =~ ^([1-9]\.[0-9])\.([0-9]|[1-9][0-9]|0-(preview[1-9]|rc[1-9]))$ ]]; then
