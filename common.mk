@@ -19127,8 +19127,11 @@ transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+util.$(OBJEXT): $(top_srcdir)/internal/array.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+util.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+util.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 util.$(OBJEXT): $(top_srcdir)/internal/util.h
 util.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 util.$(OBJEXT): {$(VPATH)}assert.h

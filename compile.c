@@ -48,9 +48,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -11421,7 +11418,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 {
     /* TODO: body should be frozen */
     long i, len = RARRAY_LEN(body);
-    struct st_table *labels_table = DATA_PTR(labels_wrapper);
+    struct st_table *labels_table = RTYPEDDATA_DATA(labels_wrapper);
     int j;
     int line_no = 0, node_id = -1, insn_idx = 0;
     int ret = COMPILE_OK;
@@ -11599,7 +11596,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
             rb_raise(rb_eTypeError, "unexpected object for instruction");
         }
     }
-    DATA_PTR(labels_wrapper) = 0;
+    RTYPEDDATA_DATA(labels_wrapper) = 0;
     RB_GC_GUARD(labels_wrapper);
     validate_labels(iseq, labels_table);
     if (!ret) return ret;
@@ -11732,6 +11729,15 @@ rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
     }
 }
 
+static const rb_data_type_t labels_wrapper_type = {
+    .wrap_struct_name = "compiler/labels_wrapper",
+    .function = {
+        .dmark = (RUBY_DATA_FUNC)rb_mark_set,
+        .dfree = (RUBY_DATA_FUNC)st_free_table,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+
 void
 rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
                          VALUE exception, VALUE body)
@@ -11741,7 +11747,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     unsigned int arg_size, local_size, stack_max;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
-    VALUE labels_wrapper = Data_Wrap_Struct(0, rb_mark_set, st_free_table, labels_table);
+    VALUE labels_wrapper = TypedData_Wrap_Struct(0, &labels_wrapper_type, labels_table);
     VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
     VALUE keywords = rb_hash_aref(params, SYM(keyword));
     VALUE sym_arg_rest = ID2SYM(rb_intern_const("#arg_rest"));
