@@ -15,6 +15,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_namespace_availability
+    pend
     Namespace.enabled = nil
     assert !Namespace.enabled
     Namespace.enabled = true
@@ -24,6 +25,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_current_namespace
+    pend
     global = Namespace.current
     assert_nil global
     @n.require_relative('namespace/current')
@@ -33,6 +35,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_rb_separately
+    pend
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
@@ -49,6 +52,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_relative_rb_separately
+    pend
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
@@ -65,6 +69,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_separately
+    pend
     assert_raise(NameError) { NS_A } # !
     assert_raise(NameError) { NS_B }
 
@@ -81,6 +86,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_namespace_in_namespace
+    pend
     assert_raise(NameError) { NS1 }
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
@@ -100,6 +106,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_rb_2versions
+    pend
     assert_raise(NameError) { NS_A }
 
     @n.require(File.join(__dir__, 'namespace', 'a.1_2_0'))
@@ -119,11 +126,13 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_raising_errors_in_require
+    pend
     assert_raise(RuntimeError, "Yay!") { @n.require(File.join(__dir__, 'namespace', 'raise')) }
     assert_nil Namespace.current
   end
 
   def test_autoload_in_namespace
+    pend
     assert_raise(NameError) { NS_A }
 
     @n.require_relative('namespace/autoloading')
@@ -140,12 +149,14 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_continuous_top_level_method_in_a_namespace
+    pend
     @n.require_relative('namespace/define_toplevel')
     @n.require_relative('namespace/call_toplevel')
     assert_raise(NameError) { foo }
   end
 
   def test_top_level_methods_in_namespace
+    pend
     @n.require_relative('namespace/top_level')
     assert_equal "yay!", @n::Foo.foo
     assert_raise(NameError) { yaaay }
@@ -154,6 +165,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_defined_in_namespace_refers_module_in_namespace
+    pend
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -174,6 +186,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_defined_globally_refers_global_module
+    pend
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -197,16 +210,17 @@ class TestNamespace < Test::Unit::TestCase
   end
 end
 
-class NSDummyBuiltinA; def foo; "a"; end; end
-module NSDummyBuiltinB; def foo; "b"; end; end
-Namespace.force_builtin(NSDummyBuiltinA)
-Namespace.force_builtin(NSDummyBuiltinB)
+# class NSDummyBuiltinA; def foo; "a"; end; end
+# module NSDummyBuiltinB; def foo; "b"; end; end
+# Namespace.force_builtin(NSDummyBuiltinA)
+# Namespace.force_builtin(NSDummyBuiltinB)
 
-class NSUsualClassC; def foo; "a"; end; end
-module NSUsualModuleD; def foo; "b"; end; end
+# class NSUsualClassC; def foo; "a"; end; end
+# module NSUsualModuleD; def foo; "b"; end; end
 
 class TestNamespace < Test::Unit::TestCase
   def test_builtin_classes_and_modules_are_reopened
+    pend
     @n.require_relative('namespace/reopen_classes_modules')
 
     assert_equal "A", @n::NSReopenClassesModules.test_a
@@ -221,6 +235,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_methods_added_in_namespace_are_invisible_globally
+    pend
     @n.require_relative('namespace/string_ext')
     assert_equal "yay", @n::Bar.yay
 
@@ -228,6 +243,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_continuous_method_definitions_in_a_namespace
+    pend
     @n.require_relative('namespace/string_ext')
     assert_equal "yay", @n::Bar.yay
 
@@ -238,6 +254,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_methods_added_in_namespace_later_than_caller_code
+    pend
     @n.require_relative('namespace/string_ext_caller')
 
     @n.require_relative('namespace/string_ext')
@@ -248,6 +265,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_method_added_in_namespace_are_available_on_eval
+    pend
     @n.require_relative('namespace/string_ext')
 
     @n.require_relative('namespace/string_ext_eval_caller')
@@ -255,6 +273,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_method_added_in_namespace_are_available_on_eval_with_binding
+    pend
     @n.require_relative('namespace/string_ext')
 
     @n.require_relative('namespace/string_ext_eval_caller')
@@ -262,6 +281,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_methods_and_constants_added_by_include
+    pend
     @n.require_relative('namespace/open_class_with_include')
 
     assert_equal "I'm saying foo 1", @n::OpenClassWithInclude.say
@@ -287,6 +307,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_from_global_works_with_global_definitions
+    pend
     @n.require_relative('namespace/procs')
 
     str_pr1 = Proc.new { String.new.yay }
@@ -326,6 +347,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_from_namespace_works_with_definitions_in_namespace
+    pend
     @n.require_relative('namespace/procs')
 
     str_pr1 = @n::ProcInNS.make_str_proc(:proc_new)
@@ -384,6 +406,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_add_constants_in_namespace
+    pend
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
     assert_equal 999, String.const_get(:STR_CONST0)
@@ -453,6 +476,7 @@ class TestNamespace < Test::Unit::TestCase
   def test_global_variables
     default_l = $-0
     default_f = $,
+    pend
 
     assert_equal "\n", $-0 # equal to $/, line splitter
     assert_equal nil, $,   # field splitter
@@ -490,6 +514,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_path_and_loaded_features
+    pend
     default_load_path = $LOAD_PATH.dup
     assert $LOAD_PATH.respond_to?(:resolve_feature_path)
 

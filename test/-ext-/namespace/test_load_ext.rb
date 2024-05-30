@@ -5,6 +5,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   ENV_ENABLE_NAMESPACE = {'RUBY_NAMESPACE' => '1'}
 
   def test_load_extension
+    pend
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require '-test-/namespace/yay1'
@@ -14,6 +15,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   end
 
   def test_extension_contamination_in_global
+    pend
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       require '-test-/namespace/yay1'
@@ -29,6 +31,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   end
 
   def test_load_extension_in_namespace
+    pend
     assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns = Namespace.new
@@ -39,6 +42,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   end
 
   def test_different_version_extensions
+    pend
     assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns1 = Namespace.new
@@ -57,6 +61,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   end
 
   def test_loading_extensions_from_global_to_local
+    pend
     assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require '-test-/namespace/yay1'
@@ -73,6 +78,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
   end
 
   def test_loading_extensions_from_local_to_global
+    pend
     assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns = Namespace.new

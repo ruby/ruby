@@ -538,7 +538,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
         dump_append(dc, ", \"variation_count\":");
-        dump_append_d(dc, RCLASS_EXT(obj)->variation_count);
+        dump_append_d(dc, rb_class_variation_count(obj));
 
       case T_MODULE:
         if (rb_class_get_superclass(obj)) {
@@ -562,7 +562,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (RCLASS_SINGLETON_P(obj)) {
+            if (rb_class_singleton_p(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }

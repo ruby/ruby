@@ -445,6 +445,7 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
 static VALUE
 gccct_hash(VALUE klass, ID mid)
 {
+    // TODO: inject the namespace id into the hash?
     return (klass >> 3) ^ (VALUE)mid;
 }
 
@@ -503,6 +504,17 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc)
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
     return gccct_method_search_slowpath(vm, klass, mid, argc, index);
+}
+
+VALUE
+rb_gccct_clear_table(VALUE _self)
+{
+    int i;
+    rb_vm_t *vm = GET_VM();
+    for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
+        vm->global_cc_cache_table[i] = NULL;
+    }
+    return Qnil;
 }
 
 /**
@@ -1836,7 +1848,6 @@ static VALUE
 eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
-    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     struct rb_block block;
     const rb_iseq_t *iseq;
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
@@ -1860,10 +1871,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
         cref = vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
-
-    if (NAMESPACE_LOCAL_P(ns)) {
-        rb_vm_using_module(ns->refiner);
-    }
+    // TODO: set the namespace frame
 
     /* kick */
     return vm_exec(ec);
@@ -1873,7 +1881,6 @@ static VALUE
 eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
-    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     rb_binding_t *bind = Check_TypedStruct(scope, &ruby_binding_data_type);
     const rb_iseq_t *iseq = eval_make_iseq(src, file, line, &bind->block);
     if (!iseq) {
@@ -1887,9 +1894,7 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
         vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
     }
 
-    if (NAMESPACE_LOCAL_P(ns)) {
-        rb_vm_using_module(ns->refiner);
-    }
+    // TODO: set the namespace frame
 
     /* kick */
     return vm_exec(ec);

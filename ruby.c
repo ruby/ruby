@@ -1803,6 +1803,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     ruby_init_prelude();
 
+    rb_initialize_main_namespace();
+
     // Initialize JITs after prelude because JITing prelude is typically not optimal.
 #if USE_RJIT
     // Also, rb_rjit_init is safe only after rb_call_builtin_inits() defines RubyVM::RJIT::Compiler.

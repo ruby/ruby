@@ -147,6 +147,7 @@ size_t rb_imemo_memsize(VALUE obj);
 void rb_cc_table_mark(VALUE klass);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
 void rb_cc_table_free(VALUE klass);
+void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN

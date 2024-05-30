@@ -121,7 +121,7 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
 
     size_t size = rb_obj_embedded_size(index_tbl_num_entries);
     if (!rb_gc_size_allocatable_p(size)) {
@@ -2054,7 +2054,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
             rb_raise(rb_eTypeError, "can't inherit uninitialized class");
         }
     }
-    RCLASS_SET_SUPER(klass, super);
+    rb_class_set_super(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2226,17 +2226,21 @@ rb_class_superclass(VALUE klass)
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
 
     VALUE super = RCLASS_SUPER(klass);
+    VALUE *superclasses;
+    size_t superclasses_depth;
 
     if (!super) {
         if (klass == rb_cBasicObject) return Qnil;
         rb_raise(rb_eTypeError, "uninitialized class");
     }
 
-    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+    superclasses_depth = RCLASS_SUPERCLASS_DEPTH(klass);
+    if (!superclasses_depth) {
         return Qnil;
     }
     else {
-        super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
+        superclasses = RCLASS_SUPERCLASSES(klass);
+        super = superclasses[superclasses_depth - 1];
         RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
         return super;
     }
@@ -2245,7 +2249,7 @@ rb_class_superclass(VALUE klass)
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
-    return RCLASS(klass)->super;
+    return RCLASS_SUPER(klass);
 }
 
 static const char bad_instance_name[] = "'%1$s' is not allowed as an instance variable name";
@@ -4521,6 +4525,11 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
+
+    // TODO: only for development
+    rb_define_method(rb_cModule, "debug_duplicate_classext", rb_class_debug_duplicate_classext, 1);
+    rb_define_method(rb_cModule, "debug_dump_all_classext", rb_class_debug_dump_all_classext, 0);
+    rb_define_method(rb_cModule, "debug_dump_all_classext_super", rb_class_debug_dump_all_classext_super, 1);
 
     rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);

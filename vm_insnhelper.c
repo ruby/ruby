@@ -17,7 +17,6 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/compar.h"
-#include "internal/eval.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/proc.h"
@@ -960,7 +959,7 @@ vm_get_const_key_cref(const VALUE *ep)
 
     while (cref) {
         if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
-                RCLASS_EXT(CREF_CLASS(cref))->cloned) {
+                RCLASS_CLONED_P(CREF_CLASS(cref)) ) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
@@ -1006,18 +1005,6 @@ vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int
     }
 
     return vm_cref_new(klass, METHOD_VISI_PUBLIC, FALSE, prev_cref, pushed_by_eval, singleton);
-}
-
-static rb_cref_t *
-vm_cref_push_with_refinement(const rb_execution_context_t *ec, VALUE klass, VALUE refiner)
-{
-    struct rb_refinements_refine_pair setup;
-    rb_cref_t *cref;
-
-    rb_refinement_setup(&setup, refiner, klass);
-    cref = vm_cref_push(ec, setup.refinement, NULL, FALSE, FALSE);
-    CREF_REFINEMENTS_SET(cref, setup.refinements);
-    return cref;
 }
 
 static inline VALUE
@@ -1069,8 +1056,7 @@ static inline VALUE
 vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_nil, int is_defined)
 {
     void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
-    VALUE val, refinement;
-    const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(ec->cfp);
+    VALUE val;
 
     if (NIL_P(orig_klass) && allow_nil) {
         /* in current lexical scope */
@@ -1090,13 +1076,6 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                 klass = CREF_CLASS(cref);
             }
             cref = CREF_NEXT(cref);
-
-            if (cme && cme->def && NAMESPACE_LOCAL_P(cme->def->ns)) {
-                refinement = rb_refinement_if_exist(cme->def->ns->refiner, klass);
-                if (refinement && !NIL_P(refinement)) {
-                    klass = refinement;
-                }
-            }
 
             if (!NIL_P(klass)) {
                 VALUE av, am = 0;
@@ -2131,7 +2110,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
     else {
-        cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
+        cc_tbl = rb_id_table_create(2);
+        RCLASS_SET_CC_TBL(klass, cc_tbl);
     }
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
@@ -3874,7 +3854,7 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     VALUE klass = current_class;
 
     /* for prepended Module, then start from cover class */
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+    if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
         klass = RBASIC_CLASS(klass);
     }
@@ -4974,8 +4954,6 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 
 /* ruby iseq -> ruby block */
 
-static void vm_using_module(VALUE module);
-
 static VALUE
 vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
@@ -5527,9 +5505,9 @@ unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old)
 }
 
 static VALUE
-vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super, rb_namespace_t *ns, int *refined)
+vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
-    VALUE klass, klass_ns;
+    VALUE klass;
 
     if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) && !RB_TYPE_P(super, T_CLASS)) {
         rb_raise(rb_eTypeError,
@@ -5542,22 +5520,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super, rb_namespace_t 
     /* find klass */
     rb_autoload_load(cbase, id);
 
-    klass = vm_const_get_under(id, flags, cbase);
-    if (!klass && NAMESPACE_LOCAL_P(ns)) {
-        klass = vm_const_get_under(id, flags, rb_cObject);
-        if (klass) {
-            klass_ns = rb_namespace_of(klass);
-            if (RTEST(klass_ns)) {
-                // the klass is not a built-in class, thus should be recreated in namespaces
-                klass = 0;
-            } else {
-                // the klass is a built-in class, should be refined in namespaces
-                *refined = 1;
-            }
-        }
-    }
-
-    if (klass != 0) {
+    if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
         return klass;
@@ -5568,28 +5531,12 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super, rb_namespace_t 
 }
 
 static VALUE
-vm_define_module(ID id, rb_num_t flags, VALUE cbase, rb_namespace_t *ns, int *refined)
+vm_define_module(ID id, rb_num_t flags, VALUE cbase)
 {
-    VALUE mod, mod_ns;
+    VALUE mod;
 
     vm_check_if_namespace(cbase);
-
-    mod = vm_const_get_under(id, flags, cbase);
-    if (!mod && NAMESPACE_LOCAL_P(ns)) {
-        mod = vm_const_get_under(id, flags, rb_cObject);
-        if (mod) {
-            mod_ns = rb_namespace_of(mod);
-            if (RTEST(mod_ns)) {
-                // the module is not a built-in module, thus should be recreated in namespaces
-                mod = 0;
-            } else {
-                // the module is a built-in module, should be refined in namespaces
-                *refined = 1;
-            }
-        }
-    }
-
-    if (mod != 0) {
+    if ((mod = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_module(id, mod))
             unmatched_redefinition("module", cbase, id, mod);
         return mod;
@@ -5599,38 +5546,26 @@ vm_define_module(ID id, rb_num_t flags, VALUE cbase, rb_namespace_t *ns, int *re
     }
 }
 
-static void
-vm_using_module(VALUE module)
-{
-    rb_vm_using_module(module);
-}
-
 static VALUE
 vm_find_or_create_class_by_id(ID id,
                               rb_num_t flags,
                               VALUE cbase,
-                              VALUE super,
-                              rb_namespace_t *ns,
-                              int *refined)
+                              VALUE super)
 {
     rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
 
     switch (type) {
       case VM_DEFINECLASS_TYPE_CLASS:
         /* classdef returns class scope value */
-        return vm_define_class(id, flags, cbase, super, ns, refined);
+        return vm_define_class(id, flags, cbase, super);
 
       case VM_DEFINECLASS_TYPE_SINGLETON_CLASS:
         /* classdef returns class scope value */
-        if (NAMESPACE_LOCAL_P(ns) && !RTEST(rb_namespace_of(cbase))) {
-            /* opening the singleton class of built-in classes in namespaces, should be refined */
-            *refined = 1;
-        }
         return rb_singleton_class(cbase);
 
       case VM_DEFINECLASS_TYPE_MODULE:
         /* classdef returns class scope value */
-        return vm_define_module(id, flags, cbase, ns, refined);
+        return vm_define_module(id, flags, cbase);
 
       default:
         rb_bug("unknown defineclass type: %d", (int)type);
@@ -5686,8 +5621,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
     if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
-
-        RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
+        RCLASS_WRITE_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
     }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {

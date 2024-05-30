@@ -291,14 +291,8 @@ setconstant
  * method calls. */
 // attr bool leaf = false; /* has StringValue() */
 {
-    VALUE self = GET_SELF();
     vm_check_if_namespace(cbase);
-    /* When reopening classes/modules in namespaces, self and cbase are same
-     * Refinement and constants can be added
-     */
-    if (self != cbase) {
-        vm_ensure_not_refinement_module(GET_SELF());
-    }
+    vm_ensure_not_refinement_module(GET_SELF());
     rb_const_set(cbase, id, val);
 }
 
@@ -827,28 +821,14 @@ defineclass
 (VALUE cbase, VALUE super)
 (VALUE val)
 {
-    rb_cref_t *cref;
-    VALUE self, type;
-    int refined = 0;
-    rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
-    VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super, ns, &refined);
+    VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
     rb_iseq_check(class_iseq);
 
-    if (refined) {
-        cref = vm_cref_push_with_refinement(ec, klass, ns->refiner);
-        self = cref->klass_or_self; /* self = refinement */
-        type = VM_FRAME_MAGIC_CLASS | VM_FRAME_FLAG_HOOKED | VM_ENV_FLAG_LOCAL;
-    } else {
-        cref = vm_cref_push(ec, klass, NULL, FALSE, FALSE);
-        self = klass;
-        type = VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL;
-    }
-
     /* enter scope */
-    vm_push_frame(ec, class_iseq, type, self,
+    vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
                   GET_BLOCK_HANDLER(),
-                  (VALUE)cref,
+                  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
                   ISEQ_BODY(class_iseq)->stack_max);
@@ -862,38 +842,7 @@ definemethod
 ()
 ()
 {
-    rb_cref_t *cref;
-    VALUE klass;
-    int is_toplevel_in_ns = FALSE;
-    rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
-
-    rb_iseq_check(iseq);
-
-    if (NAMESPACE_LOCAL_P(ns)) {
-        cref = vm_ec_cref(ec);
-        klass = CREF_CLASS_FOR_DEFINITION(cref);
-        if (klass == ns->ns_object) {
-            is_toplevel_in_ns = TRUE;
-            cref = vm_cref_push_with_refinement(ec, rb_cObject, ns->refiner);
-            klass = cref->klass_or_self;
-            /* TODO: vm_call_cfunc_with_frame ? */
-            vm_push_frame(ec, iseq, VM_FRAME_MAGIC_CLASS | VM_FRAME_FLAG_HOOKED | VM_ENV_FLAG_LOCAL, klass,
-                          GET_BLOCK_HANDLER(),
-                          (VALUE)cref,
-                          ISEQ_BODY(iseq)->iseq_encoded, GET_SP(),
-                          ISEQ_BODY(iseq)->local_table_size,
-                          ISEQ_BODY(iseq)->stack_max);
-        }
-    }
-
     vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
-
-    if (is_toplevel_in_ns) {
-        const VALUE *const bp = vm_base_ptr(ec->cfp);
-        vm_pop_frame(ec, ec->cfp, bp);
-
-        vm_using_module(ns->refiner);
-    }
 }
 
 DEFINE_INSN
@@ -902,7 +851,6 @@ definesmethod
 (VALUE obj)
 ()
 {
-    // TODO: Singleton
     vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
 
@@ -1085,9 +1033,6 @@ leave
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 // attr bool handles_sp = true;
 {
-    int finished;
-    int using = 0;
-    rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     if (OPT_CHECKED_RUN) {
         const VALUE *const bp = vm_base_ptr(GET_CFP());
         if (GET_SP() != bp) {
@@ -1095,18 +1040,7 @@ leave
         }
     }
 
-    if (NAMESPACE_LOCAL_P(ns)) {
-        if (VM_FRAME_HOOKED_P(GET_CFP())) {
-            using = 1;
-        }
-    }
-
-    finished = vm_pop_frame(ec, GET_CFP(), GET_EP());
-    if (using) {
-        vm_using_module(ns->refiner);
-    }
-
-    if (finished) {
+    if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
         rb_ec_thread_ptr(ec)->retval = val;
         return 0;

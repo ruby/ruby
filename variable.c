@@ -104,10 +104,10 @@ classname(VALUE klass, bool *permanent)
 {
     *permanent = false;
 
-    VALUE classpath = RCLASS_EXT(klass)->classpath;
+    VALUE classpath = RCLASS_CLASSPATH(klass);
     if (classpath == 0) return Qnil;
 
-    *permanent = RCLASS_EXT(klass)->permanent_classpath;
+    *permanent = RCLASS_PERMANENT_CLASSPATH_P(klass);
 
     return classpath;
 }
@@ -216,13 +216,13 @@ VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
     // We don't allow setting the name if the classpath is already permanent:
-    if (RCLASS_EXT(mod)->permanent_classpath) {
+    if (RCLASS_PERMANENT_CLASSPATH_P(mod)) {
         rb_raise(rb_eRuntimeError, "can't change permanent name");
     }
 
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
-        RCLASS_SET_CLASSPATH(mod, 0, FALSE);
+        RCLASS_WRITE_CLASSPATH(mod, 0, FALSE);
     }
     else {
         // Ensure the name is a string:
@@ -237,7 +237,7 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
         }
 
         // Set the temporary classpath to the given name:
-        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+        RCLASS_WRITE_CLASSPATH(mod, name, FALSE);
     }
 
     return mod;
@@ -1421,7 +1421,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            table = RCLASS_IV_HASH(obj);
+            table = RCLASS_WRITABLE_IV_HASH(obj);
             break;
 
           case T_OBJECT:
@@ -2068,7 +2068,7 @@ class_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     itr_data.arg = arg;
     itr_data.func = func;
     if (rb_shape_obj_too_complex(obj)) {
-        rb_st_foreach(RCLASS_IV_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
+        rb_st_foreach(RCLASS_WRITABLE_IV_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
         iterate_over_shapes_with_callback(shape, func, &itr_data);
@@ -2427,7 +2427,7 @@ autoload_data(VALUE mod, ID id)
     // If we are called with a non-origin ICLASS, fetch the autoload data from
     // the original module.
     if (RB_TYPE_P(mod, T_ICLASS)) {
-        if (FL_TEST_RAW(mod, RICLASS_IS_ORIGIN)) {
+        if (RICLASS_IS_ORIGIN_P(mod)) {
             return 0;
         }
         else {
@@ -3136,9 +3136,8 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 static VALUE
 rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, current, refinement;
+    VALUE value, current;
     bool first_iteration = true;
-    const rb_namespace_t *ns = rb_current_namespace();
 
     for (current = klass;
             RTEST(current);
@@ -3158,13 +3157,6 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         // iclass in the chain.
         tmp = current;
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
-
-        if (NAMESPACE_LOCAL_P(ns)) {
-            refinement = rb_refinement_if_exist(ns->refiner, tmp);
-            if (!NIL_P(refinement)) {
-                tmp = refinement;
-            }
-        }
 
         // Do the lookup. Loop in case of autoload.
         while ((ce = rb_const_lookup(tmp, id))) {
@@ -3341,7 +3333,7 @@ rb_const_remove(VALUE mod, ID id)
     rb_check_frozen(mod);
 
     ce = rb_const_lookup(mod, id);
-    if (!ce || !rb_id_table_delete(RCLASS_CONST_TBL(mod), id)) {
+    if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
         if (rb_const_defined_at(mod, id)) {
             rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
         }
@@ -3580,8 +3572,8 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
     }
     set_namespace_path(value, build_const_path(parental_path, id));
 
-    if (!RCLASS_EXT(value)->permanent_classpath) {
-        RCLASS_SET_CLASSPATH(value, 0, false);
+    if (!RCLASS_PERMANENT_CLASSPATH_P(value)) {
+        RCLASS_WRITE_CLASSPATH(value, 0, false);
     }
 
     return ID_TABLE_CONTINUE;
@@ -3599,7 +3591,7 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 
     RB_VM_LOCK_ENTER();
     {
-        RCLASS_SET_CLASSPATH(named_namespace, namespace_path, true);
+        RCLASS_WRITE_CLASSPATH(named_namespace, namespace_path, true);
 
         if (const_table) {
             rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
@@ -3635,9 +3627,10 @@ const_set(VALUE klass, ID id, VALUE val)
 
     RB_VM_LOCK_ENTER();
     {
-        struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+        struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         if (!tbl) {
-            RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
+            tbl = rb_id_table_create(0);
+            RCLASS_WRITE_CONST_TBL(klass, tbl, false);
             rb_clear_constant_cache_for_id(id);
             ce = ZALLOC(rb_const_entry_t);
             rb_id_table_insert(tbl, id, (VALUE)ce);
@@ -3684,12 +3677,9 @@ const_set(VALUE klass, ID id, VALUE val)
     }
 }
 
-#define IS_REFINEMENT_P(klass) (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT))
-
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
-    klass = rb_mod_changed_in_current_namespace(klass);
     const_set(klass, id, val);
     const_added(klass, id);
 }
@@ -3764,6 +3754,7 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
         setup_const_entry(ce, klass, val, visibility);
     }
     else {
+        tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         rb_clear_constant_cache_for_id(id);
 
         ce = ZALLOC(rb_const_entry_t);
@@ -3926,7 +3917,7 @@ static int
 cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 {
     if (RB_TYPE_P(klass, T_ICLASS)) {
-        if (FL_TEST_RAW(klass, RICLASS_IS_ORIGIN)) {
+        if (RICLASS_IS_ORIGIN_P(klass)) {
             return 0;
         }
         else {
@@ -4031,10 +4022,11 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 
     int result = rb_class_ivar_set(target, id, val);
 
-    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(target);
+    struct rb_id_table *rb_cvc_tbl = RCLASS_WRITABLE_CVC_TBL(target);
 
     if (!rb_cvc_tbl) {
-        rb_cvc_tbl = RCLASS_CVC_TBL(target) = rb_id_table_create(2);
+        rb_cvc_tbl = rb_id_table_create(2);
+        RCLASS_WRITE_CVC_TBL(target, rb_cvc_tbl);
     }
 
     struct rb_cvar_class_tbl_entry *ent;
@@ -4318,7 +4310,7 @@ class_ivar_set_too_complex_table(VALUE obj, void *_data)
 {
     RUBY_ASSERT(rb_shape_obj_too_complex(obj));
 
-    return RCLASS_IV_HASH(obj);
+    return RCLASS_WRITABLE_IV_HASH(obj);
 }
 
 int

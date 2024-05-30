@@ -77,6 +77,7 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
 void rb_check_stack_overflow(void);
+VALUE rb_gccct_clear_table(VALUE);
 
 #if USE_YJIT
 /* vm_exec.c */
