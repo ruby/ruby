@@ -3914,14 +3914,20 @@ rb_error_frozen_object(VALUE frozen_obj)
 void
 rb_check_frozen(VALUE obj)
 {
-    rb_check_frozen_internal(obj);
+    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
+        rb_error_frozen_object(obj);
+    }
+
+    if (RB_UNLIKELY(CHILLED_STRING_P(obj))) {
+        rb_str_modify(obj);
+    }
 }
 
 void
 rb_check_copyable(VALUE obj, VALUE orig)
 {
     if (!FL_ABLE(obj)) return;
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     if (!FL_ABLE(orig)) return;
 }
 

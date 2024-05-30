@@ -222,7 +222,7 @@ setinstancevariable
 (ID id, IVC ic)
 (VALUE val)
 ()
-// attr bool leaf = false; /* has rb_check_frozen_internal() */
+// attr bool leaf = false; /* has rb_check_frozen() */
 {
     vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
