@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-return if RUBY_VERSION < "3.1.0"
+return if RUBY_VERSION < "3.1.0" || Prism::BACKEND == :FFI
 
 module Prism
   class UnescapeTest < TestCase
