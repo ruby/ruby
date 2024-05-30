@@ -1,5 +1,8 @@
 #!/bin/bash
 # Bash version 3.2+ is required for regexp
+# Usage:
+#   tool/release.sh 3.0.0
+#   tool/release.sh 3.0.0-rc1
 
 EXTS='.tar.gz .tar.xz .zip'
 
