@@ -824,7 +824,7 @@ class TestBignum < Test::Unit::TestCase
 
   def test_gmp_version
     if RbConfig::CONFIG.fetch('configure_args').include?("'--with-gmp'")
-      assert_equal(true, defined?(Integer::GMP_VERSION))
+      assert_kind_of(String, Integer::GMP_VERSION)
     end
   end if ENV['GITHUB_WORKFLOW'] == 'Compilations'
 end
