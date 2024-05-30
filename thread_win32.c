@@ -154,6 +154,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     sched->lock = w32_mutex_create();
 }
 
+#if 0
 // per-ractor
 void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
@@ -161,6 +162,7 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
     if (GVL_DEBUG) fprintf(stderr, "sched destroy\n");
     CloseHandle(sched->lock);
 }
+#endif
 
 rb_thread_t *
 ruby_thread_from_native(void)

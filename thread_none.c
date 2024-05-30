@@ -46,10 +46,12 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
+#if 0
 static void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
+#endif
 
 // Do nothing for mutex guard
 void
