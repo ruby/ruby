@@ -37,7 +37,7 @@ Some examples here assume that certain helper methods are defined:
 - `match_values_cleared?(scanner)`:
   Returns whether the scanner's [match values][9] are cleared.
 
-See examples [here][ext/strscan/helper_methods_md.html].
+See examples [here][helper_methods_md.html].
 
 ## The `StringScanner` \Object
 
