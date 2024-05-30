@@ -1419,7 +1419,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
-        rb_check_frozen_internal(obj);
+        rb_check_frozen(obj);
 
         attr_index_t index = rb_obj_ivar_set(obj, id, val);
 
@@ -3767,7 +3767,7 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     attr_index_t index = vm_cc_attr_index(cc);
     shape_id_t dest_shape_id = vm_cc_attr_index_dest_shape_id(cc);
     ID id = vm_cc_cme(cc)->def->body.attr.id;
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     VALUE res = vm_setivar(obj, id, val, dest_shape_id, index);
     if (UNDEF_P(res)) {
         switch (BUILTIN_TYPE(obj)) {
