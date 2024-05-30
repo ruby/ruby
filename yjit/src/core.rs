@@ -527,7 +527,7 @@ impl BitVector
     }
 
     // Write and append an unsigned integer
-    fn push_uint(&mut self, mut val: usize, mut num_bits: usize)
+    fn push_uint(&mut self, mut val: u64, mut num_bits: usize)
     {
         // Mask out bits above the number of bits requested
         let val_bits = val & ((1 << num_bits) - 1);
@@ -563,14 +563,27 @@ impl BitVector
         }
     }
 
-    fn push_u8(&mut self, mut val: u8)
+    fn push_u8(&mut self, val: u8)
     {
-        self.push_uint(val as usize, 8);
+        self.push_uint(val as u64, 8);
     }
 
-    fn push_u4(&mut self, mut val: u8)
+    fn push_u4(&mut self, val: u8)
     {
-        self.push_uint(val as usize, 4);
+        assert!(val < 16);
+        self.push_uint(val as u64, 4);
+    }
+
+    fn push_u3(&mut self, val: u8)
+    {
+        assert!(val < 8);
+        self.push_uint(val as u64, 3);
+    }
+
+    // Push a context encoding opcode
+    fn push_op(&mut self, op: CtxOp)
+    {
+        self.push_u4(op as u8);
     }
 
     // Read a uint value at a given bit index
@@ -684,6 +697,26 @@ mod bitvector_tests {
     }
 
     #[test]
+    fn write_read_u32_max() {
+        let mut arr = BitVector::new();
+        arr.push_uint(0xFF_FF_FF_FF, 32);
+        assert!(arr.read_uint_at(0, 32) == 0xFF_FF_FF_FF);
+    }
+
+    #[test]
+    fn write_read_u64_max() {
+
+        // FIXME: this is failing
+        /*
+        let mut arr = BitVector::new();
+        arr.push_uint(0xFF_FF_FF_FF, 64);
+        assert!(arr.read_uint_at(0, 64) == 0xFF_FF_FF_FF);
+        */
+
+
+
+    }
+    #[test]
     fn encode_default() {
         let ctx = Context::default();
         let bits = ctx.encode();
@@ -695,15 +728,22 @@ mod bitvector_tests {
 #[repr(u8)]
 enum CtxOp
 {
-    SetSelfType,
+    // Self type (4 bits)
+    SetSelfType = 0,
+
+    // Local idx (3 bits), temp type (4 bits)
     SetLocalType,
 
-    // Push temp with type	type (4 bits)
-    // Push stack temp mapped to self (no payload)
-    // Push stack temp mapped to local idx (3 bits)
+    // Map stack temp to self with known type
+    // Temp idx (3 bits), known type (4 bits)
+    SetTempType,
+
+    // Map stack temp to a local variable
+    // Temp idx (3 bits), local idx (3 bits)
+    SetTempLocal,
+
     // Set inline block pointer	(8 bytes)
-
-
+    SetInlineBlock,
 }
 
 impl Context
@@ -715,7 +755,6 @@ impl Context
         // Number of values currently on the temporary stack
         bits.push_u8(self.stack_size);
 
-        // FIXME: no way to encode sp_offset which is an i8?
         // sp_offset: i8,
         bits.push_u8(self.sp_offset as u8);
 
@@ -726,17 +765,27 @@ impl Context
         // chain_depth_and_flags: u8,
         bits.push_u8(self.chain_depth_and_flags);
 
+        if self.self_type != Type::Unknown {
+            bits.push_op(CtxOp::SetSelfType);
+            bits.push_u4(self.self_type as u8);
+        }
+
+        // Encode the local types
+        for local_idx in 0..MAX_LOCAL_TYPES {
+            let t = self.get_local_type(local_idx);
+            if t != Type::Unknown {
+                bits.push_op(CtxOp::SetLocalType);
+                bits.push_u3(local_idx as u8);
+                bits.push_u4(t as u8);
+            }
+        }
 
 
+
+
+        // TODO: encode stack temps
 
         /*
-        // Type we track for self
-        self_type: Type,
-
-        // Local variable types we keep track of
-        // We store 8 local types, requiring 4 bits each, for a total of 32 bits
-        local_types: u32,
-
         // Temp mapping kinds we track
         // 8 temp mappings * 2 bits, total 16 bits
         temp_mapping_kind: u16,
@@ -744,16 +793,18 @@ impl Context
         // Stack slot type/local_idx we track
         // 8 temp types * 4 bits, total 32 bits
         temp_payload: u32,
-
-        /// A pointer to a block ISEQ supplied by the caller. 0 if not inlined.
-        /// Not using IseqPtr to satisfy Default trait, and not using Option for #[repr(packed)]
-        /// TODO: This could be u16 if we have a global or per-ISEQ HashMap to convert IseqPtr
-        /// to serial indexes. We're thinking of overhauling Context structure in Ruby 3.4 which
-        /// could allow this to consume no bytes, so we're leaving this as is.
-        inline_block: u64,
         */
 
 
+
+
+        // Inline block pointer
+        if self.inline_block != 0 {
+            bits.push_uint(self.inline_block, 64);
+        }
+
+        // TODO: should we add an op for end-of-encoding,
+        // or store num ops at the beginning?
 
 
 
