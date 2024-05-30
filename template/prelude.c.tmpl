@@ -154,6 +154,18 @@ prelude_ast_value(VALUE name, VALUE code, int line)
     return ast_value;
 }
 
+static void
+pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
+{
+    pm_options_line_set(&result->options, line);
+    VALUE error = pm_parse_string(result, code, name);
+
+    if (!NIL_P(error)) {
+        pm_parse_result_free(result);
+        rb_exc_raise(error);
+    }
+}
+
 % end
 % if @builtin_count > 0
 #define PRELUDE_VAST(n, name_str, start_line) \
@@ -174,6 +186,28 @@ rb_builtin_ast_value(const char *feature_name, VALUE *name_str)
 %     end
 %   end
     return ast_value;
+}
+
+bool
+pm_builtin_ast_value(pm_parse_result_t *result, const char *feature_name, VALUE *name_str)
+{
+    const size_t prefix_len = rb_strlen_lit("<internal:");
+    size_t namelen = strlen(feature_name);
+
+%   @preludes.each_value do |i, prelude, lines, sub, start_line|
+%     if sub
+    if (
+        (sizeof(prelude_name<%= i %>) - prefix_len - 2 == namelen) &&
+        (strncmp(prelude_name<%= i %> + prefix_len, feature_name, namelen) == 0)
+    ) {
+        *name_str = PRELUDE_NAME(<%= i %>);
+        pm_prelude_load(result, *name_str, PRELUDE_CODE(<%= i %>), <%= start_line %>);
+        return true;
+    }
+%     end
+%   end
+
+    return false;
 }
 
 % end
@@ -198,13 +232,22 @@ prelude_eval(VALUE code, VALUE name, int line)
         0, /* int debug_level; */
     };
 
-    rb_ast_t *ast;
-    VALUE ast_value = prelude_ast_value(name, code, line);
-    ast = rb_ruby_ast_data_get(ast_value);
-    rb_iseq_eval(rb_iseq_new_with_opt(ast_value, name, name, Qnil, line,
-                                      NULL, 0, ISEQ_TYPE_TOP, &optimization,
-                                      Qnil));
-    rb_ast_dispose(ast);
+    if (*rb_ruby_prism_ptr()) {
+        pm_parse_result_t result = { 0 };
+        pm_prelude_load(&result, name, code, line);
+        rb_iseq_eval(pm_iseq_new_with_opt(&result.node, name, name, Qnil, line,
+                                          NULL, 0, ISEQ_TYPE_TOP, &optimization));
+        pm_parse_result_free(&result);
+    }
+    else {
+        rb_ast_t *ast;
+        VALUE ast_value = prelude_ast_value(name, code, line);
+        ast = rb_ruby_ast_data_get(ast_value);
+        rb_iseq_eval(rb_iseq_new_with_opt(ast_value, name, name, Qnil, line,
+                                        NULL, 0, ISEQ_TYPE_TOP, &optimization,
+                                        Qnil));
+        rb_ast_dispose(ast);
+    }
 }
 COMPILER_WARNING_POP
 
