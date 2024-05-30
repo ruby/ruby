@@ -2827,6 +2827,22 @@ iseqw_disasm(VALUE self)
     return rb_iseq_disasm(iseqw_check(self));
 }
 
+/**
+ * call-seq:
+ *   iseq.mandatory_only_iseq -> iseq or nil
+ *
+ * Returns the attached instruction sequence used when only mandatory arguments
+ * are passed to the method. There will only be a mandatory-only iseq if the
+ * mandatory_only? primitive was used.
+ */
+static VALUE
+iseqw_mandatory_only_iseq(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    const rb_iseq_t *mandatory_only_iseq = ISEQ_BODY(iseq)->mandatory_only_iseq;
+    return mandatory_only_iseq ? iseqw_new(mandatory_only_iseq) : Qnil;
+}
+
 static int
 iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *child_iseq, void *data), void *data)
 {
@@ -4240,6 +4256,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
+    rb_define_method(rb_cISeq, "mandatory_only_iseq", iseqw_mandatory_only_iseq, 0);
 
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);
