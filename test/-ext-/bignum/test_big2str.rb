@@ -22,7 +22,6 @@ class TestBignum_Big2str < Test::Unit::TestCase
   def test_big2str_gmp
     x = 10**1000
     assert_equal("1" + "0" * 1000, Bug::Bignum.big2str_gmp(x, 10))
-  rescue NotImplementedError
   end
 
 end

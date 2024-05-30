@@ -53,7 +53,7 @@ env:
   append_configure: >-
     --without-valgrind
     --without-jemalloc
-    --without-gmp
+    --with-gmp
 
   CONFIGURE_TTY: never
   GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -111,109 +111,6 @@ jobs:
             # check: true
 
           - { name: ext/Setup }
-
-#         - { name: aarch64-linux-gnu,     crosshost: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
-#         - { name: arm-linux-gnueabi,     crosshost: arm-linux-gnueabi }
-#         - { name: arm-linux-gnueabihf,   crosshost: arm-linux-gnueabihf }
-#         - { name: i686-w64-mingw32,      crosshost: i686-w64-mingw32 }
-#         - { name: powerpc-linux-gnu,     crosshost: powerpc-linux-gnu }
-#         - { name: powerpc64le-linux-gnu, crosshost: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
-#         - { name: s390x-linux-gnu,       crosshost: s390x-linux-gnu, container: crossbuild-essential-s390x }
-#         - { name: x86_64-w64-mingw32,    crosshost: x86_64-w64-mingw32, container: mingw-w64 }
-
-          # -Wno-strict-prototypes is necessary with current clang-15 since
-          # older autoconf generate functions without prototype and -pedantic
-          # now implies strict-prototypes. Disabling the error but leaving the
-          # warning generates a lot of noise from use of ANYARGS in
-          # rb_define_method() and friends.
-          # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-          - { name: c99,   env: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c11,   env: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c17,   env: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-          - { name: c23,   env: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-          - { name: c++98, env: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-#         - { name: c++11, env: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-#         - { name: c++14, env: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-#         - { name: c++17, env: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-#         - { name: c++20, env: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-#         - { name: c++23, env: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-          - { name: c++26, env: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-
-          - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
-#         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
-
-          - { name: gmp,                  env: { append_configure: '--with-gmp' } }
-          - { name: jemalloc,             env: { append_configure: '--with-jemalloc' } }
-          - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
-          - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
-          - { name: 'coroutine=pthread',  env: { append_configure: '--with-coroutine=pthread' } }
-          - { name: disable-jit,          env: { append_configure: '--disable-yjit --disable-rjit' } }
-          - { name: disable-dln,          env: { append_configure: '--disable-dln' } }
-          - { name: enable-mkmf-verbose,  env: { append_configure: '--enable-mkmf-verbose' } }
-          - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }
-          - { name: RUBY_DEVEL,           env: { append_configure: '--enable-devel' } }
-
-          - { name: OPT_THREADED_CODE=1,            env: { cppflags: '-DOPT_THREADED_CODE=1' } }
-          - { name: OPT_THREADED_CODE=2,            env: { cppflags: '-DOPT_THREADED_CODE=2' } }
-          - { name: OPT_THREADED_CODE=3,            env: { cppflags: '-DOPT_THREADED_CODE=3' } }
-
-          - { name: NDEBUG,                         env: { cppflags: '-DNDEBUG' } }
-          - { name: RUBY_DEBUG,                     env: { cppflags: '-DRUBY_DEBUG' } }
-#         - { name: ARRAY_DEBUG,                    env: { cppflags: '-DARRAY_DEBUG' } }
-#         - { name: BIGNUM_DEBUG,                   env: { cppflags: '-DBIGNUM_DEBUG' } }
-#         - { name: CCAN_LIST_DEBUG,                env: { cppflags: '-DCCAN_LIST_DEBUG' } }
-#         - { name: CPDEBUG=-1,                     env: { cppflags: '-DCPDEBUG=-1' } }
-#         - { name: ENC_DEBUG,                      env: { cppflags: '-DENC_DEBUG' } }
-#         - { name: GC_DEBUG,                       env: { cppflags: '-DGC_DEBUG' } }
-#         - { name: HASH_DEBUG,                     env: { cppflags: '-DHASH_DEBUG' } }
-#         - { name: ID_TABLE_DEBUG,                 env: { cppflags: '-DID_TABLE_DEBUG' } }
-#         - { name: RGENGC_DEBUG=-1,                env: { cppflags: '-DRGENGC_DEBUG=-1' } }
-#         - { name: SYMBOL_DEBUG,                   env: { cppflags: '-DSYMBOL_DEBUG' } }
-
-#         - { name: RGENGC_CHECK_MODE,              env: { cppflags: '-DRGENGC_CHECK_MODE' } }
-#         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
-
-#         - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }
-          - name: USE_FLONUM=0
-            env:
-              cppflags: '-DUSE_FLONUM=0'
-              # yjit requires FLONUM for the pointer tagging scheme
-              append_configure: '--disable-yjit'
-#         - { name: USE_GC_MALLOC_OBJ_INFO_DETAILS, env: { cppflags: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' } }
-#         - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
-#         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
-#         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
-          - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
-#         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
-          - { name: SHARABLE_MIDDLE_SUBSTRING,      env: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' } }
-
-#         - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
-#         - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
-#         - { name: ENABLE_PATH_CHECK,              env: { cppflags: '-DENABLE_PATH_CHECK' } }
-
-#         - { name: GC_DEBUG_STRESS_TO_CLASS,       env: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
-#         - { name: GC_ENABLE_LAZY_SWEEP=0,         env: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
-#         - { name: GC_PROFILE_DETAIL_MEMOTY,       env: { cppflags: '-DGC_PROFILE_DETAIL_MEMOTY' } }
-#         - { name: GC_PROFILE_MORE_DETAIL,         env: { cppflags: '-DGC_PROFILE_MORE_DETAIL' } }
-
-#         - { name: CALC_EXACT_MALLOC_SIZE,         env: { cppflags: '-DCALC_EXACT_MALLOC_SIZE' } }
-#         - { name: MALLOC_ALLOCATED_SIZE_CHECK,    env: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' } }
-
-#         - { name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   env: { cppflags: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' } }
-
-#         - { name: RGENGC_ESTIMATE_OLDMALLOC,      env: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
-#         - { name: RGENGC_FORCE_MAJOR_GC,          env: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
-#         - { name: RGENGC_OBJ_INFO,                env: { cppflags: '-DRGENGC_OBJ_INFO' } }
-#         - { name: RGENGC_PROFILE,                 env: { cppflags: '-DRGENGC_PROFILE' } }
-
-#         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
-#         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
-
-          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' } }
-          - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
-          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
-#         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
-          - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
 
     name: ${{ matrix.entry.name }}
 

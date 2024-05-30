@@ -130,7 +130,6 @@ class TestBignum_Mul < Test::Unit::TestCase
     x = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
     y = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
     assert_equal(Bug::Bignum.big_mul_normal(x, y), Bug::Bignum.big_mul_gmp(x, y))
-  rescue NotImplementedError
   end
 
 end

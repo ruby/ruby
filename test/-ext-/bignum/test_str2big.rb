@@ -30,7 +30,6 @@ class TestBignum_Str2big < Test::Unit::TestCase
     s = "1" + "0" * 1000
     n = 10 ** 1000
     assert_equal(n, Bug::Bignum.str2big_gmp(s, 10, true))
-  rescue NotImplementedError
   end
 
 end

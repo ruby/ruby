@@ -22,6 +22,5 @@ class TestBignum_Div < Test::Unit::TestCase
     q = (1 << BITSPERDIG) | 1
     r = 2
     assert_equal([q, r], Bug::Bignum.big_divrem_gmp(x, y))
-  rescue NotImplementedError
   end
 end
