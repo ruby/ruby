@@ -523,16 +523,14 @@ module Bundler
       YAMLSerializer
     end
 
-    PER_URI_OPTIONS = %w[
-      fallback_timeout
-    ].freeze
+    FALLBACK_TIMEOUT_URI_OPTION = "fallback_timeout"
 
     NORMALIZE_URI_OPTIONS_PATTERN =
       /
         \A
         (\w+\.)? # optional prefix key
         (https?.*?) # URI
-        (\.#{Regexp.union(PER_URI_OPTIONS)})? # optional suffix key
+        (\.#{FALLBACK_TIMEOUT_URI_OPTION})? # optional suffix key
         \z
       /ix
 
