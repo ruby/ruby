@@ -148,7 +148,7 @@ extensions will be restored.
       end
 
       unless spec.extensions.empty? || options[:extensions] || options[:only_executables] || options[:only_plugins]
-        say "Skipped #{spec.full_name_with_location}, it needs to compile an extension"
+        say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
       end
 
@@ -157,7 +157,7 @@ extensions will be restored.
       unless File.exist?(gem) || options[:only_executables] || options[:only_plugins]
         require_relative "../remote_fetcher"
 
-        say "Cached gem for #{spec.full_name_with_location} not found, attempting to fetch..."
+        say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
 
         dep = Gem::Dependency.new spec.name, spec.version
         found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
@@ -201,7 +201,7 @@ extensions will be restored.
         installer.install
       end
 
-      say "Restored #{spec.full_name_with_location}"
+      say "Restored #{spec.full_name}"
     end
   end
 end
