@@ -500,7 +500,11 @@ pub struct Context {
 
 
 
-struct BitVector
+
+
+
+
+pub struct BitVector
 {
     bytes: Vec<u8>,
     num_bits: usize,
@@ -557,6 +561,16 @@ impl BitVector
             num_bits -= bits_to_encode;
             val >>= bits_to_encode;
         }
+    }
+
+    fn push_u8(&mut self, mut val: u8)
+    {
+        self.push_uint(val as usize, 8);
+    }
+
+    fn push_u4(&mut self, mut val: u8)
+    {
+        self.push_uint(val as usize, 4);
     }
 
     // Read a uint value at a given bit index
@@ -661,14 +675,98 @@ mod bitvector_tests {
 
     #[test]
     fn write_ff_sandwich() {
-        // Write 0xFF sandwhiched between zeros
+        // Write 0xFF sandwiched between zeros
         let mut arr = BitVector::new();
         arr.push_uint(0, 3);
-        arr.push_uint(0xFF, 8);
+        arr.push_u8(0xFF);
         arr.push_uint(0, 3);
         assert!(arr.read_uint_at(3, 8) == 0xFF);
     }
+
+    #[test]
+    fn encode_default() {
+        let ctx = Context::default();
+        let bits = ctx.encode();
+        assert!(bits.num_bytes() > 0);
+    }
 }
+
+// Context encoding opcodes (4 bits)
+#[repr(u8)]
+enum CtxOp
+{
+    SetSelfType,
+    SetLocalType,
+
+    // Push temp with type	type (4 bits)
+    // Push stack temp mapped to self (no payload)
+    // Push stack temp mapped to local idx (3 bits)
+    // Set inline block pointer	(8 bytes)
+
+
+}
+
+impl Context
+{
+    pub fn encode(&self) -> BitVector
+    {
+        let mut bits = BitVector::new();
+
+        // Number of values currently on the temporary stack
+        bits.push_u8(self.stack_size);
+
+        // FIXME: no way to encode sp_offset which is an i8?
+        // sp_offset: i8,
+        bits.push_u8(self.sp_offset as u8);
+
+        // Bitmap of which stack temps are in a register
+        let RegTemps(reg_temps) = self.reg_temps;
+        bits.push_u8(reg_temps);
+
+        // chain_depth_and_flags: u8,
+        bits.push_u8(self.chain_depth_and_flags);
+
+
+
+
+        /*
+        // Type we track for self
+        self_type: Type,
+
+        // Local variable types we keep track of
+        // We store 8 local types, requiring 4 bits each, for a total of 32 bits
+        local_types: u32,
+
+        // Temp mapping kinds we track
+        // 8 temp mappings * 2 bits, total 16 bits
+        temp_mapping_kind: u16,
+
+        // Stack slot type/local_idx we track
+        // 8 temp types * 4 bits, total 32 bits
+        temp_payload: u32,
+
+        /// A pointer to a block ISEQ supplied by the caller. 0 if not inlined.
+        /// Not using IseqPtr to satisfy Default trait, and not using Option for #[repr(packed)]
+        /// TODO: This could be u16 if we have a global or per-ISEQ HashMap to convert IseqPtr
+        /// to serial indexes. We're thinking of overhauling Context structure in Ruby 3.4 which
+        /// could allow this to consume no bytes, so we're leaving this as is.
+        inline_block: u64,
+        */
+
+
+
+
+
+        bits
+    }
+}
+
+
+
+
+
+
+
 
 
 
