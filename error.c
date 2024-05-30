@@ -2721,8 +2721,16 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
     else {
         VALUE old_path = rb_attr_get(exc, id_i_path);
         if (old_path != path) {
-            rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE"->%+"PRIsVALUE,
-                     old_path, path);
+            if (rb_str_equal(path, old_path)) {
+                rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE" (%p->%p)",
+                         old_path, (void *)old_path, (void *)path);
+            }
+            else {
+                rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE"(%s%s)->%+"PRIsVALUE"(%s)",
+                         old_path, rb_enc_name(rb_enc_get(old_path)),
+                         (FL_TEST(old_path, RSTRING_FSTR) ? ":FSTR" : ""),
+                         path, rb_enc_name(rb_enc_get(path)));
+            }
         }
         VALUE s = *mesg = rb_attr_get(exc, idMesg);
         if (RSTRING_LEN(s) > 0 && *(RSTRING_END(s)-1) != '\n')
