@@ -529,9 +529,14 @@ impl BitVector
     // Write and append an unsigned integer
     fn push_uint(&mut self, mut val: u64, mut num_bits: usize)
     {
+        assert!(num_bits <= 64);
+
         // Mask out bits above the number of bits requested
-        let val_bits = val & ((1 << num_bits) - 1);
-        assert!(val == val_bits);
+        let mut val_bits = val;
+        if num_bits < 64 {
+            val_bits &= (1 << num_bits) - 1;
+            assert!(val == val_bits);
+        }
 
         // Number of bits encoded in the last byte
         let rem_bits = self.num_bits % 8;
@@ -587,7 +592,7 @@ impl BitVector
     }
 
     // Read a uint value at a given bit index
-    fn read_uint_at(&self, start_bit_idx: usize, mut num_bits: usize) -> usize
+    fn read_uint_at(&self, start_bit_idx: usize, mut num_bits: usize) -> u64
     {
         let mut bit_idx = start_bit_idx;
 
@@ -599,13 +604,13 @@ impl BitVector
         bit_idx += num_bits_in_byte;
         num_bits -= num_bits_in_byte;
 
-        let mut out_bits: usize = bits_in_byte as usize;
+        let mut out_bits: u64 = bits_in_byte as u64;
 
         // While we have bits left to read
         while num_bits > 0 {
             let num_bits_in_byte = std::cmp::min(num_bits, 8);
             assert!(bit_idx % 8 == 0);
-            let byte = self.bytes[bit_idx / 8] as usize;
+            let byte = self.bytes[bit_idx / 8] as u64;
 
             let bits_in_byte = byte & ((1 << num_bits) - 1);
             out_bits |= bits_in_byte << (bit_idx - start_bit_idx);
@@ -619,7 +624,6 @@ impl BitVector
 
         out_bits
     }
-
 }
 
 impl fmt::Debug for BitVector
@@ -704,18 +708,21 @@ mod bitvector_tests {
     }
 
     #[test]
-    fn write_read_u64_max() {
+    fn write_read_u32_max_64b() {
 
-        // FIXME: this is failing
-        /*
         let mut arr = BitVector::new();
         arr.push_uint(0xFF_FF_FF_FF, 64);
         assert!(arr.read_uint_at(0, 64) == 0xFF_FF_FF_FF);
-        */
-
-
-
     }
+
+    #[test]
+    fn write_read_u64_max() {
+
+        let mut arr = BitVector::new();
+        arr.push_uint(u64::MAX, 64);
+        assert!(arr.read_uint_at(0, 64) == u64::MAX);
+    }
+
     #[test]
     fn encode_default() {
         let ctx = Context::default();
