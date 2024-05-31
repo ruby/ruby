@@ -189,7 +189,7 @@ The `else` clause:
 ```
 begin
   puts 'Begin.'
-rescue NoSuch
+rescue
   puts 'Rescued an exception!'
 else
   puts 'No exception raised.'
@@ -315,20 +315,33 @@ it can be useful to try the access more than once
 (in the hope that it may become available):
 
 ```
-require 'open-uri'
+retries = 0
 begin
-  retries ||= 0
-  tempfile = URI.open("https://docs.ruby-lang.org/en/master/Exception.html")
-  # Do something with the retrieved data.
-rescue OpenURI::HTTPError
-  retry if (retries += 1) < 5
-else
-  puts "Got it, with #{retries} retries."
+  puts "Try ##{retries}."
+  raise 'Boom'
+rescue
+  puts "Rescued retry ##{retries}."
+  if (retries += 1) < 3
+    puts 'Retrying'
+    retry
+  else
+    puts 'Giving up.'
+    raise
+  end
 end
 ```
 
 ```
-Got it, with 0 retries.
+Try #0.
+Rescued retry #0.
+Retrying
+Try #1.
+Rescued retry #1.
+Retrying
+Try #2.
+Rescued retry #2.
+Giving up.
+# RuntimeError ('Boom') raised.
 ```
 
 Note that the retry re-executes the entire begin clause,
