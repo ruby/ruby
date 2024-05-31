@@ -158,6 +158,9 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+        if extension == "rust"
+          templates.merge!("github/workflows/build-gems.yml.tt" => ".github/workflows/build-gems.yml")
+        end
         config[:ignore_paths] << ".github/"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
