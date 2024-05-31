@@ -168,7 +168,6 @@
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
-#define rb_enc_mbclen           p->config->enc_mbclen
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
 #define rb_enc_isspace          p->config->enc_isspace
