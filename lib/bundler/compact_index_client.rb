@@ -12,6 +12,13 @@ module Bundler
     SUPPORTED_DIGESTS = { "sha-256" => :SHA256, "md5" => :MD5 }.freeze
     DEBUG_MUTEX = Thread::Mutex.new
 
+    # info returns an Array of INFO Arrays. Each INFO Array has the following indices:
+    INFO_NAME = 0
+    INFO_VERSION = 1
+    INFO_PLATFORM = 2
+    INFO_DEPS = 3
+    INFO_REQS = 4
+
     def self.debug
       return unless ENV["DEBUG_COMPACT_INDEX"]
       DEBUG_MUTEX.synchronize { warn("[#{self}] #{yield}") }
@@ -29,29 +36,6 @@ module Bundler
       @parser = Parser.new(@cache)
     end
 
-    def execution_mode=(block)
-      Bundler::CompactIndexClient.debug { "execution_mode=" }
-      @cache.reset!
-      @execution_mode = block
-    end
-
-    # @return [Lambda] A lambda that takes an array of inputs and a block, and
-    #         maps the inputs with the block in parallel.
-    #
-    def execution_mode
-      @execution_mode || sequentially
-    end
-
-    def sequential_execution_mode!
-      self.execution_mode = sequentially
-    end
-
-    def sequentially
-      @sequentially ||= lambda do |inputs, &blk|
-        inputs.map(&blk)
-      end
-    end
-
     def names
       Bundler::CompactIndexClient.debug { "names" }
       @parser.names
@@ -64,17 +48,27 @@ module Bundler
 
     def dependencies(names)
       Bundler::CompactIndexClient.debug { "dependencies(#{names})" }
-      execution_mode.call(names) {|name| @parser.info(name) }.flatten(1)
+      names.map {|name| info(name) }
+    end
+
+    def info(name)
+      Bundler::CompactIndexClient.debug { "info(#{names})" }
+      @parser.info(name)
     end
 
     def latest_version(name)
       Bundler::CompactIndexClient.debug { "latest_version(#{name})" }
-      @parser.info(name).map {|d| Gem::Version.new(d[1]) }.max
+      @parser.info(name).map {|d| Gem::Version.new(d[INFO_VERSION]) }.max
     end
 
     def available?
       Bundler::CompactIndexClient.debug { "available?" }
       @parser.available?
+    end
+
+    def reset!
+      Bundler::CompactIndexClient.debug { "reset!" }
+      @cache.reset!
     end
   end
 end
