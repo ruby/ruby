@@ -42,14 +42,9 @@ Parser::AST::Node.prepend(
 
 module Prism
   class ParserTest < TestCase
-    # These files are erroring because of the parser gem being wrong.
-    skip_incorrect = [
-      "embdoc_no_newline_at_end.txt"
-    ]
-
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = skip_incorrect | [
+    skip_all = [
       "dash_heredocs.txt",
       "dos_endings.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -58,15 +53,12 @@ module Prism
       "spanning_heredoc.txt",
       "spanning_heredoc_newlines.txt",
       "unescaping.txt",
-      "seattlerb/backticks_interpolation_line.txt",
       "seattlerb/block_decomp_anon_splat_arg.txt",
       "seattlerb/block_decomp_arg_splat_arg.txt",
       "seattlerb/block_decomp_arg_splat.txt",
       "seattlerb/block_decomp_splat.txt",
       "seattlerb/block_paren_splat.txt",
       "seattlerb/bug190.txt",
-      "seattlerb/case_in_hash_pat_rest_solo.txt",
-      "seattlerb/case_in_hash_pat_rest.txt",
       "seattlerb/case_in.txt",
       "seattlerb/heredoc_nested.txt",
       "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
@@ -78,8 +70,6 @@ module Prism
       "seattlerb/masgn_double_paren.txt",
       "seattlerb/parse_line_heredoc_hardnewline.txt",
       "seattlerb/parse_pattern_044.txt",
-      "seattlerb/parse_pattern_058_2.txt",
-      "seattlerb/parse_pattern_058.txt",
       "seattlerb/pct_nl.txt",
       "seattlerb/pctW_lineno.txt",
       "seattlerb/regexp_esc_C_slash.txt",
@@ -91,7 +81,6 @@ module Prism
       "unparser/corpus/literal/literal.txt",
       "unparser/corpus/literal/pattern.txt",
       "unparser/corpus/semantic/dstr.txt",
-      "unparser/corpus/semantic/opasgn.txt",
       "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
       "whitequark/masgn_nested.txt",
       "whitequark/newline_in_hash_argument.txt",
@@ -111,12 +100,14 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
       "comments.txt",
+      "embdoc_no_newline_at_end.txt",
       "heredoc_with_comment.txt",
       "indented_file_end.txt",
       "methods.txt",
       "strings.txt",
       "tilde_heredocs.txt",
       "xstring_with_backslash.txt",
+      "seattlerb/backticks_interpolation_line.txt",
       "seattlerb/bug169.txt",
       "seattlerb/class_comments.txt",
       "seattlerb/difficult4__leading_dots2.txt",
@@ -164,6 +155,7 @@ module Prism
       "seattlerb/str_single_newline.txt",
       "seattlerb/symbol_empty.txt",
       "seattlerb/symbols_empty_space.txt",
+      "unparser/corpus/semantic/opasgn.txt",
       "whitequark/args.txt",
       "whitequark/beginless_erange_after_newline.txt",
       "whitequark/beginless_irange_after_newline.txt",
@@ -183,15 +175,20 @@ module Prism
       "whitequark/space_args_block.txt"
     ]
 
-    Fixture.each(except: skip_all) do |fixture|
+    Fixture.each do |fixture|
       define_method(fixture.test_name) do
-        assert_equal_parses(fixture, compare_tokens: !skip_tokens.include?(fixture.path))
+        assert_equal_parses(
+          fixture,
+          compare_asts: !skip_all.include?(fixture.path),
+          compare_tokens: !skip_tokens.include?(fixture.path),
+          compare_comments: fixture.path != "embdoc_no_newline_at_end.txt"
+        )
       end
     end
 
     private
 
-    def assert_equal_parses(fixture, compare_tokens: true)
+    def assert_equal_parses(fixture, compare_asts: true, compare_tokens: true, compare_comments: true)
       buffer = Parser::Source::Buffer.new(fixture.path, 1)
       buffer.source = fixture.read
 
@@ -209,9 +206,17 @@ module Prism
       actual_ast, actual_comments, actual_tokens =
         ignore_warnings { Prism::Translation::Parser33.new.tokenize(buffer) }
 
-      assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
-      assert_equal_tokens(expected_tokens, actual_tokens) if compare_tokens
-      assert_equal_comments(expected_comments, actual_comments)
+      if expected_ast == actual_ast
+        if !compare_asts
+          puts "#{fixture.path} is now passing"
+        end
+
+        assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
+        assert_equal_tokens(expected_tokens, actual_tokens) if compare_tokens
+        assert_equal_comments(expected_comments, actual_comments) if compare_comments
+      elsif compare_asts
+        flunk "expected: #{expected_ast.inspect}\nactual: #{actual_ast.inspect}"
+      end
     end
 
     def assert_equal_asts_message(expected_ast, actual_ast)

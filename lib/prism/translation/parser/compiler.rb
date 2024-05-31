@@ -146,7 +146,9 @@ module Prism
         # { **foo }
         #   ^^^^^
         def visit_assoc_splat_node(node)
-          if node.value.nil? && forwarding.include?(:**)
+          if in_pattern
+            builder.match_rest(token(node.operator_loc), token(node.value&.location))
+          elsif node.value.nil? && forwarding.include?(:**)
             builder.forwarded_kwrestarg(token(node.operator_loc))
           else
             builder.kwsplat(token(node.operator_loc), visit(node.value))
