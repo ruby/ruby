@@ -46,7 +46,6 @@ module Prism
     # skip them for now.
     skip_all = [
       "dash_heredocs.txt",
-      "dos_endings.txt",
       "heredocs_with_ignored_newlines.txt",
       "regex.txt",
       "regex_char_width.txt",
@@ -60,7 +59,6 @@ module Prism
       "seattlerb/block_paren_splat.txt",
       "seattlerb/bug190.txt",
       "seattlerb/heredoc_nested.txt",
-      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
       "seattlerb/heredoc_with_carriage_return_escapes_windows.txt",
       "seattlerb/heredoc_with_carriage_return_escapes.txt",
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
@@ -71,9 +69,7 @@ module Prism
       "seattlerb/pctW_lineno.txt",
       "seattlerb/regexp_esc_C_slash.txt",
       "seattlerb/TestRubyParserShared.txt",
-      "unparser/corpus/literal/assignment.txt",
       "unparser/corpus/literal/block.txt",
-      "unparser/corpus/literal/dstr.txt",
       "unparser/corpus/literal/literal.txt",
       "unparser/corpus/literal/pattern.txt",
       "unparser/corpus/semantic/dstr.txt",
@@ -95,6 +91,7 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
       "comments.txt",
+      "dos_endings.txt",
       "embdoc_no_newline_at_end.txt",
       "heredoc_with_comment.txt",
       "indented_file_end.txt",
@@ -113,6 +110,7 @@ module Prism
       "seattlerb/heredoc__backslash_dos_format.txt",
       "seattlerb/heredoc_backslash_nl.txt",
       "seattlerb/heredoc_comma_arg.txt",
+      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
       "seattlerb/heredoc_squiggly_blank_lines.txt",
       "seattlerb/heredoc_squiggly_interp.txt",
       "seattlerb/heredoc_squiggly_tabs_extra.txt",
@@ -151,6 +149,8 @@ module Prism
       "seattlerb/str_single_newline.txt",
       "seattlerb/symbol_empty.txt",
       "seattlerb/symbols_empty_space.txt",
+      "unparser/corpus/literal/assignment.txt",
+      "unparser/corpus/literal/dstr.txt",
       "unparser/corpus/semantic/opasgn.txt",
       "whitequark/args.txt",
       "whitequark/beginless_erange_after_newline.txt",

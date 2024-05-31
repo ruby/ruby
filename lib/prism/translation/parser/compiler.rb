@@ -1076,36 +1076,7 @@ module Prism
         # ^^^^^^^^^^^^
         def visit_interpolated_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node)
-            opening = token(node.opening_loc)
-
-            start_offset = node.opening_loc.end_offset + 1
-            end_offset = node.parts.first.location.start_offset
-
-            # In the below case, the offsets should be the same:
-            #
-            # <<~HEREDOC
-            #   a #{b}
-            # HEREDOC
-            #
-            # But in this case, the end_offset would be greater than the start_offset:
-            #
-            # <<~HEREDOC
-            #   #{b}
-            # HEREDOC
-            #
-            # So we need to make sure the result node's heredoc range is correct, without updating the children
-            result = if start_offset < end_offset
-              # We need to add a padding string to ensure that the heredoc has correct range for its body
-              padding_string_node = builder.string_internal(["", srange_offsets(start_offset, end_offset)])
-              node_with_correct_location = builder.string_compose(opening, [padding_string_node, *children], closing)
-              # But the padding string should not be included in the final AST, so we need to update the result's children
-              node_with_correct_location.updated(:dstr, children)
-            else
-              builder.string_compose(opening, children, closing)
-            end
-
-            return result
+            return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
           parts = if node.parts.one? { |part| part.type == :string_node }
@@ -1149,8 +1120,7 @@ module Prism
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node)
-            builder.xstring_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
           else
             builder.xstring_compose(
               token(node.opening_loc),
@@ -1685,8 +1655,7 @@ module Prism
         # ^^^^^
         def visit_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node.to_interpolated)
-            builder.string_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node.to_interpolated) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
           elsif node.opening&.start_with?("%") && node.unescaped.empty?
@@ -1890,8 +1859,7 @@ module Prism
         # ^^^^^
         def visit_x_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node.to_interpolated)
-            builder.xstring_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node.to_interpolated) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
           else
             parts = if node.unescaped.lines.one?
               [builder.string_internal([node.unescaped, srange(node.content_loc)])]
@@ -2055,6 +2023,17 @@ module Prism
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
           children = Array.new
+          indented = false
+
+          # If this is a dedenting heredoc, then we need to insert the opening
+          # content into the children as well.
+          if node.opening.start_with?("<<~") && node.parts.length > 0 && !node.parts.first.is_a?(StringNode)
+            location = node.parts.first.location
+            location = location.copy(start_offset: location.start_offset - location.start_line_slice.bytesize)
+            children << builder.string_internal(token(location))
+            indented = true
+          end
+
           node.parts.each do |part|
             pushing =
               if part.is_a?(StringNode) && part.unescaped.include?("\n")
@@ -2094,8 +2073,10 @@ module Prism
 
           closing = node.closing
           closing_t = [closing.chomp, srange_offsets(node.closing_loc.start_offset, node.closing_loc.end_offset - (closing[/\s+$/]&.length || 0))]
+          composed = yield children, closing_t
 
-          [children, closing_t]
+          composed = composed.updated(nil, children[1..-1]) if indented
+          composed
         end
 
         # Visit a numeric node and account for the optional sign.
