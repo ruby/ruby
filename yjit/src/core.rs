@@ -747,7 +747,11 @@ enum CtxOp
 
     // Map stack temp to a local variable
     // Temp idx (3 bits), local idx (3 bits)
-    SetTempLocal,
+    MapTempLocal,
+
+    // Map a stack temp to self
+    // Temp idx (3 bits)
+    MapTempSelf,
 
     // Set inline block pointer	(8 bytes)
     SetInlineBlock,
@@ -787,23 +791,37 @@ impl Context
             }
         }
 
+        // Encode stack temps
+        for stack_idx in 0..MAX_TEMP_TYPES {
+            let mapping = self.get_temp_mapping(stack_idx);
 
+            match mapping.get_kind() {
+                MapToStack => {
+                    let t = mapping.get_type();
+                    if t != Type::Unknown {
+                        // Temp idx (3 bits), known type (4 bits)
+                        bits.push_op(CtxOp::SetTempType);
+                        bits.push_u3(stack_idx as u8);
+                        bits.push_u4(t as u8);
+                    }
+                }
 
+                MapToLocal => {
+                    let local_idx = mapping.get_local_idx();
 
-        // TODO: encode stack temps
+                    // Temp idx (3 bits), local idx (3 bits)
+                    bits.push_op(CtxOp::MapTempLocal);
+                    bits.push_u3(stack_idx as u8);
+                    bits.push_u3(local_idx as u8);
+                }
 
-        /*
-        // Temp mapping kinds we track
-        // 8 temp mappings * 2 bits, total 16 bits
-        temp_mapping_kind: u16,
-
-        // Stack slot type/local_idx we track
-        // 8 temp types * 4 bits, total 32 bits
-        temp_payload: u32,
-        */
-
-
-
+                MapToSelf => {
+                    // Temp idx (3 bits)
+                    bits.push_op(CtxOp::MapTempSelf);
+                    bits.push_u3(stack_idx as u8);
+                }
+            }
+        }
 
         // Inline block pointer
         if self.inline_block != 0 {
