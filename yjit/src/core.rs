@@ -755,6 +755,9 @@ enum CtxOp
 
     // Set inline block pointer	(8 bytes)
     SetInlineBlock,
+
+    // End of encoding
+    EndOfCode,
 }
 
 impl Context
@@ -763,11 +766,19 @@ impl Context
     {
         let mut bits = BitVector::new();
 
+        // Note: sp_offset is most often in [0, 3], so
+        // could potentially be compressed
+
+        // NOTE: this value is often zero or falls within
+        // a small range, so could be compressed
+        //println!("chain_depth_and_flags={}", self.chain_depth_and_flags);
+
         // Number of values currently on the temporary stack
         bits.push_u8(self.stack_size);
 
         // sp_offset: i8,
         bits.push_u8(self.sp_offset as u8);
+        println!("sp_offset={}", self.sp_offset);
 
         // Bitmap of which stack temps are in a register
         let RegTemps(reg_temps) = self.reg_temps;
@@ -776,12 +787,13 @@ impl Context
         // chain_depth_and_flags: u8,
         bits.push_u8(self.chain_depth_and_flags);
 
+        // Encode the self type if known
         if self.self_type != Type::Unknown {
             bits.push_op(CtxOp::SetSelfType);
             bits.push_u4(self.self_type as u8);
         }
 
-        // Encode the local types
+        // Encode the local types if known
         for local_idx in 0..MAX_LOCAL_TYPES {
             let t = self.get_local_type(local_idx);
             if t != Type::Unknown {
@@ -807,9 +819,8 @@ impl Context
                 }
 
                 MapToLocal => {
-                    let local_idx = mapping.get_local_idx();
-
                     // Temp idx (3 bits), local idx (3 bits)
+                    let local_idx = mapping.get_local_idx();
                     bits.push_op(CtxOp::MapTempLocal);
                     bits.push_u3(stack_idx as u8);
                     bits.push_u3(local_idx as u8);
@@ -825,13 +836,13 @@ impl Context
 
         // Inline block pointer
         if self.inline_block != 0 {
+            bits.push_op(CtxOp::SetInlineBlock);
             bits.push_uint(self.inline_block, 64);
         }
 
         // TODO: should we add an op for end-of-encoding,
         // or store num ops at the beginning?
-
-
+        bits.push_op(CtxOp::EndOfCode);
 
         bits
     }
@@ -1963,6 +1974,14 @@ fn remove_block_version(blockref: &BlockRef) {
     version_list.retain(|other| blockref != other);
 }
 
+
+
+
+static mut TOTAL_CTX_BYTES: usize = 0;
+static mut TOTAL_CTX_ENCODED: usize = 0;
+
+
+
 impl JITState {
     // Finish compiling and turn a jit state into a block
     // note that the block is still not in shape.
@@ -1971,6 +1990,34 @@ impl JITState {
         let blockref: *mut MaybeUninit<Block> = Box::into_raw(Box::new(MaybeUninit::uninit()));
 
         incr_counter_by!(num_gc_obj_refs, gc_obj_offsets.len());
+
+
+
+
+        // Test the variable-length context encoding logic
+        {
+            let ctx = self.get_starting_ctx();
+            let bits = ctx.encode();
+            let num_bytes = bits.num_bytes();
+            println!("num_bytes={}", num_bytes);
+
+            // Try to estimate the average number of bytes needed to encode contexts
+            unsafe {
+                TOTAL_CTX_BYTES += num_bytes;
+                TOTAL_CTX_ENCODED += 1;
+
+                let avg_bytes = (TOTAL_CTX_BYTES as f64) / (TOTAL_CTX_ENCODED as f64);
+
+                let current_size = std::mem::size_of::<Context>() as f64;
+                let pct_of_current = 100.0 * (avg_bytes / current_size);
+
+                println!("avg_bytes={:.1} ({:.1}% of current size)", avg_bytes, pct_of_current);
+            }
+        }
+
+
+
+
 
         // Make the new block
         let block = MaybeUninit::new(Block {
