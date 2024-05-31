@@ -83,7 +83,6 @@ module Prism
       "unparser/corpus/semantic/dstr.txt",
       "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
       "whitequark/masgn_nested.txt",
-      "whitequark/newline_in_hash_argument.txt",
       "whitequark/parser_bug_640.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
       "whitequark/ruby_bug_11989.txt",
@@ -167,6 +166,7 @@ module Prism
       "whitequark/interp_digit_var.txt",
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
+      "whitequark/newline_in_hash_argument.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/ruby_bug_11990.txt",
       "whitequark/ruby_bug_14690.txt",
@@ -215,7 +215,7 @@ module Prism
         assert_equal_tokens(expected_tokens, actual_tokens) if compare_tokens
         assert_equal_comments(expected_comments, actual_comments) if compare_comments
       elsif compare_asts
-        flunk "expected: #{expected_ast.inspect}\nactual: #{actual_ast.inspect}"
+        assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
       end
     end
 

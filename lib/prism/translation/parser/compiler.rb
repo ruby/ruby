@@ -106,14 +106,20 @@ module Prism
         #   ^^^^
         def visit_assoc_node(node)
           if in_pattern
+            key = node.key
+
             if node.value.is_a?(ImplicitNode)
-              if node.key.is_a?(SymbolNode)
-                builder.match_hash_var([node.key.unescaped, srange(node.key.location)])
+              if key.is_a?(SymbolNode)
+                if key.opening.nil?
+                  builder.match_hash_var([key.unescaped, srange(key.location)])
+                else
+                  builder.match_hash_var_from_str(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc))
+                end
               else
-                builder.match_hash_var_from_str(token(node.key.opening_loc), visit_all(node.key.parts), token(node.key.closing_loc))
+                builder.match_hash_var_from_str(token(key.opening_loc), visit_all(key.parts), token(key.closing_loc))
               end
             else
-              builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
+              builder.pair_keyword([key.unescaped, srange(key.location)], visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
             if (value = node.value.value).is_a?(LocalVariableReadNode)
