@@ -6953,20 +6953,20 @@ fn push_splat_args(required_args: u32, asm: &mut Assembler) {
     asm.cmp(array_len_opnd, required_args.into());
     asm.jne(Target::side_exit(Counter::guard_send_splatarray_length_not_equal));
 
-    asm_comment!(asm, "Check last argument is not ruby2keyword hash");
+    // Check last element of array if present
+    if required_args > 0 {
+        asm_comment!(asm, "Check last argument is not ruby2keyword hash");
 
-    // Need to repeat this here to deal with register allocation
-    let array_reg = asm.load(asm.stack_opnd(0));
-
-    let ary_opnd = get_array_ptr(asm, array_reg);
-
-    let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
-
-    guard_object_is_not_ruby2_keyword_hash(
-        asm,
-        last_array_value,
-        Counter::guard_send_splatarray_last_ruby2_keywords,
-    );
+        // Need to repeat this here to deal with register allocation
+        let array_reg = asm.load(asm.stack_opnd(0));
+        let ary_opnd = get_array_ptr(asm, array_reg);
+        let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
+        guard_object_is_not_ruby2_keyword_hash(
+            asm,
+            last_array_value,
+            Counter::guard_send_splatarray_last_ruby2_keywords,
+        );
+    }
 
     asm_comment!(asm, "Push arguments from array");
     let array_opnd = asm.stack_pop(1);
