@@ -19,9 +19,11 @@ Note that each entry is kept to a minimum, see links for details.
   `**nil` is treated similarly to `**{}`, passing no keywords,
   and not calling any conversion methods.  [[Bug #20064]]
 
-* Block passing is no longer allowed in index.  [[Bug #19918]]
+* Block passing is no longer allowed in index assignment
+  (e.g. `a[0, &b] = 1`).  [[Bug #19918]]
 
-* Keyword arguments are no longer allowed in index.  [[Bug #20218]]
+* Keyword arguments are no longer allowed in index assignment
+  (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
 ## Core classes updates
 
