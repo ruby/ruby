@@ -674,6 +674,7 @@ RSpec.describe "bundle exec" do
             s.version = '1.0'
             s.summary = 'TODO: Add summary'
             s.authors = 'Me'
+            s.rubygems_version = nil
           end
         G
       end
@@ -686,7 +687,7 @@ RSpec.describe "bundle exec" do
       bundle "exec irb", raise_on_error: false
 
       expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
-      expect(err).to match('"TODO" is not a summary')
+      expect(err).to match(/missing value for attribute rubygems_version|rubygems_version must not be nil/)
     end
   end
 
