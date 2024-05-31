@@ -19,8 +19,6 @@ class TestGemUninstaller < Gem::InstallerTestCase
         @user_spec = @user_installer.spec
       end
     end
-
-    Gem::Specification.reset
   end
 
   def test_initialize_expand_path

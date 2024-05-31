@@ -13658,10 +13658,10 @@ aryset_check(struct parser_params *p, NODE *args)
         }
     }
     if (kwds && nd_type_p(kwds, NODE_HASH) && !RNODE_HASH(kwds)->nd_brace) {
-        yyerror1(&kwds->nd_loc, "keyword arg given in index");
+        yyerror1(&kwds->nd_loc, "keyword arg given in index assignment");
     }
     if (block) {
-        yyerror1(&block->nd_loc, "block arg given in index");
+        yyerror1(&block->nd_loc, "block arg given in index assignment");
     }
 }
 

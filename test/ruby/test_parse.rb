@@ -512,12 +512,12 @@ class TestParse < Test::Unit::TestCase
     def t.dummy(_)
     end
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
     begin;
       t[42, &blk] ||= 42
     end;
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
     begin;
       t[42, &blk] ||= t.dummy 42 # command_asgn test
     end;
