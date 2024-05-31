@@ -7,7 +7,7 @@ RSpec.describe <%= config[:constant_name] %> do
 
 <%- if config[:ext] == 'rust' -%>
   it "can call into Rust" do
-    result = Testing.hello("world")
+    result = <%= config[:constant_name] %>.hello("world")
 
     expect(result).to be("Hello earth, from Rust!")
   end
