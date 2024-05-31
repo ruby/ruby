@@ -3951,6 +3951,40 @@ end
     assert_equal ["default-2.0.0.0"], Gem::Specification.map(&:full_name)
   end
 
+  def test_validate_for_resolution_validates_required_attributes
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.version = nil
+      @a1.validate_for_resolution
+    end
+
+    assert_equal "missing value for attribute version", e.message
+  end
+
+  def test_validate_for_resolution_validates_name
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.name = 123
+      @a1.validate_for_resolution
+    end
+
+    assert_equal 'invalid value for attribute name: "123" must be a string', e.message
+  end
+
+  def test_validate_for_resolution_validates_duplicate_dependencies
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.add_dependency "foo", "1.2.3"
+      @a1.add_dependency "foo", "3.4.5"
+      @a1.validate_for_resolution
+    end
+
+    assert_match "duplicate dependency on foo", e.message
+  end
+
+  def test_validate_for_resolution_ignores_metadata
+    @a1.summary = "TODO: Invalid summary"
+    @a1.metadata["homepage_uri"] = "TODO: Invalid homepage URI"
+    @a1.validate_for_resolution
+  end
+
   def util_setup_deps
     @gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_runtime_dependency "bonobo", []
