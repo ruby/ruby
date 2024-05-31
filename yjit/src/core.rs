@@ -585,6 +585,18 @@ impl BitVector
         self.push_uint(val as u64, 3);
     }
 
+    fn push_u2(&mut self, val: u8)
+    {
+        assert!(val < 4);
+        self.push_uint(val as u64, 2);
+    }
+
+    fn push_u1(&mut self, val: u8)
+    {
+        assert!(val < 2);
+        self.push_uint(val as u64, 1);
+    }
+
     // Push a context encoding opcode
     fn push_op(&mut self, op: CtxOp)
     {
@@ -766,19 +778,28 @@ impl Context
     {
         let mut bits = BitVector::new();
 
-        // Note: sp_offset is most often in [0, 3], so
-        // could potentially be compressed
-
         // NOTE: this value is often zero or falls within
         // a small range, so could be compressed
+        //println!("stack_size={}", self.stack_size);
+        //println!("sp_offset={}", self.sp_offset);
         //println!("chain_depth_and_flags={}", self.chain_depth_and_flags);
 
-        // Number of values currently on the temporary stack
-        bits.push_u8(self.stack_size);
+        // Most of the time, the stack size is small and sp offset has the same value
+        if (self.stack_size as i64) == (self.sp_offset as i64) && self.stack_size < 4 {
+            // One single bit to signify a compact stack_size/sp_offset encoding
+            bits.push_u1(1);
+            bits.push_u2(self.stack_size);
+        } else
+        {
+            // Full stack size encoding
+            bits.push_u1(0);
 
-        // sp_offset: i8,
-        bits.push_u8(self.sp_offset as u8);
-        println!("sp_offset={}", self.sp_offset);
+            // Number of values currently on the temporary stack
+            bits.push_u8(self.stack_size);
+
+            // sp_offset: i8,
+            bits.push_u8(self.sp_offset as u8);
+        }
 
         // Bitmap of which stack temps are in a register
         let RegTemps(reg_temps) = self.reg_temps;
@@ -1976,7 +1997,7 @@ fn remove_block_version(blockref: &BlockRef) {
 
 
 
-
+static mut MAX_CTX_BYTES: usize = 0;
 static mut TOTAL_CTX_BYTES: usize = 0;
 static mut TOTAL_CTX_ENCODED: usize = 0;
 
@@ -1993,16 +2014,17 @@ impl JITState {
 
 
 
-
+        /*
         // Test the variable-length context encoding logic
         {
             let ctx = self.get_starting_ctx();
             let bits = ctx.encode();
             let num_bytes = bits.num_bytes();
-            println!("num_bytes={}", num_bytes);
+            //println!("num_bytes={}", num_bytes);
 
             // Try to estimate the average number of bytes needed to encode contexts
             unsafe {
+                MAX_CTX_BYTES = std::cmp::max(MAX_CTX_BYTES, num_bytes);
                 TOTAL_CTX_BYTES += num_bytes;
                 TOTAL_CTX_ENCODED += 1;
 
@@ -2011,10 +2033,15 @@ impl JITState {
                 let current_size = std::mem::size_of::<Context>() as f64;
                 let pct_of_current = 100.0 * (avg_bytes / current_size);
 
-                println!("avg_bytes={:.1} ({:.1}% of current size)", avg_bytes, pct_of_current);
+                println!(
+                    "avg_bytes={:.2} ({:.1}% of current size), max_bytes={}",
+                    avg_bytes,
+                    pct_of_current,
+                    MAX_CTX_BYTES
+                );
             }
         }
-
+        */
 
 
 
