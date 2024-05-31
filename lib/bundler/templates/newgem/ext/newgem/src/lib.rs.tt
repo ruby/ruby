@@ -1,7 +1,7 @@
 use magnus::{function, prelude::*, Error, Ruby};
 
-fn hello(subject: String) -> String {
-    format!("Hello from Rust, {subject}!")
+pub fn hello(subject: String) -> String {
+    format!("Hello {subject}, from Rust!")
 }
 
 #[magnus::init]
@@ -14,10 +14,10 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use rb_sys_test_helpers::ruby_test;
+    use super::hello;
 
     #[ruby_test]
     fn test_hello() {
-        use magnus::RString;
-        assert_eq!(12, RString::new("rust ❤️ ruby").length())
+        assert_eq!("Hello world, from Rust!", hello("world".to_string()));
     }
 }

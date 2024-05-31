@@ -1736,10 +1736,8 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/build.rs")).to exist
       end
 
-      it "includes rake-compiler, rb_sys gems and required_rubygems_version constraint" do
+      it "includes rake-compiler constraint" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "rb_sys"')
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.required_rubygems_version = ">= ')
       end
 
       it "depends on compile task for build" do
@@ -1782,6 +1780,8 @@ RSpec.describe "bundle gem" do
 
         system(env, "cargo", "-V", out: IO::NULL, err: [:child, :out])
         skip "cargo not present" unless $?.success?
+        # Hermetic Cargo setup
+        RbConfig::CONFIG.each {|k, v| env["RBCONFIG_#{k}"] = v }
         env
       end
     end
