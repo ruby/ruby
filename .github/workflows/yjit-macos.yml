@@ -135,6 +135,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
