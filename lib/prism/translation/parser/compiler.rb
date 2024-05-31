@@ -90,7 +90,11 @@ module Prism
           end
 
           if node.constant
-            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visited, nil), token(node.closing_loc))
+            if visited.empty?
+              builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(token(node.opening_loc), visited, token(node.closing_loc)), token(node.closing_loc))
+            else
+              builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visited, nil), token(node.closing_loc))
+            end
           else
             builder.array_pattern(token(node.opening_loc), visited, token(node.closing_loc))
           end
