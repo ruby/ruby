@@ -1689,6 +1689,8 @@ module Prism
             builder.string_compose(token(node.opening_loc), children, closing)
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
+          elsif node.opening&.start_with?("%") && node.unescaped.empty?
+            builder.string_compose(token(node.opening_loc), [], token(node.closing_loc))
           else
             content_lines = node.content.lines
             unescaped_lines = node.unescaped.lines
