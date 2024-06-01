@@ -392,8 +392,9 @@ end
 #   see {File Permissions}[rdoc-ref:File@File+Permissions].
 # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
 #
-# With no block, the file is not removed automatically,
-# and so should be explicitly removed.
+# The temporary file removal depends on the keyword argument +anonymous+ and
+# whether a block is given or not.
+# See the description about the +anonymous+ keyword argument later.
 #
 # Example:
 #
@@ -401,11 +402,36 @@ end
 #   f.class                 # => File
 #   f.path                  # => "/tmp/20220505-9795-17ky6f6"
 #   f.stat.mode.to_s(8)     # => "100600"
+#   f.close
 #   File.exist?(f.path)     # => true
 #   File.unlink(f.path)
 #   File.exist?(f.path)     # => false
 #
-# Argument +basename+, if given, may be one of:
+#   Tempfile.create {|f|
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#     f.path                # => "/tmp/20240524-380207-oma0ny"
+#     File.exist?(f.path)   # => true
+#   }                       # The file is removed at block exit.
+#
+#   f = Tempfile.create(anonymous: true)
+#   # The file is already removed because anonymous
+#   f.path                  # => "/tmp/"  (no filename since no file)
+#   f.puts "foo"
+#   f.rewind
+#   f.read                  # => "foo\n"
+#   f.close
+#
+#   Tempfile.create(anonymous: true) {|f|
+#     # The file is already removed because anonymous
+#     f.path                # => "/tmp/"  (no filename since no file)
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#   }
+#
+# The argument +basename+, if given, may be one of the following:
 #
 # - A string: the generated filename begins with +basename+:
 #
@@ -416,27 +442,57 @@ end
 #
 #     Tempfile.create(%w/foo .jpg/) # => #<File:/tmp/foo20220505-17839-tnjchh.jpg>
 #
-# With arguments +basename+ and +tmpdir+, the file is created in directory +tmpdir+:
+# With arguments +basename+ and +tmpdir+, the file is created in the directory +tmpdir+:
 #
 #   Tempfile.create('foo', '.') # => #<File:./foo20220505-9795-1emu6g8>
 #
-# Keyword arguments +mode+ and +options+ are passed directly to method
+# Keyword arguments +mode+ and +options+ are passed directly to the method
 # {File.open}[rdoc-ref:File.open]:
 #
-# - The value given with +mode+ must be an integer,
+# - The value given for +mode+ must be an integer
 #   and may be expressed as the logical OR of constants defined in
 #   {File::Constants}[rdoc-ref:File::Constants].
 # - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
 #
-# With a block given, creates the file as above, passes it to the block,
-# and returns the block's value;
-# before the return, the file object is closed and the underlying file is removed:
+# The keyword argument +anonymous+ specifies when the file is removed.
+#
+# - +anonymous=false+ (default) without a block: the file is not removed.
+# - +anonymous=false+ (default) with a block: the file is removed after the block exits.
+# - +anonymous=true+ without a block: the file is removed before returning.
+# - +anonymous=true+ with a block: the file is removed before the block is called.
+#
+# In the first case (+anonymous=false+ without a block),
+# the file is not removed automatically.
+# It should be explicitly closed.
+# It can be used to rename to the desired filename.
+# If the file is not needed, it should be explicitly removed.
+#
+# The +File#path+ method of the created file object returns the temporary directory with a trailing slash
+# when +anonymous+ is true.
+#
+# When a block is given, it creates the file as described above, passes it to the block,
+# and returns the block's value.
+# Before the returning, the file object is closed and the underlying file is removed:
 #
 #   Tempfile.create {|file| file.path } # => "/tmp/20220505-9795-rkists"
 #
+# Implementation note:
+#
+# The keyword argument +anonymous=true+ is implemented using FILE_SHARE_DELETE on Windows.
+# O_TMPFILE is used on Linux.
+#
 # Related: Tempfile.new.
 #
-def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
+def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **options, &block)
+  if anonymous
+    create_anonymous(basename, tmpdir, mode: mode, **options, &block)
+  else
+    create_with_filename(basename, tmpdir, mode: mode, **options, &block)
+  end
+end
+
+class << Tempfile
+private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
@@ -463,4 +519,38 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   else
     tmpfile
   end
+end
+
+private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block)
+  tmpfile = nil
+  tmpdir = Dir.tmpdir() if tmpdir.nil?
+  if defined?(File::TMPFILE) # O_TMPFILE since Linux 3.11
+    begin
+      tmpfile = File.open(tmpdir, File::RDWR | File::TMPFILE, 0600)
+    rescue Errno::EISDIR, Errno::ENOENT, Errno::EOPNOTSUPP
+      # kernel or the filesystem does not support O_TMPFILE
+      # fallback to create-and-unlink
+    end
+  end
+  if tmpfile.nil?
+    mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
+    tmpfile = create_with_filename(basename, tmpdir, mode: mode, **options)
+    File.unlink(tmpfile.path)
+  end
+  path = File.join(tmpdir, '')
+  if tmpfile.path != path
+    # clear path.
+    tmpfile.autoclose = false
+    tmpfile = File.new(tmpfile.fileno, mode: File::RDWR, path: path)
+  end
+  if block
+    begin
+      yield tmpfile
+    ensure
+      tmpfile.close
+    end
+  else
+    tmpfile
+  end
+end
 end
