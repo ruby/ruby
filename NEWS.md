@@ -89,6 +89,11 @@ The following bundled gems are promoted from default gems.
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
+* The keyword argument `anonymous: true` is implemented for `Tempfile.create`.
+  `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
+  So applications don't need to remove the file.
+  [[Feature #20497]]
+
 ## Supported platforms
 
 ## Compatibility issues
