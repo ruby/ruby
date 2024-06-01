@@ -481,7 +481,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err, gai_errno = 0;
+    int err = 0, gai_errno = 0;
 
 start:
     retry = 0;

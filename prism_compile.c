@@ -992,7 +992,7 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_
     pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, false, scope_node);
     PUSH_SEQ(ret, cond_seq);
 
-    rb_code_location_t conditional_location;
+    rb_code_location_t conditional_location = { 0 };
     VALUE branches = Qfalse;
 
     if (then_label->refcnt && else_label->refcnt && PM_BRANCH_COVERAGE_P(iseq)) {
@@ -6140,7 +6140,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // We're going to use this to uniquely identify each branch so that we
         // can track coverage information.
-        rb_code_location_t case_location;
+        rb_code_location_t case_location = { 0 };
         VALUE branches = Qfalse;
         int branch_id = 0;
 
