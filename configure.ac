@@ -9,45 +9,50 @@ tooldir="$srcdir/tool"
 
 AC_DISABLE_OPTION_CHECKING
 
-m4_include([tool/m4/_colorize_result_prepare.m4])dnl
-m4_include([tool/m4/ac_msg_result.m4])dnl
-m4_include([tool/m4/colorize_result.m4])dnl
-m4_include([tool/m4/ruby_append_option.m4])dnl
-m4_include([tool/m4/ruby_append_options.m4])dnl
-m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
-m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
-m4_include([tool/m4/ruby_check_header.m4])dnl
-m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
-m4_include([tool/m4/ruby_check_setjmp.m4])dnl
-m4_include([tool/m4/ruby_check_signedness.m4])dnl
-m4_include([tool/m4/ruby_check_sizeof.m4])dnl
-m4_include([tool/m4/ruby_check_sysconf.m4])dnl
-m4_include([tool/m4/ruby_cppoutfile.m4])dnl
-m4_include([tool/m4/ruby_decl_attribute.m4])dnl
-m4_include([tool/m4/ruby_default_arch.m4])dnl
-m4_include([tool/m4/ruby_define_if.m4])dnl
-m4_include([tool/m4/ruby_defint.m4])dnl
-m4_include([tool/m4/ruby_dtrace_available.m4])dnl
-m4_include([tool/m4/ruby_dtrace_postprocess.m4])dnl
-m4_include([tool/m4/ruby_func_attribute.m4])dnl
-m4_include([tool/m4/ruby_mingw32.m4])dnl
-m4_include([tool/m4/ruby_prepend_option.m4])dnl
-m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
-m4_include([tool/m4/ruby_prog_makedirs.m4])dnl
-m4_include([tool/m4/ruby_replace_funcs.m4])dnl
-m4_include([tool/m4/ruby_replace_type.m4])dnl
-m4_include([tool/m4/ruby_require_funcs.m4])dnl
-m4_include([tool/m4/ruby_rm_recursive.m4])dnl
-m4_include([tool/m4/ruby_setjmp_type.m4])dnl
-m4_include([tool/m4/ruby_shared_gc.m4])dnl
-m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
-m4_include([tool/m4/ruby_thread.m4])dnl
-m4_include([tool/m4/ruby_try_cflags.m4])dnl
-m4_include([tool/m4/ruby_try_cxxflags.m4])dnl
-m4_include([tool/m4/ruby_try_ldflags.m4])dnl
-m4_include([tool/m4/ruby_universal_arch.m4])dnl
-m4_include([tool/m4/ruby_wasm_tools.m4])dnl
-m4_include([tool/m4/ruby_werror_flag.m4])dnl
+m4_define([RUBY_M4_INCLUDED], [])dnl
+AC_DEFUN([RUBY_M4_INCLUDE], [m4_include([tool/m4/$1])dnl
+  m4_append([RUBY_M4_INCLUDED], [ \
+	$(tooldir)/m4/$1])dnl
+])
+RUBY_M4_INCLUDE([_colorize_result_prepare.m4])dnl
+RUBY_M4_INCLUDE([ac_msg_result.m4])dnl
+RUBY_M4_INCLUDE([colorize_result.m4])dnl
+RUBY_M4_INCLUDE([ruby_append_option.m4])dnl
+RUBY_M4_INCLUDE([ruby_append_options.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_builtin_func.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_builtin_setjmp.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_header.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_printf_prefix.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_setjmp.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_signedness.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_sizeof.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_sysconf.m4])dnl
+RUBY_M4_INCLUDE([ruby_cppoutfile.m4])dnl
+RUBY_M4_INCLUDE([ruby_decl_attribute.m4])dnl
+RUBY_M4_INCLUDE([ruby_default_arch.m4])dnl
+RUBY_M4_INCLUDE([ruby_define_if.m4])dnl
+RUBY_M4_INCLUDE([ruby_defint.m4])dnl
+RUBY_M4_INCLUDE([ruby_dtrace_available.m4])dnl
+RUBY_M4_INCLUDE([ruby_dtrace_postprocess.m4])dnl
+RUBY_M4_INCLUDE([ruby_func_attribute.m4])dnl
+RUBY_M4_INCLUDE([ruby_mingw32.m4])dnl
+RUBY_M4_INCLUDE([ruby_prepend_option.m4])dnl
+RUBY_M4_INCLUDE([ruby_prog_gnu_ld.m4])dnl
+RUBY_M4_INCLUDE([ruby_prog_makedirs.m4])dnl
+RUBY_M4_INCLUDE([ruby_replace_funcs.m4])dnl
+RUBY_M4_INCLUDE([ruby_replace_type.m4])dnl
+RUBY_M4_INCLUDE([ruby_require_funcs.m4])dnl
+RUBY_M4_INCLUDE([ruby_rm_recursive.m4])dnl
+RUBY_M4_INCLUDE([ruby_setjmp_type.m4])dnl
+RUBY_M4_INCLUDE([ruby_shared_gc.m4])dnl
+RUBY_M4_INCLUDE([ruby_stack_grow_direction.m4])dnl
+RUBY_M4_INCLUDE([ruby_thread.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_cflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_cxxflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_ldflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_universal_arch.m4])dnl
+RUBY_M4_INCLUDE([ruby_wasm_tools.m4])dnl
+RUBY_M4_INCLUDE([ruby_werror_flag.m4])dnl
 
 AS_IF([test "x${GITHUB_ACTIONS}" = xtrue],
 [AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
@@ -4606,6 +4611,9 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	], [
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	])
+
+	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
+	$(empty)'
     } > $tmpmk && AS_IF([! grep '^ruby:' $tmpmk > /dev/null], [
 	AS_IF([test "${gnumake}" = yes], [
 	    tmpgmk=confgmk$$.tmp
