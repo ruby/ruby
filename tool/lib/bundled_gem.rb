@@ -6,6 +6,16 @@ require 'rubygems/package'
 # unpack bundled gem files.
 
 module BundledGem
+  DEFAULT_GEMS_DEPENDENCIES = [
+    "net-protocol", # net-ftp
+    "time", # net-ftp
+    "singleton", # prime
+    "ipaddr", # rinda
+    "forwardable", # prime, rinda
+    "ruby2_keywords", # drb
+    "strscan" # rexml
+  ]
+
   module_function
 
   def unpack(file, *rest)
@@ -35,6 +45,9 @@ module BundledGem
     gem_dir = File.join(dir, "gems", target)
     yield gem_dir
     spec_dir = spec.extensions.empty? ? "specifications" : File.join("gems", target)
+    if spec.extensions.empty?
+      spec.dependencies.reject! {|dep| DEFAULT_GEMS_DEPENDENCIES.include?(dep.name)}
+    end
     File.binwrite(File.join(dir, spec_dir, "#{target}.gemspec"), spec.to_ruby)
     unless spec.extensions.empty?
       spec.dependencies.clear
