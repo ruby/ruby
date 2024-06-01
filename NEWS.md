@@ -40,6 +40,13 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Tempfile
+
+    * The keyword argument `anonymous: true` is implemented for `Tempfile.create`.
+      `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
+      So applications don't need to remove the file.
+      [[Feature #20497]]
+
 The following default gems are updated.
 
 * RubyGems 3.6.0.dev
@@ -88,11 +95,6 @@ The following bundled gems are promoted from default gems.
 * csv 3.3.0
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
-
-* The keyword argument `anonymous: true` is implemented for `Tempfile.create`.
-  `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
-  So applications don't need to remove the file.
-  [[Feature #20497]]
 
 ## Supported platforms
 
