@@ -1390,12 +1390,12 @@ module Prism
 
           if node.requireds.any?
             node.requireds.each do |required|
-              if required.is_a?(RequiredParameterNode)
-                params << visit(required)
-              else
-                compiler = copy_compiler(in_destructure: true)
-                params << required.accept(compiler)
-              end
+              params <<
+                if required.is_a?(RequiredParameterNode)
+                  visit(required)
+                else
+                  required.accept(copy_compiler(in_destructure: true))
+                end
             end
           end
 
@@ -1404,12 +1404,12 @@ module Prism
 
           if node.posts.any?
             node.posts.each do |post|
-              if post.is_a?(RequiredParameterNode)
-                params << visit(post)
-              else
-                compiler = copy_compiler(in_destructure: true)
-                params << post.accept(compiler)
-              end
+              params <<
+                if post.is_a?(RequiredParameterNode)
+                  visit(post)
+                else
+                  post.accept(copy_compiler(in_destructure: true))
+                end
             end
           end
 
@@ -2004,7 +2004,8 @@ module Prism
                   token(parameters.opening_loc),
                   if procarg0?(parameters.parameters)
                     parameter = parameters.parameters.requireds.first
-                    [builder.procarg0(visit(parameter))].concat(visit_all(parameters.locals))
+                    visited = parameter.is_a?(RequiredParameterNode) ? visit(parameter) : parameter.accept(copy_compiler(in_destructure: true))
+                    [builder.procarg0(visited)].concat(visit_all(parameters.locals))
                   else
                     visit(parameters)
                   end,
