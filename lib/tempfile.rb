@@ -8,18 +8,61 @@
 require 'delegate'
 require 'tmpdir'
 
-# A utility class for managing temporary files. When you create a Tempfile
-# object, it will create a temporary file with a unique filename. A Tempfile
-# objects behaves just like a File object, and you can perform all the usual
-# file operations on it: reading data, writing data, changing its permissions,
-# etc. So although this class does not explicitly document all instance methods
-# supported by File, you can in fact call any File instance method on a
-# Tempfile object.
+# A utility class for managing temporary files.
+#
+# There are two kind of methods of creating a temporary file:
+#
+# - Tempfile.create (recommended)
+# - Tempfile.new and Tempfile.open (mostly for backward compatibility, not recommended)
+#
+# Tempfile.create creates a usual \File object.
+# The timing of file deletion is predictable.
+# Also, it supports open-and-unlink technique which
+# removes the temporary file immediately after creation.
+#
+# Tempfile.new and Tempfile.open creates a \Tempfile object.
+# The created file is removed by the GC (finalizer).
+# The timing of file deletion is not predictable.
 #
 # == Synopsis
 #
 #   require 'tempfile'
 #
+#   # Tempfile.create with a block
+#   # The filename are choosen automatically.
+#   # (You can specify the prefix and suffix of the filename by an optional argument.)
+#   Tempfile.create {|f|
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#   }                       # The file is removed at block exit.
+#
+#   # Tempfile.create without a block
+#   # You need to unlink the file in non-block form.
+#   f = Tempfile.create
+#   f.puts "foo"
+#   f.close
+#   File.unlink(f.path)     # You need to unlink the file.
+#
+#   # Tempfile.create(anonymous: true) without a block
+#   f = Tempfile.create(anonymous: true)
+#   # The file is already removed because anonymous.
+#   f.path                  # => "/tmp/"  (no filename since no file)
+#   f.puts "foo"
+#   f.rewind
+#   f.read                  # => "foo\n"
+#   f.close
+#
+#   # Tempfile.create(anonymous: true) with a block
+#   Tempfile.create(anonymous: true) {|f|
+#     # The file is already removed because anonymous.
+#     f.path                # => "/tmp/"  (no filename since no file)
+#     f.puts "foo"
+#     f.rewind
+#     f.read                # => "foo\n"
+#   }
+#
+#   # Not recommended: Tempfile.new without a block
 #   file = Tempfile.new('foo')
 #   file.path      # => A unique filename in the OS's temp directory,
 #                  #    e.g.: "/tmp/foo.24722.0"
@@ -30,7 +73,27 @@ require 'tmpdir'
 #   file.close
 #   file.unlink    # deletes the temp file
 #
-# == Good practices
+# == About Tempfile.new and Tempfile.open
+#
+# This section does not apply to Tempfile.create because
+# it returns a File object (not a Tempfile object).
+#
+# When you create a Tempfile object,
+# it will create a temporary file with a unique filename. A Tempfile
+# objects behaves just like a File object, and you can perform all the usual
+# file operations on it: reading data, writing data, changing its permissions,
+# etc. So although this class does not explicitly document all instance methods
+# supported by File, you can in fact call any File instance method on a
+# Tempfile object.
+#
+# A Tempfile object has a finalizer to remove the temporary file.
+# This means that the temporary file is removed via GC.
+# This can cause several problems:
+#
+# - Long GC intervals and conservative GC can accumulate temporary files that are not removed.
+# - Temporary files are not removed if Ruby exits abnormally (such as SIGKILL, SEGV).
+#
+# There are legacy good practices for Tempfile.new and Tempfile.open as follows.
 #
 # === Explicit close
 #
@@ -71,12 +134,17 @@ require 'tmpdir'
 # be able to read from or write to the Tempfile, and you do not need to
 # know the Tempfile's filename either.
 #
+# Also, this guarantees the temporary file is removed even if Ruby exits abnormally.
+# The OS reclaims the storage for the temporary file when the file is closed or
+# the Ruby process exits (normally or abnormally).
+#
 # For example, a practical use case for unlink-after-creation would be this:
 # you need a large byte buffer that's too large to comfortably fit in RAM,
 # e.g. when you're writing a web server and you want to buffer the client's
 # file upload data.
 #
-# Please refer to #unlink for more information and a code example.
+# `Tempfile.create(anonymous: true)` supports this behavior.
+# It also works on Windows.
 #
 # == Minor notes
 #
