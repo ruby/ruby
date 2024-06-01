@@ -146,22 +146,40 @@ class Gem::S3URISigner
     require_relative "request"
     require_relative "request/connection_pools"
     require "json"
-
-    iam_info = ec2_metadata_request(EC2_IAM_INFO)
+    token = ec2_metadata_token
+    iam_info = ec2_metadata_request(EC2_IAM_INFO, token)
     # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
     role_name = iam_info["InstanceProfileArn"].split("/").last
-    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name)
+    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name, token)
   end
 
-  def ec2_metadata_request(url)
+  def ec2_metadata_request(url, token)
     uri = Gem::URI(url)
     @request_pool ||= create_request_pool(uri)
     request = Gem::Request.new(uri, Gem::Net::HTTP::Get, nil, @request_pool)
-    response = request.fetch
+    response = request.fetch do |req|
+      req.add_field "X-aws-ec2-metadata-token", token
+    end
 
     case response
     when Gem::Net::HTTPOK then
       JSON.parse(response.body)
+    else
+      raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
+    end
+  end
+
+  def ec2_metadata_token
+    uri = Gem::URI(EC2_IAM_TOKEN)
+    @request_pool ||= create_request_pool(uri)
+    request = Gem::Request.new(uri, Gem::Net::HTTP::Put, nil, @request_pool)
+    response = request.fetch do |req|
+      req.add_field "X-aws-ec2-metadata-token-ttl-seconds", 60
+    end
+
+    case response
+    when Gem::Net::HTTPOK then
+      response.body
     else
       raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
     end
@@ -174,6 +192,7 @@ class Gem::S3URISigner
   end
 
   BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
+  EC2_IAM_TOKEN = "http://169.254.169.254/latest/api/token"
   EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info"
   EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
 end
