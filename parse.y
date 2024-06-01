@@ -2588,21 +2588,21 @@ rb_parser_ast_token_free(rb_parser_t *p, rb_parser_ast_token_t *token)
 static void
 rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 {
-    void (*free_func)(rb_parser_t *, rb_parser_ary_data) = NULL;
+# define foreach_ary(ptr) \
+    for (rb_parser_ary_data *ptr = ary->data, *const end_ary_data = ptr + ary->len; \
+         ptr < end_ary_data; ptr++)
     switch (ary->data_type) {
       case PARSER_ARY_DATA_AST_TOKEN:
-        free_func = (void (*)(rb_parser_t *, rb_parser_ary_data))rb_parser_ast_token_free;
+        foreach_ary(data) {rb_parser_ast_token_free(p, *data);}
         break;
       case PARSER_ARY_DATA_SCRIPT_LINE:
-        free_func = (void (*)(rb_parser_t *, rb_parser_ary_data))rb_parser_string_free;
+        foreach_ary(data) {rb_parser_string_free(p, *data);}
         break;
       default:
         rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
         break;
     }
-    for (long i = 0; i < ary->len; i++) {
-        free_func(p, ary->data[i]);
-    }
+# undef foreach_ary
     xfree(ary);
 }
 
