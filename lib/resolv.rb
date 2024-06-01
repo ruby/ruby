@@ -513,27 +513,28 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      protocols = {}
+      truncated = {}
       requesters = {}
+      udp_requester = begin
+        make_udp_requester
+      rescue Errno::EACCES
+        # fall back to TCP
+      end
       senders = {}
+
       begin
         @config.resolv(name) do |candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
 
-          protocol = protocols[candidate] ||= :udp
-          requester = requesters[[protocol, nameserver]] ||=
-            case protocol
-            when :udp
-              begin
-                make_udp_requester
-              rescue Errno::EACCES
-                make_tcp_requester(nameserver, port)
-              end
-            when :tcp
-              make_tcp_requester(nameserver, port)
+          requester = requesters.fetch([nameserver, port]) do
+            if !truncated[candidate] && udp_requester
+              udp_requester
+            else
+              requesters[[nameserver, port]] = make_tcp_requester(nameserver, port)
             end
+          end
 
           unless sender = senders[[candidate, requester, nameserver, port]]
             sender = requester.sender(msg, candidate, nameserver, port)
@@ -544,9 +545,8 @@ class Resolv
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
-              requester.close
               # Retry via TCP:
-              protocols[candidate] = :tcp
+              truncated[candidate] = true
               redo
             else
               yield(reply, reply_name)
@@ -559,6 +559,7 @@ class Resolv
           end
         end
       ensure
+        udp_requester&.close
         requesters.each_value { |requester| requester&.close }
       end
     end
