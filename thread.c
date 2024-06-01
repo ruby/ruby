@@ -1541,10 +1541,12 @@ rb_nogvl(void *(*func)(void *), void *data1,
         }
     }
 
+    rb_vm_t *volatile saved_vm = vm;
     BLOCKING_REGION(th, {
         val = func(data1);
         saved_errno = rb_errno();
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
+    vm = saved_vm;
 
     if (is_main_thread) vm->ubf_async_safe = 0;
 
