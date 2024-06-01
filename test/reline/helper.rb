@@ -22,29 +22,36 @@ module Reline
   class <<self
     def test_mode(ansi: false)
       @original_iogate = IOGate
-      remove_const('IOGate')
-      const_set('IOGate', ansi ? Reline::ANSI : Reline::GeneralIO)
+
       if ENV['RELINE_TEST_ENCODING']
         encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
       else
         encoding = Encoding::UTF_8
       end
-      @original_get_screen_size = IOGate.method(:get_screen_size)
-      IOGate.singleton_class.remove_method(:get_screen_size)
-      def IOGate.get_screen_size
-        [24, 80]
+
+      if ansi
+        new_io_gate = ANSI.new
+        # Setting ANSI gate's screen size through set_screen_size will also change the tester's stdin's screen size
+        # Let's avoid that side-effect by stubbing the get_screen_size method
+        new_io_gate.define_singleton_method(:get_screen_size) do
+          [24, 80]
+        end
+        new_io_gate.define_singleton_method(:encoding) do
+          encoding
+        end
+      else
+        new_io_gate = Dumb.new(encoding: encoding)
       end
-      Reline::GeneralIO.reset(encoding: encoding) unless ansi
+
+      remove_const('IOGate')
+      const_set('IOGate', new_io_gate)
       core.config.instance_variable_set(:@test_mode, true)
       core.config.reset
     end
 
     def test_reset
-      IOGate.singleton_class.remove_method(:get_screen_size)
-      IOGate.define_singleton_method(:get_screen_size, @original_get_screen_size)
       remove_const('IOGate')
       const_set('IOGate', @original_iogate)
-      Reline::GeneralIO.reset
       Reline.instance_variable_set(:@core, nil)
     end
 
@@ -146,7 +153,7 @@ class Reline::TestCase < Test::Unit::TestCase
       expected.bytesize, byte_pointer,
       <<~EOM)
         <#{expected.inspect} (#{expected.encoding.inspect})> expected but was
-        <#{chunk.inspect} (#{chunk.encoding.inspect})> in <Terminal #{Reline::GeneralIO.encoding.inspect}>
+        <#{chunk.inspect} (#{chunk.encoding.inspect})> in <Terminal #{Reline::Dumb.new.encoding.inspect}>
       EOM
   end
 

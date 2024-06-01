@@ -412,7 +412,7 @@ class Reline::LineEditor
         # do nothing
       elsif level == :blank
         Reline::IOGate.move_cursor_column base_x
-        @output.write "#{Reline::IOGate::RESET_COLOR}#{' ' * width}"
+        @output.write "#{Reline::IOGate.reset_color_sequence}#{' ' * width}"
       else
         x, w, content = new_items[level]
         cover_begin = base_x != 0 && new_levels[base_x - 1] == level
@@ -422,7 +422,7 @@ class Reline::LineEditor
           content, pos = Reline::Unicode.take_mbchar_range(content, base_x - x, width, cover_begin: cover_begin, cover_end: cover_end, padding: true)
         end
         Reline::IOGate.move_cursor_column x + pos
-        @output.write "#{Reline::IOGate::RESET_COLOR}#{content}#{Reline::IOGate::RESET_COLOR}"
+        @output.write "#{Reline::IOGate.reset_color_sequence}#{content}#{Reline::IOGate.reset_color_sequence}"
       end
       base_x += width
     end

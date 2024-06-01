@@ -7,6 +7,7 @@ require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
 require 'reline/terminfo'
+require 'reline/io'
 require 'reline/face'
 require 'rbconfig'
 
@@ -336,7 +337,7 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       pre_input_hook&.call
-      unless Reline::IOGate == Reline::GeneralIO
+      unless Reline::IOGate.dumb?
         @dialog_proc_list.each_pair do |name_sym, d|
           line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
         end
@@ -473,7 +474,7 @@ module Reline
     end
 
     private def may_req_ambiguous_char_width
-      @ambiguous_width = 2 if io_gate == Reline::GeneralIO or !STDOUT.tty?
+      @ambiguous_width = 2 if io_gate.dumb? or !STDOUT.tty?
       return if defined? @ambiguous_width
       io_gate.move_cursor_column(0)
       begin
@@ -573,31 +574,19 @@ module Reline
 
     # Need to change IOGate when `$stdout.tty?` change from false to true by `$stdout.reopen`
     # Example: rails/spring boot the application in non-tty, then run console in tty.
-    if ENV['TERM'] != 'dumb' && core.io_gate == Reline::GeneralIO && $stdout.tty?
-      require 'reline/ansi'
+    if ENV['TERM'] != 'dumb' && core.io_gate.dumb? && $stdout.tty?
+      require 'reline/io/ansi'
       remove_const(:IOGate)
-      const_set(:IOGate, Reline::ANSI)
+      const_set(:IOGate, Reline::ANSI.new)
     end
   end
 end
 
-require 'reline/general_io'
-io = Reline::GeneralIO
-unless ENV['TERM'] == 'dumb'
-  case RbConfig::CONFIG['host_os']
-  when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
-    require 'reline/windows'
-    tty = (io = Reline::Windows).msys_tty?
-  else
-    tty = $stdout.tty?
-  end
-end
-Reline::IOGate = if tty
-  require 'reline/ansi'
-  Reline::ANSI
-else
-  io
-end
+
+Reline::IOGate = Reline::IO.decide_io_gate
+
+# Deprecated
+Reline::GeneralIO = Reline::Dumb.new
 
 Reline::Face.load_initial_configs
 
