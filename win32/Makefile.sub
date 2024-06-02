@@ -1438,3 +1438,8 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 !endif
 
 exts: rubyspec-capiext
+
+yesterday:
+	for /f "usebackq" %H in \
+	    (`$(GIT) -C $(srcdir) log -1 "--before=00:00+0900" "--format=%H"`) do \
+	    $(GIT) -C $(srcdir) reset --hard %%H
