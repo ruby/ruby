@@ -8,14 +8,14 @@
 
     For RubyGems, you will also need:
 
-    * OpenSSL 1.1.x or 3.0.x / LibreSSL
-    * libyaml 0.1.7 or later
-    * zlib
+    * [OpenSSL] 1.1.x or 3.0.x / [LibreSSL]
+    * [libyaml] 0.1.7 or later
+    * [zlib]
 
     If you want to build from the git repository, you will also need:
 
-    * autoconf - 2.67 or later
-    * gperf - 3.1 or later
+    * [autoconf] - 2.67 or later
+    * [gperf] - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
     * ruby - 3.0 or later
         * We can upgrade this version to system ruby version of the latest
@@ -23,10 +23,9 @@
 
 2. Install optional, recommended dependencies:
 
-    * libffi (to build fiddle)
-    * gmp (if you with to accelerate Bignum operations)
-    * libexecinfo (FreeBSD)
-    * rustc - 1.58.0 or later, if you wish to build
+    * [libffi] (to build fiddle)
+    * [gmp] (if you with to accelerate Bignum operations)
+    * [rustc] - 1.58.0 or later, if you wish to build
       [YJIT](rdoc-ref:RubyVM::YJIT).
 
     If you installed the libraries needed for extensions (openssl, readline,
@@ -40,6 +39,16 @@
       CONFIGURE_ARGS="${CONFIGURE_ARGS} --with-$ext-dir=$(brew --prefix $ext)"
     done
     ```
+
+[OpenSSL]: https://www.openssl.org
+[LibreSSL]: https://www.libressl.org
+[libyaml]: https://github.com/yaml/libyaml/
+[zlib]: https://www.zlib.net
+[autoconf]: https://www.gnu.org/software/autoconf/
+[gperf]: https://www.gnu.org/software/gperf/
+[libffi]: https://sourceware.org/libffi/
+[gmp]: https://gmplib.org
+[rustc]: https://www.rust-lang.org
 
 ## Quick start guide
 
