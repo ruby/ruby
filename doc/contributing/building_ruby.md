@@ -130,6 +130,9 @@ to run tests on 8 processes, use:
 make test-all -j8
 ```
 
+**CAUTION**: GNU make 3 is missing some features for parallel execution, we
+recommend to upgrade to GNU make 4 or later.
+
 We can also set `MAKEFLAGS` to run _all_ `make` commands in parallel.
 
 Having the right `--jobs` flag will ensure all processors are utilized when building software projects. To do this effectively, you can set `MAKEFLAGS` in your shell configuration/profile:
