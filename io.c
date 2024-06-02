@@ -10890,7 +10890,8 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  Each of the arguments +read_ios+, +write_ios+, and +error_ios+
  *  is an array of IO objects.
  *
- *  Argument +timeout+ is an integer timeout interval in seconds.
+ *  Argument +timeout+ is a numeric value (such as integer or float) timeout
+ *  interval in seconds.
  *
  *  The method monitors the \IO objects given in all three arrays,
  *  waiting for some to be ready;
