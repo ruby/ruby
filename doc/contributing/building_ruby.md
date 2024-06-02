@@ -27,7 +27,7 @@
     * gmp (if you with to accelerate Bignum operations)
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later, if you wish to build
-      [YJIT](https://docs.ruby-lang.org/en/master/RubyVM/YJIT.html).
+      [YJIT](rdoc-ref:RubyVM::YJIT).
 
     If you installed the libraries needed for extensions (openssl, readline,
     libyaml, zlib) into other than the OS default place, typically using
@@ -49,8 +49,7 @@
 
     1. Build from the tarball:
 
-        Download the latest tarball from
-        [ruby-lang.org](https://www.ruby-lang.org/en/downloads/) and extract
+        Download the latest tarball from [Download Ruby] page and extract
         it. Example for Ruby 3.0.2:
 
         ``` shell
@@ -115,6 +114,8 @@
       generation with different permissions, you can use `make SUDO=sudo
       install`.
 
+[Download Ruby]: https://www.ruby-lang.org/en/downloads/
+
 ### Unexplainable Build Errors
 
 If you are having unexplainable build errors, after saving all your work, try
@@ -125,7 +126,8 @@ cause build failures.
 
 ## Building on Windows
 
-The documentation for building on Windows can be found [here](../windows.md).
+The documentation for building on Windows can be found in [the separated
+file](../windows.md).
 
 ## More details
 
@@ -226,26 +228,28 @@ Please note, however, the following caveats!
 
 * ASAN will not work properly on any currently released version of Ruby; the
   necessary support is currently only present on Ruby's master branch (and the
-  whole test suite passes only as of commit
-  [9d0a5148ae062a0481a4a18fbeb9cfd01dc10428](https://bugs.ruby-lang.org/projects/ruby-master/repository/git/revisions/9d0a5148ae062a0481a4a18fbeb9cfd01dc10428))
-* Due to [this bug](https://bugs.ruby-lang.org/issues/20243), Clang generates
-  code for threadlocal variables which doesn't work with M:N threading. Thus,
-  it's necessary to disable M:N threading support at build time for now (with
-  the `-DUSE_MN_THREADS=0` configure argument).
-* ASAN will only work when using Clang version 18 or later - it requires [this
-  bugfix](https://github.com/llvm/llvm-project/pull/75290) related to
-  multithreaded `fork`.
+  whole test suite passes only as of commit [Revision 9d0a5148]).
+* Due to [Bug #20243], Clang generates code for threadlocal variables which
+  doesn't work with M:N threading. Thus, it's necessary to disable M:N
+  threading support at build time for now (with the `-DUSE_MN_THREADS=0`
+  configure argument).
+* ASAN will only work when using Clang version 18 or later - it requires
+  [llvm/llvm-project#75290] related to multithreaded `fork`.
 * ASAN has only been tested so far with Clang on Linux. It may or may not work
   with other compilers or on other platforms - please file an issue on
-  [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if you run into
-  problems with such configurations (or, to report that they actually work
-  properly!)
+  [Ruby Issue Tracking System] if you run into problems with such configurations
+  (or, to report that they actually work properly!)
 * In particular, although I have not yet tried it, I have reason to believe
   ASAN will _not_ work properly on macOS yet - the fix for the multithreaded
-  fork issue was actually reverted for macOS (see
-  [here](https://github.com/llvm/llvm-project/commit/2a03854e4ce9bb1bcd79a211063bc63c4657f92c)). Please
-  open an issue on [https://bugs.ruby-lang.org](https://bugs.ruby-lang.org) if
-  this is a problem for you.
+  fork issue was actually reverted for macOS (see [llvm/llvm-project#75659]).
+  Please open an issue on [Ruby Issue Tracking System] if this is a problem for
+  you.
+
+[Revision 9d0a5148]: https://bugs.ruby-lang.org/projects/ruby-master/repository/git/revisions/9d0a5148ae062a0481a4a18fbeb9cfd01dc10428
+[Bug #20243]: https://bugs.ruby-lang.org/issues/20243
+[llvm/llvm-project#75290]: https://github.com/llvm/llvm-project/pull/75290
+[llvm/llvm-project#75659]: https://github.com/llvm/llvm-project/pull/75659#issuecomment-1861584777
+[Ruby Issue Tracking System]: https://bugs.ruby-lang.org
 
 ## How to measure coverage of C and Ruby code
 
