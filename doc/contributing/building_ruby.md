@@ -145,16 +145,13 @@ about Ruby's build to help out.
 
 ### Running make scripts in parallel
 
-In GNU make and BSD make implementations, to run a specific make script in
+In GNU make[^caution-gmake-3] and BSD make implementations, to run a specific make script in
 parallel, pass the flag `-j<number of processes>`. For instance, to run tests
 on 8 processes, use:
 
 ``` shell
 make test-all -j8
 ```
-
-**CAUTION**: GNU make 3 is missing some features for parallel execution, we
-recommend to upgrade to GNU make 4 or later.
 
 We can also set `MAKEFLAGS` to run _all_ `make` commands in parallel.
 
@@ -175,6 +172,9 @@ export MAKEFLAGS="--jobs "(nproc)
 # On Linux with Bash/ZSH shell:
 export MAKEFLAGS="--jobs $(nproc)"
 ```
+
+[^caution-gmake-3]: **CAUTION**: GNU make 3 is missing some features for parallel execution, we
+recommend to upgrade to GNU make 4 or later.
 
 ### Miniruby vs Ruby
 
