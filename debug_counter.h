@@ -356,7 +356,7 @@ RB_DEBUG_COUNTER(load_path_is_not_realpath)
 
 enum rb_debug_counter_type {
 #define RB_DEBUG_COUNTER(name) RB_DEBUG_COUNTER_##name,
-#include __FILE__
+#include "debug_counter.h"
     RB_DEBUG_COUNTER_MAX
 #undef RB_DEBUG_COUNTER
 };
