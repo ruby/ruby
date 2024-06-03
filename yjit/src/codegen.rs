@@ -9070,6 +9070,14 @@ fn gen_send(
     })
 }
 
+fn gen_sendforward(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    return gen_send(jit, asm, ocb);
+}
+
 fn gen_invokeblock(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -9251,6 +9259,14 @@ fn gen_invokesuper(
             vec![EC, CFP, (cd as usize).into(), VALUE(blockiseq as usize).into()],
         )
     })
+}
+
+fn gen_invokesuperforward(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    return gen_invokesuper(jit, asm, ocb);
 }
 
 fn gen_invokesuper_specialized(
@@ -10232,8 +10248,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getblockparam => Some(gen_getblockparam),
         YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
         YARVINSN_send => Some(gen_send),
+        YARVINSN_sendforward => Some(gen_sendforward),
         YARVINSN_invokeblock => Some(gen_invokeblock),
         YARVINSN_invokesuper => Some(gen_invokesuper),
+        YARVINSN_invokesuperforward => Some(gen_invokesuperforward),
         YARVINSN_leave => Some(gen_leave),
 
         YARVINSN_getglobal => Some(gen_getglobal),
