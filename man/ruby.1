@@ -561,7 +561,7 @@ Reaching the old malloc limit.
 .El
 .Pp
 There are currently 4 possible areas where the GC may be tuned by
-the following 11 environment variables:
+the following environment variables:
 .Bl -hang -compact -width "RUBY_GC_HEAP_INIT_SLOTS"
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
 Initial allocation slots. Applies to all slot sizes.  Introduced in Ruby 2.1, default: 10000.
@@ -591,6 +591,12 @@ where R is this factor and N is the number of old objects after the
 last full GC.
 Introduced in Ruby 2.1.1, default: 2.0
 .Pp
+.It Ev RUBY_GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO
+Used to calculate the
+.Li remembered_wb_unprotected_objects_limit
+using a ratio of
+.Li old_objects .
+Introduced in Ruby 3.3, default: 0.1, minimum: 0.0
 .It Ev RUBY_GC_MALLOC_LIMIT
 The initial limit of young generation allocation from the malloc-family.
 GC will start when this limit is reached.
@@ -606,6 +612,31 @@ Increases the limit of young generation malloc calls, reducing
 GC frequency but increasing malloc growth until RUBY_GC_MALLOC_LIMIT_MAX
 is reached.
 Introduced in Ruby 2.1, default: 1.4, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO
+Allocate additional pages when the number of free slots is
+lower than the value
+.Li (total_slots * (this ratio)) .
+Introduced in Ruby 2.4, default: 0.2, minimum: 0.0, maximum: 1.0
+.Pp
+.It Ev RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO
+Allow to free pages when the number of free slots is greater than the value
+.Li (total_slots * (this ratio)) .
+Introduced in Ruby 2.4, default: 0.4, minimum:
+.Li RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO,
+maximum: 1.0
+.Pp
+.It Ev RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO
+Allocate slots to satisfy this formula:
+.Li free_slots = total_slots * goal_ratio
+In other words, prepare
+.Li (total_slots * goal_ratio)
+free slots.
+if this value is 0.0, then use RUBY_GC_HEAP_GROWTH_FACTOR directly.
+Introduced in Ruby 2.4, default: 0.65, minimum:
+.Li RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO,
+maximum:
+.Li RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO
 .Pp
 .It Ev RUBY_GC_OLDMALLOC_LIMIT
 The initial limit of old generation allocation from malloc,
