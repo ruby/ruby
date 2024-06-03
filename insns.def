@@ -867,20 +867,37 @@ send
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    JIT_EXEC(ec, val);
+
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
+/* invoke forward method. */
+DEFINE_INSN
+sendforward
+(CALL_DATA cd, ISEQ blockiseq)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
     CALL_DATA _cd = cd;
 
-    VALUE bh = vm_caller_setup_args(GET_EC(), GET_CFP(), &cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), &cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
 
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
-          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
-      }
+    if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
     }
 
     if (UNDEF_P(val)) {
@@ -1006,19 +1023,36 @@ invokesuper
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    JIT_EXEC(ec, val);
+
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
+/* super(args) # args.size => num */
+DEFINE_INSN
+invokesuperforward
+(CALL_DATA cd, ISEQ blockiseq)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
     CALL_DATA _cd = cd;
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh = vm_caller_setup_args(GET_EC(), GET_CFP(), &cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), &cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
 
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
-          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
-      }
+    if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
     }
 
     if (UNDEF_P(val)) {

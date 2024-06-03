@@ -2990,7 +2990,7 @@ pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry
     INSN *iobj;
     LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
     iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
-    while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+    while (!IS_INSN_ID(iobj, send) && !IS_INSN_ID(iobj, invokesuper) && !IS_INSN_ID(iobj, sendforward) && !IS_INSN_ID(iobj, invokesuperforward)) {
         iobj = (INSN*) get_prev_insn(iobj);
     }
     ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
@@ -6707,7 +6707,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             flag |= VM_CALL_FORWARDING;
             pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
             PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
-            PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+            PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
             if (popped) PUSH_INSN(ret, location, pop);
             return;
         }
@@ -9277,8 +9277,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_SEQ(ret, args);
-        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
-        pm_compile_retry_end_label(iseq, ret, retry_end_l);
+        if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+            flags |= VM_CALL_FORWARDING;
+            PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+        }
+        else {
+            PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+            pm_compile_retry_end_label(iseq, ret, retry_end_l);
+        }
 
         if (popped) PUSH_INSN(ret, location, pop);
         ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;

@@ -1465,7 +1465,16 @@ new_insn_send(rb_iseq_t *iseq, int line_no, int node_id, ID id, VALUE argc, cons
     if (blockiseq) {
         RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
     }
-    INSN *insn = new_insn_core(iseq, line_no, node_id, BIN(send), 2, operands);
+
+    INSN *insn;
+
+    if (vm_ci_flag((struct rb_callinfo *)ci) & VM_CALL_FORWARDING) {
+        insn = new_insn_core(iseq, line_no, node_id, BIN(sendforward), 2, operands);
+    }
+    else {
+        insn = new_insn_core(iseq, line_no, node_id, BIN(send), 2, operands);
+    }
+
     RB_OBJ_WRITTEN(iseq, Qundef, ci);
     RB_GC_GUARD(ci);
     return insn;
@@ -8009,7 +8018,7 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         INSN *iobj;
         LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
         iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
-        while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+        while (!IS_INSN_ID(iobj, send) && !IS_INSN_ID(iobj, invokesuper) && !IS_INSN_ID(iobj, sendforward) && !IS_INSN_ID(iobj, invokesuperforward)) {
             iobj = (INSN*) get_prev_insn(iobj);
         }
         ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
@@ -9607,9 +9616,15 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     if (type == NODE_ZSUPER) flag |= VM_CALL_ZSUPER;
     ADD_INSN(ret, node, putself);
     ADD_SEQ(ret, args);
-    ADD_INSN2(ret, node, invokesuper,
-              new_callinfo(iseq, 0, argc, flag, keywords, parent_block != NULL),
-              parent_block);
+
+    const struct rb_callinfo * ci = new_callinfo(iseq, 0, argc, flag, keywords, parent_block != NULL);
+
+    if (vm_ci_flag(ci) & VM_CALL_FORWARDING) {
+        ADD_INSN2(ret, node, invokesuperforward, ci, parent_block);
+    }
+    else {
+        ADD_INSN2(ret, node, invokesuper, ci, parent_block);
+    }
 
     if (popped) {
         ADD_INSN(ret, node, pop);
