@@ -471,8 +471,8 @@ The created string is the same as if you created it with single quotes:
   %q(1 + 1 is #{1 + 1}) # => "1 + 1 is \#{1 + 1}" # No interpolation.
   %q[foo[bar]baz]       # => "foo[bar]baz" # brackets can be nested.
   %q(foo(bar)baz)       # => "foo(bar)baz" # parenthesis can be nested.
-  %q{foo{bar}baz}       # => "foo[bar]baz" # braces can be nested.
-  %q<foo<bar>baz>       # => "foo[bar]baz" # angle brackets can be nested.
+  %q{foo{bar}baz}       # => "foo{bar}baz" # braces can be nested.
+  %q<foo<bar>baz>       # => "foo<bar>baz" # angle brackets can be nested.
 
 === <tt>% and %Q</tt>: Interpolable String Literals
 
