@@ -1,157 +1,157 @@
 E2BIG           Argument list too long
 EACCES          Permission denied
-EADDRINUSE      Address in use
+EADDRINUSE      Address already in use
 EADDRNOTAVAIL   Address not available
-EADV
+EADV            Advertise error
 EAFNOSUPPORT    Address family not supported
-EAGAIN          Resource unavailable, try again (may be the same value as [EWOULDBLOCK])
+EAGAIN          Resource temporarily unavailable, try again
 EALREADY        Connection already in progress
-EAUTH
-EBADARCH
-EBADE
-EBADEXEC
+EAUTH           Authentication error
+EBADARCH        Bad CPU type in executable
+EBADE           Bad exchange
+EBADEXEC        Bad executable
 EBADF           Bad file descriptor
-EBADFD
-EBADMACHO
+EBADFD          File descriptor in bad state
+EBADMACHO       Malformed Macho file
 EBADMSG         Bad message
-EBADR
-EBADRPC
-EBADRQC
-EBADSLT
-EBFONT
+EBADR           Invalid request descriptor
+EBADRPC         RPC struct is bad
+EBADRQC         Invalid request code
+EBADSLT         Invalid slot
+EBFONT          Bad font file format
 EBUSY           Device or resource busy
 ECANCELED       Operation canceled
-ECAPMODE
+ECAPMODE        Not permitted in capability mode
 ECHILD          No child processes
-ECHRNG
-ECOMM
+ECHRNG          Channel number out of range
+ECOMM           Communication error on send
 ECONNABORTED    Connection aborted
 ECONNREFUSED    Connection refused
 ECONNRESET      Connection reset
-EDEADLK         Resource deadlock would occur
-EDEADLOCK
+EDEADLK         Resource deadlock avoided
+EDEADLOCK       Resource deadlock avoided
 EDESTADDRREQ    Destination address required
-EDEVERR
+EDEVERR         Device error; e.g., printer paper out
 EDOM            Mathematics argument out of domain of function
-EDOOFUS
-EDOTDOT
-EDQUOT          Reserved
+EDOOFUS         Improper function use
+EDOTDOT         RFS specific error
+EDQUOT          Disk quota exceeded
 EEXIST          File exists
 EFAULT          Bad address
 EFBIG           File too large
-EFTYPE
-EHOSTDOWN
+EFTYPE          Invalid file type or format
+EHOSTDOWN       Host is down
 EHOSTUNREACH    Host is unreachable
-EHWPOISON
+EHWPOISON       Memory page has hardware error
 EIDRM           Identifier removed
-EILSEQ          Illegal byte sequence
+EILSEQ          Invalid or incomplete multibyte or wide character
 EINPROGRESS     Operation in progress
-EINTR           Interrupted function
+EINTR           Interrupted function call
 EINVAL          Invalid argument
-EIO             I/O error
-EIPSEC
+EIO             Input/output error
+EIPSEC          IPsec processing failure
 EISCONN         Socket is connected
 EISDIR          Is a directory
-EISNAM
-EKEYEXPIRED
-EKEYREJECTED
-EKEYREVOKED
-EL2HLT
-EL2NSYNC
-EL3HLT
-EL3RST
-ELIBACC
-ELIBBAD
-ELIBEXEC
-ELIBMAX
-ELIBSCN
-ELNRNG
+EISNAM          Is a named file type
+EKEYEXPIRED     Key has expired
+EKEYREJECTED    Key was rejected by service
+EKEYREVOKED     Key has been revoked
+EL2HLT          Level 2 halted
+EL2NSYNC        Level 2 not synchronized
+EL3HLT          Level 3 halted
+EL3RST          Level 3 reset
+ELIBACC         Cannot access a needed shared library
+ELIBBAD         Accessing a corrupted shared library
+ELIBEXEC        Cannot exec a shared library directly
+ELIBMAX         Attempting to link in too many shared libraries
+ELIBSCN         .lib section in a.out corrupted
+ELNRNG          Link number out of range
 ELOOP           Too many levels of symbolic links
-EMEDIUMTYPE
-EMFILE          File descriptor value too large
+EMEDIUMTYPE     Wrong medium type
+EMFILE          Too many open files
 EMLINK          Too many links
-EMSGSIZE        Message too large
-EMULTIHOP       Reserved
+EMSGSIZE        Message too long
+EMULTIHOP       Multihop attempted
 ENAMETOOLONG    Filename too long
-ENAVAIL
-ENEEDAUTH
+ENAVAIL         No XENIX semaphores available
+ENEEDAUTH       Need authenticator
 ENETDOWN        Network is down
 ENETRESET       Connection aborted by network
 ENETUNREACH     Network unreachable
-ENFILE          Too many files open in system
-ENOANO
-ENOATTR
+ENFILE          Too many open files in system
+ENOANO          No anode
+ENOATTR         Attribute not found
 ENOBUFS         No buffer space available
-ENOCSI
-ENODATA         [OB XSR] [Option Start] No message is available on the STREAM head read queue [Option End]
+ENOCSI          No CSI structure available
+ENODATA         No data available
 ENODEV          No such device
 ENOENT          No such file or directory
-ENOEXEC         Executable file format error
-ENOKEY
+ENOEXEC         Exec format error
+ENOKEY          Required key not available
 ENOLCK          No locks available
-ENOLINK         Reserved
-ENOMEDIUM
-ENOMEM          Not enough space
+ENOLINK         Link has been severed
+ENOMEDIUM       No medium found
+ENOMEM          Not enough space/cannot allocate memory
 ENOMSG          No message of the desired type
-ENONET
-ENOPKG
-ENOPOLICY
+ENONET          Machine is not on the network
+ENOPKG          Package not installed
+ENOPOLICY       No such policy
 ENOPROTOOPT     Protocol not available
 ENOSPC          No space left on device
-ENOSR           [OB XSR] [Option Start] No STREAM resources [Option End]
-ENOSTR          [OB XSR] [Option Start] Not a STREAM [Option End]
-ENOSYS          Functionality not supported
-ENOTBLK
-ENOTCAPABLE
+ENOSR           No STREAM resources
+ENOSTR          Not a STREAM
+ENOSYS          Functionality not implemented
+ENOTBLK         Block device required
+ENOTCAPABLE     Capabilities insufficient
 ENOTCONN        The socket is not connected
-ENOTDIR         Not a directory or a symbolic link to a directory
+ENOTDIR         Not a directory
 ENOTEMPTY       Directory not empty
-ENOTNAM
+ENOTNAM         Not a XENIX named type file
 ENOTRECOVERABLE State not recoverable
 ENOTSOCK        Not a socket
-ENOTSUP         Not supported (may be the same value as [EOPNOTSUPP])
+ENOTSUP         Operation not supported
 ENOTTY          Inappropriate I/O control operation
-ENOTUNIQ
+ENOTUNIQ        Name not unique on network
 ENXIO           No such device or address
-EOPNOTSUPP      Operation not supported on socket (may be the same value as [ENOTSUP])
+EOPNOTSUPP      Operation not supported on socket
 EOVERFLOW       Value too large to be stored in data type
-EOWNERDEAD      Previous owner died
+EOWNERDEAD      Owner died
 EPERM           Operation not permitted
-EPFNOSUPPORT
+EPFNOSUPPORT    Protocol family not supported
 EPIPE           Broken pipe
-EPROCLIM
-EPROCUNAVAIL
-EPROGMISMATCH
-EPROGUNAVAIL
+EPROCLIM        Too many processes
+EPROCUNAVAIL    Bad procedure for program
+EPROGMISMATCH   Program version wrong
+EPROGUNAVAIL    RPC program isn't available
 EPROTO          Protocol error
 EPROTONOSUPPORT Protocol not supported
 EPROTOTYPE      Protocol wrong type for socket
-EPWROFF
-EQFULL
+EPWROFF         Device power is off
+EQFULL          Interface output queue is full
 ERANGE          Result too large
-EREMCHG
-EREMOTE
-EREMOTEIO
-ERESTART
-ERFKILL
+EREMCHG         Remote address changed
+EREMOTE         Object is remote
+EREMOTEIO       Remote I/O error
+ERESTART        Interrupted system call should be restarted
+ERFKILL         Operation not possible due to RF-kill
 EROFS           Read-only file system
-ERPCMISMATCH
-ESHLIBVERS
-ESHUTDOWN
-ESOCKTNOSUPPORT
-ESPIPE          Invalid seek
+ERPCMISMATCH    RPC version wrong
+ESHLIBVERS      Shared library version mismatch
+ESHUTDOWN       Cannot send after transport endpoint shutdown
+ESOCKTNOSUPPORT Socket type not supported
+ESPIPE          Illegal seek
 ESRCH           No such process
-ESRMNT
-ESTALE          Reserved
-ESTRPIPE
-ETIME           [OB XSR] [Option Start] Stream ioctl() timeout [Option End]
+ESRMNT          Server mount error
+ESTALE          Stale file handle
+ESTRPIPE        Streams pipe error
+ETIME           Timer expired
 ETIMEDOUT       Connection timed out
-ETOOMANYREFS
+ETOOMANYREFS    Too many references: cannot splice
 ETXTBSY         Text file busy
-EUCLEAN
-EUNATCH
-EUSERS
-EWOULDBLOCK     Operation would block (may be the same value as [EAGAIN])
-EXDEV           Cross-device link
-EXFULL
-ELAST           Largest errno
+EUCLEAN         Structure needs cleaning
+EUNATCH         Protocol drive not attached
+EUSERS          Too many users
+EWOULDBLOCK     Operation would block
+EXDEV           Invalid cross-device link
+EXFULL          Exchange full
+ELAST           Largest errno value
