@@ -8955,18 +8955,22 @@ time_to_datetime(VALUE self)
 static VALUE
 date_to_time(VALUE self)
 {
+    VALUE t;
+
     get_d1a(self);
 
     if (m_julian_p(adat)) {
-        VALUE tmp = d_lite_gregorian(self);
-        get_d1b(tmp);
+        self = d_lite_gregorian(self);
+        get_d1b(self);
         adat = bdat;
     }
 
-    return f_local3(rb_cTime,
+    t = f_local3(rb_cTime,
         m_real_year(adat),
         INT2FIX(m_mon(adat)),
         INT2FIX(m_mday(adat)));
+    RB_GC_GUARD(self); /* may be the converted gregorian */
+    return t;
 }
 
 /*
@@ -9055,6 +9059,7 @@ datetime_to_time(VALUE self)
 		   f_add(INT2FIX(m_sec(dat)),
 			 m_sf_in_sec(dat)),
 		   INT2FIX(m_of(dat)));
+	RB_GC_GUARD(self); /* may be the converted gregorian */
 	return t;
     }
 }
