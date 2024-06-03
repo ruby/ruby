@@ -447,6 +447,9 @@ do not add an example if it provides the same information given
 in the synopsis or details.  The purpose of examples is not to prove
 what the details are stating.
 
+For corner cases such as atypical usage,
+briefly mention the behavior, but do not provides examples.
+
 ### Argument Description (if necessary)
 
 For methods that require arguments, if not obvious and not explicitly
@@ -465,18 +468,18 @@ details, and not implicitly shown in the examples.
 If there is more than one argument or block argument, use a
 [labeled list](rdoc-ref:RDoc::MarkupReference@Labeled+Lists).
 
-### Corner Cases and Exceptions
+### Exceptions (Optional)
 
-For corner cases of methods, such as atypical usage, briefly mention
-the behavior, but do not provide any examples.
+Consider listing the specific exceptions that may be raised.
+This can aid the user in crafting effective rescue clauses.
 
-Only document exceptions raised if they are not obvious.  For example,
-if you have stated earlier than an argument type must be an integer,
-you do not need to document that a `TypeError` is raised if a non-integer
-is passed.  Do not provide examples of exceptions being raised unless
-that is a common case, such as `Hash#fetch` raising a `KeyError`.
+Pro tip: check the method's tests to discover which exceptions may be raised,
+and why.
 
-### Related Methods (optional)
+Include examples for an exception only if the exception is commonly raised;
+e.g., `Hash#fetch` raising `KeyError`.
+
+### Related Methods (Optional)
 
 In some cases, it is useful to document which methods are related to
 the current method.  For example, documentation for `Hash#[]` might
