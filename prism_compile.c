@@ -292,7 +292,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
         encoding = scope_node->encoding;
     }
 
-    VALUE value = rb_enc_interned_str((const char *) pm_string_source(string), pm_string_length(string), encoding);
+    VALUE value = rb_enc_literal_str((const char *) pm_string_source(string), pm_string_length(string), encoding);
     rb_enc_str_coderange(value);
 
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
@@ -987,9 +987,12 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NULL;
 
-    pm_compile_branch_condition(iseq, ret, predicate, then_label, else_label, false, scope_node);
+    DECL_ANCHOR(cond_seq);
+    INIT_ANCHOR(cond_seq);
+    pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, false, scope_node);
+    PUSH_SEQ(ret, cond_seq);
 
-    rb_code_location_t conditional_location;
+    rb_code_location_t conditional_location = { 0 };
     VALUE branches = Qfalse;
 
     if (then_label->refcnt && else_label->refcnt && PM_BRANCH_COVERAGE_P(iseq)) {
@@ -2642,7 +2645,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             const char *name = rb_id2name(id);
 
             if (name && strlen(name) > 0 && name[0] != '_') {
-                COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")", rb_id2str(id));
+                COMPILE_ERROR(iseq, location.line, "illegal variable in alternative pattern (%"PRIsVALUE")", rb_id2str(id));
                 return COMPILE_NG;
             }
         }
@@ -2990,6 +2993,264 @@ pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry
     }
 }
 
+static const char *
+pm_iseq_builtin_function_name(const pm_scope_node_t *scope_node, const pm_node_t *receiver, ID method_id)
+{
+    const char *name = rb_id2name(method_id);
+    static const char prefix[] = "__builtin_";
+    const size_t prefix_len = sizeof(prefix) - 1;
+
+    if (receiver == NULL) {
+        if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
+            // __builtin_foo
+            return &name[prefix_len];
+        }
+    }
+    else if (PM_NODE_TYPE_P(receiver, PM_CALL_NODE)) {
+        if (PM_NODE_FLAG_P(receiver, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
+            const pm_call_node_t *cast = (const pm_call_node_t *) receiver;
+            if (pm_constant_id_lookup(scope_node, cast->name) == rb_intern_const("__builtin")) {
+                // __builtin.foo
+                return name;
+            }
+        }
+    }
+    else if (PM_NODE_TYPE_P(receiver, PM_CONSTANT_READ_NODE)) {
+        const pm_constant_read_node_t *cast = (const pm_constant_read_node_t *) receiver;
+        if (pm_constant_id_lookup(scope_node, cast->name) == rb_intern_const("Primitive")) {
+            // Primitive.foo
+            return name;
+        }
+    }
+
+    return NULL;
+}
+
+// Compile Primitive.attr! :leaf, ...
+static int
+pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_line_column_t *node_location)
+{
+    if (arguments == NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "attr!: no argument");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *argument;
+    PM_NODE_LIST_FOREACH(&arguments->arguments, index, argument) {
+        if (!PM_NODE_TYPE_P(argument, PM_SYMBOL_NODE)) {
+            COMPILE_ERROR(iseq, node_location->line, "non symbol argument to attr!: %s", pm_node_type_to_str(PM_NODE_TYPE(argument)));
+            return COMPILE_NG;
+        }
+
+        VALUE symbol = pm_static_literal_value(iseq, argument, scope_node);
+        VALUE string = rb_sym_to_s(symbol);
+
+        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
+        }
+        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
+        }
+        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
+            iseq_set_use_block(iseq);
+        }
+        else {
+            COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %s", RSTRING_PTR(string));
+            return COMPILE_NG;
+        }
+    }
+
+    return COMPILE_OK;
+}
+
+static int
+pm_compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_line_column_t *node_location, int popped)
+{
+    if (arguments == NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "arg!: no argument");
+        return COMPILE_NG;
+    }
+
+    if (arguments->arguments.size != 1) {
+        COMPILE_ERROR(iseq, node_location->line, "arg!: too many argument");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *argument = arguments->arguments.nodes[0];
+    if (!PM_NODE_TYPE_P(argument, PM_SYMBOL_NODE)) {
+        COMPILE_ERROR(iseq, node_location->line, "non symbol argument to arg!: %s", pm_node_type_to_str(PM_NODE_TYPE(argument)));
+        return COMPILE_NG;
+    }
+
+    if (!popped) {
+        ID name = parse_string_symbol(scope_node, ((const pm_symbol_node_t *) argument));
+        int index = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size - get_local_var_idx(iseq, name);
+
+        debugs("id: %s idx: %d\n", rb_id2name(name), index);
+        PUSH_GETLOCAL(ret, *node_location, index, get_lvar_level(iseq));
+    }
+
+    return COMPILE_OK;
+}
+
+static int
+pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_call_node_t *call_node, const pm_line_column_t *node_location)
+{
+    const pm_node_t *ast_node = scope_node->ast_node;
+    if (!PM_NODE_TYPE_P(ast_node, PM_DEF_NODE)) {
+        rb_bug("mandatory_only?: not in method definition");
+        return COMPILE_NG;
+    }
+
+    const pm_def_node_t *def_node = (const pm_def_node_t *) ast_node;
+    const pm_parameters_node_t *parameters_node = def_node->parameters;
+    if (parameters_node == NULL) {
+        rb_bug("mandatory_only?: in method definition with no parameters");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *body_node = def_node->body;
+    if (body_node == NULL || !PM_NODE_TYPE_P(body_node, PM_STATEMENTS_NODE) || (((const pm_statements_node_t *) body_node)->body.size != 1) || !PM_NODE_TYPE_P(((const pm_statements_node_t *) body_node)->body.nodes[0], PM_IF_NODE)) {
+        rb_bug("mandatory_only?: not in method definition with plain statements");
+        return COMPILE_NG;
+    }
+
+    const pm_if_node_t *if_node = (const pm_if_node_t *) ((const pm_statements_node_t *) body_node)->body.nodes[0];
+    if (if_node->predicate != ((const pm_node_t *) call_node)) {
+        rb_bug("mandatory_only?: can't find mandatory node");
+        return COMPILE_NG;
+    }
+
+    pm_parameters_node_t parameters = {
+        .base = parameters_node->base,
+        .requireds = parameters_node->requireds
+    };
+
+    const pm_def_node_t def = {
+        .base = def_node->base,
+        .name = def_node->name,
+        .receiver = def_node->receiver,
+        .parameters = &parameters,
+        .body = (pm_node_t *) if_node->statements,
+        .locals = {
+            .ids = def_node->locals.ids,
+            .size = parameters_node->requireds.size,
+            .capacity = def_node->locals.capacity
+        }
+    };
+
+    pm_scope_node_t next_scope_node;
+    pm_scope_node_init(&def.base, &next_scope_node, scope_node);
+
+    ISEQ_BODY(iseq)->mandatory_only_iseq = pm_iseq_new_with_opt(
+        &next_scope_node,
+        rb_iseq_base_label(iseq),
+        rb_iseq_path(iseq),
+        rb_iseq_realpath(iseq),
+        node_location->line,
+        NULL,
+        0,
+        ISEQ_TYPE_METHOD,
+        ISEQ_COMPILE_DATA(iseq)->option
+    );
+
+    pm_scope_node_destroy(&next_scope_node);
+    return COMPILE_OK;
+}
+
+static int
+pm_compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_call_node_t *call_node, const pm_line_column_t *node_location, int popped, const rb_iseq_t *parent_block, const char *builtin_func)
+{
+    const pm_arguments_node_t *arguments = call_node->arguments;
+
+    if (parent_block != NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "should not call builtins here.");
+        return COMPILE_NG;
+    }
+
+#define BUILTIN_INLINE_PREFIX "_bi"
+    char inline_func[sizeof(BUILTIN_INLINE_PREFIX) + DECIMAL_SIZE_OF(int)];
+    bool cconst = false;
+retry:;
+    const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
+
+    if (bf == NULL) {
+        if (strcmp("cstmt!", builtin_func) == 0 || strcmp("cexpr!", builtin_func) == 0) {
+            // ok
+        }
+        else if (strcmp("cconst!", builtin_func) == 0) {
+            cconst = true;
+        }
+        else if (strcmp("cinit!", builtin_func) == 0) {
+            // ignore
+            return COMPILE_OK;
+        }
+        else if (strcmp("attr!", builtin_func) == 0) {
+            return pm_compile_builtin_attr(iseq, scope_node, arguments, node_location);
+        }
+        else if (strcmp("arg!", builtin_func) == 0) {
+            return pm_compile_builtin_arg(iseq, ret, scope_node, arguments, node_location, popped);
+        }
+        else if (strcmp("mandatory_only?", builtin_func) == 0) {
+            if (popped) {
+                rb_bug("mandatory_only? should be in if condition");
+            }
+            else if (!LIST_INSN_SIZE_ZERO(ret)) {
+                rb_bug("mandatory_only? should be put on top");
+            }
+
+            PUSH_INSN1(ret, *node_location, putobject, Qfalse);
+            return pm_compile_builtin_mandatory_only_method(iseq, scope_node, call_node, node_location);
+        }
+        else if (1) {
+            rb_bug("can't find builtin function:%s", builtin_func);
+        }
+        else {
+            COMPILE_ERROR(iseq, node_location->line, "can't find builtin function:%s", builtin_func);
+            return COMPILE_NG;
+        }
+
+        int inline_index = node_location->line;
+        snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
+        builtin_func = inline_func;
+        arguments = NULL;
+        goto retry;
+    }
+
+    if (cconst) {
+        typedef VALUE(*builtin_func0)(void *, VALUE);
+        VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+        PUSH_INSN1(ret, *node_location, putobject, const_val);
+        return COMPILE_OK;
+    }
+
+    // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
+
+    DECL_ANCHOR(args_seq);
+    INIT_ANCHOR(args_seq);
+
+    int flags = 0;
+    struct rb_callinfo_kwarg *keywords = NULL;
+    int argc = pm_setup_args(arguments, call_node->block, &flags, &keywords, iseq, args_seq, scope_node, node_location);
+
+    if (argc != bf->argc) {
+        COMPILE_ERROR(iseq, node_location->line, "argc is not match for builtin function:%s (expect %d but %d)", builtin_func, bf->argc, argc);
+        return COMPILE_NG;
+    }
+
+    unsigned int start_index;
+    if (delegate_call_p(iseq, argc, args_seq, &start_index)) {
+        PUSH_INSN2(ret, *node_location, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
+    }
+    else {
+        PUSH_SEQ(ret, args_seq);
+        PUSH_INSN1(ret, *node_location, invokebuiltin, bf);
+    }
+
+    if (popped) PUSH_INSN(ret, *node_location, pop);
+    return COMPILE_OK;
+}
+
 /**
  * Compile a call node into the given iseq.
  */
@@ -3041,6 +3302,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     struct rb_callinfo_kwarg *kw_arg = NULL;
 
     int orig_argc = pm_setup_args(call_node->arguments, call_node->block, &flags, &kw_arg, iseq, ret, scope_node, &location);
+    const rb_iseq_t *previous_block = ISEQ_COMPILE_DATA(iseq)->current_block;
     const rb_iseq_t *block_iseq = NULL;
 
     if (call_node->block != NULL && PM_NODE_TYPE_P(call_node->block, PM_BLOCK_NODE)) {
@@ -3111,6 +3373,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     }
 
     if (popped) PUSH_INSN(ret, location, pop);
+    ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
 }
 
 static void
@@ -4036,9 +4299,15 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for i, j in []; end
         //
-        if (state != NULL) state->position--;
+        size_t before_position;
+        if (state != NULL) {
+            before_position = state->position;
+            state->position--;
+        }
+
         pm_compile_multi_target_node(iseq, node, parents, writes, cleanup, scope_node, state);
-        if (state != NULL) state->position++;
+        if (state != NULL) state->position = before_position;
+
         break;
       }
       default:
@@ -4095,7 +4364,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     if (state == NULL) state = &target_state;
 
     size_t base_position = state->position;
-    size_t splat_position = has_rest ? 1 : 0;
+    size_t splat_position = (has_rest || has_posts) ? 1 : 0;
 
     // Next, we'll iterate through all of the leading targets.
     for (size_t index = 0; index < lefts->size; index++) {
@@ -4257,7 +4526,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
         PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->statements);
     }
     else {
-        PUSH_INSN(ret, *node_location, putnil);
+        PUSH_SYNTHETIC_PUTNIL(ret, iseq);
     }
 
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
@@ -4323,7 +4592,6 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_line_co
     );
 
     pm_scope_node_destroy(&next_scope_node);
-    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
     erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
     if (estart->link.next != &eend->link) {
@@ -4662,7 +4930,7 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
             const pm_node_t *element = cast->elements.nodes[index];
 
             if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) {
-                COMPILE_ERROR(ERROR_ARGS "Ractor constant writes do not support **");
+                COMPILE_ERROR(iseq, location.line, "Ractor constant writes do not support **");
             }
 
             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
@@ -5059,8 +5327,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     const pm_line_column_t location = PM_NODE_START_LINE_COLUMN(parser, node);
     int lineno = (int) location.line;
 
-    if (!PM_NODE_TYPE_P(node, PM_RETURN_NODE) || !PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) || ((const pm_return_node_t *) node)->arguments != NULL) {
+    if (PM_NODE_TYPE_P(node, PM_RETURN_NODE) && PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) && ((const pm_return_node_t *) node)->arguments == NULL) {
+        // If the node that we're compiling is a return node that is redundant,
+        // then it cannot be considered a line node because the other parser
+        // eliminates it from the parse tree. In this case we must replicate
+        // this behavior.
+    } else {
+        if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
+            // If this node is a begin node and it has empty statements and also
+            // has a rescue clause, then the other parser considers it as
+            // starting on the same line as the rescue, as opposed to the
+            // location of the begin keyword. We replicate that behavior here.
+            lineno = (int) PM_NODE_START_LINE_COLUMN(parser, ((const pm_begin_node_t *) node)->rescue_clause).line;
+        }
+
         if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+            // If this node has the newline flag set and it is on a new line
+            // from the previous nodes that have been compiled for this ISEQ,
+            // then we need to emit a newline event.
             int event = RUBY_EVENT_LINE;
 
             ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
@@ -5310,7 +5594,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE((const pm_node_t *) cast->statements);
             }
             else if (!popped) {
-                PUSH_INSN(ret, location, putnil);
+                PUSH_SYNTHETIC_PUTNIL(ret, iseq);
             }
         }
         return;
@@ -5373,7 +5657,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     throw_flag = 0;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
+                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with break");
                     return;
                 }
                 else {
@@ -5395,7 +5679,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 return;
             }
 
-            COMPILE_ERROR(ERROR_ARGS "Invalid break");
+            COMPILE_ERROR(iseq, location.line, "Invalid break");
         }
         return;
       }
@@ -5409,13 +5693,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // foo.bar() {}
         // ^^^^^^^^^^^^
         const pm_call_node_t *cast = (const pm_call_node_t *) node;
-        LABEL *start = NEW_LABEL(location.line);
+        ID method_id = pm_constant_id_lookup(scope_node, cast->name);
 
-        if (cast->block) {
-            PUSH_LABEL(ret, start);
+        const pm_location_t *message_loc = &cast->message_loc;
+        if (message_loc->start == NULL) message_loc = &cast->base.location;
+
+        const pm_line_column_t location = PM_LOCATION_START_LINE_COLUMN(scope_node->parser, message_loc);
+        const char *builtin_func;
+
+        if (UNLIKELY(iseq_has_builtin_function_table(iseq)) && (builtin_func = pm_iseq_builtin_function_name(scope_node, cast->receiver, method_id)) != NULL) {
+            const pm_string_t *filepath = &scope_node->parser->filepath;
+            fprintf(stderr, "COMPILING %.*s:%d:%d builtin_func:%s\n", (int) pm_string_length(filepath), pm_string_source(filepath), location.line, location.column, builtin_func);
+
+            pm_compile_builtin_function_call(iseq, ret, scope_node, cast, &location, popped, ISEQ_COMPILE_DATA(iseq)->current_block, builtin_func);
+            return;
         }
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->name);
+        LABEL *start = NEW_LABEL(location.line);
+        if (cast->block) PUSH_LABEL(ret, start);
 
         switch (method_id) {
           case idUMinus: {
@@ -5605,7 +5900,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    PUSH_INSN(body_seq, location, putnil);
+                    PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
                 }
 
                 PUSH_INSNL(body_seq, location, jump, end_label);
@@ -5754,7 +6049,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
                 }
                 else if (!popped) {
-                    PUSH_INSN(body_seq, clause_location, putnil);
+                    PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
                 }
 
                 PUSH_INSNL(body_seq, clause_location, jump, end_label);
@@ -5845,7 +6140,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // We're going to use this to uniquely identify each branch so that we
         // can track coverage information.
-        rb_code_location_t case_location;
+        rb_code_location_t case_location = { 0 };
         VALUE branches = Qfalse;
         int branch_id = 0;
 
@@ -5902,7 +6197,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE_INTO_ANCHOR(body_seq, (const pm_node_t *) in_node->statements);
             }
             else if (!popped) {
-                PUSH_INSN(body_seq, in_location, putnil);
+                PUSH_SYNTHETIC_PUTNIL(body_seq, iseq);
             }
 
             PUSH_INSNL(body_seq, in_location, jump, end_label);
@@ -6238,7 +6533,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((const pm_node_t *) (cast->statements));
         }
         else {
-            PUSH_INSN(ret, location, putnil);
+            PUSH_SYNTHETIC_PUTNIL(ret, iseq);
         }
 
         if (popped) PUSH_INSN(ret, location, pop);
@@ -7367,7 +7662,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
+                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with next");
                     return;
                 }
 
@@ -7385,7 +7680,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (popped) PUSH_INSN(ret, location, pop);
             }
             else {
-                COMPILE_ERROR(ERROR_ARGS "Invalid next");
+                COMPILE_ERROR(iseq, location.line, "Invalid next");
                 return;
             }
         }
@@ -7620,7 +7915,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with redo");
                     return;
                 }
 
@@ -7633,7 +7928,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (popped) PUSH_INSN(ret, location, pop);
             }
             else {
-                COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+                COMPILE_ERROR(iseq, location.line, "Invalid redo");
                 return;
             }
         }
@@ -7861,7 +8156,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (popped) PUSH_INSN(ret, location, pop);
         }
         else {
-            COMPILE_ERROR(ERROR_ARGS "Invalid retry");
+            COMPILE_ERROR(iseq, location.line, "Invalid retry");
             return;
         }
         return;
@@ -8699,7 +8994,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             return;
           }
           case ISEQ_TYPE_METHOD: {
+            ISEQ_COMPILE_DATA(iseq)->root_node = (const void *) scope_node->body;
             PUSH_TRACE(ret, RUBY_EVENT_CALL);
+
             if (scope_node->body) {
                 PM_COMPILE((const pm_node_t *) scope_node->body);
             }
@@ -8707,9 +9004,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN(ret, location, putnil);
             }
 
+            ISEQ_COMPILE_DATA(iseq)->root_node = (const void *) scope_node->body;
             PUSH_TRACE(ret, RUBY_EVENT_RETURN);
-            ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
+            ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
             break;
           }
           case ISEQ_TYPE_RESCUE: {
@@ -9053,7 +9351,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           case ISEQ_TYPE_TOP:
           case ISEQ_TYPE_MAIN:
           case ISEQ_TYPE_CLASS:
-            COMPILE_ERROR(ERROR_ARGS "Invalid yield");
+            COMPILE_ERROR(iseq, location.line, "Invalid yield");
             return;
           default: /* valid */;
         }

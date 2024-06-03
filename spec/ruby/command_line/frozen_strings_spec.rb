@@ -42,16 +42,8 @@ describe "With neither --enable-frozen-string-literal nor --disable-frozen-strin
     ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb")).chomp.should == "false"
   end
 
-  ruby_version_is "3.4" do
-    it "if file has no frozen_string_literal comment produce different frozen strings each time" do
-      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:true interned:false"
-    end
-  end
-
-  ruby_version_is ""..."3.4" do
-    it "if file has no frozen_string_literal comment produce different mutable strings each time" do
-      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
-    end
+  it "if file has no frozen_string_literal comment produce different mutable strings each time" do
+    ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
   end
 
   it "if file has frozen_string_literal:true comment produce same frozen strings each time" do

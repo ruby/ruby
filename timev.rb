@@ -45,6 +45,42 @@
 # (for example, by method Time.now)
 # has the resolution supported by the system.
 #
+# == \Time Internal Representation
+#
+# Time implementation uses a signed 63 bit integer, Integer(T_BIGNUM), or
+# Rational.
+# It is a number of nanoseconds since the _Epoch_.
+# The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
+# When Integer or Rational is used (before 1823, after 2116, under
+# nanosecond), Time works slower than when the signed 63 bit integer is used.
+#
+# Ruby uses the C function "localtime" and "gmtime" to map between the number
+# and 6-tuple (year,month,day,hour,minute,second).
+# "localtime" is used for local time and "gmtime" is used for UTC.
+#
+# Integer(T_BIGNUM) and Rational has no range limit,
+# but the localtime and gmtime has range limits
+# due to the C types "time_t" and "struct tm".
+# If that limit is exceeded, Ruby extrapolates the localtime function.
+#
+# "time_t" can represent 1901-12-14 to 2038-01-19 if it is 32 bit signed integer,
+# -292277022657-01-27 to 292277026596-12-05 if it is 64 bit signed integer.
+# However "localtime" on some platforms doesn't supports negative time_t (before 1970).
+#
+# "struct tm" has tm_year member to represent years.
+# (tm_year = 0 means the year 1900.)
+# It is defined as int in the C standard.
+# tm_year can represent between -2147481748 to 2147485547 if int is 32 bit.
+#
+# Ruby supports leap seconds as far as if the C function "localtime" and
+# "gmtime" supports it.
+# They use the tz database in most Unix systems.
+# The tz database has timezones which supports leap seconds.
+# For example, "Asia/Tokyo" doesn't support leap seconds but
+# "right/Asia/Tokyo" supports leap seconds.
+# So, Ruby supports leap seconds if the TZ environment variable is
+# set to "right/Asia/Tokyo" in most Unix systems.
+#
 # == Examples
 #
 # All of these examples were done using the EST timezone which is GMT-5.

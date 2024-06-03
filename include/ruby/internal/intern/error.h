@@ -190,6 +190,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 void rb_error_frozen(const char *what);
 
+RBIMPL_ATTR_NORETURN()
 /**
  * Identical  to  rb_error_frozen(),  except  it takes  arbitrary  Ruby  object
  * instead of C's string.
@@ -243,24 +244,10 @@ RBIMPL_SYMBOL_EXPORT_END()
  *
  * Does anyone use this?  Remain not deleted for compatibility.
  */
-#define rb_check_frozen_internal(obj) do { \
-        VALUE frozen_obj = (obj); \
-        if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
-            rb_error_frozen_object(frozen_obj); \
-        } \
-    } while (0)
+#define rb_check_frozen_internal rb_check_frozen
 
 /** @alias{rb_check_frozen} */
-static inline void
-rb_check_frozen_inline(VALUE obj)
-{
-    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
-        rb_error_frozen_object(obj);
-    }
-}
-
-/** @alias{rb_check_frozen} */
-#define rb_check_frozen rb_check_frozen_inline
+#define rb_check_frozen_inline rb_check_frozen
 
 /**
  * Ensures that the  passed integer is in  the passed range.  When  you can use

@@ -1000,7 +1000,7 @@ impl fmt::Debug for MutableBranchList {
         // SAFETY: the derived Clone for boxed slices does not mutate this Cell
         let branches = unsafe { self.0.ref_unchecked().clone() };
 
-        formatter.debug_list().entries(branches.into_iter()).finish()
+        formatter.debug_list().entries(branches.iter()).finish()
     }
 }
 

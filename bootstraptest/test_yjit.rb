@@ -4982,3 +4982,15 @@ assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{
 
   events
 }
+
+# regression test for splatting empty array
+assert_equal '1', %q{
+  def callee(foo) = foo
+
+  def test_body(args) = callee(1, *args)
+
+  test_body([])
+  array = Array.new(100)
+  array.clear
+  test_body(array)
+}

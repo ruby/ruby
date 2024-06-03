@@ -83,7 +83,7 @@ jobs:
         timeout-minutes: 30
         env:
           GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-v --tty=no'
+          RUBY_TESTOPTS: '--tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
 
       - name: make test-all

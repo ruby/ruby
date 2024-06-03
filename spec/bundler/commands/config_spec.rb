@@ -79,6 +79,14 @@ RSpec.describe ".bundle/config" do
       expect(home(".bundle/config")).to exist
     end
 
+    it "does not list global settings as local" do
+      bundle "config set --global foo bar"
+      bundle "config list", dir: home
+
+      expect(out).to include("for the current user")
+      expect(out).not_to include("for your local app")
+    end
+
     it "works with an absolute path" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"

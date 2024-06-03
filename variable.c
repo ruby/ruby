@@ -1826,7 +1826,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     rb_obj_ivar_set(obj, id, val);
     return val;
 }

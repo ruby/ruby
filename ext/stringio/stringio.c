@@ -51,18 +51,11 @@ static long strio_write(VALUE self, VALUE str);
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (rb_syserr_fail(EINVAL, msg))
 #define get_enc(ptr) ((ptr)->enc ? (ptr)->enc : !NIL_P((ptr)->string) ? rb_enc_get((ptr)->string) : NULL)
-#ifndef HAVE_RB_STR_CHILLED_P
-static bool
-rb_str_chilled_p(VALUE str)
-{
-    return false;
-}
-#endif
 
 static bool
 readonly_string_p(VALUE string)
 {
-    return OBJ_FROZEN_RAW(string) && !rb_str_chilled_p(string);
+    return OBJ_FROZEN_RAW(string);
 }
 
 static struct StringIO *
@@ -183,9 +176,6 @@ check_modifiable(struct StringIO *ptr)
 {
     if (NIL_P(ptr->string)) {
 	/* Null device StringIO */
-    }
-    else if (rb_str_chilled_p(ptr->string)) {
-	rb_str_modify(ptr->string);
     }
     else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");

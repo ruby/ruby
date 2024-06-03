@@ -2952,13 +2952,15 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
 
                 // Retry allocation after moving to new page
                 obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
-
-                GC_ASSERT(obj != Qfalse);
             }
         }
 
         if (unlock_vm) {
             RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
+        }
+
+        if (UNLIKELY(obj == Qfalse)) {
+            rb_memerror();
         }
     }
 

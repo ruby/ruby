@@ -156,7 +156,7 @@ RB_TEST(VALUE obj)
      *
      *  RTEST(v) can be 0 if and only if (v == Qfalse || v == Qnil).
      */
-    return obj & ~RUBY_Qnil;
+    return obj & RBIMPL_CAST((VALUE)~RUBY_Qnil);
 }
 
 RBIMPL_ATTR_CONST()
@@ -226,7 +226,7 @@ RB_NIL_OR_UNDEF_P(VALUE obj)
      *
      *  NIL_OR_UNDEF_P(v) can be true only when v is Qundef or Qnil.
      */
-    const VALUE mask = ~(RUBY_Qundef ^ RUBY_Qnil);
+    const VALUE mask = RBIMPL_CAST((VALUE)~(RUBY_Qundef ^ RUBY_Qnil));
     const VALUE common_bits = RUBY_Qundef & RUBY_Qnil;
     return (obj & mask) == common_bits;
 }

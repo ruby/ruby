@@ -20,7 +20,9 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
 
   let(:compact_index) { TestCompactIndexClient.new(names, versions, info_data) }
   let(:names) { "a\nb\nc\n" }
-  let(:versions) { <<~VERSIONS }
+  let(:versions) { <<~VERSIONS.dup }
+    created_at: 2024-05-01T00:00:04Z
+    ---
     a 1.0.0,1.0.1,1.1.0 aaa111
     b 2.0.0,2.0.0-java bbb222
     c 3.0.0,3.0.3,3.3.3 ccc333
@@ -33,7 +35,8 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
       "c" => { "ccc333yanked" => c_info },
     }
   end
-  let(:a_info) { <<~INFO }
+  let(:a_info) { <<~INFO.dup }
+    ---
     1.0.0 |checksum:aaa1,ruby:>= 3.0.0,rubygems:>= 3.2.3
     1.0.1 |checksum:aaa2,ruby:>= 3.0.0,rubygems:>= 3.2.3
     1.1.0 |checksum:aaa3,ruby:>= 3.0.0,rubygems:>= 3.2.3
@@ -52,8 +55,43 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
       expect(parser).to be_available
     end
 
-    it "returns false when versions are not available" do
+    it "returns true when versions has only one gem" do
+      compact_index.versions = +"a 1.0.0 aaa1\n"
+      expect(parser).to be_available
+    end
+
+    it "returns true when versions has a gem and a header" do
+      compact_index.versions = +"---\na 1.0.0 aaa1\n"
+      expect(parser).to be_available
+    end
+
+    it "returns true when versions has a gem and a header with header data" do
+      compact_index.versions = +"created_at: 2024-05-01T00:00:04Z\n---\na 1.0.0 aaa1\n"
+      expect(parser).to be_available
+    end
+
+    it "returns false when versions has only the header" do
+      compact_index.versions = +"---\n"
+      expect(parser).not_to be_available
+    end
+
+    it "returns false when versions has only the header with header data" do
+      compact_index.versions = +"created_at: 2024-05-01T00:00:04Z\n---\n"
+      expect(parser).not_to be_available
+    end
+
+    it "returns false when versions index is not available" do
       compact_index.versions = nil
+      expect(parser).not_to be_available
+    end
+
+    it "returns false when versions is empty" do
+      compact_index.versions = +""
+      expect(parser).not_to be_available
+    end
+
+    it "returns false when versions ends improperly without a newline" do
+      compact_index.versions = "a 1.0.0 aaa1"
       expect(parser).not_to be_available
     end
   end

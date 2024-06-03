@@ -602,21 +602,6 @@ VALUE rb_str_dup(VALUE str);
 VALUE rb_str_resurrect(VALUE str);
 
 /**
- * Returns whether a string is chilled or not.
- *
- * This function is temporary and users must check for its presence using
- * #ifdef HAVE_RB_STR_CHILLED_P. If HAVE_RB_STR_CHILLED_P is not defined, then
- * strings can't be chilled.
- *
- * @param[in]  str  A string.
- * @retval     1    The string is chilled.
- * @retval     0    Otherwise.
- */
-bool rb_str_chilled_p(VALUE str);
-
-#define HAVE_RB_STR_CHILLED_P 1
-
-/**
  * Obtains a "temporary  lock" of the string.  This  advisory locking mechanism
  * prevents other  cooperating threads from  tampering the receiver.   The same
  * thing could be done via freeze mechanism,  but this one can also be unlocked

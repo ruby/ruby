@@ -1,7 +1,7 @@
 require_relative 'helper'
-require 'reline/ansi'
+require 'reline'
 
-class Reline::ANSI::TestWithoutTerminfo < Reline::TestCase
+class Reline::ANSI::WithoutTerminfoTest < Reline::TestCase
   def setup
     Reline.send(:test_mode, ansi: true)
     @config = Reline::Config.new

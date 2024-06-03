@@ -4,14 +4,12 @@ require 'stringio'
 
 class Reline::LineEditor
   class RenderLineDifferentialTest < Reline::TestCase
-    module TestIO
-      RESET_COLOR = "\e[0m"
-
-      def self.move_cursor_column(col)
+    class TestIO < Reline::IO
+      def move_cursor_column(col)
         @output << "[COL_#{col}]"
       end
 
-      def self.erase_after_cursor
+      def erase_after_cursor
         @output << '[ERASE]'
       end
     end
@@ -24,7 +22,7 @@ class Reline::LineEditor
       @line_editor.instance_variable_set(:@screen_size, [24, 80])
       @line_editor.instance_variable_set(:@output, @output)
       Reline.send(:remove_const, :IOGate)
-      Reline.const_set(:IOGate, TestIO)
+      Reline.const_set(:IOGate, TestIO.new)
       Reline::IOGate.instance_variable_set(:@output, @output)
     ensure
       $VERBOSE = verbose

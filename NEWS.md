@@ -7,8 +7,8 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-* String literals in files without a `frozen_string_literal` comment now behave
-  as if they were frozen. If they are mutated a deprecation warning is emitted.
+* String literals in files without a `frozen_string_literal` comment now emit a deprecation warning
+  when they are mutated.
   These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
   To disable this change, you can run Ruby with the `--disable-frozen-string-literal`
   command line argument. [[Feature #20205]]
@@ -19,9 +19,11 @@ Note that each entry is kept to a minimum, see links for details.
   `**nil` is treated similarly to `**{}`, passing no keywords,
   and not calling any conversion methods.  [[Bug #20064]]
 
-* Block passing is no longer allowed in index.  [[Bug #19918]]
+* Block passing is no longer allowed in index assignment
+  (e.g. `a[0, &b] = 1`).  [[Bug #19918]]
 
-* Keyword arguments are no longer allowed in index.  [[Bug #20218]]
+* Keyword arguments are no longer allowed in index assignment
+  (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
 ## Core classes updates
 
@@ -38,6 +40,13 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Tempfile
+
+    * The keyword argument `anonymous: true` is implemented for `Tempfile.create`.
+      `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
+      So applications don't need to remove the file.
+      [[Feature #20497]]
+
 The following default gems are updated.
 
 * RubyGems 3.6.0.dev
@@ -51,7 +60,7 @@ The following default gems are updated.
 * optparse 0.5.0
 * prism 0.29.0
 * rdoc 6.7.0
-* reline 0.5.7
+* reline 0.5.8
 * resolv 0.4.0
 * stringio 3.1.1
 * strscan 3.1.1
@@ -62,8 +71,8 @@ The following bundled gems are updated.
 * rake 13.2.1
 * test-unit 3.6.2
 * rexml 3.2.8
-* net-ftp 0.3.4
-* net-imap 0.4.11
+* net-ftp 0.3.5
+* net-imap 0.4.12
 * net-smtp 0.5.0
 * rbs 3.4.4
 * typeprof 0.21.11

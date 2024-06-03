@@ -90,6 +90,7 @@ require 'mspec/runner/formatters/dotted'
 class DottedFormatter
   prepend Module.new {
     BASE = __dir__ + "/ruby/" unless defined?(BASE)
+    COUNT_WIDTH = 6
 
     def initialize(out = nil)
       super
@@ -97,7 +98,10 @@ class DottedFormatter
         @columns = nil
       else
         columns = ENV["COLUMNS"]&.to_i
-        @columns = columns&.nonzero? || 80
+        columns = 80 unless columns&.nonzero?
+        w = COUNT_WIDTH + 1
+        round = 20
+        @columns = (columns - w) / round * round + w
       end
       @dotted = 0
       @loaded = false
@@ -113,7 +117,7 @@ class DottedFormatter
     def after(*)
       if @columns
         if @dotted == 0
-          s = sprintf("%6d ", @count)
+          s = sprintf("%*d ", COUNT_WIDTH, @count)
           print(s)
           @dotted += s.size
         end

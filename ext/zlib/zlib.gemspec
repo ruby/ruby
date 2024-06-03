@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/zlib"
   spec.licenses       = ["Ruby", "BSD-2-Clause"]
 
-  spec.files         = ["LICENSE.txt", "README.md", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
+  spec.files         = ["COPYING", "BSDL", "README.md", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]

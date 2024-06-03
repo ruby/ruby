@@ -6326,9 +6326,11 @@ minus_dd(VALUE self, VALUE other)
  * call-seq:
  *    d - other  ->  date or rational
  *
- * Returns the difference between the two dates if the other is a date
- * object.  If the other is a numeric value, returns a date object
- * pointing +other+ days before self.  If the other is a fractional number,
+ * If the other is a date object, returns a Rational
+ * whose value is the difference between the two dates in days.
+ * If the other is a numeric value, returns a date object
+ * pointing +other+ days before self.
+ * If the other is a fractional number,
  * assumes its precision is at most nanosecond.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
@@ -8955,18 +8957,22 @@ time_to_datetime(VALUE self)
 static VALUE
 date_to_time(VALUE self)
 {
+    VALUE t;
+
     get_d1a(self);
 
     if (m_julian_p(adat)) {
-        VALUE tmp = d_lite_gregorian(self);
-        get_d1b(tmp);
+        self = d_lite_gregorian(self);
+        get_d1b(self);
         adat = bdat;
     }
 
-    return f_local3(rb_cTime,
+    t = f_local3(rb_cTime,
         m_real_year(adat),
         INT2FIX(m_mon(adat)),
         INT2FIX(m_mday(adat)));
+    RB_GC_GUARD(self); /* may be the converted gregorian */
+    return t;
 }
 
 /*
@@ -9055,6 +9061,7 @@ datetime_to_time(VALUE self)
 		   f_add(INT2FIX(m_sec(dat)),
 			 m_sf_in_sec(dat)),
 		   INT2FIX(m_of(dat)));
+	RB_GC_GUARD(self); /* may be the converted gregorian */
 	return t;
     }
 }

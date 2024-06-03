@@ -2737,8 +2737,16 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
     else {
         VALUE old_path = rb_attr_get(exc, id_i_path);
         if (old_path != path) {
-            rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE"->%+"PRIsVALUE,
-                     old_path, path);
+            if (rb_str_equal(path, old_path)) {
+                rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE" (%p->%p)",
+                         old_path, (void *)old_path, (void *)path);
+            }
+            else {
+                rb_raise(rb_eArgError, "SyntaxError#path changed: %+"PRIsVALUE"(%s%s)->%+"PRIsVALUE"(%s)",
+                         old_path, rb_enc_name(rb_enc_get(old_path)),
+                         (FL_TEST(old_path, RSTRING_FSTR) ? ":FSTR" : ""),
+                         path, rb_enc_name(rb_enc_get(path)));
+            }
         }
         VALUE s = *mesg = rb_attr_get(exc, idMesg);
         if (RSTRING_LEN(s) > 0 && *(RSTRING_END(s)-1) != '\n')
@@ -3900,11 +3908,6 @@ rb_error_frozen_object(VALUE frozen_obj)
 {
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
 
-    if (CHILLED_STRING_P(frozen_obj)) {
-        CHILLED_STRING_MUTATED(frozen_obj);
-        return;
-    }
-
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
@@ -3927,14 +3930,20 @@ rb_error_frozen_object(VALUE frozen_obj)
 void
 rb_check_frozen(VALUE obj)
 {
-    rb_check_frozen_internal(obj);
+    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
+        rb_error_frozen_object(obj);
+    }
+
+    if (RB_UNLIKELY(CHILLED_STRING_P(obj))) {
+        rb_str_modify(obj);
+    }
 }
 
 void
 rb_check_copyable(VALUE obj, VALUE orig)
 {
     if (!FL_ABLE(obj)) return;
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     if (!FL_ABLE(orig)) return;
 }
 

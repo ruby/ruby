@@ -469,7 +469,7 @@ class TestISeq < Test::Unit::TestCase
                   ["<class:C>@1",
                     ["bar@10", ["block in bar@11",
                             ["block (2 levels) in bar@12"]]],
-                    ["foo@2", ["ensure in foo@2"],
+                    ["foo@2", ["ensure in foo@7"],
                               ["rescue in foo@4"]]],
                   ["<class:D>@17"]]
 
@@ -502,7 +502,7 @@ class TestISeq < Test::Unit::TestCase
                                   [4, :line],
                                   [7, :line],
                                   [9, :return]]],
-                       [["ensure in foo@2", [[7, :line]]]],
+                       [["ensure in foo@7", [[7, :line]]]],
                        [["rescue in foo@4", [[5, :line],
                                              [5, :rescue]]]]]],
                    [["<class:D>@17", [[17, :class],

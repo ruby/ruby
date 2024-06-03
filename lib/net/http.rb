@@ -67,6 +67,8 @@ module Net   #:nodoc:
   #     Net::HTTP.post(uri, data)
   #     params = {title: 'foo', body: 'bar', userId: 1}
   #     Net::HTTP.post_form(uri, params)
+  #     data = '{"title": "foo", "body": "bar", "userId": 1}'
+  #     Net::HTTP.put(uri, data)
   #
   # - If performance is important, consider using sessions, which lower request overhead.
   #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
@@ -524,6 +526,8 @@ module Net   #:nodoc:
   #   Sends a POST request with form data and returns a response object.
   # - {::post}[rdoc-ref:Net::HTTP.post]:
   #   Sends a POST request with data and returns a response object.
+  # - {::put}[rdoc-ref:Net::HTTP.put]:
+  #   Sends a PUT request with data and returns a response object.
   # - {#copy}[rdoc-ref:Net::HTTP#copy]:
   #   Sends a COPY request and returns a response object.
   # - {#delete}[rdoc-ref:Net::HTTP#delete]:
@@ -890,6 +894,39 @@ module Net   #:nodoc:
       start(url.hostname, url.port,
             :use_ssl => url.scheme == 'https' ) {|http|
         http.request(req)
+      }
+    end
+
+    # Sends a PUT request to the server; returns a Net::HTTPResponse object.
+    #
+    # Argument +url+ must be a URL;
+    # argument +data+ must be a string:
+    #
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = '{"title": "foo", "body": "bar", "userId": 1}'
+    #   headers = {'content-type': 'application/json'}
+    #   res = Net::HTTP.put(_uri, data, headers) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
+    #
+    # Output:
+    #
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": 1,
+    #     "id": 101
+    #   }
+    #
+    # Related:
+    #
+    # - Net::HTTP::Put: request class for \HTTP method +PUT+.
+    # - Net::HTTP#put: convenience method for \HTTP method +PUT+.
+    #
+    def HTTP.put(url, data, header = nil)
+      start(url.hostname, url.port,
+            :use_ssl => url.scheme == 'https' ) {|http|
+        http.put(url, data, header)
       }
     end
 
@@ -2015,6 +2052,11 @@ module Net   #:nodoc:
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
     #   http = Net::HTTP.new(hostname)
     #   http.put('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Put: request class for \HTTP method PUT.
+    # - Net::HTTP.put: sends PUT request, returns response body.
     #
     def put(path, data, initheader = nil)
       request(Put.new(path, initheader), data)

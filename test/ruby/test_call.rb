@@ -136,7 +136,7 @@ class TestCall < Test::Unit::TestCase
     # Prevent "assigned but unused variable" warnings
     _ = [h, a, kw, b]
 
-    message = /keyword arg given in index/
+    message = /keyword arg given in index assignment/
 
     # +=, without block, non-popped
     assert_syntax_error(%q{h[**kw] += 1}, message)
@@ -270,7 +270,7 @@ class TestCall < Test::Unit::TestCase
     def o.[](...) 2 end
     def o.[]=(...) end
 
-    message = /keyword arg given in index/
+    message = /keyword arg given in index assignment/
 
     assert_syntax_error(%q{o[kw: 1] += 1}, message)
     assert_syntax_error(%q{o[**o] += 1}, message)
@@ -292,7 +292,7 @@ class TestCall < Test::Unit::TestCase
       def []=(*a, **b) @set = [a, b] end
     end.new
 
-    message = /keyword arg given in index/
+    message = /keyword arg given in index assignment/
 
     a = []
     kw = {}

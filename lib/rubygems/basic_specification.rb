@@ -144,6 +144,19 @@ class Gem::BasicSpecification
   end
 
   ##
+  # Returns the full name of this Gem (see `Gem::BasicSpecification#full_name`).
+  # Information about where the gem is installed is also included if not
+  # installed in the default GEM_HOME.
+
+  def full_name_with_location
+    if base_dir != Gem.dir
+      "#{full_name} in #{base_dir}"
+    else
+      full_name
+    end
+  end
+
+  ##
   # Full paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
   # activated.
 

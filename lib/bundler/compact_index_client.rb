@@ -4,6 +4,29 @@ require "pathname"
 require "set"
 
 module Bundler
+  # The CompactIndexClient is responsible for fetching and parsing the compact index.
+  #
+  # The compact index is a set of caching optimized files that are used to fetch gem information.
+  # The files are:
+  # - names: a list of all gem names
+  # - versions: a list of all gem versions
+  # - info/[gem]: a list of all versions of a gem
+  #
+  # The client is instantiated with:
+  # - `directory`: the root directory where the cache files are stored.
+  # - `fetcher`: (optional) an object that responds to #call(uri_path, headers) and returns an http response.
+  # If the `fetcher` is not provided, the client will only read cached files from disk.
+  #
+  # The client is organized into:
+  # - `Updater`: updates the cached files on disk using the fetcher.
+  # - `Cache`: calls the updater, caches files, read and return them from disk
+  # - `Parser`: parses the compact index file data
+  # - `CacheFile`: a concurrency safe file reader/writer that verifies checksums
+  #
+  # The client is intended to optimize memory usage and performance.
+  # It is called 100s or 1000s of times, parsing files with hundreds of thousands of lines.
+  # It may be called concurrently without global interpreter lock in some Rubies.
+  # As a result, some methods may look more complex than necessary to save memory or time.
   class CompactIndexClient
     # NOTE: MD5 is here not because we expect a server to respond with it, but
     # because we use it to generate the etag on first request during the upgrade
@@ -11,6 +34,13 @@ module Bundler
     # Remove once 2.5.0 has been out for a while.
     SUPPORTED_DIGESTS = { "sha-256" => :SHA256, "md5" => :MD5 }.freeze
     DEBUG_MUTEX = Thread::Mutex.new
+
+    # info returns an Array of INFO Arrays. Each INFO Array has the following indices:
+    INFO_NAME = 0
+    INFO_VERSION = 1
+    INFO_PLATFORM = 2
+    INFO_DEPS = 3
+    INFO_REQS = 4
 
     def self.debug
       return unless ENV["DEBUG_COMPACT_INDEX"]
@@ -29,29 +59,6 @@ module Bundler
       @parser = Parser.new(@cache)
     end
 
-    def execution_mode=(block)
-      Bundler::CompactIndexClient.debug { "execution_mode=" }
-      @cache.reset!
-      @execution_mode = block
-    end
-
-    # @return [Lambda] A lambda that takes an array of inputs and a block, and
-    #         maps the inputs with the block in parallel.
-    #
-    def execution_mode
-      @execution_mode || sequentially
-    end
-
-    def sequential_execution_mode!
-      self.execution_mode = sequentially
-    end
-
-    def sequentially
-      @sequentially ||= lambda do |inputs, &blk|
-        inputs.map(&blk)
-      end
-    end
-
     def names
       Bundler::CompactIndexClient.debug { "names" }
       @parser.names
@@ -64,17 +71,27 @@ module Bundler
 
     def dependencies(names)
       Bundler::CompactIndexClient.debug { "dependencies(#{names})" }
-      execution_mode.call(names) {|name| @parser.info(name) }.flatten(1)
+      names.map {|name| info(name) }
+    end
+
+    def info(name)
+      Bundler::CompactIndexClient.debug { "info(#{names})" }
+      @parser.info(name)
     end
 
     def latest_version(name)
       Bundler::CompactIndexClient.debug { "latest_version(#{name})" }
-      @parser.info(name).map {|d| Gem::Version.new(d[1]) }.max
+      @parser.info(name).map {|d| Gem::Version.new(d[INFO_VERSION]) }.max
     end
 
     def available?
       Bundler::CompactIndexClient.debug { "available?" }
       @parser.available?
+    end
+
+    def reset!
+      Bundler::CompactIndexClient.debug { "reset!" }
+      @cache.reset!
     end
   end
 end

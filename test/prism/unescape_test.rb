@@ -41,7 +41,7 @@ module Prism
           result = Prism.parse(code(escape), encoding: "binary")
 
           if result.success?
-            yield result.value.statements.body.first
+            yield result.statement
           else
             :error
           end

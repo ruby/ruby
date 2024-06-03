@@ -485,9 +485,9 @@ module Prism
         def visit_constant_path_target_node(node)
           inner =
             if node.parent.nil?
-              s(node, :colon3, node.child.name)
+              s(node, :colon3, node.name)
             else
-              s(node, :colon2, visit(node.parent), node.child.name)
+              s(node, :colon2, visit(node.parent), node.name)
             end
 
           s(node, :const, inner)

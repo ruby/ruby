@@ -10,6 +10,8 @@ module Bundler
         @info_checksums = nil
         @versions_by_name = nil
         @available = nil
+        @gem_parser = nil
+        @versions_data = nil
       end
 
       def names
@@ -38,46 +40,71 @@ module Bundler
       end
 
       def info(name)
-        data = @compact_index.info(name, info_checksums[name])
+        data = @compact_index.info(name, info_checksum(name))
         lines(data).map {|line| gem_parser.parse(line).unshift(name) }
       end
 
+      # parse the last, most recently updated line of the versions file to determine availability
       def available?
         return @available unless @available.nil?
-        @available = !info_checksums.empty?
+        return @available = false unless versions_data&.size&.nonzero?
+
+        line_end = versions_data.size - 1
+        return @available = false if versions_data[line_end] != "\n"
+
+        line_start = versions_data.rindex("\n", line_end - 1)
+        line_start ||= -1 # allow a single line versions file
+
+        @available = !split_last_word(versions_data, line_start + 1, line_end).nil?
       end
 
       private
 
-      def info_checksums
-        @info_checksums ||= lines(@compact_index.versions).each_with_object({}) do |line, checksums|
-          parse_version_checksum(line, checksums)
-        end
-      end
-
-      def lines(data)
-        return [] if data.nil? || data.empty?
-        lines = data.split("\n")
-        header = lines.index("---")
-        header ? lines[header + 1..-1] : lines
+      # Search for a line starting with gem name, then return last space-separated word (the checksum)
+      def info_checksum(name)
+        return unless versions_data
+        return unless (line_start = rindex_of_gem(name))
+        return unless (line_end = versions_data.index("\n", line_start))
+        split_last_word(versions_data, line_start, line_end)
       end
 
       def gem_parser
         @gem_parser ||= GemParser.new
       end
 
-      # This is mostly the same as `split(" ", 3)` but it avoids allocating extra objects.
-      # This method gets called at least once for every gem when parsing versions.
-      def parse_version_checksum(line, checksums)
-        line.freeze # allows slicing into the string to not allocate a copy of the line
-        name_end = line.index(" ")
-        checksum_start = line.index(" ", name_end + 1) + 1
-        checksum_end = line.size - checksum_start
-        # freeze name since it is used as a hash key
-        # pre-freezing means a frozen copy isn't created
-        name = line[0, name_end].freeze
-        checksum = line[checksum_start, checksum_end]
-        checksums[name] = checksum
+      def versions_data
+        @versions_data ||= begin
+          data = @compact_index.versions
+          strip_header!(data) if data
+          data.freeze
+        end
+      end
+
+      def rindex_of_gem(name)
+        if (pos = versions_data.rindex("\n#{name} "))
+          pos + 1
+        elsif versions_data.start_with?("#{name} ")
+          0
+        end
+      end
+
+      # This is similar to `string.split(" ").last` but it avoids allocating extra objects.
+      def split_last_word(string, line_start, line_end)
+        return unless line_start < line_end && line_start >= 0
+        word_start = string.rindex(" ", line_end).to_i + 1
+        return if word_start < line_start
+        string[word_start, line_end - word_start]
+      end
+
+      def lines(string)
+        return [] if string.nil? || string.empty?
+        strip_header!(string)
+        string.split("\n")
+      end
+
+      def strip_header!(string)
+        header_end = string.index("---\n")
+        string.slice!(0, header_end + 4) if header_end
       end
     end
   end

@@ -1205,7 +1205,6 @@ installs = $install.map do |inst|
 end
 installs.flatten!
 installs -= $exclude.map {|exc| $install_procs[exc]}.flatten
-puts "Installing to #$destdir" unless installs.empty?
 installs.each do |block|
   dir = Dir.pwd
   begin
@@ -1213,6 +1212,10 @@ installs.each do |block|
   ensure
     Dir.chdir(dir)
   end
+end
+unless installs.empty? or $destdir.empty?
+  require_relative 'lib/colorize'
+  puts "Installed under #{Colorize.new.info($destdir)}"
 end
 
 # vi:set sw=2:

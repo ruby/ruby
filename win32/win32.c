@@ -1950,7 +1950,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
             }
         }
 
-        curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
+        curr = (NtCmdLineElement *)calloc(1, sizeof(NtCmdLineElement));
         if (!curr) goto do_nothing;
         curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
         curr->flags |= NTMALLOC;
@@ -2156,7 +2156,7 @@ w32_wopendir(const WCHAR *wpath)
     //
     // Get us a DIR structure
     //
-    p = calloc(sizeof(DIR), 1);
+    p = calloc(1, sizeof(DIR));
     if (p == NULL)
         return NULL;
 

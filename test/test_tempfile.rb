@@ -425,4 +425,54 @@ puts Tempfile.new('foo').path
       assert_not_send([File.absolute_path(actual), :start_with?, target])
     end
   end
+
+  def test_create_anonymous_without_block
+    t = Tempfile.create(anonymous: true)
+    assert_equal(File, t.class)
+    assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+    t.puts "foo"
+    t.rewind
+    assert_equal("foo\n", t.read)
+    t.close
+  ensure
+    t.close if t
+  end
+
+  def test_create_anonymous_with_block
+    result = Tempfile.create(anonymous: true) {|t|
+      assert_equal(File, t.class)
+      assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+      t.puts "foo"
+      t.rewind
+      assert_equal("foo\n", t.read)
+      :result
+    }
+    assert_equal(:result, result)
+  end
+
+  def test_create_anonymous_removes_file
+    Dir.mktmpdir {|d|
+      t = Tempfile.create("", d, anonymous: true)
+      t.close
+      assert_equal([], Dir.children(d))
+    }
+  end
+
+  def test_create_anonymous_path
+    Dir.mktmpdir {|d|
+      begin
+        t = Tempfile.create("", d, anonymous: true)
+        assert_equal(File.join(d, ""), t.path)
+      ensure
+        t.close if t
+      end
+    }
+  end
+
+  def test_create_anonymous_autoclose
+    Tempfile.create(anonymous: true) {|t|
+      assert_equal(true, t.autoclose?)
+    }
+  end
+
 end

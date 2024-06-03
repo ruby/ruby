@@ -481,7 +481,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err, gai_errno = 0;
+    int err = 0, gai_errno = 0;
 
 start:
     retry = 0;
@@ -493,8 +493,10 @@ start:
 
     pthread_t th;
     if (do_pthread_create(&th, do_getaddrinfo, arg) != 0) {
+        int err = errno;
         free_getaddrinfo_arg(arg);
-        return EAI_AGAIN;
+        errno = err;
+        return EAI_SYSTEM;
     }
     pthread_detach(th);
 
@@ -712,8 +714,10 @@ start:
 
     pthread_t th;
     if (do_pthread_create(&th, do_getnameinfo, arg) != 0) {
+        int err = errno;
         free_getnameinfo_arg(arg);
-        return EAI_AGAIN;
+        errno = err;
+        return EAI_SYSTEM;
     }
     pthread_detach(th);
 

@@ -12367,9 +12367,10 @@ parser_lex(pm_parser_t *parser) {
 
             // If we are immediately following a newline and we have hit the
             // terminator, then we need to return the ending of the heredoc.
-            if (!line_continuation && current_token_starts_line(parser)) {
+            if (current_token_starts_line(parser)) {
                 const uint8_t *start = parser->current.start;
-                if (start + ident_length <= parser->end) {
+
+                if (!line_continuation && (start + ident_length <= parser->end)) {
                     const uint8_t *newline = next_newline(start, parser->end - start);
                     const uint8_t *ident_end = newline;
                     const uint8_t *terminator_end = newline;
@@ -12525,11 +12526,8 @@ parser_lex(pm_parser_t *parser) {
                             }
 
                             parser->current.end = breakpoint + 1;
-
-                            if (!was_line_continuation) {
-                                pm_token_buffer_flush(parser, &token_buffer);
-                                LEX(PM_TOKEN_STRING_CONTENT);
-                            }
+                            pm_token_buffer_flush(parser, &token_buffer);
+                            LEX(PM_TOKEN_STRING_CONTENT);
                         }
 
                         // Otherwise we hit a newline and it wasn't followed by

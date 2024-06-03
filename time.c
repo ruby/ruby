@@ -5725,16 +5725,6 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     return rb_obj_as_string(abbr);
 }
 
-/*  Internal Details:
- *
- *  Since Ruby 1.9.2, Time implementation uses a signed 63 bit integer or
- *  Integer(T_BIGNUM), Rational.
- *  The integer is a number of nanoseconds since the _Epoch_ which can
- *  represent 1823-11-12 to 2116-02-20.
- *  When Integer(T_BIGNUM) or Rational is used (before 1823, after 2116, under
- *  nanosecond), Time works slower than when integer is used.
- */
-
 //
 void
 Init_Time(void)

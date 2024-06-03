@@ -358,7 +358,7 @@ module Bundler
     def settings
       @settings ||= Settings.new(app_config_path)
     rescue GemfileNotFound
-      @settings = Settings.new(Pathname.new(".bundle").expand_path)
+      @settings = Settings.new
     end
 
     # @return [Hash] Environment present before Bundler was activated

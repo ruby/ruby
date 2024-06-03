@@ -453,6 +453,8 @@ may use these paired delimiters:
 * <tt><</tt> and <tt>></tt>.
 * Any other character, as both beginning and ending delimiters.
 
+The first four pairs (brackets, parenthesis, braces, and angle brackets) can be nested.
+
 These are demonstrated in the next section.
 
 === <tt>%q</tt>: Non-Interpolable String Literals
@@ -467,6 +469,10 @@ The created string is the same as if you created it with single quotes:
   %|foo bar baz|        # => "foo bar baz" # Using two |.
   %:foo bar baz:        # => "foo bar baz" # Using two :.
   %q(1 + 1 is #{1 + 1}) # => "1 + 1 is \#{1 + 1}" # No interpolation.
+  %q[foo[bar]baz]       # => "foo[bar]baz" # brackets can be nested.
+  %q(foo(bar)baz)       # => "foo(bar)baz" # parenthesis can be nested.
+  %q{foo{bar}baz}       # => "foo{bar}baz" # braces can be nested.
+  %q<foo<bar>baz>       # => "foo<bar>baz" # angle brackets can be nested.
 
 === <tt>% and %Q</tt>: Interpolable String Literals
 
@@ -487,6 +493,10 @@ or <tt>%W</tt> (interpolable):
   %w[foo\ bar baz\ bat] # => ["foo bar", "baz bat"]
   %w(#{1 + 1})          # => ["\#{1", "+", "1}"]
   %W(#{1 + 1})          # => ["2"]
+
+  # The nested delimiters evaluated to a flat array of strings
+  # (not nested array).
+  %w[foo[bar baz]qux]   # => ["foo[bar", "baz]qux"]
 
 === <tt>%i and %I</tt>: Symbol-Array Literals
 

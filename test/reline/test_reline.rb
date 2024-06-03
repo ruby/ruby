@@ -375,7 +375,7 @@ class Reline::Test < Reline::TestCase
   def test_dumb_terminal
     lib = File.expand_path("../../lib", __dir__)
     out = IO.popen([{"TERM"=>"dumb"}, Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", "p Reline.core.io_gate"], &:read)
-    assert_equal("Reline::GeneralIO", out.chomp)
+    assert_match(/#<Reline::Dumb/, out.chomp)
   end
 
   def test_require_reline_should_not_trigger_winsize
@@ -389,7 +389,7 @@ class Reline::Test < Reline::TestCase
       require("reline") && p(Reline.core.io_gate)
     RUBY
     out = IO.popen([{}, Reline.test_rubybin, "-I#{lib}", "-e", code], &:read)
-    assert_equal("Reline::ANSI", out.chomp)
+    assert_include(out.chomp, "Reline::ANSI")
   end
 
   def win?

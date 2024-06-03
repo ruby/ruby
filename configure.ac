@@ -9,46 +9,51 @@ tooldir="$srcdir/tool"
 
 AC_DISABLE_OPTION_CHECKING
 
-m4_include([tool/m4/_colorize_result_prepare.m4])dnl
-m4_include([tool/m4/ac_msg_result.m4])dnl
-m4_include([tool/m4/colorize_result.m4])dnl
-m4_include([tool/m4/ruby_append_option.m4])dnl
-m4_include([tool/m4/ruby_append_options.m4])dnl
-m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
-m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
-m4_include([tool/m4/ruby_check_header.m4])dnl
-m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
-m4_include([tool/m4/ruby_check_setjmp.m4])dnl
-m4_include([tool/m4/ruby_check_signedness.m4])dnl
-m4_include([tool/m4/ruby_check_sizeof.m4])dnl
-m4_include([tool/m4/ruby_check_sysconf.m4])dnl
-m4_include([tool/m4/ruby_cppoutfile.m4])dnl
-m4_include([tool/m4/ruby_decl_attribute.m4])dnl
-m4_include([tool/m4/ruby_default_arch.m4])dnl
-m4_include([tool/m4/ruby_define_if.m4])dnl
-m4_include([tool/m4/ruby_defint.m4])dnl
-m4_include([tool/m4/ruby_dtrace_available.m4])dnl
-m4_include([tool/m4/ruby_dtrace_postprocess.m4])dnl
-m4_include([tool/m4/ruby_func_attribute.m4])dnl
-m4_include([tool/m4/ruby_mingw32.m4])dnl
-m4_include([tool/m4/ruby_prepend_option.m4])dnl
-m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
-m4_include([tool/m4/ruby_prog_makedirs.m4])dnl
-m4_include([tool/m4/ruby_replace_funcs.m4])dnl
-m4_include([tool/m4/ruby_replace_type.m4])dnl
-m4_include([tool/m4/ruby_require_funcs.m4])dnl
-m4_include([tool/m4/ruby_rm_recursive.m4])dnl
-m4_include([tool/m4/ruby_setjmp_type.m4])dnl
-m4_include([tool/m4/ruby_shared_gc.m4])dnl
-m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
-m4_include([tool/m4/ruby_thread.m4])dnl
-m4_include([tool/m4/ruby_try_cflags.m4])dnl
-m4_include([tool/m4/ruby_try_cxxflags.m4])dnl
-m4_include([tool/m4/ruby_try_ldflags.m4])dnl
-m4_include([tool/m4/ruby_universal_arch.m4])dnl
-m4_include([tool/m4/ruby_wasm_tools.m4])dnl
-m4_include([tool/m4/ruby_werror_flag.m4])dnl
-m4_include([tool/m4/mmtk_ruby.m4])dnl
+m4_define([RUBY_M4_INCLUDED], [])dnl
+AC_DEFUN([RUBY_M4_INCLUDE], [m4_include([tool/m4/$1])dnl
+  m4_append([RUBY_M4_INCLUDED], [ \
+	$(tooldir)/m4/$1])dnl
+])
+RUBY_M4_INCLUDE([_colorize_result_prepare.m4])dnl
+RUBY_M4_INCLUDE([ac_msg_result.m4])dnl
+RUBY_M4_INCLUDE([colorize_result.m4])dnl
+RUBY_M4_INCLUDE([ruby_append_option.m4])dnl
+RUBY_M4_INCLUDE([ruby_append_options.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_builtin_func.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_builtin_setjmp.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_header.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_printf_prefix.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_setjmp.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_signedness.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_sizeof.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_sysconf.m4])dnl
+RUBY_M4_INCLUDE([ruby_cppoutfile.m4])dnl
+RUBY_M4_INCLUDE([ruby_decl_attribute.m4])dnl
+RUBY_M4_INCLUDE([ruby_default_arch.m4])dnl
+RUBY_M4_INCLUDE([ruby_define_if.m4])dnl
+RUBY_M4_INCLUDE([ruby_defint.m4])dnl
+RUBY_M4_INCLUDE([ruby_dtrace_available.m4])dnl
+RUBY_M4_INCLUDE([ruby_dtrace_postprocess.m4])dnl
+RUBY_M4_INCLUDE([ruby_func_attribute.m4])dnl
+RUBY_M4_INCLUDE([ruby_mingw32.m4])dnl
+RUBY_M4_INCLUDE([ruby_prepend_option.m4])dnl
+RUBY_M4_INCLUDE([ruby_prog_gnu_ld.m4])dnl
+RUBY_M4_INCLUDE([ruby_prog_makedirs.m4])dnl
+RUBY_M4_INCLUDE([ruby_replace_funcs.m4])dnl
+RUBY_M4_INCLUDE([ruby_replace_type.m4])dnl
+RUBY_M4_INCLUDE([ruby_require_funcs.m4])dnl
+RUBY_M4_INCLUDE([ruby_rm_recursive.m4])dnl
+RUBY_M4_INCLUDE([ruby_setjmp_type.m4])dnl
+RUBY_M4_INCLUDE([ruby_shared_gc.m4])dnl
+RUBY_M4_INCLUDE([ruby_stack_grow_direction.m4])dnl
+RUBY_M4_INCLUDE([ruby_thread.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_cflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_cxxflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_try_ldflags.m4])dnl
+RUBY_M4_INCLUDE([ruby_universal_arch.m4])dnl
+RUBY_M4_INCLUDE([ruby_wasm_tools.m4])dnl
+RUBY_M4_INCLUDE([ruby_werror_flag.m4])dnl
+RUBY_M4_INCLUDE([mmtk_ruby.m4])dnl
 
 AS_IF([test "x${GITHUB_ACTIONS}" = xtrue],
 [AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
@@ -434,13 +439,11 @@ AS_CASE(["$build_os"],
     AC_MSG_CHECKING(for $CC linker warning)
     suppress_ld_waring=no
     echo 'int main(void) {return 0;}' > conftest.c
-    AS_IF([$CC -framework Foundation -o conftest -ggdb3 conftest.c 2>&1 |
+    AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep \
 	      -e '^ld: warning: ignoring duplicate libraries:' \
 	      -e '^ld: warning: text-based stub file' \
 	      -e '^ld: warning: -multiply_defined is obsolete' \
-	      -e "^warning: '\.debug_macinfo'" \
-	      -e '^note: while processing' \
 	   >/dev/null], [
 	suppress_ld_waring=yes
     ])
@@ -902,9 +905,9 @@ AS_IF([test "$GCC" = yes], [
     # suppress annoying -Wstrict-overflow warnings
     RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])
 
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb3, [debugflags=-ggdb3])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb, [debugflags=-ggdb])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-ggdb3, [debugflags=-ggdb3])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-ggdb, [debugflags=-ggdb])}
+    test "${debugflags+set}" || {RUBY_TRY_LDFLAGS(-g3, [debugflags=-g3])}
 ])
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 
@@ -4612,6 +4615,9 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	], [
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	])
+
+	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
+	$(empty)'
     } > $tmpmk && AS_IF([! grep '^ruby:' $tmpmk > /dev/null], [
 	AS_IF([test "${gnumake}" = yes], [
 	    tmpgmk=confgmk$$.tmp

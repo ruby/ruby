@@ -48,7 +48,7 @@ big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint
 
 /**
  * Internal use for karatsuba_multiply. Calculates `a - b - c` with the given
- * base. Assume a, b, c, a - b - c all to be poitive.
+ * base. Assume a, b, c, a - b - c all to be positive.
  * Return pm_integer_t with values allocated. Not normalized.
  */
 static void
