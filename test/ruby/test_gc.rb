@@ -453,13 +453,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter
-    env = {
-      "RUBY_GC_HEAP_INIT_SLOTS" => "100"
-    }
-    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [])
-    assert_in_out_err([env, "-W:deprecated", "-e", "exit"], "", [],
-                       /The environment variable RUBY_GC_HEAP_INIT_SLOTS is deprecated; use environment variables RUBY_GC_HEAP_%d_INIT_SLOTS instead/)
-
     env = {}
     GC.stat_heap.keys.each do |heap|
       env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = "200000"
