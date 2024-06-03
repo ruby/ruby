@@ -430,7 +430,7 @@ Dump some information.
 Prints the specified target.
 .Ar target
 can be one of:
-.Bl -hang -offset indent
+.Bl -hang -offset indent -width "version"
 .It Sy version
 Print version description (same as
 .Fl -version).
@@ -448,7 +448,7 @@ Check syntax (same as
 .El
 .Pp
 Or one of the following, which are intended for debugging the interpreter:
-.Bl -hang -offset indent -tag -width "+error-tolerant"
+.Bl -hang -offset indent -width "parsetree"
 .It Sy yydebug
 Enable compiler debug mode (same as
 .Fl -yydebug).
@@ -562,11 +562,11 @@ Reaching the old malloc limit.
 .Pp
 There are currently 4 possible areas where the GC may be tuned by
 the following 11 environment variables:
-.Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
+.Bl -hang -compact -width "RUBY_GC_HEAP_INIT_SLOTS"
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
 Initial allocation slots. Applies to all slot sizes.  Introduced in Ruby 2.1, default: 10000.
 .Pp
-.It Ev RUBY_GC_HEAP_%d_INIT_SLOTS
+.It Ev RUBY_GC_HEAP_ Ns Ar %d Ns Ev _INIT_SLOTS
 Initial allocation of slots in a specific heap.
 The available heaps can be found in the keys of `GC.stat_heap`.
 Introduced in Ruby 3.3.
