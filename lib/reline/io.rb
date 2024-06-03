@@ -19,11 +19,7 @@ module Reline
             io
           end
         else
-          if $stdout.tty?
-            Reline::ANSI.new
-          else
-            Reline::Dumb.new
-          end
+          Reline::ANSI.new
         end
       end
     end

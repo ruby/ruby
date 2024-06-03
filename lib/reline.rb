@@ -254,7 +254,6 @@ module Reline
           raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
         end
 
-        Reline.update_iogate
         io_gate.with_raw_input do
           inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
         end
@@ -277,7 +276,6 @@ module Reline
 
     def readline(prompt = '', add_hist = false)
       @mutex.synchronize do
-        Reline.update_iogate
         io_gate.with_raw_input do
           inner_readline(prompt, add_hist, false)
         end
@@ -461,7 +459,7 @@ module Reline
     end
 
     private def may_req_ambiguous_char_width
-      @ambiguous_width = 2 if io_gate.dumb? or !STDOUT.tty?
+      @ambiguous_width = 2 if io_gate.dumb? || !STDIN.tty? || !STDOUT.tty?
       return if defined? @ambiguous_width
       io_gate.move_cursor_column(0)
       begin
@@ -554,18 +552,6 @@ module Reline
 
   def self.line_editor
     core.line_editor
-  end
-
-  def self.update_iogate
-    return if core.config.test_mode
-
-    # Need to change IOGate when `$stdout.tty?` change from false to true by `$stdout.reopen`
-    # Example: rails/spring boot the application in non-tty, then run console in tty.
-    if ENV['TERM'] != 'dumb' && core.io_gate.dumb? && $stdout.tty?
-      require 'reline/io/ansi'
-      remove_const(:IOGate)
-      const_set(:IOGate, Reline::ANSI.new)
-    end
   end
 end
 
