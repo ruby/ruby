@@ -684,10 +684,8 @@ class Reline::LineEditor
           @trap_key.each do |t|
             @config.add_oneshot_key_binding(t, @name)
           end
-        elsif @trap_key.is_a?(Array)
+        else
           @config.add_oneshot_key_binding(@trap_key, @name)
-        elsif @trap_key.is_a?(Integer) or @trap_key.is_a?(Reline::Key)
-          @config.add_oneshot_key_binding([@trap_key], @name)
         end
       end
       dialog_render_info

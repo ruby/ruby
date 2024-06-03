@@ -1,5 +1,5 @@
-class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
-  MAPPING = [
+module Reline::KeyActor
+  VI_INSERT_MAPPING = [
     #   0 ^@
     :ed_unassigned,
     #   1 ^A

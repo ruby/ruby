@@ -303,12 +303,12 @@ class Reline::Test < Reline::TestCase
 
   def test_vi_editing_mode
     Reline.vi_editing_mode
-    assert_equal(Reline::KeyActor::ViInsert, Reline.core.config.editing_mode.class)
+    assert_equal(:vi_insert, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
-    assert_equal(Reline::KeyActor::Emacs, Reline.core.config.editing_mode.class)
+    assert_equal(:emacs, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_add_dialog_proc

@@ -1,6 +1,6 @@
 require_relative 'helper'
 
-class Reline::KeyActor::Emacs::Test < Reline::TestCase
+class Reline::KeyActor::EmacsTest < Reline::TestCase
   def setup
     Reline.send(:test_mode)
     @prompt = '> '
