@@ -517,6 +517,10 @@ enabled for only mswin32, mingw32, and OS/2 platforms.  If this
 variable is not defined, Ruby refers to
 .Ev COMSPEC .
 .Pp
+.It Ev RUBY_FREE_AT_EXIT
+If set, Ruby tries to free all dynamically allocated memories.
+Introduced in Ruby 3.3, default: unset.
+.Pp
 .It Ev RUBY_IO_BUFFER_DEFAULT_SIZE
 The custom default buffer size of
 .Li IO::Buffer .
