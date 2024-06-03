@@ -1062,10 +1062,10 @@ static void vm_adjust_stack_forwarding(const struct rb_execution_context_struct 
 
 static VALUE
 vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                    CALL_DATA *cd, const rb_iseq_t *blockiseq, const int is_super,
+                    CALL_DATA cd, const rb_iseq_t *blockiseq, const int is_super,
                     struct rb_forwarding_call_data *adjusted_cd, struct rb_callinfo *adjusted_ci)
 {
-    CALL_INFO site_ci = (*cd)->ci;
+    CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
     RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
@@ -1098,17 +1098,8 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
             );
 
     adjusted_cd->cd.ci = adjusted_ci;
-    adjusted_cd->cd.cc = (*cd)->cc;
+    adjusted_cd->cd.cc = cd->cc;
     adjusted_cd->caller_ci = caller_ci;
 
-    *cd = &adjusted_cd->cd;
-
     return bh;
-}
-
-static VALUE
-vm_caller_setup_args(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                    CALL_DATA *cd, const rb_iseq_t *blockiseq, const int is_super)
-{
-    return vm_caller_setup_arg_block(ec, GET_CFP(), (*cd)->ci, blockiseq, is_super);
 }
