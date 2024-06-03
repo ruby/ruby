@@ -208,6 +208,7 @@ RSpec.describe "bundle info" do
 
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
+      skip "fails on ruby/ruby CI" # https://github.com/rubygems/rubygems/issues/7713
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
