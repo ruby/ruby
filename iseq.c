@@ -346,7 +346,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 if (cc_is_active(cds[i].cc, reference_updating)) {
                     rb_gc_mark_and_move_ptr(&cds[i].cc);
                 }
-                else {
+                else if (cds[i].cc != rb_vm_empty_cc()) {
                     cds[i].cc = rb_vm_empty_cc();
                 }
             }
