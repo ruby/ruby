@@ -5927,23 +5927,22 @@ rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd
 
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
-    CALL_DATA _cd = cd;
 
     VALUE bh;
+    VALUE val;
 
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), &cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
+    if (vm_ci_flag(cd->ci) & VM_CALL_FORWARDING) {
+        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
+
+        val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
+
+        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        }
     }
     else {
-        bh = vm_caller_setup_args(ec, GET_CFP(), &cd, blockiseq, false);
-    }
-
-    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
-
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
-          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
-      }
+        bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     }
 
     VM_EXEC(ec, val);
@@ -5966,23 +5965,22 @@ rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_
     stack_check(ec);
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
-    CALL_DATA _cd = cd;
 
     VALUE bh;
+    VALUE val;
 
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-        bh = vm_caller_setup_fwd_args(ec, GET_CFP(), &cd, blockiseq, true, &adjusted_cd, &adjusted_ci);
+    if (vm_ci_flag(cd->ci) & VM_CALL_FORWARDING) {
+        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, true, &adjusted_cd, &adjusted_ci);
+
+        val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
+
+        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        }
     }
     else {
-        bh = vm_caller_setup_args(ec, GET_CFP(), &cd, blockiseq, true);
-    }
-
-    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
-
-    if (vm_ci_flag(_cd->ci) & VM_CALL_FORWARDING) {
-      if (_cd->cc != cd->cc && vm_cc_markable(cd->cc)) {
-          RB_OBJ_WRITE(GET_ISEQ(), &_cd->cc, cd->cc);
-      }
+        bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
+        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
     }
 
     VM_EXEC(ec, val);
