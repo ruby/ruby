@@ -5,7 +5,7 @@
     └── body: (length: 1)
         └── @ StringNode (location: (1,0)-(2,1))
             ├── flags: ∅
-            ├── opening_loc: (1,0)-(1,3) = "%Q{"
+            ├── opening_loc: (1,0)-(1,3) = "%q{"
             ├── content_loc: (1,3)-(2,0) = " \\\n"
             ├── closing_loc: (2,0)-(2,1) = "}"
-            └── unescaped: " "
+            └── unescaped: " \\\n"
