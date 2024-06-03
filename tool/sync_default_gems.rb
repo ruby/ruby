@@ -273,7 +273,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/ext/strscan", "ext")
       cp_r("#{upstream}/test/strscan", "test")
       cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
-      mv(["ext/strscan/helper_methods.md", "ext/strscan/link_refs.txt", "ext/strscan/strscan.md"], "doc/strscan")
       rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
       `git checkout ext/strscan/depend`
     when "cgi"
