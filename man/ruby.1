@@ -655,6 +655,11 @@ GC frequency but increasing malloc growth until RUBY_GC_OLDMALLOC_LIMIT_MAX
 is reached.
 Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
 .Pp
+.It Ev RUBY_SHARED_FIBER_POOL_FREE_STACKS
+Frees stacks of pooled fibers, if set to 1.
+Do not free the stacks if set to 0.
+Introduced in Ruby 2.7, default: 1 (no growth)
+.Pp
 .El
 .Sh STACK SIZE ENVIRONMENT
 Stack size environment variables are implementation-dependent and
