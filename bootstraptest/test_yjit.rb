@@ -4992,3 +4992,15 @@ assert_equal '1', %q{
   array.clear
   test_body(array)
 }
+
+# regression test for splatting empty array to cfunc
+assert_normal_exit %q{
+  def test_body(args) = Array(1, *args)
+
+  test_body([])
+  0x100.times do
+    array = Array.new(100)
+    array.clear
+    test_body(array)
+  end
+}
