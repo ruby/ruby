@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.0.7"
+#define STRSCAN_VERSION "3.0.9"
 
 /* =======================================================================
                          Data Type Definitions
@@ -1243,10 +1243,10 @@ strscan_size(VALUE self)
  * If nothing was priorly matched, it returns nil.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
- *   s.captures                         # -> ["Fri", "Dec", "12"]
- *   s.scan(/(\w+) (\w+) (\d+) /)       # -> nil
- *   s.captures                         # -> nil
+ *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> "Fri Dec 12 "
+ *   s.captures                                # -> ["Fri", "Dec", "12", nil]
+ *   s.scan(/(\w+) (\w+) (\d+) (1980)?/)       # -> nil
+ *   s.captures                                # -> nil
  */
 static VALUE
 strscan_captures(VALUE self)
@@ -1262,9 +1262,13 @@ strscan_captures(VALUE self)
     new_ary  = rb_ary_new2(num_regs);
 
     for (i = 1; i < num_regs; i++) {
-        VALUE str = extract_range(p,
-                                  adjust_register_position(p, p->regs.beg[i]),
-                                  adjust_register_position(p, p->regs.end[i]));
+        VALUE str;
+        if (p->regs.beg[i] == -1)
+            str = Qnil;
+        else
+            str = extract_range(p,
+                                adjust_register_position(p, p->regs.beg[i]),
+                                adjust_register_position(p, p->regs.end[i]));
         rb_ary_push(new_ary, str);
     }
 

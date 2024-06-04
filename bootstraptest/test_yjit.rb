@@ -4455,8 +4455,19 @@ assert_equal '[[{:a=>1}], {}]', %q{
   body
 }
 
+# regression test for splatting empty array to cfunc
+assert_normal_exit %q{
+  def test_body(args) = Array(1, *args)
+  test_body([])
+  0x100.times do
+    array = Array.new(100)
+    array.clear
+    test_body(array)
+  end
+}
+
 # compiling code shouldn't emit warnings as it may call into more Ruby code
-assert_equal 'ok', <<~'RUBY'
+assert_equal 'ok', <<~'RUBY' unless rjit_enabled? # Not yet working on RJIT
   # [Bug #20522]
   $VERBOSE = true
   Warning[:performance] = true
