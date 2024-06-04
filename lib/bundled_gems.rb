@@ -30,6 +30,7 @@ module Gem::BUNDLED_GEMS
     "pstore" => "3.5.0",
     "rdoc" => "3.5.0",
     "win32ole" => "3.5.0",
+    "fiddle" => "3.5.0",
   }.freeze
 
   EXACT = {
