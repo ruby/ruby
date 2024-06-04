@@ -13,28 +13,32 @@ typedef struct {
     /** A pointer to the end of the source that we are parsing. */
     const uint8_t *end;
 
-    /** A list of named captures that we've found. */
-    pm_string_list_t *named_captures;
-
     /** Whether the encoding has changed from the default. */
     bool encoding_changed;
 
     /** The encoding of the source. */
     const pm_encoding_t *encoding;
+
+    /** The callback to call when a named capture group is found. */
+    pm_regexp_name_callback_t name_callback;
+
+    /** The data to pass to the name callback. */
+    void *name_data;
 } pm_regexp_parser_t;
 
 /**
  * This initializes a new parser with the given source.
  */
 static void
-pm_regexp_parser_init(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding) {
+pm_regexp_parser_init(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, bool encoding_changed, const pm_encoding_t *encoding, pm_regexp_name_callback_t name_callback, void *name_data) {
     *parser = (pm_regexp_parser_t) {
         .start = start,
         .cursor = start,
         .end = end,
-        .named_captures = named_captures,
         .encoding_changed = encoding_changed,
-        .encoding = encoding
+        .encoding = encoding,
+        .name_callback = name_callback,
+        .name_data = name_data
     };
 }
 
@@ -45,7 +49,7 @@ static void
 pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     pm_string_t string;
     pm_string_shared_init(&string, start, end);
-    pm_string_list_append(parser->named_captures, &string);
+    parser->name_callback(&string, parser->name_data);
     pm_string_free(&string);
 }
 
@@ -646,8 +650,8 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * groups.
  */
 PRISM_EXPORTED_FUNCTION bool
-pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding) {
+pm_regexp_parse(const uint8_t *source, size_t size, bool encoding_changed, const pm_encoding_t *encoding, pm_regexp_name_callback_t name_callback, void *name_data) {
     pm_regexp_parser_t parser;
-    pm_regexp_parser_init(&parser, source, source + size, named_captures, encoding_changed, encoding);
+    pm_regexp_parser_init(&parser, source, source + size, encoding_changed, encoding, name_callback, name_data);
     return pm_regexp_parse_pattern(&parser);
 }

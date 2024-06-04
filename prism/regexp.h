@@ -18,16 +18,21 @@
 #include <string.h>
 
 /**
- * Parse a regular expression and extract the names of all of the named capture
- * groups.
+ * This callback is called when a named capture group is found.
+ */
+typedef void (*pm_regexp_name_callback_t)(const pm_string_t *name, void *data);
+
+/**
+ * Parse a regular expression.
  *
  * @param source The source code to parse.
  * @param size The size of the source code.
- * @param named_captures The list to add the names of the named capture groups.
  * @param encoding_changed Whether or not the encoding changed from the default.
  * @param encoding The encoding of the source code.
+ * @param name_callback The callback to call when a named capture group is found.
+ * @param name_data The data to pass to the name callback.
  * @return Whether or not the parsing was successful.
  */
-PRISM_EXPORTED_FUNCTION bool pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding);
+PRISM_EXPORTED_FUNCTION bool pm_regexp_parse(const uint8_t *source, size_t size, bool encoding_changed, const pm_encoding_t *encoding, pm_regexp_name_callback_t name_callback, void *name_data);
 
 #endif
