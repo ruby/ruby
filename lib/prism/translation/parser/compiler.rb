@@ -1507,9 +1507,20 @@ module Prism
         # /foo/
         # ^^^^^
         def visit_regular_expression_node(node)
+          content = node.content
+          parts =
+            if content.include?("\n")
+              offset = node.content_loc.start_offset
+              content.lines.map do |line|
+                builder.string_internal([line, srange_offsets(offset, offset += line.bytesize)])
+              end
+            else
+              [builder.string_internal(token(node.content_loc))]
+            end
+
           builder.regexp_compose(
             token(node.opening_loc),
-            [builder.string_internal(token(node.content_loc))],
+            parts,
             [node.closing[0], srange_offsets(node.closing_loc.start_offset, node.closing_loc.start_offset + 1)],
             builder.regexp_options([node.closing[1..], srange_offsets(node.closing_loc.start_offset + 1, node.closing_loc.end_offset)])
           )
