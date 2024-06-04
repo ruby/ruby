@@ -639,8 +639,6 @@ impl BitVector
             num_bits -= num_bits_in_byte;
         }
 
-        dbg!(out_bits);
-
         // Update the read index
         *bit_idx = cur_idx;
 
@@ -674,7 +672,7 @@ impl BitVector
 
     fn read_op(&self, bit_idx: &mut usize) -> CtxOp
     {
-        unsafe { std::mem::transmute(self.read_u8(bit_idx)) }
+        unsafe { std::mem::transmute(self.read_u4(bit_idx)) }
     }
 }
 
@@ -783,10 +781,15 @@ mod bitvector_tests {
         assert!(start_idx == 0);
         assert!(bits.num_bits() > 0);
         assert!(bits.num_bytes() > 0);
+
+        // Make sure that the round trip matches the input
+        let ctx2 = Context::decode(&bits, 0);
+        assert!(ctx2 == ctx);
     }
 }
 
 // Context encoding opcodes (4 bits)
+#[derive(Debug)]
 #[repr(u8)]
 enum CtxOp
 {
@@ -914,12 +917,73 @@ impl Context
     // Decode a compressed context representation
     pub fn decode(bits: &BitVector, start_idx: usize) -> Context
     {
+        let mut ctx = Context::default();
 
+        let mut idx = start_idx;
 
+        // Small vs large stack size encoding
+        if bits.read_u1(&mut idx) == 1 {
+            ctx.stack_size = bits.read_u2(&mut idx);
+            ctx.sp_offset = ctx.stack_size as i8;
+        } else
+        {
+            ctx.stack_size = bits.read_u8(&mut idx);
+            ctx.sp_offset = bits.read_u8(&mut idx) as i8;
+        }
 
+        // Bitmap of which stack temps are in a register
+        ctx.reg_temps = RegTemps(bits.read_u8(&mut idx));
 
+        // chain_depth_and_flags: u8
+        ctx.chain_depth_and_flags = bits.read_u8(&mut idx);
 
-        todo!();
+        loop
+        {
+            //println!("reading op");
+            let op = bits.read_op(&mut idx);
+            //println!("got op {:?}", op);
+
+            match op {
+                CtxOp::SetSelfType => {
+                    ctx.self_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                }
+
+                CtxOp::SetLocalType => {
+                    let local_idx = bits.read_u3(&mut idx) as usize;
+                    let t = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    ctx.set_local_type(local_idx, t);
+                }
+
+                // Map temp to stack (known type)
+                CtxOp::SetTempType => {
+                    let temp_idx = bits.read_u3(&mut idx) as usize;
+                    let t = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    ctx.set_temp_mapping(temp_idx, TempMapping::map_to_stack(t));
+                }
+
+                // Map temp to local
+                CtxOp::MapTempLocal => {
+                    let temp_idx = bits.read_u3(&mut idx) as usize;
+                    let local_idx = bits.read_u3(&mut idx);
+                    ctx.set_temp_mapping(temp_idx, TempMapping::map_to_local(local_idx));
+                }
+
+                // Map temp to self
+                CtxOp::MapTempSelf => {
+                    let temp_idx = bits.read_u3(&mut idx) as usize;
+                    ctx.set_temp_mapping(temp_idx, TempMapping::map_to_self());
+                }
+
+                // Inline block pointer
+                CtxOp::SetInlineBlock => {
+                    ctx.inline_block = bits.read_uint(&mut idx, 64);
+                }
+
+                CtxOp::EndOfCode => break,
+            }
+        }
+
+        ctx
     }
 }
 
