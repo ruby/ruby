@@ -35,22 +35,7 @@ module Gem::BUNDLED_GEMS
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
 
   EXACT = {
-    "abbrev" => true,
-    "base64" => true,
-    "bigdecimal" => true,
-    "csv" => true,
-    "drb" => true,
-    "getoptlong" => true,
-    "mutex_m" => true,
-    "nkf" => true, "kconv" => "nkf",
-    "observer" => true,
-    "resolv-replace" => true,
-    "rinda" => true,
-    "syslog" => true,
-    "ostruct" => true,
-    "pstore" => true,
-    "rdoc" => true,
-    "win32ole" => true,
+    "kconv" => "nkf",
   }.freeze
 
   PREFIXED = {
@@ -124,7 +109,7 @@ module Gem::BUNDLED_GEMS
     else
       return
     end
-    EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
+    (EXACT[n] || !!SINCE[n]) or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
   end
 
   def self.warning?(name, specs: nil)
