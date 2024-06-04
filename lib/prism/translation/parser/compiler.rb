@@ -109,9 +109,9 @@ module Prism
         # { a: 1 }
         #   ^^^^
         def visit_assoc_node(node)
-          if in_pattern
-            key = node.key
+          key = node.key
 
+          if in_pattern
             if node.value.is_a?(ImplicitNode)
               if key.is_a?(SymbolNode)
                 if key.opening.nil?
@@ -122,31 +122,33 @@ module Prism
               else
                 builder.match_hash_var_from_str(token(key.opening_loc), visit_all(key.parts), token(key.closing_loc))
               end
-            else
+            elsif key.opening.nil?
               builder.pair_keyword([key.unescaped, srange(key.location)], visit(node.value))
+            else
+              builder.pair_quoted(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc), visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
             if (value = node.value.value).is_a?(LocalVariableReadNode)
               builder.pair_keyword(
-                [node.key.unescaped, srange(node.key)],
-                builder.ident([value.name, srange(node.key.value_loc)]).updated(:lvar)
+                [key.unescaped, srange(key)],
+                builder.ident([value.name, srange(key.value_loc)]).updated(:lvar)
               )
             else
-              builder.pair_label([node.key.unescaped, srange(node.key.location)])
+              builder.pair_label([key.unescaped, srange(key.location)])
             end
           elsif node.operator_loc
-            builder.pair(visit(node.key), token(node.operator_loc), visit(node.value))
-          elsif node.key.is_a?(SymbolNode) && node.key.opening_loc.nil?
-            builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
+            builder.pair(visit(key), token(node.operator_loc), visit(node.value))
+          elsif key.is_a?(SymbolNode) && key.opening_loc.nil?
+            builder.pair_keyword([key.unescaped, srange(key.location)], visit(node.value))
           else
             parts =
-              if node.key.is_a?(SymbolNode)
-                [builder.string_internal([node.key.unescaped, srange(node.key.value_loc)])]
+              if key.is_a?(SymbolNode)
+                [builder.string_internal([key.unescaped, srange(key.value_loc)])]
               else
-                visit_all(node.key.parts)
+                visit_all(key.parts)
               end
 
-            builder.pair_quoted(token(node.key.opening_loc), parts, token(node.key.closing_loc), visit(node.value))
+            builder.pair_quoted(token(key.opening_loc), parts, token(key.closing_loc), visit(node.value))
           end
         end
 

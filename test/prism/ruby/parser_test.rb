@@ -71,7 +71,6 @@ module Prism
       "seattlerb/regexp_esc_C_slash.txt",
       "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/literal.txt",
-      "unparser/corpus/literal/pattern.txt",
       "unparser/corpus/semantic/dstr.txt",
       "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
       "whitequark/parser_bug_640.txt",
