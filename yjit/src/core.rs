@@ -867,6 +867,17 @@ impl Context
 
         bits
     }
+
+    // Decode a compressed context representation
+    pub fn decode(bits: &BitVector, start_idx: usize) -> Context
+    {
+
+
+
+
+
+        todo!();
+    }
 }
 
 
@@ -2018,6 +2029,11 @@ impl JITState {
         // Test the variable-length context encoding logic
         {
             let ctx = self.get_starting_ctx();
+
+            if ctx == Context::default() {
+                println!("trying to encode default context");
+            }
+
             let bits = ctx.encode();
             let num_bytes = bits.num_bytes();
             //println!("num_bytes={}", num_bytes);
@@ -2042,7 +2058,6 @@ impl JITState {
             }
         }
         */
-
 
 
 
