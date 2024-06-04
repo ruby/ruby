@@ -1979,7 +1979,7 @@ module Prism
         # Note that end_offset is allowed to be nil, in which case this will
         # search until the end of the string.
         def srange_find(start_offset, end_offset, tokens)
-          if (match = source_buffer.source.byteslice(start_offset...end_offset).match(/(\s*)(#{tokens.join("|")})/))
+          if (match = source_buffer.source.byteslice(start_offset...end_offset).match(/\A(\s*)(#{tokens.join("|")})/))
             _, whitespace, token = *match
             token_offset = start_offset + whitespace.bytesize
 
