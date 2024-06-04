@@ -4465,3 +4465,46 @@ assert_normal_exit %q{
     test_body(array)
   end
 }
+
+# compiling code shouldn't emit warnings as it may call into more Ruby code
+assert_equal 'ok', <<~'RUBY' unless rjit_enabled? # Not yet working on RJIT
+  # [Bug #20522]
+  $VERBOSE = true
+  Warning[:performance] = true
+
+  module StrictWarnings
+    def warn(msg, category: nil, **)
+      raise warn
+    end
+  end
+  Warning.singleton_class.prepend(StrictWarnings)
+
+  class A
+    def compiled_method(is_private)
+      @some_ivar = is_private
+    end
+  end
+
+  shape_max_variations = 8
+  if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS) && RubyVM::Shape::SHAPE_MAX_VARIATIONS != shape_max_variations
+    raise "Expected SHAPE_MAX_VARIATIONS to be 8, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
+  end
+
+  100.times do |i|
+    klass = Class.new(A)
+    (shape_max_variations - 1).times do |j|
+      obj = klass.new
+      obj.instance_variable_set("@base_#{i}", 42)
+      obj.instance_variable_set("@ivar_#{j}", 42)
+    end
+    obj = klass.new
+    obj.instance_variable_set("@base_#{i}", 42)
+    begin
+      obj.compiled_method(true)
+    rescue
+      # expected
+    end
+  end
+
+  :ok
+RUBY
