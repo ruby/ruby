@@ -5015,12 +5015,13 @@ assert_normal_exit %q{
 }
 
 # compiling code shouldn't emit warnings as it may call into more Ruby code
-assert_normal_exit %q{
+assert_equal 'ok', <<~'RUBY'
   # [Bug #20522]
+  $VERBOSE = true
   Warning[:performance] = true
 
   module StrictWarnings
-    def warn(msg, category: nil, **)
+    def warn(msg, **)
       raise msg
     end
   end
@@ -5032,9 +5033,14 @@ assert_normal_exit %q{
     end
   end
 
+  shape_max_variations = 8
+  if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS) && RubyVM::Shape::SHAPE_MAX_VARIATIONS != shape_max_variations
+    raise "Expected SHAPE_MAX_VARIATIONS to be #{shape_max_variations}, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
+  end
+
   100.times do |i|
     klass = Class.new(A)
-    7.times do |j|
+    (shape_max_variations - 1).times do |j|
       obj = klass.new
       obj.instance_variable_set("@base_#{i}", 42)
       obj.instance_variable_set("@ivar_#{j}", 42)
@@ -5044,6 +5050,9 @@ assert_normal_exit %q{
     begin
       obj.compiled_method(true)
     rescue
+      # expected
     end
   end
-}
+
+  :ok
+RUBY
