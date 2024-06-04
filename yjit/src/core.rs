@@ -609,16 +609,18 @@ impl BitVector
     }
 
     // Read a uint value at a given bit index
-    fn read_uint_at(&self, start_bit_idx: usize, mut num_bits: usize) -> u64
+    // The bit index will is incremented after the value is read
+    fn read_uint(&self, bit_idx: &mut usize, mut num_bits: usize) -> u64
     {
-        let mut bit_idx = start_bit_idx;
+        let start_bit_idx = *bit_idx;
+        let mut cur_idx = *bit_idx;
 
         // Read the bits in the first byte
-        let bit_mod = bit_idx % 8;
-        let bits_in_byte = self.bytes[bit_idx / 8] >> bit_mod;
+        let bit_mod = cur_idx % 8;
+        let bits_in_byte = self.bytes[cur_idx / 8] >> bit_mod;
 
         let num_bits_in_byte = std::cmp::min(num_bits, 8 - bit_mod);
-        bit_idx += num_bits_in_byte;
+        cur_idx += num_bits_in_byte;
         num_bits -= num_bits_in_byte;
 
         let mut out_bits: u64 = bits_in_byte as u64;
@@ -626,20 +628,53 @@ impl BitVector
         // While we have bits left to read
         while num_bits > 0 {
             let num_bits_in_byte = std::cmp::min(num_bits, 8);
-            assert!(bit_idx % 8 == 0);
-            let byte = self.bytes[bit_idx / 8] as u64;
+            assert!(cur_idx % 8 == 0);
+            let byte = self.bytes[cur_idx / 8] as u64;
 
             let bits_in_byte = byte & ((1 << num_bits) - 1);
-            out_bits |= bits_in_byte << (bit_idx - start_bit_idx);
+            out_bits |= bits_in_byte << (cur_idx - start_bit_idx);
 
             // Move to the next byte/offset
-            bit_idx += num_bits_in_byte;
+            cur_idx += num_bits_in_byte;
             num_bits -= num_bits_in_byte;
         }
 
         dbg!(out_bits);
 
+        // Update the read index
+        *bit_idx = cur_idx;
+
         out_bits
+    }
+
+    fn read_u8(&self, bit_idx: &mut usize) -> u8
+    {
+        self.read_uint(bit_idx, 8) as u8
+    }
+
+    fn read_u4(&self, bit_idx: &mut usize) -> u8
+    {
+        self.read_uint(bit_idx, 4) as u8
+    }
+
+    fn read_u3(&self, bit_idx: &mut usize) -> u8
+    {
+        self.read_uint(bit_idx, 3) as u8
+    }
+
+    fn read_u2(&self, bit_idx: &mut usize) -> u8
+    {
+        self.read_uint(bit_idx, 2) as u8
+    }
+
+    fn read_u1(&self, bit_idx: &mut usize) -> u8
+    {
+        self.read_uint(bit_idx, 1) as u8
+    }
+
+    fn read_op(&self, bit_idx: &mut usize) -> CtxOp
+    {
+        unsafe { std::mem::transmute(self.read_u8(bit_idx)) }
     }
 }
 
@@ -669,7 +704,7 @@ mod bitvector_tests {
     fn write_3() {
         let mut arr = BitVector::new();
         arr.push_uint(3, 2);
-        assert!(arr.read_uint_at(0, 2) == 3);
+        assert!(arr.read_uint(&mut 0, 2) == 3);
     }
 
     #[test]
@@ -677,7 +712,7 @@ mod bitvector_tests {
         let mut arr = BitVector::new();
         arr.push_uint(1, 1);
         arr.push_uint(1, 1);
-        assert!(arr.read_uint_at(0, 2) == 3);
+        assert!(arr.read_uint(&mut 0, 2) == 3);
     }
 
     #[test]
@@ -688,14 +723,14 @@ mod bitvector_tests {
         arr.push_uint(1, 1);
 
         //dbg!(arr.read_uint(7, 2));
-        assert!(arr.read_uint_at(7, 2) == 3);
+        assert!(arr.read_uint(&mut 7, 2) == 3);
     }
 
     #[test]
     fn write_ff_0() {
         let mut arr = BitVector::new();
         arr.push_uint(0xFF, 8);
-        assert!(arr.read_uint_at(0, 8) == 0xFF);
+        assert!(arr.read_uint(&mut 0, 8) == 0xFF);
     }
 
     #[test]
@@ -704,7 +739,7 @@ mod bitvector_tests {
         let mut arr = BitVector::new();
         arr.push_uint(0, 3);
         arr.push_uint(0xFF, 8);
-        assert!(arr.read_uint_at(3, 8) == 0xFF);
+        assert!(arr.read_uint(&mut 3, 8) == 0xFF);
     }
 
     #[test]
@@ -714,14 +749,14 @@ mod bitvector_tests {
         arr.push_uint(0, 3);
         arr.push_u8(0xFF);
         arr.push_uint(0, 3);
-        assert!(arr.read_uint_at(3, 8) == 0xFF);
+        assert!(arr.read_uint(&mut 3, 8) == 0xFF);
     }
 
     #[test]
     fn write_read_u32_max() {
         let mut arr = BitVector::new();
         arr.push_uint(0xFF_FF_FF_FF, 32);
-        assert!(arr.read_uint_at(0, 32) == 0xFF_FF_FF_FF);
+        assert!(arr.read_uint(&mut 0, 32) == 0xFF_FF_FF_FF);
     }
 
     #[test]
@@ -729,7 +764,7 @@ mod bitvector_tests {
 
         let mut arr = BitVector::new();
         arr.push_uint(0xFF_FF_FF_FF, 64);
-        assert!(arr.read_uint_at(0, 64) == 0xFF_FF_FF_FF);
+        assert!(arr.read_uint(&mut 0, 64) == 0xFF_FF_FF_FF);
     }
 
     #[test]
@@ -737,7 +772,7 @@ mod bitvector_tests {
 
         let mut arr = BitVector::new();
         arr.push_uint(u64::MAX, 64);
-        assert!(arr.read_uint_at(0, 64) == u64::MAX);
+        assert!(arr.read_uint(&mut 0, 64) == u64::MAX);
     }
 
     #[test]
