@@ -20096,7 +20096,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
         .names = { 0 }
     };
 
-    pm_regexp_parse(pm_string_source(content), pm_string_length(content), parser->encoding_changed, parser->encoding, parse_regular_expression_named_capture, &callback_data);
+    pm_regexp_parse(parser, pm_string_source(content), pm_string_length(content), parse_regular_expression_named_capture, &callback_data);
     pm_constant_id_list_free(&callback_data.names);
 
     if (callback_data.match != NULL) {
