@@ -234,7 +234,7 @@ End
   end
   tests ||= ARGV
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
-  pathes = tests.map {|path| File.expand_path(path) }
+  paths = tests.map {|path| File.expand_path(path) }
 
   BT.progress = %w[- \\ | /]
   BT.progress_bs = "\b" * BT.progress[0].size
@@ -278,7 +278,7 @@ End
   end
 
   in_temporary_working_directory(dir) do
-    exec_test pathes
+    exec_test paths
   end
 end
 
@@ -290,8 +290,8 @@ def erase(e = true)
   end
 end
 
-def load_test pathes
-  pathes.each do |path|
+def load_test paths
+  paths.each do |path|
     load File.expand_path(path)
   end
 end
@@ -341,13 +341,13 @@ def concurrent_exec_test
   end
 end
 
-def exec_test(pathes)
+def exec_test(paths)
   # setup
-  load_test pathes
+  load_test paths
   BT_STATE.count = 0
   BT_STATE.error = 0
   BT.columns = 0
-  BT.width = pathes.map {|path| File.basename(path).size}.max + 2
+  BT.width = paths.map {|path| File.basename(path).size}.max + 2
 
   # execute tests
   if BT.wn > 1
