@@ -4,6 +4,9 @@
  * This is the parser that is going to handle parsing regular expressions.
  */
 typedef struct {
+    /** The parser that is currently being used. */
+    pm_parser_t *parser;
+
     /** A pointer to the start of the source that we are parsing. */
     const uint8_t *start;
 
@@ -25,22 +28,6 @@ typedef struct {
     /** The data to pass to the name callback. */
     void *name_data;
 } pm_regexp_parser_t;
-
-/**
- * This initializes a new parser with the given source.
- */
-static void
-pm_regexp_parser_init(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, bool encoding_changed, const pm_encoding_t *encoding, pm_regexp_name_callback_t name_callback, void *name_data) {
-    *parser = (pm_regexp_parser_t) {
-        .start = start,
-        .cursor = start,
-        .end = end,
-        .encoding_changed = encoding_changed,
-        .encoding = encoding,
-        .name_callback = name_callback,
-        .name_data = name_data
-    };
-}
 
 /**
  * This appends a new string to the list of named captures.
@@ -650,8 +637,17 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * groups.
  */
 PRISM_EXPORTED_FUNCTION bool
-pm_regexp_parse(const uint8_t *source, size_t size, bool encoding_changed, const pm_encoding_t *encoding, pm_regexp_name_callback_t name_callback, void *name_data) {
-    pm_regexp_parser_t parser;
-    pm_regexp_parser_init(&parser, source, source + size, encoding_changed, encoding, name_callback, name_data);
-    return pm_regexp_parse_pattern(&parser);
+pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data) {
+    pm_regexp_parser_t regexp_parser = {
+        .parser = parser,
+        .start = source,
+        .cursor = source,
+        .end = source + size,
+        .encoding_changed = parser->encoding_changed,
+        .encoding = parser->encoding,
+        .name_callback = name_callback,
+        .name_data = name_data
+    };
+
+    return pm_regexp_parse_pattern(&regexp_parser);
 }
