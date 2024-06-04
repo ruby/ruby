@@ -302,9 +302,8 @@ world"
       [[6, 2], :on_tstring_content, "3\n", state(:EXPR_BEG)],
       [[7, 0], :on_heredoc_end, "H1\n", state(:EXPR_BEG)],
     ]
-    assert_equal(code, Ripper.tokenize(code).join(""))
-    assert_equal(expected, result = Ripper.lex(code),
-                 proc {expected.zip(result) {|e, r| break diff(e, r) unless e == r}})
+
+    assert_lexer(expected, code)
 
     code = <<~'HEREDOC'
     <<-H1
@@ -330,6 +329,55 @@ world"
       [[6, 0], :on_tstring_content, "  3\n", state(:EXPR_BEG)],
       [[7, 0], :on_heredoc_end, "H1\n", state(:EXPR_BEG)],
     ]
+
+    assert_lexer(expected, code)
+  end
+
+  def test_invalid_escape_ctrl_mbchar
+    code = %["\\C-\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\C-\u{3042}", state(:EXPR_BEG)],
+      [[1, 7], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
+  def test_invalid_escape_meta_mbchar
+    code = %["\\M-\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\M-\u{3042}", state(:EXPR_BEG)],
+      [[1, 7], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
+  def test_invalid_escape_meta_ctrl_mbchar
+    code = %["\\M-\\C-\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\M-\\C-\u{3042}", state(:EXPR_BEG)],
+      [[1, 10], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
+  def test_invalid_escape_ctrl_meta_mbchar
+    code = %["\\C-\\M-\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\C-\\M-\u{3042}", state(:EXPR_BEG)],
+      [[1, 10], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
+  def assert_lexer(expected, code)
     assert_equal(code, Ripper.tokenize(code).join(""))
     assert_equal(expected, result = Ripper.lex(code),
                  proc {expected.zip(result) {|e, r| break diff(e, r) unless e == r}})
