@@ -115,7 +115,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
+          vcpkg --triplet x64-windows install libffi libyaml openssl zlib
 
       - name: Install libraries with scoop
         run: |
