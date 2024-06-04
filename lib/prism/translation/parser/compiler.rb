@@ -1293,13 +1293,9 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^
         def visit_multi_target_node(node)
-          elements = [*node.lefts]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.rights)
-
           builder.multi_lhs(
             token(node.lparen_loc),
-            visit_all(elements),
+            visit_all(multi_target_elements(node)),
             token(node.rparen_loc)
           )
         end
@@ -1307,9 +1303,11 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^^^^^^^
         def visit_multi_write_node(node)
-          elements = [*node.lefts]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.rights)
+          elements = multi_target_elements(node)
+
+          if elements.length == 1 && elements.first.is_a?(MultiTargetNode)
+            elements = multi_target_elements(elements.first)
+          end
 
           builder.multi_assign(
             builder.multi_lhs(
@@ -1919,6 +1917,14 @@ module Prism
           forwarding |= [:&, :"..."] if node.keyword_rest.is_a?(ForwardingParameterNode)
 
           forwarding
+        end
+
+        # Returns the set of targets for a MultiTargetNode or a MultiWriteNode.
+        def multi_target_elements(node)
+          elements = [*node.lefts]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.rights)
+          elements
         end
 
         # Negate the value of a numeric node. This is a special case where you
