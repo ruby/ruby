@@ -2484,7 +2484,7 @@ fn gen_setinstancevariable(
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
-        let next_shape = unsafe { rb_shape_get_next(current_shape, comptime_receiver, ivar_name) };
+        let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
         let next_shape_id = unsafe { rb_shape_id(next_shape) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,

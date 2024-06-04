@@ -695,8 +695,8 @@ rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
     return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
 }
 
-rb_shape_t *
-rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
+static inline rb_shape_t *
+shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
@@ -729,7 +729,7 @@ rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
 
         if (variation_created) {
             RCLASS_EXT(klass)->variation_count++;
-            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+            if (emit_warnings && rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
                 if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
                     rb_category_warn(
                         RB_WARN_CATEGORY_PERFORMANCE,
@@ -744,6 +744,18 @@ rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
     }
 
     return new_shape;
+}
+
+rb_shape_t *
+rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
+{
+    return shape_get_next(shape, obj, id, true);
+}
+
+rb_shape_t *
+rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id)
+{
+    return shape_get_next(shape, obj, id, false);
 }
 
 // Same as rb_shape_get_iv_index, but uses a provided valid shape id and index
