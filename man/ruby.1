@@ -588,11 +588,14 @@ Reaching the old malloc limit.
 .Pp
 There are currently 4 possible areas where the GC may be tuned by
 the following environment variables:
-.Bl -hang -compact -width "RUBY_GC_HEAP_%d_INIT_SLOTS"
-.It Ev RUBY_GC_HEAP_ Ns Ar %d Ns Ev _INIT_SLOTS
+.Bl -hang -compact -width "RUBY_GC_HEAP_n_INIT_SLOTS"
+.Pp
+.It Ev RUBY_GC_HEAP_ Ns Ar n Ns Ev _INIT_SLOTS
 Initial allocation of slots in a specific heap.
 The available heaps can be found in the keys of
 .Li GC.stat_heap .
+.Ar n
+is a decimal number between 0 and 4.
 Introduced in Ruby 3.3.
 .Pp
 .It Ev RUBY_GC_HEAP_FREE_SLOTS
