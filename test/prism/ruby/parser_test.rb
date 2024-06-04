@@ -45,6 +45,10 @@ module Prism
     # These files contain code that is being parsed incorrectly by the parser
     # gem, and therefore we don't want to compare against our translation.
     skip_incorrect = [
+      # https://github.com/whitequark/parser/issues/1017
+      "spanning_heredoc.txt",
+      "spanning_heredoc_newlines.txt",
+
       # https://github.com/whitequark/parser/issues/1016
       "whitequark/unary_num_pow_precedence.txt"
     ]
@@ -56,8 +60,6 @@ module Prism
       "heredocs_with_ignored_newlines.txt",
       "regex.txt",
       "regex_char_width.txt",
-      "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt",
       "unescaping.txt",
       "seattlerb/bug190.txt",
       "seattlerb/heredoc_nested.txt",
