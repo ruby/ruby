@@ -76,7 +76,7 @@ The scanner has:
     * Modifiable implicitly (various traversing methods, among others).
 
     More at [Byte Position][2] below.
- 
+
 * A <i>target substring</i>,
   which is a trailing substring of the stored string;
   it extends from the current position to the end of the stored string:
@@ -206,7 +206,7 @@ put_situation(scanner)
 The target substring is the the part of the [stored string][1]
 that extends from the current [byte position][2] to the end of the stored string;
 it is always either:
- 
+
 - The entire stored string (byte position is zero).
 - A trailing substring of the stored string (byte position positive).
 
