@@ -42,9 +42,16 @@ Parser::AST::Node.prepend(
 
 module Prism
   class ParserTest < TestCase
+    # These files contain code that is being parsed incorrectly by the parser
+    # gem, and therefore we don't want to compare against our translation.
+    skip_incorrect = [
+      # https://github.com/whitequark/parser/issues/1016
+      "whitequark/unary_num_pow_precedence.txt"
+    ]
+
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = [
+    skip_all = skip_incorrect | [
       "dash_heredocs.txt",
       "heredocs_with_ignored_newlines.txt",
       "regex.txt",
@@ -70,8 +77,7 @@ module Prism
       "whitequark/parser_bug_640.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
       "whitequark/ruby_bug_11989.txt",
-      "whitequark/slash_newline_in_heredocs.txt",
-      "whitequark/unary_num_pow_precedence.txt"
+      "whitequark/slash_newline_in_heredocs.txt"
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
