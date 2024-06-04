@@ -287,7 +287,7 @@ else
 
   Merger.version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s", revstr, tickets.map{|num| " [Backport ##{num}]"}.join
+  f.printf "merge revision(s) %s:%s", revs.join(', '), tickets.map{|num| " [Backport ##{num}]"}.join
   f.write commit_message
   f.flush
   f.close
