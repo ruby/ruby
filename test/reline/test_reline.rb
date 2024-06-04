@@ -378,6 +378,18 @@ class Reline::Test < Reline::TestCase
     assert_match(/#<Reline::Dumb/, out.chomp)
   end
 
+  def test_print_prompt_before_everything_else
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p Reline::IOGate.class; p Reline.readline 'prompt> '"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "abc\n"
+      io.close_write
+      io.read
+    end
+    assert_match(/\AReline::ANSI\nprompt> /, out)
+  end
+
   def test_require_reline_should_not_trigger_winsize
     pend if win?
     lib = File.expand_path("../../lib", __dir__)

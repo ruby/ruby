@@ -242,7 +242,7 @@ class Reline::ANSI < Reline::IO
   end
 
   def cursor_pos
-    if @input.tty? && @output.tty?
+    if both_tty?
       res = +''
       m = nil
       @input.raw do |stdin|
@@ -274,6 +274,10 @@ class Reline::ANSI < Reline::IO
       end
     end
     Reline::CursorPos.new(column, row)
+  end
+
+  def both_tty?
+    @input.tty? && @output.tty?
   end
 
   def move_cursor_column(x)
@@ -343,14 +347,14 @@ class Reline::ANSI < Reline::IO
 
   def prep
     # Enable bracketed paste
-    @output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste
+    @output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste && both_tty?
     retrieve_keybuffer
     nil
   end
 
   def deprep(otio)
     # Disable bracketed paste
-    @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste
+    @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste && both_tty?
     Signal.trap('WINCH', @old_winch_handler) if @old_winch_handler
   end
 end
