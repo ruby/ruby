@@ -520,6 +520,11 @@ impl BitVector
         }
     }
 
+    fn num_bits(&self) -> usize
+    {
+        self.num_bits
+    }
+
     // Total number of bytes taken
     fn num_bytes(&self) -> usize
     {
@@ -737,8 +742,11 @@ mod bitvector_tests {
 
     #[test]
     fn encode_default() {
+        let mut bits = BitVector::new();
         let ctx = Context::default();
-        let bits = ctx.encode();
+        let start_idx = ctx.encode(&mut bits);
+        assert!(start_idx == 0);
+        assert!(bits.num_bits() > 0);
         assert!(bits.num_bytes() > 0);
     }
 }
@@ -774,9 +782,9 @@ enum CtxOp
 
 impl Context
 {
-    pub fn encode(&self) -> BitVector
+    pub fn encode(&self, bits: &mut BitVector) -> usize
     {
-        let mut bits = BitVector::new();
+        let start_idx = bits.num_bits();
 
         // NOTE: this value is often zero or falls within
         // a small range, so could be compressed
@@ -865,7 +873,7 @@ impl Context
         // or store num ops at the beginning?
         bits.push_op(CtxOp::EndOfCode);
 
-        bits
+        start_idx
     }
 
     // Decode a compressed context representation
