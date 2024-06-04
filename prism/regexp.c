@@ -636,9 +636,9 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * Parse a regular expression and extract the names of all of the named capture
  * groups.
  */
-PRISM_EXPORTED_FUNCTION bool
+PRISM_EXPORTED_FUNCTION void
 pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data) {
-    pm_regexp_parser_t regexp_parser = {
+    pm_regexp_parse_pattern(&(pm_regexp_parser_t) {
         .parser = parser,
         .start = source,
         .cursor = source,
@@ -647,7 +647,5 @@ pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_rege
         .encoding = parser->encoding,
         .name_callback = name_callback,
         .name_data = name_data
-    };
-
-    return pm_regexp_parse_pattern(&regexp_parser);
+    });
 }
