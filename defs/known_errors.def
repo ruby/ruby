@@ -4,7 +4,7 @@ EADDRINUSE      Address already in use
 EADDRNOTAVAIL   Address not available
 EADV            Advertise error
 EAFNOSUPPORT    Address family not supported
-EAGAIN          Resource temporarily unavailable, try again
+EAGAIN          Resource temporarily unavailable, try again (may be the same value as EWOULDBLOCK)
 EALREADY        Connection already in progress
 EAUTH           Authentication error
 EBADARCH        Bad CPU type in executable
@@ -29,7 +29,7 @@ ECONNABORTED    Connection aborted
 ECONNREFUSED    Connection refused
 ECONNRESET      Connection reset
 EDEADLK         Resource deadlock avoided
-EDEADLOCK       Resource deadlock avoided
+EDEADLOCK       File locking deadlock error
 EDESTADDRREQ    Destination address required
 EDEVERR         Device error; e.g., printer paper out
 EDOM            Mathematics argument out of domain of function
@@ -149,7 +149,7 @@ ETIMEDOUT       Connection timed out
 ETOOMANYREFS    Too many references: cannot splice
 ETXTBSY         Text file busy
 EUCLEAN         Structure needs cleaning
-EUNATCH         Protocol drive not attached
+EUNATCH         Protocol driver not attached
 EUSERS          Too many users
 EWOULDBLOCK     Operation would block
 EXDEV           Invalid cross-device link
