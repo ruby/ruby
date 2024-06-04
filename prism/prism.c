@@ -20003,89 +20003,107 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
 }
 
 /**
+ * This struct is used to pass information between the regular expression parser
+ * and the named capture callback.
+ */
+typedef struct {
+    pm_parser_t *parser;
+    const pm_string_t *content;
+    pm_call_node_t *call;
+    pm_match_write_node_t *match;
+    pm_constant_id_list_t names;
+} parse_regular_expression_named_capture_data_t;
+
+/**
+ * This callback is called when the regular expression parser encounters a named
+ * capture group.
+ */
+void
+parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
+    parse_regular_expression_named_capture_data_t *callback_data = (parse_regular_expression_named_capture_data_t *) data;
+
+    pm_parser_t *parser = callback_data->parser;
+    const pm_string_t *content = callback_data->content;
+    pm_call_node_t *call = callback_data->call;
+    pm_constant_id_list_t *names = &callback_data->names;
+
+    const uint8_t *source = pm_string_source(capture);
+    size_t length = pm_string_length(capture);
+
+    pm_location_t location;
+    pm_constant_id_t name;
+
+    // If the name of the capture group isn't a valid identifier, we do
+    // not add it to the local table.
+    if (!pm_slice_is_valid_local(parser, source, source + length)) return;
+
+    if (content->type == PM_STRING_SHARED) {
+        // If the unescaped string is a slice of the source, then we can
+        // copy the names directly. The pointers will line up.
+        location = (pm_location_t) { .start = source, .end = source + length };
+        name = pm_parser_constant_id_location(parser, location.start, location.end);
+    } else {
+        // Otherwise, the name is a slice of the malloc-ed owned string,
+        // in which case we need to copy it out into a new string.
+        location = call->receiver->location;
+
+        void *memory = xmalloc(length);
+        if (memory == NULL) abort();
+
+        memcpy(memory, source, length);
+        name = pm_parser_constant_id_owned(parser, (uint8_t *) memory, length);
+    }
+
+    // Add this name to the list of constants if it is valid, not duplicated,
+    // and not a keyword.
+    if (name != 0 && !pm_constant_id_list_includes(names, name)) {
+        pm_constant_id_list_append(names, name);
+
+        int depth;
+        if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
+            // If the local is not already a local but it is a keyword, then we
+            // do not want to add a capture for this.
+            if (pm_local_is_keyword((const char *) source, length)) return;
+
+            // If the identifier is not already a local, then we will add it to
+            // the local table.
+            pm_parser_local_add(parser, name, location.start, location.end, 0);
+        }
+
+        // Here we lazily create the MatchWriteNode since we know we're
+        // about to add a target.
+        if (callback_data->match == NULL) {
+            callback_data->match = pm_match_write_node_create(parser, call);
+        }
+
+        // Next, create the local variable target and add it to the list of
+        // targets for the match.
+        pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create(parser, &location, name, depth == -1 ? 0 : (uint32_t) depth);
+        pm_node_list_append(&callback_data->match->targets, target);
+    }
+}
+
+/**
  * Potentially change a =~ with a regular expression with named captures into a
  * match write node.
  */
 static pm_node_t *
 parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call) {
-    pm_string_list_t named_captures = { 0 };
-    pm_node_t *result;
+    parse_regular_expression_named_capture_data_t callback_data = {
+        .parser = parser,
+        .content = content,
+        .call = call,
+        .names = { 0 }
+    };
 
-    if (pm_regexp_named_capture_group_names(pm_string_source(content), pm_string_length(content), &named_captures, parser->encoding_changed, parser->encoding) && (named_captures.length > 0)) {
-        // Since we should not create a MatchWriteNode when all capture names
-        // are invalid, creating a MatchWriteNode is delaid here.
-        pm_match_write_node_t *match = NULL;
-        pm_constant_id_list_t names = { 0 };
+    pm_regexp_parse(pm_string_source(content), pm_string_length(content), parser->encoding_changed, parser->encoding, parse_regular_expression_named_capture, &callback_data);
+    pm_constant_id_list_free(&callback_data.names);
 
-        for (size_t index = 0; index < named_captures.length; index++) {
-            pm_string_t *string = &named_captures.strings[index];
-
-            const uint8_t *source = pm_string_source(string);
-            size_t length = pm_string_length(string);
-
-            pm_location_t location;
-            pm_constant_id_t name;
-
-            // If the name of the capture group isn't a valid identifier, we do
-            // not add it to the local table.
-            if (!pm_slice_is_valid_local(parser, source, source + length)) continue;
-
-            if (content->type == PM_STRING_SHARED) {
-                // If the unescaped string is a slice of the source, then we can
-                // copy the names directly. The pointers will line up.
-                location = (pm_location_t) { .start = source, .end = source + length };
-                name = pm_parser_constant_id_location(parser, location.start, location.end);
-            } else {
-                // Otherwise, the name is a slice of the malloc-ed owned string,
-                // in which case we need to copy it out into a new string.
-                location = call->receiver->location;
-
-                void *memory = xmalloc(length);
-                if (memory == NULL) abort();
-
-                memcpy(memory, source, length);
-                name = pm_parser_constant_id_owned(parser, (uint8_t *) memory, length);
-            }
-
-            if (name != 0) {
-                // We dont want to create duplicate targets if the capture name
-                // is duplicated.
-                if (pm_constant_id_list_includes(&names, name)) continue;
-                pm_constant_id_list_append(&names, name);
-
-                int depth;
-                if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
-                    // If the identifier is not already a local, then we'll add
-                    // it to the local table unless it's a keyword.
-                    if (pm_local_is_keyword((const char *) source, length)) continue;
-
-                    pm_parser_local_add(parser, name, location.start, location.end, 0);
-                }
-
-                // Here we lazily create the MatchWriteNode since we know we're
-                // about to add a target.
-                if (match == NULL) match = pm_match_write_node_create(parser, call);
-
-                // Next, create the local variable target and add it to the
-                // list of targets for the match.
-                pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create(parser, &location, name, depth == -1 ? 0 : (uint32_t) depth);
-                pm_node_list_append(&match->targets, target);
-            }
-        }
-
-        if (match != NULL) {
-            result = (pm_node_t *) match;
-        } else {
-            result = (pm_node_t *) call;
-        }
-
-        pm_constant_id_list_free(&names);
+    if (callback_data.match != NULL) {
+        return (pm_node_t *) callback_data.match;
     } else {
-        result = (pm_node_t *) call;
+        return (pm_node_t *) call;
     }
-
-    pm_string_list_free(&named_captures);
-    return result;
 }
 
 static inline pm_node_t *
