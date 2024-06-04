@@ -355,24 +355,8 @@ Raise an exception with method Kernel#raise.
 
 To provide additional or alternate information,
 you may create custom exception classes;
-each should be a subclass of one of the built-in exception classes.
-
-If you are building a library or gem (or even if you're not),
-it's good practice to start with a single “generic” exception class
-(commonly an immediate subclass of StandardError or RuntimeError),
-and have its other exception classes derive from that class.
-This allows an exception handler to rescue the generic exception,
-thus also rescuing all its derived exceptions.
-
-For example:
+each should be a subclass of one of the built-in exception classes:
 
 ```
-class MyLib
-  class Error < StandardError; end
-  class FooError < Error; end
-  class BarError < Error; end
-end
+class MyException < StandardError; end
 ```
-
-An exception handler rescue clause that rescues `MyLib::Error`
-will also rescue the derived classes `MyLib::FooError` and `MyLib::BarError`.
