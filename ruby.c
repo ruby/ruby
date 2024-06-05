@@ -2302,7 +2302,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 #if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
-        opt->yjit = true; // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
+        bool rb_yjit_option_disable(void);
+        opt->yjit = !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
 

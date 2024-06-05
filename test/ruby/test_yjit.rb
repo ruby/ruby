@@ -56,14 +56,26 @@ class TestYJIT < Test::Unit::TestCase
   def test_yjit_enable
     args = []
     args << "--disable=yjit" if RubyVM::YJIT.enabled?
-    assert_separately(args, <<~RUBY)
-      assert_false RubyVM::YJIT.enabled?
-      assert_false RUBY_DESCRIPTION.include?("+YJIT")
+    assert_separately(args, <<~'RUBY')
+      refute_predicate RubyVM::YJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+YJIT"
 
       RubyVM::YJIT.enable
 
-      assert_true RubyVM::YJIT.enabled?
-      assert_true RUBY_DESCRIPTION.include?("+YJIT")
+      assert_predicate RubyVM::YJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+YJIT"
+    RUBY
+  end
+
+  def test_yjit_disable
+    assert_separately(["--yjit", "--yjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::YJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+YJIT"
+
+      RubyVM::YJIT.enable
+
+      assert_predicate RubyVM::YJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 
