@@ -65,7 +65,6 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_newline_list.h",
     "include/prism/util/pm_strncasecmp.h",
     "include/prism/util/pm_string.h",
-    "include/prism/util/pm_string_list.h",
     "include/prism/util/pm_strpbrk.h",
     "include/prism/version.h",
     "lib/prism.rb",
@@ -148,7 +147,6 @@ Gem::Specification.new do |spec|
     "src/util/pm_list.c",
     "src/util/pm_memchr.c",
     "src/util/pm_newline_list.c",
-    "src/util/pm_string_list.c",
     "src/util/pm_string.c",
     "src/util/pm_strncasecmp.c",
     "src/util/pm_strpbrk.c"
