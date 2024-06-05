@@ -22,6 +22,11 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
     return parse_option(str_ptr).is_some();
 }
 
+#[no_mangle]
+pub extern "C" fn rb_yjit_option_disable() -> bool {
+    return get_option!(disable);
+}
+
 /// Like rb_yjit_enabled_p, but for Rust code.
 pub fn yjit_enabled_p() -> bool {
     unsafe { rb_yjit_enabled_p }
@@ -34,7 +39,7 @@ pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
     yjit_reg_method_codegen_fns();
 
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
-    if yjit_enabled && !get_option!(disable) {
+    if yjit_enabled {
         yjit_init();
     }
 }
