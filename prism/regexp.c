@@ -438,16 +438,26 @@ pm_regexp_options_remove(pm_regexp_options_t *options, uint8_t key) {
  */
 static bool
 pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
+    const uint8_t *group_start = parser->cursor;
+
     // First, parse any options for the group.
     if (pm_regexp_char_accept(parser, '?')) {
         if (pm_regexp_char_is_eof(parser)) {
+            pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
             return false;
         }
+
         pm_regexp_options_t options;
         pm_regexp_options_init(&options);
 
         switch (*parser->cursor) {
             case '#': { // inline comments
+                parser->cursor++;
+                if (pm_regexp_char_is_eof(parser)) {
+                    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
+                    return false;
+                }
+
                 if (parser->encoding_changed && parser->encoding->multibyte) {
                     bool escaped = false;
 
@@ -491,6 +501,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
             case '<':
                 parser->cursor++;
                 if (pm_regexp_char_is_eof(parser)) {
+                    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
                     return false;
                 }
 
@@ -565,7 +576,9 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                 }
                 break;
             default:
-                return false;
+                parser->cursor++;
+                pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "undefined group option");
+                break;
         }
     }
 
@@ -578,7 +591,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
     }
 
     // Finally, make sure we have a closing parenthesis.
-    return pm_regexp_char_expect(parser, ')');
+    if (pm_regexp_char_expect(parser, ')')) return true;
+
+    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
+    return false;
 }
 
 /**
@@ -617,6 +633,10 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
         case '+':
             parser->cursor++;
             pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "target of repeat operator is not specified");
+            return true;
+        case ')':
+            parser->cursor++;
+            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "unmatched close parenthesis");
             return true;
         default: {
             size_t width;
