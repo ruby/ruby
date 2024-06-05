@@ -2768,7 +2768,7 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
  *    Errno::ENOENT.superclass # => SystemCallError
  *    Errno::ENOENT::Errno     # => 2
  *
- *  The names of nested classes are returned by method `Errno.constants`:
+ *  The names of nested classes are returned by method +Errno.constants+:
  *
  *    Errno.constants.size         # => 158
  *    Errno.constants.sort.take(5) # => [:E2BIG, :EACCES, :EADDRINUSE, :EADDRNOTAVAIL, :EADV]
