@@ -1262,43 +1262,47 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "adds current musl platform" do
-    build_repo4 do
-      build_gem "rcee_precompiled", "0.5.0" do |s|
-        s.platform = "x86_64-linux"
+  ["x86_64-linux", "x86_64-linux-musl"].each do |host_platform|
+    describe "on host platform #{host_platform}" do
+      it "adds current musl platform" do
+        build_repo4 do
+          build_gem "rcee_precompiled", "0.5.0" do |s|
+            s.platform = "x86_64-linux"
+          end
+
+          build_gem "rcee_precompiled", "0.5.0" do |s|
+            s.platform = "x86_64-linux-musl"
+          end
+        end
+
+        gemfile <<~G
+          source "#{file_uri_for(gem_repo4)}"
+
+          gem "rcee_precompiled", "0.5.0"
+        G
+
+        simulate_platform host_platform do
+          bundle "lock", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+          expect(lockfile).to eq(<<~L)
+            GEM
+              remote: #{file_uri_for(gem_repo4)}/
+              specs:
+                rcee_precompiled (0.5.0-x86_64-linux)
+                rcee_precompiled (0.5.0-x86_64-linux-musl)
+
+            PLATFORMS
+              x86_64-linux
+              x86_64-linux-musl
+
+            DEPENDENCIES
+              rcee_precompiled (= 0.5.0)
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
       end
-
-      build_gem "rcee_precompiled", "0.5.0" do |s|
-        s.platform = "x86_64-linux-musl"
-      end
-    end
-
-    gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
-
-      gem "rcee_precompiled", "0.5.0"
-    G
-
-    simulate_platform "x86_64-linux-musl" do
-      bundle "lock", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
-
-      expect(lockfile).to eq(<<~L)
-        GEM
-          remote: #{file_uri_for(gem_repo4)}/
-          specs:
-            rcee_precompiled (0.5.0-x86_64-linux)
-            rcee_precompiled (0.5.0-x86_64-linux-musl)
-
-        PLATFORMS
-          x86_64-linux
-          x86_64-linux-musl
-
-        DEPENDENCIES
-          rcee_precompiled (= 0.5.0)
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
     end
   end
 

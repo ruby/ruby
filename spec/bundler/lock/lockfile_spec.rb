@@ -324,7 +324,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "generates a lockfile without credentials for a configured source" do
+  it "generates a lockfile without credentials" do
     bundle "config set http://localgemserver.test/ user:pass"
 
     install_gemfile(<<-G, artifice: "endpoint_strict_basic_authentication", quiet: true)
@@ -354,7 +354,7 @@ RSpec.describe "the lockfile format" do
         specs:
 
       GEM
-        remote: http://user:pass@othergemserver.test/
+        remote: http://othergemserver.test/
         specs:
           rack (1.0.0)
           rack-obama (1.0)

@@ -1954,6 +1954,52 @@ RSpec.describe "bundle update conservative" do
     end
   end
 
+  context "when Gemfile dependencies have changed" do
+    before do
+      build_repo4 do
+        build_gem "nokogiri", "1.16.4" do |s|
+          s.platform = "arm64-darwin"
+        end
+
+        build_gem "nokogiri", "1.16.4" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem "prism", "0.25.0"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "nokogiri", ">=1.16.4"
+        gem "prism", ">=0.25.0"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.16.4-arm64-darwin)
+            nokogiri (1.16.4-x86_64-linux)
+
+        PLATFORMS
+          arm64-darwin
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri (>= 1.16.4)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "still works" do
+      simulate_platform "arm64-darwin-23" do
+        bundle "update"
+      end
+    end
+  end
+
   context "error handling" do
     before do
       gemfile "source \"#{file_uri_for(gem_repo1)}\""

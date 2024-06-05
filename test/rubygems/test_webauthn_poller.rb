@@ -13,7 +13,7 @@ class WebauthnPollerTest < Gem::TestCase
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
     @credentials = {
-      email: "email@example.com",
+      identifier: "email@example.com",
       password: "password",
     }
   end
@@ -120,5 +120,15 @@ class WebauthnPollerTest < Gem::TestCase
 
     assert_equal error.message,
       "Security device verification failed: The token in the link you used has either expired or been used already."
+  end
+
+  def test_poll_for_otp_missing_credentials
+    @credentials = { password: "password" }
+
+    error = assert_raise Gem::WebauthnVerificationError do
+      Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
+    end
+
+    assert_equal error.message, "Security device verification failed: Provided missing credentials"
   end
 end
