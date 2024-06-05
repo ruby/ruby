@@ -1,5 +1,7 @@
 #include "prism/regexp.h"
 
+#define PM_REGEXP_PARSE_DEPTH_MAX 4096
+
 /**
  * This is the parser that is going to handle parsing regular expressions.
  */
@@ -27,10 +29,25 @@ typedef struct {
 
     /** The data to pass to the name callback. */
     void *name_data;
+
+    /** The callback to call when a parse error is found. */
+    pm_regexp_error_callback_t error_callback;
+
+    /** The data to pass to the error callback. */
+    void *error_data;
 } pm_regexp_parser_t;
 
 /**
- * This appends a new string to the list of named captures.
+ * Append an error to the parser.
+ */
+static inline void
+pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
+    parser->error_callback(start, end, message, parser->error_data);
+}
+
+/**
+ * This appends a new string to the list of named captures. This function
+ * assumes the caller has already checked the validity of the name callback.
  */
 static void
 pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
@@ -246,20 +263,20 @@ pm_regexp_parse_posix_class(pm_regexp_parser_t *parser) {
 
 // Forward declaration because character sets can be nested.
 static bool
-pm_regexp_parse_lbracket(pm_regexp_parser_t *parser);
+pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
  * match-char-set : '[' '^'? (match-range | match-char)* ']'
  *                ;
  */
 static bool
-pm_regexp_parse_character_set(pm_regexp_parser_t *parser) {
+pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
     pm_regexp_char_accept(parser, '^');
 
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ']') {
         switch (*parser->cursor++) {
             case '[':
-                pm_regexp_parse_lbracket(parser);
+                pm_regexp_parse_lbracket(parser, depth + 1);
                 break;
             case '\\':
                 if (!pm_regexp_char_is_eof(parser)) {
@@ -279,7 +296,12 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser) {
  * A left bracket can either mean a POSIX class or a character set.
  */
 static bool
-pm_regexp_parse_lbracket(pm_regexp_parser_t *parser) {
+pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
     const uint8_t *reset = parser->cursor;
 
     if ((parser->cursor + 2 < parser->end) && parser->cursor[0] == '[' && parser->cursor[1] == ':') {
@@ -289,13 +311,13 @@ pm_regexp_parse_lbracket(pm_regexp_parser_t *parser) {
         parser->cursor = reset;
     }
 
-    return pm_regexp_parse_character_set(parser);
+    return pm_regexp_parse_character_set(parser, depth);
 }
 
 // Forward declaration here since parsing groups needs to go back up the grammar
 // to parse expressions within them.
 static bool
-pm_regexp_parse_expression(pm_regexp_parser_t *parser);
+pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
  * These are the states of the options that are configurable on the regular
@@ -409,7 +431,7 @@ pm_regexp_options_remove(pm_regexp_options_t *options, uint8_t key) {
  * * (?imxdau-imx:subexp)          - turn on and off configuration for an expression
  */
 static bool
-pm_regexp_parse_group(pm_regexp_parser_t *parser) {
+pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
     // First, parse any options for the group.
     if (pm_regexp_char_accept(parser, '?')) {
         if (pm_regexp_char_is_eof(parser)) {
@@ -476,7 +498,11 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser) {
                         if (!pm_regexp_char_find(parser, '>')) {
                             return false;
                         }
-                        pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
+
+                        if (parser->name_callback != NULL) {
+                            pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
+                        }
+
                         break;
                     }
                 }
@@ -487,7 +513,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser) {
                     return false;
                 }
 
-                pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
+                if (parser->name_callback != NULL) {
+                    pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
+                }
+
                 break;
             }
             case '(': // conditional expression
@@ -532,7 +561,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser) {
 
     // Now, parse the expressions within this group.
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')') {
-        if (!pm_regexp_parse_expression(parser)) {
+        if (!pm_regexp_parse_expression(parser, depth + 1)) {
             return false;
         }
         pm_regexp_char_accept(parser, '|');
@@ -555,7 +584,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser) {
  *      ;
  */
 static bool
-pm_regexp_parse_item(pm_regexp_parser_t *parser) {
+pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
     switch (*parser->cursor) {
         case '^':
         case '$':
@@ -569,10 +598,10 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser) {
             return pm_regexp_parse_quantifier(parser);
         case '(':
             parser->cursor++;
-            return pm_regexp_parse_group(parser) && pm_regexp_parse_quantifier(parser);
+            return pm_regexp_parse_group(parser, depth) && pm_regexp_parse_quantifier(parser);
         case '[':
             parser->cursor++;
-            return pm_regexp_parse_lbracket(parser) && pm_regexp_parse_quantifier(parser);
+            return pm_regexp_parse_lbracket(parser, depth) && pm_regexp_parse_quantifier(parser);
         default: {
             size_t width;
             if (!parser->encoding_changed) {
@@ -594,13 +623,18 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser) {
  *            ;
  */
 static bool
-pm_regexp_parse_expression(pm_regexp_parser_t *parser) {
-    if (!pm_regexp_parse_item(parser)) {
+pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
+    if (!pm_regexp_parse_item(parser, depth)) {
         return false;
     }
 
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')' && *parser->cursor != '|') {
-        if (!pm_regexp_parse_item(parser)) {
+        if (!pm_regexp_parse_item(parser, depth)) {
             return false;
         }
     }
@@ -616,20 +650,12 @@ pm_regexp_parse_expression(pm_regexp_parser_t *parser) {
  */
 static bool
 pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
-    return (
-        (
-            // Exit early if the pattern is empty.
-            pm_regexp_char_is_eof(parser) ||
-            // Parse the first expression in the pattern.
-            pm_regexp_parse_expression(parser)
-        ) &&
-        (
-            // Return now if we've parsed the entire pattern.
-            pm_regexp_char_is_eof(parser) ||
-            // Otherwise, we should have a pipe character.
-            (pm_regexp_char_expect(parser, '|') && pm_regexp_parse_pattern(parser))
-        )
-    );
+    do {
+        if (pm_regexp_char_is_eof(parser)) return true;
+        if (!pm_regexp_parse_expression(parser, 0)) return false;
+    } while (pm_regexp_char_accept(parser, '|'));
+
+    return pm_regexp_char_is_eof(parser);
 }
 
 /**
@@ -637,7 +663,7 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * groups.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data) {
+pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data, pm_regexp_error_callback_t error_callback, void *error_data) {
     pm_regexp_parse_pattern(&(pm_regexp_parser_t) {
         .parser = parser,
         .start = source,
@@ -646,6 +672,8 @@ pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_rege
         .encoding_changed = parser->encoding_changed,
         .encoding = parser->encoding,
         .name_callback = name_callback,
-        .name_data = name_data
+        .name_data = name_data,
+        .error_callback = error_callback,
+        .error_data = error_data
     });
 }

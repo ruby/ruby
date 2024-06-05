@@ -318,6 +318,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING]      = { "incompatible character encoding: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_NON_ESCAPED_MBC]             = { "/.../n has a non escaped non ASCII character in non ASCII-8BIT script: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_INVALID_UNICODE_RANGE]       = { "invalid Unicode range: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_PARSE_ERROR]                 = { "%s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_UNKNOWN_OPTIONS]             = { "unknown regexp %s: %.*s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_TERM]                        = { "unterminated regexp meets end of file; expected a closing delimiter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP]   = { "UTF-8 character in non UTF-8 regexp: /%s/", PM_ERROR_LEVEL_SYNTAX },
