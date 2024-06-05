@@ -516,7 +516,10 @@ class TestGem < Gem::TestCase
 
     Gem.clear_paths
 
-    assert_nil Gem::Specification.send(:class_variable_get, :@@all)
+    with_env("GEM_HOME" => "foo", "GEM_PATH" => "bar") do
+      assert_equal("foo", Gem.dir)
+      assert_equal("bar", Gem.path.first)
+    end
   end
 
   def test_self_configuration
@@ -1281,7 +1284,6 @@ class TestGem < Gem::TestCase
   def test_self_try_activate_missing_extensions
     spec = util_spec "ext", "1" do |s|
       s.extensions = %w[ext/extconf.rb]
-      s.mark_version
       s.installed_by_version = v("2.2")
     end
 

@@ -929,7 +929,7 @@ RSpec.describe "bundle install with git sources" do
         gem "has_submodule"
       end
     G
-    expect(err).to match(%r{submodule >= 0 could not be found in rubygems repository #{file_uri_for(gem_repo1)}/, cached gems or installed locally})
+    expect(err).to match(%r{submodule >= 0 could not be found in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally})
 
     expect(the_bundle).not_to include_gems "has_submodule 1.0"
   end

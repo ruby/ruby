@@ -274,7 +274,9 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     return if rubygems_version == Gem::VERSION
 
-    error "expected RubyGems version #{Gem::VERSION}, was #{rubygems_version}"
+    warning "expected RubyGems version #{Gem::VERSION}, was #{rubygems_version}"
+
+    @specification.rubygems_version = Gem::VERSION
   end
 
   def validate_required_attributes

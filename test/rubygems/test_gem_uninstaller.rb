@@ -188,22 +188,81 @@ class TestGemUninstaller < Gem::InstallerTestCase
     refute File.exist?(plugin_path), "plugin not removed"
   end
 
-  def test_remove_plugins_with_install_dir
+  def test_uninstall_with_install_dir_removes_plugins
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
       io.write "# do nothing"
     end
 
     @spec.files += %w[lib/rubygems_plugin.rb]
 
-    Gem::Installer.at(Gem::Package.build(@spec), force: true).install
+    package = Gem::Package.build(@spec)
+
+    Gem::Installer.at(package, force: true).install
 
     plugin_path = File.join Gem.plugindir, "a_plugin.rb"
     assert File.exist?(plugin_path), "plugin not written"
 
-    Dir.mkdir "#{@gemhome}2"
-    Gem::Uninstaller.new(nil, install_dir: "#{@gemhome}2").remove_plugins @spec
+    install_dir = "#{@gemhome}2"
+
+    Gem::Installer.at(package, force: true, install_dir: install_dir).install
+
+    install_dir_plugin_path = File.join install_dir, "plugins/a_plugin.rb"
+    assert File.exist?(install_dir_plugin_path), "plugin not written"
+
+    Gem::Specification.dirs = [install_dir]
+    Gem::Uninstaller.new(@spec.name, executables: true, install_dir: install_dir).uninstall
 
     assert File.exist?(plugin_path), "plugin unintentionally removed"
+    refute File.exist?(install_dir_plugin_path), "plugin not removed"
+  end
+
+  def test_uninstall_with_install_dir_regenerates_plugins
+    write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+      io.write "# do nothing"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    install_dir = "#{@gemhome}2"
+
+    package = Gem::Package.build(@spec)
+
+    spec_v9 = @spec.dup
+    spec_v9.version = "9"
+    package_v9 = Gem::Package.build(spec_v9)
+
+    Gem::Installer.at(package, force: true, install_dir: install_dir).install
+    Gem::Installer.at(package_v9, force: true, install_dir: install_dir).install
+
+    install_dir_plugin_path = File.join install_dir, "plugins/a_plugin.rb"
+    assert File.exist?(install_dir_plugin_path), "plugin not written"
+
+    Gem::Specification.dirs = [install_dir]
+    Gem::Uninstaller.new(@spec.name, version: "9", executables: true, install_dir: install_dir).uninstall
+    assert File.exist?(install_dir_plugin_path), "plugin unintentionally removed"
+
+    Gem::Specification.dirs = [install_dir]
+    Gem::Uninstaller.new(@spec.name, executables: true, install_dir: install_dir).uninstall
+    refute File.exist?(install_dir_plugin_path), "plugin not removed"
+  end
+
+  def test_remove_plugins_user_installed
+    write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+      io.write "# do nothing"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec), force: true, user_install: true).install
+
+    plugin_path = File.join Gem.user_dir, "plugins/a_plugin.rb"
+    assert File.exist?(plugin_path), "plugin not written"
+
+    Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
+
+    Gem::Uninstaller.new(@spec.name, executables: true, force: true, user_install: true).uninstall
+
+    refute File.exist?(plugin_path), "plugin not removed"
   end
 
   def test_regenerate_plugins_for
@@ -370,7 +429,7 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_user_install
-    @user_spec = Gem::Specification.find_by_name "b"
+    Gem::Specification.dirs = [Gem.user_dir]
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
                                        executables: true,
@@ -392,6 +451,32 @@ create_makefile '#{@spec.name}'
 
     assert_same uninstaller, @pre_uninstall_hook_arg
     assert_same uninstaller, @post_uninstall_hook_arg
+  end
+
+  def test_uninstall_user_install_with_symlinked_home
+    pend "Symlinks not supported or not enabled" unless symlink_supported?
+
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    symlinked_home = File.join(@tempdir, "new-home")
+    FileUtils.ln_s(Gem.user_home, symlinked_home)
+
+    ENV["HOME"] = symlinked_home
+    Gem.instance_variable_set(:@user_home, nil)
+    Gem.instance_variable_set(:@data_home, nil)
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true,
+                                       force: true)
+
+    gem_dir = File.join @user_spec.gem_dir
+
+    assert_path_exist gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
   end
 
   def test_uninstall_wrong_repo

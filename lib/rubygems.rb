@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.10"
+  VERSION = "3.5.11"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -1010,6 +1010,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.solaris_platform?
     RUBY_PLATFORM.include?("solaris")
+  end
+
+  ##
+  # Is this platform FreeBSD
+
+  def self.freebsd_platform?
+    RbConfig::CONFIG["host_os"].to_s.include?("bsd")
   end
 
   ##

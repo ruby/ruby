@@ -69,7 +69,6 @@ module Bundler
       @sources         = sources
       @unlock          = unlock
       @optional_groups = optional_groups
-      @remote          = false
       @prefer_local    = false
       @specs           = nil
       @ruby_version    = ruby_version
@@ -164,37 +163,24 @@ module Bundler
     end
 
     def resolve_only_locally!
-      @remote = false
       sources.local_only!
       resolve
     end
 
     def resolve_with_cache!
+      sources.local!
       sources.cached!
       resolve
     end
 
     def resolve_remotely!
-      @remote = true
+      sources.cached!
       sources.remote!
       resolve
     end
 
-    def resolution_mode=(options)
-      if options["local"]
-        @remote = false
-      else
-        @remote = true
-        @prefer_local = options["prefer-local"]
-      end
-    end
-
-    def setup_sources_for_resolve
-      if @remote == false
-        sources.cached!
-      else
-        sources.remote!
-      end
+    def prefer_local!
+      @prefer_local = true
     end
 
     # For given dependency list returns a SpecSet with Gemspec of all the required
@@ -310,7 +296,12 @@ module Bundler
           end
         end
       else
-        Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
+        if lockfile_exists?
+          Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
+        else
+          Bundler.ui.debug "Resolving dependencies because there's no lockfile"
+        end
+
         start_resolution
       end
     end
@@ -483,6 +474,8 @@ module Bundler
     private :sources
 
     def nothing_changed?
+      return false unless lockfile_exists?
+
       !@source_changes &&
         !@dependency_changes &&
         !@new_platform &&
@@ -587,7 +580,7 @@ module Bundler
       if missing_specs.any?
         missing_specs.each do |s|
           locked_gem = @locked_specs[s.name].last
-          next if locked_gem.nil? || locked_gem.version != s.version || !@remote
+          next if locked_gem.nil? || locked_gem.version != s.version || sources.local_mode?
           raise GemNotFound, "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
                              "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
                              "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
@@ -606,7 +599,7 @@ module Bundler
         break if incomplete_specs.empty?
 
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
-        setup_sources_for_resolve
+        sources.remote!
         resolution_packages.delete(incomplete_specs)
         @resolve = start_resolution
         specs = resolve.materialize(dependencies)
@@ -967,7 +960,7 @@ module Bundler
       else
         { default: Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
-      source_requirements.merge!(source_map.locked_requirements) unless @remote
+      source_requirements.merge!(source_map.locked_requirements) if nothing_changed?
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
@@ -1038,8 +1031,6 @@ module Bundler
 
     def dup_for_full_unlock
       unlocked_definition = self.class.new(@lockfile, @dependencies, @sources, true, @ruby_version, @optional_groups, @gemfiles)
-      unlocked_definition.resolution_mode = { "local" => !@remote }
-      unlocked_definition.setup_sources_for_resolve
       unlocked_definition.gem_version_promoter.tap do |gvp|
         gvp.level = gem_version_promoter.level
         gvp.strict = gem_version_promoter.strict

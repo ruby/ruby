@@ -430,6 +430,30 @@ RSpec.describe "Bundler.require" do
 
     expect(out).to eq("WIN")
   end
+
+  it "does not extract gemspecs from application cache packages" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle :cache
+
+    path = cached_gem("rack-1.0.0")
+
+    run <<-R
+      File.open("#{path}", "w") do |f|
+        f.write "broken package"
+      end
+    R
+
+    run <<-R
+      Bundler.require
+      puts "WIN"
+    R
+
+    expect(out).to eq("WIN")
+  end
 end
 
 RSpec.describe "Bundler.require with platform specific dependencies" do

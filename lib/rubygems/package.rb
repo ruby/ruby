@@ -294,7 +294,6 @@ class Gem::Package
 
     Gem.load_yaml
 
-    @spec.mark_version
     @spec.validate true, strict_validation unless skip_validation
 
     setup_signer(

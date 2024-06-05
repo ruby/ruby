@@ -185,6 +185,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   end
 
   def cargo_dylib_path(dest_path, crate_name)
+    so_ext = RbConfig::CONFIG["SOEXT"]
     prefix = so_ext == "dll" ? "" : "lib"
     path_parts = [dest_path]
     path_parts << ENV["CARGO_BUILD_TARGET"] if ENV["CARGO_BUILD_TARGET"]
@@ -311,22 +312,6 @@ EOF
     end
 
     deffile_path
-  end
-
-  # We have to basically reimplement <code>RbConfig::CONFIG['SOEXT']</code> here to support
-  # Ruby < 2.5
-  #
-  # @see https://github.com/ruby/ruby/blob/c87c027f18c005460746a74c07cd80ee355b16e4/configure.ac#L3185
-  def so_ext
-    return RbConfig::CONFIG["SOEXT"] if RbConfig::CONFIG.key?("SOEXT")
-
-    if win_target?
-      "dll"
-    elsif darwin_target?
-      "dylib"
-    else
-      "so"
-    end
   end
 
   # Corresponds to $(LIBPATH) in mkmf

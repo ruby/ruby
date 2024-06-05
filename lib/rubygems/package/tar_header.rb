@@ -95,14 +95,14 @@ class Gem::Package::TarHeader
 
   attr_reader(*FIELDS)
 
-  EMPTY_HEADER = ("\0" * 512).freeze # :nodoc:
+  EMPTY_HEADER = ("\0" * 512).b.freeze # :nodoc:
 
   ##
   # Creates a tar header from IO +stream+
 
   def self.from(stream)
     header = stream.read 512
-    empty = (header == EMPTY_HEADER)
+    return EMPTY if header == EMPTY_HEADER
 
     fields = header.unpack UNPACK_FORMAT
 
@@ -123,7 +123,7 @@ class Gem::Package::TarHeader
         devminor: strict_oct(fields.shift),
         prefix: fields.shift,
 
-        empty: empty
+        empty: false
   end
 
   def self.strict_oct(str)
@@ -171,6 +171,22 @@ class Gem::Package::TarHeader
 
     @empty = vals[:empty]
   end
+
+  EMPTY = new({ # :nodoc:
+    checksum: 0,
+    gname: "",
+    linkname: "",
+    magic: "",
+    mode: 0,
+    name: "",
+    prefix: "",
+    size: 0,
+    uname: "",
+    version: 0,
+
+    empty: true,
+  }).freeze
+  private_constant :EMPTY
 
   ##
   # Is the tar entry empty?
@@ -241,7 +257,7 @@ class Gem::Package::TarHeader
 
     header = header.pack PACK_FORMAT
 
-    header << ("\0" * ((512 - header.size) % 512))
+    header.ljust 512, "\0"
   end
 
   def oct(num, len)

@@ -11,6 +11,8 @@ module Bundler
           end
 
           if local_spec = Gem.loaded_specs["bundler"]
+            raise CorruptBundlerInstallError.new(local_spec) if local_spec.version.to_s != Bundler::VERSION
+
             idx << local_spec
           else
             idx << Gem::Specification.new do |s|
