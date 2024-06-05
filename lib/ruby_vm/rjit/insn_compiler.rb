@@ -503,7 +503,7 @@ module RubyVM::RJIT
           shape = C.rb_shape_get_shape_by_id(shape_id)
 
           current_capacity = shape.capacity
-          dest_shape = C.rb_shape_get_next(shape, comptime_receiver, ivar_name)
+          dest_shape = C.rb_shape_get_next_no_warnings(shape, comptime_receiver, ivar_name)
           new_shape_id = C.rb_shape_id(dest_shape)
 
           if new_shape_id == C::OBJ_TOO_COMPLEX_SHAPE_ID

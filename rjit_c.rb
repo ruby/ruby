@@ -171,9 +171,9 @@ module RubyVM::RJIT # :nodoc: all
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
     end
 
-    def rb_shape_get_next(shape, obj, id)
+    def rb_shape_get_next_no_warnings(shape, obj, id)
       _shape = shape.to_i
-      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next_no_warnings((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'
       rb_shape_t.new(shape_addr)
     end
 

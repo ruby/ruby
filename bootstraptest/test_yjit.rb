@@ -4467,14 +4467,14 @@ assert_normal_exit %q{
 }
 
 # compiling code shouldn't emit warnings as it may call into more Ruby code
-assert_equal 'ok', <<~'RUBY' unless rjit_enabled? # Not yet working on RJIT
+assert_equal 'ok', <<~'RUBY'
   # [Bug #20522]
   $VERBOSE = true
   Warning[:performance] = true
 
   module StrictWarnings
-    def warn(msg, category: nil, **)
-      raise warn
+    def warn(msg, **)
+      raise msg
     end
   end
   Warning.singleton_class.prepend(StrictWarnings)
@@ -4487,7 +4487,7 @@ assert_equal 'ok', <<~'RUBY' unless rjit_enabled? # Not yet working on RJIT
 
   shape_max_variations = 8
   if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS) && RubyVM::Shape::SHAPE_MAX_VARIATIONS != shape_max_variations
-    raise "Expected SHAPE_MAX_VARIATIONS to be 8, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
+    raise "Expected SHAPE_MAX_VARIATIONS to be #{shape_max_variations}, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
   end
 
   100.times do |i|
