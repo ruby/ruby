@@ -512,7 +512,7 @@ pub struct BitVector
 
 impl BitVector
 {
-    fn new() -> Self
+    pub fn new() -> Self
     {
         Self {
             bytes: Vec::with_capacity(64),
@@ -520,13 +520,13 @@ impl BitVector
         }
     }
 
-    fn num_bits(&self) -> usize
+    pub fn num_bits(&self) -> usize
     {
         self.num_bits
     }
 
     // Total number of bytes taken
-    fn num_bytes(&self) -> usize
+    pub fn num_bytes(&self) -> usize
     {
         (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
     }
@@ -776,13 +776,13 @@ mod bitvector_tests {
     fn encode_default() {
         let mut bits = BitVector::new();
         let ctx = Context::default();
-        let start_idx = ctx.encode(&mut bits);
+        let start_idx = ctx.encode_into(&mut bits);
         assert!(start_idx == 0);
         assert!(bits.num_bits() > 0);
         assert!(bits.num_bytes() > 0);
 
         // Make sure that the round trip matches the input
-        let ctx2 = Context::decode(&bits, 0);
+        let ctx2 = Context::decode_from(&bits, 0);
         assert!(ctx2 == ctx);
     }
 
@@ -791,15 +791,15 @@ mod bitvector_tests {
         let mut bits = BitVector::new();
 
         let ctx0 = Context::default();
-        let idx0 = ctx0.encode(&mut bits);
+        let idx0 = ctx0.encode_into(&mut bits);
 
         let mut ctx1 = Context::default();
         ctx1.reg_temps = RegTemps(1);
-        let idx1 = ctx1.encode(&mut bits);
+        let idx1 = ctx1.encode_into(&mut bits);
 
         // Make sure that we can encode two contexts successively
-        let ctx0_dec = Context::decode(&bits, idx0);
-        let ctx1_dec = Context::decode(&bits, idx1);
+        let ctx0_dec = Context::decode_from(&bits, idx0);
+        let ctx1_dec = Context::decode_from(&bits, idx1);
         assert!(ctx0_dec == ctx0);
         assert!(ctx1_dec == ctx1);
     }
@@ -809,13 +809,13 @@ mod bitvector_tests {
         let mut bits = BitVector::new();
         let mut ctx = Context::default();
         ctx.reg_temps = RegTemps(1);
-        ctx.encode(&mut bits);
+        ctx.encode_into(&mut bits);
 
         let b0 = bits.read_u1(&mut 0);
         assert!(b0 == 1);
 
         // Make sure that the round trip matches the input
-        let ctx2 = Context::decode(&bits, 0);
+        let ctx2 = Context::decode_from(&bits, 0);
         assert!(ctx2 == ctx);
     }
 }
@@ -852,7 +852,8 @@ enum CtxOp
 
 impl Context
 {
-    pub fn encode(&self, bits: &mut BitVector) -> usize
+    // Encode into a compressed context representation in a bit vector
+    pub fn encode_into(&self, bits: &mut BitVector) -> usize
     {
         let start_idx = bits.num_bits();
 
@@ -946,8 +947,8 @@ impl Context
         start_idx
     }
 
-    // Decode a compressed context representation
-    pub fn decode(bits: &BitVector, start_idx: usize) -> Context
+    // Decode a compressed context representation from a bit vector
+    pub fn decode_from(bits: &BitVector, start_idx: usize) -> Context
     {
         let mut ctx = Context::default();
 
@@ -2179,7 +2180,7 @@ impl JITState {
 
             dbg!(ctx);
 
-            let ctx_decoded = Context::decode(&bits, start_idx);
+            let ctx_decoded = Context::decode_from(&bits, start_idx);
 
             if ctx_decoded != ctx {
                 dbg!(ctx);
