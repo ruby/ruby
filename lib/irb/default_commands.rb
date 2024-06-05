@@ -2,32 +2,33 @@
 
 require_relative "command"
 require_relative "command/internal_helpers"
-require_relative "command/context"
-require_relative "command/exit"
-require_relative "command/force_exit"
-require_relative "command/chws"
-require_relative "command/pushws"
-require_relative "command/subirb"
-require_relative "command/load"
-require_relative "command/debug"
-require_relative "command/edit"
+require_relative "command/backtrace"
 require_relative "command/break"
 require_relative "command/catch"
-require_relative "command/next"
-require_relative "command/delete"
-require_relative "command/step"
+require_relative "command/chws"
+require_relative "command/context"
 require_relative "command/continue"
+require_relative "command/debug"
+require_relative "command/delete"
+require_relative "command/disable_irb"
+require_relative "command/edit"
+require_relative "command/exit"
 require_relative "command/finish"
-require_relative "command/backtrace"
-require_relative "command/info"
+require_relative "command/force_exit"
 require_relative "command/help"
-require_relative "command/show_doc"
+require_relative "command/history"
+require_relative "command/info"
 require_relative "command/irb_info"
+require_relative "command/load"
 require_relative "command/ls"
 require_relative "command/measure"
+require_relative "command/next"
+require_relative "command/pushws"
+require_relative "command/show_doc"
 require_relative "command/show_source"
+require_relative "command/step"
+require_relative "command/subirb"
 require_relative "command/whereami"
-require_relative "command/history"
 
 module IRB
   module Command
@@ -234,6 +235,10 @@ module IRB
     _register_with_aliases(:irb_history, Command::History,
       [:history, NO_OVERRIDE],
       [:hist, NO_OVERRIDE]
+    )
+
+    _register_with_aliases(:irb_disable_irb, Command::DisableIrb,
+      [:disable_irb, NO_OVERRIDE]
     )
   end
 
