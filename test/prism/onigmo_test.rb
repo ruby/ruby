@@ -20,12 +20,22 @@ module Prism
       assert_error("[]", "empty char-class")
     end
 
+    def test_ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED
+      assert_error("*", "target of repeat operator is not specified")
+      assert_error("+", "target of repeat operator is not specified")
+      assert_error("?", "target of repeat operator is not specified")
+    end
+
+    def test_ONIGERR_EMPTY_GROUP_NAME
+      assert_error("(?<>)", "group name is empty")
+    end
+
     private
 
     def assert_error(source, message)
       result = Prism.parse(%Q{/#{source}/ =~ ""})
 
-      assert result.failure?
+      assert result.failure?, "Expected #{source.inspect} to error"
       assert_equal message, result.errors.first.message
 
       error = assert_raise(ArgumentError) { Onigmo.parse(source) }
@@ -35,26 +45,9 @@ module Prism
 end
 
 __END__
-case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
-  p = "premature end of char-class"; break;
-case ONIGERR_END_PATTERN_AT_ESCAPE:
-  p = "end pattern at escape"; break;
-case ONIGERR_END_PATTERN_AT_META:
-  p = "end pattern at meta"; break;
-case ONIGERR_END_PATTERN_AT_CONTROL:
-  p = "end pattern at control"; break;
-case ONIGERR_META_CODE_SYNTAX:
-  p = "invalid meta-code syntax"; break;
-case ONIGERR_CONTROL_CODE_SYNTAX:
-  p = "invalid control-code syntax"; break;
-case ONIGERR_CHAR_CLASS_VALUE_AT_END_OF_RANGE:
-  p = "char-class value at end of range"; break;
+
 case ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS:
   p = "unmatched range specifier in char-class"; break;
-case ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED:
-  p = "target of repeat operator is not specified"; break;
-case ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID:
-  p = "target of repeat operator is invalid"; break;
 case ONIGERR_UNMATCHED_CLOSE_PARENTHESIS:
   p = "unmatched close parenthesis"; break;
 case ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS:
@@ -112,13 +105,6 @@ case ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL:
 case ONIGERR_NEVER_ENDING_RECURSION:
   p = "never ending recursion"; break;
 #ifdef USE_CAPTURE_HISTORY
-case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
-  p = "group number is too big for capture history"; break;
-#endif
-case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
-  p = "invalid character property name {%n}"; break;
-case ONIGERR_TOO_MANY_CAPTURE_GROUPS:
-  p = "too many capture groups are specified"; break;
 case ONIGERR_INVALID_CODE_POINT_VALUE:
   p = "invalid code point value"; break;
 case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
