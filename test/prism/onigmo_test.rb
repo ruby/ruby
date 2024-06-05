@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return if RUBY_ENGINE != "ruby"
+
 require_relative "test_helper"
 
 begin
