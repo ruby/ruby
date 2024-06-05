@@ -11340,7 +11340,7 @@ gc_disable_major(rb_execution_context_t *ec, VALUE _)
 }
 
 static VALUE
-gc_needs_major_p(rb_execution_context_t *ec, VALUE _)
+gc_need_major_p(rb_execution_context_t *ec, VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
     if (!dont_major_val()) {

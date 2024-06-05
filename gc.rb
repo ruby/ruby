@@ -105,14 +105,14 @@ module GC
   end
 
   #  call-seq:
-  #     GC.needs_major?    -> true or false, nil
+  #     GC.need_major?    -> true or false, nil
   #
   #  This function is implementation specific. Alternative Ruby implementations
   #  as well as future GC implementations are not required to implement this
   #  function.
   #
   #  Used in conjunction with `GC.disable_major`. If Major GC's are disabled,
-  #  then `GC.needs_major?` will report whether manually running a major GC is
+  #  then `GC.need_major?` will report whether manually running a major GC is
   #  recommended.
   #
   #  If Majors are disabled, then the first time the heap runs out of space
@@ -120,8 +120,8 @@ module GC
   #  returning true.
   #
   #  If Major GC's are not disabled then this function will always return `nil`
-  def self.needs_major?
-    Primitive.gc_needs_major_p
+  def self.need_major?
+    Primitive.gc_need_major_p
   end
 
   #  call-seq:
