@@ -1024,6 +1024,29 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when gemspecs are unreadable", :permissions do
+    let(:gemspec_path) { vendored_gems("specifications/rack-1.0.0.gemspec") }
+
+    before do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+      bundle "config path vendor/bundle"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-r", gemspec_path)
+    end
+
+    it "shows a good error" do
+      bundle :install, raise_on_error: false
+      expect(err).to include(gemspec_path.to_s)
+      expect(err).to include("grant read permissions")
+    end
+  end
+
   context "after installing with --standalone" do
     before do
       install_gemfile <<-G
@@ -1382,6 +1405,35 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not save the flag to config" do
       expect(bundled_app(".bundle/config")).not_to exist
+    end
+  end
+
+  context "when bundler installation is corrupt" do
+    before do
+      system_gems "bundler-9.99.8"
+
+      replace_version_file("9.99.9", dir: system_gem_path("gems/bundler-9.99.8"))
+    end
+
+    it "shows a proper error" do
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           9.99.8
+      L
+
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\"", env: { "BUNDLER_VERSION" => "9.99.8" }, raise_on_error: false
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+      expect(err).to include("The running version of Bundler (9.99.9) does not match the version of the specification installed for it (9.99.8)")
     end
   end
 end

@@ -139,7 +139,7 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.with_original_env" do
     it "should set ENV to original_env in the block" do
       expected = Bundler.original_env
-      actual = Bundler.with_original_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+      actual = Bundler.with_original_env { ENV.to_hash }
       expect(actual).to eq(expected)
     end
 
@@ -157,7 +157,7 @@ RSpec.describe "Bundler.with_env helpers" do
       expected = Bundler.unbundled_env
 
       actual = Bundler.ui.silence do
-        Bundler.with_clean_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+        Bundler.with_clean_env { ENV.to_hash }
       end
 
       expect(actual).to eq(expected)
@@ -175,7 +175,7 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.with_unbundled_env" do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
-      actual = Bundler.with_unbundled_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+      actual = Bundler.with_unbundled_env { ENV.to_hash }
       expect(actual).to eq(expected)
     end
 

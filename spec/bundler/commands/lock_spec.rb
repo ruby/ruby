@@ -138,7 +138,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", raise_on_error: false
 
-    expect(err).to match(/cached gems or installed locally/)
+    expect(err).to match(/locally installed gems/)
   end
 
   it "does not fetch remote checksums with --local" do
@@ -250,6 +250,128 @@ RSpec.describe "bundle lock" do
     bundle "lock --update rails rake"
 
     expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)", "(#{rake_version})"))
+  end
+
+  it "updates specific gems using --update, even if that requires unlocking other top level gems" do
+    build_repo4 do
+      build_gem "prism", "0.15.1"
+      build_gem "prism", "0.24.0"
+
+      build_gem "ruby-lsp", "0.12.0" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "ruby-lsp", "0.16.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "tapioca", "0.11.10" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "tapioca", "0.13.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "tapioca"
+      gem "ruby-lsp"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}
+        specs:
+          prism (0.15.1)
+          ruby-lsp (0.12.0)
+            prism (< 0.24.0)
+          tapioca (0.11.10)
+            prism (< 0.24.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ruby-lsp
+        tapioca
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update tapioca --verbose"
+
+    expect(lockfile).to include("tapioca (0.13.1)")
+  end
+
+  it "updates specific gems using --update, even if that requires unlocking other top level gems, but only as few as possible" do
+    build_repo4 do
+      build_gem "prism", "0.15.1"
+      build_gem "prism", "0.24.0"
+
+      build_gem "ruby-lsp", "0.12.0" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "ruby-lsp", "0.16.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "tapioca", "0.11.10" do |s|
+        s.add_dependency "prism", "< 0.24.0"
+      end
+
+      build_gem "tapioca", "0.13.1" do |s|
+        s.add_dependency "prism", ">= 0.24.0"
+      end
+
+      build_gem "other-prism-dependent", "1.0.0" do |s|
+        s.add_dependency "prism", ">= 0.15.1"
+      end
+
+      build_gem "other-prism-dependent", "1.1.0" do |s|
+        s.add_dependency "prism", ">= 0.15.1"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "tapioca"
+      gem "ruby-lsp"
+      gem "other-prism-dependent"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}
+        specs:
+          other-prism-dependent (1.0.0)
+            prism (>= 0.15.1)
+          prism (0.15.1)
+          ruby-lsp (0.12.0)
+            prism (< 0.24.0)
+          tapioca (0.11.10)
+            prism (< 0.24.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ruby-lsp
+        tapioca
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update tapioca"
+
+    expect(lockfile).to include("tapioca (0.13.1)")
+    expect(lockfile).to include("other-prism-dependent (1.0.0)")
   end
 
   it "preserves unknown checksum algorithms" do
@@ -1227,7 +1349,7 @@ RSpec.describe "bundle lock" do
       Because rails >= 7.0.4 depends on railties = 7.0.4
         and rails < 7.0.4 depends on railties = 7.0.3.1,
         railties = 7.0.3.1 OR = 7.0.4 is required.
-      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally,
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
         version solving has failed.
     ERR
   end
@@ -1338,7 +1460,7 @@ RSpec.describe "bundle lock" do
       Thus, rails >= 7.0.2.3, < 7.0.4 cannot be used.
       And because rails >= 7.0.4 depends on activemodel = 7.0.4,
         rails >= 7.0.2.3 requires activemodel = 7.0.4.
-      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally
+      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
         and Gemfile depends on rails >= 7.0.2.3,
         version solving has failed.
     ERR

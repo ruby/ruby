@@ -11,6 +11,7 @@ require_relative "deprecate"
 require_relative "basic_specification"
 require_relative "stub_specification"
 require_relative "platform"
+require_relative "specification_record"
 require_relative "util/list"
 
 require "rbconfig"
@@ -179,22 +180,12 @@ class Gem::Specification < Gem::BasicSpecification
     @@default_value[k].nil?
   end
 
-  def self.clear_specs # :nodoc:
-    @@all = nil
-    @@stubs = nil
-    @@stubs_by_name = {}
-    @@spec_with_requirable_file = {}
-    @@active_stub_with_requirable_file = {}
-  end
-  private_class_method :clear_specs
-
-  clear_specs
-
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
+  deprecate_constant :NOT_FOUND
 
   # Tracking removed method calls to warn users during build time.
-  REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
+  REMOVED_METHODS = [:rubyforge_project=, :mark_version].freeze # :nodoc:
   def removed_method_calls
     @removed_method_calls ||= []
   end
@@ -770,7 +761,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
+    specification_record.all
   end
 
   def self.clear_load_cache # :nodoc:
@@ -788,26 +779,9 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  def self.gemspec_stubs_in(dir, pattern)
+  def self.gemspec_stubs_in(dir, pattern) # :nodoc:
     Gem::Util.glob_files_in_dir(pattern, dir).map {|path| yield path }.select(&:valid?)
   end
-  private_class_method :gemspec_stubs_in
-
-  def self.installed_stubs(dirs, pattern)
-    map_stubs(dirs, pattern) do |path, base_dir, gems_dir|
-      Gem::StubSpecification.gemspec_stub(path, base_dir, gems_dir)
-    end
-  end
-  private_class_method :installed_stubs
-
-  def self.map_stubs(dirs, pattern) # :nodoc:
-    dirs.flat_map do |dir|
-      base_dir = File.dirname dir
-      gems_dir = File.join base_dir, "gems"
-      gemspec_stubs_in(dir, pattern) {|path| yield path, base_dir, gems_dir }
-    end
-  end
-  private_class_method :map_stubs
 
   def self.each_spec(dirs) # :nodoc:
     each_gemspec(dirs) do |path|
@@ -820,13 +794,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns a Gem::StubSpecification for every installed gem
 
   def self.stubs
-    @@stubs ||= begin
-      pattern = "*.gemspec"
-      stubs = stubs_for_pattern(pattern, false)
-
-      @@stubs_by_name = stubs.select {|s| Gem::Platform.match_spec? s }.group_by(&:name)
-      stubs
-    end
+    specification_record.stubs
   end
 
   ##
@@ -845,13 +813,7 @@ class Gem::Specification < Gem::BasicSpecification
   # only returns stubs that match Gem.platforms
 
   def self.stubs_for(name)
-    if @@stubs
-      @@stubs_by_name[name] || []
-    else
-      @@stubs_by_name[name] ||= stubs_for_pattern("#{name}-*.gemspec").select do |s|
-        s.name == name
-      end
-    end
+    specification_record.stubs_for(name)
   end
 
   ##
@@ -859,12 +821,7 @@ class Gem::Specification < Gem::BasicSpecification
   # optionally filtering out specs not matching the current platform
   #
   def self.stubs_for_pattern(pattern, match_platform = true) # :nodoc:
-    installed_stubs = installed_stubs(Gem::Specification.dirs, pattern)
-    installed_stubs.select! {|s| Gem::Platform.match_spec? s } if match_platform
-    stubs = installed_stubs + default_stubs(pattern)
-    stubs = stubs.uniq(&:full_name)
-    _resort!(stubs)
-    stubs
+    specification_record.stubs_for_pattern(pattern, match_platform)
   end
 
   def self._resort!(specs) # :nodoc:
@@ -893,23 +850,14 @@ class Gem::Specification < Gem::BasicSpecification
   # properly sorted.
 
   def self.add_spec(spec)
-    return if _all.include? spec
-
-    _all << spec
-    stubs << spec
-    (@@stubs_by_name[spec.name] ||= []) << spec
-
-    _resort!(@@stubs_by_name[spec.name])
-    _resort!(stubs)
+    specification_record.add_spec(spec)
   end
 
   ##
   # Removes +spec+ from the known specs.
 
   def self.remove_spec(spec)
-    _all.delete spec.to_spec
-    stubs.delete spec
-    (@@stubs_by_name[spec.name] || []).delete spec
+    specification_record.remove_spec(spec)
   end
 
   ##
@@ -923,27 +871,17 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets the known specs to +specs+. Not guaranteed to work for you in
-  # the future. Use at your own risk. Caveat emptor. Doomy doom doom.
-  # Etc etc.
-  #
-  #--
-  # Makes +specs+ the known specs
-  # Listen, time is a river
-  # Winter comes, code breaks
-  #
-  # -- wilsonb
+  # Sets the known specs to +specs+.
 
   def self.all=(specs)
-    @@stubs_by_name = specs.group_by(&:name)
-    @@all = @@stubs = specs
+    specification_record.all = specs
   end
 
   ##
   # Return full names of all specs in sorted order.
 
   def self.all_names
-    _all.map(&:full_name)
+    specification_record.all_names
   end
 
   ##
@@ -968,9 +906,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the directories that Specification uses to find specs.
 
   def self.dirs
-    @@dirs ||= Gem.path.collect do |dir|
-      File.join dir, "specifications"
-    end
+    @@dirs ||= Gem::SpecificationRecord.dirs_from(Gem.path)
   end
 
   ##
@@ -980,7 +916,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.dirs=(dirs)
     reset
 
-    @@dirs = Array(dirs).map {|dir| File.join dir, "specifications" }
+    @@dirs = Gem::SpecificationRecord.dirs_from(Array(dirs))
   end
 
   extend Enumerable
@@ -989,21 +925,15 @@ class Gem::Specification < Gem::BasicSpecification
   # Enumerate every known spec.  See ::dirs= and ::add_spec to set the list of
   # specs.
 
-  def self.each
-    return enum_for(:each) unless block_given?
-
-    _all.each do |x|
-      yield x
-    end
+  def self.each(&block)
+    specification_record.each(&block)
   end
 
   ##
   # Returns every spec that matches +name+ and optional +requirements+.
 
   def self.find_all_by_name(name, *requirements)
-    requirements = Gem::Requirement.default if requirements.empty?
-
-    Gem::Dependency.new(name, *requirements).matching_specs
+    specification_record.find_all_by_name(name, *requirements)
   end
 
   ##
@@ -1033,12 +963,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path(path)
-    path = path.dup.freeze
-    spec = @@spec_with_requirable_file[path] ||= stubs.find do |s|
-      s.contains_requirable_file? path
-    end || NOT_FOUND
-
-    spec.to_spec
+    specification_record.find_by_path(path)
   end
 
   ##
@@ -1046,19 +971,15 @@ class Gem::Specification < Gem::BasicSpecification
   # amongst the specs that are not activated.
 
   def self.find_inactive_by_path(path)
-    stub = stubs.find do |s|
-      next if s.activated?
-      s.contains_requirable_file? path
-    end
-    stub&.to_spec
+    specification_record.find_inactive_by_path(path)
   end
 
-  def self.find_active_stub_by_path(path)
-    stub = @@active_stub_with_requirable_file[path] ||= stubs.find do |s|
-      s.activated? && s.contains_requirable_file?(path)
-    end || NOT_FOUND
+  ##
+  # Return the best specification that contains the file matching +path+, among
+  # those already activated.
 
-    stub.this
+  def self.find_active_stub_by_path(path)
+    specification_record.find_active_stub_by_path(path)
   end
 
   ##
@@ -1125,14 +1046,14 @@ class Gem::Specification < Gem::BasicSpecification
   # +prerelease+ is true.
 
   def self.latest_specs(prerelease = false)
-    _latest_specs Gem::Specification.stubs, prerelease
+    specification_record.latest_specs(prerelease)
   end
 
   ##
   # Return the latest installed spec for gem +name+.
 
   def self.latest_spec_for(name)
-    latest_specs(true).find {|installed_spec| installed_spec.name == name }
+    specification_record.latest_spec_for(name)
   end
 
   def self._latest_specs(specs, prerelease = false) # :nodoc:
@@ -1270,7 +1191,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.reset
     @@dirs = nil
     Gem.pre_reset_hooks.each(&:call)
-    clear_specs
+    @specification_record = nil
     clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
@@ -1289,6 +1210,13 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved.clear
     end
     Gem.post_reset_hooks.each(&:call)
+  end
+
+  ##
+  # Keeps track of all currently known specifications
+
+  def self.specification_record
+    @specification_record ||= Gem::SpecificationRecord.new(dirs)
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -1874,8 +1802,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def encode_with(coder) # :nodoc:
-    mark_version
-
     coder.add "name", @name
     coder.add "version", @version
     platform = case @original_platform
@@ -2167,13 +2093,6 @@ class Gem::Specification < Gem::BasicSpecification
     @ri_dir        = nil
     @spec_dir      = nil
     @spec_file     = nil
-  end
-
-  ##
-  # Sets the rubygems_version to the current RubyGems version.
-
-  def mark_version
-    @rubygems_version = Gem::VERSION
   end
 
   ##
@@ -2493,7 +2412,6 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
-    mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
     result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{raw_require_paths.join("\0")}"

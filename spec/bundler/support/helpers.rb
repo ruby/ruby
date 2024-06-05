@@ -226,12 +226,20 @@ module Spec
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
-      return Psych.load_file(path) unless config
+      current = File.exist?(path) ? Psych.load_file(path) : {}
+      return current unless config
+
+      current = {} if current.empty?
+
       FileUtils.mkdir_p(File.dirname(path))
-      File.open(path, "w") do |f|
-        f.puts config.to_yaml
+
+      new_config = current.merge(config).compact
+
+      File.open(path, "w+") do |f|
+        f.puts new_config.to_yaml
       end
-      config
+
+      new_config
     end
 
     def global_config(config = nil)

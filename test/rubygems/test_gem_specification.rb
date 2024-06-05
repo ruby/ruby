@@ -56,7 +56,6 @@ end
       s.add_dependency "jabber4r", "> 0.0.0"
       s.add_dependency "pqa", ["> 0.4", "<= 0.6"]
 
-      s.mark_version
       s.files = %w[lib/code.rb]
     end
   end
@@ -69,7 +68,6 @@ end
       s.license = "MIT"
       s.platform = platform
 
-      s.mark_version
       s.files = %w[lib/code.rb]
       s.installed_by_version = v("2.2")
     end
@@ -96,7 +94,6 @@ end
       s.requirements << "A working computer"
       s.license = "MIT"
 
-      s.mark_version
       s.files = %w[lib/code.rb]
     end
 
@@ -970,7 +967,10 @@ dependencies: []
 
   def test_self_stubs_for_lazy_loading
     Gem.loaded_specs.clear
-    Gem::Specification.class_variable_set(:@@stubs, nil)
+
+    specification_record = Gem::Specification.specification_record
+
+    specification_record.instance_variable_set(:@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, "specifications"
 
@@ -978,9 +978,9 @@ dependencies: []
     save_gemspec("b-1", "1", dir_standard_specs) {|s| s.name = "b" }
 
     assert_equal ["a-1"], Gem::Specification.stubs_for("a").map(&:full_name)
-    assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal 1, specification_record.instance_variable_get(:@stubs_by_name).length
     assert_equal ["b-1"], Gem::Specification.stubs_for("b").map(&:full_name)
-    assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal 2, specification_record.instance_variable_get(:@stubs_by_name).length
 
     assert_equal(
       Gem::Specification.stubs_for("a").map(&:object_id),
@@ -989,7 +989,7 @@ dependencies: []
 
     Gem.loaded_specs.delete "a"
     Gem.loaded_specs.delete "b"
-    Gem::Specification.class_variable_set(:@@stubs, nil)
+    specification_record.instance_variable_set(:@stubs, nil)
   end
 
   def test_self_stubs_for_no_lazy_loading_after_all_specs_setup
@@ -3167,7 +3167,7 @@ or set it to nil if you don't want to specify a license.
   end
 
   def test_removed_methods
-    assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=]
+    assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=, :mark_version]
   end
 
   def test_validate_removed_rubyforge_project
@@ -3460,12 +3460,17 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     @a1.rubygems_version = "3"
-    e = assert_raise Gem::InvalidSpecificationException do
+
+    use_ui @ui do
       @a1.validate
     end
 
-    assert_equal "expected RubyGems version #{Gem::VERSION}, was 3",
-                 e.message
+    expected = <<~EXPECTED
+      #{w}:  expected RubyGems version #{Gem::VERSION}, was 3
+      #{w}:  See https://guides.rubygems.org/specification-reference/ for help
+    EXPECTED
+
+    assert_equal expected, @ui.error
   end
 
   def test_validate_specification_version

@@ -638,4 +638,22 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing timeout 999")
   end
+
+  it "does not upcase ENV" do
+    script <<-RUBY
+      require 'bundler/inline'
+
+      ENV['Test_Variable'] = 'value string'
+      puts("before: \#{ENV.each_key.select { |key| key.match?(/test_variable/i) }}")
+
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+      end
+
+      puts("after: \#{ENV.each_key.select { |key| key.match?(/test_variable/i) }}")
+    RUBY
+
+    expect(out).to include("before: [\"Test_Variable\"]")
+    expect(out).to include("after: [\"Test_Variable\"]")
+  end
 end

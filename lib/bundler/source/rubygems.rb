@@ -10,14 +10,14 @@ module Bundler
       # Ask for X gems per API request
       API_REQUEST_SIZE = 50
 
-      attr_reader :remotes
+      attr_accessor :remotes
 
       def initialize(options = {})
         @options = options
         @remotes = []
         @dependency_names = []
         @allow_remote = false
-        @allow_cached = options["allow_cached"] || false
+        @allow_cached = false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
 
@@ -50,10 +50,11 @@ module Bundler
       end
 
       def cached!
+        return unless File.exist?(cache_path)
+
         return if @allow_cached
 
         @specs = nil
-        @allow_local = true
         @allow_cached = true
       end
 
@@ -96,7 +97,7 @@ module Bundler
       def to_lock
         out = String.new("GEM\n")
         remotes.reverse_each do |remote|
-          out << "  remote: #{suppress_configured_credentials remote}\n"
+          out << "  remote: #{remove_auth remote}\n"
         end
         out << "  specs:\n"
       end
@@ -312,11 +313,7 @@ module Bundler
       end
 
       def credless_remotes
-        if Bundler.settings[:allow_deployment_source_credential_changes]
-          remotes.map(&method(:remove_auth))
-        else
-          remotes.map(&method(:suppress_configured_credentials))
-        end
+        remotes.map(&method(:remove_auth))
       end
 
       def remotes_for_spec(spec)
@@ -353,15 +350,6 @@ module Bundler
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
           "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Gem::URI::HTTP) && uri.host.nil?)
         uri
-      end
-
-      def suppress_configured_credentials(remote)
-        remote_nouser = remove_auth(remote)
-        if remote.userinfo && remote.userinfo == Bundler.settings[remote_nouser]
-          remote_nouser
-        else
-          remote
-        end
       end
 
       def remove_auth(remote)

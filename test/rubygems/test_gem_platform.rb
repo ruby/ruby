@@ -145,6 +145,9 @@ class TestGemPlatform < Gem::TestCase
       "x86_64-openbsd3.9" => ["x86_64",    "openbsd",   "3.9"],
       "x86_64-openbsd4.0" => ["x86_64",    "openbsd",   "4.0"],
       "x86_64-openbsd" => ["x86_64", "openbsd", nil],
+      "wasm32-wasi" => ["wasm32", "wasi", nil],
+      "wasm32-wasip1" => ["wasm32", "wasi", nil],
+      "wasm32-wasip2" => ["wasm32", "wasi", nil],
     }
 
     test_cases.each do |arch, expected|

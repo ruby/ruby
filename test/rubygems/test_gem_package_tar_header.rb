@@ -99,6 +99,31 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     assert_empty @tar_header
   end
 
+  def test_empty
+    @tar_header = Gem::Package::TarHeader.from(StringIO.new(Gem::Package::TarHeader::EMPTY_HEADER))
+
+    assert_empty @tar_header
+    assert_equal Gem::Package::TarHeader.new(
+      checksum: 0,
+      devmajor: 0,
+      devminor: 0,
+      empty: true,
+      gid: 0,
+      gname: "",
+      linkname: "",
+      magic: "",
+      mode: 0,
+      mtime: 0,
+      name: "",
+      prefix: "",
+      size: 0,
+      typeflag: "0",
+      uid: 0,
+      uname: "",
+      version: 0,
+    ), @tar_header
+  end
+
   def test_equals2
     assert_equal @tar_header, @tar_header
     assert_equal @tar_header, @tar_header.dup

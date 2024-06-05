@@ -184,7 +184,7 @@ that is a dependency of an existing gem.  You can use the
   rescue Gem::GemNotInHomeException => e
     spec = e.spec
     alert("In order to remove #{spec.name}, please execute:\n" \
-          "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
+          "\tgem uninstall #{spec.name} --install-dir=#{spec.base_dir}")
   rescue Gem::UninstallError => e
     spec = e.spec
     alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " \
