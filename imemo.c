@@ -316,6 +316,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         else {
             if (vm_cc_super_p(cc) || vm_cc_refinement_p(cc)) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
+                rb_gc_mark_movable((VALUE)cc->klass);
             }
         }
 
