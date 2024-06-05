@@ -17391,6 +17391,51 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * This struct is used to pass information between the regular expression parser
+ * and the error callback.
+ */
+typedef struct {
+    pm_parser_t *parser;
+    const uint8_t *start;
+    const uint8_t *end;
+    bool shared;
+} parse_regular_expression_error_data_t;
+
+/**
+ * This callback is called when the regular expression parser encounters a
+ * syntax error.
+ */
+static void
+parse_regular_expression_error(const uint8_t *start, const uint8_t *end, const char *message, void *data) {
+    parse_regular_expression_error_data_t *callback_data = (parse_regular_expression_error_data_t *) data;
+    pm_location_t location;
+
+    if (callback_data->shared) {
+        location = (pm_location_t) { .start = start, .end = end };
+    } else {
+        location = (pm_location_t) { .start = callback_data->start, .end = callback_data->end };
+    }
+
+    PM_PARSER_ERR_FORMAT(callback_data->parser, location.start, location.end, PM_ERR_REGEXP_PARSE_ERROR, message);
+}
+
+/**
+ * Parse the errors for the regular expression and add them to the parser.
+ */
+static void
+parse_regular_expression_errors(pm_parser_t *parser, pm_regular_expression_node_t *node) {
+    const pm_string_t *unescaped = &node->unescaped;
+    parse_regular_expression_error_data_t error_data = {
+        .parser = parser,
+        .start = node->base.location.start,
+        .end = node->base.location.end,
+        .shared = unescaped->type == PM_STRING_SHARED
+    };
+
+    pm_regexp_parse(parser, pm_string_source(unescaped), pm_string_length(unescaped), NULL, NULL, parse_regular_expression_error, &error_data);
+}
+
+/**
  * Parse an expression that begins with the previous node that we just lexed.
  */
 static inline pm_node_t *
@@ -19511,13 +19556,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 bool ascii_only = parser->current_regular_expression_ascii_only;
                 parser_lex(parser);
 
-                // If we hit an end, then we can create a regular expression node
-                // without interpolation, which can be represented more succinctly and
-                // more easily compiled.
+                // If we hit an end, then we can create a regular expression
+                // node without interpolation, which can be represented more
+                // succinctly and more easily compiled.
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
-                    pm_node_t *node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
-                    pm_node_flag_set(node, parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, node->flags));
-                    return node;
+                    pm_regular_expression_node_t *node = (pm_regular_expression_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+
+                    // If we're not immediately followed by a =~, then we want
+                    // to parse all of the errors at this point. If it is
+                    // followed by a =~, then it will get parsed higher up while
+                    // parsing the named captures as well.
+                    if (!match1(parser, PM_TOKEN_EQUAL_TILDE)) {
+                        parse_regular_expression_errors(parser, node);
+                    }
+
+                    pm_node_flag_set((pm_node_t *) node, parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, node->base.flags));
+                    return (pm_node_t *) node;
                 }
 
                 // If we get here, then we have interpolation so we'll need to create
@@ -20084,38 +20138,6 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
 }
 
 /**
- * This struct is used to pass information between the regular expression parser
- * and the error callback.
- */
-typedef struct {
-    pm_parser_t *parser;
-    const pm_string_t *content;
-    const pm_call_node_t *call;
-} parse_regular_expression_error_data_t;
-
-/**
- * This callback is called when the regular expression parser encounters a
- * syntax error.
- */
-static void
-parse_regular_expression_error(const uint8_t *start, const uint8_t *end, const char *message, void *data) {
-    parse_regular_expression_error_data_t *callback_data = (parse_regular_expression_error_data_t *) data;
-
-    pm_parser_t *parser = callback_data->parser;
-    const pm_string_t *content = callback_data->content;
-    const pm_call_node_t *call = callback_data->call;
-
-    pm_location_t location;
-    if (content->type == PM_STRING_SHARED) {
-        location = (pm_location_t) { .start = start, .end = end };
-    } else {
-        location = call->receiver->location;
-    }
-
-    PM_PARSER_ERR_FORMAT(parser, location.start, location.end, PM_ERR_REGEXP_PARSE_ERROR, message);
-}
-
-/**
  * Potentially change a =~ with a regular expression with named captures into a
  * match write node.
  */
@@ -20130,8 +20152,9 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
     parse_regular_expression_error_data_t error_data = {
         .parser = parser,
-        .content = content,
-        .call = call
+        .start = call->receiver->location.start,
+        .end = call->receiver->location.end,
+        .shared = content->type == PM_STRING_SHARED
     };
 
     pm_regexp_parse(parser, pm_string_source(content), pm_string_length(content), parse_regular_expression_named_capture, &callback_data, parse_regular_expression_error, &error_data);
