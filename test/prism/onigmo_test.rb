@@ -54,7 +54,7 @@ module Prism
     private
 
     def assert_error(source, message)
-      result = Prism.parse(%Q{/#{source}/ =~ ""})
+      result = Prism.parse("/#{source}/")
 
       assert result.failure?, "Expected #{source.inspect} to error"
       assert_equal message, result.errors.first.message

@@ -225,21 +225,24 @@ pm_regexp_parse_range_quantifier(pm_regexp_parser_t *parser) {
  */
 static bool
 pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
-    if (pm_regexp_char_is_eof(parser)) return true;
-
-    switch (*parser->cursor) {
-        case '*':
-        case '+':
-        case '?':
-            parser->cursor++;
-            return true;
-        case '{':
-            parser->cursor++;
-            return pm_regexp_parse_range_quantifier(parser);
-        default:
-            // In this case there is no quantifier.
-            return true;
+    while (!pm_regexp_char_is_eof(parser)) {
+        switch (*parser->cursor) {
+            case '*':
+            case '+':
+            case '?':
+                parser->cursor++;
+                break;
+            case '{':
+                parser->cursor++;
+                if (!pm_regexp_parse_range_quantifier(parser)) return false;
+                break;
+            default:
+                // In this case there is no quantifier.
+                return true;
+        }
     }
+
+    return true;
 }
 
 /**
@@ -276,7 +279,7 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ']') {
         switch (*parser->cursor++) {
             case '[':
-                pm_regexp_parse_lbracket(parser, depth + 1);
+                pm_regexp_parse_lbracket(parser, (uint16_t) (depth + 1));
                 break;
             case '\\':
                 if (!pm_regexp_char_is_eof(parser)) {
@@ -584,7 +587,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
 
     // Now, parse the expressions within this group.
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')') {
-        if (!pm_regexp_parse_expression(parser, depth + 1)) {
+        if (!pm_regexp_parse_expression(parser, (uint16_t) (depth + 1))) {
             return false;
         }
         pm_regexp_char_accept(parser, '|');
@@ -615,7 +618,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
         case '^':
         case '$':
             parser->cursor++;
-            return true;
+            return pm_regexp_parse_quantifier(parser);
         case '\\':
             parser->cursor++;
             if (!pm_regexp_char_is_eof(parser)) {
