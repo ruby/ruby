@@ -503,7 +503,7 @@ pub struct Context {
 
 
 
-
+#[derive(Clone)]
 pub struct BitVector
 {
     bytes: Vec<u8>,
@@ -623,7 +623,7 @@ impl BitVector
         cur_idx += num_bits_in_byte;
         num_bits -= num_bits_in_byte;
 
-        let mut out_bits: u64 = bits_in_byte as u64;
+        let mut out_bits = (bits_in_byte as u64) & ((1 << num_bits_in_byte) - 1);
 
         // While we have bits left to read
         while num_bits > 0 {
@@ -767,7 +767,6 @@ mod bitvector_tests {
 
     #[test]
     fn write_read_u64_max() {
-
         let mut arr = BitVector::new();
         arr.push_uint(u64::MAX, 64);
         assert!(arr.read_uint(&mut 0, 64) == u64::MAX);
@@ -786,10 +785,43 @@ mod bitvector_tests {
         let ctx2 = Context::decode(&bits, 0);
         assert!(ctx2 == ctx);
     }
+
+    #[test]
+    fn encode_default_2x() {
+        let mut bits = BitVector::new();
+
+        let ctx0 = Context::default();
+        let idx0 = ctx0.encode(&mut bits);
+
+        let mut ctx1 = Context::default();
+        ctx1.reg_temps = RegTemps(1);
+        let idx1 = ctx1.encode(&mut bits);
+
+        // Make sure that we can encode two contexts successively
+        let ctx0_dec = Context::decode(&bits, idx0);
+        let ctx1_dec = Context::decode(&bits, idx1);
+        assert!(ctx0_dec == ctx0);
+        assert!(ctx1_dec == ctx1);
+    }
+
+    #[test]
+    fn regress_reg_temps() {
+        let mut bits = BitVector::new();
+        let mut ctx = Context::default();
+        ctx.reg_temps = RegTemps(1);
+        ctx.encode(&mut bits);
+
+        let b0 = bits.read_u1(&mut 0);
+        assert!(b0 == 1);
+
+        // Make sure that the round trip matches the input
+        let ctx2 = Context::decode(&bits, 0);
+        assert!(ctx2 == ctx);
+    }
 }
 
 // Context encoding opcodes (4 bits)
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 enum CtxOp
 {
@@ -2141,9 +2173,18 @@ impl JITState {
                 println!("trying to encode default context");
             }
 
-            let bits = ctx.encode();
+            let mut bits = BitVector::new();
+            let start_idx = ctx.encode(&mut bits);
             let num_bytes = bits.num_bytes();
-            //println!("num_bytes={}", num_bytes);
+
+            dbg!(ctx);
+
+            let ctx_decoded = Context::decode(&bits, start_idx);
+
+            if ctx_decoded != ctx {
+                dbg!(ctx);
+                panic!("round-trip test failed");
+            }
 
             // Try to estimate the average number of bytes needed to encode contexts
             unsafe {
@@ -2165,6 +2206,7 @@ impl JITState {
             }
         }
         */
+
 
 
 
