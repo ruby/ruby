@@ -7,6 +7,9 @@ for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
     exit /b 999
 )
 
+set XINCFLAGS=
+set XLDFLAGS=
+
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
 echo>> ~tmp~.mak $(conf): nul
@@ -48,7 +51,9 @@ if "%1" == "--with-git" goto :git
 if "%1" == "--without-git" goto :nogit
 if "%1" == "--without-ext" goto :witharg
 if "%1" == "--without-extensions" goto :witharg
+if "%1" == "--with-opt-dir" goto :opt-dir
 if "%1" == "--with-gmp" goto :gmp
+if "%1" == "--with-gmp-dir" goto :gmp-dir
 if "%opt:~0,10%" == "--without-" goto :withoutarg
 if "%opt:~0,7%" == "--with-" goto :witharg
 if "%1" == "-h" goto :help
@@ -217,6 +222,10 @@ goto :loop ;
   shift
   shift
 goto :loop ;
+:gmp-dir
+:opt-dir
+  set XINCFLAGS=%XINCFLAGS% -I%2/include
+  set XLDFLAGS=%XLDFLAGS% -libpath:%2/lib
 :witharg
   echo>>confargs.tmp  %1=%2\
   set witharg=1
@@ -263,6 +272,8 @@ cl -EP confargs.c > ~setup~.mak 2>nul
 if exist pathlist.tmp echo>>~setup~.mak PATH = $(pathlist:;=/bin;)$(PATH)
 if exist pathlist.tmp echo>>~setup~.mak INCLUDE = $(pathlist:;=/include;)
 if exist pathlist.tmp echo>>~setup~.mak LIB = $(pathlist:;=/lib;)
+echo>>~setup~.mak XINCFLAGS = %XINCFLAGS%
+echo>>~setup~.mak XLDFLAGS = %XLDFLAGS%
 type>>~setup~.mak ~tmp~.mak
 del *.tmp > nul
 del ~tmp~.mak > nul
