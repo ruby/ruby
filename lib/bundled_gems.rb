@@ -31,6 +31,7 @@ module Gem::BUNDLED_GEMS
     "rdoc" => "3.5.0",
     "win32ole" => "3.5.0",
     "fiddle" => "3.5.0",
+    "logger" => "3.5.0",
   }.freeze
 
   EXACT = {
