@@ -24,14 +24,14 @@ class Reline::KeyStroke::Test < Reline::TestCase
       config.add_default_key_binding(key.bytes, func.bytes)
     end
     stroke = Reline::KeyStroke.new(config)
-    assert_equal(:matching, stroke.match_status("a".bytes))
-    assert_equal(:matching, stroke.match_status("ab".bytes))
-    assert_equal(:matched, stroke.match_status("abc".bytes))
-    assert_equal(:unmatched, stroke.match_status("abz".bytes))
-    assert_equal(:unmatched, stroke.match_status("abcx".bytes))
-    assert_equal(:unmatched, stroke.match_status("aa".bytes))
-    assert_equal(:matched, stroke.match_status("x".bytes))
-    assert_equal(:unmatched, stroke.match_status("xa".bytes))
+    assert_equal(Reline::KeyStroke::MATCHING_MATCHED, stroke.match_status("a".bytes))
+    assert_equal(Reline::KeyStroke::MATCHING_MATCHED, stroke.match_status("ab".bytes))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("abc".bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status("abz".bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status("abcx".bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status("aa".bytes))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("x".bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status("xa".bytes))
   end
 
   def test_match_unknown
@@ -50,10 +50,10 @@ class Reline::KeyStroke::Test < Reline::TestCase
       "\e\eX"
     ]
     sequences.each do |seq|
-      assert_equal(:matched, stroke.match_status(seq.bytes))
-      assert_equal(:unmatched, stroke.match_status(seq.bytes + [32]))
-      (1...seq.size).each do |i|
-        assert_equal(:matching, stroke.match_status(seq.bytes.take(i)))
+      assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status(seq.bytes))
+      assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status(seq.bytes + [32]))
+      (2...seq.size).each do |i|
+        assert_equal(Reline::KeyStroke::MATCHING, stroke.match_status(seq.bytes.take(i)))
       end
     end
   end
@@ -84,8 +84,8 @@ class Reline::KeyStroke::Test < Reline::TestCase
       config.add_default_key_binding(key.bytes, func.bytes)
     end
     stroke = Reline::KeyStroke.new(config)
-    assert_equal(:unmatched, stroke.match_status('zzz'.bytes))
-    assert_equal(:matched, stroke.match_status('abc'.bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('zzz'.bytes))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status('abc'.bytes))
   end
 
   def test_with_reline_key
@@ -97,9 +97,9 @@ class Reline::KeyStroke::Test < Reline::TestCase
       config.add_oneshot_key_binding(key, func.bytes)
     end
     stroke = Reline::KeyStroke.new(config)
-    assert_equal(:unmatched, stroke.match_status('da'.bytes))
-    assert_equal(:matched, stroke.match_status("\eda".bytes))
-    assert_equal(:unmatched, stroke.match_status([32, 195, 164]))
-    assert_equal(:matched, stroke.match_status([195, 164]))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('da'.bytes))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("\eda".bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status([32, 195, 164]))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status([195, 164]))
   end
 end

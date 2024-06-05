@@ -1081,17 +1081,7 @@ class Reline::LineEditor
     else # single byte
       return if key.char >= 128 # maybe, first byte of multi byte
       method_symbol = @config.editing_mode.get_method(key.combined_char)
-      if key.with_meta and method_symbol == :ed_unassigned
-        if @config.editing_mode_is?(:vi_command, :vi_insert)
-          # split ESC + key in vi mode
-          method_symbol = @config.editing_mode.get_method("\e".ord)
-          process_key("\e".ord, method_symbol)
-          method_symbol = @config.editing_mode.get_method(key.char)
-          process_key(key.char, method_symbol)
-        end
-      else
-        process_key(key.combined_char, method_symbol)
-      end
+      process_key(key.combined_char, method_symbol)
       @multibyte_buffer.clear
     end
     if @config.editing_mode_is?(:vi_command) and @byte_pointer > 0 and @byte_pointer == current_line.bytesize

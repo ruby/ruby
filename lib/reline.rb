@@ -367,89 +367,39 @@ module Reline
       end
     end
 
-    # GNU Readline waits for "keyseq-timeout" milliseconds to see if the ESC
-    # is followed by a character, and times out and treats it as a standalone
-    # ESC if the second character does not arrive. If the second character
-    # comes before timed out, it is treated as a modifier key with the
-    # meta-property of meta-key, so that it can be distinguished from
-    # multibyte characters with the 8th bit turned on.
-    #
-    # GNU Readline will wait for the 2nd character with "keyseq-timeout"
-    # milli-seconds but wait forever after 3rd characters.
+    # GNU Readline watis for "keyseq-timeout" milliseconds when the input is
+    # ambiguous whether it is matching or matched.
+    # If the next character does not arrive within the specified timeout, input
+    # is considered as matched.
+    # `ESC` is ambiguous because it can be a standalone ESC (matched) or part of
+    # `ESC char` or part of CSI sequence (matching).
     private def read_io(keyseq_timeout, &block)
       buffer = []
+      status = KeyStroke::MATCHING
       loop do
-        c = io_gate.getc(Float::INFINITY)
-        if c == -1
-          result = :unmatched
+        timeout = status == KeyStroke::MATCHING_MATCHED ? keyseq_timeout.fdiv(1000) : Float::INFINITY
+        c = io_gate.getc(timeout)
+        if c.nil? || c == -1
+          if status == KeyStroke::MATCHING_MATCHED
+            status = KeyStroke::MATCHED
+          elsif buffer.empty?
+            # io_gate is closed and reached EOF
+            block.call([Key.new(nil, nil, false)])
+            return
+          else
+            status = KeyStroke::UNMATCHED
+          end
         else
           buffer << c
-          result = key_stroke.match_status(buffer)
+          status = key_stroke.match_status(buffer)
         end
-        case result
-        when :matched
+
+        if status == KeyStroke::MATCHED || status == KeyStroke::UNMATCHED
           expanded, rest_bytes = key_stroke.expand(buffer)
           rest_bytes.reverse_each { |c| io_gate.ungetc(c) }
-          block.(expanded)
-          break
-        when :matching
-          if buffer.size == 1
-            case read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
-            when :break then break
-            when :next  then next
-            end
-          end
-        when :unmatched
-          if buffer.size == 1 and c == "\e".ord
-            read_escaped_key(keyseq_timeout, c, block)
-          else
-            expanded, rest_bytes = key_stroke.expand(buffer)
-            rest_bytes.reverse_each { |c| io_gate.ungetc(c) }
-            block.(expanded)
-          end
-          break
+          block.call(expanded)
+          return
         end
-      end
-    end
-
-    private def read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
-      succ_c = io_gate.getc(keyseq_timeout.fdiv(1000))
-      if succ_c
-        case key_stroke.match_status(buffer.dup.push(succ_c))
-        when :unmatched
-          if c == "\e".ord
-            block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
-          else
-            block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
-          end
-          return :break
-        when :matching
-          io_gate.ungetc(succ_c)
-          return :next
-        when :matched
-          buffer << succ_c
-          expanded, rest_bytes = key_stroke.expand(buffer)
-          rest_bytes.reverse_each { |c| io_gate.ungetc(c) }
-          block.(expanded)
-          return :break
-        end
-      else
-        block.([Reline::Key.new(c, c, false)])
-        return :break
-      end
-    end
-
-    private def read_escaped_key(keyseq_timeout, c, block)
-      escaped_c = io_gate.getc(keyseq_timeout.fdiv(1000))
-
-      if escaped_c.nil?
-        block.([Reline::Key.new(c, c, false)])
-      elsif escaped_c >= 128 # maybe, first byte of multi byte
-        block.([Reline::Key.new(c, c, false), Reline::Key.new(escaped_c, escaped_c, false)])
-      elsif escaped_c == "\e".ord # escape twice
-        block.([Reline::Key.new(c, c, false), Reline::Key.new(c, c, false)])
-      else
-        block.([Reline::Key.new(escaped_c, escaped_c | 0b10000000, true)])
       end
     end
 
