@@ -16089,6 +16089,230 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_w
     nodes->size = write_index;
 }
 
+/**
+ * Return a string content token at a particular location that is empty.
+ */
+static pm_token_t
+parse_strings_empty_content(const uint8_t *location) {
+    return (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = location, .end = location };
+}
+
+/**
+ * Parse a set of strings that could be concatenated together.
+ */
+static inline pm_node_t *
+parse_strings(pm_parser_t *parser, pm_node_t *current) {
+    assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
+
+    bool concating = false;
+    bool state_is_arg_labeled = lex_state_arg_labeled_p(parser);
+
+    while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
+        pm_node_t *node = NULL;
+
+        // Here we have found a string literal. We'll parse it and add it to
+        // the list of strings.
+        const pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+        assert(lex_mode->mode == PM_LEX_STRING);
+        bool lex_interpolation = lex_mode->as.string.interpolation;
+
+        pm_token_t opening = parser->current;
+        parser_lex(parser);
+
+        if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
+            // If we get here, then we have an end immediately after a
+            // start. In that case we'll create an empty content token and
+            // return an uninterpolated string.
+            pm_token_t content = parse_strings_empty_content(parser->previous.start);
+            pm_string_node_t *string = pm_string_node_create(parser, &opening, &content, &parser->previous);
+
+            pm_string_shared_init(&string->unescaped, content.start, content.end);
+            node = (pm_node_t *) string;
+        } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
+            // If we get here, then we have an end of a label immediately
+            // after a start. In that case we'll create an empty symbol
+            // node.
+            pm_token_t content = parse_strings_empty_content(parser->previous.start);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &content, &parser->previous);
+
+            pm_string_shared_init(&symbol->unescaped, content.start, content.end);
+            node = (pm_node_t *) symbol;
+        } else if (!lex_interpolation) {
+            // If we don't accept interpolation then we expect the string to
+            // start with a single string content node.
+            pm_string_t unescaped;
+            pm_token_t content;
+
+            if (match1(parser, PM_TOKEN_EOF)) {
+                unescaped = PM_STRING_EMPTY;
+                content = not_provided(parser);
+            } else {
+                unescaped = parser->current_string;
+                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_EXPECT_STRING_CONTENT);
+                content = parser->previous;
+            }
+
+            // It is unfortunately possible to have multiple string content
+            // nodes in a row in the case that there's heredoc content in
+            // the middle of the string, like this cursed example:
+            //
+            // <<-END+'b
+            //  a
+            // END
+            //  c'+'d'
+            //
+            // In that case we need to switch to an interpolated string to
+            // be able to contain all of the parts.
+            if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                pm_node_list_t parts = { 0 };
+
+                pm_token_t delimiters = not_provided(parser);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &delimiters, &content, &delimiters, &unescaped);
+                pm_node_list_append(&parts, part);
+
+                do {
+                    part = (pm_node_t *) pm_string_node_create_current_string(parser, &delimiters, &parser->current, &delimiters);
+                    pm_node_list_append(&parts, part);
+                    parser_lex(parser);
+                } while (match1(parser, PM_TOKEN_STRING_CONTENT));
+
+                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
+                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+
+                pm_node_list_free(&parts);
+            } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, &content, &unescaped, true));
+            } else if (match1(parser, PM_TOKEN_EOF)) {
+                pm_parser_err_token(parser, &opening, PM_ERR_STRING_LITERAL_EOF);
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
+            } else if (accept1(parser, PM_TOKEN_STRING_END)) {
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+            } else {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_STRING_LITERAL_TERM, pm_token_type_human(parser->previous.type));
+                parser->previous.start = parser->previous.end;
+                parser->previous.type = PM_TOKEN_MISSING;
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+            }
+        } else if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+            // In this case we've hit string content so we know the string
+            // at least has something in it. We'll need to check if the
+            // following token is the end (in which case we can return a
+            // plain string) or if it's not then it has interpolation.
+            pm_token_t content = parser->current;
+            pm_string_t unescaped = parser->current_string;
+            parser_lex(parser);
+
+            if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
+                pm_node_flag_set(node, parse_unescaped_encoding(parser));
+
+                // Kind of odd behavior, but basically if we have an
+                // unterminated string and it ends in a newline, we back up one
+                // character so that the error message is on the last line of
+                // content in the string.
+                if (!accept1(parser, PM_TOKEN_STRING_END)) {
+                    const uint8_t *location = parser->previous.end;
+                    if (location > parser->start && location[-1] == '\n') location--;
+                    pm_parser_err(parser, location, location, PM_ERR_STRING_LITERAL_EOF);
+
+                    parser->previous.start = parser->previous.end;
+                    parser->previous.type = PM_TOKEN_MISSING;
+                }
+            } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, &content, &unescaped, true));
+            } else {
+                // If we get here, then we have interpolation so we'll need
+                // to create a string or symbol node with interpolation.
+                pm_node_list_t parts = { 0 };
+                pm_token_t string_opening = not_provided(parser);
+                pm_token_t string_closing = not_provided(parser);
+
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &string_opening, &parser->previous, &string_closing, &unescaped);
+                pm_node_flag_set(part, parse_unescaped_encoding(parser));
+                pm_node_list_append(&parts, part);
+
+                while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
+                    if ((part = parse_string_part(parser)) != NULL) {
+                        pm_node_list_append(&parts, part);
+                    }
+                }
+
+                if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
+                    node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+                } else if (match1(parser, PM_TOKEN_EOF)) {
+                    pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
+                    node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current);
+                } else {
+                    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
+                    node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+                }
+
+                pm_node_list_free(&parts);
+            }
+        } else {
+            // If we get here, then the first part of the string is not plain
+            // string content, in which case we need to parse the string as an
+            // interpolated string.
+            pm_node_list_t parts = { 0 };
+            pm_node_t *part;
+
+            while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
+                if ((part = parse_string_part(parser)) != NULL) {
+                    pm_node_list_append(&parts, part);
+                }
+            }
+
+            if (accept1(parser, PM_TOKEN_LABEL_END)) {
+                node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+            } else if (match1(parser, PM_TOKEN_EOF)) {
+                pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
+                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current);
+            } else {
+                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
+                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+            }
+
+            pm_node_list_free(&parts);
+        }
+
+        if (current == NULL) {
+            // If the node we just parsed is a symbol node, then we can't
+            // concatenate it with anything else, so we can now return that
+            // node.
+            if (PM_NODE_TYPE_P(node, PM_SYMBOL_NODE) || PM_NODE_TYPE_P(node, PM_INTERPOLATED_SYMBOL_NODE)) {
+                return node;
+            }
+
+            // If we don't already have a node, then it's fine and we can just
+            // set the result to be the node we just parsed.
+            current = node;
+        } else {
+            // Otherwise we need to check the type of the node we just parsed.
+            // If it cannot be concatenated with the previous node, then we'll
+            // need to add a syntax error.
+            if (!PM_NODE_TYPE_P(node, PM_STRING_NODE) && !PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
+                pm_parser_err_node(parser, node, PM_ERR_STRING_CONCATENATION);
+            }
+
+            // If we haven't already created our container for concatenation,
+            // we'll do that now.
+            if (!concating) {
+                concating = true;
+                pm_token_t bounds = not_provided(parser);
+
+                pm_interpolated_string_node_t *container = pm_interpolated_string_node_create(parser, &bounds, NULL, &bounds);
+                pm_interpolated_string_node_append(container, current);
+                current = (pm_node_t *) container;
+            }
+
+            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, node);
+        }
+    }
+
+    return current;
+}
+
 #define PM_PARSE_PATTERN_SINGLE 0
 #define PM_PARSE_PATTERN_TOP 1
 #define PM_PARSE_PATTERN_MULTI 2
@@ -16446,8 +16670,20 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 pm_node_list_append(&assocs, assoc);
             }
         } else {
-            expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
-            pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
+            pm_node_t *key;
+
+            if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
+                key = parse_strings(parser, NULL);
+
+                if (PM_NODE_TYPE_P(key, PM_INTERPOLATED_SYMBOL_NODE)) {
+                    pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_INTERPOLATED);
+                } else if (!pm_symbol_node_label_p(key)) {
+                    pm_parser_err_node(parser, key, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
+                }
+            } else {
+                expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
+                key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
+            }
 
             parse_pattern_hash_key(parser, &keys, key);
             pm_node_t *value = NULL;
@@ -16969,230 +17205,6 @@ parse_negative_numeric(pm_node_t *node) {
             assert(false && "unreachable");
             break;
     }
-}
-
-/**
- * Return a string content token at a particular location that is empty.
- */
-static pm_token_t
-parse_strings_empty_content(const uint8_t *location) {
-    return (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = location, .end = location };
-}
-
-/**
- * Parse a set of strings that could be concatenated together.
- */
-static inline pm_node_t *
-parse_strings(pm_parser_t *parser, pm_node_t *current) {
-    assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
-
-    bool concating = false;
-    bool state_is_arg_labeled = lex_state_arg_labeled_p(parser);
-
-    while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
-        pm_node_t *node = NULL;
-
-        // Here we have found a string literal. We'll parse it and add it to
-        // the list of strings.
-        const pm_lex_mode_t *lex_mode = parser->lex_modes.current;
-        assert(lex_mode->mode == PM_LEX_STRING);
-        bool lex_interpolation = lex_mode->as.string.interpolation;
-
-        pm_token_t opening = parser->current;
-        parser_lex(parser);
-
-        if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
-            // If we get here, then we have an end immediately after a
-            // start. In that case we'll create an empty content token and
-            // return an uninterpolated string.
-            pm_token_t content = parse_strings_empty_content(parser->previous.start);
-            pm_string_node_t *string = pm_string_node_create(parser, &opening, &content, &parser->previous);
-
-            pm_string_shared_init(&string->unescaped, content.start, content.end);
-            node = (pm_node_t *) string;
-        } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
-            // If we get here, then we have an end of a label immediately
-            // after a start. In that case we'll create an empty symbol
-            // node.
-            pm_token_t content = parse_strings_empty_content(parser->previous.start);
-            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &content, &parser->previous);
-
-            pm_string_shared_init(&symbol->unescaped, content.start, content.end);
-            node = (pm_node_t *) symbol;
-        } else if (!lex_interpolation) {
-            // If we don't accept interpolation then we expect the string to
-            // start with a single string content node.
-            pm_string_t unescaped;
-            pm_token_t content;
-
-            if (match1(parser, PM_TOKEN_EOF)) {
-                unescaped = PM_STRING_EMPTY;
-                content = not_provided(parser);
-            } else {
-                unescaped = parser->current_string;
-                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_EXPECT_STRING_CONTENT);
-                content = parser->previous;
-            }
-
-            // It is unfortunately possible to have multiple string content
-            // nodes in a row in the case that there's heredoc content in
-            // the middle of the string, like this cursed example:
-            //
-            // <<-END+'b
-            //  a
-            // END
-            //  c'+'d'
-            //
-            // In that case we need to switch to an interpolated string to
-            // be able to contain all of the parts.
-            if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                pm_node_list_t parts = { 0 };
-
-                pm_token_t delimiters = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &delimiters, &content, &delimiters, &unescaped);
-                pm_node_list_append(&parts, part);
-
-                do {
-                    part = (pm_node_t *) pm_string_node_create_current_string(parser, &delimiters, &parser->current, &delimiters);
-                    pm_node_list_append(&parts, part);
-                    parser_lex(parser);
-                } while (match1(parser, PM_TOKEN_STRING_CONTENT));
-
-                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
-                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-
-                pm_node_list_free(&parts);
-            } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
-                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, &content, &unescaped, true));
-            } else if (match1(parser, PM_TOKEN_EOF)) {
-                pm_parser_err_token(parser, &opening, PM_ERR_STRING_LITERAL_EOF);
-                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
-            } else if (accept1(parser, PM_TOKEN_STRING_END)) {
-                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
-            } else {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_STRING_LITERAL_TERM, pm_token_type_human(parser->previous.type));
-                parser->previous.start = parser->previous.end;
-                parser->previous.type = PM_TOKEN_MISSING;
-                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
-            }
-        } else if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-            // In this case we've hit string content so we know the string
-            // at least has something in it. We'll need to check if the
-            // following token is the end (in which case we can return a
-            // plain string) or if it's not then it has interpolation.
-            pm_token_t content = parser->current;
-            pm_string_t unescaped = parser->current_string;
-            parser_lex(parser);
-
-            if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
-                pm_node_flag_set(node, parse_unescaped_encoding(parser));
-
-                // Kind of odd behavior, but basically if we have an
-                // unterminated string and it ends in a newline, we back up one
-                // character so that the error message is on the last line of
-                // content in the string.
-                if (!accept1(parser, PM_TOKEN_STRING_END)) {
-                    const uint8_t *location = parser->previous.end;
-                    if (location > parser->start && location[-1] == '\n') location--;
-                    pm_parser_err(parser, location, location, PM_ERR_STRING_LITERAL_EOF);
-
-                    parser->previous.start = parser->previous.end;
-                    parser->previous.type = PM_TOKEN_MISSING;
-                }
-            } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, &content, &unescaped, true));
-            } else {
-                // If we get here, then we have interpolation so we'll need
-                // to create a string or symbol node with interpolation.
-                pm_node_list_t parts = { 0 };
-                pm_token_t string_opening = not_provided(parser);
-                pm_token_t string_closing = not_provided(parser);
-
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &string_opening, &parser->previous, &string_closing, &unescaped);
-                pm_node_flag_set(part, parse_unescaped_encoding(parser));
-                pm_node_list_append(&parts, part);
-
-                while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
-                    if ((part = parse_string_part(parser)) != NULL) {
-                        pm_node_list_append(&parts, part);
-                    }
-                }
-
-                if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
-                    node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
-                } else if (match1(parser, PM_TOKEN_EOF)) {
-                    pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
-                    node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current);
-                } else {
-                    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
-                    node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                }
-
-                pm_node_list_free(&parts);
-            }
-        } else {
-            // If we get here, then the first part of the string is not plain
-            // string content, in which case we need to parse the string as an
-            // interpolated string.
-            pm_node_list_t parts = { 0 };
-            pm_node_t *part;
-
-            while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
-                if ((part = parse_string_part(parser)) != NULL) {
-                    pm_node_list_append(&parts, part);
-                }
-            }
-
-            if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
-            } else if (match1(parser, PM_TOKEN_EOF)) {
-                pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
-                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current);
-            } else {
-                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
-                node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-            }
-
-            pm_node_list_free(&parts);
-        }
-
-        if (current == NULL) {
-            // If the node we just parsed is a symbol node, then we can't
-            // concatenate it with anything else, so we can now return that
-            // node.
-            if (PM_NODE_TYPE_P(node, PM_SYMBOL_NODE) || PM_NODE_TYPE_P(node, PM_INTERPOLATED_SYMBOL_NODE)) {
-                return node;
-            }
-
-            // If we don't already have a node, then it's fine and we can just
-            // set the result to be the node we just parsed.
-            current = node;
-        } else {
-            // Otherwise we need to check the type of the node we just parsed.
-            // If it cannot be concatenated with the previous node, then we'll
-            // need to add a syntax error.
-            if (!PM_NODE_TYPE_P(node, PM_STRING_NODE) && !PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
-                pm_parser_err_node(parser, node, PM_ERR_STRING_CONCATENATION);
-            }
-
-            // If we haven't already created our container for concatenation,
-            // we'll do that now.
-            if (!concating) {
-                concating = true;
-                pm_token_t bounds = not_provided(parser);
-
-                pm_interpolated_string_node_t *container = pm_interpolated_string_node_create(parser, &bounds, NULL, &bounds);
-                pm_interpolated_string_node_append(container, current);
-                current = (pm_node_t *) container;
-            }
-
-            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, node);
-        }
-    }
-
-    return current;
 }
 
 /**
