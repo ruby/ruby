@@ -86,7 +86,7 @@ XLDFLAGS = $(XLDFLAGS)
 !endif
 
 !if "$(WITH_GMP)" != "no"
-	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || (echo USE_GMP = no)) >>$(MAKEFILE)
+	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
 #include <gmp.h>
 mpz_t x;
 int main(void) {mpz_init(x); return 0;}
