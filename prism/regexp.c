@@ -302,6 +302,12 @@ pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
         return false;
     }
 
+    if ((parser->cursor < parser->end) && parser->cursor[0] == ']') {
+        parser->cursor++;
+        pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "empty char-class");
+        return true;
+    }
+
     const uint8_t *reset = parser->cursor;
 
     if ((parser->cursor + 2 < parser->end) && parser->cursor[0] == '[' && parser->cursor[1] == ':') {

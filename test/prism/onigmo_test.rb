@@ -16,6 +16,10 @@ module Prism
       assert_error(%Q{#{"(" * 4096}a#{")" * 4096}}, "parse depth limit over")
     end
 
+    def test_ONIGERR_EMPTY_CHAR_CLASS
+      assert_error("[]", "empty char-class")
+    end
+
     private
 
     def assert_error(source, message)
@@ -23,15 +27,14 @@ module Prism
 
       assert result.failure?
       assert_equal message, result.errors.first.message
+
+      error = assert_raise(ArgumentError) { Onigmo.parse(source) }
+      assert_equal message, error.message
     end
   end
 end
 
 __END__
-case ONIGERR_END_PATTERN_AT_LEFT_BRACE:
-  p = "end pattern at left brace"; break;
-case ONIGERR_EMPTY_CHAR_CLASS:
-  p = "empty char-class"; break;
 case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
   p = "premature end of char-class"; break;
 case ONIGERR_END_PATTERN_AT_ESCAPE:
