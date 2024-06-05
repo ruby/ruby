@@ -505,6 +505,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                             return false;
                         }
 
+                        if (parser->cursor - start == 1) {
+                            pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+                        }
+
                         if (parser->name_callback != NULL) {
                             pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
                         }
@@ -608,6 +612,12 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
         case '[':
             parser->cursor++;
             return pm_regexp_parse_lbracket(parser, depth) && pm_regexp_parse_quantifier(parser);
+        case '*':
+        case '?':
+        case '+':
+            parser->cursor++;
+            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "target of repeat operator is not specified");
+            return true;
         default: {
             size_t width;
             if (!parser->encoding_changed) {
