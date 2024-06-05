@@ -17395,9 +17395,21 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
  * and the error callback.
  */
 typedef struct {
+    /** The parser that we are parsing the regular expression for. */
     pm_parser_t *parser;
+
+    /** The start of the regular expression. */
     const uint8_t *start;
+
+    /** The end of the regular expression. */
     const uint8_t *end;
+
+    /**
+     * Whether or not the source of the regular expression is shared. This
+     * impacts the location of error messages, because if it is shared then we
+     * can use the location directly and if it is not, then we use the bounds of
+     * the regular expression itself.
+     */
     bool shared;
 } parse_regular_expression_error_data_t;
 
@@ -20061,11 +20073,24 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
  * and the named capture callback.
  */
 typedef struct {
+    /** The parser that is parsing the regular expression. */
     pm_parser_t *parser;
-    const pm_string_t *content;
+
+    /** The call node wrapping the regular expression node. */
     pm_call_node_t *call;
+
+    /** The match write node that is being created. */
     pm_match_write_node_t *match;
+
+    /** The list of names that have been parsed. */
     pm_constant_id_list_t names;
+
+    /**
+     * Whether the content of the regular expression is shared. This impacts
+     * whether or not we used owned constants or shared constants in the
+     * constant pool for the names of the captures.
+     */
+    bool shared;
 } parse_regular_expression_named_capture_data_t;
 
 /**
@@ -20077,7 +20102,6 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     parse_regular_expression_named_capture_data_t *callback_data = (parse_regular_expression_named_capture_data_t *) data;
 
     pm_parser_t *parser = callback_data->parser;
-    const pm_string_t *content = callback_data->content;
     pm_call_node_t *call = callback_data->call;
     pm_constant_id_list_t *names = &callback_data->names;
 
@@ -20091,7 +20115,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     // not add it to the local table.
     if (!pm_slice_is_valid_local(parser, source, source + length)) return;
 
-    if (content->type == PM_STRING_SHARED) {
+    if (callback_data->shared) {
         // If the unescaped string is a slice of the source, then we can
         // copy the names directly. The pointers will line up.
         location = (pm_location_t) { .start = source, .end = source + length };
@@ -20099,7 +20123,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     } else {
         // Otherwise, the name is a slice of the malloc-ed owned string,
         // in which case we need to copy it out into a new string.
-        location = call->receiver->location;
+        location = (pm_location_t) { .start = call->receiver->location.start, .end = call->receiver->location.end };
 
         void *memory = xmalloc(length);
         if (memory == NULL) abort();
@@ -20145,9 +20169,9 @@ static pm_node_t *
 parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call) {
     parse_regular_expression_named_capture_data_t callback_data = {
         .parser = parser,
-        .content = content,
         .call = call,
-        .names = { 0 }
+        .names = { 0 },
+        .shared = content->type == PM_STRING_SHARED
     };
 
     parse_regular_expression_error_data_t error_data = {
