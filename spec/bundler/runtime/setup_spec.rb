@@ -767,7 +767,7 @@ end
     expect(err).to be_empty
   end
 
-  it "can require rubygems without warnings, when using a local cache" do
+  it "can require rubygems without warnings, when using a local cache", :truffleruby do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
