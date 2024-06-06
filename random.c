@@ -566,8 +566,6 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 
 # if defined(CRYPT_VERIFYCONTEXT)
-STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
-
 /* Although HCRYPTPROV is not a HANDLE, it looks like
  * INVALID_HANDLE_VALUE is not a valid value */
 static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
@@ -576,11 +574,17 @@ static void
 release_crypt(void *p)
 {
     HCRYPTPROV *ptr = p;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
         CryptReleaseContext(prov, 0);
     }
 }
+
+static const rb_data_type_t crypt_prov_type = {
+    "HCRYPTPROV",
+    {0, release_crypt,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+};
 
 static int
 fill_random_bytes_crypt(void *seed, size_t size)
@@ -588,15 +592,15 @@ fill_random_bytes_crypt(void *seed, size_t size)
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
+        VALUE wrapper = TypedData_Wrap_Struct(0, &crypt_prov_type, 0);
         if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
             prov = INVALID_HCRYPTPROV;
         }
-        old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
         if (LIKELY(!old_prov)) { /* no other threads acquired */
             if (prov != INVALID_HCRYPTPROV) {
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-                rb_vm_register_global_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
+                DATA_PTR(wrapper) = (void *)prov;
+                rb_vm_register_global_object(wrapper);
             }
         }
         else {			/* another thread acquired */
