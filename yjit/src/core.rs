@@ -498,15 +498,13 @@ pub struct Context {
     inline_block: u64,
 }
 
-
-
-
-
-
 #[derive(Clone)]
 pub struct BitVector
 {
+    // Flat vector of bytes to write into
     bytes: Vec<u8>,
+
+    // Number of bits taken out of bytes allocated
     num_bits: usize,
 }
 
@@ -533,7 +531,7 @@ impl BitVector
         (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
     }
 
-    // Write and append an unsigned integer
+    // Write/append an unsigned integer value
     fn push_uint(&mut self, mut val: u64, mut num_bits: usize)
     {
         assert!(num_bits <= 64);
@@ -611,7 +609,7 @@ impl BitVector
     }
 
     // Read a uint value at a given bit index
-    // The bit index will is incremented after the value is read
+    // The bit index is incremented after the value is read
     fn read_uint(&self, bit_idx: &mut usize, mut num_bits: usize) -> u64
     {
         let start_bit_idx = *bit_idx;
@@ -853,6 +851,8 @@ enum CtxOp
 }
 
 // Cache of the last context encoded
+// Empirically this saves a few percent of memory
+// We can experiment with varying the size of this cache
 static mut LAST_CTX_ENCODED: Option<(Context, u32)> = None;
 
 impl Context

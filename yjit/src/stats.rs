@@ -754,6 +754,7 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
         }
 
+        // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
         hash_aset_usize!(hash, "context_data_bytes", context_data.num_bytes());
 

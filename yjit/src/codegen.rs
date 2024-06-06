@@ -10333,6 +10333,7 @@ fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
 
 /// Global state needed for code generation
 pub struct CodegenGlobals {
+    /// Flat vector of bits to store compressed context data
     context_data: BitVector,
 
     /// Inline code block (fast path)
