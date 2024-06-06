@@ -131,8 +131,9 @@ typedef struct {
 
 static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
-static void fill_random_seed(uint32_t *seed, size_t cnt);
+static void fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes);
 static VALUE make_seed_value(uint32_t *ptr, size_t len);
+#define fill_random_bytes ruby_fill_random_bytes
 
 RB_RANDOM_INTERFACE_DECLARE(rand_mt);
 static const rb_random_interface_t random_mt_if = {
@@ -354,7 +355,7 @@ rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
     size_t len = roomof(rng->default_seed_bits, 32);
     uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
 
-    fill_random_seed(buf, len);
+    fill_random_seed(buf, len, true);
     rng->init(rnd, buf, len);
     seed = make_seed_value(buf, len);
     explicit_bzero(buf, len * sizeof(*buf));
@@ -677,11 +678,9 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
     return fill_random_bytes_urandom(seed, size);
 }
 
-#define fill_random_bytes ruby_fill_random_bytes
-
 /* cnt must be 4 or more */
 static void
-fill_random_seed(uint32_t *seed, size_t cnt)
+fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes)
 {
     static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
@@ -691,10 +690,12 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #endif
     size_t len = cnt * sizeof(*seed);
 
+    if (try_bytes) {
+        fill_random_bytes(seed, len, FALSE);
+        return;
+    }
+
     memset(seed, 0, len);
-
-    fill_random_bytes(seed, len, FALSE);
-
 #if defined HAVE_CLOCK_GETTIME
     clock_gettime(CLOCK_REALTIME, &tv);
     seed[0] ^= tv.tv_nsec;
@@ -729,8 +730,8 @@ make_seed_value(uint32_t *ptr, size_t len)
     return seed;
 }
 
-#define with_random_seed(size, add) \
-    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size)), 1); \
+#define with_random_seed(size, add, try_bytes) \
+    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size), try_bytes), 1); \
          loop; explicit_bzero(seedbuf, (size)*sizeof(seedbuf[0])), loop = 0)
 
 /*
@@ -745,7 +746,7 @@ static VALUE
 random_seed(VALUE _)
 {
     VALUE v;
-    with_random_seed(DEFAULT_SEED_CNT, 1) {
+    with_random_seed(DEFAULT_SEED_CNT, 1, true) {
         v = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
     }
     return v;
@@ -1774,7 +1775,7 @@ Init_RandomSeedCore(void)
     */
     struct MT mt;
 
-    with_random_seed(DEFAULT_SEED_CNT, 0) {
+    with_random_seed(DEFAULT_SEED_CNT, 0, false) {
         init_by_array(&mt, seedbuf, DEFAULT_SEED_CNT);
     }
 
