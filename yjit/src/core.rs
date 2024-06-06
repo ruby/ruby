@@ -499,8 +499,7 @@ pub struct Context {
 }
 
 #[derive(Clone)]
-pub struct BitVector
-{
+pub struct BitVector {
     // Flat vector of bytes to write into
     bytes: Vec<u8>,
 
@@ -508,10 +507,8 @@ pub struct BitVector
     num_bits: usize,
 }
 
-impl BitVector
-{
-    pub fn new() -> Self
-    {
+impl BitVector {
+    pub fn new() -> Self {
         Self {
             bytes: Vec::with_capacity(4096),
             num_bits: 0,
@@ -519,21 +516,18 @@ impl BitVector
     }
 
     #[allow(unused)]
-    pub fn num_bits(&self) -> usize
-    {
+    pub fn num_bits(&self) -> usize {
         self.num_bits
     }
 
     // Total number of bytes taken
     #[allow(unused)]
-    pub fn num_bytes(&self) -> usize
-    {
+    pub fn num_bytes(&self) -> usize {
         (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
     }
 
     // Write/append an unsigned integer value
-    fn push_uint(&mut self, mut val: u64, mut num_bits: usize)
-    {
+    fn push_uint(&mut self, mut val: u64, mut num_bits: usize) {
         assert!(num_bits <= 64);
 
         // Mask out bits above the number of bits requested
@@ -580,45 +574,38 @@ impl BitVector
         }
     }
 
-    fn push_u8(&mut self, val: u8)
-    {
+    fn push_u8(&mut self, val: u8) {
         self.push_uint(val as u64, 8);
     }
 
-    fn push_u4(&mut self, val: u8)
-    {
+    fn push_u4(&mut self, val: u8) {
         assert!(val < 16);
         self.push_uint(val as u64, 4);
     }
 
-    fn push_u3(&mut self, val: u8)
-    {
+    fn push_u3(&mut self, val: u8) {
         assert!(val < 8);
         self.push_uint(val as u64, 3);
     }
 
-    fn push_u2(&mut self, val: u8)
-    {
+    fn push_u2(&mut self, val: u8) {
         assert!(val < 4);
         self.push_uint(val as u64, 2);
     }
 
-    fn push_u1(&mut self, val: u8)
-    {
+    fn push_u1(&mut self, val: u8) {
         assert!(val < 2);
         self.push_uint(val as u64, 1);
     }
 
     // Push a context encoding opcode
-    fn push_op(&mut self, op: CtxOp)
-    {
+    fn push_op(&mut self, op: CtxOp) {
         self.push_u4(op as u8);
     }
 
     // Read a uint value at a given bit index
     // The bit index is incremented after the value is read
-    fn read_uint(&self, bit_idx: &mut usize, mut num_bits: usize) -> u64
-    {
+    fn read_uint(&self, bit_idx: &mut usize, mut num_bits: usize) -> u64 {
         let start_bit_idx = *bit_idx;
         let mut cur_idx = *bit_idx;
 
@@ -652,41 +639,33 @@ impl BitVector
         out_bits
     }
 
-    fn read_u8(&self, bit_idx: &mut usize) -> u8
-    {
+    fn read_u8(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 8) as u8
     }
 
-    fn read_u4(&self, bit_idx: &mut usize) -> u8
-    {
+    fn read_u4(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 4) as u8
     }
 
-    fn read_u3(&self, bit_idx: &mut usize) -> u8
-    {
+    fn read_u3(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 3) as u8
     }
 
-    fn read_u2(&self, bit_idx: &mut usize) -> u8
-    {
+    fn read_u2(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 2) as u8
     }
 
-    fn read_u1(&self, bit_idx: &mut usize) -> u8
-    {
+    fn read_u1(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 1) as u8
     }
 
-    fn read_op(&self, bit_idx: &mut usize) -> CtxOp
-    {
+    fn read_op(&self, bit_idx: &mut usize) -> CtxOp {
         unsafe { std::mem::transmute(self.read_u4(bit_idx)) }
     }
 }
 
-impl fmt::Debug for BitVector
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
-    {
+impl fmt::Debug for BitVector {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // We print the higher bytes first
         for (idx, byte) in self.bytes.iter().enumerate().rev() {
             write!(f, "{:08b}", byte)?;
@@ -766,7 +745,6 @@ mod bitvector_tests {
 
     #[test]
     fn write_read_u32_max_64b() {
-
         let mut arr = BitVector::new();
         arr.push_uint(0xFF_FF_FF_FF, 64);
         assert!(arr.read_uint(&mut 0, 64) == 0xFF_FF_FF_FF);
@@ -830,8 +808,7 @@ mod bitvector_tests {
 // Context encoding opcodes (4 bits)
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
-enum CtxOp
-{
+enum CtxOp {
     // Self type (4 bits)
     SetSelfType = 0,
 
@@ -862,10 +839,8 @@ enum CtxOp
 // We can experiment with varying the size of this cache
 static mut LAST_CTX_ENCODED: Option<(Context, u32)> = None;
 
-impl Context
-{
-    pub fn encode(&self) -> u32
-    {
+impl Context {
+    pub fn encode(&self) -> u32 {
         incr_counter!(num_contexts_encoded);
 
         if *self == Context::default() {
@@ -900,8 +875,7 @@ impl Context
         idx
     }
 
-    pub fn decode(start_idx: u32) -> Context
-    {
+    pub fn decode(start_idx: u32) -> Context {
         if start_idx == 0 {
             return Context::default();
         };
@@ -911,8 +885,7 @@ impl Context
     }
 
     // Encode into a compressed context representation in a bit vector
-    fn encode_into(&self, bits: &mut BitVector) -> usize
-    {
+    fn encode_into(&self, bits: &mut BitVector) -> usize {
         let start_idx = bits.num_bits();
 
         // NOTE: this value is often zero or falls within
@@ -926,8 +899,7 @@ impl Context
             // One single bit to signify a compact stack_size/sp_offset encoding
             bits.push_u1(1);
             bits.push_u2(self.stack_size);
-        } else
-        {
+        } else {
             // Full stack size encoding
             bits.push_u1(0);
 
@@ -1006,8 +978,7 @@ impl Context
     }
 
     // Decode a compressed context representation from a bit vector
-    fn decode_from(bits: &BitVector, start_idx: usize) -> Context
-    {
+    fn decode_from(bits: &BitVector, start_idx: usize) -> Context {
         let mut ctx = Context::default();
 
         let mut idx = start_idx;
@@ -1016,8 +987,7 @@ impl Context
         if bits.read_u1(&mut idx) == 1 {
             ctx.stack_size = bits.read_u2(&mut idx);
             ctx.sp_offset = ctx.stack_size as i8;
-        } else
-        {
+        } else {
             ctx.stack_size = bits.read_u8(&mut idx);
             ctx.sp_offset = bits.read_u8(&mut idx) as i8;
         }
@@ -1028,8 +998,7 @@ impl Context
         // chain_depth_and_flags: u8
         ctx.chain_depth_and_flags = bits.read_u8(&mut idx);
 
-        loop
-        {
+        loop {
             //println!("reading op");
             let op = bits.read_op(&mut idx);
             //println!("got op {:?}", op);
