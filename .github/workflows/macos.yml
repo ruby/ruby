@@ -153,8 +153,9 @@ jobs:
           CORES_TAR_GZ="cores-${{ github.run_id }}-${{ steps.job_id.outputs.result }}.tar.gz"
           echo "test: $CORES_TAR_GZ"
           if [ -n "$(ls /cores)" ]; then
-            tar czf /cores "$CORES_TAR_GZ"
+            tar czf "$CORES_TAR_GZ" /cores
             aws s3 cp "$CORES_TAR_GZ" "s3://ruby-core-files/$CORES_TAR_GZ"
+            rm "$CORES_TAR_GZ"
           fi
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUBY_CORE_FILES_AWS_ACCESS_KEY_ID }}
