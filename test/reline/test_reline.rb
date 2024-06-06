@@ -390,6 +390,30 @@ class Reline::Test < Reline::TestCase
     assert_match(/\AReline::ANSI\nprompt> /, out)
   end
 
+  def test_read_eof_returns_input
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-a"
+      io.close_write
+      io.read
+    end
+    assert_include(out, '{:result=>"a"}')
+  end
+
+  def test_read_eof_returns_nil_if_empty
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-h"
+      io.close_write
+      io.read
+    end
+    assert_include(out, '{:result=>nil}')
+  end
+
   def test_require_reline_should_not_trigger_winsize
     pend if win?
     lib = File.expand_path("../../lib", __dir__)

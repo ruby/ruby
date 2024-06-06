@@ -238,7 +238,6 @@ class Reline::LineEditor
     @perfect_matched = nil
     @menu_info = nil
     @searching_prompt = nil
-    @first_char = true
     @just_cursor_moving = false
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
@@ -1110,13 +1109,10 @@ class Reline::LineEditor
     end
     if key.char.nil?
       process_insert(force: true)
-      if @first_char
-        @eof = true
-      end
+      @eof = buffer_empty?
       finish
       return
     end
-    @first_char = false
     @completion_occurs = false
 
     if key.char.is_a?(Symbol)
@@ -1407,6 +1403,10 @@ class Reline::LineEditor
 
   def whole_buffer
     whole_lines.join("\n")
+  end
+
+  private def buffer_empty?
+    current_line.empty? and @buffer_of_lines.size == 1
   end
 
   def finished?
@@ -1937,7 +1937,7 @@ class Reline::LineEditor
   alias_method :kill_whole_line, :em_kill_line
 
   private def em_delete(key)
-    if current_line.empty? and @buffer_of_lines.size == 1 and key == "\C-d".ord
+    if buffer_empty? and key == "\C-d".ord
       @eof = true
       finish
     elsif @byte_pointer < current_line.bytesize
@@ -2285,8 +2285,7 @@ class Reline::LineEditor
   end
 
   private def vi_list_or_eof(key)
-    if current_line.empty? and @buffer_of_lines.size == 1
-      set_current_line('', 0)
+    if buffer_empty?
       @eof = true
       finish
     else
