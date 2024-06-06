@@ -5702,7 +5702,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const char *builtin_func;
 
         if (UNLIKELY(iseq_has_builtin_function_table(iseq)) && (builtin_func = pm_iseq_builtin_function_name(scope_node, cast->receiver, method_id)) != NULL) {
-            const pm_string_t *filepath = &scope_node->parser->filepath;
             pm_compile_builtin_function_call(iseq, ret, scope_node, cast, &location, popped, ISEQ_COMPILE_DATA(iseq)->current_block, builtin_func);
             return;
         }
