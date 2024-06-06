@@ -852,8 +852,20 @@ enum CtxOp
 
 impl Context
 {
+    pub fn encode(&self) -> usize
+    {
+        let context_data = CodegenGlobals::get_context_data();
+        self.encode_into(context_data)
+    }
+
+    pub fn decode(&self, start_idx: usize) -> Context
+    {
+        let context_data = CodegenGlobals::get_context_data();
+        Self::decode_from(context_data, start_idx)
+    }
+
     // Encode into a compressed context representation in a bit vector
-    pub fn encode_into(&self, bits: &mut BitVector) -> usize
+    fn encode_into(&self, bits: &mut BitVector) -> usize
     {
         let start_idx = bits.num_bits();
 
@@ -948,7 +960,7 @@ impl Context
     }
 
     // Decode a compressed context representation from a bit vector
-    pub fn decode_from(bits: &BitVector, start_idx: usize) -> Context
+    fn decode_from(bits: &BitVector, start_idx: usize) -> Context
     {
         let mut ctx = Context::default();
 
