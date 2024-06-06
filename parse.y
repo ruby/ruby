@@ -15668,6 +15668,9 @@ rb_ruby_parser_free(void *ptr)
         st_free_table(p->case_labels);
     }
 
+    xfree(p->lex.strterm);
+    p->lex.strterm = 0;
+
     xfree(ptr);
 }
 
