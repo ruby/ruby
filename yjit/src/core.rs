@@ -852,12 +852,25 @@ enum CtxOp
     EndOfCode,
 }
 
+// Cache of the last context encoded
+static mut LAST_CTX_ENCODED: Option<(Context, u32)> = None;
+
 impl Context
 {
     pub fn encode(&self) -> u32
     {
+        incr_counter!(num_contexts_encoded);
+
         if *self == Context::default() {
             return 0;
+        }
+
+        unsafe {
+            if let Some((ctx, idx)) = LAST_CTX_ENCODED {
+                if ctx == *self {
+                    return idx;
+                }
+            }
         }
 
         let context_data = CodegenGlobals::get_context_data();
@@ -868,7 +881,13 @@ impl Context
         }
 
         let idx = self.encode_into(context_data);
-        idx.try_into().unwrap()
+        let idx: u32 = idx.try_into().unwrap();
+
+        unsafe {
+            LAST_CTX_ENCODED = Some((*self, idx));
+        }
+
+        idx
     }
 
     pub fn decode(start_idx: u32) -> Context

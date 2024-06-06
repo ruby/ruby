@@ -557,6 +557,7 @@ make_counters! {
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
+    num_contexts_encoded,
 
     freed_iseq_count,
 
@@ -752,6 +753,9 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             hash_aset_usize!(hash, "live_context_count", live_context_count);
             hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
         }
+
+        let context_data = CodegenGlobals::get_context_data();
+        hash_aset_usize!(hash, "context_data_bytes", context_data.num_bytes());
 
         // VM instructions count
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
