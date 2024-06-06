@@ -32,6 +32,9 @@ typedef struct {
     VALUE ary[]; // The actual content.
 } rb_mmtk_objbuf_t;
 
+// Write barrier
+extern bool rb_mmtk_use_barrier;
+
 // Enabled?
 bool rb_mmtk_enabled_p(void);
 

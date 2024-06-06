@@ -62,6 +62,7 @@ const char *mmtk_chosen_plan = NULL;
 bool mmtk_plan_is_immix = false;
 bool mmtk_plan_uses_bump_pointer = false;
 bool mmtk_plan_implicitly_pinning = false;
+bool rb_mmtk_use_barrier = false;
 
 size_t mmtk_pre_max_heap_size = 0;
 size_t mmtk_post_max_heap_size = 0;
@@ -269,14 +270,39 @@ apply_cmdline_options(MMTk_Builder *mmtk_builder)
 {
     if (mmtk_chosen_plan != NULL) {
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
-        mmtk_plan_is_immix = strcmp(mmtk_chosen_plan, "Immix") == 0 || strcmp(mmtk_chosen_plan, "StickyImmix") == 0;
-        mmtk_plan_uses_bump_pointer = mmtk_plan_is_immix;
-        mmtk_plan_implicitly_pinning = strcmp(mmtk_chosen_plan, "MarkSweep") == 0;
     }
 
     if (mmtk_max_heap_size > 0) {
         mmtk_builder_set_fixed_heap_size(mmtk_builder, mmtk_max_heap_size);
     }
+}
+
+static void
+set_variables_from_options(MMTk_Builder *mmtk_builder)
+{
+    mmtk_plan_is_immix = mmtk_builder_is_immix(mmtk_builder) || mmtk_builder_is_sticky_immix(mmtk_builder);
+    RUBY_DEBUG_LOG("mmtk_plan_is_immix = %d\n", mmtk_plan_is_immix);
+
+    mmtk_plan_uses_bump_pointer = mmtk_plan_is_immix;
+    RUBY_DEBUG_LOG("mmtk_plan_uses_bump_pointer = %d\n", mmtk_plan_uses_bump_pointer);
+
+    mmtk_plan_implicitly_pinning = mmtk_builder_is_mark_sweep(mmtk_builder);
+    RUBY_DEBUG_LOG("mmtk_plan_implicitly_pinning = %d\n", mmtk_plan_implicitly_pinning);
+
+    // We sometimes for disabling or enabling barriers to measure the impact of barriers.
+    const char* barrier_env_var = getenv("RB_MMTK_FORCE_BARRIER");
+    if (barrier_env_var != NULL) {
+        if (strcmp(barrier_env_var, "1") == 0) {
+            rb_mmtk_use_barrier = true;
+            fprintf(stderr, "WARNING: Force enabling barrier!\n");
+        } else {
+            rb_mmtk_use_barrier = false;
+            fprintf(stderr, "WARNING: Force disabling barrier!\n");
+        }
+    } else {
+        rb_mmtk_use_barrier = mmtk_builder_is_sticky_immix(mmtk_builder);
+    }
+    RUBY_DEBUG_LOG("rb_mmtk_use_barrier = %d\n", rb_mmtk_use_barrier);
 }
 
 void
@@ -293,6 +319,9 @@ rb_mmtk_main_thread_init(void)
 
     // (4) Apply cmdline or RUBYOPT options if set.
     apply_cmdline_options(mmtk_builder);
+
+    // Set Ruby-level variables from the actually set options.
+    set_variables_from_options(mmtk_builder);
 
 #if RACTOR_CHECK_MODE
     ruby_binding_options.ractor_check_mode = true;

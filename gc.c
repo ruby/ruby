@@ -9195,7 +9195,7 @@ void
 rb_gc_writebarrier(VALUE a, VALUE b)
 {
 #if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
+    if (rb_mmtk_enabled_p() && rb_mmtk_use_barrier) {
         mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)a);
         return;
     }
@@ -9287,7 +9287,7 @@ void
 rb_gc_writebarrier_remember(VALUE obj)
 {
 #if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
+    if (rb_mmtk_enabled_p() && rb_mmtk_use_barrier) {
         mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)obj);
         return;
     }

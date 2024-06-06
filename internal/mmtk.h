@@ -115,6 +115,21 @@ void mmtk_builder_set_fixed_heap_size(MMTk_Builder *builder, size_t heap_size);
 void mmtk_builder_set_plan(MMTk_Builder *builder, const char *plan_name);
 
 /**
+ * Query if the selected plan is MarkSweep.
+ */
+bool mmtk_builder_is_mark_sweep(MMTk_Builder *builder);
+
+/**
+ * Query if the selected plan is Immix.
+ */
+bool mmtk_builder_is_immix(MMTk_Builder *builder);
+
+/**
+ * Query if the selected plan is StickyImmix.
+ */
+bool mmtk_builder_is_sticky_immix(MMTk_Builder *builder);
+
+/**
  * Build an MMTk instance.
  *
  * -   `builder` is the pointer to the `MMTKBuilder` instance created by the
