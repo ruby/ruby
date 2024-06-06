@@ -5703,8 +5703,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (UNLIKELY(iseq_has_builtin_function_table(iseq)) && (builtin_func = pm_iseq_builtin_function_name(scope_node, cast->receiver, method_id)) != NULL) {
             const pm_string_t *filepath = &scope_node->parser->filepath;
-            fprintf(stderr, "COMPILING %.*s:%d:%d builtin_func:%s\n", (int) pm_string_length(filepath), pm_string_source(filepath), location.line, location.column, builtin_func);
-
             pm_compile_builtin_function_call(iseq, ret, scope_node, cast, &location, popped, ISEQ_COMPILE_DATA(iseq)->current_block, builtin_func);
             return;
         }
