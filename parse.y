@@ -539,8 +539,6 @@ struct parser_params {
         int end_col;
     } delayed;
 
-    ID cur_arg;
-
     rb_ast_t *ast;
     int node_id;
 
@@ -1305,7 +1303,6 @@ struct RNode_DEF_TEMP {
     ID nd_mid;
 
     struct {
-        ID cur_arg;
         int max_numparam;
         NODE *numparam_save;
         struct lex_context ctxt;
@@ -1671,7 +1668,6 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
 {
     /* See: def_name action */
     struct lex_context ctxt = temp->save.ctxt;
-    p->cur_arg = temp->save.cur_arg;
     p->ctxt.in_def = ctxt.in_def;
     p->ctxt.shareable_constant_value = ctxt.shareable_constant_value;
     p->ctxt.in_rescue = ctxt.in_rescue;
@@ -2900,7 +2896,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
  */
 %rule f_opt(value) <node_opt_arg>: f_arg_asgn f_eq value
                                     {
-                                        p->cur_arg = 0;
                                         p->ctxt.in_argdef = 1;
                                         $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
                                     /*% ripper: [$:$, $:3] %*/
@@ -3378,7 +3373,6 @@ def_name	: fname
                         ID fname = $1;
                         numparam_name(p, fname);
                         local_push(p, 0);
-                        p->cur_arg = 0;
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
                         $$ = $1;
@@ -5113,7 +5107,6 @@ opt_block_param	: none
 
 block_param_def	: '|' opt_bv_decl '|'
                     {
-                        p->cur_arg = 0;
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
                         $$ = 0;
@@ -5121,7 +5114,6 @@ block_param_def	: '|' opt_bv_decl '|'
                     }
                 | '|' block_param opt_bv_decl '|'
                     {
-                        p->cur_arg = 0;
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
                         $$ = $2;
@@ -6560,14 +6552,12 @@ f_arg_asgn	: f_norm_arg
                     {
                         ID id = $1;
                         arg_var(p, id);
-                        p->cur_arg = id;
                         $$ = $1;
                     }
                 ;
 
 f_arg_item	: f_arg_asgn
                     {
-                        p->cur_arg = 0;
                         $$ = NEW_ARGS_AUX($1, 1, &NULL_LOC);
                     /*% ripper: $:1 %*/
                     }
@@ -6606,7 +6596,6 @@ f_arg		: f_arg_item
 f_label 	: tLABEL
                     {
                         arg_var(p, formal_argument(p, $1));
-                        p->cur_arg = $1;
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
                         $$ = $1;
@@ -6616,14 +6605,12 @@ f_label 	: tLABEL
 
 f_kw		: f_label arg_value
                     {
-                        p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
                     /*% ripper: [$:$, $:2] %*/
                     }
                 | f_label
                     {
-                        p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                         $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
                     /*% ripper: [$:$, 0] %*/
@@ -12500,7 +12487,6 @@ static rb_node_def_temp_t *
 rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_def_temp_t *n = NODE_NEWNODE((enum node_type)NODE_DEF_TEMP, rb_node_def_temp_t, loc);
-    n->save.cur_arg = p->cur_arg;
     n->save.numparam_save = 0;
     n->save.max_numparam = 0;
     n->save.ctxt = p->ctxt;
@@ -13031,19 +13017,11 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case ID_LOCAL:
         if (dyna_in_block(p) && dvar_defined_ref(p, id, &vidp)) {
             if (NUMPARAM_ID_P(id) && (numparam_nested_p(p) || it_used_p(p))) return 0;
-            if (id == p->cur_arg) {
-                compile_error(p, "circular argument reference - %"PRIsWARN, rb_id2str(id));
-                return 0;
-            }
             if (vidp) *vidp |= LVAR_USED;
             node = NEW_DVAR(id, loc);
             return node;
         }
         if (local_id_ref(p, id, &vidp)) {
-            if (id == p->cur_arg) {
-                compile_error(p, "circular argument reference - %"PRIsWARN, rb_id2str(id));
-                return 0;
-            }
             if (vidp) *vidp |= LVAR_USED;
             node = NEW_LVAR(id, loc);
             return node;

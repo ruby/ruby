@@ -14394,7 +14394,7 @@ parse_parameters(
                     context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
 
                     pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &name);
-                    uint32_t reads = pm_locals_reads(&parser->current_scope->locals, name_id);
+                    uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
 
                     pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT);
                     pm_optional_parameter_node_t *param = pm_optional_parameter_node_create(parser, &name, &operator, value);
@@ -14407,7 +14407,7 @@ parse_parameters(
                     // If the value of the parameter increased the number of
                     // reads of that parameter, then we need to warn that we
                     // have a circular definition.
-                    if (pm_locals_reads(&parser->current_scope->locals, name_id) != reads) {
+                    if ((parser->version == PM_OPTIONS_VERSION_CRUBY_3_3) && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
                         PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, name, PM_ERR_PARAMETER_CIRCULAR);
                     }
 
@@ -14486,10 +14486,10 @@ parse_parameters(
                             context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
 
                             pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &local);
-                            uint32_t reads = pm_locals_reads(&parser->current_scope->locals, name_id);
+                            uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
                             pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT_KW);
 
-                            if (pm_locals_reads(&parser->current_scope->locals, name_id) != reads) {
+                            if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
                                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, local, PM_ERR_PARAMETER_CIRCULAR);
                             }
 

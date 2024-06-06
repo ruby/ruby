@@ -1990,12 +1990,18 @@ module Prism
         proc { |foo: foo| }
       RUBY
 
-      assert_errors expression(source), source, [
-        ["circular argument reference - bar", 8..11],
-        ["circular argument reference - bar", 32..35],
-        ["circular argument reference - foo", 55..58],
-        ["circular argument reference - foo", 76..79]
-      ]
+      assert_errors(
+        expression(source),
+        source,
+        [
+          ["circular argument reference - bar", 8..11],
+          ["circular argument reference - bar", 32..35],
+          ["circular argument reference - foo", 55..58],
+          ["circular argument reference - foo", 76..79]
+        ],
+        check_valid_syntax: false,
+        version: "3.3.0"
+      )
 
       refute_error_messages("def foo(bar: bar = 1); end")
     end
@@ -2244,10 +2250,10 @@ module Prism
 
     private
 
-    def assert_errors(expected, source, errors, check_valid_syntax: true)
+    def assert_errors(expected, source, errors, check_valid_syntax: true, **options)
       refute_valid_syntax(source) if check_valid_syntax
 
-      result = Prism.parse(source)
+      result = Prism.parse(source, **options)
       node = result.value.statements.body.last
 
       assert_equal_nodes(expected, node, compare_location: false)
