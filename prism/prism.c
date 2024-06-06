@@ -13188,9 +13188,14 @@ parse_target_implicit_parameter(pm_parser_t *parser, pm_node_t *node) {
 
 /**
  * Convert the given node into a valid target node.
+ *
+ * @param multiple Whether or not this target is part of a larger set of
+ *   targets. If it is, then the &. operator is not allowed.
+ * @param splat Whether or not this target is a child of a splat target. If it
+ *   is, then fewer patterns are allowed.
  */
 static pm_node_t *
-parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple) {
+parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_parent) {
     switch (PM_NODE_TYPE(target)) {
         case PM_MISSING_NODE:
             return target;
@@ -13265,12 +13270,18 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple) {
             target->type = PM_INSTANCE_VARIABLE_TARGET_NODE;
             return target;
         case PM_MULTI_TARGET_NODE:
+            if (splat_parent) {
+                // Multi target is not accepted in all positions. If this is one
+                // of them, then we need to add an error.
+                pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_UNEXPECTED);
+            }
+
             return target;
         case PM_SPLAT_NODE: {
             pm_splat_node_t *splat = (pm_splat_node_t *) target;
 
             if (splat->expression != NULL) {
-                splat->expression = parse_target(parser, splat->expression, multiple);
+                splat->expression = parse_target(parser, splat->expression, multiple, true);
             }
 
             return (pm_node_t *) splat;
@@ -13340,9 +13351,10 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple) {
  */
 static pm_node_t *
 parse_target_validate(pm_parser_t *parser, pm_node_t *target, bool multiple) {
-    pm_node_t *result = parse_target(parser, target, multiple);
+    pm_node_t *result = parse_target(parser, target, multiple, false);
 
-    // Ensure that we have one of an =, an 'in' in for indexes, and a ')' in parens after the targets.
+    // Ensure that we have one of an =, an 'in' in for indexes, and a ')' in
+    // parens after the targets.
     if (
         !match1(parser, PM_TOKEN_EQUAL) &&
         !(context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)) &&
@@ -13593,7 +13605,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
     bool has_rest = PM_NODE_TYPE_P(first_target, PM_SPLAT_NODE);
 
     pm_multi_target_node_t *result = pm_multi_target_node_create(parser);
-    pm_multi_target_node_targets_append(parser, result, parse_target(parser, first_target, true));
+    pm_multi_target_node_targets_append(parser, result, parse_target(parser, first_target, true, false));
 
     while (accept1(parser, PM_TOKEN_COMMA)) {
         if (accept1(parser, PM_TOKEN_USTAR)) {
@@ -13609,7 +13621,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
 
             if (token_begins_expression_p(parser->current.type)) {
                 name = parse_expression(parser, binding_power, false, PM_ERR_EXPECT_EXPRESSION_AFTER_STAR);
-                name = parse_target(parser, name, true);
+                name = parse_target(parser, name, true, true);
             }
 
             pm_node_t *splat = (pm_node_t *) pm_splat_node_create(parser, &star_operator, name);
@@ -13617,7 +13629,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             has_rest = true;
         } else if (token_begins_expression_p(parser->current.type)) {
             pm_node_t *target = parse_expression(parser, binding_power, false, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
-            target = parse_target(parser, target, true);
+            target = parse_target(parser, target, true, false);
 
             pm_multi_target_node_targets_append(parser, result, target);
         } else if (!match1(parser, PM_TOKEN_EOF)) {
@@ -14649,7 +14661,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
                 pm_rescue_node_operator_set(rescue, &parser->previous);
 
                 pm_node_t *reference = parse_expression(parser, PM_BINDING_POWER_INDEX, false, PM_ERR_RESCUE_VARIABLE);
-                reference = parse_target(parser, reference, false);
+                reference = parse_target(parser, reference, false, false);
 
                 pm_rescue_node_reference_set(rescue, reference);
                 break;
@@ -14679,7 +14691,7 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
                             pm_rescue_node_operator_set(rescue, &parser->previous);
 
                             pm_node_t *reference = parse_expression(parser, PM_BINDING_POWER_INDEX, false, PM_ERR_RESCUE_VARIABLE);
-                            reference = parse_target(parser, reference, false);
+                            reference = parse_target(parser, reference, false, false);
 
                             pm_rescue_node_reference_set(rescue, reference);
                             break;
@@ -18945,7 +18957,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (match1(parser, PM_TOKEN_COMMA)) {
                 index = parse_targets(parser, index, PM_BINDING_POWER_INDEX);
             } else {
-                index = parse_target(parser, index, false);
+                index = parse_target(parser, index, false, false);
             }
 
             context_pop(parser);
