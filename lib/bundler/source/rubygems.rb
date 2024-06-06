@@ -10,7 +10,7 @@ module Bundler
       # Ask for X gems per API request
       API_REQUEST_SIZE = 50
 
-      attr_accessor :remotes
+      attr_reader :remotes
 
       def initialize(options = {})
         @options = options
@@ -20,6 +20,7 @@ module Bundler
         @allow_cached = false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
+        @original_remotes = nil
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
@@ -94,10 +95,15 @@ module Bundler
         new(options)
       end
 
+      def remotes=(new_remotes)
+        @original_remotes = @remotes
+        @remotes = new_remotes
+      end
+
       def to_lock
         out = String.new("GEM\n")
-        remotes.reverse_each do |remote|
-          out << "  remote: #{remove_auth remote}\n"
+        lockfile_remotes.reverse_each do |remote|
+          out << "  remote: #{remote}\n"
         end
         out << "  specs:\n"
       end
@@ -462,6 +468,10 @@ module Bundler
       end
 
       private
+
+      def lockfile_remotes
+        @original_remotes || credless_remotes
+      end
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.
