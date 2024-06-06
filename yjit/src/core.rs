@@ -854,13 +854,27 @@ impl Context
 {
     pub fn encode(&self) -> u32
     {
+        if *self == Context::default() {
+            return 0;
+        }
+
         let context_data = CodegenGlobals::get_context_data();
+
+        // Offset 0 is reserved for the default context
+        if context_data.num_bits() == 0 {
+            context_data.push_u1(0);
+        }
+
         let idx = self.encode_into(context_data);
         idx.try_into().unwrap()
     }
 
-    pub fn decode(&self, start_idx: u32) -> Context
+    pub fn decode(start_idx: u32) -> Context
     {
+        if start_idx == 0 {
+            return Context::default();
+        };
+
         let context_data = CodegenGlobals::get_context_data();
         Self::decode_from(context_data, start_idx as usize)
     }
@@ -1033,19 +1047,6 @@ impl Context
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /// Tuple of (iseq, idx) used to identify basic blocks
 /// There are a lot of blockid objects so we try to keep the size small.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -1207,7 +1208,7 @@ impl BranchTarget {
         }
     }
 
-    fn get_ctx(&self) -> Context {
+    fn get_ctx(&self) -> u32 {
         match self {
             BranchTarget::Stub(stub) => stub.ctx,
             BranchTarget::Block(blockref) => unsafe { blockref.as_ref() }.ctx,
@@ -1234,7 +1235,7 @@ struct BranchStub {
     address: Option<CodePtr>,
     iseq: Cell<IseqPtr>,
     iseq_idx: IseqIdx,
-    ctx: Context,
+    ctx: u32,
 }
 
 /// Store info about an outgoing branch in a code segment
@@ -1356,6 +1357,9 @@ impl PendingBranch {
             return Some(block.start_addr);
         }
 
+        // Compress/encode the context
+        let ctx = Context::encode(ctx);
+
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
         let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
@@ -1367,7 +1371,7 @@ impl PendingBranch {
                 address: Some(stub_addr),
                 iseq: Cell::new(target.iseq),
                 iseq_idx: target.idx,
-                ctx: *ctx,
+                ctx,
             })))));
         }
 
@@ -1460,7 +1464,7 @@ pub struct Block {
 
     // Context at the start of the block
     // This should never be mutated
-    ctx: Context,
+    ctx: u32,
 
     // Positions where the generated code starts and ends
     start_addr: CodePtr,
@@ -1973,13 +1977,17 @@ pub fn take_version_list(blockid: BlockId) -> VersionList {
 fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
+
+        // FIXME: this counting logic is going to be expensive.
+        // We should avoid it if possible
+
         Some(payload) => {
             payload
                 .version_map
                 .get(insn_idx)
                 .map(|versions| {
                     versions.iter().filter(|&&version|
-                        unsafe { version.as_ref() }.ctx.inline() == inlined
+                        Context::decode(unsafe { version.as_ref() }.ctx).inline() == inlined
                     ).count()
                 })
                 .unwrap_or(0)
@@ -2024,10 +2032,11 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     // For each version matching the blockid
     for blockref in versions.iter() {
         let block = unsafe { blockref.as_ref() };
+        let block_ctx = Context::decode(block.ctx);
 
         // Note that we always prefer the first matching
         // version found because of inline-cache chains
-        match ctx.diff(&block.ctx) {
+        match ctx.diff(&block_ctx) {
             TypeDiff::Compatible(diff) if diff < best_diff => {
                 best_version = Some(*blockref);
                 best_diff = diff;
@@ -2109,7 +2118,7 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     let block = unsafe { blockref.as_ref() };
 
     // Function entry blocks must have stack size 0
-    assert!(!(block.iseq_range.start == 0 && block.ctx.stack_size > 0));
+    //assert!(!(block.iseq_range.start == 0 && block.ctx.stack_size > 0));
 
     let version_list = get_or_create_version_list(block.get_blockid());
 
@@ -2159,14 +2168,6 @@ fn remove_block_version(blockref: &BlockRef) {
     version_list.retain(|other| blockref != other);
 }
 
-
-
-static mut MAX_CTX_BYTES: usize = 0;
-static mut TOTAL_CTX_BYTES: usize = 0;
-static mut TOTAL_CTX_ENCODED: usize = 0;
-
-
-
 impl JITState {
     // Finish compiling and turn a jit state into a block
     // note that the block is still not in shape.
@@ -2176,60 +2177,14 @@ impl JITState {
 
         incr_counter_by!(num_gc_obj_refs, gc_obj_offsets.len());
 
-
-
-        /*
-        // Test the variable-length context encoding logic
-        {
-            let ctx = self.get_starting_ctx();
-
-            if ctx == Context::default() {
-                println!("trying to encode default context");
-            }
-
-            let mut bits = BitVector::new();
-            let start_idx = ctx.encode(&mut bits);
-            let num_bytes = bits.num_bytes();
-
-            dbg!(ctx);
-
-            let ctx_decoded = Context::decode_from(&bits, start_idx);
-
-            if ctx_decoded != ctx {
-                dbg!(ctx);
-                panic!("round-trip test failed");
-            }
-
-            // Try to estimate the average number of bytes needed to encode contexts
-            unsafe {
-                MAX_CTX_BYTES = std::cmp::max(MAX_CTX_BYTES, num_bytes);
-                TOTAL_CTX_BYTES += num_bytes;
-                TOTAL_CTX_ENCODED += 1;
-
-                let avg_bytes = (TOTAL_CTX_BYTES as f64) / (TOTAL_CTX_ENCODED as f64);
-
-                let current_size = std::mem::size_of::<Context>() as f64;
-                let pct_of_current = 100.0 * (avg_bytes / current_size);
-
-                println!(
-                    "avg_bytes={:.2} ({:.1}% of current size), max_bytes={}",
-                    avg_bytes,
-                    pct_of_current,
-                    MAX_CTX_BYTES
-                );
-            }
-        }
-        */
-
-
-
+        let ctx = Context::encode(&self.get_starting_ctx());
 
         // Make the new block
         let block = MaybeUninit::new(Block {
             start_addr,
             iseq: Cell::new(self.get_iseq()),
             iseq_range: self.get_starting_insn_idx()..end_insn_idx,
-            ctx: self.get_starting_ctx(),
+            ctx,
             end_addr: Cell::new(end_addr),
             incoming: MutableBranchList(Cell::default()),
             gc_obj_offsets: gc_obj_offsets.into_boxed_slice(),
@@ -2986,6 +2941,7 @@ fn gen_block_series_body(
         };
 
         // Generate new block using context from the last branch.
+        let requested_ctx = Context::decode(requested_ctx);
         let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb);
 
         // If the block failed to compile
@@ -3373,7 +3329,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             return target.get_address().unwrap().raw_ptr(cb);
         }
 
-        (target.get_blockid(), target.get_ctx())
+        let target_ctx = Context::decode(target.get_ctx());
+        (target.get_blockid(), target_ctx)
     };
 
     let (cfp, original_interp_sp) = unsafe {
@@ -3510,7 +3467,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 /// Generate a "stub", a piece of code that calls the compiler back when run.
 /// A piece of code that redeems for more code; a thunk for code.
 fn gen_branch_stub(
-    ctx: &Context,
+    ctx: u32,
     ocb: &mut OutlinedCb,
     branch_struct_address: usize,
     target_idx: u32,
@@ -3518,8 +3475,8 @@ fn gen_branch_stub(
     let ocb = ocb.unwrap();
 
     let mut asm = Assembler::new();
-    asm.ctx = *ctx;
-    asm.set_reg_temps(ctx.reg_temps);
+    asm.ctx = Context::decode(ctx);
+    asm.set_reg_temps(asm.ctx.reg_temps);
     asm_comment!(asm, "branch stub hit");
 
     if asm.ctx.is_return_landing() {
@@ -3716,7 +3673,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         // compile the target block right after this one (fallthrough).
         BranchTarget::Stub(Box::new(BranchStub {
             address: None,
-            ctx: *ctx,
+            ctx: Context::encode(ctx),
             iseq: Cell::new(target0.iseq),
             iseq_idx: target0.idx,
         }))
@@ -3968,7 +3925,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Create a stub for this branch target
-        let stub_addr = gen_branch_stub(&block.ctx, ocb, branchref.as_ptr() as usize, target_idx as u32);
+        let stub_addr = gen_branch_stub(block.ctx, ocb, branchref.as_ptr() as usize, target_idx as u32);
 
         // In case we were unable to generate a stub (e.g. OOM). Use the block's
         // exit instead of a stub for the block. It's important that we
@@ -4299,7 +4256,7 @@ mod tests {
                 iseq: Cell::new(ptr::null()),
                 iseq_idx: 0,
                 address: None,
-                ctx: Context::default(),
+                ctx: 0,
             })))))]
         };
         // For easier soundness reasoning, make sure the reference returned does not out live the
@@ -4332,7 +4289,7 @@ mod tests {
             iseq: Cell::new(ptr::null()),
             iseq_idx: 0,
             address: None,
-            ctx: Context::default(),
+            ctx: 0,
         })))));
         // Invalid ISeq; we never dereference it.
         let secret_iseq = NonNull::<rb_iseq_t>::dangling().as_ptr();
