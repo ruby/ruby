@@ -35,6 +35,17 @@ RSpec.describe "Self management", rubygems: ">= 3.3.0.dev", realworld: true do
       bundle "-v", artifice: nil
       expect(out).to end_with(previous_minor[0] == "2" ? "Bundler version #{previous_minor}" : previous_minor)
 
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts Bundler::VERSION
+      RUBY
+      file.chmod(0o777)
+      sys_exec "bin/bundle_version.rb", artifice: nil
+      expect(out).to eq(previous_minor)
+
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose", artifice: nil
       expect(out).to include("Using bundler #{previous_minor}")
@@ -56,6 +67,17 @@ RSpec.describe "Self management", rubygems: ">= 3.3.0.dev", realworld: true do
       # App now uses locked version
       bundle "-v"
       expect(out).to end_with(previous_minor[0] == "2" ? "Bundler version #{previous_minor}" : previous_minor)
+
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts Bundler::VERSION
+      RUBY
+      file.chmod(0o777)
+      sys_exec "bin/bundle_version.rb", artifice: nil
+      expect(out).to eq(previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose"
