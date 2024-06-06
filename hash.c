@@ -3405,20 +3405,65 @@ rb_hash_to_a(VALUE hash)
     return ary;
 }
 
+static bool
+symbol_key_needs_quote(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    if (len == 0 || !rb_str_symname_p(str)) return true;
+    const char *s = RSTRING_PTR(str);
+    char first = s[0];
+    if (first == '@' || first == '$' || first == '!') return true;
+    if (!at_char_boundary(s, s + len - 1, RSTRING_END(str), rb_enc_get(str))) return false;
+    switch (s[len - 1]) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '`':
+        case '%':
+        case '^':
+        case '&':
+        case '|':
+        case ']':
+        case '<':
+        case '=':
+        case '>':
+        case '~':
+        case '@':
+            return true;
+        default:
+            return false;
+    }
+}
+
 static int
 inspect_i(VALUE key, VALUE value, VALUE str)
 {
     VALUE str2;
 
-    str2 = rb_inspect(key);
+    bool is_symbol = SYMBOL_P(key);
+    bool quote = false;
+    if (is_symbol) {
+        str2 = rb_sym2str(key);
+        quote = symbol_key_needs_quote(str2);
+    }
+    else {
+        str2 = rb_inspect(key);
+    }
     if (RSTRING_LEN(str) > 1) {
         rb_str_buf_cat_ascii(str, ", ");
     }
     else {
         rb_enc_copy(str, str2);
     }
-    rb_str_buf_append(str, str2);
-    rb_str_buf_cat_ascii(str, "=>");
+    if (quote) {
+        rb_str_buf_append(str, rb_str_inspect(str2));
+    }
+    else {
+        rb_str_buf_append(str, str2);
+    }
+
+    rb_str_buf_cat_ascii(str, is_symbol ? ": " : " => ");
     str2 = rb_inspect(value);
     rb_str_buf_append(str, str2);
 
