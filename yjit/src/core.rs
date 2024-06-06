@@ -515,17 +515,19 @@ impl BitVector
     pub fn new() -> Self
     {
         Self {
-            bytes: Vec::with_capacity(64),
+            bytes: Vec::with_capacity(4096),
             num_bits: 0,
         }
     }
 
+    #[allow(unused)]
     pub fn num_bits(&self) -> usize
     {
         self.num_bits
     }
 
     // Total number of bytes taken
+    #[allow(unused)]
     pub fn num_bytes(&self) -> usize
     {
         (self.num_bits / 8) + if (self.num_bits % 8) != 0 { 1 } else { 0 }
