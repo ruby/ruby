@@ -5789,7 +5789,7 @@ fn jit_rb_str_getbyte(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    // Exit if the indes is out of bounds
+    // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
     asm.jge(Target::side_exit(Counter::getbyte_idx_out_of_bounds));
 
@@ -10333,6 +10333,9 @@ fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
 
 /// Global state needed for code generation
 pub struct CodegenGlobals {
+    /// Flat vector of bits to store compressed context data
+    context_data: BitVector,
+
     /// Inline code block (fast path)
     inline_cb: CodeBlock,
 
@@ -10448,6 +10451,7 @@ impl CodegenGlobals {
         ocb.unwrap().mark_all_executable();
 
         let codegen_globals = CodegenGlobals {
+            context_data: BitVector::new(),
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code,
@@ -10474,6 +10478,11 @@ impl CodegenGlobals {
 
     pub fn has_instance() -> bool {
         unsafe { CODEGEN_GLOBALS.as_mut().is_some() }
+    }
+
+    /// Get a mutable reference to the context data
+    pub fn get_context_data() -> &'static mut BitVector {
+        &mut CodegenGlobals::get_instance().context_data
     }
 
     /// Get a mutable reference to the inline code block
