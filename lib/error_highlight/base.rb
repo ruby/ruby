@@ -749,7 +749,7 @@ module ErrorHighlight
     def prism_spot_local_variable_operator_write_for_name
       prism_location(@node.binary_operator_loc.chop)
     end
-  
+
     # Example:
     #   x += 1
     #        ^
@@ -842,7 +842,7 @@ module ErrorHighlight
         prism_location(location)
       end
     end
-  
+
     # Example:
     #   Foo::Bar += 1
     #      ^^^^^^^^
