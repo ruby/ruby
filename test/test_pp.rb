@@ -138,7 +138,6 @@ class PPCycleTest < Test::Unit::TestCase
   def test_hash
     a = {}
     a[0] = a
-    assert_equal("{0=>{...}}\n", PP.pp(a, ''.dup))
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
@@ -194,8 +193,22 @@ end
 
 class PPSingleLineTest < Test::Unit::TestCase
   def test_hash
-    assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
+    assert_equal({1 => 1}.inspect, PP.singleline_pp({1 => 1}, ''.dup)) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
+  end
+
+  def test_hash_symbol_colon_key
+    omit if RUBY_VERSION < "3.4."
+    no_quote = "{a: 1, a!: 1, a?: 1, \u{3042}: 1}"
+    quote0 = '{"": 1}'
+    quote1 = '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}'
+    quote2 = '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}'
+    quote3 = '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}'
+    assert_equal(no_quote, PP.singleline_pp(eval(no_quote), ''.dup))
+    assert_equal(quote0, PP.singleline_pp(eval(quote0), ''.dup))
+    assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
+    assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
+    assert_equal(quote3, PP.singleline_pp(eval(quote3), ''.dup))
   end
 
   def test_hash_in_array
@@ -250,7 +263,7 @@ class PPInheritedTest < Test::Unit::TestCase
     def pp_hash_pair(k, v)
       case k
       when Symbol
-        text k.inspect.delete_prefix(":")
+        text k.inspect.delete_prefix(":").tr('"', "'")
         text ":"
         group(1) {
           breakable
@@ -264,8 +277,9 @@ class PPInheritedTest < Test::Unit::TestCase
 
   def test_hash_override
     obj = {k: 1, "": :null, "0": :zero, 100 => :ten}
+    sep = RUBY_VERSION >= "3.4." ? " => " : "=>"
     assert_equal <<~EXPECT, PPSymbolHash.pp(obj, "".dup)
-    {k: 1, "": :null, "0": :zero, 100=>:ten}
+    {k: 1, '': :null, '0': :zero, 100#{sep}:ten}
     EXPECT
   end
 end

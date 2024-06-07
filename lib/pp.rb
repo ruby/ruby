@@ -292,14 +292,35 @@ class PP < PrettyPrint
       }
     end
 
-    # A pretty print for a pair of Hash
-    def pp_hash_pair(k, v)
-      pp k
-      text '=>'
-      group(1) {
-        breakable ''
-        pp v
-      }
+    if RUBY_VERSION >= '3.4.'
+      # A pretty print for a pair of Hash
+      def pp_hash_pair(k, v)
+        if Symbol === k
+          sym_s = k.inspect
+          if sym_s[1].match?(/["$@!]/) || sym_s[-1].match?(/[%&*+\-\/<=>@\]^`|~]/)
+            text "#{k.to_s.inspect}:"
+          else
+            text "#{k}:"
+          end
+        else
+          pp k
+          text ' '
+          text '=>'
+        end
+        group(1) {
+          breakable
+          pp v
+        }
+      end
+    else
+      def pp_hash_pair(k, v)
+        pp k
+        text '=>'
+        group(1) {
+          breakable ''
+          pp v
+        }
+      end
     end
   end
 
