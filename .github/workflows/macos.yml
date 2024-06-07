@@ -148,6 +148,7 @@ jobs:
             return workflow_run.jobs.find((job) => job.name === job_name).id;
 
       - name: upload /cores
+        if: ${{ github.ref == 'refs/heads/master' && github.event_name != 'pull_request' }}
         run: |
           ls -l /cores
           CORES_TAR_GZ="cores-${{ github.run_id }}-${{ steps.job_id.outputs.result }}.tar.gz"
