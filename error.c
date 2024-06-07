@@ -1579,10 +1579,13 @@ rb_get_detailed_message(VALUE exc, VALUE opt)
 }
 
 /*
- * call-seq:
- *    Exception.to_tty?   ->  true or false
+ *  call-seq:
+ *    Exception.to_tty? -> true or false
  *
- * Returns +true+ if exception messages will be sent to a tty.
+ *  Returns <tt>$stderr.is_atty</tt>,
+ *  which indicates whether the exception, if not rescued,
+ *  is to be written to a terminal device;
+ *  see IO#isatty.
  */
 static VALUE
 exc_s_to_tty_p(VALUE self)
@@ -1787,38 +1790,37 @@ exc_inspect(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace    -> array or nil
+ *    backtrace -> array or nil
  *
- *  Returns any backtrace associated with the exception. The backtrace
- *  is an array of strings, each containing either ``filename:lineNo: in
- *  `method''' or ``filename:lineNo.''
+ *  Returns the backtrace value for the exception.
  *
- *     def a
- *       raise "boom"
- *     end
+ *  If the backtrace has not been assigned, the value is +nil+:
  *
- *     def b
- *       a()
- *     end
+ *    x = Exception.new
+ *    x.backtrace # => nil
  *
- *     begin
- *       b()
- *     rescue => detail
- *       print detail.backtrace.join("\n")
- *     end
+ *  If the backtrace was assigned by Kernel#raise,
+ *  the value is an array of strings:
  *
- *  <em>produces:</em>
+ *    $ cat t.rb
+ *    begin
+ *      Math.sin('x')
+ *    rescue => x
+ *      p x.class
+ *      p x.backtrace
+ *    end
+ *    $ ruby t.rb
+ *    TypeError
+ *    ["t.rb:2:in `sin'", "t.rb:2:in `<main>'"]
  *
- *     prog.rb:2:in `a'
- *     prog.rb:6:in `b'
- *     prog.rb:10
+ *  If the backtrace was otherwise assigned by #set_backtrace,
+ *  the value is an array of strings:
  *
- *  In the case no backtrace has been set, +nil+ is returned
+ *    x = Exception.new
+ *    x.set_backtrace(%w[ foo bar baz ])
+ *    x.backtrace # => ["foo", "bar", "baz"]
  *
- *    ex = StandardError.new
- *    ex.backtrace
- *    #=> nil
-*/
+ */
 
 static VALUE
 exc_backtrace(VALUE exc)
@@ -1860,13 +1862,14 @@ rb_get_backtrace(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace_locations    -> array or nil
+ *    backtrace_locations -> array or nil
  *
- *  Returns any backtrace associated with the exception. This method is
- *  similar to Exception#backtrace, but the backtrace is an array of
- *  Thread::Backtrace::Location.
+ *  Like #backtrace, but the returned value is:
  *
- *  This method is not affected by Exception#set_backtrace().
+ *  - An array of Thread::Backtrace::Location objects (not an array of strings)
+ *    if the exception was raised by Kernel#raise.
+ *  - +nil+ otherwise.
+ *
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
@@ -1955,11 +1958,11 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *     exc == obj   -> true or false
+ *    self == object -> true or false
  *
- *  Equality---If <i>obj</i> is not an Exception, returns
- *  <code>false</code>. Otherwise, returns <code>true</code> if <i>exc</i> and
- *  <i>obj</i> share same class, messages, and backtrace.
+ *  Returns whether +object+ is the same class as +self+
+ *  and its #message and #backtrace are equal to those of +self+.
+ *
  */
 
 static VALUE
