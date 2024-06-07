@@ -64,10 +64,28 @@ rb_id_metadata(void)
     return rb_intern_const("metadata");
 }
 
+#if !defined(HAVE_RB_EXT_RESOLVE_SYMBOL)
+#elif !defined(RUBY_UNTYPED_DATA_WARNING)
+# error RUBY_UNTYPED_DATA_WARNING is not defined
+#elif RUBY_UNTYPED_DATA_WARNING
+/* rb_ext_resolve_symbol() has been defined since Ruby 3.3, but digest
+ * bundled with 3.3 didn't use it. */
+# define DIGEST_USE_RB_EXT_RESOLVE_SYMBOL 1
+#endif
+
 static inline VALUE
 rb_digest_make_metadata(const rb_digest_metadata_t *meta)
 {
+#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+    typedef VALUE (*wrapper_func_type)(const rb_digest_metadata_t *meta);
+    static wrapper_func_type wrapper;
+    if (!wrapper) {
+        wrapper = (wrapper_func_type)rb_ext_resolve_symbol("digest.so", "rb_digest_wrap_metadata");
+    }
+    return wrapper(meta);
+#else
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     return rb_obj_freeze(Data_Wrap_Struct(0, 0, 0, (void *)meta));
+#endif
 }

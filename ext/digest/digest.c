@@ -537,6 +537,36 @@ rb_digest_class_init(VALUE self)
  *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
  */
 
+#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+static const rb_data_type_t metadata_type = {
+    "digest/metadata",
+    {0},
+};
+
+RUBY_FUNC_EXPORTED VALUE
+rb_digest_wrap_metadata(const rb_digest_metadata_t *meta)
+{
+    return rb_obj_freeze(TypedData_Wrap_Struct(0, &metadata_type, (void *)meta));
+}
+#endif
+
+static rb_digest_metadata_t *
+get_metadata_ptr(VALUE obj)
+{
+    rb_digest_metadata_t *algo;
+
+#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+    if (!rb_typeddata_is_kind_of(obj, &metadata_type)) return 0;
+    algo = RTYPEDDATA_DATA(obj);
+#else
+# undef RUBY_UNTYPED_DATA_WARNING
+# define RUBY_UNTYPED_DATA_WARNING 0
+    Data_Get_Struct(obj, rb_digest_metadata_t, algo);
+#endif
+
+    return algo;
+}
+
 static rb_digest_metadata_t *
 get_digest_base_metadata(VALUE klass)
 {
@@ -554,8 +584,8 @@ get_digest_base_metadata(VALUE klass)
     if (NIL_P(p))
         rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
-    if (!RB_TYPE_P(obj, T_DATA) || RTYPEDDATA_P(obj)) {
-      wrong:
+    algo = get_metadata_ptr(obj);
+    if (!algo) {
         if (p == klass)
             rb_raise(rb_eTypeError, "%"PRIsVALUE"::metadata is not initialized properly",
                      klass);
@@ -563,12 +593,6 @@ get_digest_base_metadata(VALUE klass)
             rb_raise(rb_eTypeError, "%"PRIsVALUE"(%"PRIsVALUE")::metadata is not initialized properly",
                      klass, p);
     }
-
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-    Data_Get_Struct(obj, rb_digest_metadata_t, algo);
-
-    if (!algo) goto wrong;
 
     switch (algo->api_version) {
       case 3:
