@@ -15,12 +15,14 @@ use crate::utils::*;
 use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
-use std::collections::HashSet;
 use std::fmt;
 use std::mem;
 use std::mem::transmute;
 use std::ops::Range;
 use std::rc::Rc;
+use std::collections::HashSet;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use mem::MaybeUninit;
 use std::ptr;
 use ptr::NonNull;
@@ -839,10 +841,12 @@ enum CtxOp {
     EndOfCode,
 }
 
-// Cache of the last context encoded
+const CTX_CACHE_SIZE: usize = 256;
+
+// Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
 // We can experiment with varying the size of this cache
-static mut LAST_CTX_ENCODED: Option<(Context, u32)> = None;
+static mut CTX_CACHE: Option<[(Context, u32); CTX_CACHE_SIZE]> = None;
 
 impl Context {
     pub fn encode(&self) -> u32 {
@@ -852,20 +856,8 @@ impl Context {
             return 0;
         }
 
-        /*
-        // If this context was previously decoded and was not changed since
-        if self.decoded_from != 0 && Self::decode(self.decoded_from) == *self {
-            return self.decoded_from;
-        }
-        */
-
-        // If this context was recently encoded (cache check)
-        unsafe {
-            if let Some((ctx, idx)) = LAST_CTX_ENCODED {
-                if ctx == *self {
-                    return idx;
-                }
-            }
+        if let Some(idx) = Self::cache_get(self) {
+            return idx;
         }
 
         let context_data = CodegenGlobals::get_context_data();
@@ -878,9 +870,7 @@ impl Context {
         let idx = self.encode_into(context_data);
         let idx: u32 = idx.try_into().unwrap();
 
-        unsafe {
-            LAST_CTX_ENCODED = Some((*self, idx));
-        }
+        Self::cache_set(self, idx);
 
         // In debug mode, check that the round-trip decoding always matches
         debug_assert!(Self::decode(idx) == *self);
@@ -896,10 +886,49 @@ impl Context {
         let context_data = CodegenGlobals::get_context_data();
         let ctx = Self::decode_from(context_data, start_idx as usize);
 
-        // Keep track of the fact that this context was previously encoded
-        //ctx.decoded_from = start_idx;
+        Self::cache_set(&ctx, start_idx);
 
         ctx
+    }
+
+    // Lookup the context in a cache of recently encoded/decoded contexts
+    fn cache_get(ctx: &Context) -> Option<u32>
+    {
+        unsafe {
+            if CTX_CACHE == None {
+                return None;
+            }
+
+            let cache = CTX_CACHE.as_mut().unwrap();
+
+            let mut hasher = DefaultHasher::new();
+            ctx.hash(&mut hasher);
+            let ctx_hash = hasher.finish() as usize;
+            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
+
+            if cache_entry.0 == *ctx {
+                return Some(cache_entry.1);
+            }
+
+            return None;
+        }
+    }
+
+    // Store an entry in a cache of recently encoded/decoded contexts
+    fn cache_set(ctx: &Context, idx: u32)
+    {
+        unsafe {
+            if CTX_CACHE == None {
+                CTX_CACHE = Some( [(Context::default(), 0); CTX_CACHE_SIZE] );
+            }
+
+            let mut hasher = DefaultHasher::new();
+            ctx.hash(&mut hasher);
+            let ctx_hash = hasher.finish() as usize;
+
+            let cache = CTX_CACHE.as_mut().unwrap();
+            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
+        }
     }
 
     // Encode into a compressed context representation in a bit vector
