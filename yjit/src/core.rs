@@ -1650,15 +1650,6 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
-/// Iterate over all ISEQ payloads
-pub fn for_each_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
-    for_each_iseq(|iseq| {
-        if let Some(iseq_payload) = get_iseq_payload(iseq) {
-            callback(iseq_payload);
-        }
-    });
-}
-
 /// Iterate over all on-stack ISEQs
 pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
