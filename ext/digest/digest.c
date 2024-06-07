@@ -534,7 +534,7 @@ rb_digest_class_init(VALUE self)
  *
  *
  *  rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
- *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
+ *		rb_digest_make_metadata(&sha1));
  */
 
 #ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
