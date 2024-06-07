@@ -562,6 +562,13 @@ impl BitVector
 
         // While we have bits left to encode
         while num_bits > 0 {
+            // Grow with a 1.2x growth factor instead of 2x
+            assert!(self.num_bits % 8 == 0);
+            let num_bytes = self.num_bits / 8;
+            if num_bytes == self.bytes.capacity() {
+                self.bytes.reserve_exact(self.bytes.len() / 5);
+            }
+
             let bits = val & 0xFF;
             let bits: u8 = bits.try_into().unwrap();
             self.bytes.push(bits);
