@@ -198,6 +198,17 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
   end
 
+  def test_hash_key
+    no_quote = "{a: 1, a!: 1, a?: 1, \u{3042}: 1}"
+    quote1 = '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}'
+    quote2 = '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}'
+    quote3 = '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}'
+    assert_equal(no_quote, PP.singleline_pp(eval(no_quote), ''.dup))
+    assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
+    assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
+    assert_equal(quote3, PP.singleline_pp(eval(quote3), ''.dup))
+  end
+
   def test_hash_in_array
     omit if RUBY_ENGINE == "jruby"
     assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
