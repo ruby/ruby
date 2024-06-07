@@ -2122,7 +2122,7 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     let block = unsafe { blockref.as_ref() };
 
     // Function entry blocks must have stack size 0
-    //assert!(!(block.iseq_range.start == 0 && block.ctx.stack_size > 0));
+    debug_assert!(!(block.iseq_range.start == 0 && Context::decode(block.ctx).stack_size > 0));
 
     let version_list = get_or_create_version_list(block.get_blockid());
 
