@@ -457,8 +457,10 @@ const CHAIN_DEPTH_MASK: u8   = 0b00111111; // 63
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
-#[repr(packed)]
 pub struct Context {
+    // Offset at which this context was previously encoded (zero if not)
+    decoded_from: u32,
+
     // Number of values currently on the temporary stack
     stack_size: u8,
 
@@ -847,6 +849,12 @@ impl Context {
             return 0;
         }
 
+        // If this context was previously decoded and was not changed since
+        if self.decoded_from != 0 && Self::decode(self.decoded_from) == *self {
+            return self.decoded_from;
+        }
+
+        // If this context was recently encoded (cache check)
         unsafe {
             if let Some((ctx, idx)) = LAST_CTX_ENCODED {
                 if ctx == *self {
@@ -881,7 +889,12 @@ impl Context {
         };
 
         let context_data = CodegenGlobals::get_context_data();
-        Self::decode_from(context_data, start_idx as usize)
+        let mut ctx = Self::decode_from(context_data, start_idx as usize);
+
+        // Keep track of the fact that this context was previously encoded
+        ctx.decoded_from = start_idx;
+
+        ctx
     }
 
     // Encode into a compressed context representation in a bit vector
@@ -4105,11 +4118,6 @@ mod tests {
         let t = TempMapping::map_to_local(7);
         assert_eq!(t.get_kind(), MapToLocal);
         assert_eq!(t.get_local_idx(), 7);
-    }
-
-    #[test]
-    fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 23);
     }
 
     #[test]
