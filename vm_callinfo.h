@@ -348,7 +348,10 @@ vm_cc_new(VALUE klass,
         break;
     }
 
-    vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+    if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
+        vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+    }
+
     RB_DEBUG_COUNTER_INC(cc_new);
     return cc;
 }
