@@ -138,8 +138,7 @@ class PPCycleTest < Test::Unit::TestCase
   def test_hash
     a = {}
     a[0] = a
-    assert_equal("{0=>{...}}\n", PP.pp(a, ''.dup))
-    assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+    assert_equal("{0 => {...}}\n", PP.pp(a, ''.dup))
   end
 
   S = Struct.new("S", :a, :b)
@@ -194,7 +193,7 @@ end
 
 class PPSingleLineTest < Test::Unit::TestCase
   def test_hash
-    assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
+    assert_equal("{1 => 1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
   end
 
@@ -261,7 +260,7 @@ class PPInheritedTest < Test::Unit::TestCase
     def pp_hash_pair(k, v)
       case k
       when Symbol
-        text k.inspect.delete_prefix(":")
+        text k.inspect.delete_prefix(":").tr('"', "'")
         text ":"
         group(1) {
           breakable
@@ -276,7 +275,7 @@ class PPInheritedTest < Test::Unit::TestCase
   def test_hash_override
     obj = {k: 1, "": :null, "0": :zero, 100 => :ten}
     assert_equal <<~EXPECT, PPSymbolHash.pp(obj, "".dup)
-    {k: 1, "": :null, "0": :zero, 100=>:ten}
+    {k: 1, '': :null, '0': :zero, 100 => :ten}
     EXPECT
   end
 end
