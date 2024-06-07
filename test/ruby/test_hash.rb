@@ -2295,7 +2295,7 @@ class TestHashOnly < Test::Unit::TestCase
     h = obj.h
 
     h[obj] = true
-    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9, test=>true}', h.inspect
+    assert_equal '{0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, test => true}', h.inspect
   end
 
   def test_ar2st_delete
@@ -2309,7 +2309,7 @@ class TestHashOnly < Test::Unit::TestCase
 
     h[obj2] = true
     h.delete obj
-    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9}', h.inspect
+    assert_equal '{0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9}', h.inspect
   end
 
   def test_ar2st_lookup

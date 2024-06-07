@@ -803,7 +803,7 @@ dummy
       "puts RubyVM::AbstractSyntaxTree.of(->{ 1 + 2 }, keep_script_lines: true).script_lines",
       "p SCRIPT_LINES__"
     ]
-    test_stdout = lines + ['{"-e"=>[]}']
+    test_stdout = lines + ['{"-e" => []}']
     assert_in_out_err(["-e", lines.join("\n")], "", test_stdout, [])
   end
 
