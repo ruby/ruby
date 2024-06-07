@@ -894,6 +894,9 @@ impl Context
             LAST_CTX_ENCODED = Some((*self, idx));
         }
 
+        // In debug mode, check that the round-trip decoding always matches
+        debug_assert!(Self::decode(idx) == *self);
+
         idx
     }
 
