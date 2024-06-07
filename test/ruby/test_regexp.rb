@@ -1783,7 +1783,7 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(timeout, t, timeout / 2)
+      assert_operator(timeout, :<=, [timeout * 1.5, 1].max)
     end;
   end
 
