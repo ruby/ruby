@@ -727,24 +727,6 @@ mentioned below.
       for internal or external distribution as long as this notice
       remains attached.
 
-[ext/nkf/nkf-utf8/config.h]
-[ext/nkf/nkf-utf8/nkf.c]
-[ext/nkf/nkf-utf8/utf8tbl.c]
-
-  These files are under the following license.  So to speak, it is
-  copyrighted semi-public-domain software.
-
-  >>>
-    Copyright (C) 1987:: Fujitsu LTD. (Itaru ICHIKAWA)
-
-    Everyone is permitted to do anything on this program
-    including copying, modifying, improving,
-    as long as you don't try to pretend that you wrote it.
-    i.e., the above copyright notice has to appear in all copies.
-    Binary distribution requires original version messages.
-    You don't have to ask before copying, redistribution or publishing.
-    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
-
 [ext/psych]
 [test/psych]
 
