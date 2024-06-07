@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
+require_relative '../../fixtures/io'
 
 ruby_version_is ''...'3.2' do
   require 'io/wait'
@@ -55,7 +55,7 @@ describe "IO#wait" do
     end
 
     it "waits for the WRITABLE event to be ready" do
-      written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
+      written_bytes = IOSpec.exhaust_write_buffer(@w)
       @w.wait(IO::WRITABLE, 0).should == nil
 
       @r.read(written_bytes)
@@ -67,7 +67,7 @@ describe "IO#wait" do
     end
 
     it "returns nil when the WRITABLE event is not ready during the timeout" do
-      IOWaitSpec.exhaust_write_buffer(@w)
+      IOSpec.exhaust_write_buffer(@w)
       @w.wait(IO::WRITABLE, 0).should == nil
     end
 
@@ -92,13 +92,44 @@ describe "IO#wait" do
     end
 
     it "changes thread status to 'sleep' when waits for WRITABLE event" do
-      written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
+      IOSpec.exhaust_write_buffer(@w)
 
       t = Thread.new { @w.wait(IO::WRITABLE, 10) }
       sleep 1
       t.status.should == 'sleep'
       t.kill
       t.join # Thread#kill doesn't wait for the thread to end
+    end
+
+    it "can be interrupted when waiting for READABLE event" do
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      t = Thread.new do
+        @r.wait(IO::READABLE, 10)
+      end
+
+      Thread.pass until t.stop?
+      t.kill
+      t.join # Thread#kill doesn't wait for the thread to end
+
+      finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (finish - start).should < 9
+    end
+
+    it "can be interrupted when waiting for WRITABLE event" do
+      IOSpec.exhaust_write_buffer(@w)
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      t = Thread.new do
+        @w.wait(IO::WRITABLE, 10)
+      end
+
+      Thread.pass until t.stop?
+      t.kill
+      t.join # Thread#kill doesn't wait for the thread to end
+
+      finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (finish - start).should < 9
     end
   end
 

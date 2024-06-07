@@ -28,6 +28,16 @@ describe "Array#pack with :buffer option" do
       TypeError, "buffer must be String, not Array")
   end
 
+  it "raise FrozenError if buffer is frozen" do
+    -> { [65].pack("c", buffer: "frozen-string".freeze) }.should raise_error(FrozenError)
+  end
+
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    [65, 66, 67].pack("ccc", buffer: buffer)
+    buffer.encoding.should == Encoding::ISO_8859_1
+  end
+
   context "offset (@) is specified" do
     it 'keeps buffer content if it is longer than offset' do
       n = [ 65, 66, 67 ]
