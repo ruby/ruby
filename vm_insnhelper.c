@@ -3225,7 +3225,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 }
 
 static void
-vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, CALL_INFO callers_info, VALUE splat)
+vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, int argc, VALUE splat)
 {
     // This case is when the caller is using a ... parameter.
     // For example `bar(...)`. The call info will have VM_CALL_FORWARDING
@@ -3249,9 +3249,6 @@ vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct 
     // > CI for foo(1, 2), via `getlocal ...`
     // >      ( SP points here )
     const VALUE * lep = VM_CF_LEP(cfp);
-
-    // We'll need to copy argc args to this SP
-    int argc = vm_ci_argc(callers_info);
 
     const rb_iseq_t *iseq;
 

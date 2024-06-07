@@ -1058,7 +1058,7 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
     }
 }
 
-static void vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, CALL_INFO callers_info, VALUE splat);
+static void vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, int argc, VALUE splat);
 
 static VALUE
 vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
@@ -1071,13 +1071,20 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
-    unsigned int forwarding_argc = vm_ci_argc(site_ci);
+    unsigned int site_argc = vm_ci_argc(site_ci);
+    unsigned int site_flag = vm_ci_flag(site_ci);
+    ID site_mid = vm_ci_mid(site_ci);
+
+    unsigned int caller_argc = vm_ci_argc(caller_ci);
+    unsigned int caller_flag = vm_ci_flag(caller_ci);
+    const struct rb_callinfo_kwarg * kw = vm_ci_kwarg(caller_ci);
+
     VALUE splat = Qfalse;
 
-    if (vm_ci_flag(site_ci) & VM_CALL_ARGS_SPLAT) {
+    if (site_flag & VM_CALL_ARGS_SPLAT) {
         // If we're called with args_splat, the top 1 should be an array
         splat = TOPN(1);
-        forwarding_argc += (RARRAY_LEN(splat) - 1);
+        site_argc += (RARRAY_LEN(splat) - 1);
     }
 
     // Need to setup the block in case of e.g. `super { :block }`
@@ -1088,13 +1095,13 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
         bh = VM_ENV_BLOCK_HANDLER(GET_LEP());
     }
 
-    vm_adjust_stack_forwarding(ec, GET_CFP(), caller_ci, splat);
+    vm_adjust_stack_forwarding(ec, GET_CFP(), caller_argc, splat);
 
     *adjusted_ci = VM_CI_ON_STACK(
-            vm_ci_mid(site_ci),
-            (vm_ci_flag(caller_ci) | (vm_ci_flag(site_ci) & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
-            forwarding_argc + vm_ci_argc(caller_ci),
-            vm_ci_kwarg(caller_ci)
+            site_mid,
+            (caller_flag | (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            site_argc + caller_argc,
+            kw
             );
 
     adjusted_cd->cd.ci = adjusted_ci;
