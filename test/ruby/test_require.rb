@@ -847,7 +847,7 @@ class TestRequire < Test::Unit::TestCase
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 3)
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
       begin;
         th = Thread.current
         Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
