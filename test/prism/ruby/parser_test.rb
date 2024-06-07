@@ -59,7 +59,6 @@ module Prism
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
-      "dash_heredocs.txt",
       "regex.txt",
       "regex_char_width.txt",
       "unescaping.txt",
@@ -86,6 +85,7 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
       "comments.txt",
+      "dash_heredocs.txt",
       "dos_endings.txt",
       "embdoc_no_newline_at_end.txt",
       "heredoc_with_comment.txt",

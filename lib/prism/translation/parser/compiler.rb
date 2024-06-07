@@ -2040,6 +2040,13 @@ module Prism
           end
         end
 
+        # The parser gem automatically converts \r\n to \n, meaning our offsets
+        # need to be adjusted to always subtract 1 from the length.
+        def chomped_bytesize(line)
+          chomped = line.chomp
+          chomped.bytesize + (chomped == line ? 0 : 1)
+        end
+
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
           children = Array.new
@@ -2066,14 +2073,14 @@ module Prism
                 if node.opening.end_with?("'")
                   escaped.each do |line|
                     escaped_lengths << line.bytesize
-                    normalized_lengths << (line.chomp.bytesize + 1)
+                    normalized_lengths << chomped_bytesize(line)
                   end
                 else
                   escaped
                     .chunk_while { |before, after| before.match?(/(?<!\\)\\\r?\n$/) }
                     .each do |lines|
                       escaped_lengths << lines.sum(&:bytesize)
-                      normalized_lengths << lines.sum { |line| line.chomp.bytesize + 1 }
+                      normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
                     end
                 end
 
