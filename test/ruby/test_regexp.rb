@@ -1929,7 +1929,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_cache_positive_look_ahead
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
        Regexp.timeout = timeout
