@@ -624,6 +624,11 @@ module Bundler
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
+
+      if @current_ruby_locked_platform && @current_ruby_locked_platform != local_platform
+        @platforms.delete(result.incomplete_for_platform?(dependencies, @current_ruby_locked_platform) ? @current_ruby_locked_platform : local_platform)
+      end
+
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
       result.complete_platforms!(platforms)
@@ -661,7 +666,7 @@ module Bundler
     end
 
     def add_current_platform
-      return if current_ruby_platform_locked?
+      @current_ruby_locked_platform = most_specific_locked_platform if current_ruby_platform_locked?
 
       add_platform(local_platform)
     end
@@ -1049,7 +1054,6 @@ module Bundler
                 !@originally_locked_specs.incomplete_for_platform?(dependencies, platform)
 
         remove_platform(platform)
-        add_current_platform if platform == Gem::Platform::RUBY
       end
     end
 
