@@ -147,22 +147,6 @@ jobs:
             const job_name = `${context.job}${matrix ? ` (${Object.values(matrix).join(", ")})` : ""}`;
             return workflow_run.jobs.find((job) => job.name === job_name).id;
 
-      - name: upload /cores
-        if: ${{ github.ref == 'refs/heads/master' && github.event_name != 'pull_request' }}
-        run: |
-          ls -l /cores
-          CORES_TAR_GZ="cores-${{ github.run_id }}-${{ steps.job_id.outputs.result }}.tar.gz"
-          echo "test: $CORES_TAR_GZ"
-          if [ -n "$(ls /cores)" ]; then
-            tar czf "$CORES_TAR_GZ" /cores
-            aws s3 cp "$CORES_TAR_GZ" "s3://ruby-core-files/$CORES_TAR_GZ"
-            rm "$CORES_TAR_GZ"
-          fi
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUBY_CORE_FILES_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUBY_CORE_FILES_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-northeast-1
-
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
