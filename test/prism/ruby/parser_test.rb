@@ -49,6 +49,9 @@ module Prism
       "spanning_heredoc.txt",
       "spanning_heredoc_newlines.txt",
 
+      # https://github.com/whitequark/parser/issues/1021
+      "seattlerb/heredoc_nested.txt",
+
       # https://github.com/whitequark/parser/issues/1016
       "whitequark/unary_num_pow_precedence.txt"
     ]
@@ -61,7 +64,6 @@ module Prism
       "regex_char_width.txt",
       "unescaping.txt",
       "seattlerb/bug190.txt",
-      "seattlerb/heredoc_nested.txt",
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
