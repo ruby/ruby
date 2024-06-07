@@ -1,7 +1,9 @@
 require_relative 'spec_helper'
 require_relative 'shared/rbasic'
 load_extension("rbasic")
-load_extension("data")
+ruby_version_is ""..."3.4" do
+  load_extension("data")
+end
 load_extension("array")
 
 describe "RBasic support for regular objects" do
@@ -10,6 +12,10 @@ describe "RBasic support for regular objects" do
     @data = -> { [Object.new, Object.new] }
   end
   it_should_behave_like :rbasic
+end
+
+ruby_version_is "3.4" do
+  return
 end
 
 describe "RBasic support for RData" do

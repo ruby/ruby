@@ -106,6 +106,8 @@ VALUE sws_typed_wrap_struct(VALUE self, VALUE val) {
   return TypedData_Wrap_Struct(rb_cObject, &sample_typed_wrapped_struct_data_type, bar);
 }
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
 VALUE sws_untyped_wrap_struct(VALUE self, VALUE val) {
   int* data = (int*) malloc(sizeof(int));
   *data = FIX2INT(val);
