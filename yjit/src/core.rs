@@ -841,7 +841,7 @@ enum CtxOp {
     EndOfCode,
 }
 
-const CTX_CACHE_SIZE: usize = 256;
+const CTX_CACHE_SIZE: usize = 512;
 
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
