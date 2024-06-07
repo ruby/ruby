@@ -1,12 +1,12 @@
-module IOWaitSpec
+module IOSpec
   def self.exhaust_write_buffer(io)
     written = 0
     buf = " " * 4096
 
-    begin
+    while true
       written += io.write_nonblock(buf)
-    rescue Errno::EAGAIN, Errno::EWOULDBLOCK
-      return written
-    end while true
+    end
+  rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+    written
   end
 end

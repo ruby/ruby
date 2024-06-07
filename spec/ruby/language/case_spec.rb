@@ -427,7 +427,7 @@ describe "The 'case'-construct" do
             :bar
           end
         RUBY
-      }.should complain(/warning: duplicated .when' clause with line \d+ is ignored/, verbose: true)
+      }.should complain(/warning: (duplicated .when' clause with line \d+ is ignored|'when' clause on line \d+ duplicates 'when' clause on line \d+ and is ignored)/, verbose: true)
     end
   end
 

@@ -88,6 +88,30 @@ describe 'RbConfig::CONFIG' do
       end
     end
   end
+
+  guard -> { %w[aarch64 arm64].include? RbConfig::CONFIG['host_cpu'] } do
+    it "['host_cpu'] returns CPU architecture properly for AArch64" do
+      platform_is :darwin do
+        RbConfig::CONFIG['host_cpu'].should == 'arm64'
+      end
+
+      platform_is_not :darwin do
+        RbConfig::CONFIG['host_cpu'].should == 'aarch64'
+      end
+    end
+  end
+
+  guard -> { platform_is(:linux) || platform_is(:darwin) } do
+    it "['host_os'] returns a proper OS name or platform" do
+      platform_is :darwin do
+        RbConfig::CONFIG['host_os'].should.match?(/darwin/)
+      end
+
+      platform_is :linux do
+        RbConfig::CONFIG['host_os'].should.match?(/linux/)
+      end
+    end
+  end
 end
 
 describe "RbConfig::TOPDIR" do
@@ -97,5 +121,34 @@ describe "RbConfig::TOPDIR" do
     else
       RbConfig::TOPDIR.should == nil
     end
+  end
+end
+
+describe "RUBY_PLATFORM" do
+  it "RUBY_PLATFORM contains a proper CPU architecture" do
+    RUBY_PLATFORM.should.include? RbConfig::CONFIG['host_cpu']
+  end
+
+  guard -> { platform_is(:linux) || platform_is(:darwin) } do
+    it "RUBY_PLATFORM contains OS name" do
+      # don't use RbConfig::CONFIG['host_os'] as far as it could be slightly different, e.g. linux-gnu
+      platform_is(:linux) do
+        RUBY_PLATFORM.should.include? 'linux'
+      end
+
+      platform_is(:darwin) do
+        RUBY_PLATFORM.should.include? 'darwin'
+      end
+    end
+  end
+end
+
+describe "RUBY_DESCRIPTION" do
+  it "contains version" do
+    RUBY_DESCRIPTION.should.include? RUBY_VERSION
+  end
+
+  it "contains RUBY_PLATFORM" do
+    RUBY_DESCRIPTION.should.include? RUBY_PLATFORM
   end
 end
