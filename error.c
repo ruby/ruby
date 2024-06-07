@@ -1467,12 +1467,24 @@ exc_init(VALUE exc, VALUE mesg)
 }
 
 /*
- * call-seq:
- *    Exception.new(msg = nil)        ->  exception
- *    Exception.exception(msg = nil)  ->  exception
+ *  call-seq:
+ *    Exception.new(message = self.to_s) ->  exception
  *
- *  Construct a new Exception object, optionally passing in
- *  a message.
+ *  Returns a new exception object:
+ *
+ *  - Its class is the same as that of +self+,
+ *    which is either +Exception+ or one of its subclasses.
+ *  - Its message is the given +message+,
+ *    which should be
+ *    a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
+ *    see method #message.
+ *
+ *  Examples:
+ *
+ *    x = Exception.new         # => #<Exception: Exception>
+ *    x = LoadError.new         # => #<LoadError: LoadError> # Subclass of Exception.
+ *    x = Exception.new('Boom') # => #<Exception: Boom>
+ *
  */
 
 static VALUE
@@ -1488,12 +1500,24 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  Document-method: exception
  *
  *  call-seq:
- *     exc.exception([string])  ->  an_exception or exc
+ *    exception(message = nil) -> self or new_exception
  *
- *  With no argument, or if the argument is the same as the receiver,
- *  return the receiver. Otherwise, create a new
- *  exception object of the same class as the receiver, but with a
- *  message equal to <code>string.to_str</code>.
+ *  Returns an exception object of the same class as +self+;
+ *  useful for creating a similar exception, but with a different message.
+ *
+ *  With +message+ +nil+, returns +self+:
+ *
+ *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
+ *    x1 = x0.exception              # => #<StandardError: Boom>
+ *    x0.__id__ == x1.__id__         # => true
+ *
+ *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
+ *  +message+ (even the same as the original message),
+ *  returns a new exception object whose class is the same as +self+,
+ *  and whose message is the given +message+:
+ *
+ *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
+ *    x0.__id__ == x1.__id__    # => false
  *
  */
 
@@ -3246,98 +3270,84 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: Exception
  *
- *  \Class Exception and its subclasses are used to communicate between
- *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
+ *  \Class +Exception+ and its subclasses are used to indicate that an error
+ *  or other problem has occurred,
+ *  and may need to be handled.
+ *  See {Exceptions}[rdoc-ref:exceptions.md].
  *
- *  An Exception object carries information about an exception:
- *  - Its type (the exception's class).
- *  - An optional descriptive message.
- *  - Optional backtrace information.
+ *  An +Exception+ object carries certain information:
  *
- *  Some built-in subclasses of Exception have additional methods: e.g., NameError#name.
+ *  - The type (the exception's class),
+ *    commonly StandardError, RuntimeError, or a subclass of one or the other;
+ *    see {Built-In Exception Class Hierarchy}[rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy].
+ *  - An optional descriptive message;
+ *    see methods ::new, #message.
+ *  - Optional backtrace information;
+ *    see methods #backtrace, #backtrace_locations, #set_backtrace.
+ *  - An optional cause;
+ *    see method #cause.
  *
- *  == Defaults
+ *  == Built-In \Exception \Class Hierarchy
  *
- *  Two Ruby statements have default exception classes:
- *  - +raise+: defaults to RuntimeError.
- *  - +rescue+: defaults to StandardError.
- *
- *  == Global Variables
- *
- *  When an exception has been raised but not yet handled (in +rescue+,
- *  +ensure+, +at_exit+ and +END+ blocks), two global variables are set:
- *  - <code>$!</code> contains the current exception.
- *  - <code>$@</code> contains its backtrace.
- *
- *  == Custom Exceptions
- *
- *  To provide additional or alternate information,
- *  a program may create custom exception classes
- *  that derive from the built-in exception classes.
- *
- *  A good practice is for a library to create a single "generic" exception class
- *  (typically a subclass of StandardError or RuntimeError)
- *  and have its other exception classes derive from that class.
- *  This allows the user to rescue the generic exception, thus catching all exceptions
- *  the library may raise even if future versions of the library add new
- *  exception subclasses.
- *
- *  For example:
- *
- *    class MyLibrary
- *      class Error < ::StandardError
- *      end
- *
- *      class WidgetError < Error
- *      end
- *
- *      class FrobError < Error
- *      end
- *
- *    end
- *
- *  To handle both MyLibrary::WidgetError and MyLibrary::FrobError the library
- *  user can rescue MyLibrary::Error.
- *
- *  == Built-In Exception Classes
- *
- *  The built-in subclasses of Exception are:
+ *  The hierarchy of built-in subclasses of class +Exception+:
  *
  *  * NoMemoryError
  *  * ScriptError
- *    * LoadError
+ *
+ *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
  *    * NotImplementedError
  *    * SyntaxError
+ *
  *  * SecurityError
  *  * SignalException
+ *
  *    * Interrupt
+ *
  *  * StandardError
+ *
  *    * ArgumentError
+ *
  *      * UncaughtThrowError
+ *
  *    * EncodingError
  *    * FiberError
  *    * IOError
+ *
  *      * EOFError
+ *
  *    * IndexError
+ *
  *      * KeyError
  *      * StopIteration
+ *
  *        * ClosedQueueError
+ *
  *    * LocalJumpError
  *    * NameError
+ *
  *      * NoMethodError
+ *
  *    * RangeError
+ *
  *      * FloatDomainError
+ *
  *    * RegexpError
  *    * RuntimeError
+ *
  *      * FrozenError
+ *
  *    * SystemCallError
- *      * Errno::*
+ *
+ *      * Errno (and its subclasses, representing system errors)
+ *
  *    * ThreadError
  *    * TypeError
  *    * ZeroDivisionError
+ *
  *  * SystemExit
  *  * SystemStackError
- *  * fatal
+ *  * {fatal}[https://docs.ruby-lang.org/en/master/fatal.html]
+ *
  */
 
 static VALUE

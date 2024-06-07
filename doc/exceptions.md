@@ -90,9 +90,7 @@ if none is given, StandardError is assumed.
 
 The rescue clause rescues both the specified class
 (or StandardError if none given) or any of its subclasses;
-(see [Built-In Exception Classes](rdoc-ref:Exception@Built-In+Exception+Classes)
-for the hierarchy of Ruby built-in exception classes):
-
+see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
 ```
 begin
@@ -354,8 +352,10 @@ Raise an exception with method Kernel#raise.
 ## Custom Exceptions
 
 To provide additional or alternate information,
-you may create custom exception classes;
-each should be a subclass of one of the built-in exception classes:
+you may create custom exception classes.
+Each should be a subclass of one of the built-in exception classes
+(commonly StandardError or RuntimeError);
+see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
 ```
 class MyException < StandardError; end
