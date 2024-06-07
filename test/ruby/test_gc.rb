@@ -648,7 +648,7 @@ class TestGc < Test::Unit::TestCase
   def test_thrashing_for_young_objects
     # This test prevents bugs like [Bug #18929]
 
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 60)
       # Grow the heap
       @ary = 100_000.times.map { Object.new }
 
