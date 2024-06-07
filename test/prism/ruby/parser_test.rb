@@ -57,7 +57,6 @@ module Prism
     # skip them for now.
     skip_all = skip_incorrect | [
       "dash_heredocs.txt",
-      # "heredocs_with_ignored_newlines.txt",
       "regex.txt",
       "regex_char_width.txt",
       "unescaping.txt",
@@ -72,10 +71,8 @@ module Prism
       "unparser/corpus/literal/literal.txt",
       "unparser/corpus/semantic/dstr.txt",
       "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
-      "whitequark/parser_bug_640.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
-      "whitequark/ruby_bug_11989.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/ruby_bug_11989.txt"
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -90,6 +87,7 @@ module Prism
       "dos_endings.txt",
       "embdoc_no_newline_at_end.txt",
       "heredoc_with_comment.txt",
+      "heredocs_with_ignored_newlines.txt",
       "indented_file_end.txt",
       "methods.txt",
       "strings.txt",
@@ -163,10 +161,12 @@ module Prism
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
+      "whitequark/parser_bug_640.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/ruby_bug_11990.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
+      "whitequark/slash_newline_in_heredocs.txt",
       "whitequark/space_args_arg_block.txt",
       "whitequark/space_args_block.txt"
     ]

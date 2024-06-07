@@ -2092,7 +2092,12 @@ module Prism
               if child.type == :str && child.children.last == ""
                 # nothing
               elsif child.type == :str && children.last && children.last.type == :str && !children.last.children.first.end_with?("\n")
-                children.last.children.first << child.children.first
+                appendee = children[-1]
+
+                location = appendee.loc
+                location = location.with_expression(location.expression.join(child.loc.expression))
+
+                children[-1] = appendee.updated(:str, [appendee.children.first << child.children.first], location: location)
               else
                 children << child
               end
