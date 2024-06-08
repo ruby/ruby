@@ -1448,9 +1448,7 @@ static NODE *assignable(struct parser_params*,ID,NODE*,const YYLTYPE*);
 static NODE *aryset(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 
-#ifndef RIPPER
-static void rb_backref_error(struct parser_params*,NODE*);
-#endif
+static VALUE rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
@@ -1494,7 +1492,6 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #ifdef RIPPER
 #define get_value(idx) (rb_ary_entry(p->s_value_stack, idx))
 #define set_value(val) (p->s_lvalue = val)
-static VALUE backref_error(struct parser_params*, NODE *, VALUE);
 static VALUE assign_error(struct parser_params *p, const char *mesg, VALUE a);
 static int id_is_var(struct parser_params *p, ID id);
 #endif
@@ -3282,11 +3279,9 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     }
                 | backref tOP_ASGN lex_ctxt command_rhs
                     {
-                    /*%%%*/
-                        rb_backref_error(p, $1);
-                    /*% %*/
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, $1, opassign!(var_field!($:1), $:2, $:4)) %*/
+                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 ;
 
@@ -3669,11 +3664,9 @@ mlhs_node	: user_variable
                     }
                 | backref
                     {
-                    /*%%%*/
-                        rb_backref_error(p, $1);
-                    /*% %*/
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, $1, var_field!($:1)) %*/
+                    /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
                     }
                 ;
 
@@ -3719,11 +3712,9 @@ lhs		: user_variable
                     }
                 | backref
                     {
-                    /*%%%*/
-                        rb_backref_error(p, $1);
-                    /*% %*/
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, $1, var_field!($:1)) %*/
+                    /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
                     }
                 ;
 
@@ -3877,11 +3868,9 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 | backref tOP_ASGN lex_ctxt arg_rhs
                     {
-                    /*%%%*/
-                        rb_backref_error(p, $1);
-                    /*% %*/
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: backref_error(p, $1, opassign!(var_field!($:1), $:2, $:4)) %*/
+                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 | arg tDOT2 arg
                     {
@@ -13671,37 +13660,23 @@ attrset(struct parser_params *p, NODE *recv, ID atype, ID id, const YYLTYPE *loc
     return NEW_ATTRASGN(recv, id, 0, loc);
 }
 
-#ifndef RIPPER
-static void
+static VALUE
 rb_backref_error(struct parser_params *p, NODE *node)
 {
+#ifndef RIPPER
+# define ERR(...) (compile_error(p, __VA_ARGS__), Qtrue)
+#else
+# define ERR(...) rb_sprintf(__VA_ARGS__)
+#endif
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-        compile_error(p, "Can't set variable $%ld", RNODE_NTH_REF(node)->nd_nth);
-        break;
+        return ERR("Can't set variable $%ld", RNODE_NTH_REF(node)->nd_nth);
       case NODE_BACK_REF:
-        compile_error(p, "Can't set variable $%c", (int)RNODE_BACK_REF(node)->nd_nth);
-        break;
+        return ERR("Can't set variable $%c", (int)RNODE_BACK_REF(node)->nd_nth);
     }
+#undef ERR
+    UNREACHABLE_RETURN(Qfalse); /* only called on syntax error */
 }
-#endif
-
-#ifdef RIPPER
-static VALUE
-backref_error(struct parser_params *p, NODE *node, VALUE expr)
-{
-    VALUE mesg = rb_str_new_cstr("Can't set variable ");
-    switch (nd_type(node)) {
-      case NODE_NTH_REF:
-        rb_str_catf(mesg, "$%ld", RNODE_NTH_REF(node)->nd_nth);
-        break;
-      case NODE_BACK_REF:
-        rb_str_catf(mesg, "$%c", (int)RNODE_BACK_REF(node)->nd_nth);
-        break;
-    }
-    return dispatch2(assign_error, mesg, expr);
-}
-#endif
 
 static NODE *
 arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc)
