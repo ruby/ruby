@@ -1514,7 +1514,7 @@ RUBY_SYMBOL_EXPORT_END
 
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
-static ID formal_argument(struct parser_params*, ID);
+static VALUE formal_argument_error(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
 static void new_bv(struct parser_params*,ID);
 
@@ -1606,8 +1606,6 @@ void ripper_error(struct parser_params *p);
 #define dispatch7(n,a,b,c,d,e,f,g) ripper_dispatch7(p, RIPPER_ID(n), (a), (b), (c), (d), (e), (f), (g))
 
 #define yyparse ripper_yyparse
-
-static VALUE ripper_formal_argument(struct parser_params *p, ID id, VALUE lhs);
 
 static VALUE
 aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
@@ -1794,7 +1792,7 @@ add_block_exit(struct parser_params *p, NODE *node)
     switch (nd_type(node)) {
       case NODE_BREAK: case NODE_NEXT: case NODE_REDO: break;
       default:
-        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "add_block_exit: unexpected node: %s", parser_node_name(nd_type(node)));
         return node;
     }
     if (!p->ctxt.in_defined) {
@@ -1885,7 +1883,7 @@ get_nd_value(struct parser_params *p, NODE *node)
       case NODE_CDECL:
         return RNODE_CDECL(node)->nd_value;
       default:
-        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "get_nd_value: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -1916,7 +1914,7 @@ set_nd_value(struct parser_params *p, NODE *node, NODE *rhs)
         RNODE_CVASGN(node)->nd_value = rhs;
         break;
       default:
-        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "set_nd_value: unexpected node: %s", parser_node_name(nd_type(node)));
         break;
     }
 }
@@ -1938,7 +1936,7 @@ get_nd_vid(struct parser_params *p, NODE *node)
       case NODE_CVASGN:
         return RNODE_CVASGN(node)->nd_vid;
       default:
-        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "get_nd_vid: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -1965,7 +1963,7 @@ get_nd_args(struct parser_params *p, NODE *node)
       case NODE_NEXT:
         return 0;
       default:
-        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "get_nd_args: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -6530,10 +6528,11 @@ f_bad_arg	: tCONSTANT
 f_norm_arg	: f_bad_arg
                 | tIDENTIFIER
                     {
-                        formal_argument(p, $1);
+                        VALUE e = formal_argument_error(p, $$ = $1);
+                        if (e) {
+                            /*% ripper[error]: param_error!(?e, $:1) %*/
+                        }
                         p->max_numparam = ORDINAL_PARAM;
-                        $$ = $1;
-                    /*% ripper: ripper_formal_argument(p, $1, $:1) %*/
                     }
                 ;
 
@@ -6584,11 +6583,21 @@ f_arg		: f_arg_item
 
 f_label 	: tLABEL
                     {
-                        arg_var(p, formal_argument(p, $1));
+                        VALUE e = formal_argument_error(p, $$ = $1);
+                        if (e) {
+                            $$ = 0;
+                            /*% ripper[error]: param_error!(?e, $:1) %*/
+                        }
+                        /*
+                         * Workaround for Prism::ParseTest#test_filepath for
+                         * "unparser/corpus/literal/def.txt"
+                         *
+                         * See the discussion on https://github.com/ruby/ruby/pull/9923
+                         */
+                        arg_var(p, ifdef_ripper(0, $1));
+                        /*% ripper: $:1 %*/
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
-                        $$ = $1;
-                    /*% ripper: ripper_formal_argument(p, $1, $:1) %*/
                     }
                 ;
 
@@ -9300,72 +9309,35 @@ arg_ambiguous(struct parser_params *p, char c)
     return TRUE;
 }
 
-static ID
-formal_argument(struct parser_params *p, ID id)
+/* returns true value if formal argument error;
+ * Qtrue, or error message if ripper */
+static VALUE
+formal_argument_error(struct parser_params *p, ID id)
 {
     switch (id_type(id)) {
       case ID_LOCAL:
         break;
-#define ERR(mesg) yyerror0(mesg)
+#ifndef RIPPER
+# define ERR(mesg) (yyerror0(mesg), Qtrue)
+#else
+# define ERR(mesg) WARN_S(mesg)
+#endif
       case ID_CONST:
-        ERR("formal argument cannot be a constant");
-        return 0;
+        return ERR("formal argument cannot be a constant");
       case ID_INSTANCE:
-        ERR("formal argument cannot be an instance variable");
-        return 0;
+        return ERR("formal argument cannot be an instance variable");
       case ID_GLOBAL:
-        ERR("formal argument cannot be a global variable");
-        return 0;
+        return ERR("formal argument cannot be a global variable");
       case ID_CLASS:
-        ERR("formal argument cannot be a class variable");
-        return 0;
+        return ERR("formal argument cannot be a class variable");
       default:
-        ERR("formal argument must be local variable");
-        return 0;
+        return ERR("formal argument must be local variable");
 #undef ERR
     }
     shadowing_lvar(p, id);
 
-/*
- * Workaround for Prism::ParseTest#test_filepath for "unparser/corpus/literal/def.txt"
- *
- * See the discussion on https://github.com/ruby/ruby/pull/9923
- */
-#ifndef RIPPER
-    return id;
-#else
-    return 0;
-#endif
+    return Qfalse;
 }
-
-#ifdef RIPPER
-static VALUE
-ripper_formal_argument(struct parser_params *p, ID id, VALUE lhs)
-{
-    switch (id_type(id)) {
-      case ID_LOCAL:
-        break;
-#define ERR(mesg) (dispatch2(param_error, WARN_S(mesg), lhs), ripper_error(p))
-      case ID_CONST:
-        ERR("formal argument cannot be a constant");
-        break;
-      case ID_INSTANCE:
-        ERR("formal argument cannot be an instance variable");
-        break;
-      case ID_GLOBAL:
-        ERR("formal argument cannot be a global variable");
-        break;
-      case ID_CLASS:
-        ERR("formal argument cannot be a class variable");
-        break;
-      default:
-        ERR("formal argument must be local variable");
-        break;
-#undef ERR
-    }
-    return lhs;
-}
-#endif
 
 static int
 lvar_defined(struct parser_params *p, ID id)
