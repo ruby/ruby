@@ -1,0 +1,3 @@
+EXPORTS
+Init_digest
+rb_digest_wrap_metadata
