@@ -746,32 +746,87 @@ rb_f_raise(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     raise
- *     raise(string, cause: $!)
- *     raise(exception [, string [, array]], cause: $!)
- *     fail
- *     fail(string, cause: $!)
- *     fail(exception [, string [, array]], cause: $!)
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
- *  With no arguments, raises the exception in <code>$!</code> or raises
- *  a RuntimeError if <code>$!</code> is +nil+.  With a single +String+
- *  argument, raises a +RuntimeError+ with the string as a message. Otherwise,
- *  the first parameter should be an +Exception+ class (or another
- *  object that returns an +Exception+ object when sent an +exception+
- *  message).  The optional second parameter sets the message associated with
- *  the exception (accessible via Exception#message), and the third parameter
- *  is an array of callback information (accessible via
- *  Exception#backtrace_locations or Exception#backtrace).
- *  The +cause+ of the generated exception (accessible via Exception#cause)
- *  is automatically set to the "current" exception (<code>$!</code>), if any.
- *  An alternative value, either an +Exception+ object or +nil+, can be
- *  specified via the +:cause+ argument.
+ *  Raises an exception;
+ *  see {Exceptions}[rdoc-ref:exceptions.md].
  *
- *  Exceptions are caught by the +rescue+ clause of
- *  <code>begin...end</code> blocks.
+ *  Argument +exception+ (an exception class or instance)
+ *  sets the class of the new exception:
  *
- *     raise "Failed to create socket"
- *     raise ArgumentError, "No parameters", caller_locations
+ *    begin
+ *      raise(StandardError)
+ *    rescue => x
+ *      p x.class
+ *    end
+ *    # => StandardError
+ *
+ *  Argument +message+ sets the stored message in the new exception,
+ *  which may be retrieved by method Exception#message;
+ *  the message must be
+ *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
+ *  or +nil+:
+ *
+ *    begin
+ *      raise(StandardError, 'Boom')
+ *    rescue => x
+ *      p x.message
+ *    end
+ *    # => "Boom"
+ *
+ *  If argument +message+ is not given,
+ *  the message is the exception class name.
+ *
+ *  Argument +backtrace+ sets the stored backtrace in the new exception,
+ *  which may be retrieved by method Exception#backtrace;
+ *  the backtrace must be one of:
+ *
+ *  - An array of strings.
+ *  - An array of Thread::Backtrace::Location objects.
+ *  - +nil+.
+ *
+ *  Example:
+ *
+ *    begin
+ *      raise(StandardError, 'Boom', %w[foo bar baz])
+ *    rescue => x
+ *      p x.backtrace
+ *    end
+ *    # => ["foo", "bar", "baz"]
+ *
+ *  If argument +backtrace+ is not given,
+ *  the backtrace is set according to the call stack.
+ *
+ *  Keyword argument +cause+ sets the stored cause in the new exception,
+ *  which may be retrieved by method Exception#cause;
+ *  the cause must be an exception object (Exception or one of its subclasses),
+ *  or +nil+:
+ *
+ *    begin
+ *      raise(StandardError, cause: RuntimeError.new)
+ *    rescue => x
+ *      p x.cause
+ *    end
+ *    # => #<RuntimeError: RuntimeError>
+ *
+ *  If keyword argument +cause+ is not given,
+ *  the cause is the value of <tt>$!</tt>.
+ *
+ *  With exception class argument +exception+ _not_ given,
+ *  raises a new exception of the class given by <tt>$!</tt>,
+ *  or of class RuntimeError if <tt>$!</tt> is +nil+:
+ *
+ *    begin
+ *      raise
+ *    rescue => x
+ *      p x
+ *    end
+ *    # => RuntimeError
+ *
+ *  With argument +exception+ not given,
+ *  argument +message+ and keyword argument +cause+ may be given,
+ *  but argument +backtrace+ may not be given.
  */
 
 static VALUE
