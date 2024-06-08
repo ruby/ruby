@@ -31,10 +31,35 @@ jobs:
   make:
     strategy:
       matrix:
-        # main variables included in the job name
-        test_task: [check]
-        run_opts: ['--parser=prism']
-        arch: ['']
+        include:
+          - test_task: test
+            run_opts: '--parser=prism'
+            testopts: '-v --tty=no'
+            timeout: 30
+          - test_task: test-all
+            run_opts: '--parser=prism'
+            testopts: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb"'
+            timeout: 40
+          - test_task: test-spec
+            run_opts: '--parser=prism'
+            specopts: '-T --parser=prism'
+            timeout: 10
+          - test_task: test-tool
+            run_opts: '--parser=prism'
+            testopts: '-v --tty=no'
+            timeout: 30
+          - test_task: test-bundler-parallel
+            run_opts: '--parser=prism'
+            testopts: '-v --tty=no'
+            timeout: 30
+          - test_task: test-bundled-gems
+            run_opts: '--parser=prism'
+            testopts: '-v --tty=no'
+            timeout: 30
+          - test_task: test-syntax-suggest
+            run_opts: '--parser=prism'
+            testopts: '-v --tty=no'
+            timeout: 30
       fail-fast: false
 
     env:
@@ -69,39 +94,17 @@ jobs:
           makeup: true
 
       - name: Run configure
-        env:
-          arch: ${{ matrix.arch }}
-        run: >-
-          $SETARCH ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
-          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
 
-      - run: $SETARCH make
+      - run: make
 
-      - name: make test
-        run: |
-          $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 30
+      - name: make ${{ matrix.test_task }}
+        run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
+        timeout-minutes: ${{ matrix.timeout }}
         env:
-          GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-v --tty=no'
+          RUBY_TESTOPTS: ${{ matrix.testopts }}
           RUN_OPTS: ${{ matrix.run_opts }}
-
-      - name: make test-all
-        run: |
-          $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 40
-        env:
-          GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb"'
-          RUN_OPTS: ${{ matrix.run_opts }}
-
-      - name: make test-spec
-        run: |
-          $SETARCH make -s test-spec SPECOPTS="$SPECOPTS"
-        timeout-minutes: 10
-        env:
-          GNUMAKEFLAGS: ''
-          SPECOPTS: "-T -W:no-experimental -T --parser=prism"
+          SPECOPTS: ${{ matrix.specopts }}
 
       - uses: ./.github/actions/slack
         with:
