@@ -1600,13 +1600,13 @@ static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,V
 static VALUE ripper_dispatch7(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE);
 void ripper_error(struct parser_params *p);
 
-#define dispatch0(n)            ripper_dispatch0(p, TOKEN_PASTE(ripper_id_, n))
-#define dispatch1(n,a)          ripper_dispatch1(p, TOKEN_PASTE(ripper_id_, n), (a))
-#define dispatch2(n,a,b)        ripper_dispatch2(p, TOKEN_PASTE(ripper_id_, n), (a), (b))
-#define dispatch3(n,a,b,c)      ripper_dispatch3(p, TOKEN_PASTE(ripper_id_, n), (a), (b), (c))
-#define dispatch4(n,a,b,c,d)    ripper_dispatch4(p, TOKEN_PASTE(ripper_id_, n), (a), (b), (c), (d))
-#define dispatch5(n,a,b,c,d,e)  ripper_dispatch5(p, TOKEN_PASTE(ripper_id_, n), (a), (b), (c), (d), (e))
-#define dispatch7(n,a,b,c,d,e,f,g) ripper_dispatch7(p, TOKEN_PASTE(ripper_id_, n), (a), (b), (c), (d), (e), (f), (g))
+#define dispatch0(n)            ripper_dispatch0(p, RIPPER_ID(n))
+#define dispatch1(n,a)          ripper_dispatch1(p, RIPPER_ID(n), (a))
+#define dispatch2(n,a,b)        ripper_dispatch2(p, RIPPER_ID(n), (a), (b))
+#define dispatch3(n,a,b,c)      ripper_dispatch3(p, RIPPER_ID(n), (a), (b), (c))
+#define dispatch4(n,a,b,c,d)    ripper_dispatch4(p, RIPPER_ID(n), (a), (b), (c), (d))
+#define dispatch5(n,a,b,c,d,e)  ripper_dispatch5(p, RIPPER_ID(n), (a), (b), (c), (d), (e))
+#define dispatch7(n,a,b,c,d,e,f,g) ripper_dispatch7(p, RIPPER_ID(n), (a), (b), (c), (d), (e), (f), (g))
 
 #define yyparse ripper_yyparse
 
