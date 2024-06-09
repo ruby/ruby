@@ -2889,6 +2889,13 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tLAST_TOKEN
 
 /*
+ *	inlining rules
+ */
+%rule %inline ident_or_const: tIDENTIFIER
+                            | tCONSTANT
+                            ;
+
+/*
  *	parameterizing rules
  */
 %rule f_opt(value) <node_opt_arg>: f_arg_asgn f_eq value
@@ -3232,12 +3239,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
 
                     }
-                | primary_value call_op tIDENTIFIER tOP_ASGN lex_ctxt command_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
-                | primary_value call_op tCONSTANT tOP_ASGN lex_ctxt command_rhs
+                | primary_value call_op ident_or_const tOP_ASGN lex_ctxt command_rhs
                     {
                         $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
@@ -3744,8 +3746,7 @@ cpath		: tCOLON3 cname
                     }
                 ;
 
-fname		: tIDENTIFIER
-                | tCONSTANT
+fname		: ident_or_const
                 | tFID
                 | op
                     {
@@ -6267,8 +6268,7 @@ nonlocal_var    : tIVAR
                 | tCVAR
                 ;
 
-user_variable	: tIDENTIFIER
-                | tCONSTANT
+user_variable	: ident_or_const
                 | nonlocal_var
                 ;
 
@@ -6810,8 +6810,7 @@ assoc		: arg_value tASSOC arg_value
                     }
                 ;
 
-operation	: tIDENTIFIER
-                | tCONSTANT
+operation	: ident_or_const
                 | tFID
                 ;
 
