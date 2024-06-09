@@ -233,6 +233,8 @@ Format +argument+ as a single character:
   sprintf('%c', 'A') # => "A"
   sprintf('%c', 65)  # => "A"
 
+This behaves like String#<<, except for raising ArgumentError instead of RangeError.
+
 === Specifier +d+
 
 Format +argument+ as a decimal integer:

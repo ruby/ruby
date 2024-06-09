@@ -3595,6 +3595,22 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *    s = 'foo'
  *    s << 33 # => "foo!"
  *
+ *  If that codepoint is not representable in the encoding of
+ *  _string_, RangeError is raised.
+ *
+ *    s = 'foo'
+ *    s.encoding              # => <Encoding:UTF-8>
+ *    s << 0x00110000         # 1114112 out of char range (RangeError)
+ *    s = 'foo'.encode('EUC-JP')
+ *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
+ *
+ *  If the encoding is US-ASCII and the codepoint is 0..0xff, _string_
+ *  is automatically promoted to ASCII-8BIT.
+ *
+ *    s = 'foo'.encode('US-ASCII')
+ *    s << 0xff
+ *    s.encoding              # => #<Encoding:BINARY (ASCII-8BIT)>
+ *
  *  Related: String#concat, which takes multiple arguments.
  */
 VALUE
