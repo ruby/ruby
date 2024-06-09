@@ -1050,7 +1050,7 @@ Init_openssl(void)
     /*
      * Init all digests, ciphers
      */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
     if (!OPENSSL_init_ssl(0, NULL))
         rb_raise(rb_eRuntimeError, "OPENSSL_init_ssl");
 #else
@@ -1075,7 +1075,7 @@ Init_openssl(void)
     /*
      * Version of OpenSSL the ruby OpenSSL extension is running with
      */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
     rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
 #else
     rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
