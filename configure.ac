@@ -1761,7 +1761,7 @@ AS_IF([test "$GCC" = yes], [
 AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
 rb_cv_func_exported=no
 RUBY_WERROR_FLAG([
-for mac in '__attribute__ ((__visibility__("default")))' '__declspec(dllexport)'; do
+for mac in '__declspec(dllexport)' '__attribute__ ((__visibility__("default")))'; do
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@define RUBY_FUNC_EXPORTED $mac extern
     RUBY_FUNC_EXPORTED void conftest_attribute_check(void);]], [[]])],
     [rb_cv_func_exported="$mac"; break])
