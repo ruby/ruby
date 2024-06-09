@@ -89,6 +89,7 @@ cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
+hardenflags = @hardenflags@
 cppflags = @cppflags@
 incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
