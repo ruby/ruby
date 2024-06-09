@@ -1568,7 +1568,7 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define CASE_LABELS_ENABLED_P(case_labels) (case_labels && case_labels != CHECK_LITERAL_WHEN)
 
 #define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(p, yyres, yystr)
-size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
+RUBY_FUNC_EXPORTED size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
 
 #define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
@@ -8613,7 +8613,6 @@ flush_string_content(struct parser_params *p, rb_encoding *enc)
     dispatch_scan_event(p, tSTRING_CONTENT);
 }
 
-RUBY_FUNC_EXPORTED const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 /* this can be shared with ripper, since it's independent from struct
  * parser_params. */
 #ifndef RIPPER
@@ -15935,7 +15934,7 @@ count_char(const char *str, int c)
  *
  *  "\"`class' keyword\"" => "`class' keyword"
  */
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 {
     if (*yystr == '"') {
