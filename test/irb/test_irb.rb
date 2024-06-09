@@ -825,6 +825,13 @@ module TestIRB
   end
 
   class BacktraceFilteringTest < TestIRB::IntegrationTestCase
+    def setup
+      super
+      # These tests are sensitive to warnings, so we disable them
+      original_rubyopt = [ENV["RUBYOPT"], @envs["RUBYOPT"]].compact.join(" ")
+      @envs["RUBYOPT"] = original_rubyopt + " -W0"
+    end
+
     def test_backtrace_filtering
       write_ruby <<~'RUBY'
         def foo
