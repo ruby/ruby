@@ -43,7 +43,7 @@ begin
   raise 'Boom!'                # Raises an exception, transfers control.
   puts 'Will not get here.'
 rescue
-  puts 'Rescued an exception.' # Control tranferred to here; program does not exit.
+  puts 'Rescued an exception.' # Control transferred to here; program does not exit.
 end
 puts 'Got here.'
 ```
