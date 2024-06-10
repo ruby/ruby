@@ -388,3 +388,21 @@ see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+C
 ```
 class MyException < StandardError; end
 ```
+
+## Messages
+
+Every +Exception+ object has a message,
+which is a string that is set at the time the object is created;
+see Exception.new.
+
+The message may not be changed, but you can create a similar object with a different message;
+see Exception#exception.
+
+The message is returned by method Exception#message.
+
+Two other methods return modified versions of the message:
+
+- Exception#detailed_message:
+- Exception#full_message:
+
+## Backtraces

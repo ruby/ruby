@@ -1645,20 +1645,20 @@ check_order_keyword(VALUE opt)
 
 /*
  * call-seq:
- *   exception.full_message(highlight: bool, order: [:top or :bottom]) ->  string
+ *   full_message(highlight: true, order: :top) -> string
  *
- * Returns formatted string of _exception_.
- * The returned string is formatted using the same format that Ruby uses
- * when printing an uncaught exceptions to stderr.
+ * Returns an enhanced message string:
  *
- * If _highlight_ is +true+ the default error handler will send the
- * messages to a tty.
+ * - Includes the exception class name.
+ * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
+ *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
+ * - Includes the backtrace:
  *
- * _order_ must be either of +:top+ or +:bottom+, and places the error
- * message and the innermost backtrace come at the top or the bottom.
+ *   - If the value of keyword +order+ is +:top+,
+ *     lists the error message and the innermost backtrace entry first.
+ *   - If the value of keyword +order+ is +:bottom+,
+ *     lists the error message the the innermost entry last.
  *
- * The default values of these options depend on <code>$stderr</code>
- * and its +tty?+ at the timing of a call.
  */
 
 static VALUE
@@ -1701,42 +1701,57 @@ exc_message(VALUE exc)
 
 /*
  * call-seq:
- *   exception.detailed_message(highlight: bool, **opt)   ->  string
+ *   detailed_message(highlight: false, **kwargs) -> string
  *
- * Processes a string returned by #message.
+ * Returns an enhanced message string:
  *
- * It may add the class name of the exception to the end of the first line.
- * Also, when +highlight+ keyword is true, it adds ANSI escape sequences to
- * make the message bold.
+ * - Includes the exception class name in the first line.
+ * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
+ *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
  *
- * If you override this method, it must be tolerant for unknown keyword
- * arguments. All keyword arguments passed to #full_message are delegated
- * to this method.
+ * This method is overridden by certain modules:
  *
- * This method is overridden by did_you_mean and error_highlight to add
- * their information.
+ * - DidYouMean::Correctable#detailed_message.
+ * - ErrorHighlight::CoreExt#detailed_message.
+ * - SyntaxSuggest#detailed_message.
  *
- * A user-defined exception class can also define their own
- * +detailed_message+ method to add supplemental information.
- * When +highlight+ is true, it can return a string containing escape
- * sequences, but use widely-supported ones. It is recommended to limit
- * the following codes:
+ * An overriding method definition must be tolerant of passed keyword arguments,
+ * which may include (but may not be limited to):
  *
- * - Reset (+\e[0m+)
- * - Bold (+\e[1m+)
- * - Underline (+\e[4m+)
- * - Foreground color except white and black
- *   - Red (+\e[31m+)
- *   - Green (+\e[32m+)
- *   - Yellow (+\e[33m+)
- *   - Blue (+\e[34m+)
- *   - Magenta (+\e[35m+)
- *   - Cyan (+\e[36m+)
+ * - +:highlight+.
+ * - +:did_you_mean+.
+ * - +:error_highlight+.
+ * - +:syntax_suggest+.
  *
- * Use escape sequences carefully even if +highlight+ is true.
- * Do not use escape sequences to express essential information;
- * the message should be readable even if all escape sequences are
- * ignored.
+ * A custom exception class that overrides this method
+ * may choose to interpret keyword argument <tt>highlight: true</tt>
+ * to mean that the returned message should contain
+ * {ANSI codes}[https://en.wikipedia.org/wiki/ANSI_escape_code]
+ * that specify foreground and background color,
+ * along with other font properties (e.g., bold, italic, underscore).
+ *
+ * Widely supported ANSI codes include:
+ *
+ * - Begin foreground color:
+ *
+ *   - Black: +\e30m+
+ *   - Red: +\e[31m+
+ *   - Green: +\e[32m+
+ *   - Yellow: +\e[33m+
+ *   - Blue: +\e[34m+
+ *   - Magenta: +\e[35m+
+ *   - Cyan: +\e[36m+
+ *   - White: +\e[37m+
+ *
+ * - Begin font property:
+ *
+ *   - Bold: +\e[1m+
+ *   - Underline: +\e[4m+
+ *
+ * - End all of the above:
+ *
+ *   - Reset: +\e[0m+
+ *
  */
 
 static VALUE
