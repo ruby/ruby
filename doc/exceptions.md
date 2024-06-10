@@ -84,6 +84,8 @@ A rescue clause:
 - Ends with the first following `rescue`,
   `else`, `ensure`, or `end` statement.
 
+##### Rescued Exceptions
+
 A `rescue` statement may include one or more classes
 that are to be rescued;
 if none is given, StandardError is assumed.
@@ -131,6 +133,8 @@ rescue FloatDomainError, ZeroDivisionError
 end
 ```
 
+##### Multiple Rescue Clauses
+
 An exception handler may contain multiple rescue clauses;
 in that case, the first clause that rescues the exception does so,
 and those before and after are ignored:
@@ -150,6 +154,8 @@ Output:
 ```
 Rescued Errno::ENOENT
 ```
+
+##### Capturing the Rescued Exception
 
 A `rescue` statement may specify a variable
 whose value becomes the rescued exception
@@ -171,10 +177,32 @@ ZeroDivisionError
 divided by 0
 ```
 
-In the rescue clause, these global variables are defined:
+##### Global Variables
 
-- `$!`": the current exception instance.
-- `$@`: its backtrace.
+Two read-only global variables always have +nil+ value
+except in a rescue clause;
+there:
+
+- `$!`: contains the rescued exception.
+- `$@`: contains its backtrace.
+
+Example:
+
+```
+begin
+  1 / 0
+rescue => x
+  puts $!.__id__ == x.__id__
+  puts $@.__id__ == x.backtrace.__id__
+end
+```
+
+Output:
+
+```
+true
+true
+```
 
 #### Else Clause
 

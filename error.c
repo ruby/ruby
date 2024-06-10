@@ -1936,12 +1936,36 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
 }
 
 /*
- * call-seq:
- *   exception.cause   -> an_exception or nil
+ *  call-seq:
+ *    cause -> exception or nil
  *
- * Returns the previous exception ($!) at the time this exception was raised.
- * This is useful for wrapping exceptions and retaining the original exception
- * information.
+ *  In a rescue clause, returns the previous value of global variable <tt>$!</tt>,
+ *  which may be +nil+
+ *  (see {Global Variables}[rdoc-ref:exceptions.md@Global+Variables]);
+ *  elsewhere, returns +nil+:
+ *
+ *    begin
+ *      raise('Boom 0')
+ *    rescue => x0
+ *      puts "Exception: #{x0};  $!: #{$!};  cause: #{x0.cause.inspect}."
+ *      begin
+ *        raise('Boom 1')
+ *      rescue => x1
+ *        puts "Exception: #{x1};  $!: #{$!};  cause: #{x1.cause}."
+ *        begin
+ *          raise('Boom 2')
+ *        rescue => x2
+ *          puts "Exception: #{x2};  $!: #{$!};  cause: #{x2.cause}."
+ *        end
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    Exception: Boom 0;  $!: Boom 0;  cause: nil.
+ *    Exception: Boom 1;  $!: Boom 1;  cause: Boom 0.
+ *    Exception: Boom 2;  $!: Boom 2;  cause: Boom 1.
+ *
  */
 
 static VALUE
