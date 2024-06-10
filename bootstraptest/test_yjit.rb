@@ -589,6 +589,8 @@ assert_equal 'string', %q{
 
 # Check that exceptions work when getting global variable
 assert_equal 'rescued', %q{
+  Warning[:deprecated] = true
+
   module Warning
     def warn(message)
       raise
