@@ -390,6 +390,7 @@ module RubyVM::YJIT
       out.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
 
       bytes_per_context = stats[:context_data_bytes].fdiv(stats[:num_contexts_encoded])
+      out.puts "context_cache_bytes:   " + format_number(13, stats[:context_cache_bytes])
       out.puts "context_data_bytes:    " + format_number(13, stats[:context_data_bytes])
       out.puts "num_contexts_encoded:  " + format_number(13, stats[:num_contexts_encoded])
       out.puts "bytes_per_context:     " + ("%13.2f" % bytes_per_context)

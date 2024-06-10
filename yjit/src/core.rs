@@ -841,12 +841,17 @@ enum CtxOp {
     EndOfCode,
 }
 
-const CTX_CACHE_SIZE: usize = 512;
+// Number of entries in the context cache
+const CTX_CACHE_SIZE: usize = 1024;
 
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
 // We can experiment with varying the size of this cache
-static mut CTX_CACHE: Option<[(Context, u32); CTX_CACHE_SIZE]> = None;
+pub type CtxCache = Option<[(Context, u32); CTX_CACHE_SIZE]>;
+static mut CTX_CACHE: CtxCache = None;
+
+// Size of the context cache in bytes
+pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCache>();
 
 impl Context {
     pub fn encode(&self) -> u32 {
@@ -919,7 +924,7 @@ impl Context {
     {
         unsafe {
             if CTX_CACHE == None {
-                CTX_CACHE = Some( [(Context::default(), 0); CTX_CACHE_SIZE] );
+                CTX_CACHE = CtxCache::default();
             }
 
             let mut hasher = DefaultHasher::new();
@@ -934,12 +939,6 @@ impl Context {
     // Encode into a compressed context representation in a bit vector
     fn encode_into(&self, bits: &mut BitVector) -> usize {
         let start_idx = bits.num_bits();
-
-        // NOTE: this value is often zero or falls within
-        // a small range, so could be compressed
-        //println!("stack_size={}", self.stack_size);
-        //println!("sp_offset={}", self.sp_offset);
-        //println!("chain_depth_and_flags={}", self.chain_depth_and_flags);
 
         // Most of the time, the stack size is small and sp offset has the same value
         if (self.stack_size as i64) == (self.sp_offset as i64) && self.stack_size < 4 {
