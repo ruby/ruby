@@ -114,10 +114,14 @@ class Reline::ANSI < Reline::IO
 
   def set_default_key_bindings_comprehensive_list(config)
     {
+      # xterm
+      [27, 91, 51, 126] => :key_delete, # kdch1
+      [27, 91, 53, 126] => :ed_search_prev_history, # kpp
+      [27, 91, 54, 126] => :ed_search_next_history, # knp
+
       # Console (80x25)
       [27, 91, 49, 126] => :ed_move_to_beg, # Home
       [27, 91, 52, 126] => :ed_move_to_end, # End
-      [27, 91, 51, 126] => :key_delete,     # Del
 
       # KDE
       # Del is 0x08
@@ -301,27 +305,27 @@ class Reline::ANSI < Reline::IO
   end
 
   def hide_cursor
+    seq = "\e[?25l"
     if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
-        @output.write Reline::Terminfo.tigetstr('civis')
+        seq = Reline::Terminfo.tigetstr('civis')
       rescue Reline::Terminfo::TerminfoError
         # civis is undefined
       end
-    else
-      # ignored
     end
+    @output.write seq
   end
 
   def show_cursor
+    seq = "\e[?25h"
     if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
-        @output.write Reline::Terminfo.tigetstr('cnorm')
+        seq = Reline::Terminfo.tigetstr('cnorm')
       rescue Reline::Terminfo::TerminfoError
         # cnorm is undefined
       end
-    else
-      # ignored
     end
+    @output.write seq
   end
 
   def erase_after_cursor
