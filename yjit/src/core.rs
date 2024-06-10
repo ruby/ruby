@@ -847,11 +847,11 @@ const CTX_CACHE_SIZE: usize = 1024;
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
 // We can experiment with varying the size of this cache
-pub type CtxCache = Option<[(Context, u32); CTX_CACHE_SIZE]>;
-static mut CTX_CACHE: CtxCache = None;
+pub type CtxCacheTbl = [(Context, u32); CTX_CACHE_SIZE];
+static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
 
 // Size of the context cache in bytes
-pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCache>();
+pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
 
 impl Context {
     pub fn encode(&self) -> u32 {
@@ -896,6 +896,24 @@ impl Context {
         ctx
     }
 
+    // Store an entry in a cache of recently encoded/decoded contexts
+    fn cache_set(ctx: &Context, idx: u32)
+    {
+        unsafe {
+            if CTX_CACHE == None {
+                let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
+                CTX_CACHE = Some(Box::new(empty_tbl));
+            }
+
+            let mut hasher = DefaultHasher::new();
+            ctx.hash(&mut hasher);
+            let ctx_hash = hasher.finish() as usize;
+
+            let cache = CTX_CACHE.as_mut().unwrap();
+            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
+        }
+    }
+
     // Lookup the context in a cache of recently encoded/decoded contexts
     fn cache_get(ctx: &Context) -> Option<u32>
     {
@@ -916,23 +934,6 @@ impl Context {
             }
 
             return None;
-        }
-    }
-
-    // Store an entry in a cache of recently encoded/decoded contexts
-    fn cache_set(ctx: &Context, idx: u32)
-    {
-        unsafe {
-            if CTX_CACHE == None {
-                CTX_CACHE = CtxCache::default();
-            }
-
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
-
-            let cache = CTX_CACHE.as_mut().unwrap();
-            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
         }
     }
 
