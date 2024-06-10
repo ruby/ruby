@@ -144,11 +144,13 @@ describe "RUBY_PLATFORM" do
 end
 
 describe "RUBY_DESCRIPTION" do
-  it "contains version" do
-    RUBY_DESCRIPTION.should.include? RUBY_VERSION
-  end
+  guard_not -> { RUBY_ENGINE == "ruby" && !RbConfig::TOPDIR } do
+    it "contains version" do
+      RUBY_DESCRIPTION.should.include? RUBY_VERSION
+    end
 
-  it "contains RUBY_PLATFORM" do
-    RUBY_DESCRIPTION.should.include? RUBY_PLATFORM
+    it "contains RUBY_PLATFORM" do
+      RUBY_DESCRIPTION.should.include? RUBY_PLATFORM
+    end
   end
 end
