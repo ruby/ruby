@@ -4316,13 +4316,8 @@ rb_objspace_free_objects_i(VALUE obj, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_NONE:
-      case T_SYMBOL:
-        break;
-      default:
+    if (BUILTIN_TYPE(obj) != T_NONE) {
         obj_free(objspace, obj);
-        break;
     }
 }
 
@@ -4350,8 +4345,6 @@ rb_objspace_call_finalizer_i(VALUE obj, void *data)
       case T_FILE:
         obj_free(objspace, obj);
         break;
-      case T_SYMBOL:
-      case T_ARRAY:
       case T_NONE:
         break;
       default:
