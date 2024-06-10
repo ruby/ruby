@@ -364,6 +364,9 @@ typedef enum {
     /** a rescue statement within a lambda expression */
     PM_CONTEXT_LAMBDA_RESCUE,
 
+    /** the predicate clause of a loop statement */
+    PM_CONTEXT_LOOP_PREDICATE,
+
     /** the top level context */
     PM_CONTEXT_MAIN,
 

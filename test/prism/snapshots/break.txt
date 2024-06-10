@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(25,23))
+@ ProgramNode (location: (1,0)-(29,21))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(25,23))
-    └── body: (length: 11)
+    @ StatementsNode (location: (1,0)-(29,21))
+    └── body: (length: 13)
         ├── @ CallNode (location: (1,0)-(1,13))
         │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
@@ -346,56 +346,102 @@
         │   │           └── value: 42
         │   ├── closing_loc: ∅
         │   └── block: ∅
-        └── @ CallNode (location: (25,0)-(25,23))
+        ├── @ CallNode (location: (25,0)-(25,23))
+        │   ├── flags: ∅
+        │   ├── receiver:
+        │   │   @ CallNode (location: (25,0)-(25,17))
+        │   │   ├── flags: ignore_visibility
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
+        │   │   ├── message_loc: (25,0)-(25,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── block:
+        │   │       @ BlockNode (location: (25,4)-(25,17))
+        │   │       ├── locals: [:a]
+        │   │       ├── parameters:
+        │   │       │   @ BlockParametersNode (location: (25,6)-(25,9))
+        │   │       │   ├── parameters:
+        │   │       │   │   @ ParametersNode (location: (25,7)-(25,8))
+        │   │       │   │   ├── requireds: (length: 1)
+        │   │       │   │   │   └── @ RequiredParameterNode (location: (25,7)-(25,8))
+        │   │       │   │   │       ├── flags: ∅
+        │   │       │   │   │       └── name: :a
+        │   │       │   │   ├── optionals: (length: 0)
+        │   │       │   │   ├── rest: ∅
+        │   │       │   │   ├── posts: (length: 0)
+        │   │       │   │   ├── keywords: (length: 0)
+        │   │       │   │   ├── keyword_rest: ∅
+        │   │       │   │   └── block: ∅
+        │   │       │   ├── locals: (length: 0)
+        │   │       │   ├── opening_loc: (25,6)-(25,7) = "|"
+        │   │       │   └── closing_loc: (25,8)-(25,9) = "|"
+        │   │       ├── body:
+        │   │       │   @ StatementsNode (location: (25,10)-(25,15))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ BreakNode (location: (25,10)-(25,15))
+        │   │       │           ├── arguments: ∅
+        │   │       │           └── keyword_loc: (25,10)-(25,15) = "break"
+        │   │       ├── opening_loc: (25,4)-(25,5) = "{"
+        │   │       └── closing_loc: (25,16)-(25,17) = "}"
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :==
+        │   ├── message_loc: (25,18)-(25,20) = "=="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (25,21)-(25,23))
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (25,21)-(25,23))
+        │   │           ├── flags: decimal
+        │   │           └── value: 42
+        │   ├── closing_loc: ∅
+        │   └── block: ∅
+        ├── @ WhileNode (location: (27,0)-(27,21))
+        │   ├── flags: ∅
+        │   ├── keyword_loc: (27,0)-(27,5) = "while"
+        │   ├── closing_loc: (27,18)-(27,21) = "end"
+        │   ├── predicate:
+        │   │   @ AndNode (location: (27,6)-(27,16))
+        │   │   ├── left:
+        │   │   │   @ CallNode (location: (27,6)-(27,7))
+        │   │   │   ├── flags: variable_call, ignore_visibility
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :_
+        │   │   │   ├── message_loc: (27,6)-(27,7) = "_"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── block: ∅
+        │   │   ├── right:
+        │   │   │   @ BreakNode (location: (27,11)-(27,16))
+        │   │   │   ├── arguments: ∅
+        │   │   │   └── keyword_loc: (27,11)-(27,16) = "break"
+        │   │   └── operator_loc: (27,8)-(27,10) = "&&"
+        │   └── statements: ∅
+        └── @ UntilNode (location: (29,0)-(29,21))
             ├── flags: ∅
-            ├── receiver:
-            │   @ CallNode (location: (25,0)-(25,17))
-            │   ├── flags: ignore_visibility
-            │   ├── receiver: ∅
-            │   ├── call_operator_loc: ∅
-            │   ├── name: :foo
-            │   ├── message_loc: (25,0)-(25,3) = "foo"
-            │   ├── opening_loc: ∅
-            │   ├── arguments: ∅
-            │   ├── closing_loc: ∅
-            │   └── block:
-            │       @ BlockNode (location: (25,4)-(25,17))
-            │       ├── locals: [:a]
-            │       ├── parameters:
-            │       │   @ BlockParametersNode (location: (25,6)-(25,9))
-            │       │   ├── parameters:
-            │       │   │   @ ParametersNode (location: (25,7)-(25,8))
-            │       │   │   ├── requireds: (length: 1)
-            │       │   │   │   └── @ RequiredParameterNode (location: (25,7)-(25,8))
-            │       │   │   │       ├── flags: ∅
-            │       │   │   │       └── name: :a
-            │       │   │   ├── optionals: (length: 0)
-            │       │   │   ├── rest: ∅
-            │       │   │   ├── posts: (length: 0)
-            │       │   │   ├── keywords: (length: 0)
-            │       │   │   ├── keyword_rest: ∅
-            │       │   │   └── block: ∅
-            │       │   ├── locals: (length: 0)
-            │       │   ├── opening_loc: (25,6)-(25,7) = "|"
-            │       │   └── closing_loc: (25,8)-(25,9) = "|"
-            │       ├── body:
-            │       │   @ StatementsNode (location: (25,10)-(25,15))
-            │       │   └── body: (length: 1)
-            │       │       └── @ BreakNode (location: (25,10)-(25,15))
-            │       │           ├── arguments: ∅
-            │       │           └── keyword_loc: (25,10)-(25,15) = "break"
-            │       ├── opening_loc: (25,4)-(25,5) = "{"
-            │       └── closing_loc: (25,16)-(25,17) = "}"
-            ├── call_operator_loc: ∅
-            ├── name: :==
-            ├── message_loc: (25,18)-(25,20) = "=="
-            ├── opening_loc: ∅
-            ├── arguments:
-            │   @ ArgumentsNode (location: (25,21)-(25,23))
-            │   ├── flags: ∅
-            │   └── arguments: (length: 1)
-            │       └── @ IntegerNode (location: (25,21)-(25,23))
-            │           ├── flags: decimal
-            │           └── value: 42
-            ├── closing_loc: ∅
-            └── block: ∅
+            ├── keyword_loc: (29,0)-(29,5) = "until"
+            ├── closing_loc: (29,18)-(29,21) = "end"
+            ├── predicate:
+            │   @ AndNode (location: (29,6)-(29,16))
+            │   ├── left:
+            │   │   @ CallNode (location: (29,6)-(29,7))
+            │   │   ├── flags: variable_call, ignore_visibility
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :_
+            │   │   ├── message_loc: (29,6)-(29,7) = "_"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   └── block: ∅
+            │   ├── right:
+            │   │   @ BreakNode (location: (29,11)-(29,16))
+            │   │   ├── arguments: ∅
+            │   │   └── keyword_loc: (29,11)-(29,16) = "break"
+            │   └── operator_loc: (29,8)-(29,10) = "&&"
+            └── statements: ∅

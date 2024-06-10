@@ -14,180 +14,6 @@ pm_version(void) {
  */
 #define PM_TAB_WHITESPACE_SIZE 8
 
-#ifndef PM_DEBUG_LOGGING
-/**
- * Debugging logging will provide you with additional debugging functions as
- * well as automatically replace some functions with their debugging
- * counterparts.
- */
-#define PM_DEBUG_LOGGING 0
-#endif
-
-#if PM_DEBUG_LOGGING
-
-/******************************************************************************/
-/* Debugging                                                                  */
-/******************************************************************************/
-
-PRISM_ATTRIBUTE_UNUSED static const char *
-debug_context(pm_context_t context) {
-    switch (context) {
-        case PM_CONTEXT_BEGIN: return "BEGIN";
-        case PM_CONTEXT_BEGIN_ENSURE: return "BEGIN_ENSURE";
-        case PM_CONTEXT_BEGIN_ELSE: return "BEGIN_ELSE";
-        case PM_CONTEXT_BEGIN_RESCUE: return "BEGIN_RESCUE";
-        case PM_CONTEXT_BLOCK_BRACES: return "BLOCK_BRACES";
-        case PM_CONTEXT_BLOCK_KEYWORDS: return "BLOCK_KEYWORDS";
-        case PM_CONTEXT_BLOCK_ENSURE: return "BLOCK_ENSURE";
-        case PM_CONTEXT_BLOCK_ELSE: return "BLOCK_ELSE";
-        case PM_CONTEXT_BLOCK_RESCUE: return "BLOCK_RESCUE";
-        case PM_CONTEXT_CASE_IN: return "CASE_IN";
-        case PM_CONTEXT_CASE_WHEN: return "CASE_WHEN";
-        case PM_CONTEXT_CLASS: return "CLASS";
-        case PM_CONTEXT_CLASS_ELSE: return "CLASS_ELSE";
-        case PM_CONTEXT_CLASS_ENSURE: return "CLASS_ENSURE";
-        case PM_CONTEXT_CLASS_RESCUE: return "CLASS_RESCUE";
-        case PM_CONTEXT_DEF: return "DEF";
-        case PM_CONTEXT_DEF_PARAMS: return "DEF_PARAMS";
-        case PM_CONTEXT_DEF_ENSURE: return "DEF_ENSURE";
-        case PM_CONTEXT_DEF_ELSE: return "DEF_ELSE";
-        case PM_CONTEXT_DEF_RESCUE: return "DEF_RESCUE";
-        case PM_CONTEXT_DEFAULT_PARAMS: return "DEFAULT_PARAMS";
-        case PM_CONTEXT_DEFINED: return "DEFINED";
-        case PM_CONTEXT_ELSE: return "ELSE";
-        case PM_CONTEXT_ELSIF: return "ELSIF";
-        case PM_CONTEXT_EMBEXPR: return "EMBEXPR";
-        case PM_CONTEXT_FOR_INDEX: return "FOR_INDEX";
-        case PM_CONTEXT_FOR: return "FOR";
-        case PM_CONTEXT_IF: return "IF";
-        case PM_CONTEXT_LAMBDA_BRACES: return "LAMBDA_BRACES";
-        case PM_CONTEXT_LAMBDA_DO_END: return "LAMBDA_DO_END";
-        case PM_CONTEXT_LAMBDA_ENSURE: return "LAMBDA_ENSURE";
-        case PM_CONTEXT_LAMBDA_ELSE: return "LAMBDA_ELSE";
-        case PM_CONTEXT_LAMBDA_RESCUE: return "LAMBDA_RESCUE";
-        case PM_CONTEXT_MAIN: return "MAIN";
-        case PM_CONTEXT_MODULE: return "MODULE";
-        case PM_CONTEXT_MODULE_ELSE: return "MODULE_ELSE";
-        case PM_CONTEXT_MODULE_ENSURE: return "MODULE_ENSURE";
-        case PM_CONTEXT_MODULE_RESCUE: return "MODULE_RESCUE";
-        case PM_CONTEXT_NONE: return "NONE";
-        case PM_CONTEXT_PARENS: return "PARENS";
-        case PM_CONTEXT_POSTEXE: return "POSTEXE";
-        case PM_CONTEXT_PREDICATE: return "PREDICATE";
-        case PM_CONTEXT_PREEXE: return "PREEXE";
-        case PM_CONTEXT_RESCUE_MODIFIER: return "RESCUE_MODIFIER";
-        case PM_CONTEXT_SCLASS: return "SCLASS";
-        case PM_CONTEXT_SCLASS_ENSURE: return "SCLASS_ENSURE";
-        case PM_CONTEXT_SCLASS_ELSE: return "SCLASS_ELSE";
-        case PM_CONTEXT_SCLASS_RESCUE: return "SCLASS_RESCUE";
-        case PM_CONTEXT_TERNARY: return "TERNARY";
-        case PM_CONTEXT_UNLESS: return "UNLESS";
-        case PM_CONTEXT_UNTIL: return "UNTIL";
-        case PM_CONTEXT_WHILE: return "WHILE";
-    }
-    return NULL;
-}
-
-PRISM_ATTRIBUTE_UNUSED static void
-debug_contexts(pm_parser_t *parser) {
-    pm_context_node_t *context_node = parser->current_context;
-    fprintf(stderr, "CONTEXTS: ");
-
-    if (context_node != NULL) {
-        while (context_node != NULL) {
-            fprintf(stderr, "%s", debug_context(context_node->context));
-            context_node = context_node->prev;
-            if (context_node != NULL) {
-                fprintf(stderr, " <- ");
-            }
-        }
-    } else {
-        fprintf(stderr, "NONE");
-    }
-
-    fprintf(stderr, "\n");
-}
-
-PRISM_ATTRIBUTE_UNUSED static void
-debug_node(const pm_parser_t *parser, const pm_node_t *node) {
-    pm_buffer_t output_buffer = { 0 };
-    pm_prettyprint(&output_buffer, parser, node);
-
-    fprintf(stderr, "%.*s", (int) output_buffer.length, output_buffer.value);
-    pm_buffer_free(&output_buffer);
-}
-
-PRISM_ATTRIBUTE_UNUSED static void
-debug_lex_mode(pm_parser_t *parser) {
-    pm_lex_mode_t *lex_mode = parser->lex_modes.current;
-    bool first = true;
-
-    while (lex_mode != NULL) {
-        if (first) {
-            first = false;
-        } else {
-            fprintf(stderr, " <- ");
-        }
-
-        switch (lex_mode->mode) {
-            case PM_LEX_DEFAULT: fprintf(stderr, "DEFAULT"); break;
-            case PM_LEX_EMBEXPR: fprintf(stderr, "EMBEXPR"); break;
-            case PM_LEX_EMBVAR: fprintf(stderr, "EMBVAR"); break;
-            case PM_LEX_HEREDOC: fprintf(stderr, "HEREDOC"); break;
-            case PM_LEX_LIST: fprintf(stderr, "LIST (terminator=%c, interpolation=%d)", lex_mode->as.list.terminator, lex_mode->as.list.interpolation); break;
-            case PM_LEX_REGEXP: fprintf(stderr, "REGEXP (terminator=%c)", lex_mode->as.regexp.terminator); break;
-            case PM_LEX_STRING: fprintf(stderr, "STRING (terminator=%c, interpolation=%d)", lex_mode->as.string.terminator, lex_mode->as.string.interpolation); break;
-        }
-
-        lex_mode = lex_mode->prev;
-    }
-
-    fprintf(stderr, "\n");
-}
-
-PRISM_ATTRIBUTE_UNUSED static void
-debug_state(pm_parser_t *parser) {
-    fprintf(stderr, "STATE: ");
-    bool first = true;
-
-    if (parser->lex_state == PM_LEX_STATE_NONE) {
-        fprintf(stderr, "NONE\n");
-        return;
-    }
-
-#define CHECK_STATE(state) \
-    if (parser->lex_state & state) { \
-        if (!first) fprintf(stderr, "|"); \
-        fprintf(stderr, "%s", #state); \
-        first = false; \
-    }
-
-    CHECK_STATE(PM_LEX_STATE_BEG)
-    CHECK_STATE(PM_LEX_STATE_END)
-    CHECK_STATE(PM_LEX_STATE_ENDARG)
-    CHECK_STATE(PM_LEX_STATE_ENDFN)
-    CHECK_STATE(PM_LEX_STATE_ARG)
-    CHECK_STATE(PM_LEX_STATE_CMDARG)
-    CHECK_STATE(PM_LEX_STATE_MID)
-    CHECK_STATE(PM_LEX_STATE_FNAME)
-    CHECK_STATE(PM_LEX_STATE_DOT)
-    CHECK_STATE(PM_LEX_STATE_CLASS)
-    CHECK_STATE(PM_LEX_STATE_LABEL)
-    CHECK_STATE(PM_LEX_STATE_LABELED)
-    CHECK_STATE(PM_LEX_STATE_FITEM)
-
-#undef CHECK_STATE
-
-    fprintf(stderr, "\n");
-}
-
-PRISM_ATTRIBUTE_UNUSED static void
-debug_token(pm_token_t * token) {
-    fprintf(stderr, "%s: \"%.*s\"\n", pm_token_type_human(token->type), (int) (token->end - token->start), token->start);
-}
-
-#endif
-
 // Macros for min/max.
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -491,8 +317,52 @@ lex_state_set(pm_parser_t *parser, pm_lex_state_t state) {
     parser->lex_state = state;
 }
 
+#ifndef PM_DEBUG_LOGGING
+/**
+ * Debugging logging will print additional information to stdout whenever the
+ * lexer state changes.
+ */
+#define PM_DEBUG_LOGGING 0
+#endif
+
 #if PM_DEBUG_LOGGING
-static inline void
+PRISM_ATTRIBUTE_UNUSED static void
+debug_state(pm_parser_t *parser) {
+    fprintf(stderr, "STATE: ");
+    bool first = true;
+
+    if (parser->lex_state == PM_LEX_STATE_NONE) {
+        fprintf(stderr, "NONE\n");
+        return;
+    }
+
+#define CHECK_STATE(state) \
+    if (parser->lex_state & state) { \
+        if (!first) fprintf(stderr, "|"); \
+        fprintf(stderr, "%s", #state); \
+        first = false; \
+    }
+
+    CHECK_STATE(PM_LEX_STATE_BEG)
+    CHECK_STATE(PM_LEX_STATE_END)
+    CHECK_STATE(PM_LEX_STATE_ENDARG)
+    CHECK_STATE(PM_LEX_STATE_ENDFN)
+    CHECK_STATE(PM_LEX_STATE_ARG)
+    CHECK_STATE(PM_LEX_STATE_CMDARG)
+    CHECK_STATE(PM_LEX_STATE_MID)
+    CHECK_STATE(PM_LEX_STATE_FNAME)
+    CHECK_STATE(PM_LEX_STATE_DOT)
+    CHECK_STATE(PM_LEX_STATE_CLASS)
+    CHECK_STATE(PM_LEX_STATE_LABEL)
+    CHECK_STATE(PM_LEX_STATE_LABELED)
+    CHECK_STATE(PM_LEX_STATE_FITEM)
+
+#undef CHECK_STATE
+
+    fprintf(stderr, "\n");
+}
+
+static void
 debug_lex_state_set(pm_parser_t *parser, pm_lex_state_t state, char const * caller_name, int line_number) {
     fprintf(stderr, "Caller: %s:%d\nPrevious: ", caller_name, line_number);
     debug_state(parser);
@@ -8492,6 +8362,8 @@ context_terminator(pm_context_t context, pm_token_t *token) {
         case PM_CONTEXT_MODULE_ENSURE:
         case PM_CONTEXT_SCLASS_ENSURE:
             return token->type == PM_TOKEN_KEYWORD_END;
+        case PM_CONTEXT_LOOP_PREDICATE:
+            return token->type == PM_TOKEN_KEYWORD_DO || token->type == PM_TOKEN_KEYWORD_THEN;
         case PM_CONTEXT_FOR_INDEX:
             return token->type == PM_TOKEN_KEYWORD_IN;
         case PM_CONTEXT_CASE_WHEN:
@@ -8664,6 +8536,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_IF: return "if statement";
         case PM_CONTEXT_LAMBDA_BRACES: return "'{'..'}' lambda block";
         case PM_CONTEXT_LAMBDA_DO_END: return "'do'..'end' lambda block";
+        case PM_CONTEXT_LOOP_PREDICATE: return "loop predicate";
         case PM_CONTEXT_MAIN: return "top level context";
         case PM_CONTEXT_MODULE: return "module definition";
         case PM_CONTEXT_PARENS: return "parentheses";
@@ -15170,6 +15043,7 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node, const char *type) {
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_LAMBDA_ENSURE:
             case PM_CONTEXT_LAMBDA_RESCUE:
+            case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_UNTIL:
             case PM_CONTEXT_WHILE:
@@ -17318,6 +17192,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_IF:
             case PM_CONTEXT_LAMBDA_BRACES:
             case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
@@ -17396,6 +17271,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_LAMBDA_ENSURE:
             case PM_CONTEXT_LAMBDA_RESCUE:
+            case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
@@ -19146,12 +19022,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
             return (pm_node_t *) pm_true_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_UNTIL: {
+            context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
             pm_do_loop_stack_push(parser, true);
+
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
-
             pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
+
             pm_do_loop_stack_pop(parser);
+            context_pop(parser);
 
             expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
             pm_statements_node_t *statements = NULL;
@@ -19167,12 +19046,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_until_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
         }
         case PM_TOKEN_KEYWORD_WHILE: {
+            context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
             pm_do_loop_stack_push(parser, true);
+
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
-
             pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
+
             pm_do_loop_stack_pop(parser);
+            context_pop(parser);
 
             expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
             pm_statements_node_t *statements = NULL;
