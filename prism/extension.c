@@ -138,7 +138,13 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     if (key_id == rb_id_option_filepath) {
         if (!NIL_P(value)) pm_options_filepath_set(options, check_string(value));
     } else if (key_id == rb_id_option_encoding) {
-        if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
+        if (!NIL_P(value)) {
+            if (value == Qfalse) {
+                pm_options_encoding_locked_set(options, true);
+            } else {
+                pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
+            }
+        }
     } else if (key_id == rb_id_option_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
     } else if (key_id == rb_id_option_frozen_string_literal) {
@@ -206,6 +212,7 @@ build_options(VALUE argument) {
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
     options->line = 1; // default
+
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
         struct build_options_data *argument = &data;
