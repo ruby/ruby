@@ -319,7 +319,7 @@ TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/.excludes --name=!/memory_leak/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
-TESTRUN_SCRIPT = $(srcdir)/test.rb
+TESTRUN_SCRIPT = ./test.rb
 
 COMPILE_PRELUDE = $(tooldir)/generic_erb.rb $(srcdir)/template/prelude.c.tmpl \
 	$(tooldir)/ruby_vm/helpers/c_escape.rb
