@@ -12,6 +12,11 @@ else
 end
 SPEC_TEMP_DIR = spec_temp_dir
 
+# to debug
+if File.exist?(SPEC_TEMP_DIR)
+  STDERR.puts File.stat(SPEC_TEMP_DIR).inspect
+end
+
 SPEC_TEMP_UNIQUIFIER = +"0"
 
 at_exit do
