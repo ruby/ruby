@@ -861,6 +861,14 @@ struct pm_parser {
     bool recovering;
 
     /**
+     * This is very specialized behavior for when you want to parse in a context
+     * that does not respect encoding comments. Its main use case is translating
+     * into the whitequark/parser AST which re-encodes source files in UTF-8
+     * before they are parsed and ignores encoding comments.
+     */
+    bool encoding_locked;
+
+    /**
      * Whether or not the encoding has been changed by a magic comment. We use
      * this to provide a fast path for the lexer instead of going through the
      * function pointer.

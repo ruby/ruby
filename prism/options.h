@@ -103,6 +103,13 @@ typedef struct {
     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
     */
     int8_t frozen_string_literal;
+
+    /**
+     * Whether or not the encoding magic comments should be respected. This is a
+     * niche use-case where you want to parse a file with a specific encoding
+     * but ignore any encoding magic comments at the top of the file.
+     */
+    bool encoding_locked;
 } pm_options_t;
 
 /**
@@ -165,6 +172,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t 
  * @param encoding The encoding to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding);
+
+/**
+ * Set the encoding_locked option on the given options struct.
+ *
+ * @param options The options struct to set the encoding_locked value on.
+ * @param encoding_locked The encoding_locked value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked);
 
 /**
  * Set the frozen string literal option on the given options struct.

@@ -60,7 +60,6 @@ module Prism
     # skip them for now.
     skip_all = skip_incorrect | [
       "regex.txt",
-      "regex_char_width.txt",
       "unescaping.txt",
       "seattlerb/bug190.txt",
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
