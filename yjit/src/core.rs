@@ -862,12 +862,14 @@ impl Context {
         }
 
         if let Some(idx) = Self::cache_get(self) {
+            debug_assert!(Self::decode(idx) == *self);
             return idx;
         }
 
         let context_data = CodegenGlobals::get_context_data();
 
-        // Offset 0 is reserved for the default context
+        // Make sure we don't use offset 0 because
+        // it's is reserved for the default context
         if context_data.num_bits() == 0 {
             context_data.push_u1(0);
         }
