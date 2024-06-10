@@ -1278,6 +1278,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
+    pm_options_scopes_init(&result.options, 1);
     result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
