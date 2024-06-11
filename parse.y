@@ -9085,21 +9085,6 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
     return type;
 }
 
-#ifdef RIPPER
-static void
-dispatch_heredoc_end(struct parser_params *p)
-{
-    VALUE str;
-    if (has_delayed_token(p))
-        dispatch_delayed_token(p, tSTRING_CONTENT);
-    str = STR_NEW(p->lex.ptok, p->lex.pend - p->lex.ptok);
-    ripper_dispatch1(p, ripper_token2eventid(tHEREDOC_END), str);
-    RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*p->yylloc);
-    lex_goto_eol(p);
-    token_flush(p);
-}
-
-#else
 #define dispatch_heredoc_end(p) parser_dispatch_heredoc_end(p, __LINE__)
 static void
 parser_dispatch_heredoc_end(struct parser_params *p, int line)
@@ -9107,17 +9092,21 @@ parser_dispatch_heredoc_end(struct parser_params *p, int line)
     if (has_delayed_token(p))
         dispatch_delayed_token(p, tSTRING_CONTENT);
 
+#ifdef RIPPER
+    VALUE str = STR_NEW(p->lex.ptok, p->lex.pend - p->lex.ptok);
+    ripper_dispatch1(p, ripper_token2eventid(tHEREDOC_END), str);
+#else
     if (p->keep_tokens) {
         rb_parser_string_t *str = rb_parser_encoding_string_new(p, p->lex.ptok, p->lex.pend - p->lex.ptok, p->enc);
         RUBY_SET_YYLLOC_OF_HEREDOC_END(*p->yylloc);
         parser_append_tokens(p, str, tHEREDOC_END, line);
     }
+#endif
 
     RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*p->yylloc);
     lex_goto_eol(p);
     token_flush(p);
 }
-#endif
 
 static enum yytokentype
 here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
