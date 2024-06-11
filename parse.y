@@ -15547,6 +15547,10 @@ rb_ruby_parser_free(void *ptr)
             xfree(ptinfo);
         }
     }
+
+    xfree(p->lex.strterm);
+    p->lex.strterm = 0;
+
     xfree(ptr);
 
 #ifdef UNIVERSAL_PARSER

@@ -253,16 +253,29 @@ world"
     assert_equal(code, Ripper.tokenize(code).join(""), bug)
   end
 
+  InvalidHeredocInsideBlockParam = <<~CODE
+    a do |b
+      <<-C
+      C
+      |
+    end
+  CODE
+
   def test_heredoc_inside_block_param
     bug = '[Bug #19399]'
-    code = <<~CODE
-      a do |b
-        <<-C
-        C
-        |
-      end
-    CODE
+    code = InvalidHeredocInsideBlockParam
     assert_equal(code, Ripper.tokenize(code).join(""), bug)
+  end
+
+  def test_heredoc_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    require "ripper"
+    source = "" #{InvalidHeredocInsideBlockParam.dump}
+    begin;
+      400_000.times do
+        Ripper.new(source).parse
+      end
+    end;
   end
 
   def test_heredoc_unterminated_interpolation
