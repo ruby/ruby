@@ -15,11 +15,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_ctx_setup
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_equal true, ctx.setup
+    assert_predicate ctx, :frozen?
+    assert_equal nil, ctx.setup
+  end
+
   def test_ctx_options
     ctx = OpenSSL::SSL::SSLContext.new
 
-    assert (OpenSSL::SSL::OP_ALL & ctx.options) == OpenSSL::SSL::OP_ALL,
-           "OP_ALL is set by default"
     ctx.options = 4
     assert_equal 4, ctx.options & 4
     if ctx.options != 4
@@ -31,6 +36,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal true, ctx.setup
     assert_predicate ctx, :frozen?
     assert_equal nil, ctx.setup
+  end
+
+  def test_ctx_options_config
+    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+    omit "OpenSSL < 1.1.1 does not support system_default" if openssl? && !openssl?(1, 1, 1)
+
+    Tempfile.create("openssl.cnf") { |f|
+      f.puts(<<~EOF)
+        openssl_conf = default_conf
+        [default_conf]
+        ssl_conf = ssl_sect
+        [ssl_sect]
+        system_default = ssl_default_sect
+        [ssl_default_sect]
+        Options = -SessionTicket
+      EOF
+      f.close
+
+      assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl"], <<~"end;")
+        ctx = OpenSSL::SSL::SSLContext.new
+        assert_equal OpenSSL::SSL::OP_NO_TICKET, ctx.options & OpenSSL::SSL::OP_NO_TICKET
+      end;
+    }
   end
 
   def test_ssl_with_server_cert

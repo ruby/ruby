@@ -125,7 +125,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       # that this form is deprecated. New applications should use #min_version=
       # and #max_version= as necessary.
       def initialize(version = nil)
-        self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
         self.verify_mode = OpenSSL::SSL::VERIFY_NONE
         self.verify_hostname = false
