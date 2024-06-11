@@ -746,7 +746,10 @@ ssl_info_cb(const SSL *ssl, int where, int val)
 }
 
 /*
- * Gets various OpenSSL options.
+ * call-seq:
+ *    ctx.options -> integer
+ *
+ * Gets various \OpenSSL options.
  */
 static VALUE
 ossl_sslctx_get_options(VALUE self)
@@ -761,7 +764,17 @@ ossl_sslctx_get_options(VALUE self)
 }
 
 /*
- * Sets various OpenSSL options.
+ * call-seq:
+ *    ctx.options = integer
+ *
+ * Sets various \OpenSSL options. The options are a bit field and can be
+ * combined with the bitwise OR operator (<tt>|</tt>). Available options are
+ * defined as constants in OpenSSL::SSL that begin with +OP_+.
+ *
+ * For backwards compatibility, passing +nil+ has the same effect as passing
+ * OpenSSL::SSL::OP_ALL.
+ *
+ * See also man page SSL_CTX_set_options(3).
  */
 static VALUE
 ossl_sslctx_set_options(VALUE self, VALUE options)
