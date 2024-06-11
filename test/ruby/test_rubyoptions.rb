@@ -287,17 +287,17 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
-  def test_parser_flag
-    warning = /compiler based on the Prism parser is currently experimental/
+  PRISM_WARNING = /compiler based on the Prism parser is currently experimental/
 
-    assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
+  def test_parser_flag
+    assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), PRISM_WARNING)
 
     assert_in_out_err(%w(--parser=parse.y -e) + ["puts :hi"], "", %w(hi), [])
     assert_norun_with_rflag('--parser=parse.y', '--version', "")
 
     assert_in_out_err(%w(--parser=notreal -e) + ["puts :hi"], "", [], /unknown parser notreal/)
 
-    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, warning)
+    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, PRISM_WARNING)
   end
 
   def test_eval
@@ -1140,6 +1140,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
     assert_norun_with_rflag('--dump=parsetree+error_tolerant')
     assert_norun_with_rflag('--dump=parse+error_tolerant')
+    assert_in_out_err(%w(--parser=prism --dump=parsetree -e ""), "", /ProgramNode/, PRISM_WARNING, encoding: "UTF-8")
   end
 
   def test_dump_insns_with_rflag
