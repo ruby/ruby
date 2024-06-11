@@ -57,6 +57,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl"], <<~"end;")
         ctx = OpenSSL::SSL::SSLContext.new
         assert_equal OpenSSL::SSL::OP_NO_TICKET, ctx.options & OpenSSL::SSL::OP_NO_TICKET
+        ctx.set_params
+        assert_equal OpenSSL::SSL::OP_NO_TICKET, ctx.options & OpenSSL::SSL::OP_NO_TICKET
       end;
     }
   end
