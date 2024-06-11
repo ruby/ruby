@@ -1536,10 +1536,15 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   exception.to_s   ->  string
+ *   to_s -> string
  *
- * Returns exception's message (or the name of the exception if
- * no message is set).
+ * Returns a string representation of +self+:
+ *
+ *   x = RuntimeError.new('Boom')
+ *   x.to_s # => "Boom"
+ *   x = RuntimeError.new
+ *   x.to_s # => "RuntimeError"
+ *
  */
 
 static VALUE
@@ -1718,10 +1723,16 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   exception.message   ->  string
+ *   message -> string
  *
- * Returns the result of invoking <code>exception.to_s</code>.
- * Normally this returns the exception's message or name.
+ * Returns the message that was set when +self+ was created:
+ *
+ *   x = RuntimeError.new('Boom')
+ *   x.message # => "Boom"
+ *   x = RuntimeError.new # Default message is class name.
+ *   x.message # => "RuntimeError"
+ *
+ * See {Exception Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1791,9 +1802,15 @@ exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   exception.inspect   -> string
+ *   inspect -> string
  *
- * Return this exception's class name and message.
+ * Returns a string representation of +self+:
+ *
+ *   x = RuntimeError.new('Boom')
+ *   x.inspect # => "#<RuntimeError: Boom>"
+ *   x = RuntimeError.new
+ *   x.inspect # => "#<RuntimeError: RuntimeError>"
+ *
  */
 
 static VALUE
