@@ -148,6 +148,6 @@ notifications:
     on_failure: always
   email:
     recipients:
-      - jaruga@ruby-lang.org
+      - jun.aruga@gmail.com
     on_success: never
     on_failure: always
