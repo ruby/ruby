@@ -1,6 +1,6 @@
 require_relative 'helper'
 
-class Reline::KeyActor::Emacs::Test < Reline::TestCase
+class Reline::KeyActor::EmacsTest < Reline::TestCase
   def setup
     Reline.send(:test_mode)
     @prompt = '> '
@@ -1242,14 +1242,22 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
       '12345' # new
     ])
     # The ed_search_prev_history doesn't have default binding
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12345')
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12aaa')
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12356')
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12356')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12345', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12356', '')
+    input_key_by_symbol(:ed_search_next_history)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_prev_char)
+    input_key_by_symbol(:ed_next_char)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12aaa', '')
+    3.times { input_key_by_symbol(:ed_prev_char) }
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12', '356')
   end
 
   def test_ed_search_prev_history_without_match
@@ -1291,18 +1299,25 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
       '12345' # new
     ])
     # The ed_search_prev_history and ed_search_next_history doesn't have default binding
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12345')
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12aaa')
-    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
-    assert_line_around_cursor('', '12356')
-    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
-    assert_line_around_cursor('', '12aaa')
-    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
-    assert_line_around_cursor('', '12345')
-    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
-    assert_line_around_cursor('', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12345', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12356', '')
+    input_key_by_symbol(:ed_search_next_history)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_search_next_history)
+    assert_line_around_cursor('12345', '')
+    input_key_by_symbol(:ed_search_prev_history)
+    assert_line_around_cursor('12aaa', '')
+    input_key_by_symbol(:ed_prev_char)
+    input_key_by_symbol(:ed_next_char)
+    input_key_by_symbol(:ed_search_next_history)
+    assert_line_around_cursor('12aaa', '')
+    3.times { input_key_by_symbol(:ed_prev_char) }
+    input_key_by_symbol(:ed_search_next_history)
+    assert_line_around_cursor('12', '345')
   end
 
   def test_incremental_search_history_cancel_by_symbol_key

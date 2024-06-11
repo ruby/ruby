@@ -45,6 +45,7 @@ class Reline::LineEditor
   RenderedScreen = Struct.new(:base_y, :lines, :cursor_y, keyword_init: true)
 
   CompletionJourneyState = Struct.new(:line_index, :pre, :target, :post, :list, :pointer)
+  NullActionState = [nil, nil].freeze
 
   class MenuInfo
     attr_reader :list
@@ -237,7 +238,6 @@ class Reline::LineEditor
     @perfect_matched = nil
     @menu_info = nil
     @searching_prompt = nil
-    @first_char = true
     @just_cursor_moving = false
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
@@ -253,6 +253,8 @@ class Reline::LineEditor
     @input_lines = [[[""], 0, 0]]
     @input_lines_position = 0
     @undoing = false
+    @prev_action_state = NullActionState
+    @next_action_state = NullActionState
     reset_line
   end
 
@@ -684,10 +686,8 @@ class Reline::LineEditor
           @trap_key.each do |t|
             @config.add_oneshot_key_binding(t, @name)
           end
-        elsif @trap_key.is_a?(Array)
+        else
           @config.add_oneshot_key_binding(@trap_key, @name)
-        elsif @trap_key.is_a?(Integer) or @trap_key.is_a?(Reline::Key)
-          @config.add_oneshot_key_binding([@trap_key], @name)
         end
       end
       dialog_render_info
@@ -1080,17 +1080,7 @@ class Reline::LineEditor
     else # single byte
       return if key.char >= 128 # maybe, first byte of multi byte
       method_symbol = @config.editing_mode.get_method(key.combined_char)
-      if key.with_meta and method_symbol == :ed_unassigned
-        if @config.editing_mode_is?(:vi_command, :vi_insert)
-          # split ESC + key in vi mode
-          method_symbol = @config.editing_mode.get_method("\e".ord)
-          process_key("\e".ord, method_symbol)
-          method_symbol = @config.editing_mode.get_method(key.char)
-          process_key(key.char, method_symbol)
-        end
-      else
-        process_key(key.combined_char, method_symbol)
-      end
+      process_key(key.combined_char, method_symbol)
       @multibyte_buffer.clear
     end
     if @config.editing_mode_is?(:vi_command) and @byte_pointer > 0 and @byte_pointer == current_line.bytesize
@@ -1119,13 +1109,10 @@ class Reline::LineEditor
     end
     if key.char.nil?
       process_insert(force: true)
-      if @first_char
-        @eof = true
-      end
+      @eof = buffer_empty?
       finish
       return
     end
-    @first_char = false
     @completion_occurs = false
 
     if key.char.is_a?(Symbol)
@@ -1133,6 +1120,9 @@ class Reline::LineEditor
     else
       normal_char(key)
     end
+
+    @prev_action_state, @next_action_state = @next_action_state, NullActionState
+
     unless @completion_occurs
       @completion_state = CompletionState::NORMAL
       @completion_journey_state = nil
@@ -1413,6 +1403,10 @@ class Reline::LineEditor
 
   def whole_buffer
     whole_lines.join("\n")
+  end
+
+  private def buffer_empty?
+    current_line.empty? and @buffer_of_lines.size == 1
   end
 
   def finished?
@@ -1763,29 +1757,31 @@ class Reline::LineEditor
   end
 
   private def ed_search_prev_history(key, arg: 1)
-    substr = current_line.byteslice(0, @byte_pointer)
+    substr = prev_action_state_value(:search_history) == :empty ? '' : current_line.byteslice(0, @byte_pointer)
     return if @history_pointer == 0
     return if @history_pointer.nil? && substr.empty? && !current_line.empty?
 
     history_range = 0...(@history_pointer || Reline::HISTORY.size)
     h_pointer, line_index = search_history(substr, history_range.reverse_each)
     return unless h_pointer
-    move_history(h_pointer, line: line_index || :start, cursor: @byte_pointer)
+    move_history(h_pointer, line: line_index || :start, cursor: substr.empty? ? :end : @byte_pointer)
     arg -= 1
+    set_next_action_state(:search_history, :empty) if substr.empty?
     ed_search_prev_history(key, arg: arg) if arg > 0
   end
   alias_method :history_search_backward, :ed_search_prev_history
 
   private def ed_search_next_history(key, arg: 1)
-    substr = current_line.byteslice(0, @byte_pointer)
+    substr = prev_action_state_value(:search_history) == :empty ? '' : current_line.byteslice(0, @byte_pointer)
     return if @history_pointer.nil?
 
     history_range = @history_pointer + 1...Reline::HISTORY.size
     h_pointer, line_index = search_history(substr, history_range)
     return if h_pointer.nil? and not substr.empty?
 
-    move_history(h_pointer, line: line_index || :start, cursor: @byte_pointer)
+    move_history(h_pointer, line: line_index || :start, cursor: substr.empty? ? :end : @byte_pointer)
     arg -= 1
+    set_next_action_state(:search_history, :empty) if substr.empty?
     ed_search_next_history(key, arg: arg) if arg > 0
   end
   alias_method :history_search_forward, :ed_search_next_history
@@ -1941,7 +1937,7 @@ class Reline::LineEditor
   alias_method :kill_whole_line, :em_kill_line
 
   private def em_delete(key)
-    if current_line.empty? and @buffer_of_lines.size == 1 and key == "\C-d".ord
+    if buffer_empty? and key == "\C-d".ord
       @eof = true
       finish
     elsif @byte_pointer < current_line.bytesize
@@ -2289,8 +2285,7 @@ class Reline::LineEditor
   end
 
   private def vi_list_or_eof(key)
-    if current_line.empty? and @buffer_of_lines.size == 1
-      set_current_line('', 0)
+    if buffer_empty?
       @eof = true
       finish
     else
@@ -2550,5 +2545,13 @@ class Reline::LineEditor
     @input_lines_position += 1
     target_lines, target_cursor_x, target_cursor_y = @input_lines[@input_lines_position]
     set_current_lines(target_lines.dup, target_cursor_x, target_cursor_y)
+  end
+
+  private def prev_action_state_value(type)
+    @prev_action_state[0] == type ? @prev_action_state[1] : nil
+  end
+
+  private def set_next_action_state(type, value)
+    @next_action_state = [type, value]
   end
 end

@@ -168,7 +168,7 @@ class Reline::TestCase < Test::Unit::TestCase
   def assert_key_binding(input, method_symbol, editing_modes = [:emacs, :vi_insert, :vi_command])
     editing_modes.each do |editing_mode|
       @config.editing_mode = editing_mode
-      assert_equal(method_symbol, @config.editing_mode.default_key_bindings[input.bytes])
+      assert_equal(method_symbol, @config.editing_mode.get(input.bytes))
     end
   end
 end

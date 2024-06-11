@@ -46,6 +46,10 @@
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR == (minor) && RUBY_VERSION_TEENY < (teeny)))
 #define RUBY_VERSION_SINCE(major,minor,teeny) (!RUBY_VERSION_BEFORE(major, minor, teeny))
 
+#if RUBY_VERSION_SINCE(3, 4, 0)
+#define RUBY_VERSION_IS_3_4
+#endif
+
 #if RUBY_VERSION_SINCE(3, 3, 0)
 #define RUBY_VERSION_IS_3_3
 #endif

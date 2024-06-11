@@ -114,10 +114,14 @@ class Reline::ANSI < Reline::IO
 
   def set_default_key_bindings_comprehensive_list(config)
     {
+      # xterm
+      [27, 91, 51, 126] => :key_delete, # kdch1
+      [27, 91, 53, 126] => :ed_search_prev_history, # kpp
+      [27, 91, 54, 126] => :ed_search_next_history, # knp
+
       # Console (80x25)
       [27, 91, 49, 126] => :ed_move_to_beg, # Home
       [27, 91, 52, 126] => :ed_move_to_end, # End
-      [27, 91, 51, 126] => :key_delete,     # Del
 
       # KDE
       # Del is 0x08
@@ -174,11 +178,9 @@ class Reline::ANSI < Reline::IO
       Reline.core.line_editor.handle_signal
     end
     c = @input.getbyte
-    (c == 0x16 && @input.raw(min: 0, time: 0, &:getbyte)) || c
+    (c == 0x16 && @input.tty? && @input.raw(min: 0, time: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
-    nil
-  rescue Errno::ENOTTY
     nil
   end
 
@@ -239,12 +241,12 @@ class Reline::ANSI < Reline::IO
   def set_screen_size(rows, columns)
     @input.winsize = [rows, columns]
     self
-  rescue Errno::ENOTTY
+  rescue Errno::ENOTTY, Errno::ENODEV
     self
   end
 
   def cursor_pos
-    begin
+    if both_tty?
       res = +''
       m = nil
       @input.raw do |stdin|
@@ -263,7 +265,7 @@ class Reline::ANSI < Reline::IO
       end
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
-    rescue Errno::ENOTTY
+    else
       begin
         buf = @output.pread(@output.pos, 0)
         row = buf.count("\n")
@@ -276,6 +278,10 @@ class Reline::ANSI < Reline::IO
       end
     end
     Reline::CursorPos.new(column, row)
+  end
+
+  def both_tty?
+    @input.tty? && @output.tty?
   end
 
   def move_cursor_column(x)
@@ -299,27 +305,27 @@ class Reline::ANSI < Reline::IO
   end
 
   def hide_cursor
+    seq = "\e[?25l"
     if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
-        @output.write Reline::Terminfo.tigetstr('civis')
+        seq = Reline::Terminfo.tigetstr('civis')
       rescue Reline::Terminfo::TerminfoError
         # civis is undefined
       end
-    else
-      # ignored
     end
+    @output.write seq
   end
 
   def show_cursor
+    seq = "\e[?25h"
     if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
       begin
-        @output.write Reline::Terminfo.tigetstr('cnorm')
+        seq = Reline::Terminfo.tigetstr('cnorm')
       rescue Reline::Terminfo::TerminfoError
         # cnorm is undefined
       end
-    else
-      # ignored
     end
+    @output.write seq
   end
 
   def erase_after_cursor
@@ -345,14 +351,14 @@ class Reline::ANSI < Reline::IO
 
   def prep
     # Enable bracketed paste
-    @output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste
+    @output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste && both_tty?
     retrieve_keybuffer
     nil
   end
 
   def deprep(otio)
     # Disable bracketed paste
-    @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste
+    @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste && both_tty?
     Signal.trap('WINCH', @old_winch_handler) if @old_winch_handler
   end
 end

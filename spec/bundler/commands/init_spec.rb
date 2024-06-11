@@ -79,7 +79,7 @@ RSpec.describe "bundle init" do
   end
 
   context "given --gemspec option" do
-    let(:spec_file) { tmp.join("test.gemspec") }
+    let(:spec_file) { tmp("test.gemspec") }
 
     it "should generate from an existing gemspec" do
       File.open(spec_file, "w") do |file|
@@ -160,7 +160,7 @@ RSpec.describe "bundle init" do
     end
 
     context "given --gemspec option" do
-      let(:spec_file) { tmp.join("test.gemspec") }
+      let(:spec_file) { tmp("test.gemspec") }
 
       before do
         File.open(spec_file, "w") do |file|

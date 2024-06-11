@@ -30,7 +30,6 @@ pub use crate::virtualmem::CodePtr;
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
 enum CodegenStatus {
-    SkipNextInsn,
     KeepCompiling,
     EndBlock,
 }
@@ -195,6 +194,13 @@ impl JITState {
     // Get the index of the next instruction
     fn next_insn_idx(&self) -> u16 {
         self.insn_idx + insn_len(self.get_opcode()) as u16
+    }
+
+    /// Get the index of the next instruction of the next instruction
+    fn next_next_insn_idx(&self) -> u16 {
+        let next_pc = unsafe { rb_iseq_pc_at_idx(self.iseq, self.next_insn_idx().into()) };
+        let next_opcode: usize = unsafe { rb_iseq_opcode_at_pc(self.iseq, next_pc) }.try_into().unwrap();
+        self.next_insn_idx() + insn_len(next_opcode) as u16
     }
 
     // Check if we are compiling the instruction at the stub PC
@@ -1098,7 +1104,16 @@ fn jump_to_next_insn(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-) -> Option<()> {
+) -> Option<CodegenStatus> {
+    end_block_with_jump(jit, asm, ocb, jit.next_insn_idx())
+}
+
+fn end_block_with_jump(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    continuation_insn_idx: u16,
+) -> Option<CodegenStatus> {
     // Reset the depth since in current usages we only ever jump to
     // chain_depth > 0 from the same instruction.
     let mut reset_depth = asm.ctx;
@@ -1106,20 +1121,20 @@ fn jump_to_next_insn(
 
     let jump_block = BlockId {
         iseq: jit.iseq,
-        idx: jit.next_insn_idx(),
+        idx: continuation_insn_idx,
     };
 
     // We are at the end of the current instruction. Record the boundary.
     if jit.record_boundary_patch_point {
         jit.record_boundary_patch_point = false;
-        let exit_pc = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
+        let exit_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, continuation_insn_idx.into())};
         let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, ocb);
         record_global_inval_patch(asm, exit_pos?);
     }
 
     // Generate the jump instruction
     gen_direct_jump(jit, &reset_depth, jump_block, asm);
-    Some(())
+    Some(EndBlock)
 }
 
 // Compile a sequence of bytecode instructions for a given basic block version.
@@ -1282,13 +1297,6 @@ pub fn gen_single_block(
 
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode) as u16;
-
-        // Move past next instruction when instructed
-        if status == Some(SkipNextInsn) {
-            let next_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
-            let next_opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, next_pc) }.try_into().unwrap();
-            insn_idx += insn_len(next_opcode) as u16;
-        }
 
         // If the instruction terminates this block
         if status == Some(EndBlock) {
@@ -1519,7 +1527,7 @@ fn fuse_putobject_opt_ltlt(
 
         asm.stack_pop(1);
         fixnum_left_shift_body(asm, lhs, shift_amt as u64);
-        return Some(SkipNextInsn);
+        return end_block_with_jump(jit, asm, ocb, jit.next_next_insn_idx());
     }
     return None;
 }
@@ -2962,7 +2970,7 @@ fn gen_set_ivar(
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
-        let next_shape = unsafe { rb_shape_get_next(current_shape, comptime_receiver, ivar_name) };
+        let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
         let next_shape_id = unsafe { rb_shape_id(next_shape) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
@@ -5781,7 +5789,7 @@ fn jit_rb_str_getbyte(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    // Exit if the indes is out of bounds
+    // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
     asm.jge(Target::side_exit(Counter::getbyte_idx_out_of_bounds));
 
@@ -10325,6 +10333,9 @@ fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
 
 /// Global state needed for code generation
 pub struct CodegenGlobals {
+    /// Flat vector of bits to store compressed context data
+    context_data: BitVector,
+
     /// Inline code block (fast path)
     inline_cb: CodeBlock,
 
@@ -10440,6 +10451,7 @@ impl CodegenGlobals {
         ocb.unwrap().mark_all_executable();
 
         let codegen_globals = CodegenGlobals {
+            context_data: BitVector::new(),
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code,
@@ -10466,6 +10478,11 @@ impl CodegenGlobals {
 
     pub fn has_instance() -> bool {
         unsafe { CODEGEN_GLOBALS.as_mut().is_some() }
+    }
+
+    /// Get a mutable reference to the context data
+    pub fn get_context_data() -> &'static mut BitVector {
+        &mut CodegenGlobals::get_instance().context_data
     }
 
     /// Get a mutable reference to the inline code block

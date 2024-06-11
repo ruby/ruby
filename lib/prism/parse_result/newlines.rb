@@ -25,6 +25,7 @@ module Prism
     class Newlines < Visitor
       # Create a new Newlines visitor with the given newline offsets.
       def initialize(lines)
+        # @type var lines: Integer
         @lines = Array.new(1 + lines, false)
       end
 

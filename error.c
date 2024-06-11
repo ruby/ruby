@@ -2757,32 +2757,47 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
 
 /*
  *  Document-module: Errno
+
+ *  When an operating system encounters an error,
+ *  it typically reports the error as an integer error code:
  *
- *  Ruby exception objects are subclasses of Exception.  However,
- *  operating systems typically report errors using plain
- *  integers. Module Errno is created dynamically to map these
- *  operating system errors to Ruby classes, with each error number
- *  generating its own subclass of SystemCallError.  As the subclass
- *  is created in module Errno, its name will start
- *  <code>Errno::</code>.
+ *    $ ls nosuch.txt
+ *    ls: cannot access 'nosuch.txt': No such file or directory
+ *    $ echo $? # Code for last error.
+ *    2
  *
- *  The names of the <code>Errno::</code> classes depend on the
- *  environment in which Ruby runs. On a typical Unix or Windows
- *  platform, there are Errno classes such as Errno::EACCES,
- *  Errno::EAGAIN, Errno::EINTR, and so on.
+ *  When the Ruby interpreter interacts with the operating system
+ *  and receives such an error code (e.g., +2+),
+ *  it maps the code to a particular Ruby exception class (e.g., +Errno::ENOENT+):
  *
- *  The integer operating system error number corresponding to a
- *  particular error is available as the class constant
- *  <code>Errno::</code><em>error</em><code>::Errno</code>.
+ *    File.open('nosuch.txt')
+ *    # => No such file or directory @ rb_sysopen - nosuch.txt (Errno::ENOENT)
  *
- *     Errno::EACCES::Errno   #=> 13
- *     Errno::EAGAIN::Errno   #=> 11
- *     Errno::EINTR::Errno    #=> 4
+ *  Each such class is:
  *
- *  The full list of operating system errors on your particular platform
- *  are available as the constants of Errno.
+ *  - A nested class in this module, +Errno+.
+ *  - A subclass of class SystemCallError.
+ *  - Associated with an error code.
  *
- *     Errno.constants   #=> :E2BIG, :EACCES, :EADDRINUSE, :EADDRNOTAVAIL, ...
+ *  Thus:
+ *
+ *    Errno::ENOENT.superclass # => SystemCallError
+ *    Errno::ENOENT::Errno     # => 2
+ *
+ *  The names of nested classes are returned by method +Errno.constants+:
+ *
+ *    Errno.constants.size         # => 158
+ *    Errno.constants.sort.take(5) # => [:E2BIG, :EACCES, :EADDRINUSE, :EADDRNOTAVAIL, :EADV]
+ *
+ *  As seen above, the error code associated with each class
+ *  is available as the value of a constant;
+ *  the value for a particular class may vary among operating systems.
+ *  If the class is not needed for the particular operating system,
+ *  the value is zero:
+ *
+ *    Errno::ENOENT::Errno      # => 2
+ *    Errno::ENOTCAPABLE::Errno # => 0
+ *
  */
 
 static st_table *syserr_tbl;

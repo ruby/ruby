@@ -492,6 +492,10 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
+          k = k.dup
+          k << "/" if /https?:/i.match?(k) && !k.end_with?("/", "__#{FALLBACK_TIMEOUT_URI_OPTION.upcase}")
+          k.gsub!(".", "__")
+
           unless k.start_with?("#")
             if k.include?("-")
               Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
@@ -519,26 +523,25 @@ module Bundler
       YAMLSerializer
     end
 
-    PER_URI_OPTIONS = %w[
-      fallback_timeout
-    ].freeze
+    FALLBACK_TIMEOUT_URI_OPTION = "fallback_timeout"
 
     NORMALIZE_URI_OPTIONS_PATTERN =
       /
         \A
         (\w+\.)? # optional prefix key
         (https?.*?) # URI
-        (\.#{Regexp.union(PER_URI_OPTIONS)})? # optional suffix key
+        (\.#{FALLBACK_TIMEOUT_URI_OPTION})? # optional suffix key
         \z
       /ix
 
     def self.key_for(key)
-      key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
-      key = key_to_s(key).gsub(".", "__")
+      key = key_to_s(key)
+      key = normalize_uri(key) if key.start_with?("http", "mirror.http")
+      key = key.gsub(".", "__")
       key.gsub!("-", "___")
       key.upcase!
 
-      key.prepend("BUNDLE_")
+      key.gsub(/\A([ #]*)/, '\1BUNDLE_')
     end
 
     # TODO: duplicates Rubygems#normalize_uri

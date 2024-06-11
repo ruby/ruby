@@ -44,7 +44,7 @@ RSpec.describe "bundle open" do
       G
 
       bundle "open foo", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
-      expect(out).to include("editor #{default_bundle_path.join("bundler", "gems", "foo-1.0-#{ref}")}")
+      expect(out).to include("editor #{default_bundle_path("bundler", "gems", "foo-1.0-#{ref}")}")
     end
 
     it "suggests alternatives for similar-sounding gems" do

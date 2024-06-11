@@ -14,7 +14,7 @@ class RequirementChecker < Proc
   attr_accessor :provided
 
   def inspect
-    "\"!= #{provided}\""
+    "\"#{provided}\""
   end
 end
 

@@ -461,8 +461,8 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "includes the gem without warning if two gemspecs add it with the same requirement" do
-      gem1 = tmp.join("my-gem-1")
-      gem2 = tmp.join("my-gem-2")
+      gem1 = tmp("my-gem-1")
+      gem2 = tmp("my-gem-2")
 
       build_lib "my-gem", path: gem1 do |s|
         s.add_development_dependency "rubocop", "~> 1.36.0"

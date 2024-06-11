@@ -10,7 +10,6 @@
 #include "prism/parser.h"
 #include "prism/encoding.h"
 #include "prism/util/pm_memchr.h"
-#include "prism/util/pm_string_list.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
@@ -18,16 +17,26 @@
 #include <string.h>
 
 /**
- * Parse a regular expression and extract the names of all of the named capture
- * groups.
+ * This callback is called when a named capture group is found.
+ */
+typedef void (*pm_regexp_name_callback_t)(const pm_string_t *name, void *data);
+
+/**
+ * This callback is called when a parse error is found.
+ */
+typedef void (*pm_regexp_error_callback_t)(const uint8_t *start, const uint8_t *end, const char *message, void *data);
+
+/**
+ * Parse a regular expression.
  *
+ * @param parser The parser that is currently being used.
  * @param source The source code to parse.
  * @param size The size of the source code.
- * @param named_captures The list to add the names of the named capture groups.
- * @param encoding_changed Whether or not the encoding changed from the default.
- * @param encoding The encoding of the source code.
- * @return Whether or not the parsing was successful.
+ * @param name_callback The optional callback to call when a named capture group is found.
+ * @param name_data The optional data to pass to the name callback.
+ * @param error_callback The callback to call when a parse error is found.
+ * @param error_data The data to pass to the error callback.
  */
-PRISM_EXPORTED_FUNCTION bool pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding);
+PRISM_EXPORTED_FUNCTION void pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data, pm_regexp_error_callback_t error_callback, void *error_data);
 
 #endif

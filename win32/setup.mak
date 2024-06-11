@@ -62,6 +62,12 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !if defined(RJIT_SUPPORT)
 RJIT_SUPPORT = $(RJIT_SUPPORT)
 !endif
+!if defined(XINCFLAGS)
+CPPFLAGS = $(XINCFLAGS)
+!endif
+!if defined(XLDFLAGS)
+XLDFLAGS = $(XLDFLAGS)
+!endif
 
 # TOOLS
 <<
@@ -79,8 +85,13 @@ RJIT_SUPPORT = $(RJIT_SUPPORT)
 	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
 !endif
 
-!if "$(WITH_GMP)" == "yes"
-	@echo>>$(MAKEFILE) USE_GMP = 1
+!if "$(WITH_GMP)" != "no"
+	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
+#include <gmp.h>
+mpz_t x;
+int main(void) {mpz_init(x); return 0;}
+<<
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 !endif
 
 -osname-section-:

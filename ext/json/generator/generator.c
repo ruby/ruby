@@ -636,16 +636,12 @@ static size_t State_memsize(const void *ptr)
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
-#ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {NULL, State_free, State_memsize,},
-#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
-#endif
+    RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 };
-#endif
 
 static VALUE cState_s_allocate(VALUE klass)
 {

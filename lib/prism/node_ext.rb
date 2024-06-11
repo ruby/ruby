@@ -5,10 +5,13 @@
 module Prism
   class Node
     def deprecated(*replacements) # :nodoc:
+      location = caller_locations(1, 1)
+      location = location[0].label if location
       suggest = replacements.map { |replacement| "#{self.class}##{replacement}" }
+
       warn(<<~MSG, category: :deprecated)
-        [deprecation]: #{self.class}##{caller_locations(1, 1)[0].label} is deprecated \
-        and will be removed in the next major version. Use #{suggest.join("/")} instead.
+        [deprecation]: #{self.class}##{location} is deprecated and will be \
+        removed in the next major version. Use #{suggest.join("/")} instead.
         #{(caller(1, 3) || []).join("\n")}
       MSG
     end
@@ -261,9 +264,10 @@ module Prism
       end
 
       posts.each do |param|
-        if param.is_a?(MultiTargetNode)
+        case param
+        when MultiTargetNode
           names << [:req]
-        elsif param.is_a?(NoKeywordsParameterNode)
+        when NoKeywordsParameterNode, KeywordRestParameterNode, ForwardingParameterNode
           # Invalid syntax, e.g. "def f(**nil, ...)" moves the NoKeywordsParameterNode to posts
           raise "Invalid syntax"
         else

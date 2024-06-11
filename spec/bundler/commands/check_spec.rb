@@ -447,7 +447,7 @@ RSpec.describe "bundle check" do
         build_gem "dex-dispatch-engine"
       end
 
-      build_lib("bundle-check-issue", path: tmp.join("bundle-check-issue")) do |s|
+      build_lib("bundle-check-issue", path: tmp("bundle-check-issue")) do |s|
         s.write "Gemfile", <<-G
           source "https://localgemserver.test"
 
@@ -461,14 +461,14 @@ RSpec.describe "bundle check" do
         s.add_dependency "awesome_print"
       end
 
-      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, dir: tmp.join("bundle-check-issue")
+      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, dir: tmp("bundle-check-issue")
     end
 
     it "does not corrupt lockfile when changing version" do
-      version_file = tmp.join("bundle-check-issue/bundle-check-issue.gemspec")
+      version_file = tmp("bundle-check-issue/bundle-check-issue.gemspec")
       File.write(version_file, File.read(version_file).gsub(/s\.version = .+/, "s.version = '9999'"))
 
-      bundle "check --verbose", dir: tmp.join("bundle-check-issue")
+      bundle "check --verbose", dir: tmp("bundle-check-issue")
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "awesome_print", "1.0"
@@ -476,7 +476,7 @@ RSpec.describe "bundle check" do
         c.checksum gem_repo2, "dex-dispatch-engine", "1.0"
       end
 
-      expect(File.read(tmp.join("bundle-check-issue/Gemfile.lock"))).to eq <<~L
+      expect(File.read(tmp("bundle-check-issue/Gemfile.lock"))).to eq <<~L
         PATH
           remote: .
           specs:

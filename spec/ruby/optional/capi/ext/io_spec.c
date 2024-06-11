@@ -330,13 +330,15 @@ static VALUE io_spec_errno_set(VALUE self, VALUE val) {
 }
 
 VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
+  int mode;
 #ifdef RUBY_VERSION_IS_3_3
-  if (rb_io_mode(io) & FMODE_SYNC) {
+  mode = rb_io_mode(io);
 #else
   rb_io_t *fp;
   GetOpenFile(io, fp);
-  if (fp->mode & FMODE_SYNC) {
+  mode = fp->mode;
 #endif
+  if (mode & FMODE_SYNC) {
     return Qtrue;
   } else {
     return Qfalse;

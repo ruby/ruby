@@ -75,6 +75,7 @@ def generate_eventids1_h(ids)
   buf << %Q[#ifndef RIPPER_EVENTIDS1\n]
   buf << %Q[#define RIPPER_EVENTIDS1\n]
   buf << %Q[\n]
+  buf << %Q[#define RIPPER_ID(n) ripper_parser_ids.id_ ## n\n]
   buf << %Q[void ripper_init_eventids1(void);\n]
   buf << %Q[void ripper_init_eventids1_table(VALUE self);\n]
   buf << %Q[\n]
@@ -84,9 +85,6 @@ def generate_eventids1_h(ids)
   end
   buf << %Q[};\n]
   buf << %Q[\n]
-  ids.each do |id, arity|
-    buf << %Q[#define ripper_id_#{id} ripper_parser_ids.id_#{id}\n]
-  end
   buf << %Q[#endif /* RIPPER_EVENTIDS1 */\n]
   buf << %Q[\n]
 end
@@ -101,7 +99,7 @@ def generate_eventids1(ids)
   buf << %Q[void\n]
   buf << %Q[ripper_init_eventids1(void)\n]
   buf << %Q[{\n]
-  buf << %Q[#define set_id1(name) ripper_id_##name = rb_intern_const("on_"#name)\n]
+  buf << %Q[#define set_id1(name) RIPPER_ID(name) = rb_intern_const("on_"#name)\n]
   ids.each do |id, arity|
     buf << %Q[    set_id1(#{id});\n]
   end

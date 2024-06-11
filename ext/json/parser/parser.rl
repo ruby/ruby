@@ -857,12 +857,12 @@ static VALUE cParser_parse(VALUE self)
 static void JSON_mark(void *ptr)
 {
     JSON_Parser *json = ptr;
-    rb_gc_mark_maybe(json->Vsource);
-    rb_gc_mark_maybe(json->create_id);
-    rb_gc_mark_maybe(json->object_class);
-    rb_gc_mark_maybe(json->array_class);
-    rb_gc_mark_maybe(json->decimal_class);
-    rb_gc_mark_maybe(json->match_string);
+    rb_gc_mark(json->Vsource);
+    rb_gc_mark(json->create_id);
+    rb_gc_mark(json->object_class);
+    rb_gc_mark(json->array_class);
+    rb_gc_mark(json->decimal_class);
+    rb_gc_mark(json->match_string);
 }
 
 static void JSON_free(void *ptr)
@@ -878,16 +878,12 @@ static size_t JSON_memsize(const void *ptr)
     return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
 }
 
-#ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
-#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
-#endif
 };
-#endif
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {

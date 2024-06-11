@@ -166,12 +166,7 @@ static inline void *ruby_zalloc(size_t n)
     return p;
 }
 #endif
-#ifdef TypedData_Make_Struct
+
 static const rb_data_type_t JSON_Generator_State_type;
-#define NEW_TYPEDDATA_WRAPPER 1
-#else
-#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, State_free, json)
-#define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) Data_Get_Struct(self, JSON_Generator_State, json)
-#endif
 
 #endif

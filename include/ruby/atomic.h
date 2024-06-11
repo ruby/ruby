@@ -311,7 +311,7 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_PTR_CAS(var, oldval, newval) \
-    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (oldval), (newval)))
+    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (void *)(oldval), (void *)(newval)))
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are

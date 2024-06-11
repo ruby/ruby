@@ -3,6 +3,7 @@
 
 #include <string.h>
 
+#ifndef RUBY_VERSION_IS_3_4
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -70,8 +71,10 @@ VALUE sws_rb_check_type(VALUE self, VALUE obj, VALUE other) {
   rb_check_type(obj, TYPE(other));
   return Qtrue;
 }
+#endif
 
 void Init_data_spec(void) {
+#ifndef RUBY_VERSION_IS_3_4
   VALUE cls = rb_define_class("CApiAllocSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_func);
   rb_define_method(cls, "wrapped_data", sdaf_get_struct, 0);
@@ -82,6 +85,7 @@ void Init_data_spec(void) {
   rb_define_method(cls, "get_struct_data_ptr", sws_get_struct_data_ptr, 1);
   rb_define_method(cls, "change_struct", sws_change_struct, 2);
   rb_define_method(cls, "rb_check_type", sws_rb_check_type, 2);
+#endif
 }
 
 #ifdef __cplusplus

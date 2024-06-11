@@ -1,5 +1,5 @@
-class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
-  MAPPING = [
+module Reline::KeyActor
+  VI_COMMAND_MAPPING = [
     #   0 ^@
     :ed_unassigned,
     #   1 ^A

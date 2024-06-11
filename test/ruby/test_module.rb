@@ -3163,6 +3163,19 @@ class TestModule < Test::Unit::TestCase
     end;
   end
 
+  def test_define_method_changes_visibility_with_existing_method_bug_19749
+    c = Class.new do
+      def a; end
+      private def b; end
+
+      define_method(:b, instance_method(:b))
+      private
+      define_method(:a, instance_method(:a))
+    end
+    assert_equal([:b], c.public_instance_methods(false))
+    assert_equal([:a], c.private_instance_methods(false))
+  end
+
   def test_define_method_with_unbound_method
     # Passing an UnboundMethod to define_method succeeds if it is from an ancestor
     assert_nothing_raised do

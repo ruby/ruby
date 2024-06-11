@@ -431,6 +431,9 @@ module Prism
       template << "C"
       values << { nil => 0, "3.3.0" => 1, "3.3.1" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
 
+      template << "C"
+      values << (options[:encoding] == false ? 1 : 0)
+
       template << "L"
       if (scopes = options[:scopes])
         values << scopes.length

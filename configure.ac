@@ -1260,7 +1260,8 @@ main()
 		# __builtin_longjmp in ppc64* Linux does not restore
 		# the TOC register (r2), which is problematic
 		# when a global exit happens from JITted .so code.
-		AS_CASE(["$target_cpu"], [powerpc64*], [
+		# __builtin_setjmp can have issues on arm64 linux (see [Bug #14480]).
+		AS_CASE(["$target_cpu"], [powerpc64*|arm64|aarch64], [
 			ac_cv_func___builtin_setjmp=no
 		])
 		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
@@ -1761,7 +1762,7 @@ AS_IF([test "$GCC" = yes], [
 AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
 rb_cv_func_exported=no
 RUBY_WERROR_FLAG([
-for mac in '__attribute__ ((__visibility__("default")))' '__declspec(dllexport)'; do
+for mac in '__declspec(dllexport)' '__attribute__ ((__visibility__("default")))'; do
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@define RUBY_FUNC_EXPORTED $mac extern
     RUBY_FUNC_EXPORTED void conftest_attribute_check(void);]], [[]])],
     [rb_cv_func_exported="$mac"; break])

@@ -358,6 +358,12 @@ end
 E
       expect(out).to eq("http://gems.example.org/ => http://gem-mirror.example.org/")
     end
+
+    it "allows configuring fallback timeout for each mirror, and does not duplicate configs", rubygems: ">= 3.5.12" do
+      bundle "config set --global mirror.https://rubygems.org.fallback_timeout 1"
+      bundle "config set --global mirror.https://rubygems.org.fallback_timeout 2"
+      expect(File.read(home(".bundle/config"))).to include("BUNDLE_MIRROR").once
+    end
   end
 
   describe "quoting" do
@@ -447,7 +453,7 @@ E
     it "does not make bundler crash and ignores the configuration" do
       bundle "config list --parseable"
 
-      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(out).to be_empty
       expect(err).to be_empty
 
       ruby(<<~RUBY)

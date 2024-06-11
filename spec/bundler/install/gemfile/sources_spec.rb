@@ -1484,14 +1484,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "bar"
       end
 
-      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp("gemspec_test")) do |s|
         s.add_dependency "bar", "=1.0.0"
       end
 
       install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo2"
         gem "rack"
-        gemspec :path => "#{tmp.join("gemspec_test")}"
+        gemspec :path => "#{tmp("gemspec_test")}"
       G
     end
 
@@ -1506,7 +1506,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "bar"
       end
 
-      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp("gemspec_test")) do |s|
         s.add_development_dependency "bar"
       end
 
@@ -1517,7 +1517,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           gem "bar"
         end
 
-        gemspec :path => "#{tmp.join("gemspec_test")}"
+        gemspec :path => "#{tmp("gemspec_test")}"
       G
     end
 

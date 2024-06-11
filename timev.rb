@@ -63,6 +63,10 @@
 # due to the C types "time_t" and "struct tm".
 # If that limit is exceeded, Ruby extrapolates the localtime function.
 #
+# The Time class always uses the Gregorian calendar.
+# I.e. the proleptic Gregorian calendar is used.
+# Other calendars, such as Julian calendar, are not supported.
+#
 # "time_t" can represent 1901-12-14 to 2038-01-19 if it is 32 bit signed integer,
 # -292277022657-01-27 to 292277026596-12-05 if it is 64 bit signed integer.
 # However "localtime" on some platforms doesn't supports negative time_t (before 1970).

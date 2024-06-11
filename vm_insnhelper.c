@@ -2209,7 +2209,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
 
 #if USE_DEBUG_COUNTER
-    if (old_cc == empty_cc) {
+    if (!old_cc || old_cc == empty_cc) {
         // empty
         RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
     }

@@ -4815,6 +4815,15 @@ assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
   tests
 }
 
+# test integer left shift fusion followed by opt_getconstant_path
+assert_equal '33', %q{
+  def test(a)
+    (a << 5) | (Object; a)
+  end
+
+  test(1)
+}
+
 # test String#stebyte with arguments that need conversion
 assert_equal "abc", %q{
   str = +"a00"
@@ -4994,3 +5003,58 @@ assert_equal '1', %q{
   array.clear
   test_body(array)
 }
+
+# regression test for splatting empty array to cfunc
+assert_normal_exit %q{
+  def test_body(args) = Array(1, *args)
+
+  test_body([])
+  0x100.times do
+    array = Array.new(100)
+    array.clear
+    test_body(array)
+  end
+}
+
+# compiling code shouldn't emit warnings as it may call into more Ruby code
+assert_equal 'ok', <<~'RUBY'
+  # [Bug #20522]
+  $VERBOSE = true
+  Warning[:performance] = true
+
+  module StrictWarnings
+    def warn(msg, **)
+      raise msg
+    end
+  end
+  Warning.singleton_class.prepend(StrictWarnings)
+
+  class A
+    def compiled_method(is_private)
+      @some_ivar = is_private
+    end
+  end
+
+  shape_max_variations = 8
+  if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS) && RubyVM::Shape::SHAPE_MAX_VARIATIONS != shape_max_variations
+    raise "Expected SHAPE_MAX_VARIATIONS to be #{shape_max_variations}, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
+  end
+
+  100.times do |i|
+    klass = Class.new(A)
+    (shape_max_variations - 1).times do |j|
+      obj = klass.new
+      obj.instance_variable_set("@base_#{i}", 42)
+      obj.instance_variable_set("@ivar_#{j}", 42)
+    end
+    obj = klass.new
+    obj.instance_variable_set("@base_#{i}", 42)
+    begin
+      obj.compiled_method(true)
+    rescue
+      # expected
+    end
+  end
+
+  :ok
+RUBY

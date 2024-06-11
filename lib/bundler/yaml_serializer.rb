@@ -60,7 +60,6 @@ module Bundler
           indent, key, quote, val = match.captures
           val = strip_comment(val)
 
-          convert_to_backward_compatible_key!(key)
           depth = indent.size / 2
           if quote.empty? && val.empty?
             new_hash = {}
@@ -92,14 +91,8 @@ module Bundler
       end
     end
 
-    # for settings' keys
-    def convert_to_backward_compatible_key!(key)
-      key << "/" if /https?:/i.match?(key) && !%r{/\Z}.match?(key)
-      key.gsub!(".", "__")
-    end
-
     class << self
-      private :dump_hash, :convert_to_backward_compatible_key!
+      private :dump_hash
     end
   end
 end

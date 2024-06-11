@@ -138,19 +138,18 @@ Also \Rational numbers may be imaginary numbers.
 
 == Strings
 
-=== \String Literals
+=== Escape Sequences
 
-The most common way of writing strings is using <tt>"</tt>:
+Some characters can be represented as escape sequences in
+double-quoted strings,
+character literals,
+here document literals (non-quoted, double-quoted, and with backticks),
+double-quoted symbols,
+double-quoted symbol keys in Hash literals,
+Regexp literals, and
+several percent literals (<tt>%</tt>, <tt>%Q,</tt> <tt>%W</tt>, <tt>%I</tt>, <tt>%r</tt>, <tt>%x</tt>).
 
-  "This is a string."
-
-The string may be many lines long.
-
-Any internal <tt>"</tt> must be escaped:
-
-  "This string has a quote: \".  As you can see, it is escaped"
-
-Double-quote strings allow escaped characters such as <tt>\n</tt> for
+They allow escape sequences such as <tt>\n</tt> for
 newline, <tt>\t</tt> for tab, etc.  The full list of supported escape
 sequences are as follows:
 
@@ -174,11 +173,31 @@ sequences are as follows:
   \M-\cx         same as above
   \c\M-x         same as above
   \c? or \C-?    delete, ASCII 7Fh (DEL)
+  \<newline>     continuation line (empty string)
 
-Any other character following a backslash is interpreted as the
+The last one, <tt>\<newline></tt>, represents an empty string instead of a character.
+It is used to fold a line in a string.
+
+=== Double-quoted \String Literals
+
+The most common way of writing strings is using <tt>"</tt>:
+
+  "This is a string."
+
+The string may be many lines long.
+
+Any internal <tt>"</tt> must be escaped:
+
+  "This string has a quote: \".  As you can see, it is escaped"
+
+Double-quoted strings allow escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences].
+
+In a double-quoted string,
+any other character following a backslash is interpreted as the
 character itself.
 
-Double-quote strings allow interpolation of other values using
+Double-quoted strings allow interpolation of other values using
 <tt>#{...}</tt>:
 
   "One plus one is two: #{1 + 1}"
@@ -190,14 +209,30 @@ You can also use <tt>#@foo</tt>, <tt>#@@foo</tt> and <tt>#$foo</tt> as a
 shorthand for, respectively, <tt>#{ @foo }</tt>, <tt>#{ @@foo }</tt> and
 <tt>#{ $foo }</tt>.
 
+See also:
+
+* {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
+
+=== Single-quoted \String Literals
+
 Interpolation may be disabled by escaping the "#" character or using
-single-quote strings:
+single-quoted strings:
 
   '#{1 + 1}' #=> "\#{1 + 1}"
 
 In addition to disabling interpolation, single-quoted strings also disable all
 escape sequences except for the single-quote (<tt>\'</tt>) and backslash
 (<tt>\\\\</tt>).
+
+In a single-quoted string,
+any other character following a backslash is interpreted as is:
+a backslash and the character itself.
+
+See also:
+
+* {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
+
+=== Literal String Concatenation
 
 Adjacent string literals are automatically concatenated by the interpreter:
 
@@ -211,10 +246,12 @@ be concatenated as long as a percent-string is not last.
   %q{a} 'b' "c" #=> "abc"
   "a" 'b' %q{c} #=> NameError: uninitialized constant q
 
+=== Character Literal
+
 There is also a character literal notation to represent single
 character strings, which syntax is a question mark (<tt>?</tt>)
-followed by a single character or escape sequence that corresponds to
-a single codepoint in the script encoding:
+followed by a single character or escape sequence (except continuation line)
+that corresponds to a single codepoint in the script encoding:
 
   ?a       #=> "a"
   ?abc     #=> SyntaxError
@@ -227,11 +264,6 @@ a single codepoint in the script encoding:
   ?\M-\C-a #=> "\x81"
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
-
-See also:
-
-* {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
-* {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
 
 === Here Document Literals
 
@@ -283,9 +315,10 @@ its end is a multiple of eight.  The amount to be removed is counted in terms
 of the number of spaces.  If the boundary appears in the middle of a tab, that
 tab is not removed.
 
-A heredoc allows interpolation and escaped characters.  You may disable
-interpolation and escaping by surrounding the opening identifier with single
-quotes:
+A heredoc allows interpolation and the escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences].
+You may disable interpolation and the escaping by surrounding the opening
+identifier with single quotes:
 
   expected_result = <<-'EXPECTED'
   One plus one is #{1 + 1}
@@ -326,12 +359,15 @@ details on what symbols are and when ruby creates them internally.
 
 You may reference a symbol using a colon: <tt>:my_symbol</tt>.
 
-You may also create symbols by interpolation:
+You may also create symbols by interpolation and escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences] with double-quotes:
 
   :"my_symbol1"
   :"my_symbol#{1 + 1}"
+  :"foo\sbar"
 
-Like strings, a single-quote may be used to disable interpolation:
+Like strings, a single-quote may be used to disable interpolation and
+escape sequences:
 
   :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"
 
@@ -451,9 +487,12 @@ may use these paired delimiters:
 * <tt>(</tt> and <tt>)</tt>.
 * <tt>{</tt> and <tt>}</tt>.
 * <tt><</tt> and <tt>></tt>.
-* Any other character, as both beginning and ending delimiters.
+* Non-alphanumeric ASCII character except above, as both beginning and ending delimiters.
 
-The first four pairs (brackets, parenthesis, braces, and angle brackets) can be nested.
+The delimiters can be escaped with a backslash.
+However, the first four pairs (brackets, parenthesis, braces, and
+angle brackets) are allowed without backslash as far as they are correctly
+paired.
 
 These are demonstrated in the next section.
 
@@ -462,17 +501,20 @@ These are demonstrated in the next section.
 You can write a non-interpolable string with <tt>%q</tt>.
 The created string is the same as if you created it with single quotes:
 
-  %[foo bar baz]        # => "foo bar baz" # Using [].
-  %(foo bar baz)        # => "foo bar baz" # Using ().
-  %{foo bar baz}        # => "foo bar baz" # Using {}.
-  %<foo bar baz>        # => "foo bar baz" # Using <>.
-  %|foo bar baz|        # => "foo bar baz" # Using two |.
-  %:foo bar baz:        # => "foo bar baz" # Using two :.
+  %q[foo bar baz]       # => "foo bar baz" # Using [].
+  %q(foo bar baz)       # => "foo bar baz" # Using ().
+  %q{foo bar baz}       # => "foo bar baz" # Using {}.
+  %q<foo bar baz>       # => "foo bar baz" # Using <>.
+  %q|foo bar baz|       # => "foo bar baz" # Using two |.
+  %q:foo bar baz:       # => "foo bar baz" # Using two :.
   %q(1 + 1 is #{1 + 1}) # => "1 + 1 is \#{1 + 1}" # No interpolation.
   %q[foo[bar]baz]       # => "foo[bar]baz" # brackets can be nested.
   %q(foo(bar)baz)       # => "foo(bar)baz" # parenthesis can be nested.
   %q{foo{bar}baz}       # => "foo{bar}baz" # braces can be nested.
   %q<foo<bar>baz>       # => "foo<bar>baz" # angle brackets can be nested.
+
+This is similar to single-quoted string but only backslashs and
+the specified delimiters can be escaped with a backslash.
 
 === <tt>% and %Q</tt>: Interpolable String Literals
 
@@ -482,15 +524,22 @@ or with its alias <tt>%</tt>:
   %[foo bar baz]       # => "foo bar baz"
   %(1 + 1 is #{1 + 1}) # => "1 + 1 is 2" # Interpolation.
 
+This is similar to double-quoted string.
+It allow escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences].
+Other escaped characters (a backslash followed by a character) are
+interpreted as the character.
+
 === <tt>%w and %W</tt>: String-Array Literals
 
-You can write an array of strings with <tt>%w</tt> (non-interpolable)
-or <tt>%W</tt> (interpolable):
+You can write an array of strings as whitespace-separated words
+with <tt>%w</tt> (non-interpolable) or <tt>%W</tt> (interpolable):
 
   %w[foo bar baz]       # => ["foo", "bar", "baz"]
   %w[1 % *]             # => ["1", "%", "*"]
   # Use backslash to embed spaces in the strings.
   %w[foo\ bar baz\ bat] # => ["foo bar", "baz bat"]
+  %W[foo\ bar baz\ bat] # => ["foo bar", "baz bat"]
   %w(#{1 + 1})          # => ["\#{1", "+", "1}"]
   %W(#{1 + 1})          # => ["2"]
 
@@ -498,17 +547,39 @@ or <tt>%W</tt> (interpolable):
   # (not nested array).
   %w[foo[bar baz]qux]   # => ["foo[bar", "baz]qux"]
 
+The following characters are considered as white spaces to separate words:
+
+* space, ASCII 20h (SPC)
+* form feed, ASCII 0Ch (FF)
+* newline (line feed), ASCII 0Ah (LF)
+* carriage return, ASCII 0Dh (CR)
+* horizontal tab, ASCII 09h (TAB)
+* vertical tab, ASCII 0Bh (VT)
+
+The white space characters can be escaped with a backslash to make them
+part of a word.
+
+<tt>%W</tt> allow escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences].
+However the continuation line <tt>\<newline></tt> is not usable because
+it is interpreted as the escaped newline described above.
+
 === <tt>%i and %I</tt>: Symbol-Array Literals
 
-You can write an array of symbols with <tt>%i</tt> (non-interpolable)
-or <tt>%I</tt> (interpolable):
+You can write an array of symbols as whitespace-separated words
+with <tt>%i</tt> (non-interpolable) or <tt>%I</tt> (interpolable):
 
   %i[foo bar baz]       # => [:foo, :bar, :baz]
   %i[1 % *]             # => [:"1", :%, :*]
   # Use backslash to embed spaces in the symbols.
   %i[foo\ bar baz\ bat] # => [:"foo bar", :"baz bat"]
+  %I[foo\ bar baz\ bat] # => [:"foo bar", :"baz bat"]
   %i(#{1 + 1})          # => [:"\#{1", :+, :"1}"]
   %I(#{1 + 1})          # => [:"2"]
+
+The white space characters and its escapes are interpreted as the same as
+string-array literals described in
+{%w and %W: String-Array Literals}[#label-25w+and+-25W-3A+String-Array+Literals].
 
 === <tt>%s</tt>: Symbol Literals
 
@@ -516,6 +587,10 @@ You can write a symbol with <tt>%s</tt>:
 
   %s[foo]     # => :foo
   %s[foo bar] # => :"foo bar"
+
+This is non-interpolable.
+No interpolation allowed.
+Only backslashs and the specified delimiters can be escaped with a backslash.
 
 === <tt>%r</tt>: Regexp Literals
 
@@ -541,4 +616,10 @@ See {Regexp modes}[rdoc-ref:Regexp@Modes] for details.
 
 You can write and execute a shell command with <tt>%x</tt>:
 
-  %x(echo 1) # => "1\n"
+  %x(echo 1)      # => "1\n"
+  %x[echo #{1 + 2}] # => "3\n"
+  %x[echo \u0030] # => "0\n"
+
+This is interpolable.
+<tt>%x</tt> allow escape sequences described in
+{Escape Sequences}[#label-Escape+Sequences].
