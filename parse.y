@@ -12846,9 +12846,22 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
     return NEW_DEFINED(n, loc);
 }
 
+static VALUE
+str_to_sym_check(struct parser_params *p, VALUE lit, const YYLTYPE *loc)
+{
+    if (rb_enc_str_coderange(lit) == ENC_CODERANGE_BROKEN) {
+        yyerror1(loc, "invalid symbol");
+        lit = STR_NEW0();
+    }
+
+    return lit;
+}
+
 static NODE*
 symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 {
+    VALUE lit;
+
     enum node_type type = nd_type(symbol);
     switch (type) {
       case NODE_DSTR:
@@ -12856,7 +12869,8 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         break;
       case NODE_STR:
         nd_set_type(symbol, NODE_LIT);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(symbol)->nd_lit = rb_str_intern(RNODE_LIT(symbol)->nd_lit));
+        lit = str_to_sym_check(p, RNODE_LIT(symbol)->nd_lit, &RNODE(symbol)->nd_loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(symbol)->nd_lit = rb_str_intern(lit));
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -14553,7 +14567,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         break;
       case NODE_STR:
-        lit = RNODE_STR(node)->nd_lit;
+        lit = str_to_sym_check(p, RNODE_STR(node)->nd_lit, &RNODE(node)->nd_loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(node)->nd_lit = ID2SYM(rb_intern_str(lit)));
         nd_set_type(node, NODE_LIT);
         nd_set_loc(node, loc);

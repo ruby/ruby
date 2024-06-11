@@ -191,20 +191,22 @@ describe "Hash literal" do
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII
   end
 
-  it "raises an EncodingError at parse time when Symbol key with invalid bytes" do
-    ScratchPad.record []
-    -> {
-      eval 'ScratchPad << 1; {:"\xC3" => 1}'
-    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
-    ScratchPad.recorded.should == []
-  end
+  ruby_bug "#20280", ""..."3.3" do
+    it "raises a SyntaxError at parse time when Symbol key with invalid bytes" do
+      ScratchPad.record []
+      -> {
+        eval 'ScratchPad << 1; {:"\xC3" => 1}'
+      }.should raise_error(SyntaxError, /invalid symbol/)
+      ScratchPad.recorded.should == []
+    end
 
-  it "raises an EncodingError at parse time when Symbol key with invalid bytes and 'key: value' syntax used" do
-    ScratchPad.record []
-    -> {
-      eval 'ScratchPad << 1; {"\xC3": 1}'
-    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
-    ScratchPad.recorded.should == []
+    it "raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used" do
+      ScratchPad.record []
+      -> {
+        eval 'ScratchPad << 1; {"\xC3": 1}'
+      }.should raise_error(SyntaxError, /invalid symbol/)
+      ScratchPad.recorded.should == []
+    end
   end
 end
 
