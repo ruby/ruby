@@ -366,6 +366,7 @@ module RubyVM::YJIT
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
       out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      out.puts "deleted_defer_block_count:" + format_number_pct(10, stats[:deleted_defer_block_count], stats[:compiled_block_count])
       if stats[:compiled_blockid_count] != 0
         out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
