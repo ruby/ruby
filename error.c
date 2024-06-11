@@ -1652,13 +1652,44 @@ check_order_keyword(VALUE opt)
  * - Includes the exception class name.
  * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
  *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
- * - Includes the backtrace:
+ * - Includes the {backtrace}[rdoc-ref:exceptions.md@Backtraces]:
  *
- *   - If the value of keyword +order+ is +:top+,
+ *   - If the value of keyword +order+ is +:top+ (the default),
  *     lists the error message and the innermost backtrace entry first.
  *   - If the value of keyword +order+ is +:bottom+,
  *     lists the error message the the innermost entry last.
  *
+ * Example:
+ *
+ *   def baz
+ *     begin
+ *       1 / 0
+ *     rescue => x
+ *       pp x.message
+ *       pp x.full_message(highlight: false).split("\n")
+ *       pp x.full_message.split("\n")
+ *     end
+ *   end
+ *   def bar; baz; end
+ *   def foo; bar; end
+ *   foo
+ *
+ * Output:
+ *
+ *   "divided by 0"
+ *   ["t.rb:3:in `/': divided by 0 (ZeroDivisionError)",
+ *    "\tfrom t.rb:3:in `baz'",
+ *    "\tfrom t.rb:10:in `bar'",
+ *    "\tfrom t.rb:11:in `foo'",
+ *    "\tfrom t.rb:12:in `<main>'"]
+ *   ["t.rb:3:in `/': \e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m",
+ *    "\tfrom t.rb:3:in `baz'",
+ *    "\tfrom t.rb:10:in `bar'",
+ *    "\tfrom t.rb:11:in `foo'",
+ *    "\tfrom t.rb:12:in `<main>'"]
+ *
+ * An overrriding method should be careful with ANSI code enhancements;
+ * see {Exception Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1703,19 +1734,36 @@ exc_message(VALUE exc)
  * call-seq:
  *   detailed_message(highlight: false, **kwargs) -> string
  *
- * Returns an enhanced message string:
+ * Returns the message string with enhancements:
  *
  * - Includes the exception class name in the first line.
  * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
- *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
+ *   includes bolding and underlining ANSI codes (see below)
+ *   to enhance the appearance of the message.
  *
- * This method is overridden by certain modules:
+ * Examples:
+ *
+ *   begin
+ *     1 / 0
+ *   rescue => x
+ *     p x.message
+ *     p x.detailed_message                  # Class name added.
+ *     p x.detailed_message(highlight: true) # Class name, bolding, and underlining added.
+ *   end
+ *
+ * Output:
+ *
+ *   "divided by 0"
+ *   "divided by 0 (ZeroDivisionError)"
+ *   "\e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m"
+ *
+ * This method is overridden by certain Ruby modules:
  *
  * - DidYouMean::Correctable#detailed_message.
  * - ErrorHighlight::CoreExt#detailed_message.
  * - SyntaxSuggest#detailed_message.
  *
- * An overriding method definition must be tolerant of passed keyword arguments,
+ * An overriding method must be tolerant of passed keyword arguments,
  * which may include (but may not be limited to):
  *
  * - +:highlight+.
@@ -1723,35 +1771,8 @@ exc_message(VALUE exc)
  * - +:error_highlight+.
  * - +:syntax_suggest+.
  *
- * A custom exception class that overrides this method
- * may choose to interpret keyword argument <tt>highlight: true</tt>
- * to mean that the returned message should contain
- * {ANSI codes}[https://en.wikipedia.org/wiki/ANSI_escape_code]
- * that specify foreground and background color,
- * along with other font properties (e.g., bold, italic, underscore).
- *
- * Widely supported ANSI codes include:
- *
- * - Begin foreground color:
- *
- *   - Black: +\e30m+
- *   - Red: +\e[31m+
- *   - Green: +\e[32m+
- *   - Yellow: +\e[33m+
- *   - Blue: +\e[34m+
- *   - Magenta: +\e[35m+
- *   - Cyan: +\e[36m+
- *   - White: +\e[37m+
- *
- * - Begin font property:
- *
- *   - Bold: +\e[1m+
- *   - Underline: +\e[4m+
- *
- * - End all of the above:
- *
- *   - Reset: +\e[0m+
- *
+ * An overrriding method should also be careful with ANSI code enhancements;
+ * see {Exception Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE

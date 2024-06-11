@@ -398,11 +398,60 @@ see Exception.new.
 The message may not be changed, but you can create a similar object with a different message;
 see Exception#exception.
 
-The message is returned by method Exception#message.
+This method returns the message as defined:
+
+- Exception#message.
 
 Two other methods return modified versions of the message:
 
-- Exception#detailed_message:
-- Exception#full_message:
+- Exception#detailed_message: adds exception class name.
+- Exception#full_message: adds exception class name and backtrace.
+
+Each of the two methods above accepts keyword argument +highlight+;
+if the value of keyword +highlight+ is true (not +nil+ or +false+),
+the returned string includes bolding and underlining ANSI codes (see below)
+to enhance the appearance of the message.
+
+Any exception class (Ruby or custom) may choose to override either of these methods,
+and may choose to interpret keyword argument <tt>highlight: true</tt>
+to mean that the returned message should contain
+{ANSI codes}[https://en.wikipedia.org/wiki/ANSI_escape_code]
+that specify foreground and background color, bolding, and underlining).
+
+Because the enhanced message may be written to a non-terminal device
+(e.g., into an HTML page),
+it is best to limit the ANSI codes to these widely-supported codes:
+
+- Begin foreground color:
+
+    | Color   | ANSI Code        |
+    |---------|------------------|
+    | Red     | <tt>\\e[31m</tt> |
+    | Green   | <tt>\\e[32m</tt> |
+    | Yellow  | <tt>\\e[33m</tt> |
+    | Blue    | <tt>\\e[34m</tt> |
+    | Magenta | <tt>\\e[35m</tt> |
+    | Cyan    | <tt>\\e[36m</tt> |
+
+<br>
+
+- Begin font property:
+
+    | Color     | ANSI Code       |
+    |-----------|-----------------|
+    | Bold      | <tt>\\e[1m</tt> |
+    | Underline | <tt>\\e[4m</tt> |
+
+<br>
+
+- End all of the above:
+
+    | Color | ANSI Code       |
+    |-------|-----------------|
+    | Reset | <tt>\\e[0m</tt> |
+
+It's also best to craft a message that is conveniently human-readable,
+even if the ANSI codes are included "as-is"
+(rather than interpreted as font directives).
 
 ## Backtraces
