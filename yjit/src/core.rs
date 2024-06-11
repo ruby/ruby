@@ -1293,7 +1293,7 @@ struct BranchStub {
 /// Note: care must be taken to minimize the size of branch objects
 pub struct Branch {
     // Block this is attached to
-    block: BlockRef,
+    block: Cell<BlockRef>,
 
     // Positions where the generated code starts and ends
     start_addr: CodePtr,
@@ -1433,7 +1433,7 @@ impl PendingBranch {
     fn into_branch(mut self, uninit_block: BlockRef) -> BranchRef {
         // Make the branch
         let branch = Branch {
-            block: uninit_block,
+            block: Cell::new(uninit_block),
             start_addr: self.start_addr.get().unwrap(),
             end_addr: Cell::new(self.end_addr.get().unwrap()),
             targets: self.targets,
@@ -1522,14 +1522,11 @@ pub struct Block {
     end_addr: Cell<CodePtr>,
 
     // List of incoming branches (from predecessors)
-    // These are reference counted (ownership shared between predecessor and successors)
     incoming: MutableBranchList,
 
-    // NOTE: we might actually be able to store the branches here without refcounting
-    // however, using a RefCell makes it easy to get a pointer to Branch objects
-    //
     // List of outgoing branches (to successors)
-    outgoing: Box<[BranchRef]>,
+    // Infrequently mutated for control flow graph edits for saving memory.
+    outgoing: MutableBranchList,
 
     // FIXME: should these be code pointers instead?
     // Offsets for GC managed objects in the mainline code block
@@ -1595,6 +1592,26 @@ impl MutableBranchList {
         let mut current_list = self.0.take().into_vec();
         current_list.push(branch);
         self.0.set(current_list.into_boxed_slice());
+    }
+
+    /// Iterate through branches in the list by moving out of the cell
+    /// and then putting it back when done. Modifications to this cell
+    /// during iteration will be discarded.
+    ///
+    /// Assumes panic=abort since panic=unwind during iteration would
+    /// leave the cell empty.
+    fn for_each(&self, mut f: impl FnMut(BranchRef)) {
+        let list = self.0.take();
+        for branch in list.iter() {
+            f(*branch);
+        }
+        self.0.set(list);
+    }
+
+    /// Length of the list.
+    fn len(&self) -> usize {
+        // SAFETY: No cell mutation inside unsafe.
+        unsafe { self.0.ref_unchecked().len() }
     }
 }
 
@@ -1821,7 +1838,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         }
 
         // Mark outgoing branch entries
-        for branch in block.outgoing.iter() {
+        block.outgoing.for_each(|branch| {
             let branch = unsafe { branch.as_ref() };
             for target in branch.targets.iter() {
                 // SAFETY: no mutation inside unsafe
@@ -1841,7 +1858,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
                     unsafe { rb_gc_mark_movable(target_iseq.into()) };
                 }
             }
-        }
+        });
 
         // Mark references to objects in generated code.
         // Skip for dead blocks since they shouldn't run.
@@ -1922,7 +1939,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         }
 
         // Update outgoing branch entries
-        for branch in block.outgoing.iter() {
+        block.outgoing.for_each(|branch| {
             let branch = unsafe { branch.as_ref() };
             for target in branch.targets.iter() {
                 // SAFETY: no mutation inside unsafe
@@ -1946,7 +1963,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
                     unsafe { target.ref_unchecked().as_ref().unwrap().set_iseq(updated_iseq) };
                 }
             }
-        }
+        });
 
         // Update references to objects in generated code.
         // Skip for dead blocks since they shouldn't run and
@@ -2233,11 +2250,11 @@ impl JITState {
             entry_exit: self.get_block_entry_exit(),
             cme_dependencies: self.method_lookup_assumptions.into_iter().map(Cell::new).collect(),
             // Pending branches => actual branches
-            outgoing: self.pending_outgoing.into_iter().map(|pending_out| {
+            outgoing: MutableBranchList(Cell::new(self.pending_outgoing.into_iter().map(|pending_out| {
                 let pending_out = Rc::try_unwrap(pending_out)
                     .ok().expect("all PendingBranchRefs should be unique when ready to construct a Block");
                 pending_out.into_branch(NonNull::new(blockref as *mut Block).expect("no null from Box"))
-            }).collect()
+            }).collect()))
         });
         // Initialize it on the heap
         // SAFETY: allocated with Box above
@@ -2282,10 +2299,10 @@ impl Block {
 
     pub fn get_ctx_count(&self) -> usize {
         let mut count = 1; // block.ctx
-        for branch in self.outgoing.iter() {
+        self.outgoing.for_each(|branch| {
             // SAFETY: &self implies it's initialized
             count += unsafe { branch.as_ref() }.get_stub_count();
-        }
+        });
         count
     }
 
@@ -2954,9 +2971,10 @@ fn gen_block_series_body(
     let mut last_blockref = first_block;
     loop {
         // Get the last outgoing branch from the previous block.
-        let last_branchref = {
-            let last_block = unsafe { last_blockref.as_ref() };
-            match last_block.outgoing.last() {
+        // SAFETY: No cell mutation inside unsafe. Copying out a BranchRef.
+        let last_branchref: BranchRef = unsafe {
+            let last_block = last_blockref.as_ref();
+            match last_block.outgoing.0.ref_unchecked().last() {
                 Some(branch) => *branch,
                 None => {
                     break;
@@ -3247,7 +3265,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     cb.remove_comments(branch.start_addr, branch.end_addr.get());
 
     // SAFETY: having a &Branch implies branch.block is initialized.
-    let block = unsafe { branch.block.as_ref() };
+    let block = unsafe { branch.block.get().as_ref() };
 
     let branch_terminates_block = branch.end_addr.get() == block.get_end_addr();
 
@@ -3347,9 +3365,11 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     // SAFETY: We have the VM lock, and the branch is initialized by the time generated
     // code calls this function.
+    //
+    // Careful, don't make a `&Block` from `branch.block` here because we might
+    // delete it later in delete_empty_defer_block().
     let branch = unsafe { branch_ref.as_ref() };
     let branch_size_on_entry = branch.code_size();
-    let housing_block = unsafe { branch.block.as_ref() };
 
     let target_idx: usize = target_idx.as_usize();
     let target_branch_shape = match target_idx {
@@ -3423,7 +3443,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         // If the new block can be generated right after the branch (at cb->write_pos)
         if cb.get_write_ptr() == branch.end_addr.get() {
             // This branch should be terminating its block
-            assert!(branch.end_addr == housing_block.end_addr);
+            assert!(branch.end_addr == unsafe { branch.block.get().as_ref() }.end_addr);
 
             // Change the branch shape to indicate the target block will be placed next
             branch.gen_fn.set_shape(target_branch_shape);
@@ -3456,6 +3476,9 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
             // Branch shape should reflect layout
             assert!(!(branch.gen_fn.get_shape() == target_branch_shape && new_block.start_addr != branch.end_addr.get()));
+
+            // When block housing this branch is empty, try to free it
+            delete_empty_defer_block(branch, new_block, target_ctx, target_blockid);
 
             // Add this branch to the list of incoming branches for the target
             new_block.push_incoming(branch_ref);
@@ -3504,6 +3527,54 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     // Return a pointer to the compiled block version
     dst_addr.raw_ptr(cb)
+}
+
+/// Part of branch_stub_hit().
+/// If we've hit a deferred branch, and the housing block consists solely of the branch, rewire
+/// incoming branches to the new block and delete the housing block.
+fn delete_empty_defer_block(branch: &Branch, new_block: &Block, target_ctx: Context, target_blockid: BlockId)
+{
+    // This &Block should be unique, relying on the VM lock
+    let housing_block: &Block = unsafe { branch.block.get().as_ref() };
+    if target_ctx.is_deferred() &&
+        target_blockid == housing_block.get_blockid() &&
+        housing_block.outgoing.len() == 1 &&
+        {
+            // The block is empty when iseq_range is one instruction long.
+            let range = &housing_block.iseq_range;
+            let iseq = housing_block.iseq.get();
+            let start_opcode = iseq_opcode_at_idx(iseq, range.start.into()) as usize;
+            let empty_end = range.start + insn_len(start_opcode) as IseqIdx;
+            range.end == empty_end
+        }
+    {
+        // Divert incoming branches of housing_block to the new block
+        housing_block.incoming.for_each(|incoming| {
+            let incoming = unsafe { incoming.as_ref() };
+            for target in 0..incoming.targets.len() {
+                // SAFETY: No cell mutation; copying out a BlockRef.
+                if Some(BlockRef::from(housing_block)) == unsafe {
+                            incoming.targets[target]
+                                .ref_unchecked()
+                                .as_ref()
+                                .and_then(|target| target.get_block())
+                        } {
+                    incoming.targets[target].set(Some(Box::new(BranchTarget::Block(new_block.into()))));
+                }
+            }
+            new_block.push_incoming(incoming.into());
+        });
+
+        // Transplant the branch we've just hit to the new block
+        mem::drop(housing_block.outgoing.0.take());
+        new_block.outgoing.push(branch.into());
+        let housing_block: BlockRef = branch.block.replace(new_block.into());
+        // Free the old housing block; there should now be no live &Block.
+        remove_block_version(&housing_block);
+        unsafe { free_block(housing_block, false) };
+
+        incr_counter!(deleted_defer_block_count);
+    }
 }
 
 /// Generate a "stub", a piece of code that calls the compiler back when run.
@@ -3745,7 +3816,7 @@ pub fn defer_compilation(
         idx: jit.get_insn_idx(),
     };
 
-    // Likely a stub due to the increased chain depth
+    // Likely a stub since the context is marked as deferred().
     let target0_address = branch.set_target(0, blockid, &next_ctx, ocb);
 
     // Pad the block if it has the potential to be invalidated. This must be
@@ -3800,7 +3871,7 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
     }
 
     // For each outgoing branch
-    for out_branchref in block.outgoing.iter() {
+    block.outgoing.for_each(|out_branchref| {
         let out_branch = unsafe { out_branchref.as_ref() };
         // For each successor block
         for out_target in out_branch.targets.iter() {
@@ -3816,11 +3887,11 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
                 // Temporarily move out of succ_block.incoming.
                 let succ_incoming = succ_block.incoming.0.take();
                 let mut succ_incoming = succ_incoming.into_vec();
-                succ_incoming.retain(|branch| branch != out_branchref);
+                succ_incoming.retain(|branch| *branch != out_branchref);
                 succ_block.incoming.0.set(succ_incoming.into_boxed_slice()); // allocs. Rely on oom=abort
             }
         }
-    }
+    });
 }
 
 /// Tear down a block and deallocate it.
@@ -3854,7 +3925,7 @@ pub unsafe fn free_block(blockref: BlockRef, graph_intact: bool) {
 /// Caller must ensure that we have unique ownership for the referent block
 unsafe fn dealloc_block(blockref: BlockRef) {
     unsafe {
-        for outgoing in blockref.as_ref().outgoing.iter() {
+        for outgoing in blockref.as_ref().outgoing.0.take().iter() {
             // this Box::from_raw matches the Box::into_raw from PendingBranch::into_branch
             mem::drop(Box::from_raw(outgoing.as_ptr()));
         }
@@ -4286,7 +4357,7 @@ mod tests {
         // we're always working with &Branch (a shared reference to a Branch).
         let branch: &Branch = &Branch {
             gen_fn: BranchGenFn::JZToTarget0,
-            block,
+            block: Cell::new(block),
             start_addr: dumm_addr,
             end_addr: Cell::new(dumm_addr),
             targets: [Cell::new(None), Cell::new(Some(Box::new(BranchTarget::Stub(Box::new(BranchStub {

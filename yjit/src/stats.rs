@@ -266,13 +266,14 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 19] = [
+pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
     Counter::compiled_iseq_count,
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
+    Counter::deleted_defer_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
     Counter::max_inline_versions,
@@ -554,6 +555,7 @@ make_counters! {
     block_next_count,
     defer_count,
     defer_empty_count,
+    deleted_defer_block_count,
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
