@@ -226,15 +226,23 @@ AS_CASE(["/${rb_CC} "],
 [*clang*],            [
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
+
+    # Xcode has its own version tools that may be incompatible with
+    # genuine LLVM tools, use the tools in the same directory.
+
+    AS_IF([$rb_CC -E -dM -xc - < /dev/null | grep -F __apple_build_version__ > /dev/null],
+          [llvm_prefix=], [llvm_prefix=llvm-])
+    # AC_PREPROC_IFELSE cannot be used before AC_USE_SYSTEM_EXTENSIONS
+
     RUBY_CHECK_PROG_FOR_CC([LD],      [s/clang/ld/]) # ... maybe try lld ?
-    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
-#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
+    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/${llvm_prefix}ar/])
+#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/${llvm_prefix}as/])
     RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
-    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/llvm-nm/])
-    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/llvm-objcopy/])
-    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/llvm-objdump/])
-    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/llvm-ranlib/])
-    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/llvm-strip/])
+    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/${llvm_prefix}nm/])
+    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/${llvm_prefix}objcopy/])
+    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/${llvm_prefix}objdump/])
+    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/${llvm_prefix}ranlib/])
+    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/${llvm_prefix}strip/])
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -245,12 +253,6 @@ AS_CASE(["${build_os}"],
 ],
 [aix*], [
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
-],
-[darwin*], [
-    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
-    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
-    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
-    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
