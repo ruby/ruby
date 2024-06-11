@@ -3527,6 +3527,11 @@ rb_gc_impl_objspace_alloc(void)
         rb_bug("Could not preregister postponed job for GC");
     }
 
+    // TODO: debug why on Windows Ruby crashes on boot when GC is on.
+#ifdef _WIN32
+    dont_gc_on();
+#endif
+
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
 
@@ -3534,14 +3539,13 @@ rb_gc_impl_objspace_alloc(void)
 
         ccan_list_head_init(&SIZE_POOL_EDEN_HEAP(size_pool)->pages);
         ccan_list_head_init(&SIZE_POOL_TOMB_HEAP(size_pool)->pages);
+
+        gc_params.size_pool_init_slots[i] = GC_HEAP_INIT_SLOTS;
+
+        size_pool->allocatable_pages = minimum_pages_for_size_pool(objspace, size_pool);
     }
 
     rb_darray_make(&objspace->weak_references, 0);
-
-    // TODO: debug why on Windows Ruby crashes on boot when GC is on.
-#ifdef _WIN32
-    dont_gc_on();
-#endif
 
 #if defined(INIT_HEAP_PAGE_ALLOC_USE_MMAP)
     /* Need to determine if we can use mmap at runtime. */
@@ -3556,15 +3560,6 @@ rb_gc_impl_objspace_alloc(void)
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
-    /* Set size pools allocatable pages. */
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
-
-        /* Set the default value of size_pool_init_slots. */
-        gc_params.size_pool_init_slots[i] = GC_HEAP_INIT_SLOTS;
-
-        size_pool->allocatable_pages = minimum_pages_for_size_pool(objspace, size_pool);
-    }
     heap_pages_expand_sorted(objspace);
 
     init_mark_stack(&objspace->mark_stack);
