@@ -1140,7 +1140,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
     assert_norun_with_rflag('--dump=parsetree+error_tolerant')
     assert_norun_with_rflag('--dump=parse+error_tolerant')
-    assert_in_out_err(%w(--parser=prism --dump=parsetree -e ""), "", /ProgramNode/, PRISM_WARNING)
+    assert_in_out_err(%w(--parser=prism --dump=parsetree -e ""), "", /ProgramNode/, PRISM_WARNING, encoding: "UTF-8")
   end
 
   def test_dump_insns_with_rflag
