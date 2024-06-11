@@ -841,12 +841,17 @@ enum CtxOp {
     EndOfCode,
 }
 
+// Number of entries in the context cache
 const CTX_CACHE_SIZE: usize = 512;
 
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
 // We can experiment with varying the size of this cache
-static mut CTX_CACHE: Option<[(Context, u32); CTX_CACHE_SIZE]> = None;
+pub type CtxCacheTbl = [(Context, u32); CTX_CACHE_SIZE];
+static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
+
+// Size of the context cache in bytes
+pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
 
 impl Context {
     pub fn encode(&self) -> u32 {
@@ -857,12 +862,14 @@ impl Context {
         }
 
         if let Some(idx) = Self::cache_get(self) {
+            debug_assert!(Self::decode(idx) == *self);
             return idx;
         }
 
         let context_data = CodegenGlobals::get_context_data();
 
-        // Offset 0 is reserved for the default context
+        // Make sure we don't use offset 0 because
+        // it's is reserved for the default context
         if context_data.num_bits() == 0 {
             context_data.push_u1(0);
         }
@@ -891,6 +898,24 @@ impl Context {
         ctx
     }
 
+    // Store an entry in a cache of recently encoded/decoded contexts
+    fn cache_set(ctx: &Context, idx: u32)
+    {
+        unsafe {
+            if CTX_CACHE == None {
+                let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
+                CTX_CACHE = Some(Box::new(empty_tbl));
+            }
+
+            let mut hasher = DefaultHasher::new();
+            ctx.hash(&mut hasher);
+            let ctx_hash = hasher.finish() as usize;
+
+            let cache = CTX_CACHE.as_mut().unwrap();
+            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
+        }
+    }
+
     // Lookup the context in a cache of recently encoded/decoded contexts
     fn cache_get(ctx: &Context) -> Option<u32>
     {
@@ -914,32 +939,9 @@ impl Context {
         }
     }
 
-    // Store an entry in a cache of recently encoded/decoded contexts
-    fn cache_set(ctx: &Context, idx: u32)
-    {
-        unsafe {
-            if CTX_CACHE == None {
-                CTX_CACHE = Some( [(Context::default(), 0); CTX_CACHE_SIZE] );
-            }
-
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
-
-            let cache = CTX_CACHE.as_mut().unwrap();
-            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
-        }
-    }
-
     // Encode into a compressed context representation in a bit vector
     fn encode_into(&self, bits: &mut BitVector) -> usize {
         let start_idx = bits.num_bits();
-
-        // NOTE: this value is often zero or falls within
-        // a small range, so could be compressed
-        //println!("stack_size={}", self.stack_size);
-        //println!("sp_offset={}", self.sp_offset);
-        //println!("chain_depth_and_flags={}", self.chain_depth_and_flags);
 
         // Most of the time, the stack size is small and sp offset has the same value
         if (self.stack_size as i64) == (self.sp_offset as i64) && self.stack_size < 4 {
