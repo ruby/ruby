@@ -1354,6 +1354,10 @@ eom
     assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
   end
 
+  def test_invalid_encoding_symbol
+    assert_syntax_error('{"\xC3": 1}', "invalid symbol")
+  end
+
   def test_do_after_local_variable
     obj = Object.new
     def obj.m; yield; end

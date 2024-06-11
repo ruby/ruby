@@ -679,12 +679,14 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->enc_isspace           = enc_isspace;
     config->enc_coderange_7bit    = ENC_CODERANGE_7BIT;
     config->enc_coderange_unknown = ENC_CODERANGE_UNKNOWN;
+    config->enc_coderange_broken  = ENC_CODERANGE_BROKEN;
     config->enc_compatible        = enc_compatible;
     config->enc_from_encoding     = enc_from_encoding;
     config->encoding_get          = encoding_get;
     config->encoding_set          = encoding_set;
     config->encoding_is_ascii8bit = encoding_is_ascii8bit;
     config->usascii_encoding      = usascii_encoding;
+    config->enc_str_coderange     = rb_enc_str_coderange;
 
     config->ractor_make_shareable = rb_ractor_make_shareable;
 

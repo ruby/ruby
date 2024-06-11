@@ -1295,12 +1295,14 @@ typedef struct rb_parser_config_struct {
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
     int enc_coderange_7bit;
     int enc_coderange_unknown;
+    int enc_coderange_broken;
     rb_encoding *(*enc_compatible)(VALUE str1, VALUE str2);
     VALUE (*enc_from_encoding)(rb_encoding *enc);
     int (*encoding_get)(VALUE obj);
     void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
+    int (*enc_str_coderange)(VALUE str);
 
     /* Ractor */
     VALUE (*ractor_make_shareable)(VALUE obj);

@@ -283,12 +283,14 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
+#define ENC_CODERANGE_BROKEN    p->config->enc_coderange_broken
 #define rb_enc_compatible       p->config->enc_compatible
 #define rb_enc_from_encoding    p->config->enc_from_encoding
 #define ENCODING_GET            p->config->encoding_get
 #define ENCODING_SET            p->config->encoding_set
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
+#define rb_enc_str_coderange    p->config->enc_str_coderange
 
 #define rb_ractor_make_shareable p->config->ractor_make_shareable
 
