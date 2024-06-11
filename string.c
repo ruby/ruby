@@ -3349,7 +3349,7 @@ rb_str_cat_cstr(VALUE str, const char *ptr)
 static void
 rb_str_buf_cat_byte(VALUE str, unsigned char byte)
 {
-    RUBY_ASSERT(RB_ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT);
+    RUBY_ASSERT(RB_ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT || RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII);
 
     // We can't write directly to shared strings without impacting others, so we must make the string independent.
     if (UNLIKELY(!str_independent(str))) {
@@ -3394,6 +3394,11 @@ rb_str_buf_cat_byte(VALUE str, unsigned char byte)
         }
         else {
             ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+
+            // Promote a US-ASCII string to ASCII-8BIT when a non-ASCII byte is appended.
+            if (UNLIKELY(RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)) {
+                rb_enc_associate_index(str, ENCINDEX_ASCII_8BIT);
+            }
         }
     }
 }
@@ -3687,17 +3692,8 @@ rb_str_concat(VALUE str1, VALUE str2)
 
     encidx = rb_ascii8bit_appendable_encoding_index(enc, code);
 
-    if (encidx == ENCINDEX_ASCII_8BIT) {
+    if (encidx >= 0) {
         rb_str_buf_cat_byte(str1, (unsigned char)code);
-    }
-    else if (encidx >= 0) {
-        char buf[1];
-        buf[0] = (char)code;
-        rb_str_cat(str1, buf, 1);
-        if (encidx != rb_enc_to_index(enc)) {
-            rb_enc_associate_index(str1, encidx);
-            ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
-        }
     }
     else {
         long pos = RSTRING_LEN(str1);
