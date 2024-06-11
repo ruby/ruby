@@ -709,4 +709,3 @@ Init_fiddle(void)
     Init_fiddle_memory_view();
 #endif
 }
-/* vim: set noet sws=4 sw=4: */

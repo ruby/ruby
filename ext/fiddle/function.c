@@ -493,4 +493,3 @@ Init_fiddle_function(void)
      */
     rb_define_method(cFiddleFunction, "initialize", initialize, -1);
 }
-/* vim: set noet sws=4 sw=4: */
