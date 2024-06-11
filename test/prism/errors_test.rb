@@ -2134,14 +2134,14 @@ module Prism
 
     def test_regular_expression_with_unknown_regexp_options
       source = "/foo/AZaz"
-      errors = [["unknown regexp options: AZaz", 4..9]]
+      errors = [["unknown regexp options - AZaz", 4..9]]
 
       assert_errors expression(source), source, errors
     end
 
     def test_interpolated_regular_expression_with_unknown_regexp_options
       source = "/\#{foo}/AZaz"
-      errors = [["unknown regexp options: AZaz", 7..12]]
+      errors = [["unknown regexp options - AZaz", 7..12]]
 
       assert_errors expression(source), source, errors
     end

@@ -167,6 +167,14 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_ractor_shareable_value_frozen_core
+    iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
+      # shareable_constant_value: literal
+      REGEX = /#{}/ # [Bug #20569]
+    RUBY
+    assert_includes iseq.to_binary, "REGEX".b
+  end
+
   def test_disasm_encoding
     src = +"\u{3042} = 1; \u{3042}; \u{3043}"
     asm = compile(src).disasm

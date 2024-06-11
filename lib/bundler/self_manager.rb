@@ -92,6 +92,7 @@ module Bundler
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
         Bundler.rubygems.supports_bundler_trampolining? &&
+        ruby_can_restart_with_same_arguments? &&
         SharedHelpers.in_bundle? &&
         lockfile_version
     end
@@ -149,6 +150,10 @@ module Bundler
 
     def released?(version)
       !version.to_s.end_with?(".dev")
+    end
+
+    def ruby_can_restart_with_same_arguments?
+      $PROGRAM_NAME != "-e"
     end
 
     def updating?

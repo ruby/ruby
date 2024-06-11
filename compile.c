@@ -9882,7 +9882,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 static int
 compile_make_shareable_node(rb_iseq_t *iseq, LINK_ANCHOR *ret, LINK_ANCHOR *sub, const NODE *value, bool copy)
 {
-    ADD_INSN1(ret, value, putobject, rb_mRubyVMFrozenCore);
+    ADD_INSN1(ret, value, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_SEQ(ret, sub);
 
     if (copy) {
@@ -9971,7 +9971,7 @@ compile_ensure_shareable_node(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *dest, con
      *. RubyVM::FrozenCore.ensure_shareable(value, const_decl_path(dest))
      */
     VALUE path = const_decl_path(dest);
-    ADD_INSN1(ret, value, putobject, rb_mRubyVMFrozenCore);
+    ADD_INSN1(ret, value, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     CHECK(COMPILE(ret, "compile_ensure_shareable_node", value));
     ADD_INSN1(ret, value, putobject, path);
     RB_OBJ_WRITTEN(iseq, Qundef, path);

@@ -167,6 +167,10 @@ module Bundler
       end
     end
 
+    def auto_switch
+      self_manager.restart_with_locked_bundler_if_needed
+    end
+
     # Automatically install dependencies if Bundler.settings[:auto_install] exists.
     # This is set through config cmd `bundle config set --global auto_install 1`.
     #
