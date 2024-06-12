@@ -948,6 +948,7 @@ impl Context {
         // Most of the time, the stack size is small and sp offset has the same value
         if (self.stack_size as i64) == (self.sp_offset as i64) && self.stack_size < 4 {
             // One single bit to signify a compact stack_size/sp_offset encoding
+            debug_assert!(self.sp_offset >= 0);
             bits.push_u1(1);
             bits.push_u2(self.stack_size);
         } else {
@@ -1040,7 +1041,11 @@ impl Context {
             ctx.sp_offset = ctx.stack_size as i8;
         } else {
             ctx.stack_size = bits.read_u8(&mut idx);
-            ctx.sp_offset = bits.read_u8(&mut idx) as i8;
+            let sp_offset_bits = bits.read_u8(&mut idx);
+            ctx.sp_offset = sp_offset_bits as i8;
+
+            // If the top bit is set, then the sp offset must be negative
+            debug_assert!(!( (sp_offset_bits & 0x80) != 0 && ctx.sp_offset > 0 ));
         }
 
         // Bitmap of which stack temps are in a register
