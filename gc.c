@@ -1552,6 +1552,7 @@ static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 static inline int RVALUE_WB_UNPROTECTED(VALUE);
+static inline int RVALUE_UNCOLLECTIBLE(VALUE);
 static inline int RVALUE_MARKING(VALUE);
 static inline int RVALUE_MARKED(VALUE);
 
@@ -1590,7 +1591,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         }
         else {
             const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED(obj);
-            const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+            const int uncollectible_bit = RVALUE_UNCOLLECTIBLE(obj) != 0;
             const int mark_bit = RVALUE_MARKED(obj);
             const int marking_bit = RVALUE_MARKING(obj);
             const int remembered_bit = MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
@@ -13148,7 +13149,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
             APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
-                     C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
+                     C(RVALUE_UNCOLLECTIBLE(obj),         "L"),
                      C(RVALUE_MARKED(obj),                "M"),
                      C(RVALUE_PINNED(obj),                "P"),
                      C(RVALUE_MARKING(obj),               "R"),
