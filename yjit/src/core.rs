@@ -858,10 +858,12 @@ impl Context {
         incr_counter!(num_contexts_encoded);
 
         if *self == Context::default() {
+            incr_counter!(context_cache_hits);
             return 0;
         }
 
         if let Some(idx) = Self::cache_get(self) {
+            incr_counter!(context_cache_hits);
             debug_assert!(Self::decode(idx) == *self);
             return idx;
         }
