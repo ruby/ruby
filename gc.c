@@ -1551,6 +1551,7 @@ tick(void)
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
+static inline int RVALUE_MARKED(VALUE);
 
 static int
 check_rvalue_consistency_force(const VALUE obj, int terminate)
@@ -1588,7 +1589,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         else {
             const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
             const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
-            const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
+            const int mark_bit = RVALUE_MARKED(obj);
             const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0;
             const int remembered_bit = MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
             const int age = RVALUE_AGE_GET((VALUE)obj);
@@ -4414,7 +4415,7 @@ static inline bool
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
-        !MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr);
+        !RVALUE_MARKED(ptr);
 }
 
 static inline bool
@@ -5028,7 +5029,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
-    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
+    GC_ASSERT(RVALUE_MARKED(src));
 
     asan_unlock_freelist(free_page);
     VALUE dest = (VALUE)free_page->freelist;
@@ -5784,7 +5785,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                 if (BUILTIN_TYPE(forwarding_object) == T_MOVED) {
                     GC_ASSERT(RVALUE_PINNED(forwarding_object));
-                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(!RVALUE_MARKED(forwarding_object));
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
@@ -5807,7 +5808,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                     orig_page->free_slots++;
                     heap_page_add_freeobj(objspace, orig_page, object);
 
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(RVALUE_MARKED(forwarding_object));
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
                 }
@@ -7406,7 +7407,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, st_data_t ptr)
     rb_objspace_t *objspace = (rb_objspace_t *)ptr;
 
     /* object should be marked or oldgen */
-    if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj)) {
+    if (!RVALUE_MARKED(obj)) {
         fprintf(stderr, "gc_check_after_marks_i: %s is not marked and not oldgen.\n", obj_info(obj));
         fprintf(stderr, "gc_check_after_marks_i: %p is referred from ", (void *)obj);
         reflist_dump(refs);
@@ -8749,7 +8750,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     if (RVALUE_OLD_P(obj) && n<max)                                 flags[n++] = ID_old;
     if (RVALUE_UNCOLLECTIBLE(obj) && n<max)                         flags[n++] = ID_uncollectible;
     if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
-    if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)    flags[n++] = ID_marked;
+    if (RVALUE_MARKED(obj) && n<max)                                flags[n++] = ID_marked;
     if (RVALUE_PINNED(obj) && n<max)                                flags[n++] = ID_pinned;
     return n;
 }
@@ -9538,7 +9539,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
-    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(free), free));
+    GC_ASSERT(!RVALUE_MARKED(free));
 
     GC_ASSERT(!RVALUE_MARKING((VALUE)src));
 
@@ -13151,7 +13152,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
             APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
-                     C(RVALUE_MARK_BITMAP(obj),           "M"),
+                     C(RVALUE_MARKED(obj),                "M"),
                      C(RVALUE_PINNED(obj),                "P"),
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
@@ -13504,7 +13505,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
         return;
     }
 
-    fprintf(stderr, "marked?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
+    fprintf(stderr, "marked?      : %s\n", RVALUE_MARKED(obj) ? "true" : "false");
     fprintf(stderr, "pinned?      : %s\n", RVALUE_PINNED(obj) ? "true" : "false");
     fprintf(stderr, "age?         : %d\n", RVALUE_AGE_GET(obj));
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
