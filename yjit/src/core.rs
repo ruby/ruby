@@ -943,7 +943,7 @@ impl Context {
             let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
             if cache_entry.0 == *ctx {
                 debug_assert!(cache_entry.1 != 0);
-                debug_assert!(Self::decode(cache_entry.1) == *ctx)
+                debug_assert!(Self::decode(cache_entry.1) == *ctx);
                 return Some(cache_entry.1);
             }
 
