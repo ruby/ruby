@@ -61,7 +61,7 @@ module TestIRB
         omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
       end
 
-      if RUBY_VERSION >= "3.4."
+      if RUBY_VERSION >= "3.3."
         omit "Now raises SyntaxError"
       end
 
