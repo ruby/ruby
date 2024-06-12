@@ -1551,6 +1551,7 @@ tick(void)
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
+static inline int RVALUE_MARKING(VALUE);
 static inline int RVALUE_MARKED(VALUE);
 
 static int
@@ -1590,7 +1591,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
             const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
             const int mark_bit = RVALUE_MARKED(obj);
-            const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0;
+            const int marking_bit = RVALUE_MARKING(obj);
             const int remembered_bit = MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
             const int age = RVALUE_AGE_GET((VALUE)obj);
 
@@ -8749,7 +8750,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     if (RVALUE_WB_UNPROTECTED(obj) == 0 && n<max)                   flags[n++] = ID_wb_protected;
     if (RVALUE_OLD_P(obj) && n<max)                                 flags[n++] = ID_old;
     if (RVALUE_UNCOLLECTIBLE(obj) && n<max)                         flags[n++] = ID_uncollectible;
-    if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
+    if (RVALUE_MARKING(obj) && n<max)                               flags[n++] = ID_marking;
     if (RVALUE_MARKED(obj) && n<max)                                flags[n++] = ID_marked;
     if (RVALUE_PINNED(obj) && n<max)                                flags[n++] = ID_pinned;
     return n;
@@ -13154,7 +13155,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
                      C(RVALUE_MARKED(obj),                "M"),
                      C(RVALUE_PINNED(obj),                "P"),
-                     C(RVALUE_MARKING_BITMAP(obj),        "R"),
+                     C(RVALUE_MARKING(obj),               "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
                      obj_type_name(obj));
