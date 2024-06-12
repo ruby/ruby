@@ -12,7 +12,6 @@ static ID id_binwrite;
 static ID id_birthtime;
 static ID id_blockdev_p;
 static ID id_chardev_p;
-static ID id_chmod;
 static ID id_chown;
 static ID id_ctime;
 static ID id_directory_p;
@@ -520,20 +519,6 @@ static VALUE
 path_mtime(VALUE self)
 {
     return rb_funcall(rb_cFile, id_mtime, 1, get_strpath(self));
-}
-
-/*
- * call-seq:
- *   pathname.chmod(mode_int)	-> integer
- *
- * Changes file permissions.
- *
- * See File.chmod.
- */
-static VALUE
-path_chmod(VALUE self, VALUE mode)
-{
-    return rb_funcall(rb_cFile, id_chmod, 2, mode, get_strpath(self));
 }
 
 /*
@@ -1432,7 +1417,6 @@ path_f_pathname(VALUE self, VALUE str)
  * - #birthtime
  * - #ctime
  * - #mtime
- * - #chmod(mode)
  * - #lchmod(mode)
  * - #chown(owner, group)
  * - #lchown(owner, group)
@@ -1480,6 +1464,7 @@ path_f_pathname(VALUE self, VALUE str)
  * === Utilities
  *
  * These methods are a mixture of Find, FileUtils, and others:
+ * - #chmod(mode)
  * - #find(&block)
  * - #mkpath
  * - #rmtree
@@ -1529,7 +1514,6 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "birthtime", path_birthtime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
-    rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
     rb_define_method(rb_cPathname, "lchmod", path_lchmod, 1);
     rb_define_method(rb_cPathname, "chown", path_chown, 2);
     rb_define_method(rb_cPathname, "lchown", path_lchown, 2);
@@ -1606,7 +1590,6 @@ InitVM_pathname(void)
     id_birthtime = rb_intern("birthtime");
     id_blockdev_p = rb_intern("blockdev?");
     id_chardev_p = rb_intern("chardev?");
-    id_chmod = rb_intern("chmod");
     id_chown = rb_intern("chown");
     id_ctime = rb_intern("ctime");
     id_directory_p = rb_intern("directory?");
