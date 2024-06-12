@@ -5778,7 +5778,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                 VALUE object;
 
                 if (BUILTIN_TYPE(forwarding_object) == T_MOVED) {
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(RVALUE_PINNED(forwarding_object));
                     GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
@@ -6695,7 +6695,7 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     GC_ASSERT(is_markable_object(obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
-            if (!MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj)) {
+            if (!RVALUE_PINNED(obj)) {
                 GC_ASSERT(GET_HEAP_PAGE(obj)->pinned_slots <= GET_HEAP_PAGE(obj)->total_slots);
                 GET_HEAP_PAGE(obj)->pinned_slots++;
                 MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
@@ -8745,7 +8745,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     if (RVALUE_UNCOLLECTIBLE(obj) && n<max)                         flags[n++] = ID_uncollectible;
     if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
     if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)    flags[n++] = ID_marked;
-    if (MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) && n<max)  flags[n++] = ID_pinned;
+    if (RVALUE_PINNED(obj) && n<max)                                flags[n++] = ID_pinned;
     return n;
 }
 
@@ -13147,7 +13147,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
                      C(RVALUE_MARK_BITMAP(obj),           "M"),
-                     C(RVALUE_PIN_BITMAP(obj),            "P"),
+                     C(RVALUE_PINNED(obj),                "P"),
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
@@ -13500,7 +13500,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
     }
 
     fprintf(stderr, "marked?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
-    fprintf(stderr, "pinned?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) ? "true" : "false");
+    fprintf(stderr, "pinned?      : %s\n", RVALUE_PINNED(obj) ? "true" : "false");
     fprintf(stderr, "age?         : %d\n", RVALUE_AGE_GET(obj));
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
     fprintf(stderr, "WB-protected?: %s\n", RVALUE_WB_UNPROTECTED(obj) ? "false" : "true");
