@@ -2891,7 +2891,7 @@ AS_IF([test "$THREAD_MODEL" = pthread], [
 	    ])
     ])
 
-    AC_CACHE_CHECK([for thread-local storage sepcifier], [rb_cv_tls_specifier],
+    AC_CACHE_CHECK([for thread-local storage specifier], [rb_cv_tls_specifier],
         rb_cv_tls_specifier=none
         RUBY_WERROR_FLAG([
             for attr in \
