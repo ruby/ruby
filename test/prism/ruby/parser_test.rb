@@ -130,7 +130,6 @@ module Prism
       "seattlerb/parse_line_heredoc.txt",
       "seattlerb/parse_line_multiline_str_literal_n.txt",
       "seattlerb/parse_line_str_with_newline_escape.txt",
-      "seattlerb/pct_Q_backslash_nl.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
       "seattlerb/qsymbols_empty_space.txt",
       "seattlerb/qw_escape_term.txt",
@@ -208,7 +207,15 @@ module Prism
         end
 
         assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
-        assert_equal_tokens(expected_tokens, actual_tokens) if compare_tokens
+
+        begin
+          assert_equal_tokens(expected_tokens, actual_tokens)
+        rescue Test::Unit::AssertionFailedError
+          raise if compare_tokens
+        else
+          puts "#{fixture.path} is now passing" if !compare_tokens
+        end
+
         assert_equal_comments(expected_comments, actual_comments) if compare_comments
       elsif compare_asts
         assert_equal expected_ast, actual_ast, -> { assert_equal_asts_message(expected_ast, actual_ast) }
