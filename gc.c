@@ -1536,14 +1536,52 @@ tick(void)
 #define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
-#define RVALUE_MARK_BITMAP(obj)           MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
-#define RVALUE_PIN_BITMAP(obj)            MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
+static inline VALUE check_rvalue_consistency(const VALUE obj);
+
+static inline int
+RVALUE_MARKED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj)) != 0;
+}
+
+static inline int
+RVALUE_PINNED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+
+    return MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj)) != 0;
+}
+
+static inline int
+RVALUE_WB_UNPROTECTED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj)) != 0;
+}
+
+static inline int
+RVALUE_MARKING(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj)) != 0;
+}
+
+static inline int
+RVALUE_REMEMBERED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
+}
+
+static inline int
+RVALUE_UNCOLLECTIBLE(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj)) != 0;
+}
+
 #define RVALUE_PAGE_MARKED(page, obj)     MARKED_IN_BITMAP((page)->mark_bits, (obj))
-
-#define RVALUE_WB_UNPROTECTED_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj))
-#define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
-#define RVALUE_MARKING_BITMAP(obj)        MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj))
-
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
@@ -1551,10 +1589,6 @@ tick(void)
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
-static inline int RVALUE_WB_UNPROTECTED(VALUE);
-static inline int RVALUE_UNCOLLECTIBLE(VALUE);
-static inline int RVALUE_MARKING(VALUE);
-static inline int RVALUE_MARKED(VALUE);
 
 static int
 check_rvalue_consistency_force(const VALUE obj, int terminate)
@@ -1694,48 +1728,6 @@ gc_object_moved_p(rb_objspace_t * objspace, VALUE obj)
         }
         return ret;
     }
-}
-
-static inline int
-RVALUE_MARKED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_MARK_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_PINNED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_PIN_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_WB_UNPROTECTED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_MARKING(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_MARKING_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_REMEMBERED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
-}
-
-static inline int
-RVALUE_UNCOLLECTIBLE(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
 }
 
 static inline int
