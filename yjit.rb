@@ -459,7 +459,7 @@ module RubyVM::YJIT
           out.puts("  #{padded_count}: #{name}")
         end
       else
-        out.puts "total_exits:           " + format_number(10, total_exits)
+        out.puts "total_exits:           " + format_number(13, total_exits)
       end
     end
 
