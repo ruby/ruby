@@ -614,7 +614,6 @@ make_counters! {
     temp_spill,
 
     context_cache_hits,
-    context_cache_misses,
 }
 
 //===========================================================================
