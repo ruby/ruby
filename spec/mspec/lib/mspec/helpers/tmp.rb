@@ -42,9 +42,11 @@ def tmp(name, uniquify = true)
       raise ArgumentError, "SPEC_TEMP_DIR (#{SPEC_TEMP_DIR}) is world writable but not sticky"
     end
   else
-    umask = File.umask
-    if (umask & 0002) == 0 # o+w
-      raise ArgumentError, "File.umask #=> #{umask.to_s(8)} (world-writable)"
+    platform_is_not :windows do
+      umask = File.umask
+      if (umask & 0002) == 0 # o+w
+        raise ArgumentError, "File.umask #=> #{umask.to_s(8)} (world-writable)"
+      end
     end
     mkdir_p SPEC_TEMP_DIR
   end
