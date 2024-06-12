@@ -871,4 +871,12 @@ class TestISeq < Test::Unit::TestCase
       RubyVM::InstructionSequence.load_from_binary(var_0)
     end
   end
+
+  def test_while_in_until_condition
+    assert_in_out_err(["--dump=i", "-e", "until while 1; end; end"]) do |stdout, stderr, status|
+      assert_include(stdout.shift, "== disasm:")
+      assert_include(stdout.pop, "leave")
+      assert_predicate(status, :success?)
+    end
+  end
 end
