@@ -266,7 +266,7 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 18] = [
+pub const DEFAULT_COUNTERS: [Counter; 19] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
@@ -277,6 +277,7 @@ pub const DEFAULT_COUNTERS: [Counter; 18] = [
     Counter::compile_time_ns,
     Counter::max_inline_versions,
     Counter::num_contexts_encoded,
+    Counter::context_cache_hits,
 
     Counter::invalidation_count,
     Counter::invalidate_method_lookup,
@@ -611,6 +612,8 @@ make_counters! {
     temp_reg_opnd,
     temp_mem_opnd,
     temp_spill,
+
+    context_cache_hits,
 }
 
 //===========================================================================
