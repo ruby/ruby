@@ -4340,6 +4340,17 @@ rb_objspace_call_finalizer_i(VALUE obj, void *data)
       case T_FILE:
         obj_free(objspace, obj);
         break;
+      case T_SYMBOL:
+        if (rb_free_at_exit) {
+            if (RSYMBOL(obj)->fstr &&
+                    (BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_NONE ||
+                        BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_ZOMBIE)) {
+                RSYMBOL(obj)->fstr = 0;
+            }
+
+            obj_free(objspace, obj);
+        }
+        break;
       case T_NONE:
         break;
       default:
