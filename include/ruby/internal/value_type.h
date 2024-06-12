@@ -96,11 +96,7 @@
 #define RB_TYPE_P         RB_TYPE_P
 #define Check_Type        Check_Type
 
-#if !RUBY_DEBUG
-# define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
-#else
-# define RBIMPL_ASSERT_TYPE Check_Type
-#endif
+#define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
 /** @endcond */
 
 /** @old{rb_type} */
