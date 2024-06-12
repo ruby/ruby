@@ -1551,6 +1551,7 @@ tick(void)
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
+static inline int RVALUE_WB_UNPROTECTED(VALUE);
 static inline int RVALUE_MARKING(VALUE);
 static inline int RVALUE_MARKED(VALUE);
 
@@ -1588,7 +1589,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             ;
         }
         else {
-            const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
+            const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED(obj);
             const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
             const int mark_bit = RVALUE_MARKED(obj);
             const int marking_bit = RVALUE_MARKING(obj);
@@ -13156,7 +13157,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
                      C(RVALUE_MARKED(obj),                "M"),
                      C(RVALUE_PINNED(obj),                "P"),
                      C(RVALUE_MARKING(obj),               "R"),
-                     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
+                     C(RVALUE_WB_UNPROTECTED(obj),        "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
                      obj_type_name(obj));
         }
