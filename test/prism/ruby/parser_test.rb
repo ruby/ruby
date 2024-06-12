@@ -144,7 +144,6 @@ module Prism
       "seattlerb/str_evstr_escape.txt",
       "seattlerb/str_newline_hash_line_number.txt",
       "seattlerb/str_single_newline.txt",
-      "seattlerb/symbol_empty.txt",
       "seattlerb/symbols_empty_space.txt",
       "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/assignment.txt",
@@ -247,7 +246,7 @@ module Prism
 
         while expected_index < expected_tokens.length
           expected_token = expected_tokens[expected_index]
-          actual_token = actual_tokens[actual_index]
+          actual_token = actual_tokens.fetch(actual_index, [])
 
           expected_index += 1
           actual_index += 1

@@ -339,7 +339,7 @@ module Prism
                 location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.start_offset + 1])
               end
             when :tSYMBEG
-              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR
+              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR && next_token.type != :STRING_END
                 next_location = token.location.join(next_token.location)
                 type = :tSYMBOL
                 value = next_token.value
