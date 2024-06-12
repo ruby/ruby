@@ -854,6 +854,8 @@ static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
 pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
 
 impl Context {
+    // Encode a context into the global context data, or return
+    // a cached previously encoded offset if one is found
     pub fn encode(&self) -> u32 {
         incr_counter!(num_contexts_encoded);
 
@@ -879,6 +881,7 @@ impl Context {
         let idx = self.encode_into(context_data);
         let idx: u32 = idx.try_into().unwrap();
 
+        // Save this offset into the cache
         Self::cache_set(self, idx);
 
         // In debug mode, check that the round-trip decoding always matches
@@ -904,15 +907,18 @@ impl Context {
     fn cache_set(ctx: &Context, idx: u32)
     {
         unsafe {
+            // Lazily initialize the context cache
             if CTX_CACHE == None {
                 let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
                 CTX_CACHE = Some(Box::new(empty_tbl));
             }
 
+            // Compute the hash for this context
             let mut hasher = DefaultHasher::new();
             ctx.hash(&mut hasher);
             let ctx_hash = hasher.finish() as usize;
 
+            // Write a cache entry for this context
             let cache = CTX_CACHE.as_mut().unwrap();
             cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
         }
@@ -928,12 +934,15 @@ impl Context {
 
             let cache = CTX_CACHE.as_mut().unwrap();
 
+            // Compute the hash for this context
             let mut hasher = DefaultHasher::new();
             ctx.hash(&mut hasher);
             let ctx_hash = hasher.finish() as usize;
-            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
 
+            // Check that the context for this cache entry mmatches
+            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
             if cache_entry.0 == *ctx {
+                debug_assert!(cache_entry.1 != 0);
                 return Some(cache_entry.1);
             }
 
