@@ -832,6 +832,8 @@ class Gem::Specification < Gem::BasicSpecification
       next versions if versions.nonzero?
       platforms = Gem::Platform.sort_priority(b.platform) <=> Gem::Platform.sort_priority(a.platform)
       next platforms if platforms.nonzero?
+      default_gem = a.default_gem_priority <=> b.default_gem_priority
+      next default_gem if default_gem.nonzero?
       b.base_dir == Gem.path.first ? 1 : -1
     end
   end
