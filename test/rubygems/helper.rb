@@ -827,10 +827,8 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.instance_variable_set(:@default_gem_load_paths, [*Gem.send(:default_gem_load_paths), lib_dir])
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
-      rb_path = File.join(lib_dir, file)
-      FileUtils.mkdir_p(File.dirname(rb_path))
-      File.open(rb_path, "w") do |rb|
-        rb << "# #{file}"
+      write_file File.join(lib_dir, file) do |io|
+        io.write "# #{file}"
       end
     end
 
