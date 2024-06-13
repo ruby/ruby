@@ -29,7 +29,10 @@ module Bundler
       write_build_info_file
       run_post_build_hooks
 
-      generate_bin
+      SharedHelpers.filesystem_access(bin_dir, :write) do
+        generate_bin
+      end
+
       generate_plugins
 
       write_spec
