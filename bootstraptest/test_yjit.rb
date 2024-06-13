@@ -157,7 +157,7 @@ assert_equal '0', "0.abs(&nil)"
 
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
-  return :ok unless defined?(GC.compact)
+  skip :ok unless defined?(GC.compact)
   def foo = yield
   10.times do |i|
     ret = eval("foo { #{i} }")
