@@ -5,6 +5,10 @@
 ##  Copyright, 2018, by Samuel Williams.
 ##
 
+#if defined(__OpenBSD__)
+#include <cet.h>
+#endif
+
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
@@ -12,6 +16,10 @@
 
 .globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+
+#if defined(__OpenBSD__)
+	_CET_ENDBR
+#endif
 
 	# Make space on the stack for 6 registers:
 	subq $48, %rsp

@@ -62,7 +62,7 @@ The following default gems are updated.
 * rdoc 6.7.0
 * reline 0.5.9
 * resolv 0.4.0
-* stringio 3.1.1
+* stringio 3.1.2
 * strscan 3.1.1
 
 The following bundled gems are updated.
