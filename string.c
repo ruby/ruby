@@ -376,9 +376,8 @@ str_precompute_hash(VALUE str)
     RUBY_ASSERT(free_bytes >= sizeof(st_index_t));
 #endif
 
-    typedef struct {char bytes[sizeof(st_index_t)];} unaligned_index;
-    union {st_index_t i; unaligned_index b;} u = {.i = str_do_hash(str)};
-    *(unaligned_index *)(RSTRING_END(str) + TERM_LEN(str)) = u.b;
+    st_index_t hash = str_do_hash(str);
+    memcpy(RSTRING_END(str) + TERM_LEN(str), &hash, sizeof(hash));
 
     FL_SET(str, STR_PRECOMPUTED_HASH);
 
