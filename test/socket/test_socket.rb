@@ -591,7 +591,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end unless RUBY_PLATFORM.include?("freebsd")
+  end unless RUBY_PLATFORM =~ /freebsd|mswin|mingw/
 
   def test_connect_timeout
     host = "127.0.0.1"

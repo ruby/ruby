@@ -5,15 +5,7 @@ require_relative 'scheduler'
 class TestFiberIO < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
-  def test_read
-    omit unless defined?(UNIXSocket)
-
-    i, o = UNIXSocket.pair
-    if RUBY_PLATFORM=~/mswin|mingw/
-      i.nonblock = true
-      o.nonblock = true
-    end
-
+  private def read_test_on_io(i,o, read_size: 20)
     message = nil
 
     thread = Thread.new do
@@ -21,12 +13,12 @@ class TestFiberIO < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        message = i.read(20)
+        message = i.read(read_size)
         i.close
       end
 
       Fiber.schedule do
-        o.write("Hello World")
+        o.write(MESSAGE)
         o.close
       end
     end
@@ -36,6 +28,30 @@ class TestFiberIO < Test::Unit::TestCase
     assert_equal MESSAGE, message
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
+  end
+
+  def test_read_io_pipe
+    read_test_on_io(*IO.pipe)
+  end
+
+  def test_read_unixsocket
+    omit unless defined?(UNIXSocket)
+    read_test_on_io(*UNIXSocket.pair)
+  end
+
+  def test_read_tcp
+    server = TCPServer.new('localhost', 0)
+    i = TCPSocket.new('localhost', server.local_address.ip_port)
+    o = server.accept
+    server.close
+    read_test_on_io(i,o)
+  end
+
+  def test_read_udp
+    omit "nonblocking UDP isn't supported on Windows" if RUBY_PLATFORM=~/mswin|mingw/
+    i = Addrinfo.udp("localhost", 0).bind
+    o = i.connect_address.connect
+    read_test_on_io(i,o, read_size: MESSAGE.bytesize)
   end
 
   def test_heavy_read
@@ -67,8 +83,7 @@ class TestFiberIO < Test::Unit::TestCase
 
   def test_epipe_on_read
     omit unless defined?(UNIXSocket)
-    omit "nonblock=true isn't properly supported on Windows" if RUBY_PLATFORM=~/mswin|mingw/
-
+    omit "Windows has a different closing behaviour with nonblock=true" if RUBY_PLATFORM=~/mswin|mingw/
     i, o = UNIXSocket.pair
 
     error = nil
