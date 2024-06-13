@@ -321,6 +321,157 @@ RSpec.describe "bundler plugin install" do
       expect(out).to include("Bundle complete!")
     end
 
+    it "installs plugins in included groups" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        group :development do
+          plugin 'foo'
+        end
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installed plugin foo")
+
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed("foo")
+    end
+
+    it "does not install plugins in excluded groups" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        group :development do
+          plugin 'foo'
+        end
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "config set --local without development"
+      bundle "install"
+
+      expect(out).not_to include("Installed plugin foo")
+
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_not_be_installed("foo")
+    end
+
+    it "upgrade plugins version listed in gemfile" do
+      update_repo2 do
+        build_plugin "foo", "1.4.0"
+        build_plugin "foo", "1.5.0"
+      end
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.4.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installing foo 1.4.0")
+      expect(out).to include("Installed plugin foo")
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed_with_version("foo", "1.4.0")
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.5.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installing foo 1.5.0")
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed_with_version("foo", "1.5.0")
+    end
+
+    it "downgrade plugins version listed in gemfile" do
+      update_repo2 do
+        build_plugin "foo", "1.4.0"
+        build_plugin "foo", "1.5.0"
+      end
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.5.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installing foo 1.5.0")
+      expect(out).to include("Installed plugin foo")
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed_with_version("foo", "1.5.0")
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.4.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installing foo 1.4.0")
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed_with_version("foo", "1.4.0")
+    end
+
+    it "install only plugins not installed yet listed in gemfile" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo'
+        gem 'myrack', "1.0.0"
+      G
+
+      2.times { bundle "install" }
+
+      expect(out).to_not include("Fetching gem metadata")
+      expect(out).to_not include("Fetching foo")
+      expect(out).to_not include("Installed plugin foo")
+
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed("foo")
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo'
+        plugin 'kung-foo'
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expect(out).to include("Installing kung-foo")
+      expect(out).to include("Installed plugin kung-foo")
+
+      expect(out).to_not include("Fetching foo")
+      expect(out).to_not include("Installed plugin foo")
+
+      expect(out).to include("Bundle complete!")
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      plugin_should_be_installed("foo")
+      plugin_should_be_installed("kung-foo")
+    end
+
     it "accepts git sources" do
       build_git "ga-plugin" do |s|
         s.write "plugins.rb"
@@ -368,17 +519,14 @@ RSpec.describe "bundler plugin install" do
       it "installs plugins" do
         install_gemfile <<-G
           source 'https://gem.repo2'
-          gem 'myrack', "1.0.0"
-        G
-
-        bundle_config "deployment true"
-        install_gemfile <<-G
-          source 'https://gem.repo2'
           plugin 'foo'
           gem 'myrack', "1.0.0"
         G
 
         expect(out).to include("Installed plugin foo")
+
+        bundle_config "deployment true"
+        bundle "install"
 
         expect(out).to include("Bundle complete!")
 
@@ -386,6 +534,135 @@ RSpec.describe "bundler plugin install" do
         plugin_should_be_installed("foo")
       end
     end
+
+    context "with plugins_in_lockfile" do
+      it "includes plugins as dependencies for a new lockfile" do
+        install_gemfile <<-G
+          source 'https://gem.repo2'
+          plugin 'foo'
+          gem 'myrack', "1.0.0"
+        G
+
+        expect(the_bundle).to include_gems("foo 1.0.0")
+      end
+
+      it "does not include plugins as dependencies for an existing lockfile when disabled" do
+        bundle_config "plugins_in_lockfile false"
+
+        install_gemfile <<-G
+          source 'https://gem.repo2'
+          gem 'myrack', "1.0.0"
+        G
+
+        expect(the_bundle).not_to include_gems("foo 1.0.0")
+
+        install_gemfile <<-G
+          source 'https://gem.repo2'
+          plugin 'foo'
+          gem 'myrack', "1.0.0"
+        G
+
+        expect(the_bundle).not_to include_gems("foo 1.0.0")
+
+        # it adds the plugins to the lockfile when specifically instructed
+        bundle_config "plugins_in_lockfile true"
+        bundle "install"
+
+        expect(the_bundle).to include_gems("foo 1.0.0")
+
+        # but will not remove them, once they're there, regardless of the setting
+        bundle_config "plugins_in_lockfile false"
+        bundle "install"
+
+        expect(the_bundle).to include_gems("foo 1.0.0")
+      end
+
+      it "includes plugins as dependencies for an existing lockfile" do
+        install_gemfile <<-G
+          source 'https://gem.repo2'
+          gem 'myrack', "1.0.0"
+        G
+
+        expect(the_bundle).not_to include_gems("foo 1.0.0")
+
+        install_gemfile <<-G
+          source 'https://gem.repo2'
+          plugin 'foo'
+          gem 'myrack', "1.0.0"
+        G
+
+        expect(the_bundle).to include_gems("foo 1.0.0")
+      end
+    end
+  end
+
+  it "fails bundle commands if plugins are not yet installed" do
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+
+    gemfile <<-G
+      source 'https://gem.repo2'
+      group :development do
+        plugin 'foo'
+      end
+      source 'https://gem.repo1' do
+        gem 'rake'
+      end
+    G
+
+    plugin_should_not_be_installed("foo")
+
+    bundle "check", raise_on_error: false
+    expect(err).to include("Plugin foo (>= 0) is not installed")
+
+    bundle "exec rake", raise_on_error: false
+    expect(err).to include("Plugin foo (>= 0) is not installed")
+
+    bundle "config set --local without development"
+    bundle "install"
+    bundle "config unset --local without"
+
+    plugin_should_not_be_installed("foo")
+
+    bundle "check", raise_on_error: false
+    expect(err).to include("Plugin foo (>= 0) is not installed")
+
+    bundle "exec rake", raise_on_error: false
+    expect(err).to include("Plugin foo (>= 0) is not installed")
+
+    plugin_should_not_be_installed("foo")
+
+    bundle "install"
+    plugin_should_be_installed("foo")
+
+    bundle "check"
+    bundle "exec rake -T", raise_on_error: false
+    expect(err).not_to include("Plugin foo (>= 0) is not installed")
+  end
+
+  it "fails bundle commands gracefully when a plugin index reference is left dangling" do
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+
+    build_lib "ga-plugin" do |s|
+      s.write "plugins.rb"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
+    G
+
+    expect(out).to include("Installed plugin ga-plugin")
+    plugin_should_be_installed("ga-plugin")
+
+    FileUtils.rm_rf(lib_path("ga-plugin-1.0"))
+
+    plugin_should_not_be_installed("ga-plugin")
+
+    bundle "check", raise_on_error: false
+    expect(err).to include("Plugin ga-plugin (>= 0) is not installed")
+
+    bundle "exec rake -T", raise_on_error: false
+    expect(err).to include("Plugin ga-plugin (>= 0) is not installed")
   end
 
   context "inline gemfiles" do
@@ -400,7 +677,9 @@ RSpec.describe "bundler plugin install" do
       RUBY
 
       ruby code, artifice: "compact_index", env: { "BUNDLER_VERSION" => Bundler::VERSION }
-      expect(local_plugin_gem("foo-1.0", "plugins.rb")).to exist
+
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      plugin_should_be_installed("foo")
     end
   end
 

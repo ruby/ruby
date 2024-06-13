@@ -32,12 +32,18 @@ module Bundler
       #
       # @param [Definition] definition object
       # @return [Hash] map of names to their specs they are installed with
-      def install_definition(definition)
+      def install_definition(definition, latest = false)
         def definition.lock(*); end
-        definition.remotely!
+
+        if latest || definition.missing_specs?
+          definition.remotely!
+        else
+          definition.with_cache!
+        end
+
         specs = definition.specs
 
-        install_from_specs specs
+        install_from_specs(specs)
       end
 
       private
@@ -89,14 +95,14 @@ module Bundler
       end
 
       def install_all_sources(names, version, source_list, source = nil)
-        deps = names.map {|name| Dependency.new(name, version, { "source" => source }) }
+        deps = names.map {|name| Dependency.new(name, version, { "source" => source, "type" => :plugin }) }
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 
         Bundler.settings.temporary(deployment: false, frozen: false) do
           definition = Definition.new(nil, deps, source_list, true)
 
-          install_definition(definition)
+          install_definition(definition, true)
         end
       end
 
@@ -110,6 +116,8 @@ module Bundler
         paths = {}
 
         specs.each do |spec|
+          next if spec.name == "bundler"
+
           spec.source.download(spec)
           spec.source.install(spec)
 

@@ -6,7 +6,7 @@ RSpec.describe Bundler::SourceList do
 
     stub_const "ASourcePlugin", Class.new(Bundler::Plugin::API)
     ASourcePlugin.source "new_source"
-    allow(Bundler::Plugin).to receive(:source?).with("new_source").and_return(true)
+    allow(Bundler::Plugin).to receive(:source_plugin).with("new_source").and_return("new_source")
   end
 
   subject(:source_list) { Bundler::SourceList.new }

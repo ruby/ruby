@@ -7,7 +7,15 @@ module Bundler
   class Dependency < Gem::Dependency
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
-      super(name, version, type)
+      if type == :plugin
+        # RubyGems doesn't support plugin type, which only
+        # makes sense in the context of Bundler, so bypass
+        # the RubyGems validation
+        super(name, version, :runtime)
+        @type = type
+      else
+        super(name, version, type)
+      end
 
       @options = options
     end

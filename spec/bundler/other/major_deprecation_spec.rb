@@ -88,9 +88,9 @@ RSpec.describe "major deprecations" do
     end
   end
 
-  describe "bundle update --quiet" do
+  describe "bundle update --all --quiet" do
     it "does not print any deprecations" do
-      bundle :update, quiet: true, raise_on_error: false
+      bundle :update, all: true, quiet: true, raise_on_error: false
       expect(deprecations).to be_empty
     end
   end

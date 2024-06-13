@@ -53,7 +53,7 @@ RSpec.describe "bundler plugin list" do
       plugin_should_be_installed("foo", "bar")
       bundle "plugin list"
 
-      expected_output = "foo\n-----\n  shout\n\nbar\n-----\n  scream"
+      expected_output = "bar\n-----\n  scream\n\nfoo\n-----\n  shout"
       expect(out).to include(expected_output)
     end
   end
