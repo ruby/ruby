@@ -152,6 +152,16 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
           disp: imm8(src_disp),
         )
+        # AND r64, r/m64 (Mod 10: [reg]+disp32)
+        in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM32 => src_disp]]
+          # REX.W + 23 /r
+          # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x23,
+            mod_rm: ModRM[mod: Mod10, reg: dst_reg, rm: src_reg],
+            disp: imm32(src_disp),
+            )
       end
     end
 
@@ -736,6 +746,16 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
           disp: imm8(src_disp),
         )
+        # OR r64, r/m64 (Mod 10: [reg]+disp32)
+        in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM32 => src_disp]]
+          # REX.W + 0B /r
+          # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x0b,
+            mod_rm: ModRM[mod: Mod10, reg: dst_reg, rm: src_reg],
+            disp: imm32(src_disp),
+            )
       end
     end
 
