@@ -9545,7 +9545,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
-    GC_ASSERT(!RVALUE_MARKED(free));
+    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(free), free));
 
     GC_ASSERT(!RVALUE_MARKING((VALUE)src));
 
