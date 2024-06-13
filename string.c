@@ -3735,8 +3735,8 @@ st_index_t
 rb_str_hash(VALUE str)
 {
     if (FL_TEST_RAW(str, STR_PRECOMPUTED_HASH)) {
-        typedef struct {char bytes[sizeof(st_index_t)];} unaligned_index;
-        st_index_t precomputed_hash = ((union {st_index_t i; unaligned_index b;} *)(RSTRING_END(str) + TERM_LEN(str)))->i;
+        st_index_t precomputed_hash;
+        memcpy(&precomputed_hash, RSTRING_END(str) + TERM_LEN(str), sizeof(precomputed_hash));
 
         RUBY_ASSERT(precomputed_hash == str_do_hash(str));
         return precomputed_hash;
