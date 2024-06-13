@@ -4523,6 +4523,24 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal({one: 1, two: 2}, f.call(one:, two:))
   end
 
+  def m_bug20570(*a, **nil)
+    a
+  end
+
+  def test_splat_arg_with_prohibited_keyword
+    assert_equal([], m_bug20570(*[]))
+    assert_equal([1], m_bug20570(*[1]))
+    assert_equal([1, 2], m_bug20570(*[1, 2]))
+    h = nil
+    assert_equal([], m_bug20570(*[], **h))
+    assert_equal([1], m_bug20570(*[1], **h))
+    assert_equal([1, 2], m_bug20570(*[1, 2], **h))
+
+    assert_equal([], m_bug20570(*[], **nil))
+    assert_equal([1], m_bug20570(*[1], **nil))
+    assert_equal([1, 2], m_bug20570(*[1, 2], **nil))
+  end
+
   private def one
     1
   end
