@@ -7704,12 +7704,11 @@ new_heredoc(struct parser_params *p)
 #define peekc(p) peekc_n(p, 0)
 #define peekc_n(p,n) (lex_eol_n_p(p, n) ? -1 : (unsigned char)(p)->lex.pcur[n])
 
+#define add_delayed_token(p, tok, end) parser_add_delayed_token(p, tok, end, __LINE__)
 static void
-add_delayed_token(struct parser_params *p, const char *tok, const char *end, int line)
+parser_add_delayed_token(struct parser_params *p, const char *tok, const char *end, int line)
 {
-#ifndef RIPPER
     debug_token_line(p, "add_delayed_token", line);
-#endif
 
     if (tok < end) {
         if (has_delayed_token(p)) {
@@ -7773,7 +7772,7 @@ nextline(struct parser_params *p, int set_encoding)
         /* after here-document without terminator */
         goto end_of_input;
     }
-    add_delayed_token(p, p->lex.ptok, p->lex.pend, __LINE__);
+    add_delayed_token(p, p->lex.ptok, p->lex.pend);
     if (p->heredoc_end > 0) {
         p->ruby_sourceline = p->heredoc_end;
         p->heredoc_end = 0;
@@ -8744,14 +8743,14 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         if (func & STR_FUNC_QWORDS) {
             quote->func |= STR_FUNC_TERM;
             pushback(p, c); /* dispatch the term at tSTRING_END */
-            add_delayed_token(p, p->lex.ptok, p->lex.pcur, __LINE__);
+            add_delayed_token(p, p->lex.ptok, p->lex.pcur);
             return ' ';
         }
         return parser_string_term(p, func);
     }
     if (space) {
         if (!ISSPACE(c)) pushback(p, c);
-        add_delayed_token(p, p->lex.ptok, p->lex.pcur, __LINE__);
+        add_delayed_token(p, p->lex.ptok, p->lex.pcur);
         return ' ';
     }
     newtok(p);
