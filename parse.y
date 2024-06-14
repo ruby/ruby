@@ -10684,6 +10684,9 @@ parser_yylex(struct parser_params *p)
                 p->lex.nextline = p->lex.lastline;
                 set_lastline(p, prevline);
               case -1:		/* EOF no decrement*/
+                if (c == -1 && space_seen) {
+                    dispatch_scan_event(p, tSP);
+                }
                 lex_goto_eol(p);
                 if (c != -1) {
                     token_flush(p);
