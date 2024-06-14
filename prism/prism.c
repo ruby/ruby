@@ -17737,6 +17737,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+
+            // Unary .. and ... are special because these are non-associative
+            // operators that can also be unary operators. In this case we need
+            // to explicitly reject code that has a .. or ... that follows this
+            // expression.
+            if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
+                pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+            }
+
             return (pm_node_t *) pm_range_node_create(parser, NULL, &operator, right);
         }
         case PM_TOKEN_FLOAT:
@@ -20984,15 +20993,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             // These expressions are statements, and cannot be followed by
             // operators (except modifiers).
             if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
-                return node;
-            }
-            break;
-        case PM_RANGE_NODE:
-            // Range operators are non-associative, so that it does not
-            // associate with other range operators (i.e. `..1..` should be
-            // rejected). For this reason, we check such a case for unary ranges
-            // here, and if so, it returns the node immediately.
-            if ((((pm_range_node_t *) node)->left == NULL) && pm_binding_powers[parser->current.type].left >= PM_BINDING_POWER_RANGE) {
                 return node;
             }
             break;

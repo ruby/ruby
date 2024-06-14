@@ -348,6 +348,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_UNEXPECTED_INDEX_BLOCK]             = { "unexpected block arg given in index assignment; blocks are not allowed in index assignment expressions", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_INDEX_KEYWORDS]          = { "unexpected keyword arg given in index assignment; keywords are not allowed in index assignment expressions", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_MULTI_WRITE]             = { "unexpected multiple assignment; multiple assignment is not allowed in this context", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_UNEXPECTED_RANGE_OPERATOR]          = { "unexpected range operator; .. and ... are non-associative and cannot be chained", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_SAFE_NAVIGATION]         = { "&. inside multiple assignment destination", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT]     = { "unexpected %s, assuming it is closing the parent %s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_TOKEN_IGNORE]            = { "unexpected %s, ignoring it", PM_ERROR_LEVEL_SYNTAX },

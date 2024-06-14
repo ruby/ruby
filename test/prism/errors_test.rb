@@ -1975,8 +1975,8 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["unexpected .., expecting end-of-input", 3..5],
-        ["unexpected .., ignoring it", 3..5],
+        ["unexpected range operator; .. and ... are non-associative and cannot be chained", 3..5],
+        ["unexpected range operator; .. and ... are non-associative and cannot be chained", 10..12],
         ["unexpected .., expecting end-of-input", 10..12],
         ["unexpected .., ignoring it", 10..12]
       ]
