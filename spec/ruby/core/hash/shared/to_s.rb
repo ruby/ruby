@@ -7,7 +7,11 @@ describe :hash_to_s, shared: true do
 
     pairs = []
     h.each do |key, value|
-      pairs << key.inspect + '=>' + value.inspect
+      if Symbol === key
+        pairs << key.to_s + ': ' + value.inspect
+      else
+        pairs << key.inspect + ' => ' + value.inspect
+      end
     end
 
     str = '{' + pairs.join(', ') + '}'
@@ -20,14 +24,14 @@ describe :hash_to_s, shared: true do
     key.should_receive(:inspect).and_return('key')
     val.should_receive(:inspect).and_return('val')
 
-    { key => val }.send(@method).should == '{key=>val}'
+    { key => val }.send(@method).should == '{key => val}'
   end
 
   it "does not call #to_s on a String returned from #inspect" do
     str = +"abc"
     str.should_not_receive(:to_s)
 
-    { a: str }.send(@method).should == '{:a=>"abc"}'
+    { a: str }.send(@method).should == '{a: "abc"}'
   end
 
   it "calls #to_s on the object returned from #inspect if the Object isn't a String" do
@@ -35,7 +39,7 @@ describe :hash_to_s, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_return("abc")
 
-    { a: obj }.send(@method).should == "{:a=>abc}"
+    { a: obj }.send(@method).should == "{a: abc}"
   end
 
   it "does not call #to_str on the object returned from #inspect when it is not a String" do
@@ -43,7 +47,7 @@ describe :hash_to_s, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_not_receive(:to_str)
 
-    { a: obj }.send(@method).should =~ /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    { a: obj }.send(@method).should =~ /^\{a: #<MockObject:0x[0-9a-f]+>\}$/
   end
 
   it "does not call #to_str on the object returned from #to_s when it is not a String" do
@@ -52,7 +56,7 @@ describe :hash_to_s, shared: true do
     obj.should_receive(:to_s).and_return(obj)
     obj.should_not_receive(:to_str)
 
-    { a: obj }.send(@method).should =~ /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    { a: obj }.send(@method).should =~ /^\{a: #<MockObject:0x[0-9a-f]+>\}$/
   end
 
   it "does not swallow exceptions raised by #to_s" do
@@ -66,24 +70,24 @@ describe :hash_to_s, shared: true do
   it "handles hashes with recursive values" do
     x = {}
     x[0] = x
-    x.send(@method).should == '{0=>{...}}'
+    x.send(@method).should == '{0 => {...}}'
 
     x = {}
     y = {}
     x[0] = y
     y[1] = x
-    x.send(@method).should == "{0=>{1=>{...}}}"
-    y.send(@method).should == "{1=>{0=>{...}}}"
+    x.send(@method).should == "{0 => {1 => {...}}}"
+    y.send(@method).should == "{1 => {0 => {...}}}"
   end
 
   it "does not raise if inspected result is not default external encoding" do
     utf_16be = mock("utf_16be")
     utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode(Encoding::UTF_16BE))
 
-    {a: utf_16be}.send(@method).should == '{:a=>"utf_16be \u3042"}'
+    {a: utf_16be}.send(@method).should == '{a: "utf_16be \u3042"}'
   end
 
   it "works for keys and values whose #inspect return a frozen String" do
-    { true => false }.to_s.should == "{true=>false}"
+    { true => false }.to_s.should == "{true => false}"
   end
 end
