@@ -248,7 +248,7 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal(key.pub_key, pubkey.pub_key)
     assert_equal(key.pub_key, pubkey.params["pub_key"])
     assert_nil(pubkey.priv_key)
-    assert_equal(0, pubkey.params["priv_key"])
+    assert_nil(pubkey.params["priv_key"])
   end
 
   def test_dup

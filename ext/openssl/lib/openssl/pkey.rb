@@ -42,7 +42,7 @@ module OpenSSL::PKey
     # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
     def params
       %w{p q g pub_key priv_key}.map { |name|
-        [name, send(name) || 0.to_bn]
+        [name, send(name)]
       }.to_h
     end
 
@@ -174,7 +174,7 @@ module OpenSSL::PKey
     # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
     def params
       %w{p q g pub_key priv_key}.map { |name|
-        [name, send(name) || 0.to_bn]
+        [name, send(name)]
       }.to_h
     end
 
@@ -360,7 +360,7 @@ module OpenSSL::PKey
     # The hash has keys 'n', 'e', 'd', 'p', 'q', 'dmp1', 'dmq1', and 'iqmp'.
     def params
       %w{n e d p q dmp1 dmq1 iqmp}.map { |name|
-        [name, send(name) || 0.to_bn]
+        [name, send(name)]
       }.to_h
     end
 

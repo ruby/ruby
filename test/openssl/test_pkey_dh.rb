@@ -137,9 +137,9 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_kind_of(OpenSSL::BN, dh.g)
     assert_equal(dh.g, dh.params["g"])
     assert_nil(dh.pub_key)
-    assert_equal(0, dh.params["pub_key"])
+    assert_nil(dh.params["pub_key"])
     assert_nil(dh.priv_key)
-    assert_equal(0, dh.params["priv_key"])
+    assert_nil(dh.params["priv_key"])
 
     dhkey = OpenSSL::PKey.generate_key(dh)
     assert_equal(dh.params["p"], dhkey.params["p"])
