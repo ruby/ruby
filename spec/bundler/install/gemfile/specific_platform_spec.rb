@@ -1434,6 +1434,40 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "does not re-resolve when a specific platform, but less specific than the current platform, is locked" do
+    build_repo4 do
+      build_gem "nokogiri"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "nokogiri"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.0)
+
+      PLATFORMS
+        arm64-darwin
+
+      DEPENDENCIES
+        nokogiri!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "arm64-darwin-23" do
+      bundle "install --verbose"
+
+      expect(out).to include("Found no changes, using resolution from the lockfile")
+    end
+  end
+
   private
 
   def setup_multiplatform_gem
