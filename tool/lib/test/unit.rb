@@ -1761,9 +1761,7 @@ module Test
           puts if @verbose
           $stdout.flush
 
-          unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # compiler process is wrongly considered as leak
-            leakchecker.check("#{inst.class}\##{inst.__name__}")
-          end
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
 
           _end_method(inst)
 
