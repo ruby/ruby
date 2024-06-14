@@ -42,7 +42,7 @@ RSpec.describe Bundler::EndpointSpecification do
         expect { subject }.to raise_error(
           Bundler::GemspecError,
           a_string_including("There was an error parsing the metadata for the gem foo (1.0.0)").
-            and(a_string_including('The metadata was {"rubygems"=>">\n"}'))
+            and(a_string_including("The metadata was #{{ "rubygems" => ">\n" }.inspect}"))
         )
       end
     end
