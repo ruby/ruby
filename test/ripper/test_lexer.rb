@@ -499,6 +499,16 @@ world"
     assert_lexer(expected, code)
   end
 
+  def test_spaces_at_eof
+    code = "1\n\t \t"
+    expected = [
+      [[1, 0], :on_int, "1", state(:EXPR_END)],
+      [[1, 1], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_sp, "\t \t", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+  end
+
   def assert_lexer(expected, code)
     assert_equal(code, Ripper.tokenize(code).join(""))
     assert_equal(expected, result = Ripper.lex(code),
