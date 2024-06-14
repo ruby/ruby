@@ -7315,6 +7315,11 @@ rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
+    WHEN_USING_MMTK({
+        // MMTk scans object concurrently.  This function only adds one more source of data race.
+        return;
+    })
+
     if (RVALUE_OLD_P(obj)) {
         objspace->rgengc.parent_object = obj;
     }
@@ -7670,7 +7675,17 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 #if USE_MMTK
     const bool mmtk_enabled_local = rb_mmtk_enabled_p(); // Allows control-flow sensitive analysis of ec etc
     if (mmtk_enabled_local) {
-        rb_mmtk_assert_mmtk_worker();
+        if (GET_RACTOR()->mfd == NULL) {
+            // When using MMTk, we don't directly call `gc_mark_roots` for scanning roots.
+            // Instead, we split this function into multiple functions named `rb_mmtk_scan_*_roots`
+            // so that they can be paralleled by calling them from different work packets.
+            rb_bug("gc_mark_roots should not be called when using MMTk.");
+        } else {
+            // We still call `gc_mark_roots` when enumerating objects reachable from roots.
+            // In this case, this function will be called from mutator.
+            rb_mmtk_assert_mutator();
+        }
+
         vm = GET_VM();
     } else {
 #endif
@@ -7758,6 +7773,57 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
 }
+
+#if USE_MMTK
+void
+rb_mmtk_scan_vm_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    rb_vm_mark(vm);
+    if (vm->self) gc_mark(objspace, vm->self);
+}
+
+void
+rb_mmtk_scan_finalizer_tbl_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    mark_finalizer_tbl(objspace, finalizer_table);
+}
+
+void
+rb_mmtk_scan_end_proc_roots(void)
+{
+    rb_mark_end_proc();
+}
+
+void
+rb_mmtk_scan_global_tbl_roots(void)
+{
+    rb_gc_mark_global_tbl();
+}
+
+void
+rb_mmtk_scan_obj_to_id_tbl_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    mark_tbl_no_pin(objspace, objspace->obj_to_id_tbl); /* Only mark ids */
+}
+
+void
+rb_mmtk_scan_misc_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    if (stress_to_class) rb_gc_mark(stress_to_class);
+}
+#endif
 
 #if RGENGC_CHECK_MODE >= 4
 
@@ -14778,11 +14844,8 @@ rb_mmtk_update_ci_table(void)
 
 // Workaround private functions
 void
-rb_mmtk_mark_roots(void)
+rb_mmtk_scan_final_jobs_roots(void)
 {
-    rb_vm_t *vm = GET_VM();
-    const char *phase;
-    gc_mark_roots(vm->objspace, &phase);
     rb_mmtk_mark_final_jobs();
 }
 

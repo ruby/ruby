@@ -1557,16 +1557,6 @@ rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), v
 }
 
 static void
-rb_mmtk_scan_vm_specific_roots(void)
-{
-    rb_mmtk_assert_mmtk_worker();
-
-    RUBY_DEBUG_LOG("Scanning VM-specific roots...");
-
-    rb_mmtk_mark_roots();
-}
-
-static void
 rb_mmtk_scan_roots_in_mutator_thread(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worker)
 {
     rb_mmtk_assert_mmtk_worker();
@@ -1616,7 +1606,13 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_block_for_gc,
     rb_mmtk_number_of_mutators,
     rb_mmtk_get_mutators,
-    rb_mmtk_scan_vm_specific_roots,
+    rb_mmtk_scan_vm_roots,
+    rb_mmtk_scan_finalizer_tbl_roots,
+    rb_mmtk_scan_end_proc_roots,
+    rb_mmtk_scan_global_tbl_roots,
+    rb_mmtk_scan_obj_to_id_tbl_roots,
+    rb_mmtk_scan_misc_roots,
+    rb_mmtk_scan_final_jobs_roots,
     rb_mmtk_scan_roots_in_mutator_thread,
     rb_mmtk_scan_object_ruby_style,
     rb_mmtk_call_gc_mark_children,
