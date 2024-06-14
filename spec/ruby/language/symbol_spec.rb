@@ -97,11 +97,11 @@ describe "A Symbol literal" do
   end
 
   ruby_bug "#20280", ""..."3.4" do
-    it "raises an SyntaxError at parse time when Symbol with invalid bytes" do
+    it "raises an EncodingError at parse time when Symbol with invalid bytes" do
       ScratchPad.record []
       -> {
         eval 'ScratchPad << 1; :"\xC3"'
-      }.should raise_error(SyntaxError, /invalid symbol/)
+      }.should raise_error(EncodingError, /invalid symbol/)
       ScratchPad.recorded.should == []
     end
   end
