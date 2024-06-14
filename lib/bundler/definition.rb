@@ -621,14 +621,14 @@ module Bundler
     end
 
     def start_resolution
-      @platforms |= [local_platform]
+      @platforms |= [local_platform] if @most_specific_non_local_locked_ruby_platform
 
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
-      if most_specific_ruby_locked_platform_is_not_local_platform?
-        @platforms.delete(result.incomplete_for_platform?(dependencies, @current_ruby_locked_platform) ? @current_ruby_locked_platform : local_platform)
+      if @most_specific_non_local_locked_ruby_platform
+        @platforms.delete(result.incomplete_for_platform?(dependencies, @most_specific_non_local_locked_ruby_platform) ? @most_specific_non_local_locked_ruby_platform : local_platform)
       end
 
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
@@ -655,12 +655,6 @@ module Bundler
       end
     end
 
-    def current_ruby_platform_locked?
-      return false unless generic_local_platform_is_ruby?
-
-      current_platform_locked?
-    end
-
     def current_platform_locked?
       @platforms.any? do |bundle_platform|
         MatchPlatform.platforms_match?(bundle_platform, local_platform)
@@ -668,14 +662,19 @@ module Bundler
     end
 
     def add_current_platform
-      @current_ruby_locked_platform = most_specific_locked_platform if current_ruby_platform_locked?
-      return if most_specific_ruby_locked_platform_is_not_local_platform?
+      @most_specific_non_local_locked_ruby_platform = find_most_specific_non_local_locked_ruby_platform
+      return if @most_specific_non_local_locked_ruby_platform
 
       add_platform(local_platform)
     end
 
-    def most_specific_ruby_locked_platform_is_not_local_platform?
-      @current_ruby_locked_platform && @current_ruby_locked_platform != local_platform
+    def find_most_specific_non_local_locked_ruby_platform
+      return unless generic_local_platform_is_ruby? && current_platform_locked?
+
+      most_specific_locked_ruby_platform = most_specific_locked_platform
+      return unless most_specific_locked_ruby_platform != local_platform
+
+      most_specific_locked_ruby_platform
     end
 
     def change_reason
