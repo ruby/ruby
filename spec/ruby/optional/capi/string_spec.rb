@@ -1096,7 +1096,7 @@ end
     end
 
     it "tries to convert the passed argument to a string by calling #to_s" do
-      @s.rb_String({"bar" => "foo"}).should == '{"bar"=>"foo"}'
+      @s.rb_String({"bar" => "foo"}).should == {"bar" => "foo"}.to_s
     end
   end
 
