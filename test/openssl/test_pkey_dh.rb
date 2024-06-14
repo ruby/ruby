@@ -130,6 +130,25 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_equal(false, dh2.params_ok?)
   end
 
+  def test_params
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
+    assert_kind_of(OpenSSL::BN, dh.p)
+    assert_equal(dh.p, dh.params["p"])
+    assert_kind_of(OpenSSL::BN, dh.g)
+    assert_equal(dh.g, dh.params["g"])
+    assert_nil(dh.pub_key)
+    assert_equal(0, dh.params["pub_key"])
+    assert_nil(dh.priv_key)
+    assert_equal(0, dh.params["priv_key"])
+
+    dhkey = OpenSSL::PKey.generate_key(dh)
+    assert_equal(dh.params["p"], dhkey.params["p"])
+    assert_kind_of(OpenSSL::BN, dhkey.pub_key)
+    assert_equal(dhkey.pub_key, dhkey.params["pub_key"])
+    assert_kind_of(OpenSSL::BN, dhkey.priv_key)
+    assert_equal(dhkey.priv_key, dhkey.params["priv_key"])
+  end
+
   def test_dup
     # Parameters only
     dh1 = Fixtures.pkey("dh2048_ffdhe2048")

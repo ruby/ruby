@@ -579,6 +579,26 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_same_rsa rsa, OpenSSL::PKey.read(pem, "abcdef")
   end
 
+  def test_params
+    key = Fixtures.pkey("rsa2048")
+    assert_equal(2048, key.n.num_bits)
+    assert_equal(key.n, key.params["n"])
+    assert_equal(65537, key.e)
+    assert_equal(key.e, key.params["e"])
+    [:d, :p, :q, :dmp1, :dmq1, :iqmp].each do |name|
+      assert_kind_of(OpenSSL::BN, key.send(name))
+      assert_equal(key.send(name), key.params[name.to_s])
+    end
+
+    pubkey = OpenSSL::PKey.read(key.public_to_der)
+    assert_equal(key.n, pubkey.n)
+    assert_equal(key.e, pubkey.e)
+    [:d, :p, :q, :dmp1, :dmq1, :iqmp].each do |name|
+      assert_nil(pubkey.send(name))
+      assert_equal(0, pubkey.params[name.to_s])
+    end
+  end
+
   def test_dup
     key = Fixtures.pkey("rsa1024")
     key2 = key.dup
