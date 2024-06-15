@@ -1,3 +1,4 @@
+# Some tests depending on this name 'Compilations' via $GITHUB_WORKFLOW. Make sure to update such tests when renaming this workflow.
 name: Compilations
 
 on:
@@ -147,7 +148,7 @@ jobs:
           - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 #         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
 
-          - { name: gmp,                  env: { append_configure: '--with-gmp' } }
+          - { name: gmp,                  env: { append_configure: '--with-gmp' }, check: true }
           - { name: jemalloc,             env: { append_configure: '--with-jemalloc' } }
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
