@@ -2916,8 +2916,36 @@ nodes:
           - RequiredParameterNode
           - BackReferenceReadNode # On parsing error of `$',`
           - NumberedReferenceReadNode # On parsing error of `$1,`
+        comment: |
+          Represents the targets expressions before a splat node.
+
+              a, (b, c, *) = 1, 2, 3, 4, 5
+                  ^^^^
+
+          The splat node can be absent, in that case all target expressions are in the left field.
+
+              a, (b, c) = 1, 2, 3, 4, 5
+                  ^^^^
       - name: rest
         type: node?
+        kind:
+          - ImplicitRestNode
+          - SplatNode
+        comment: |
+          Represents a splat node in the target expression.
+
+              a, (b, *c) = 1, 2, 3, 4
+                     ^^
+
+          The variable can be empty, this results in a `SplatNode` with a `nil` expression field.
+
+              a, (b, *) = 1, 2, 3, 4
+                     ^
+
+          If the `*` is omitted, the field will containt an `ImplicitRestNode`
+
+              a, (b,) = 1, 2, 3, 4
+                   ^
       - name: rights
         type: node[]
         kind:
@@ -2932,15 +2960,35 @@ nodes:
           - MultiTargetNode
           - RequiredParameterNode
           - BackReferenceReadNode # On parsing error of `*,$'`
+        comment: |
+          Represents the targets expressions after a splat node.
+
+              a, (*, b, c) = 1, 2, 3, 4, 5
+                     ^^^^
       - name: lparen_loc
         type: location?
+        comment: |
+          The location of the opening parenthesis.
+
+              a, (b, c) = 1, 2, 3
+                 ^
       - name: rparen_loc
         type: location?
+        comment: |
+          The location of the closing parenthesis.
+
+              a, (b, c) = 1, 2, 3
+                      ^
     comment: |
       Represents a multi-target expression.
 
           a, (b, c) = 1, 2, 3
              ^^^^^^
+
+      This can be a part of `MultiWriteNode` as above, or the target of a `for` loop
+
+          for a, b in [[1, 2], [3, 4]]
+              ^^^^
   - name: MultiWriteNode
     fields:
       - name: lefts
