@@ -54,7 +54,7 @@ The following default gems are updated.
 * erb 4.0.4
 * fiddle 1.1.3
 * io-console 0.7.2
-* irb 1.13.1
+* irb 1.13.2
 * json 2.7.2
 * net-http 0.4.1
 * optparse 0.5.0
