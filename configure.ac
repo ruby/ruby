@@ -16,6 +16,7 @@ m4_include([tool/m4/ruby_append_option.m4])dnl
 m4_include([tool/m4/ruby_append_options.m4])dnl
 m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
 m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
+m4_include([tool/m4/ruby_check_header.m4])dnl
 m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
 m4_include([tool/m4/ruby_check_setjmp.m4])dnl
 m4_include([tool/m4/ruby_check_signedness.m4])dnl
@@ -1353,7 +1354,7 @@ AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
 RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
 
 AS_IF([test "x$with_gmp" != xno],
-  [AC_CHECK_HEADERS(gmp.h)
+  [RUBY_CHECK_HEADER(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
      AC_SEARCH_LIBS([__gmpz_init], [gmp],
        [AC_DEFINE(HAVE_LIBGMP, 1)]))])
