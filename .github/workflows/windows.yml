@@ -113,10 +113,6 @@ jobs:
             ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-installed-
 
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
-
       - name: Install libraries with scoop
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
@@ -127,6 +123,17 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
+      - name: Install libraries with vcpkg
+        # override global setting of 'build', vcpkg.json is in root
+        working-directory: .
+        run: |
+          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
+          vcpkg --triplet x64-windows upgrade gmp libffi libyaml openssl zlib --no-dry-run
+
+      - name: List vcpkg libraries
+        working-directory: .
+        run: vcpkg list
 
       - uses: ./.github/actions/setup/directories
         with:
