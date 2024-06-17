@@ -155,7 +155,7 @@ Output:
 Rescued Errno::ENOENT
 ```
 
-##### Capturing the Rescued Exception
+##### Capturing the Rescued \Exception
 
 A `rescue` statement may specify a variable
 whose value becomes the rescued exception
@@ -179,7 +179,7 @@ divided by 0
 
 ##### Global Variables
 
-Two read-only global variables always have +nil+ value
+Two read-only global variables always have `nil` value
 except in a rescue clause;
 there:
 
@@ -202,6 +202,40 @@ Output:
 ```
 true
 true
+```
+
+##### Cause
+
+In a rescue clause, the method Exception#cause returns the previous value of `$!`,
+which may be `nil`;
+elsewhere, the method returns `nil`.
+
+Example:
+
+```
+begin
+  raise('Boom 0')
+rescue => x0
+  puts "Exception: #{x0.inspect};  $!: #{$!.inspect};  cause: #{x0.cause.inspect}."
+  begin
+    raise('Boom 1')
+  rescue => x1
+    puts "Exception: #{x1.inspect};  $!: #{$!.inspect};  cause: #{x1.cause.inspect}."
+    begin
+      raise('Boom 2')
+    rescue => x2
+      puts "Exception: #{x2.inspect};  $!: #{$!.inspect};  cause: #{x2.cause.inspect}."
+    end
+  end
+end
+```
+
+Output:
+
+```
+Exception: #<RuntimeError: Boom 0>;  $!: #<RuntimeError: Boom 0>;  cause: nil.
+Exception: #<RuntimeError: Boom 1>;  $!: #<RuntimeError: Boom 1>;  cause: #<RuntimeError: Boom 0>.
+Exception: #<RuntimeError: Boom 2>;  $!: #<RuntimeError: Boom 2>;  cause: #<RuntimeError: Boom 1>.
 ```
 
 #### Else Clause
@@ -375,7 +409,7 @@ not just the part after the point of failure.
 
 ## Raising an \Exception
 
-Raise an exception with method Kernel#raise.
+\Method Kernel#raise raises an exception.
 
 ## Custom Exceptions
 
@@ -391,38 +425,38 @@ class MyException < StandardError; end
 
 ## Messages
 
-Every +Exception+ object has a message,
+Every `Exception` object has a message,
 which is a string that is set at the time the object is created;
 see Exception.new.
 
-The message may not be changed, but you can create a similar object with a different message;
+The message cannot be changed, but you can create a similar object with a different message;
 see Exception#exception.
 
 This method returns the message as defined:
 
 - Exception#message.
 
-Two other methods return modified versions of the message:
+Two other methods return enhanced versions of the message:
 
-- Exception#detailed_message: adds exception class name.
-- Exception#full_message: adds exception class name and backtrace.
+- Exception#detailed_message: adds exception class name, with optional highlighting.
+- Exception#full_message: adds exception class name and backtrace, with optional highlighting.
 
-Each of the two methods above accepts keyword argument +highlight+;
-if the value of keyword +highlight+ is true (not +nil+ or +false+),
+Each of the two methods above accepts keyword argument `highlight`;
+if the value of keyword `highlight` is true (not `nil` or `false`),
 the returned string includes bolding and underlining ANSI codes (see below)
 to enhance the appearance of the message.
 
 Any exception class (Ruby or custom) may choose to override either of these methods,
 and may choose to interpret keyword argument <tt>highlight: true</tt>
 to mean that the returned message should contain
-{ANSI codes}[https://en.wikipedia.org/wiki/ANSI_escape_code]
-that specify foreground and background color, bolding, and underlining).
+[ANSI codes](https://en.wikipedia.org/wiki/ANSI_escape_code)
+that specify color, bolding, and underlining).
 
 Because the enhanced message may be written to a non-terminal device
 (e.g., into an HTML page),
 it is best to limit the ANSI codes to these widely-supported codes:
 
-- Begin foreground color:
+- Begin font color:
 
     | Color   | ANSI Code        |
     |---------|------------------|
@@ -435,9 +469,9 @@ it is best to limit the ANSI codes to these widely-supported codes:
 
 <br>
 
-- Begin font property:
+- Begin font attribute:
 
-    | Color     | ANSI Code       |
+    | Attribute | ANSI Code       |
     |-----------|-----------------|
     | Bold      | <tt>\\e[1m</tt> |
     | Underline | <tt>\\e[4m</tt> |
@@ -455,3 +489,39 @@ even if the ANSI codes are included "as-is"
 (rather than interpreted as font directives).
 
 ## Backtraces
+
+A _backtrace_ is a record of the methods currently
+in the [call stack](https://en.wikipedia.org/wiki/Call_stack);
+each such method has been called, but has not yet returned.
+
+These methods return backtrace information:
+
+- Exception#backtrace: returns the backtrace as an array of strings or `nil`.
+- Exception#backtrace_locations: returns the backtrace as an array
+  of Thread::Backtrace::Location objects or `nil`.
+  Each Thread::Backtrace::Location object gives detailed information about a called method.
+
+An `Exception` object stores its backtrace value as one of:
+
+- An array of Thread::Backtrace::Location objects;
+  this is the case for an exception raised by the Ruby core or the Ruby standard library.
+  In this case:
+
+    - Exception#backtrace_locations returns the array of Thread::Backtrace::Location objects.
+    - Exception#backtrace returns the array of their string values
+      (`Exception#backtrace_locations.map {|loc| loc.to_s }`).
+
+- An array of strings;
+  in this case:
+
+    - Exception#backtrace returns the array of strings.
+    - Exception#backtrace_locations returns `nil`.
+
+- `nil`, in which case both methods return `nil`.
+
+These methods set the backtrace value:
+
+- Exception#set_backtrace: sets the backtrace value to an array of strings, or to `nil`.
+- Kernel#raise: sets the backtrace value to an array of Thread::Backtrace::Location objects,
+  or to an array of strings.
+

@@ -1470,14 +1470,12 @@ exc_init(VALUE exc, VALUE mesg)
  *  call-seq:
  *    Exception.new(message = self.to_s) ->  exception
  *
- *  Returns a new exception object:
+ *  Returns a new exception object.
  *
- *  - Its class is the same as that of +self+,
- *    which is either +Exception+ or one of its subclasses.
- *  - Its message is the given +message+,
- *    which should be
- *    a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
- *    see method #message.
+ *  Its message is the given +message+,
+ *  which should be
+ *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
+ *  see method #message.
  *
  *  Examples:
  *
@@ -1694,7 +1692,7 @@ check_order_keyword(VALUE opt)
  *    "\tfrom t.rb:12:in `<main>'"]
  *
  * An overrriding method should be careful with ANSI code enhancements;
- * see {Exception Messages}[rdoc-ref:exceptions.md@Messages].
+ * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1732,7 +1730,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
  *   x = RuntimeError.new # Default message is class name.
  *   x.message # => "RuntimeError"
  *
- * See {Exception Messages}[rdoc-ref:exceptions.md@Messages].
+ * See {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1783,7 +1781,7 @@ exc_message(VALUE exc)
  * - +:syntax_suggest+.
  *
  * An overrriding method should also be careful with ANSI code enhancements;
- * see {Exception Messages}[rdoc-ref:exceptions.md@Messages].
+ * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1845,34 +1843,25 @@ exc_inspect(VALUE exc)
  *  call-seq:
  *    backtrace -> array or nil
  *
- *  Returns the backtrace value for the exception.
+ *  Returns a backtrace value for +self+;
+ *  the returned value depends on the form of the stored backtrace value:
  *
- *  If the backtrace has not been assigned, the value is +nil+:
+ *  - \Array of strings: returns that array.
+ *  - \Array of Thread::Backtrace::Location objects:
+ *    returns the array of strings given by
+ *    <tt>Exception#backtrace_locations.map {|loc| loc.to_s }</tt>.
+ *  - +nil+: returns +nil+.
  *
- *    x = Exception.new
- *    x.backtrace # => nil
+ *  Example:
  *
- *  If the backtrace was assigned by Kernel#raise,
- *  the value is an array of strings:
- *
- *    $ cat t.rb
  *    begin
- *      Math.sin('x')
+ *      1 / 0
  *    rescue => x
- *      p x.class
- *      p x.backtrace
+ *      x.backtrace.take(2)
  *    end
- *    $ ruby t.rb
- *    TypeError
- *    ["t.rb:2:in `sin'", "t.rb:2:in `<main>'"]
+ *    # => ["(irb):132:in `/'", "(irb):132:in `<top (required)>'"]
  *
- *  If the backtrace was otherwise assigned by #set_backtrace,
- *  the value is an array of strings:
- *
- *    x = Exception.new
- *    x.set_backtrace(%w[ foo bar baz ])
- *    x.backtrace # => ["foo", "bar", "baz"]
- *
+ *  see {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
 
 static VALUE
@@ -1917,12 +1906,22 @@ rb_get_backtrace(VALUE exc)
  *  call-seq:
  *    backtrace_locations -> array or nil
  *
- *  Like #backtrace, but the returned value is:
+ *  Returns a backtrace value for +self+;
+ *  the returned value depends on the form of the stored backtrace value:
  *
- *  - An array of Thread::Backtrace::Location objects (not an array of strings)
- *    if the exception was raised by Kernel#raise.
- *  - +nil+ otherwise.
+ *  - \Array of Thread::Backtrace::Location objects: returns that array.
+ *  - \Array of strings or +nil+: returns +nil+.
  *
+ *  Example:
+ *
+ *    begin
+ *      1 / 0
+ *    rescue => x
+ *      x.backtrace_locations.take(2)
+ *    end
+ *    # => ["(irb):150:in `/'", "(irb):150:in `<top (required)>'"]
+ *
+ *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
@@ -1960,12 +1959,19 @@ rb_check_backtrace(VALUE bt)
 
 /*
  *  call-seq:
- *     exc.set_backtrace(backtrace)   ->  array
+ *    set_backtrace(value) -> value
  *
- *  Sets the backtrace information associated with +exc+. The +backtrace+ must
- *  be an array of Thread::Backtrace::Location objects or an array of String objects
- *  or a single String in the format described in Exception#backtrace.
+ *  Sets the backtrace value for +self+; returns the given +value:
  *
+ *    x = RuntimeError.new('Boom')
+ *    x.set_backtrace(%w[foo bar baz]) # => ["foo", "bar", "baz"]
+ *    x.backtrace                      # => ["foo", "bar", "baz"]
+ *
+ *  The given +value+ must be an array of strings, a single string, or +nil+.
+ *
+ *  Does not affect the value returned by #backtrace_locations.
+ *
+ *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
 
 static VALUE

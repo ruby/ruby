@@ -752,8 +752,9 @@ rb_f_raise(int argc, VALUE *argv)
  *  Raises an exception;
  *  see {Exceptions}[rdoc-ref:exceptions.md].
  *
- *  Argument +exception+ (an exception class or instance)
- *  sets the class of the new exception:
+ *  Argument +exception+ sets the class of the new exception;
+ *  it should be a subclass of Exception (or an instance of one of those classes),
+ *  usually RuntimeError or StandardError
  *
  *    begin
  *      raise(StandardError)
@@ -778,6 +779,8 @@ rb_f_raise(int argc, VALUE *argv)
  *  If argument +message+ is not given,
  *  the message is the exception class name.
  *
+ *  See {Messages}[rdoc-ref:exceptions.md@Messages].
+ *
  *  Argument +backtrace+ sets the stored backtrace in the new exception,
  *  which may be retrieved by method Exception#backtrace;
  *  the backtrace must be one of:
@@ -798,6 +801,8 @@ rb_f_raise(int argc, VALUE *argv)
  *  If argument +backtrace+ is not given,
  *  the backtrace is set according to the call stack.
  *
+ *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ *
  *  Keyword argument +cause+ sets the stored cause in the new exception,
  *  which may be retrieved by method Exception#cause;
  *  the cause must be an exception object (Exception or one of its subclasses),
@@ -813,7 +818,10 @@ rb_f_raise(int argc, VALUE *argv)
  *  If keyword argument +cause+ is not given,
  *  the cause is the value of <tt>$!</tt>.
  *
- *  With exception class argument +exception+ _not_ given,
+ *  See {Cause}[rdoc-ref:exceptions.md@Cause].
+ *
+ *  In the alternate calling sequence,
+ *  where argument +exception+ _not_ given,
  *  raises a new exception of the class given by <tt>$!</tt>,
  *  or of class RuntimeError if <tt>$!</tt> is +nil+:
  *
