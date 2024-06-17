@@ -1078,6 +1078,7 @@ extern "C" {
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
     pub fn rb_vm_barrier();
+    pub fn rb_str_buf_cat_byte(str_: VALUE, byte: ::std::os::raw::c_uchar);
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;

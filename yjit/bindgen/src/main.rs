@@ -228,6 +228,7 @@ fn main() {
         .allowlist_function("rb_str_concat_literals")
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
+        .allowlist_function("rb_str_buf_cat_byte")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")

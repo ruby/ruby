@@ -3341,7 +3341,7 @@ rb_str_cat_cstr(VALUE str, const char *ptr)
     return rb_str_buf_cat(str, ptr, strlen(ptr));
 }
 
-static void
+void
 rb_str_buf_cat_byte(VALUE str, unsigned char byte)
 {
     RUBY_ASSERT(RB_ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT || RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII);

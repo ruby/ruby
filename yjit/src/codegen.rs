@@ -5893,24 +5893,115 @@ fn jit_rb_str_empty_p(
     return true;
 }
 
+// Codegen for rb_str_concat() with an integer argument -- *not* String#concat
+// Using strings as a byte buffer often includes appending byte values to the end of the string.
+fn jit_rb_str_concat_codepoint(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<crate::codegen::BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    asm_comment!(asm, "String#<< with codepoint argument");
+
+    // Ensure the codepoint argument is a Fixnum.
+    let arg = asm.stack_opnd(0);
+    let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_arg.fixnum_p() {
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_arg.class_of(),
+            arg,
+            arg.into(),
+            comptime_arg,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnums,
+        );
+    } else {
+        return false;
+    }
+
+    // Either of the string concatenation functions we call will reallocate the string to grow its
+    // capacity if necessary. In extremely rare cases (i.e., string exceeds `LONG_MAX` bytes),
+    // either of the called functions will raise an exception.
+    jit_prepare_non_leaf_call(jit, asm);
+
+    let codepoint = asm.stack_pop(1);
+    let recv = asm.stack_pop(1);
+
+    // In order to use the fast path (rb_str_buf_cat_byte), the string encoding must be ASCII-8BIT
+    // and the codepoint must be in the byte range (0x00 - 0xff).
+    // If either of those conditions are not met we must use the general string concat (str_buf_cat)
+    // function with the original codepoint argument.
+
+    let generic_str_concat_codepoint = asm.new_label("generic_str_concat_codepoint");
+    let ret_label = asm.new_label("jit_rb_str_concat_codepoint_return");
+
+    // Check if the string is ASCII-8BIT. If it isn't, we need to use the generic string concatenation.
+    asm_comment!(asm, "Check if string is ASCII-8BIT");
+    let recv_reg = asm.load(recv);
+    let flags_opnd = Opnd::mem(VALUE_BITS, recv_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let encoding_flags_opnd = asm.and(flags_opnd, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+    let encoding_index = asm.rshift(encoding_flags_opnd, Opnd::UImm(RUBY_ENCODING_SHIFT as u64));
+    asm.cmp(encoding_index, Opnd::UImm(RUBY_ENCINDEX_ASCII_8BIT as u64));
+    asm.jne(generic_str_concat_codepoint);
+
+    // Check if the codepoint is limited to a byte value. If it isn't, we need to use the generic
+    // string concatenation, which will ultimately raise a `RangeError` as ASCII-8BIT strings only
+    // accept codepoint values that fit in a byte range.
+    asm_comment!(asm, "Check if codepoint is a byte value");
+    let codepoint_untag = asm.rshift(codepoint, Opnd::UImm(1));
+    asm.cmp(codepoint_untag, Opnd::Imm(0xff));
+    asm.jg(generic_str_concat_codepoint);
+
+    // If we've made it this far, we must be appending a single byte value to a binary string.
+    asm_comment!(asm, "Optimized (string, codepoint) concatenation");
+    let ret_opnd = asm.ccall(rb_str_buf_cat_byte as *const u8, vec![recv, codepoint_untag]);
+    let stack_ret = asm.stack_push(Type::TString);
+    asm.mov(stack_ret, ret_opnd);
+    asm.stack_pop(1);
+    asm.jmp(ret_label);
+
+    // Either the string isn't binary or the codepoint is too large.
+    asm_comment!(asm, "Fallback to generic (string, codepoint) concatenation");
+    asm.write_label(generic_str_concat_codepoint);
+    let ret_opnd = asm.ccall(rb_str_concat as *const u8, vec![recv, codepoint]);
+    let stack_ret = asm.stack_push(Type::TString);
+    asm.mov(stack_ret, ret_opnd);
+    asm.jmp(ret_label);
+
+    asm.write_label(ret_label);
+
+    true
+}
+
 // Codegen for rb_str_concat() -- *not* String#concat
 // Frequently strings are concatenated using "out_str << next_str".
 // This is common in Erb and similar templating languages.
 fn jit_rb_str_concat(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
+    ocb: &mut OutlinedCb,
+    ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    block: Option<BlockHandler>,
+    argc: i32,
+    known_recv_class: Option<VALUE>,
 ) -> bool {
     // The << operator can accept integer codepoints for characters
     // as the argument. We only specially optimise string arguments.
     // If the peeked-at compile time argument is something other than
     // a string, assume it won't be a string later either.
     let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+    if unsafe { RB_TYPE_P(comptime_arg, RUBY_T_FIXNUM) } {
+        return jit_rb_str_concat_codepoint(jit, asm, ocb, ci, cme, block, argc, known_recv_class);
+    }
+
     if ! unsafe { RB_TYPE_P(comptime_arg, RUBY_T_STRING) } {
         return false;
     }
@@ -10357,7 +10448,7 @@ pub fn yjit_reg_method_codegen_fns() {
 }
 
 // Register a specialized codegen function for a particular method. Note that
-// the if the function returns true, the code it generates runs without a
+// if the function returns true, the code it generates runs without a
 // control frame and without interrupt checks. To avoid creating observable
 // behavior changes, the codegen function should only target simple code paths
 // that do not allocate and do not make method calls.
