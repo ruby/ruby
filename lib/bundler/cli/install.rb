@@ -19,7 +19,7 @@ module Bundler
       # Disable color in deployment mode
       Bundler.ui.shell = Thor::Shell::Basic.new if options[:deployment]
 
-      if target_rbconfig_path = options["target-rbconfig"]
+      if target_rbconfig_path = options[:"target-rbconfig"]
         Bundler.rubygems.set_target_rbconfig(target_rbconfig_path)
       end
 
