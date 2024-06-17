@@ -12296,6 +12296,23 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
 
+#if USE_YJIT
+void
+rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+{
+    if (RB_LIKELY(FIXNUM_P(codepoint)) && RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
+        ssize_t code = RB_NUM2SSIZE(codepoint);
+
+        if (RB_LIKELY(code >= 0 && code < 0xff)) {
+            rb_str_buf_cat_byte(str, (char) code);
+            return;
+        }
+    }
+
+    rb_str_concat(str, codepoint);
+}
+#endif
+
 void
 Init_String(void)
 {

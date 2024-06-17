@@ -117,6 +117,7 @@ extern "C" {
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
