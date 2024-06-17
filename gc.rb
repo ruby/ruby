@@ -71,60 +71,6 @@ module GC
   end
 
   #  call-seq:
-  #     GC.disable_major    -> true or false
-  #
-  #  This function is implementation specific. Alternative Ruby implementations
-  #  as well as future GC implementations are not required to implement this
-  #  function.
-  #
-  #  Disables major garbage collection, returning +true+ if major garbage
-  #  collection was already disabled.
-  #
-  #     GC.disable_major   #=> false
-  #     GC.disable_major   #=> true
-  def self.disable_major
-    Primitive.gc_disable_major
-  end
-
-  #  call-seq:
-  #     GC.enable_major    -> true or false
-  #
-  #  This function is implementation specific. Alternative Ruby implementations
-  #  as well as future GC implementations are not required to implement this
-  #  function.
-  #
-  #  Enables major garbage collection, returning +true+ if garbage
-  #  collection was previously disabled.
-  #
-  #     GC.disable_major   #=> false
-  #     GC.enable_major    #=> true
-  #     GC.enable_major    #=> false
-  #
-  def self.enable_major
-    Primitive.gc_enable_major
-  end
-
-  #  call-seq:
-  #     GC.need_major?    -> true or false, nil
-  #
-  #  This function is implementation specific. Alternative Ruby implementations
-  #  as well as future GC implementations are not required to implement this
-  #  function.
-  #
-  #  Used in conjunction with `GC.disable_major`. If Major GC's are disabled,
-  #  then `GC.need_major?` will report whether manually running a major GC is
-  #  recommended.
-  #
-  #  If Majors are disabled, then the first time the heap runs out of space
-  #  during a minor, new pages will be allocated and this method will start
-  #  returning true.
-  #
-  #  If Major GC's are not disabled then this function will always return `nil`
-  def self.need_major?
-    Primitive.gc_need_major_p
-  end
-
-  #  call-seq:
   #    GC.stress	    -> integer, true or false
   #
   #  Returns current status of \GC stress mode.
@@ -305,6 +251,30 @@ module GC
   #
   def self.stat_heap heap_name = nil, hash_or_key = nil
     Primitive.gc_stat_heap heap_name, hash_or_key
+  end
+
+  # call-seq:
+  #     GC.config -> hash
+  #     GC.config(hash) -> hash
+  #
+  # Sets or gets information about the current GC config.
+  #
+  # The contents of the hash are implementation specific and may change in
+  # the future without notice.
+  #
+  # If the optional argument, hash, is given, it is overwritten and returned.
+  #
+  # This method is only expected to work on CRuby.
+  #
+  # The hash includes the following keys about the internal information in
+  # the \GC:
+  #
+  # [slot_size]
+  #   The slot size of the heap in bytes.
+  def self.config hash = nil
+    return Primitive.gc_config_get unless hash
+
+    Primitive.gc_config_set hash
   end
 
   # call-seq:

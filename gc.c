@@ -805,11 +805,14 @@ typedef struct rb_objspace {
 
     } malloc_params;
 
+    struct rb_gc_config {
+        bool full_mark;
+    } gc_config;
+
     struct {
         unsigned int mode : 2;
         unsigned int immediate_sweep : 1;
         unsigned int dont_gc : 1;
-        unsigned int dont_major: 1;
         unsigned int dont_incremental : 1;
         unsigned int during_gc : 1;
         unsigned int during_compacting : 1;
@@ -1172,17 +1175,8 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define dont_gc_val()         (objspace->flags.dont_gc)
 #endif
 
-#if 0
-#define dont_major_on()          (fprintf(stderr, "dont_major_on@%s:%d\n",      __FILE__, __LINE__), objspace->flags.dont_major = 1)
-#define dont_major_off()         (fprintf(stderr, "dont_major_off@%s:%d\n",     __FILE__, __LINE__), objspace->flags.dont_major = 0)
-#define dont_major_set(b)        (fprintf(stderr, "dont_major_set(%d)@%s:%d\n", __FILE__, __LINE__), (int)b), objspace->flags.dont_major = (b))
-#define dont_major_val()         (objspace->flags.dont_major)
-#else
-#define dont_major_on()          (objspace->flags.dont_major = 1)
-#define dont_major_off()         (objspace->flags.dont_major = 0)
-#define dont_major_set(b)        (((int)b), objspace->flags.dont_major = (b))
-#define dont_major_val()         (objspace->flags.dont_major)
-#endif
+#define gc_config_full_mark_set(b) (((int)b), objspace->gc_config.full_mark = (b))
+#define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
 static inline enum gc_mode
 gc_mode_verify(enum gc_mode mode)
@@ -2565,7 +2559,7 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
                         rb_memerror();
                     }
                     else {
-                        if (size_pool->allocatable_pages == 0 && dont_major_val()) {
+                        if (size_pool->allocatable_pages == 0 && !gc_config_full_mark_val) {
                             size_pool_allocatable_pages_expand(objspace, size_pool,
                                     size_pool->freed_slots + size_pool->empty_slots,
                                     heap->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots,
@@ -3552,6 +3546,8 @@ rb_gc_impl_objspace_alloc(void)
 {
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     ruby_current_vm_ptr->objspace = objspace;
+
+    gc_config_full_mark_set(TRUE);
 
     objspace->flags.gc_stressful = RTEST(initial_stress);
     objspace->gc_stress_mode = initial_stress;
@@ -6686,7 +6682,7 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
      * GC manually several times so that most objects likely to become oldgen
      * are already oldgen.
      */
-    if(dont_major_val())
+    if(!gc_config_full_mark_val)
         return;
 
     struct heap_page *page = GET_HEAP_PAGE(obj);
@@ -9055,7 +9051,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     }
 
     /* if major gc has been disabled, never do a full mark */
-    if (dont_major_val()) {
+    if (!gc_config_full_mark_val) {
         do_full_mark = FALSE;
     }
     gc_needs_major_flags = GPR_FLAG_NONE;
@@ -9448,8 +9444,8 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
                            GPR_FLAG_IMMEDIATE_SWEEP |
                            GPR_FLAG_METHOD);
 
-    int old_disable_major = dont_major_val();
-    dont_major_off();
+    int full_marking_p = gc_config_full_mark_val;
+    gc_config_full_mark_set(TRUE);
 
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (RTEST(compact)) {
@@ -9466,7 +9462,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
 
-    dont_major_set(old_disable_major);
+    gc_config_full_mark_set(full_marking_p);
     return Qnil;
 }
 
@@ -10534,12 +10530,12 @@ static VALUE
 gc_compact(VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int old_major_disabled = dont_major_val();
-    dont_major_off();
+    int full_marking_p = gc_config_full_mark_val;
+    gc_config_full_mark_set(TRUE);
 
     /* Run GC with compaction enabled */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
-    dont_major_set(old_major_disabled);
+    gc_config_full_mark_set(full_marking_p);
 
     return gc_compact_stats(self);
 }
@@ -11223,6 +11219,40 @@ gc_stat_heap(rb_execution_context_t *ec, VALUE self, VALUE heap_name, VALUE arg)
 }
 
 static VALUE
+gc_config_get(rb_execution_context_t *ec, VALUE self)
+{
+#define sym(name) ID2SYM(rb_intern_const(name))
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE hash = rb_hash_new();
+    rb_hash_aset(hash, sym("full_mark"), RBOOL(gc_config_full_mark_val));
+
+    return hash;
+}
+
+static int
+gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    if (!strcmp(rb_str_to_cstr(rb_sym2str(key)), "full_mark")) {
+        gc_config_full_mark_set(RBOOL(value));
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if(!RB_TYPE_P(hash, T_HASH)) {
+        rb_raise(rb_eArgError, "expected keyword arguments");
+    }
+
+    rb_hash_stlike_foreach(hash, gc_config_set_key, (st_data_t)objspace);
+    return gc_config_get(ec, self);
+}
+
+static VALUE
 gc_stress_get(rb_execution_context_t *ec, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -11284,43 +11314,6 @@ rb_gc_disable(void)
 }
 
 VALUE
-rb_objspace_gc_disable_major(rb_objspace_t *objspace)
-{
-    int old = dont_major_val();
-    dont_major_on();
-    return RBOOL(old);
-}
-
-VALUE
-rb_gc_disable_major(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return rb_objspace_gc_disable_major(objspace);
-}
-
-VALUE
-rb_objspace_gc_enable_major(rb_objspace_t *objspace)
-{
-    int old = dont_major_val();
-    dont_major_off();
-    rb_gc_start();
-    return RBOOL(old);
-}
-
-VALUE
-rb_gc_enable_major(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return rb_objspace_gc_enable_major(objspace);
-}
-
-static VALUE
-gc_enable_major(rb_execution_context_t *ec, VALUE _)
-{
-    return rb_gc_enable_major();
-}
-
-VALUE
 rb_objspace_gc_disable(rb_objspace_t *objspace)
 {
     gc_rest(objspace);
@@ -11331,22 +11324,6 @@ static VALUE
 gc_disable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_disable();
-}
-
-static VALUE
-gc_disable_major(rb_execution_context_t *ec, VALUE _)
-{
-    return rb_gc_disable_major();
-}
-
-static VALUE
-gc_need_major_p(rb_execution_context_t *ec, VALUE _)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    if (!dont_major_val()) {
-        return Qnil;
-    }
-    return RBOOL(objspace->rgengc.need_major_gc);
 }
 
 #if GC_CAN_COMPILE_COMPACTION
