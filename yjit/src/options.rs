@@ -125,6 +125,7 @@ pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
+    #[cfg_attr(not(feature = "disasm"), allow(dead_code))]
     File(std::os::unix::io::RawFd),
 }
 
