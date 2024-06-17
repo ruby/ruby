@@ -115,7 +115,12 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
+          set pkgs=gmp libffi libyaml openssl zlib
+          vcpkg --triplet x64-windows install %pkgs%
+          vcpkg --triplet x64-windows upgrade %pkgs% --no-dry-run
+
+      - name: List vcpkg libraries
+        run: vcpkg list
 
       - name: Install libraries with scoop
         run: |
