@@ -1,13 +1,24 @@
 # frozen_string_literal: false
 require 'mkmf'
 
+# `--target-rbconfig` compatibility for Ruby 3.3 or earlier
+# See https://bugs.ruby-lang.org/issues/20345
+MakeMakefile::RbConfig ||= ::RbConfig
+
 have_func("rb_io_path")
 have_func("rb_io_descriptor")
 have_func("rb_io_get_write_io")
 have_func("rb_io_closed_p")
 have_func("rb_io_open_descriptor")
 
-ok = true if RUBY_ENGINE == "ruby" || RUBY_ENGINE == "truffleruby"
+is_wasi = /wasi/ =~ MakeMakefile::RbConfig::CONFIG["platform"]
+# `ok` can be `true`, `false`, or `nil`:
+#   * `true` : Required headers and functions available, proceed regular build.
+#   * `false`: Required headers or functions not available, abort build.
+#   * `nil`  : Unsupported compilation target, generate dummy Makefile.
+#
+# Skip building io/console on WASI, as it does not support termios.h.
+ok = true if (RUBY_ENGINE == "ruby" && !is_wasi) || RUBY_ENGINE == "truffleruby"
 hdr = nil
 case
 when macro_defined?("_WIN32", "")
