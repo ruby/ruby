@@ -104,7 +104,7 @@ rb_construct_expanded_load_path(rb_vm_t *vm, enum expand_type type, int *has_rel
         if (NIL_P(expanded_path)) expanded_path = as_str;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
-    rb_obj_freeze(ary);
+    rb_ary_freeze(ary);
     vm->expanded_load_path = ary;
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
 }
