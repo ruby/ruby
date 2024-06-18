@@ -2259,9 +2259,11 @@ class Reline::LineEditor
       line, cut = byteslice!(current_line, @byte_pointer, byte_pointer_diff)
     elsif byte_pointer_diff < 0
       line, cut = byteslice!(current_line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+    else
+      return
     end
     copy_for_vi(cut)
-    set_current_line(line || '', @byte_pointer + (byte_pointer_diff < 0 ? byte_pointer_diff : 0))
+    set_current_line(line, @byte_pointer + (byte_pointer_diff < 0 ? byte_pointer_diff : 0))
   end
 
   private def vi_yank(key, arg: nil)
@@ -2280,6 +2282,8 @@ class Reline::LineEditor
       cut = current_line.byteslice(@byte_pointer, byte_pointer_diff)
     elsif byte_pointer_diff < 0
       cut = current_line.byteslice(@byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+    else
+      return
     end
     copy_for_vi(cut)
   end
