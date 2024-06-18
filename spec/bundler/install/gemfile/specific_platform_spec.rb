@@ -844,6 +844,63 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "automatically fixes the lockfile if locked only to RUBY, and some locked specs don't meed locked dependencies" do
+    simulate_platform "x86_64-linux" do
+      build_repo4 do
+        build_gem("ibandit", "0.7.0") do |s|
+          s.add_runtime_dependency "i18n", "~> 0.7.0"
+        end
+
+        build_gem("i18n", "0.7.0.beta1")
+        build_gem("i18n", "0.7.0")
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "ibandit", "~> 0.7.0"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            i18n (0.7.0.beta1)
+            ibandit (0.7.0)
+              i18n (~> 0.7.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          ibandit (~> 0.7.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update i18n"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            i18n (0.7.0)
+            ibandit (0.7.0)
+              i18n (~> 0.7.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          ibandit (~> 0.7.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   it "does not remove ruby if gems for other platforms, and not present in the lockfile, exist in the Gemfile" do
     build_repo4 do
       build_gem "nokogiri", "1.13.8"
