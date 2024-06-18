@@ -1270,6 +1270,7 @@ waitpid_cleanup(VALUE x)
     return Qfalse;
 }
 
+#if RUBY_SIGCHLD
 static void
 waitpid_wait(struct waitpid_state *w)
 {
@@ -1283,9 +1284,16 @@ waitpid_wait(struct waitpid_state *w)
      */
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    if (w->pid > 0 || ccan_list_empty(&vm->waiting_pids)) {
-        w->ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+    if (w->options & WNOHANG && w->pid <= 0) {
+        /* In the case of WNOHANG wait for a group, make sure there isn't a zombie child
+        * whose PID we are directly waiting for in another call to waitpid. If there is,
+        * we will reap it via a call to waitpid($pid) with this call to waitpid_each. */
+        waitpid_each(vm, &vm->waiting_pids);
+        /* _now_ it's safe to call do_waitpid, without risk of stealing the wait from
+         * another directed call. */
     }
+
+    w->ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
 
     if (w->ret) {
         if (w->ret == -1) w->errnum = errno;
@@ -1308,6 +1316,7 @@ waitpid_wait(struct waitpid_state *w)
         rb_ensure(waitpid_sleep, (VALUE)w, waitpid_cleanup, (VALUE)w);
     }
 }
+#endif
 
 static void *
 waitpid_blocking_no_SIGCHLD(void *x)
@@ -1350,12 +1359,11 @@ rb_process_status_wait(rb_pid_t pid, int flags)
     waitpid_state_init(&waitpid_state, pid, flags);
     waitpid_state.ec = GET_EC();
 
-    if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(&waitpid_state);
-    }
-    else {
-        waitpid_no_SIGCHLD(&waitpid_state);
-    }
+#if WAITPID_USE_SIGCHLD
+    waitpid_wait(&waitpid_state);
+#else
+    waitpid_no_SIGCHLD(&waitpid_state);
+#endif
 
     if (waitpid_state.ret == 0) return Qnil;
 
