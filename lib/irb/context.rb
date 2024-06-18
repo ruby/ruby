@@ -602,7 +602,6 @@ module IRB
         set_last_value(result)
       when Statement::Command
         statement.command_class.execute(self, statement.arg)
-        set_last_value(nil)
       end
 
       nil

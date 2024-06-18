@@ -239,7 +239,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\A(TIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n){2}/, out)
+      assert_match(/\A(TIME is added\.\nprocessing time: .+\n=> 3\n=> 3\n){2}/, out)
       assert_empty(c.class_variables)
     end
 
@@ -266,7 +266,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\ATIME is added\.\n=> nil\nprocessing time: .+\n=> 3\nprocessing time: .+\n=> 3/, out)
+      assert_match(/\ATIME is added\.\nprocessing time: .+\n=> 3\nprocessing time: .+\n=> 3/, out)
       assert_empty(c.class_variables)
     end
 
@@ -291,7 +291,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\Aprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\Aprocessing time: .+\n=> 3\n=> 3\n/, out)
     end
 
     def test_measure_enabled_by_rc_with_custom
@@ -321,7 +321,7 @@ module TestIRB
         conf: conf,
       )
       assert_empty err
-      assert_match(/\Acustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\Acustom processing time: .+\n=> 3\n=> 3\n/, out)
     end
 
     def test_measure_with_custom
@@ -353,7 +353,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\A=> 3\nCUSTOM is added\.\n=> nil\ncustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\A=> 3\nCUSTOM is added\.\ncustom processing time: .+\n=> 3\n=> 3\n/, out)
     end
 
     def test_measure_toggle
@@ -385,7 +385,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\AFOO is added\.\n=> nil\nfoo\n=> 1\nBAR is added\.\n=> nil\nbar\nfoo\n=> 2\n=> nil\nbar\n=> 3\n=> nil\n=> 4\n/, out)
+      assert_match(/\AFOO is added\.\nfoo\n=> 1\nBAR is added\.\nbar\nfoo\n=> 2\nbar\n=> 3\n=> 4\n/, out)
     end
 
     def test_measure_with_proc_warning
@@ -410,7 +410,7 @@ module TestIRB
       )
 
       assert_match(/to add custom measure/, err)
-      assert_match(/\A=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\A=> 3\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
   end
@@ -429,8 +429,7 @@ module TestIRB
         /=> "bug17564"\n/,
         /=> "bug17564"\n/,
         /   => "hi"\n/,
-        /   => nil\n/,
-        /=> "hi"\n/,
+        /   => "hi"\n/,
       ], out)
     end
 
@@ -457,8 +456,7 @@ module TestIRB
           /=> "bug17564"\n/,
           /=> "bug17564"\n/,
           /   => "hi"\n/,
-          /   => nil\n/,
-          /=> "bug17564"\n/,
+          /   => "bug17564"\n/,
         ], out)
     end
 
@@ -760,10 +758,7 @@ module TestIRB
 
   class ShowDocTest < CommandTestCase
     def test_show_doc
-      out, err = execute_lines(
-        "show_doc String#gsub\n",
-        "\n",
-      )
+      out, err = execute_lines("show_doc String#gsub")
 
       # the former is what we'd get without document content installed, like on CI
       # the latter is what we may get locally
@@ -776,15 +771,10 @@ module TestIRB
     end
 
     def test_show_doc_without_rdoc
-      out, err = without_rdoc do
-        execute_lines(
-          "show_doc String#gsub\n",
-          "\n",
-        )
+      _, err = without_rdoc do
+        execute_lines("show_doc String#gsub")
       end
 
-      # if it fails to require rdoc, it only returns the command object
-      assert_match(/=> nil\n/, out)
       assert_include(err, "Can't display document because `rdoc` is not installed.\n")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
