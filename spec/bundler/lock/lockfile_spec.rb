@@ -419,8 +419,16 @@ RSpec.describe "the lockfile format" do
 
     lockfile lockfile_without_credentials
 
+    # when not re-resolving
     bundle "install", artifice: "endpoint_strict_basic_authentication", quiet: true
+    expect(lockfile).to eq lockfile_without_credentials
 
+    # when re-resolving with full unlock
+    bundle "update", artifice: "endpoint_strict_basic_authentication"
+    expect(lockfile).to eq lockfile_without_credentials
+
+    # when re-resolving without ful unlocking
+    bundle "update rack-obama", artifice: "endpoint_strict_basic_authentication"
     expect(lockfile).to eq lockfile_without_credentials
   end
 
