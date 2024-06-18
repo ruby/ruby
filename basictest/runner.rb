@@ -1,8 +1,4 @@
-#! ./miniruby
 
-exit if defined?(CROSS_COMPILING) and CROSS_COMPILING
-ruby = ENV["RUBY"]
-unless ruby
   load './rbconfig.rb'
   ruby = "./#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}"
 end
