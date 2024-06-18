@@ -535,6 +535,10 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
         }
     }
 
+    if (RHASH_EMPTY_P(keyword_hash) && !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+        goto ignore;
+    }
+
     if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT) &&
         (ISEQ_BODY(iseq)->param.flags.has_kwrest ||
          ISEQ_BODY(iseq)->param.flags.ruby2_keywords)) {
@@ -856,7 +860,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals, remove_hash_value);
         }
         else {
-            VM_ASSERT(args_argc(args) == 0);
+#if VM_CHECK_MODE > 0
+            if (args_argc(args) != 0) {
+                VM_ASSERT(ci_flag & VM_CALL_ARGS_SPLAT);
+                VM_ASSERT(!(ci_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT)));
+                VM_ASSERT(!kw_flag);
+                VM_ASSERT(!ISEQ_BODY(iseq)->param.flags.has_rest);
+                VM_ASSERT(RARRAY_LENINT(args->rest) > 0);
+                VM_ASSERT(RB_TYPE_P(rest_last, T_HASH));
+                VM_ASSERT(FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS));
+                VM_ASSERT(args_argc(args) == 1);
+            }
+#endif
             args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
         }
     }
