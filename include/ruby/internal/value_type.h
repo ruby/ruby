@@ -96,7 +96,12 @@
 #define RB_TYPE_P         RB_TYPE_P
 #define Check_Type        Check_Type
 
-#define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
+#ifdef RBIMPL_VA_OPT_ARGS
+# define RBIMPL_ASSERT_TYPE(v, t) \
+    RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P(v, t), "actual type: %d", rb_type(v))
+#else
+# define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P(v, t))
+#endif
 /** @endcond */
 
 /** @old{rb_type} */
