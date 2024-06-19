@@ -44,6 +44,8 @@ When Bundler is configured to not generate tests, an interactive prompt will be 
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
 .IP "\(bu" 4
+\fB\-\-no\-test\fR: Do not use a test framework (overrides \fB\-\-test\fR specified in the global config)\.
+.IP "\(bu" 4
 \fB\-\-ci\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR, \fB\-\-ci=circle\fR: Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
 .IP
 When Bundler is configured to generate CI files, this defaults to Bundler's global config setting \fBgem\.ci\fR\.
@@ -52,6 +54,8 @@ When Bundler is configured to not generate CI files, an interactive prompt will 
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
 .IP "\(bu" 4
+\fB\-\-no\-ci\fR: Do not use a continuous integration service (overrides \fB\-\-ci\fR specified in the global config)\.
+.IP "\(bu" 4
 \fB\-\-linter\fR, \fB\-\-linter=rubocop\fR, \fB\-\-linter=standard\fR: Specify the linter and code formatter that Bundler should add to the project's development dependencies\. Acceptable values are \fBrubocop\fR and \fBstandard\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
 .IP
 When Bundler is configured to add a linter, this defaults to Bundler's global config setting \fBgem\.linter\fR\.
@@ -59,6 +63,8 @@ When Bundler is configured to add a linter, this defaults to Bundler's global co
 When Bundler is configured not to add a linter, an interactive prompt will be displayed and the answer will be used for the current rubygem project\.
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
+.IP "\(bu" 4
+\fB\-\-no\-linter\fR: Do not add a linter (overrides \fB\-\-linter\fR specified in the global config)\.
 .IP "\(bu" 4
 \fB\-e\fR, \fB\-\-edit[=EDITOR]\fR: Open the resulting GEM_NAME\.gemspec in EDITOR, or the default editor if not specified\. The default is \fB$BUNDLER_EDITOR\fR, \fB$VISUAL\fR, or \fB$EDITOR\fR\.
 .IP "" 0
