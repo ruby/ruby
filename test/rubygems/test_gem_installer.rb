@@ -2577,6 +2577,7 @@ end
 
     yield
   ensure
-    RbConfig::CONFIG["LIBRUBY_RELATIVE"] = orig_libruby_relative
+    # RbConfig::CONFIG values are strings only, there should not be a nil.
+    RbConfig::CONFIG["LIBRUBY_RELATIVE"] = orig_libruby_relative if orig_libruby_relative
   end
 end
