@@ -40,7 +40,7 @@ class CompactIndexAPI < Endpoint
     end
 
     def requested_range_for(response_body)
-      ranges = Rack::Utils.byte_ranges(env, response_body.bytesize)
+      ranges = Rack::Utils.get_byte_ranges(env["HTTP_RANGE"], response_body.bytesize)
 
       if ranges
         status 206
