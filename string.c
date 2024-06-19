@@ -9621,6 +9621,12 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
     if (!RSTRING_LEN(str)) goto end;
     str = rb_str_new_frozen(str);
     ptr = subptr = RSTRING_PTR(str);
+#if USE_MMTK
+    volatile VALUE str_content_holder = 0;
+    if (rb_mmtk_enabled_p()) {
+        str_content_holder = rb_mmtk_string_content_holder(str);
+    }
+#endif
     pend = RSTRING_END(str);
     len = RSTRING_LEN(str);
     StringValue(rs);
@@ -9721,6 +9727,10 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         ENUM_ELEM(ary, line);
         RB_GC_GUARD(str);
     }
+
+#if USE_MMTK
+    RB_GC_GUARD(str_content_holder);
+#endif
 
   end:
     if (ary)
