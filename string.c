@@ -1970,12 +1970,7 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    long fake_len = capa - termlen;
-    if (fake_len < 0) {
-        fake_len = 0;
-    }
-
-    VALUE str = str_new0(klass, NULL, fake_len, termlen);
+    VALUE str = str_new0(klass, NULL, capa, termlen);
     STR_SET_LEN(str, 0);
     TERM_FILL(RSTRING_PTR(str), termlen);
 
