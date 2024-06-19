@@ -2896,6 +2896,10 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                             | tCONSTANT
                             ;
 
+%rule %inline inline_var_lhs: user_variable
+                            | keyword_variable
+                            ;
+
 /*
  *	parameterizing rules
  */
@@ -6299,12 +6303,7 @@ var_ref		: user_variable
                     }
                 ;
 
-var_lhs		: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+var_lhs		: inline_var_lhs
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
