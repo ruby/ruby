@@ -323,10 +323,10 @@ install:
       end
       RUBY
       RbConfig::CONFIG.each do |k, v|
-        f.puts %(RbConfig::CONFIG[#{k.dump}] = #{v.dump})
+        f.puts %(RbConfig::CONFIG[#{k.dump}] = #{v&.dump || "nil"})
       end
       RbConfig::MAKEFILE_CONFIG.each do |k, v|
-        f.puts %(RbConfig::MAKEFILE_CONFIG[#{k.dump}] = #{v.dump})
+        f.puts %(RbConfig::MAKEFILE_CONFIG[#{k.dump}] = #{v&.dump || "nil"})
       end
       f.puts "RbConfig::CONFIG['host_os'] = 'fake_os'"
       f.puts "RbConfig::CONFIG['arch'] = 'fake_arch'"
