@@ -298,7 +298,7 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  * @copydetails #RUBY_ASSERT
  */
 #if RUBY_DEBUG
-# define RBIMPL_ASSERT_OR_ASSUME(expr) RUBY_ASSERT_ALWAYS(expr)
+# define RBIMPL_ASSERT_OR_ASSUME RUBY_ASSERT_ALWAYS
 #elif RBIMPL_COMPILER_BEFORE(Clang, 7, 0, 0)
 # /* See commit 67d259c5dccd31fe49d417fec169977712ffdf10 */
 # define RBIMPL_ASSERT_OR_ASSUME(expr) RBIMPL_ASSERT_NOTHING
