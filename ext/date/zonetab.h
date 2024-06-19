@@ -1228,11 +1228,11 @@ zonetab (register const char *str, register size_t len)
       {gperf_offsetof(stringpool, 240),28800},
       {-1},
 #line 317 "zonetab.list"
-      {gperf_offsetof(stringpool, 242),-10800},
+      {gperf_offsetof(stringpool, 242),-7200},
 #line 60 "zonetab.list"
       {gperf_offsetof(stringpool, 243),-9*3600},
 #line 316 "zonetab.list"
-      {gperf_offsetof(stringpool, 244),-7200},
+      {gperf_offsetof(stringpool, 244),-3600},
       {-1},
 #line 246 "zonetab.list"
       {gperf_offsetof(stringpool, 246),25200},
