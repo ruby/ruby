@@ -21,7 +21,7 @@ module Gem::BundlerVersionFinder
   end
 
   def self.bundle_update_bundler_version
-    return unless File.basename($0) == "bundle"
+    return unless ["bundle", "bundler"].include? File.basename($0)
     return unless "update".start_with?(ARGV.first || " ")
     bundler_version = nil
     update_index = nil
