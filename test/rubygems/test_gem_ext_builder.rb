@@ -333,9 +333,15 @@ install:
       f.puts "RbConfig::CONFIG['platform'] = 'fake_platform'"
     end
 
-    system(Gem.ruby, "-rmkmf", "-e", "exit MakeMakefile::RbConfig::CONFIG['host_os'] == 'fake_os'",
-           "--", "--target-rbconfig=#{fake_rbconfig}")
-    pend "This version of mkmf does not support --target-rbconfig" unless $?.success?
+    stdout, stderr = capture_subprocess_io do
+      system(Gem.ruby, "-rmkmf", "-e", "exit MakeMakefile::RbConfig::CONFIG['host_os'] == 'fake_os'",
+             "--", "--target-rbconfig=#{fake_rbconfig}")
+    end
+    unless $?.success?
+      assert_include(stderr, "uninitialized constant MakeMakefile::RbConfig")
+      pend "This version of mkmf does not support --target-rbconfig"
+    end
+    assert_empty(stdout)
 
     @spec.extensions << "extconf.rb"
     @builder = Gem::Ext::Builder.new @spec, "", Gem::TargetRbConfig.from_path(fake_rbconfig)
