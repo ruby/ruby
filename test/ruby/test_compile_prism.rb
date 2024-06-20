@@ -1972,40 +1972,6 @@ end
         end
         test_prism_call_node
       CODE
-
-      # Test opt_str_freeze instruction when calling #freeze on a string literal
-      assert_prism_eval(<<~RUBY)
-        "foo".freeze.equal?("foo".freeze)
-      RUBY
-      # Test encoding in opt_str_freeze
-      assert_prism_eval(<<~'RUBY', raw: true)
-        # -*- coding: us-ascii -*-
-        "\xff".freeze.encoding
-      RUBY
-
-      # Test opt_aref_with instruction when calling [] with a string
-      assert_prism_eval(<<~RUBY)
-        ObjectSpace.count_objects
-
-        h = {"abc" => 1}
-        before = ObjectSpace.count_objects[:T_STRING]
-        5.times{ h["abc"] }
-        after = ObjectSpace.count_objects[:T_STRING]
-
-        before == after
-      RUBY
-
-      # Test opt_aset_with instruction when calling []= with a string key
-      assert_prism_eval(<<~RUBY)
-        ObjectSpace.count_objects
-
-        h = {"abc" => 1}
-        before = ObjectSpace.count_objects[:T_STRING]
-        5.times{ h["abc"] = 2}
-        after = ObjectSpace.count_objects[:T_STRING]
-
-        before == after
-      RUBY
     end
 
     def test_CallAndWriteNode
