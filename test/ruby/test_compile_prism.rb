@@ -123,8 +123,7 @@ module Prism
       assert_prism_eval("defined? %s[1,2,3]")
       assert_prism_eval("defined? %x[1,2,3]")
 
-      # XXX: Needs fix in prism compiler
-      #assert_prism_eval("defined? [*b]")
+      assert_prism_eval("defined? [*b]")
       assert_prism_eval("defined? [[*1..2], 3, *4..5]")
       assert_prism_eval("defined? [a: [:b, :c]]")
       assert_prism_eval("defined? 1 in 1")
