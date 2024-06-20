@@ -753,8 +753,9 @@ rb_f_raise(int argc, VALUE *argv)
  *  see {Exceptions}[rdoc-ref:exceptions.md].
  *
  *  Argument +exception+ sets the class of the new exception;
- *  it should be a subclass of Exception (or an instance of one of those classes),
- *  usually RuntimeError or StandardError
+ *  it should be class Exception or one of its subclasses
+ *  (most commonly, RuntimeError or StandardError),
+ *  or an instance of one of those classes:
  *
  *    begin
  *      raise(StandardError)
@@ -783,13 +784,7 @@ rb_f_raise(int argc, VALUE *argv)
  *
  *  Argument +backtrace+ sets the stored backtrace in the new exception,
  *  which may be retrieved by method Exception#backtrace;
- *  the backtrace must be one of:
- *
- *  - An array of strings.
- *  - An array of Thread::Backtrace::Location objects.
- *  - +nil+.
- *
- *  Example:
+ *  the backtrace must be an array of strings or +nil+:
  *
  *    begin
  *      raise(StandardError, 'Boom', %w[foo bar baz])
@@ -799,7 +794,8 @@ rb_f_raise(int argc, VALUE *argv)
  *    # => ["foo", "bar", "baz"]
  *
  *  If argument +backtrace+ is not given,
- *  the backtrace is set according to the call stack.
+ *  the backtrace is set according to an array of Thread::Backtrace::Location objects,
+ *  as derived from the call stack.
  *
  *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  *

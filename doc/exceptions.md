@@ -192,16 +192,16 @@ Example:
 begin
   1 / 0
 rescue => x
-  puts $!.__id__ == x.__id__
-  puts $@.__id__ == x.backtrace.__id__
+  p $!
+  p $@
 end
 ```
 
 Output:
 
 ```
-true
-true
+#<ZeroDivisionError: divided by 0>
+["t.rb:2:in `/'", "t.rb:2:in `<main>'"]
 ```
 
 ##### Cause
@@ -442,7 +442,7 @@ Two other methods return enhanced versions of the message:
 - Exception#full_message: adds exception class name and backtrace, with optional highlighting.
 
 Each of the two methods above accepts keyword argument `highlight`;
-if the value of keyword `highlight` is true (not `nil` or `false`),
+if the value of keyword `highlight` is `true`,
 the returned string includes bolding and underlining ANSI codes (see below)
 to enhance the appearance of the message.
 
@@ -450,7 +450,7 @@ Any exception class (Ruby or custom) may choose to override either of these meth
 and may choose to interpret keyword argument <tt>highlight: true</tt>
 to mean that the returned message should contain
 [ANSI codes](https://en.wikipedia.org/wiki/ANSI_escape_code)
-that specify color, bolding, and underlining).
+that specify color, bolding, and underlining.
 
 Because the enhanced message may be written to a non-terminal device
 (e.g., into an HTML page),

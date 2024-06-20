@@ -1468,20 +1468,21 @@ exc_init(VALUE exc, VALUE mesg)
 
 /*
  *  call-seq:
- *    Exception.new(message = self.to_s) ->  exception
+ *    Exception.new(message = nil) -> exception
  *
  *  Returns a new exception object.
  *
- *  Its message is the given +message+,
- *  which should be
+ *  The given +message+ should be
  *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
- *  see method #message.
+ *  see method #message;
+ *  if not given, the message is the class name of the new instance
+ *  (which may be the name of a subclass):
  *
  *  Examples:
  *
- *    x = Exception.new         # => #<Exception: Exception>
- *    x = LoadError.new         # => #<LoadError: LoadError> # Subclass of Exception.
- *    x = Exception.new('Boom') # => #<Exception: Boom>
+ *    Exception.new         # => #<Exception: Exception>
+ *    LoadError.new         # => #<LoadError: LoadError> # Subclass of Exception.
+ *    Exception.new('Boom') # => #<Exception: Boom>
  *
  */
 
@@ -1515,7 +1516,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  and whose message is the given +message+:
  *
  *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
- *    x0.__id__ == x1.__id__    # => false
+ *    x0..equal?(x1)            # => false
  *
  */
 
@@ -1585,7 +1586,7 @@ rb_get_detailed_message(VALUE exc, VALUE opt)
  *  call-seq:
  *    Exception.to_tty? -> true or false
  *
- *  Returns <tt>$stderr.is_atty</tt>,
+ *  Returns <tt>$stderr.isatty</tt>,
  *  which indicates whether the exception, if not rescued,
  *  is to be written to a terminal device;
  *  see IO#isatty.
@@ -1723,12 +1724,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
  * call-seq:
  *   message -> string
  *
- * Returns the message that was set when +self+ was created:
- *
- *   x = RuntimeError.new('Boom')
- *   x.message # => "Boom"
- *   x = RuntimeError.new # Default message is class name.
- *   x.message # => "RuntimeError"
+ * Returns #to_s.
  *
  * See {Messages}[rdoc-ref:exceptions.md@Messages].
  */
@@ -1746,7 +1742,7 @@ exc_message(VALUE exc)
  * Returns the message string with enhancements:
  *
  * - Includes the exception class name in the first line.
- * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
+ * - If the value of keyword +highlight+ is +true+,
  *   includes bolding and underlining ANSI codes (see below)
  *   to enhance the appearance of the message.
  *
@@ -1766,7 +1762,7 @@ exc_message(VALUE exc)
  *   "divided by 0 (ZeroDivisionError)"
  *   "\e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m"
  *
- * This method is overridden by certain Ruby modules:
+ * This method is overridden by some gems in the Ruby standard library to add information:
  *
  * - DidYouMean::Correctable#detailed_message.
  * - ErrorHighlight::CoreExt#detailed_message.
@@ -1846,10 +1842,13 @@ exc_inspect(VALUE exc)
  *  Returns a backtrace value for +self+;
  *  the returned value depends on the form of the stored backtrace value:
  *
- *  - \Array of strings: returns that array.
  *  - \Array of Thread::Backtrace::Location objects:
  *    returns the array of strings given by
  *    <tt>Exception#backtrace_locations.map {|loc| loc.to_s }</tt>.
+ *    This is the normal case, where the backtrace value was stored by Kernel#raise.
+ *  - \Array of strings: returns that array.
+ *    This is the unusual case, where the backtrace value was explicitly
+ *    stored as an array of strings.
  *  - +nil+: returns +nil+.
  *
  *  Example:
@@ -1998,10 +1997,9 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
  *  call-seq:
  *    cause -> exception or nil
  *
- *  In a rescue clause, returns the previous value of global variable <tt>$!</tt>,
+ *  Returns the previous value of global variable <tt>$!</tt>,
  *  which may be +nil+
- *  (see {Global Variables}[rdoc-ref:exceptions.md@Global+Variables]);
- *  elsewhere, returns +nil+:
+ *  (see {Global Variables}[rdoc-ref:exceptions.md@Global+Variables]):
  *
  *    begin
  *      raise('Boom 0')
