@@ -375,7 +375,7 @@ class TestFile < Test::Unit::TestCase
       sleep 2
       File.read(path)
 
-      delta = 1
+      delta = EnvUtil.apply_timeout_scale(1)
       stat = File.stat(path)
       assert_in_delta tb,   stat.birthtime.to_f, delta
       assert_in_delta t0+2, stat.mtime.to_f, delta
