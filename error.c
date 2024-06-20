@@ -1586,10 +1586,7 @@ rb_get_detailed_message(VALUE exc, VALUE opt)
  *  call-seq:
  *    Exception.to_tty? -> true or false
  *
- *  Returns <tt>$stderr.isatty</tt>,
- *  which indicates whether the exception, if not rescued,
- *  is to be written to a terminal device;
- *  see IO#isatty.
+ *  Returns +true+ if exception messages will be sent to a terminal device.
  */
 static VALUE
 exc_s_to_tty_p(VALUE self)

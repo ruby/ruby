@@ -191,7 +191,7 @@ Example:
 ```
 begin
   1 / 0
-rescue => x
+rescue
   p $!
   p $@
 end
@@ -504,7 +504,7 @@ These methods return backtrace information:
 An `Exception` object stores its backtrace value as one of:
 
 - An array of Thread::Backtrace::Location objects;
-  this is the case for an exception raised by the Ruby core or the Ruby standard library.
+  this is the common case: the exception was raised by the Ruby core or the Ruby standard library.
   In this case:
 
     - Exception#backtrace_locations returns the array of Thread::Backtrace::Location objects.
@@ -512,7 +512,8 @@ An `Exception` object stores its backtrace value as one of:
       (`Exception#backtrace_locations.map {|loc| loc.to_s }`).
 
 - An array of strings;
-  in this case:
+  this is an uncommon case: the user manually set the backtrace to an array of strings;
+  In this case:
 
     - Exception#backtrace returns the array of strings.
     - Exception#backtrace_locations returns `nil`.
