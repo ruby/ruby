@@ -159,7 +159,7 @@ static const char *const ai_errlist[] = {
         "ai_family not supported.",			/* EAI_FAMILY     */
         "memory allocation failure.", 			/* EAI_MEMORY     */
         "no address associated with hostname.", 	/* EAI_NODATA     */
-        "hostname nor servname provided, or not known.",/* EAI_NONAME     */
+        "neither hostname nor servname provided, or not known.",/* EAI_NONAME     */
         "servname not supported for ai_socktype.",	/* EAI_SERVICE    */
         "ai_socktype not supported.", 			/* EAI_SOCKTYPE   */
         "system error returned in errno.", 		/* EAI_SYSTEM     */
