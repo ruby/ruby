@@ -267,7 +267,7 @@ jobs:
         if: ${{ (matrix.entry.static-exts || '') != '' }}
 
       - name: Clean up ext/Setup
-        uses: gacts/run-and-post-run@7aec950f3b114c4fcf6012070c3709ecff0eb6f8 # v1.4.0
+        uses: gacts/run-and-post-run@4683764dd706df847f57b9bed39d08164bcd2690 # v1.4.1
         with:
           shell: bash
           working-directory: build
