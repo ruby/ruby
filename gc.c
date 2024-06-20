@@ -1864,7 +1864,7 @@ static void *rb_gc_impl_objspace_alloc(void);
 
 # define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
 
-void
+static void
 ruby_external_gc_init(void)
 {
     char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
