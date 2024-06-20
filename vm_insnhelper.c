@@ -3069,6 +3069,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
 
+    VM_ASSERT((vm_ci_argc(ci), 1));
+    VM_ASSERT(vm_cc_cme(cc) != NULL);
+
     if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
                  calling->block_handler != VM_BLOCK_HANDLER_NONE &&
                  !(vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER))) {
@@ -4235,10 +4238,23 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         }
     }
 
-    calling->cd = &(struct rb_call_data) {
-        .ci = &VM_CI_ON_STACK(mid, flags, argc, vm_ci_kwarg(ci)),
-        .cc = NULL,
+    struct rb_forwarding_call_data new_fcd = {
+        .cd = {
+            .ci = &VM_CI_ON_STACK(mid, flags, argc, vm_ci_kwarg(ci)),
+            .cc = NULL,
+        },
+        .caller_ci = NULL,
     };
+
+    if (!(vm_ci_flag(ci) & VM_CALL_FORWARDING)) {
+        calling->cd = &new_fcd.cd;
+    }
+    else {
+        const struct rb_callinfo *caller_ci = ((struct rb_forwarding_call_data *)calling->cd)->caller_ci;
+        VM_ASSERT((vm_ci_argc(caller_ci), 1));
+        new_fcd.caller_ci = caller_ci;
+        calling->cd = (struct rb_call_data *)&new_fcd;
+    }
     calling->cc = &VM_CC_ON_STACK(klass,
                                   vm_call_general,
                                   { .method_missing_reason = missing_reason },
@@ -4381,10 +4397,25 @@ vm_call_method_missing_body(rb_execution_context_t *ec, rb_control_frame_t *reg_
     INC_SP(1);
 
     ec->method_missing_reason = reason;
-    calling->cd = &(struct rb_call_data) {
-        .ci = &VM_CI_ON_STACK(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci)),
-        .cc = NULL,
+
+    struct rb_forwarding_call_data new_fcd = {
+        .cd = {
+            .ci = &VM_CI_ON_STACK(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci)),
+            .cc = NULL,
+        },
+        .caller_ci = NULL,
     };
+
+    if (!(flag & VM_CALL_FORWARDING)) {
+        calling->cd = &new_fcd.cd;
+    }
+    else {
+        const struct rb_callinfo *caller_ci = ((struct rb_forwarding_call_data *)calling->cd)->caller_ci;
+        VM_ASSERT((vm_ci_argc(caller_ci), 1));
+        new_fcd.caller_ci = caller_ci;
+        calling->cd = (struct rb_call_data *)&new_fcd;
+    }
+
     calling->cc = &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }},
                                   rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv), idMethodMissing, NULL));
     return vm_call_method(ec, reg_cfp, calling);
