@@ -102,7 +102,9 @@ jobs:
         continue-on-error: true
 
       - name: Set extra test options
-        run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        run: |
+          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+          echo "RUBY_TEST_TIMEOUT_SCALE=3" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
         if: matrix.test_opts
 
       - name: make ${{ matrix.test_task }}
