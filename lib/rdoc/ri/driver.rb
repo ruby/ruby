@@ -1088,7 +1088,7 @@ or the PAGER environment variable.
       puts "You can use tab to autocomplete."
     end
 
-    puts "Enter a blank line to exit.\n\n"
+    puts "Enter an EOF to exit.\n\n"
 
     loop do
       name = if defined? Readline then
@@ -1098,7 +1098,8 @@ or the PAGER environment variable.
                $stdin.gets
              end
 
-      return if name.nil? or name.empty?
+      return if name.nil?
+      next if name.empty?
 
       begin
         display_name expand_name(name.strip)
