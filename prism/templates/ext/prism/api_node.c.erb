@@ -1,4 +1,4 @@
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
 #include "prism/extension.h"
 
 extern VALUE rb_cPrism;
@@ -142,7 +142,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
             switch (PM_NODE_TYPE(node)) {
                 <%- nodes.each do |node| -%>
                 <%- if node.fields.any? { |field| [Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::NodeListField].include?(field.class) } -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
                     <%- node.fields.each do |field| -%>
@@ -162,13 +162,13 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                 default:
                     break;
             }
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
         } else {
             const pm_node_t *node = pm_node_stack_pop(&node_stack);
 
             switch (PM_NODE_TYPE(node)) {
                 <%- nodes.each do |node| -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
                     <%- if node.fields.any? { |field| ![Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::FlagsField].include?(field.class) } -%>
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
@@ -182,50 +182,50 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     // <%= field.name %>
                     <%- case field -%>
                     <%- when Prism::Template::NodeField, Prism::Template::OptionalNodeField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_pop(value_stack);
                     <%- when Prism::Template::NodeListField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         rb_ary_push(argv[<%= index %>], rb_ary_pop(value_stack));
                     }
                     <%- when Prism::Template::StringField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_string_new(&cast-><%= field.name %>, encoding);
                     <%- when Prism::Template::ConstantField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     assert(cast-><%= field.name %> != 0);
                     argv[<%= index %>] = RARRAY_AREF(constants, cast-><%= field.name %> - 1);
                     <%- when Prism::Template::OptionalConstantField -%>
                     argv[<%= index %>] = cast-><%= field.name %> == 0 ? Qnil : RARRAY_AREF(constants, cast-><%= field.name %> - 1);
                     <%- when Prism::Template::ConstantListField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         assert(cast-><%= field.name %>.ids[index] != 0);
                         rb_ary_push(argv[<%= index %>], RARRAY_AREF(constants, cast-><%= field.name %>.ids[index] - 1));
                     }
                     <%- when Prism::Template::LocationField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end);
                     <%- when Prism::Template::OptionalLocationField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end);
                     <%- when Prism::Template::UInt8Field -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = UINT2NUM(cast-><%= field.name %>);
                     <%- when Prism::Template::UInt32Field -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
                     <%- when Prism::Template::FlagsField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(node->flags & ~PM_NODE_FLAG_COMMON_MASK);
                     <%- when Prism::Template::IntegerField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_integer_new(&cast-><%= field.name %>);
                     <%- when Prism::Template::DoubleField -%>
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = DBL2NUM(cast-><%= field.name %>);
                     <%- else -%>
                     <%- raise -%>
