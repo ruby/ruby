@@ -1315,14 +1315,32 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %q{
-def foo(a, b) = a + b
-def bar(...) = foo(...)
-bar(1, 2)
-bar(1, 2)
-begin
-  bar(1, 2, 3)
-  "ng"
-rescue ArgumentError
-  "ok"
-end
+  def foo(a, b) = a + b
+  def bar(...) = foo(...)
+  bar(1, 2)
+  bar(1, 2)
+  begin
+    bar(1, 2, 3)
+    "ng"
+  rescue ArgumentError
+    "ok"
+  end
+}
+
+assert_equal 'ok', %q{
+  class C
+    def foo(...) = :ok
+    def bar(...) = __send__(:foo, ...)
+  end
+
+  C.new.bar
+}
+
+assert_equal 'ok', %q{
+  class C
+    def method_missing(...) = :ok
+    def foo(...) = xyzzy(...)
+  end
+
+  C.new.foo
 }
