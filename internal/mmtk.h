@@ -29,6 +29,8 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
+typedef struct st_table st_table;
+
 typedef struct RubyBindingOptions {
     bool ractor_check_mode;
     size_t suffix_size;
@@ -75,15 +77,27 @@ typedef struct MMTk_RubyUpcalls {
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
     void (*cleanup_generic_iv_tbl)(void);
+    void *(*get_original_givtbl)(MMTk_ObjectReference object);
+    void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
+    size_t (*vm_live_bytes)(void);
     void (*update_frozen_strings_table)(void);
     void (*update_finalizer_table)(void);
     void (*update_obj_id_tables)(void);
     void (*update_global_symbols_table)(void);
     void (*update_overloaded_cme_table)(void);
     void (*update_ci_table)(void);
-    void *(*get_original_givtbl)(MMTk_ObjectReference object);
-    void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
-    size_t (*vm_live_bytes)(void);
+    struct st_table *(*get_frozen_strings_table)(void);
+    struct st_table *(*get_finalizer_table)(void);
+    struct st_table *(*get_obj_id_tables)(void);
+    struct st_table *(*get_global_symbols_table)(void);
+    struct st_table *(*get_overloaded_cme_table)(void);
+    struct st_table *(*get_ci_table)(void);
+    void (*st_get_size_info)(const struct st_table *table,
+                             size_t *entries_start,
+                             size_t *entries_bound,
+                             size_t *bins_num);
+    void (*st_update_entries_range)(struct st_table *table, size_t begin, size_t end);
+    void (*st_update_bins_range)(struct st_table *table, size_t begin, size_t end);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {

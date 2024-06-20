@@ -13,6 +13,7 @@
 #include "ruby/ruby.h"
 #include "ractor_core.h"
 #include "vm_core.h"
+#include "ruby/st.h"
 #include "vm_sync.h"
 #include "stdatomic.h"
 
@@ -1597,6 +1598,13 @@ void rb_mmtk_update_global_symbols_table(void); // Defined in gc.c
 void rb_mmtk_update_overloaded_cme_table(void); // Defined in gc.c
 void rb_mmtk_update_ci_table(void); // Defined in gc.c
 
+st_table* rb_mmtk_get_frozen_strings_table(void); // Defined in gc.c
+st_table* rb_mmtk_get_finalizer_table(void); // Defined in gc.c
+st_table* rb_mmtk_get_obj_id_tables(void); // Defined in gc.c
+st_table* rb_mmtk_get_global_symbols_table(void); // Defined in gc.c
+st_table* rb_mmtk_get_overloaded_cme_table(void); // Defined in gc.c
+st_table* rb_mmtk_get_ci_table(void); // Defined in gc.c
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -1618,15 +1626,24 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_call_obj_free,
     rb_mmtk_cleanup_generic_iv_tbl,
+    rb_mmtk_get_original_givtbl,
+    rb_mmtk_move_givtbl,
+    rb_mmtk_vm_live_bytes,
     rb_mmtk_update_frozen_strings_table,
     rb_mmtk_update_finalizer_table,
     rb_mmtk_update_obj_id_tables,
     rb_mmtk_update_global_symbols_table,
     rb_mmtk_update_overloaded_cme_table,
     rb_mmtk_update_ci_table,
-    rb_mmtk_get_original_givtbl,
-    rb_mmtk_move_givtbl,
-    rb_mmtk_vm_live_bytes,
+    rb_mmtk_get_frozen_strings_table,
+    rb_mmtk_get_finalizer_table,
+    rb_mmtk_get_obj_id_tables,
+    rb_mmtk_get_global_symbols_table,
+    rb_mmtk_get_overloaded_cme_table,
+    rb_mmtk_get_ci_table,
+    rb_mmtk_st_get_size_info,
+    rb_mmtk_st_update_entries_range,
+    rb_mmtk_st_update_bins_range,
 };
 
 ////////////////////////////////////////////////////////////////////////////////

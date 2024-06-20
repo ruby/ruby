@@ -14840,6 +14840,43 @@ rb_mmtk_update_ci_table(void)
     RUBY_DEBUG_LOG("CI table size: %zu -> %zu.  Removed: %zu\n",
         size1, size2, size1-size2);
 }
+
+st_table*
+rb_mmtk_get_frozen_strings_table(void)
+{
+    return GET_VM()->frozen_strings;
+}
+
+st_table*
+rb_mmtk_get_finalizer_table(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return finalizer_table;
+}
+
+st_table*
+rb_mmtk_get_obj_id_tables(void)
+{
+    return rb_objspace.obj_to_id_tbl;
+}
+
+st_table*
+rb_mmtk_get_global_symbols_table(void)
+{
+    return global_symbols.str_sym;
+}
+
+st_table*
+rb_mmtk_get_overloaded_cme_table(void)
+{
+    return GET_VM()->overloaded_cme_table;
+}
+
+st_table*
+rb_mmtk_get_ci_table(void)
+{
+    return GET_VM()->ci_table;
+}
 /////////////// END: Global table updating ////////////////
 
 // Workaround private functions

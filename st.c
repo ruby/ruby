@@ -113,6 +113,7 @@
 
 #if USE_MMTK
 #include "internal/mmtk.h"
+#include "ruby/atomic.h"
 #endif
 
 #include <stdio.h>
@@ -2340,6 +2341,85 @@ rb_st_compact_table(st_table *tab)
 }
 
 #if USE_MMTK
+void
+rb_mmtk_st_get_size_info(const st_table *tab, size_t *entries_start, size_t *entries_bound, size_t *bins_num)
+{
+    *entries_start = tab->entries_start;
+    *entries_bound = tab->entries_bound;
+    *bins_num = tab->bins == NULL ? 0 : get_bins_num(tab);
+}
+
+void
+rb_mmtk_st_update_entries_range(st_table *tab, size_t begin, size_t end)
+{
+    RUBY_ASSERT(tab->entries_start <= begin);
+    RUBY_ASSERT(end <= tab->entries_bound);
+
+    size_t deleted_entries = 0;
+
+    for (st_index_t ind = begin; ind < end; ind++) {
+        if (DELETED_ENTRY_P(&tab->entries[ind])) {
+            continue;
+        }
+
+        st_table_entry *entry = &tab->entries[ind];
+
+        bool delete_entry = false;
+
+        st_data_t key = entry->key;
+        if (!RB_SPECIAL_CONST_P(key)) {
+            if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+                st_data_t new_key = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)key);
+                if (new_key != 0) {
+                    entry->key = new_key;
+                }
+            } else {
+                delete_entry = true;
+            }
+        }
+
+        st_data_t record = tab->entries[ind].record;
+        if (!delete_entry && !RB_SPECIAL_CONST_P(record)) {
+            if (mmtk_is_reachable((MMTk_ObjectReference)record)) {
+                st_data_t new_record = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)record);
+                if (new_record != 0) {
+                    entry->record = new_record;
+                }
+            } else {
+                delete_entry = true;
+            }
+        }
+
+        if (delete_entry) {
+            MARK_ENTRY_DELETED(&tab->entries[ind]);
+            deleted_entries++;
+            continue;
+        }
+    }
+
+    rbimpl_atomic_size_sub(&tab->num_entries, deleted_entries);
+}
+
+void
+rb_mmtk_st_update_bins_range(st_table *tab, size_t begin, size_t end)
+{
+    RUBY_ASSERT(end <= get_bins_num(tab));
+
+    unsigned int const size_ind = get_size_ind(tab);
+
+    // Delete bins that point to deleted entries.
+    for (st_index_t ind = begin; ind < end; ind++) {
+        st_index_t bin = get_bin(tab->bins, size_ind, ind);
+        if (EMPTY_OR_DELETED_BIN_P(bin)) {
+            continue;
+        }
+        st_table_entry *entry = &tab->entries[bin - ENTRY_BASE];
+        if (DELETED_ENTRY_P(entry)) {
+            MARK_BIN_DELETED(tab, ind);
+        }
+    }
+}
+
 // Update a deduplication table.
 //
 // This function forwards reachable entries and removes dead entries of deduplication tables.
@@ -2354,6 +2434,13 @@ rb_st_compact_table(st_table *tab)
 void
 rb_mmtk_st_update_dedup_table(st_table *tab)
 {
+    rb_mmtk_st_update_entries_range(tab, tab->entries_start, tab->entries_bound);
+    if (tab->bins == NULL) {
+        return;
+    }
+    rb_mmtk_st_update_bins_range(tab, 0, get_bins_num(tab));
+
+    return;
     for (st_index_t ind = tab->entries_start; ind < tab->entries_bound; ind++) {
         if (DELETED_ENTRY_P(&tab->entries[ind])) {
             continue;
@@ -2403,6 +2490,7 @@ rb_mmtk_st_update_dedup_table(st_table *tab)
         }
     }
 }
+
 #endif
 
 #endif
