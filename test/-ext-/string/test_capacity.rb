@@ -23,7 +23,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   def test_s_new_capacity
     assert_equal("", String.new(capacity: 1000))
     assert_equal(String, String.new(capacity: 1000).class)
-    assert_equal(10_000 - 1, capa(String.new(capacity: 10_000))) # Real capa doesn't account for termlen
+    assert_equal(10_000, capa(String.new(capacity: 10_000)))
 
     assert_equal("", String.new(capacity: -1000))
     assert_equal(capa(String.new(capacity: -10000)), capa(String.new(capacity: -1000)))
