@@ -32,10 +32,15 @@
 # undef RUBY_DEBUG_ENV
 #endif
 
+void ruby_load_external_gc_from_argv(int argc, char **argv);
+
 static int
 rb_main(int argc, char **argv)
 {
     RUBY_INIT_STACK;
+#if USE_SHARED_GC
+    ruby_load_external_gc_from_argv(argc, argv);
+#endif
     ruby_init();
     return ruby_run_node(ruby_options(argc, argv));
 }
