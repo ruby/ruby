@@ -346,6 +346,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_TERNARY_EXPRESSION_TRUE]            = { "expected an expression after `?` in the ternary operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNDEF_ARGUMENT]                     = { "invalid argument being passed to `undef`; expected a bare word, constant, or symbol argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNARY_RECEIVER]                     = { "unexpected %s, expected a receiver for unary `%c`", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_UNARY_DISALLOWED]                   = { "unexpected %s; unary calls are not allowed in this context", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_BLOCK_ARGUMENT]          = { "block argument should not be given", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_INDEX_BLOCK]             = { "unexpected block arg given in index assignment; blocks are not allowed in index assignment expressions", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_UNEXPECTED_INDEX_KEYWORDS]          = { "unexpected keyword arg given in index assignment; keywords are not allowed in index assignment expressions", PM_ERROR_LEVEL_SYNTAX },

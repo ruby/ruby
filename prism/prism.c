@@ -17355,6 +17355,10 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, diag_id, human, parser->previous.start[0]);
             break;
         }
+        case PM_ERR_UNARY_DISALLOWED: {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, pm_token_type_human(parser->current.type));
+            break;
+        }
         default:
             pm_parser_err_previous(parser, diag_id);
             break;
@@ -19904,6 +19908,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
         }
         case PM_TOKEN_BANG: {
+            if (binding_power > PM_BINDING_POWER_UNARY) {
+                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+            }
+
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
@@ -19914,6 +19922,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_TILDE: {
+            if (binding_power > PM_BINDING_POWER_UNARY) {
+                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+            }
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
@@ -19923,6 +19934,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_UMINUS: {
+            if (binding_power > PM_BINDING_POWER_UNARY) {
+                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+            }
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
@@ -20039,6 +20053,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body);
         }
         case PM_TOKEN_UPLUS: {
+            if (binding_power > PM_BINDING_POWER_UNARY) {
+                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+            }
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
