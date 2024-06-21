@@ -167,19 +167,16 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse_but_expire
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.2.')
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.3.')
-    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
 
-    http.ssl_timeout = -1
+    http.ssl_timeout = 1
     http.start
     http.get("/")
     http.finish
-
+    sleep 1.25
     http.start
     http.get("/")
 
