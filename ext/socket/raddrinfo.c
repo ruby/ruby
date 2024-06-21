@@ -278,7 +278,7 @@ void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
     if (!ai->allocated_by_malloc)
-        freeaddrinfo(ai->ai);
+        if (ai->ai) freeaddrinfo(ai->ai);
     else {
         struct addrinfo *ai1, *ai2;
         ai1 = ai->ai;
@@ -423,7 +423,7 @@ do_getaddrinfo(void *ptr)
         arg->err = err;
         arg->gai_errno = gai_errno;
         if (arg->cancelled) {
-            freeaddrinfo(arg->ai);
+            if (arg->ai) freeaddrinfo(arg->ai);
         }
         else {
             arg->done = 1;
