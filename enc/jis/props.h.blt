@@ -1,5 +1,5 @@
 /* ANSI-C code produced by gperf version 3.1 */
-/* Command-line: gperf -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property enc/jis/props.kwd  */
+/* Command-line: gperf -L ANSI-C -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property enc/jis/props.kwd  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
@@ -28,7 +28,6 @@
 #error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
-#define gperf_offsetof(s, n) (short)offsetof(struct s##_t, s##_str##n)
 #line 1 "enc/jis/props.kwd"
 /* -*- c -*- */
 #define GPERF_DOWNCASE 1
@@ -82,7 +81,7 @@ struct enc_property;
 
 #ifndef GPERF_DOWNCASE
 #define GPERF_DOWNCASE 1
-static const unsigned char gperf_downcase[256] =
+static unsigned char gperf_downcase[256] =
   {
       0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,
      15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
@@ -180,19 +179,19 @@ onig_jis_property (register const char *str, register size_t len)
     {
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 48 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 5),      onigenc_jis_han},
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str5,      onigenc_jis_han},
       {-1},
 #line 49 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 7),    onigenc_jis_latin},
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str7,    onigenc_jis_latin},
 #line 50 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 8),    onigenc_jis_greek},
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str8,    onigenc_jis_greek},
       {-1},
 #line 46 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 10), onigenc_jis_hiragana},
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str10, onigenc_jis_hiragana},
 #line 47 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 11), onigenc_jis_katakana},
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str11, onigenc_jis_katakana},
 #line 51 "enc/jis/props.kwd"
-      {gperf_offsetof(onig_jis_property_pool, 12), onigenc_jis_cyrillic}
+      {(int)(size_t)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str12, onigenc_jis_cyrillic}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
