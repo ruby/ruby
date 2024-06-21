@@ -511,7 +511,7 @@ start:
             if (err == 0) *ai = arg->ai;
         }
         else if (arg->cancelled) {
-            err = EAI_AGAIN;
+            retry = 1;
         }
         else {
             // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
@@ -734,7 +734,7 @@ start:
         }
     }
     else if (arg->cancelled) {
-        err = EAI_AGAIN;
+        retry = 1;
     }
     else {
         // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getnameinfo.
