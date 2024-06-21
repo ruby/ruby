@@ -1,5 +1,5 @@
 /* ANSI-C code produced by gperf version 3.1 */
-/* Command-line: gperf --ignore-case -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
+/* Command-line: gperf --ignore-case -L ANSI-C -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
 /* Computed positions: -k'1-4,9' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -29,7 +29,6 @@
 #error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
-#define gperf_offsetof(s, n) (short)offsetof(struct s##_t, s##_str##n)
 #line 1 "zonetab.list"
 
 struct zone {
@@ -809,727 +808,727 @@ zonetab (register const char *str, register size_t len)
     {
       {-1}, {-1},
 #line 34 "zonetab.list"
-      {gperf_offsetof(stringpool, 2),   -2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str2,   -2*3600},
 #line 43 "zonetab.list"
-      {gperf_offsetof(stringpool, 3),  -11*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str3,  -11*3600},
 #line 45 "zonetab.list"
-      {gperf_offsetof(stringpool, 4),    0*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str4,    0*3600},
 #line 36 "zonetab.list"
-      {gperf_offsetof(stringpool, 5),   -4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str5,   -4*3600},
       {-1}, {-1},
 #line 269 "zonetab.list"
-      {gperf_offsetof(stringpool, 8),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str8,21600},
 #line 268 "zonetab.list"
-      {gperf_offsetof(stringpool, 9),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str9,25200},
 #line 35 "zonetab.list"
-      {gperf_offsetof(stringpool, 10),   -3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str10,   -3*3600},
       {-1}, {-1},
 #line 21 "zonetab.list"
-      {gperf_offsetof(stringpool, 13),    1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str13,    1*3600},
 #line 25 "zonetab.list"
-      {gperf_offsetof(stringpool, 14),    5*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str14,    5*3600},
 #line 271 "zonetab.list"
-      {gperf_offsetof(stringpool, 15),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str15,-18000},
 #line 279 "zonetab.list"
-      {gperf_offsetof(stringpool, 16),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str16,-10800},
 #line 273 "zonetab.list"
-      {gperf_offsetof(stringpool, 17),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str17,43200},
 #line 272 "zonetab.list"
-      {gperf_offsetof(stringpool, 18),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str18,43200},
 #line 80 "zonetab.list"
-      {gperf_offsetof(stringpool, 19),  2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str19,  2*3600},
 #line 186 "zonetab.list"
-      {gperf_offsetof(stringpool, 20),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str20,36000},
 #line 88 "zonetab.list"
-      {gperf_offsetof(stringpool, 21), 3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str21, 3*3600},
 #line 87 "zonetab.list"
-      {gperf_offsetof(stringpool, 22),  3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str22,  3*3600},
       {-1},
 #line 101 "zonetab.list"
-      {gperf_offsetof(stringpool, 24),-6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str24,-6*3600},
 #line 217 "zonetab.list"
-      {gperf_offsetof(stringpool, 25),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str25,-18000},
 #line 19 "zonetab.list"
-      {gperf_offsetof(stringpool, 26), -8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str26, -8*3600},
 #line 133 "zonetab.list"
-      {gperf_offsetof(stringpool, 27),                -18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str27,                -18000},
 #line 32 "zonetab.list"
-      {gperf_offsetof(stringpool, 28),   12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str28,   12*3600},
 #line 56 "zonetab.list"
-      {gperf_offsetof(stringpool, 29), -4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str29, -4*3600},
 #line 13 "zonetab.list"
-      {gperf_offsetof(stringpool, 30), -5*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str30, -5*3600},
 #line 23 "zonetab.list"
-      {gperf_offsetof(stringpool, 31),    3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str31,    3*3600},
 #line 256 "zonetab.list"
-      {gperf_offsetof(stringpool, 32),23400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str32,23400},
 #line 73 "zonetab.list"
-      {gperf_offsetof(stringpool, 33),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str33,  1*3600},
       {-1},
 #line 82 "zonetab.list"
-      {gperf_offsetof(stringpool, 35), 2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str35, 2*3600},
 #line 71 "zonetab.list"
-      {gperf_offsetof(stringpool, 36),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str36,  1*3600},
 #line 24 "zonetab.list"
-      {gperf_offsetof(stringpool, 37),    4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str37,    4*3600},
 #line 79 "zonetab.list"
-      {gperf_offsetof(stringpool, 38), 2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str38, 2*3600},
 #line 65 "zonetab.list"
-      {gperf_offsetof(stringpool, 39),2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str39,2*3600},
       {-1},
 #line 202 "zonetab.list"
-      {gperf_offsetof(stringpool, 41),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str41,28800},
 #line 252 "zonetab.list"
-      {gperf_offsetof(stringpool, 42),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str42,39600},
 #line 251 "zonetab.list"
-      {gperf_offsetof(stringpool, 43),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str43,43200},
 #line 17 "zonetab.list"
-      {gperf_offsetof(stringpool, 44), -7*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str44, -7*3600},
 #line 89 "zonetab.list"
-      {gperf_offsetof(stringpool, 45),  3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str45,  3*3600},
 #line 212 "zonetab.list"
-      {gperf_offsetof(stringpool, 46),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str46,-18000},
 #line 15 "zonetab.list"
-      {gperf_offsetof(stringpool, 47), -6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str47, -6*3600},
 #line 192 "zonetab.list"
-      {gperf_offsetof(stringpool, 48),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str48,18000},
 #line 26 "zonetab.list"
-      {gperf_offsetof(stringpool, 49),    6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str49,    6*3600},
       {-1}, {-1},
 #line 51 "zonetab.list"
-      {gperf_offsetof(stringpool, 52), -3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str52, -3*3600},
 #line 226 "zonetab.list"
-      {gperf_offsetof(stringpool, 53),-7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str53,-7200},
 #line 221 "zonetab.list"
-      {gperf_offsetof(stringpool, 54),10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str54,10800},
 #line 22 "zonetab.list"
-      {gperf_offsetof(stringpool, 55),    2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str55,    2*3600},
       {-1},
 #line 190 "zonetab.list"
-      {gperf_offsetof(stringpool, 57),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str57,43200},
 #line 189 "zonetab.list"
-      {gperf_offsetof(stringpool, 58),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str58,43200},
 #line 199 "zonetab.list"
-      {gperf_offsetof(stringpool, 59),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str59,28800},
 #line 29 "zonetab.list"
-      {gperf_offsetof(stringpool, 60),    9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str60,    9*3600},
 #line 276 "zonetab.list"
-      {gperf_offsetof(stringpool, 61),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str61,28800},
 #line 48 "zonetab.list"
-      {gperf_offsetof(stringpool, 62),  -2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str62,  -2*3600},
 #line 94 "zonetab.list"
-      {gperf_offsetof(stringpool, 63),  6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str63,  6*3600},
 #line 74 "zonetab.list"
-      {gperf_offsetof(stringpool, 64), 1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str64, 1*3600},
 #line 81 "zonetab.list"
-      {gperf_offsetof(stringpool, 65),  2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str65,  2*3600},
 #line 64 "zonetab.list"
-      {gperf_offsetof(stringpool, 66),-10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str66,-10*3600},
 #line 254 "zonetab.list"
-      {gperf_offsetof(stringpool, 67),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str67,18000},
 #line 92 "zonetab.list"
-      {gperf_offsetof(stringpool, 68),  5*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str68,  5*3600},
       {-1},
 #line 200 "zonetab.list"
-      {gperf_offsetof(stringpool, 70),-14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str70,-14400},
 #line 70 "zonetab.list"
-      {gperf_offsetof(stringpool, 71),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str71,  1*3600},
 #line 281 "zonetab.list"
-      {gperf_offsetof(stringpool, 72),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str72,32400},
       {-1},
 #line 280 "zonetab.list"
-      {gperf_offsetof(stringpool, 74),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str74,39600},
 #line 238 "zonetab.list"
-      {gperf_offsetof(stringpool, 75),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str75,21600},
 #line 93 "zonetab.list"
-      {gperf_offsetof(stringpool, 76),  (5*3600+1800)},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str76,  (5*3600+1800)},
 #line 194 "zonetab.list"
-      {gperf_offsetof(stringpool, 77),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str77,28800},
       {-1},
 #line 255 "zonetab.list"
-      {gperf_offsetof(stringpool, 79),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str79,43200},
 #line 75 "zonetab.list"
-      {gperf_offsetof(stringpool, 80),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str80,  1*3600},
 #line 270 "zonetab.list"
-      {gperf_offsetof(stringpool, 81),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str81,18000},
 #line 83 "zonetab.list"
-      {gperf_offsetof(stringpool, 82), 2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str82, 2*3600},
       {-1},
 #line 207 "zonetab.list"
-      {gperf_offsetof(stringpool, 84),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str84,36000},
 #line 278 "zonetab.list"
-      {gperf_offsetof(stringpool, 85),-7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str85,-7200},
       {-1}, {-1},
 #line 126 "zonetab.list"
-      {gperf_offsetof(stringpool, 88),                -21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str88,                -21600},
 #line 185 "zonetab.list"
-      {gperf_offsetof(stringpool, 89),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str89,39600},
 #line 183 "zonetab.list"
-      {gperf_offsetof(stringpool, 90),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str90,-18000},
 #line 218 "zonetab.list"
-      {gperf_offsetof(stringpool, 91),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str91,-18000},
 #line 182 "zonetab.list"
-      {gperf_offsetof(stringpool, 92),34200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str92,34200},
 #line 103 "zonetab.list"
-      {gperf_offsetof(stringpool, 93),11*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str93,11*3600},
 #line 53 "zonetab.list"
-      {gperf_offsetof(stringpool, 94), -3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str94, -3*3600},
 #line 208 "zonetab.list"
-      {gperf_offsetof(stringpool, 95),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str95,36000},
 #line 49 "zonetab.list"
-      {gperf_offsetof(stringpool, 96),-2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str96,-2*3600},
 #line 120 "zonetab.list"
-      {gperf_offsetof(stringpool, 97),          34200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str97,          34200},
       {-1}, {-1},
 #line 215 "zonetab.list"
-      {gperf_offsetof(stringpool, 100),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str100,25200},
 #line 242 "zonetab.list"
-      {gperf_offsetof(stringpool, 101),12600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str101,12600},
 #line 241 "zonetab.list"
-      {gperf_offsetof(stringpool, 102),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str102,28800},
 #line 240 "zonetab.list"
-      {gperf_offsetof(stringpool, 103),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str103,32400},
 #line 86 "zonetab.list"
-      {gperf_offsetof(stringpool, 104),   3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str104,   3*3600},
 #line 33 "zonetab.list"
-      {gperf_offsetof(stringpool, 105),   -1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str105,   -1*3600},
 #line 201 "zonetab.list"
-      {gperf_offsetof(stringpool, 106),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str106,21600},
 #line 148 "zonetab.list"
-      {gperf_offsetof(stringpool, 107),               -25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str107,               -25200},
 #line 96 "zonetab.list"
-      {gperf_offsetof(stringpool, 108),  (6*3600+1800)},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str108,  (6*3600+1800)},
 #line 42 "zonetab.list"
-      {gperf_offsetof(stringpool, 109),  -10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str109,  -10*3600},
 #line 31 "zonetab.list"
-      {gperf_offsetof(stringpool, 110),   11*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str110,   11*3600},
 #line 72 "zonetab.list"
-      {gperf_offsetof(stringpool, 111),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str111,  1*3600},
       {-1},
 #line 90 "zonetab.list"
-      {gperf_offsetof(stringpool, 113),  4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str113,  4*3600},
 #line 47 "zonetab.list"
-      {gperf_offsetof(stringpool, 114),  0*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str114,  0*3600},
       {-1},
 #line 78 "zonetab.list"
-      {gperf_offsetof(stringpool, 116), 1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str116, 1*3600},
 #line 77 "zonetab.list"
-      {gperf_offsetof(stringpool, 117),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str117,  1*3600},
       {-1},
 #line 95 "zonetab.list"
-      {gperf_offsetof(stringpool, 119), 2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str119, 2*3600},
 #line 313 "zonetab.list"
-      {gperf_offsetof(stringpool, 120),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str120,43200},
 #line 55 "zonetab.list"
-      {gperf_offsetof(stringpool, 121), -(2*3600+1800)},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str121, -(2*3600+1800)},
 #line 184 "zonetab.list"
-      {gperf_offsetof(stringpool, 122),31500},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str122,31500},
 #line 204 "zonetab.list"
-      {gperf_offsetof(stringpool, 123),45900},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str123,45900},
 #line 210 "zonetab.list"
-      {gperf_offsetof(stringpool, 124),-18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str124,-18000},
 #line 198 "zonetab.list"
-      {gperf_offsetof(stringpool, 125),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str125,14400},
 #line 57 "zonetab.list"
-      {gperf_offsetof(stringpool, 126), -4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str126, -4*3600},
 #line 197 "zonetab.list"
-      {gperf_offsetof(stringpool, 127),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str127,18000},
 #line 54 "zonetab.list"
-      {gperf_offsetof(stringpool, 128),-3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str128,-3*3600},
 #line 253 "zonetab.list"
-      {gperf_offsetof(stringpool, 129),-30600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str129,-30600},
 #line 91 "zonetab.list"
-      {gperf_offsetof(stringpool, 130),  4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str130,  4*3600},
 #line 99 "zonetab.list"
-      {gperf_offsetof(stringpool, 131),  9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str131,  9*3600},
 #line 122 "zonetab.list"
-      {gperf_offsetof(stringpool, 132),            21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str132,            21600},
 #line 187 "zonetab.list"
-      {gperf_offsetof(stringpool, 133),16200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str133,16200},
 #line 132 "zonetab.list"
-      {gperf_offsetof(stringpool, 134),       -10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str134,       -10800},
 #line 121 "zonetab.list"
-      {gperf_offsetof(stringpool, 135),        -21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str135,        -21600},
       {-1},
 #line 236 "zonetab.list"
-      {gperf_offsetof(stringpool, 137),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str137,25200},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 274 "zonetab.list"
-      {gperf_offsetof(stringpool, 143),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str143,36000},
 #line 266 "zonetab.list"
-      {gperf_offsetof(stringpool, 144),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str144,43200},
 #line 146 "zonetab.list"
-      {gperf_offsetof(stringpool, 145),                 -21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str145,                 -21600},
 #line 193 "zonetab.list"
-      {gperf_offsetof(stringpool, 146),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str146,32400},
 #line 220 "zonetab.list"
-      {gperf_offsetof(stringpool, 147),-3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str147,-3600},
 #line 214 "zonetab.list"
-      {gperf_offsetof(stringpool, 148),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str148,25200},
 #line 219 "zonetab.list"
-      {gperf_offsetof(stringpool, 149),0},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str149,0},
 #line 275 "zonetab.list"
-      {gperf_offsetof(stringpool, 150),46800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str150,46800},
 #line 109 "zonetab.list"
-      {gperf_offsetof(stringpool, 151),                -32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str151,                -32400},
       {-1}, {-1},
 #line 68 "zonetab.list"
-      {gperf_offsetof(stringpool, 154),  -11*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str154,  -11*3600},
       {-1}, {-1}, {-1},
 #line 321 "zonetab.list"
-      {gperf_offsetof(stringpool, 158),0},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str158,0},
       {-1},
 #line 178 "zonetab.list"
-      {gperf_offsetof(stringpool, 160),               18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str160,               18000},
 #line 181 "zonetab.list"
-      {gperf_offsetof(stringpool, 161),37800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str161,37800},
 #line 265 "zonetab.list"
-      {gperf_offsetof(stringpool, 162),20700},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str162,20700},
 #line 249 "zonetab.list"
-      {gperf_offsetof(stringpool, 163),37800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str163,37800},
 #line 108 "zonetab.list"
-      {gperf_offsetof(stringpool, 164),             16200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str164,             16200},
       {-1}, {-1},
 #line 30 "zonetab.list"
-      {gperf_offsetof(stringpool, 167),   10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str167,   10*3600},
       {-1},
 #line 27 "zonetab.list"
-      {gperf_offsetof(stringpool, 169),    7*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str169,    7*3600},
 #line 239 "zonetab.list"
-      {gperf_offsetof(stringpool, 170),16200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str170,16200},
 #line 206 "zonetab.list"
-      {gperf_offsetof(stringpool, 171),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str171,28800},
 #line 205 "zonetab.list"
-      {gperf_offsetof(stringpool, 172),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str172,32400},
 #line 12 "zonetab.list"
-      {gperf_offsetof(stringpool, 173),  0*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str173,  0*3600},
 #line 229 "zonetab.list"
-      {gperf_offsetof(stringpool, 174),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str174,14400},
 #line 264 "zonetab.list"
-      {gperf_offsetof(stringpool, 175),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str175,25200},
 #line 263 "zonetab.list"
-      {gperf_offsetof(stringpool, 176),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str176,25200},
 #line 223 "zonetab.list"
-      {gperf_offsetof(stringpool, 177),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str177,43200},
 #line 40 "zonetab.list"
-      {gperf_offsetof(stringpool, 178),   -8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str178,   -8*3600},
 #line 222 "zonetab.list"
-      {gperf_offsetof(stringpool, 179),46800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str179,46800},
       {-1},
 #line 282 "zonetab.list"
-      {gperf_offsetof(stringpool, 181),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str181,-10800},
 #line 260 "zonetab.list"
-      {gperf_offsetof(stringpool, 182),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str182,39600},
 #line 100 "zonetab.list"
-      {gperf_offsetof(stringpool, 183),  9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str183,  9*3600},
 #line 244 "zonetab.list"
-      {gperf_offsetof(stringpool, 184),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str184,39600},
 #line 102 "zonetab.list"
-      {gperf_offsetof(stringpool, 185), 10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str185, 10*3600},
 #line 143 "zonetab.list"
-      {gperf_offsetof(stringpool, 186),                    12600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str186,                    12600},
 #line 129 "zonetab.list"
-      {gperf_offsetof(stringpool, 187),               10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str187,               10800},
 #line 98 "zonetab.list"
-      {gperf_offsetof(stringpool, 188), 8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str188, 8*3600},
 #line 39 "zonetab.list"
-      {gperf_offsetof(stringpool, 189),   -7*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str189,   -7*3600},
 #line 130 "zonetab.list"
-      {gperf_offsetof(stringpool, 190),            36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str190,            36000},
 #line 38 "zonetab.list"
-      {gperf_offsetof(stringpool, 191),   -6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str191,   -6*3600},
 #line 203 "zonetab.list"
-      {gperf_offsetof(stringpool, 192),49500},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str192,49500},
 #line 298 "zonetab.list"
-      {gperf_offsetof(stringpool, 193),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str193,18000},
 #line 209 "zonetab.list"
-      {gperf_offsetof(stringpool, 194),-14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str194,-14400},
 #line 191 "zonetab.list"
-      {gperf_offsetof(stringpool, 195),-43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str195,-43200},
       {-1},
 #line 259 "zonetab.list"
-      {gperf_offsetof(stringpool, 197),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str197,28800},
 #line 179 "zonetab.list"
-      {gperf_offsetof(stringpool, 198),            36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str198,            36000},
 #line 257 "zonetab.list"
-      {gperf_offsetof(stringpool, 199),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str199,14400},
 #line 319 "zonetab.list"
-      {gperf_offsetof(stringpool, 200),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str200,32400},
 #line 84 "zonetab.list"
-      {gperf_offsetof(stringpool, 201), 2*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str201, 2*3600},
 #line 286 "zonetab.list"
-      {gperf_offsetof(stringpool, 202),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str202,39600},
 #line 152 "zonetab.list"
-      {gperf_offsetof(stringpool, 203),             43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str203,             43200},
 #line 300 "zonetab.list"
-      {gperf_offsetof(stringpool, 204),46800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str204,46800},
 #line 127 "zonetab.list"
-      {gperf_offsetof(stringpool, 205),                   28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str205,                   28800},
 #line 299 "zonetab.list"
-      {gperf_offsetof(stringpool, 206),50400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str206,50400},
 #line 85 "zonetab.list"
-      {gperf_offsetof(stringpool, 207),  -11*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str207,  -11*3600},
       {-1},
 #line 142 "zonetab.list"
-      {gperf_offsetof(stringpool, 209),                   19800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str209,                   19800},
       {-1},
 #line 314 "zonetab.list"
-      {gperf_offsetof(stringpool, 211),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str211,-10800},
 #line 288 "zonetab.list"
-      {gperf_offsetof(stringpool, 212),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str212,39600},
       {-1},
 #line 196 "zonetab.list"
-      {gperf_offsetof(stringpool, 214),-3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str214,-3600},
 #line 195 "zonetab.list"
-      {gperf_offsetof(stringpool, 215),0},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str215,0},
 #line 293 "zonetab.list"
-      {gperf_offsetof(stringpool, 216),-36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str216,-36000},
 #line 106 "zonetab.list"
-      {gperf_offsetof(stringpool, 217), 12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str217, 12*3600},
 #line 128 "zonetab.list"
-      {gperf_offsetof(stringpool, 218),               -43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str218,               -43200},
 #line 105 "zonetab.list"
-      {gperf_offsetof(stringpool, 219),12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str219,12*3600},
 #line 170 "zonetab.list"
-      {gperf_offsetof(stringpool, 220),                   32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str220,                   32400},
 #line 125 "zonetab.list"
-      {gperf_offsetof(stringpool, 221),         39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str221,         39600},
       {-1},
 #line 283 "zonetab.list"
-      {gperf_offsetof(stringpool, 223),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str223,21600},
 #line 113 "zonetab.list"
-      {gperf_offsetof(stringpool, 224),               -14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str224,               -14400},
 #line 262 "zonetab.list"
-      {gperf_offsetof(stringpool, 225),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str225,39600},
       {-1},
 #line 11 "zonetab.list"
-      {gperf_offsetof(stringpool, 227),   0*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str227,   0*3600},
 #line 301 "zonetab.list"
-      {gperf_offsetof(stringpool, 228),10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str228,10800},
 #line 315 "zonetab.list"
-      {gperf_offsetof(stringpool, 229),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str229,43200},
 #line 291 "zonetab.list"
-      {gperf_offsetof(stringpool, 230),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str230,-10800},
 #line 20 "zonetab.list"
-      {gperf_offsetof(stringpool, 231), -7*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str231, -7*3600},
 #line 248 "zonetab.list"
-      {gperf_offsetof(stringpool, 232),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str232,39600},
       {-1},
 #line 52 "zonetab.list"
-      {gperf_offsetof(stringpool, 234), -3*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str234, -3*3600},
 #line 14 "zonetab.list"
-      {gperf_offsetof(stringpool, 235), -4*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str235, -4*3600},
       {-1}, {-1},
 #line 277 "zonetab.list"
-      {gperf_offsetof(stringpool, 238),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str238,18000},
 #line 188 "zonetab.list"
-      {gperf_offsetof(stringpool, 239),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str239,21600},
 #line 320 "zonetab.list"
-      {gperf_offsetof(stringpool, 240),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str240,28800},
       {-1},
 #line 317 "zonetab.list"
-      {gperf_offsetof(stringpool, 242),-7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str242,-7200},
 #line 60 "zonetab.list"
-      {gperf_offsetof(stringpool, 243),-9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str243,-9*3600},
 #line 316 "zonetab.list"
-      {gperf_offsetof(stringpool, 244),-3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str244,-3600},
       {-1},
 #line 246 "zonetab.list"
-      {gperf_offsetof(stringpool, 246),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str246,25200},
 #line 245 "zonetab.list"
-      {gperf_offsetof(stringpool, 247),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str247,28800},
 #line 147 "zonetab.list"
-      {gperf_offsetof(stringpool, 248),            -7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str248,            -7200},
 #line 18 "zonetab.list"
-      {gperf_offsetof(stringpool, 249), -6*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str249, -6*3600},
 #line 250 "zonetab.list"
-      {gperf_offsetof(stringpool, 250),50400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str250,50400},
 #line 165 "zonetab.list"
-      {gperf_offsetof(stringpool, 251),         28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str251,         28800},
 #line 16 "zonetab.list"
-      {gperf_offsetof(stringpool, 252), -5*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str252, -5*3600},
 #line 76 "zonetab.list"
-      {gperf_offsetof(stringpool, 253),  1*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str253,  1*3600},
       {-1},
 #line 164 "zonetab.list"
-      {gperf_offsetof(stringpool, 255),                 25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str255,                 25200},
 #line 41 "zonetab.list"
-      {gperf_offsetof(stringpool, 256),   -9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str256,   -9*3600},
       {-1},
 #line 171 "zonetab.list"
-      {gperf_offsetof(stringpool, 258),                   46800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str258,                   46800},
 #line 211 "zonetab.list"
-      {gperf_offsetof(stringpool, 259),-36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str259,-36000},
       {-1},
 #line 308 "zonetab.list"
-      {gperf_offsetof(stringpool, 261),-14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str261,-14400},
 #line 119 "zonetab.list"
-      {gperf_offsetof(stringpool, 262),                14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str262,                14400},
 #line 123 "zonetab.list"
-      {gperf_offsetof(stringpool, 263),           3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str263,           3600},
 #line 28 "zonetab.list"
-      {gperf_offsetof(stringpool, 264),    8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str264,    8*3600},
 #line 124 "zonetab.list"
-      {gperf_offsetof(stringpool, 265),         3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str265,         3600},
 #line 153 "zonetab.list"
-      {gperf_offsetof(stringpool, 266),           -12600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str266,           -12600},
 #line 110 "zonetab.list"
-      {gperf_offsetof(stringpool, 267),                    10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str267,                    10800},
 #line 289 "zonetab.list"
-      {gperf_offsetof(stringpool, 268),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str268,14400},
 #line 112 "zonetab.list"
-      {gperf_offsetof(stringpool, 269),                  10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str269,                  10800},
 #line 111 "zonetab.list"
-      {gperf_offsetof(stringpool, 270),                 14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str270,                 14400},
 #line 216 "zonetab.list"
-      {gperf_offsetof(stringpool, 271),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str271,36000},
       {-1},
 #line 311 "zonetab.list"
-      {gperf_offsetof(stringpool, 273),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str273,21600},
 #line 66 "zonetab.list"
-      {gperf_offsetof(stringpool, 274),-10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str274,-10*3600},
 #line 151 "zonetab.list"
-      {gperf_offsetof(stringpool, 275),                   20700},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str275,                   20700},
 #line 267 "zonetab.list"
-      {gperf_offsetof(stringpool, 276),-39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str276,-39600},
 #line 225 "zonetab.list"
-      {gperf_offsetof(stringpool, 277),-14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str277,-14400},
       {-1},
 #line 224 "zonetab.list"
-      {gperf_offsetof(stringpool, 279),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str279,-10800},
 #line 67 "zonetab.list"
-      {gperf_offsetof(stringpool, 280),-10*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str280,-10*3600},
 #line 237 "zonetab.list"
-      {gperf_offsetof(stringpool, 281),10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str281,10800},
       {-1}, {-1},
 #line 297 "zonetab.list"
-      {gperf_offsetof(stringpool, 284),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str284,32400},
 #line 175 "zonetab.list"
-      {gperf_offsetof(stringpool, 285),            28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str285,            28800},
 #line 134 "zonetab.list"
-      {gperf_offsetof(stringpool, 286),                    7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str286,                    7200},
 #line 149 "zonetab.list"
-      {gperf_offsetof(stringpool, 287),                 23400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str287,                 23400},
 #line 107 "zonetab.list"
-      {gperf_offsetof(stringpool, 288),13*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str288,13*3600},
 #line 230 "zonetab.list"
-      {gperf_offsetof(stringpool, 289),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str289,-10800},
 #line 307 "zonetab.list"
-      {gperf_offsetof(stringpool, 290),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str290,18000},
       {-1}, {-1},
 #line 155 "zonetab.list"
-      {gperf_offsetof(stringpool, 293),              25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str293,              25200},
 #line 258 "zonetab.list"
-      {gperf_offsetof(stringpool, 294),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str294,18000},
 #line 227 "zonetab.list"
-      {gperf_offsetof(stringpool, 295),-21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str295,-21600},
 #line 261 "zonetab.list"
-      {gperf_offsetof(stringpool, 296),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str296,43200},
 #line 213 "zonetab.list"
-      {gperf_offsetof(stringpool, 297),-3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str297,-3600},
 #line 154 "zonetab.list"
-      {gperf_offsetof(stringpool, 298),         28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str298,         28800},
       {-1},
 #line 243 "zonetab.list"
-      {gperf_offsetof(stringpool, 300),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str300,21600},
 #line 114 "zonetab.list"
-      {gperf_offsetof(stringpool, 301),             34200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str301,             34200},
 #line 157 "zonetab.list"
-      {gperf_offsetof(stringpool, 302),                -28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str302,                -28800},
       {-1},
 #line 117 "zonetab.list"
-      {gperf_offsetof(stringpool, 304),         -21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str304,         -21600},
       {-1},
 #line 156 "zonetab.list"
-      {gperf_offsetof(stringpool, 306),             -14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str306,             -14400},
 #line 116 "zonetab.list"
-      {gperf_offsetof(stringpool, 307),                  -3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str307,                  -3600},
 #line 228 "zonetab.list"
-      {gperf_offsetof(stringpool, 308),-32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str308,-32400},
 #line 294 "zonetab.list"
-      {gperf_offsetof(stringpool, 309),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str309,18000},
 #line 37 "zonetab.list"
-      {gperf_offsetof(stringpool, 310),   -5*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str310,   -5*3600},
 #line 137 "zonetab.list"
-      {gperf_offsetof(stringpool, 311),                      7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str311,                      7200},
 #line 58 "zonetab.list"
-      {gperf_offsetof(stringpool, 312),-8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str312,-8*3600},
 #line 304 "zonetab.list"
-      {gperf_offsetof(stringpool, 313),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str313,28800},
 #line 303 "zonetab.list"
-      {gperf_offsetof(stringpool, 314),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str314,32400},
 #line 284 "zonetab.list"
-      {gperf_offsetof(stringpool, 315),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str315,14400},
       {-1},
 #line 295 "zonetab.list"
-      {gperf_offsetof(stringpool, 317),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str317,18000},
       {-1},
 #line 166 "zonetab.list"
-      {gperf_offsetof(stringpool, 319),             7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str319,             7200},
       {-1}, {-1}, {-1}, {-1},
 #line 97 "zonetab.list"
-      {gperf_offsetof(stringpool, 324),  8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str324,  8*3600},
       {-1},
 #line 50 "zonetab.list"
-      {gperf_offsetof(stringpool, 326), -(1*3600+1800)},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str326, -(1*3600+1800)},
 #line 285 "zonetab.list"
-      {gperf_offsetof(stringpool, 327),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str327,-10800},
       {-1}, {-1},
 #line 287 "zonetab.list"
-      {gperf_offsetof(stringpool, 330),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str330,14400},
       {-1},
 #line 169 "zonetab.list"
-      {gperf_offsetof(stringpool, 332),                36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str332,                36000},
       {-1},
 #line 235 "zonetab.list"
-      {gperf_offsetof(stringpool, 334),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str334,25200},
 #line 234 "zonetab.list"
-      {gperf_offsetof(stringpool, 335),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str335,28800},
       {-1}, {-1},
 #line 232 "zonetab.list"
-      {gperf_offsetof(stringpool, 338),-14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str338,-14400},
       {-1}, {-1}, {-1},
 #line 44 "zonetab.list"
-      {gperf_offsetof(stringpool, 342),  -12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str342,  -12*3600},
 #line 61 "zonetab.list"
-      {gperf_offsetof(stringpool, 343),-9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str343,-9*3600},
 #line 162 "zonetab.list"
-      {gperf_offsetof(stringpool, 344),             -14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str344,             -14400},
 #line 141 "zonetab.list"
-      {gperf_offsetof(stringpool, 345),               -36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str345,               -36000},
       {-1},
 #line 306 "zonetab.list"
-      {gperf_offsetof(stringpool, 347),-10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str347,-10800},
       {-1},
 #line 305 "zonetab.list"
-      {gperf_offsetof(stringpool, 349),-7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str349,-7200},
 #line 326 "zonetab.list"
-      {gperf_offsetof(stringpool, 350),18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str350,18000},
 #line 325 "zonetab.list"
-      {gperf_offsetof(stringpool, 351),21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str351,21600},
 #line 247 "zonetab.list"
-      {gperf_offsetof(stringpool, 352),14400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str352,14400},
 #line 323 "zonetab.list"
-      {gperf_offsetof(stringpool, 353),32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str353,32400},
 #line 322 "zonetab.list"
-      {gperf_offsetof(stringpool, 354),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str354,36000},
       {-1}, {-1}, {-1},
 #line 63 "zonetab.list"
-      {gperf_offsetof(stringpool, 358), -9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str358, -9*3600},
 #line 144 "zonetab.list"
-      {gperf_offsetof(stringpool, 359),                7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str359,                7200},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 167 "zonetab.list"
-      {gperf_offsetof(stringpool, 365),               21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str365,               21600},
       {-1},
 #line 180 "zonetab.list"
-      {gperf_offsetof(stringpool, 367),                 32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str367,                 32400},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 318 "zonetab.list"
-      {gperf_offsetof(stringpool, 375),25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str375,25200},
       {-1},
 #line 115 "zonetab.list"
-      {gperf_offsetof(stringpool, 377),             36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str377,             36000},
 #line 231 "zonetab.list"
-      {gperf_offsetof(stringpool, 378),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str378,43200},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 173 "zonetab.list"
-      {gperf_offsetof(stringpool, 387),            -25200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str387,            -25200},
       {-1}, {-1}, {-1},
 #line 310 "zonetab.list"
-      {gperf_offsetof(stringpool, 391),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str391,36000},
 #line 309 "zonetab.list"
-      {gperf_offsetof(stringpool, 392),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str392,39600},
       {-1}, {-1},
 #line 140 "zonetab.list"
-      {gperf_offsetof(stringpool, 395),                      7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str395,                      7200},
       {-1}, {-1},
 #line 168 "zonetab.list"
-      {gperf_offsetof(stringpool, 398),                  28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str398,                  28800},
 #line 290 "zonetab.list"
-      {gperf_offsetof(stringpool, 399),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str399,39600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 118 "zonetab.list"
-      {gperf_offsetof(stringpool, 408),              -3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str408,              -3600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 296 "zonetab.list"
-      {gperf_offsetof(stringpool, 417),46800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str417,46800},
 #line 163 "zonetab.list"
-      {gperf_offsetof(stringpool, 418),                  -39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str418,                  -39600},
       {-1}, {-1},
 #line 161 "zonetab.list"
-      {gperf_offsetof(stringpool, 421),             -18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str421,             -18000},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 312 "zonetab.list"
-      {gperf_offsetof(stringpool, 427),39600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str427,39600},
 #line 69 "zonetab.list"
-      {gperf_offsetof(stringpool, 428),-12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str428,-12*3600},
       {-1}, {-1}, {-1},
 #line 136 "zonetab.list"
-      {gperf_offsetof(stringpool, 432),                    43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str432,                    43200},
       {-1}, {-1},
 #line 46 "zonetab.list"
-      {gperf_offsetof(stringpool, 435),  0*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str435,  0*3600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 145 "zonetab.list"
-      {gperf_offsetof(stringpool, 443),                   32400},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str443,                   32400},
       {-1},
 #line 131 "zonetab.list"
-      {gperf_offsetof(stringpool, 445),                7200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str445,                7200},
       {-1}, {-1}, {-1},
 #line 292 "zonetab.list"
-      {gperf_offsetof(stringpool, 449),10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str449,10800},
       {-1}, {-1},
 #line 150 "zonetab.list"
-      {gperf_offsetof(stringpool, 452),         21600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str452,         21600},
       {-1}, {-1},
 #line 302 "zonetab.list"
-      {gperf_offsetof(stringpool, 455),43200},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str455,43200},
       {-1}, {-1},
 #line 176 "zonetab.list"
-      {gperf_offsetof(stringpool, 458),        3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str458,        3600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 135 "zonetab.list"
-      {gperf_offsetof(stringpool, 466),            18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str466,            18000},
       {-1},
 #line 174 "zonetab.list"
-      {gperf_offsetof(stringpool, 468),             36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str468,             36000},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 324 "zonetab.list"
-      {gperf_offsetof(stringpool, 476),36000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str476,36000},
 #line 172 "zonetab.list"
-      {gperf_offsetof(stringpool, 477),             -18000},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str477,             -18000},
       {-1}, {-1}, {-1}, {-1},
 #line 160 "zonetab.list"
-      {gperf_offsetof(stringpool, 482),             -10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str482,             -10800},
       {-1}, {-1},
 #line 62 "zonetab.list"
-      {gperf_offsetof(stringpool, 485), -9*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str485, -9*3600},
 #line 159 "zonetab.list"
-      {gperf_offsetof(stringpool, 486),                 10800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str486,                 10800},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 233 "zonetab.list"
-      {gperf_offsetof(stringpool, 492),28800},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str492,28800},
       {-1}, {-1}, {-1}, {-1},
 #line 158 "zonetab.list"
-      {gperf_offsetof(stringpool, 497),                  3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str497,                  3600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 177 "zonetab.list"
-      {gperf_offsetof(stringpool, 540),                3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str540,                3600},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
 #line 59 "zonetab.list"
-      {gperf_offsetof(stringpool, 563), -8*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str563, -8*3600},
       {-1}, {-1},
 #line 104 "zonetab.list"
-      {gperf_offsetof(stringpool, 566),12*3600},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str566,12*3600},
 #line 139 "zonetab.list"
-      {gperf_offsetof(stringpool, 567),                   0},
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str567,                   0},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -1537,7 +1536,7 @@ zonetab (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 138 "zonetab.list"
-      {gperf_offsetof(stringpool, 619),              -10800}
+      {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str619,              -10800}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
