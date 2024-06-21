@@ -1,4 +1,7 @@
 %{
+#define GPERF_DOWNCASE 1
+#define GPERF_CASE_STRNCMP 1
+#define gperf_case_strncmp strncasecmp
 struct zone {
     int name;
     int offset;
