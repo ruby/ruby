@@ -2349,9 +2349,37 @@ rb_mmtk_st_get_size_info(const st_table *tab, size_t *entries_start, size_t *ent
     *bins_num = tab->bins == NULL ? 0 : get_bins_num(tab);
 }
 
-void
-rb_mmtk_st_update_entries_range(st_table *tab, size_t begin, size_t end)
+static inline bool
+rb_mmtk_st_maybe_update_key_record(st_data_t *slot, bool weak, bool forward)
 {
+    if (!weak && !forward) {
+        // If the field is not weak, and we are not forwarding, we don't need to do anythin.
+        return false;
+    }
+
+    bool delete_entry = false;
+    st_data_t v = *slot;
+
+    if (!RB_SPECIAL_CONST_P(v)) {
+        if (weak && !mmtk_is_reachable((MMTk_ObjectReference)v)) {
+            delete_entry = true;
+        }
+        if (forward && !delete_entry) {
+            st_data_t new_v = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)v);
+            if (new_v != 0) {
+                *slot = new_v;
+            }
+        }
+    }
+    return delete_entry;
+}
+
+void
+rb_mmtk_st_update_entries_range(st_table *tab, size_t begin, size_t end, bool weak_keys, bool weak_records, bool forward)
+{
+    // Either the keys or the values must be weak, otherwise it is a strong table.
+    // This function only deals with weak tables.
+    RUBY_ASSERT(weak_keys || weak_records);
     RUBY_ASSERT(tab->entries_start <= begin);
     RUBY_ASSERT(end <= tab->entries_bound);
 
@@ -2364,30 +2392,15 @@ rb_mmtk_st_update_entries_range(st_table *tab, size_t begin, size_t end)
 
         st_table_entry *entry = &tab->entries[ind];
 
-        bool delete_entry = false;
+        bool delete_entry;
 
-        st_data_t key = entry->key;
-        if (!RB_SPECIAL_CONST_P(key)) {
-            if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
-                st_data_t new_key = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)key);
-                if (new_key != 0) {
-                    entry->key = new_key;
-                }
-            } else {
-                delete_entry = true;
-            }
-        }
-
-        st_data_t record = tab->entries[ind].record;
-        if (!delete_entry && !RB_SPECIAL_CONST_P(record)) {
-            if (mmtk_is_reachable((MMTk_ObjectReference)record)) {
-                st_data_t new_record = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)record);
-                if (new_record != 0) {
-                    entry->record = new_record;
-                }
-            } else {
-                delete_entry = true;
-            }
+        // We visit the weak slot first.
+        if (weak_records) {
+            delete_entry = rb_mmtk_st_maybe_update_key_record(&entry->record, weak_records, forward)
+                || rb_mmtk_st_maybe_update_key_record(&entry->key, weak_keys, forward);
+        } else {
+            delete_entry = rb_mmtk_st_maybe_update_key_record(&entry->key, weak_keys, forward)
+                || rb_mmtk_st_maybe_update_key_record(&entry->record, weak_records, forward);
         }
 
         if (delete_entry) {
@@ -2434,7 +2447,7 @@ rb_mmtk_st_update_bins_range(st_table *tab, size_t begin, size_t end)
 void
 rb_mmtk_st_update_dedup_table(st_table *tab)
 {
-    rb_mmtk_st_update_entries_range(tab, tab->entries_start, tab->entries_bound);
+    rb_mmtk_st_update_entries_range(tab, tab->entries_start, tab->entries_bound, true, true, true);
     if (tab->bins == NULL) {
         return;
     }

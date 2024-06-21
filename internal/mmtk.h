@@ -96,7 +96,12 @@ typedef struct MMTk_RubyUpcalls {
                              size_t *entries_start,
                              size_t *entries_bound,
                              size_t *bins_num);
-    void (*st_update_entries_range)(struct st_table *table, size_t begin, size_t end);
+    void (*st_update_entries_range)(struct st_table *table,
+                                    size_t begin,
+                                    size_t end,
+                                    bool weak_keys,
+                                    bool weak_records,
+                                    bool forward);
     void (*st_update_bins_range)(struct st_table *table, size_t begin, size_t end);
 } MMTk_RubyUpcalls;
 
