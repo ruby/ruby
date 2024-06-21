@@ -985,6 +985,7 @@ AS_IF([test "x$OPT_DIR" != x], [
     val=`IFS="$PATH_SEPARATOR"
         for dir in $OPT_DIR; do
             test -z "$dir" && continue
+            dir="`$CHDIR "$dir" && pwd` || continue
             echo x ${LIBPATHFLAG} ${RPATHFLAG} |
             sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
         done | tr '\012' ' ' | sed 's/ *$//'`
