@@ -186,13 +186,12 @@ class TestGc < Test::Unit::TestCase
     omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
-
-    2.times do
-      GC.stat_heap(0, stat_heap)
-      GC.stat_heap(nil, stat_heap_all)
-    end
+    # Initialize to prevent GC in future calls
+    GC.stat_heap(0, stat_heap)
+    GC.stat_heap(nil, stat_heap_all)
 
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(nil, stat_heap_all)
       GC.stat_heap(i, stat_heap)
 
       # Remove keys that can vary between invocations
