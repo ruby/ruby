@@ -3823,7 +3823,7 @@ AC_ARG_ENABLE(gcov,
        AS_HELP_STRING([--enable-gcov], [enable coverage measurement by gcov]),
        [gcov=yes])
 AS_IF([test x"$gcov" = xyes], [
-    CFLAGS="$CFLAGS -coverage"
+    CFLAGS="$CFLAGS -coverage -fprofile-update=atomic"
     LDFLAGS="$LDFLAGS -coverage"
 ])
 
