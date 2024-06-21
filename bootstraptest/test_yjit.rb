@@ -5077,3 +5077,47 @@ assert_equal 'ok', <<~'RUBY'
 
   :ok
 RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  class MyRelation
+    def callee(...)
+      :ok
+    end
+
+    def uncached(...)
+      callee(...)
+    end
+
+    def takes_block(&block)
+      # push blockhandler
+      uncached(&block) # CI1
+    end
+  end
+
+  relation = MyRelation.new
+  relation.takes_block { }
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok([], -> { "ok" })
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok(["ok"], ->(x) { x })
+RUBY

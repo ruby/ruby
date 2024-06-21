@@ -7116,9 +7116,18 @@ fn gen_send_iseq(
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
-    let splat_call = flags & VM_CALL_ARGS_SPLAT != 0;
 
-    let forwarding_call = unsafe { rb_get_iseq_flags_forwardable(iseq) };
+    // Is this iseq tagged as "forwardable"? Iseqs that take `...` as a
+    // parameter are tagged as forwardable (e.g. `def foo(...); end`)
+    let forwarding = unsafe { rb_get_iseq_flags_forwardable(iseq) };
+
+    // If a "forwardable" iseq has been called with a splat, then we _do not_
+    // want to expand the splat to the stack. So we'll only consider this
+    // a splat call if the callee iseq is not forwardable.  For example,
+    // we do not want to handle the following code:
+    //
+    // `def foo(...); end; foo(*blah)`
+    let splat_call = (flags & VM_CALL_ARGS_SPLAT != 0) && !forwarding;
 
     // For computing offsets to callee locals
     let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
@@ -7162,12 +7171,12 @@ fn gen_send_iseq(
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, doing_kw_call)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
-    if !forwarding_call {
+    if !forwarding {
         exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
     }
     exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
     exit_if_has_rest_and_optional_and_block(asm, iseq_has_rest, opt_num, iseq, block_arg)?;
-    if forwarding_call && flags & VM_CALL_OPT_SEND != 0 {
+    if forwarding && flags & VM_CALL_OPT_SEND != 0 {
         gen_counter_incr(asm, Counter::send_iseq_send_forwarding);
         return None;
     }
@@ -7465,7 +7474,12 @@ fn gen_send_iseq(
                 Counter::guard_send_block_arg_type,
             );
 
-            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
+            // If this is a forwardable iseq, adjust the stack size accordingly
+            let callee_ep = if forwarding {
+                -1 + num_locals + VM_ENV_DATA_SIZE as i32
+            } else {
+                -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1
+            };
             let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
             if callee_specval < 0 {
                 // Can't write to sp[-n] since that's where the arguments are
@@ -7679,7 +7693,8 @@ fn gen_send_iseq(
         }
     }
 
-    if !forwarding_call {
+    // Don't nil fill forwarding iseqs
+    if !forwarding {
         // Nil-initialize missing optional parameters
         nil_fill(
             "nil-initialize missing optionals",
@@ -7709,9 +7724,13 @@ fn gen_send_iseq(
         );
     }
 
-    if forwarding_call {
+    if forwarding {
         assert_eq!(1, num_params);
-        asm.mov(asm.stack_opnd(-1), VALUE(ci as usize).into());
+        // Write the CI in to the stack and ensure that it actually gets
+        // flushed to memory
+        let ci_opnd = asm.stack_opnd(-1);
+        asm.ctx.dealloc_temp_reg(ci_opnd.stack_idx());
+        asm.mov(ci_opnd, VALUE(ci as usize).into());
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
@@ -7731,7 +7750,7 @@ fn gen_send_iseq(
     jit_save_pc(jit, asm);
 
     // Adjust the callee's stack pointer
-    let callee_sp = if forwarding_call {
+    let callee_sp = if forwarding {
         let offs = num_locals + VM_ENV_DATA_SIZE as i32;
         asm.lea(asm.ctx.sp_opnd(offs))
     } else {
@@ -7803,6 +7822,12 @@ fn gen_send_iseq(
         let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
         let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
         callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
+    }
+
+    // If we're in a forwarding callee, there will be one unknown type
+    // written in to the local table (the caller's CI object)
+    if forwarding {
+        callee_ctx.set_local_type(0, Type::Unknown)
     }
 
     let recv_type = if captured_self {
