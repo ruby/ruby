@@ -47,7 +47,8 @@ Pathname.glob("**/*.gcda").sort.each do |gcda|
       )?
       Creating\ .*\n
       \n
-    )+\z
+    )+
+    (Lines\ executed:.*\n)?\z
   )x
     raise "Unexpected gcov output"
   end
