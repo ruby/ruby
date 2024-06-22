@@ -4068,7 +4068,9 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
 
-AS_IF([test x"$enable_shared" = xyes], [
+AS_IF([test x"$SOEXT" = xdll], [
+    # DLL on Windows is managed by win32/mkexports.rb
+], [test x"$enable_shared" = xyes], [
     AC_CACHE_CHECK([for default symbols in empty shared library], rb_cv_symbols_in_emptylib, [
         save_CC="$CC"
         eval CC=\"`printf "%s" "${DLDSHARED}" | sed ['s/\$(CC)/${CC}/']`\"
