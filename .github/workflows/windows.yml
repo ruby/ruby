@@ -104,12 +104,6 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
       - name: Install libraries with scoop
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
@@ -151,9 +145,16 @@ jobs:
       - name: compiler version
         run: cl
 
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install --triplet x64-windows
+        working-directory: src
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
       - name: link libraries
         run: |
-          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+          for %%I in (..\src\vcpkg_installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
       # We use OpenSSL instealled by vcpkg instead
@@ -168,7 +169,7 @@ jobs:
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-opt-dir=../src/vcpkg_installed/x64-windows
 
       - run: nmake incs
 
