@@ -72,7 +72,7 @@ The following bundled gems are updated.
 * test-unit 3.6.2
 * rexml 3.3.0
 * net-ftp 0.3.6
-* net-imap 0.4.13
+* net-imap 0.4.14
 * net-smtp 0.5.0
 * rbs 3.5.1
 * typeprof 0.21.11
