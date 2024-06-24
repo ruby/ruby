@@ -1073,7 +1073,7 @@ console_scroll(VALUE io, int line)
 
 #define GPERF_DOWNCASE 1
 #define GPERF_CASE_STRCMP 1
-#define gperf_case_strcmp strcasecmp
+#define gperf_case_strcmp STRCASECMP
 #include "win32_vk.inc"
 
 /*
