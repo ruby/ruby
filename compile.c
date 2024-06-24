@@ -5863,14 +5863,16 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_LIST:{
         const NODE *vals = (nd_type(node) == NODE_HASH) ? RNODE_HASH(node)->nd_head : node;
 
-        if (vals && RNODE_LIST(vals)->nd_head) {
+        if (vals) {
             do {
-                defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
+                if (RNODE_LIST(vals)->nd_head) {
+                    defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
 
-                if (!lfinish[1]) {
-                    lfinish[1] = NEW_LABEL(line);
+                    if (!lfinish[1]) {
+                        lfinish[1] = NEW_LABEL(line);
+                    }
+                    ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
                 }
-                ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
             } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
         }
       }
