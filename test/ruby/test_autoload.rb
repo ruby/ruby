@@ -249,7 +249,8 @@ p Foo::Bar
         ensure
           remove_autoload_constant
         end
-        assert_equal [file.path], called_with
+        # .dup to prevent breaking called_with by autoloading pp, etc
+        assert_equal [file.path], called_with.dup
       }
     end
   end
@@ -267,7 +268,8 @@ p Foo::Bar
           ensure
             remove_autoload_constant
           end
-          assert_equal [a.path, b.path], called_with
+          # .dup to prevent breaking called_with by autoloading pp, etc
+          assert_equal [a.path, b.path], called_with.dup
         end
       end
     end

@@ -2165,7 +2165,7 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+    if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
        klass = RBASIC_CLASS(klass);
     }
@@ -2850,12 +2850,9 @@ VALUE
 rb_iseq_eval(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
-    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    if (NAMESPACE_LOCAL_P(ns)) {
-        rb_vm_using_module(ns->refiner);
-    }
+    // TODO: set the namespace frame like require/load
     val = vm_exec(ec);
     return val;
 }
@@ -2864,12 +2861,9 @@ VALUE
 rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
-    const rb_namespace_t *ns = rb_ec_thread_ptr(ec)->ns;
     VALUE val;
     vm_set_main_stack(ec, iseq);
-    if (NAMESPACE_LOCAL_P(ns)) {
-        rb_vm_using_module(ns->refiner);
-    }
+    // TODO: set the namespace frame like require/load
     val = vm_exec(ec);
     return val;
 }
@@ -2928,7 +2922,7 @@ rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg
 {
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
-    const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
@@ -3035,6 +3029,10 @@ rb_vm_mark(void *ptr)
             rb_gc_mark_maybe(*list->varptr);
         }
 
+        if (vm->main_namespace) {
+            rb_namespace_entry_mark((void *)vm->main_namespace);
+        }
+
         rb_gc_mark_movable(vm->mark_object_ary);
         rb_gc_mark_movable(vm->load_path);
         rb_gc_mark_movable(vm->load_path_snapshot);
@@ -3121,7 +3119,8 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->negative_cme_table);
             st_free_table(vm->overloaded_cme_table);
 
-            rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
+            // TODO: Is this ignorable for classext->m_tbl ?
+            // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
             rb_shape_t *cursor = rb_shape_get_root_shape();
             rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
@@ -3532,7 +3531,7 @@ thread_mark(void *ptr)
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
     rb_gc_mark(th->namespaces);
-    if (th->ns && th->ns->is_local) rb_namespace_entry_mark(th->ns);
+    if (NAMESPACE_LOCAL_P(th->ns)) rb_namespace_entry_mark(th->ns);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
@@ -3720,7 +3719,7 @@ rb_thread_alloc(VALUE klass)
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
     if ((ns = rb_ec_thread_ptr(ec)->ns) == 0) {
-        ns = rb_global_namespace();
+        ns = rb_main_namespace();
     }
     target_th->ns = ns;
     return self;

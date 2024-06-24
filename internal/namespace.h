@@ -18,10 +18,8 @@ struct rb_namespace_struct {
      */
     VALUE ns_object;
     long ns_id; // namespace id to generate ext filenames
-    char is_local;
 
     VALUE top_self;
-    VALUE refiner;
 
     VALUE load_path;
     VALUE load_path_snapshot;
@@ -36,26 +34,33 @@ struct rb_namespace_struct {
     VALUE ruby_dln_libmap;
 
     VALUE gvar_tbl;
+
+    bool is_builtin;
+    bool is_local;
 };
 typedef struct rb_namespace_struct rb_namespace_t;
 
+#define NAMESPACE_BUILTIN_P(ns) (ns && ns->is_builtin)
 #define NAMESPACE_LOCAL_P(ns) (ns && ns->is_local)
+#define NAMESPACE_EFFECTIVE_P(ns) (ns && !ns->is_builtin)
+
+#define NAMESPACE_METHOD_DEFINITION(mdef) (mdef ? mdef->ns : NULL)
+#define NAMESPACE_METHOD_ENTRY(me) (me ? NAMESPACE_METHOD_DEFINITION(me->def) : NULL)
+#define NAMESPACE_CC(cc) (cc ? NAMESPACE_METHOD_ENTRY(cc->cme_) : NULL)
+#define NAMESPACE_CC_ENTRIES(ccs) (ccs ? NAMESPACE_METHOD_ENTRY(ccs->cme) : NULL)
 
 int rb_namespace_available(void);
-rb_namespace_t * rb_global_namespace(void);
+void rb_namespace_enable_builtin(void);
+void rb_namespace_disable_builtin(void);
+rb_namespace_t * rb_main_namespace(void);
 const rb_namespace_t * rb_current_namespace(void);
-
-VALUE rb_namespace_of(VALUE klass);
-VALUE rb_klass_defined_under_namespace_p(VALUE klass, VALUE namespace);
-VALUE rb_mod_changed_in_current_namespace(VALUE mod);
 
 void rb_namespace_entry_mark(void *);
 
-rb_namespace_t * rb_namespace_alloc_init(void);
 rb_namespace_t * rb_get_namespace_t(VALUE ns);
 
 VALUE rb_namespace_local_extension(VALUE namespace, VALUE path);
 
-void rb_initialize_global_namespace(void);
+void rb_initialize_main_namespace(void);
 
 #endif /* INTERNAL_NAMESPACE_H */

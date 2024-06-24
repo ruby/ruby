@@ -1785,6 +1785,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     ruby_init_prelude();
 
+    rb_initialize_main_namespace();
+
     // Initialize JITs after prelude because JITing prelude is typically not optimal.
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
