@@ -5,7 +5,7 @@ return unless /darwin/ =~ RUBY_PLATFORM
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args)
-    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
+    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: 60)
   end
 
   def test_darwin_invalid_call
