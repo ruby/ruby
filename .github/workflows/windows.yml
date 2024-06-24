@@ -54,10 +54,6 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-      # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
-      # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
-      # cf. https://github.com/ruby/openssl/pull/635#issuecomment-1596833720
-      OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
 
     steps:
       - run: md build
