@@ -141,6 +141,19 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_stat_reasons
+    stat = GC.stat
+    assert_operator stat[:minor_gc_newobj_count], :>=, 0
+    assert_operator stat[:minor_gc_malloc_count], :>=, 0
+
+    assert_operator stat[:major_gc_nofree_count], :>=, 0
+    assert_operator stat[:major_gc_oldgen_count], :>=, 0
+    assert_operator stat[:major_gc_shady_count], :>=, 0
+    if use_rgengc?
+      assert_operator stat[:major_gc_oldmalloc_count], :>=, 0
+    end
+  end
+
   def test_stat_heap
     omit 'stress' if GC.stress
 
