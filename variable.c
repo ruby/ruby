@@ -455,7 +455,7 @@ struct rb_global_entry {
 };
 
 static enum rb_id_table_iterator_result
-free_global_entry_i(ID key, VALUE val, void *arg)
+free_global_entry_i(VALUE val, void *arg)
 {
     struct rb_global_entry *entry = (struct rb_global_entry *)val;
     if (entry->var->counter == 1) {
@@ -471,7 +471,7 @@ free_global_entry_i(ID key, VALUE val, void *arg)
 void
 rb_free_rb_global_tbl(void)
 {
-    rb_id_table_foreach(rb_global_tbl, free_global_entry_i, 0);
+    rb_id_table_foreach_values(rb_global_tbl, free_global_entry_i, 0);
     rb_id_table_free(rb_global_tbl);
 }
 

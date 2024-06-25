@@ -1,4 +1,7 @@
 %{
+#define GPERF_DOWNCASE 1
+#define GPERF_CASE_STRNCMP 1
+#define gperf_case_strncmp strncasecmp
 struct zone {
     int name;
     int offset;
@@ -313,8 +316,8 @@ vut,39600
 wakt,43200
 warst,-10800
 wft,43200
-wgst,-7200
-wgt,-10800
+wgst,-3600
+wgt,-7200
 wib,25200
 wit,32400
 wita,28800

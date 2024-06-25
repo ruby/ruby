@@ -24,7 +24,7 @@ pub static mut rb_yjit_call_threshold: u64 = SMALL_CALL_THRESHOLD;
 pub static mut rb_yjit_cold_threshold: u64 = 200_000;
 
 // Command-line options
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct Options {
     // Size of the executable memory block to allocate in bytes
@@ -120,12 +120,13 @@ pub enum TraceExits {
     CountedExit(Counter),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Debug)]
 pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
-    File(String),
+    #[cfg_attr(not(feature = "disasm"), allow(dead_code))]
+    File(std::os::unix::io::RawFd),
 }
 
 /// Type of symbols to dump into /tmp/perf-{pid}.map
@@ -257,9 +258,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 directory => {
                     let path = format!("{directory}/yjit_{}.log", std::process::id());
                     match File::options().create(true).append(true).open(&path) {
-                        Ok(_) => {
+                        Ok(file) => {
+                            use std::os::unix::io::IntoRawFd;
                             eprintln!("YJIT disasm dump: {path}");
-                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(file.into_raw_fd())) }
                         }
                         Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }

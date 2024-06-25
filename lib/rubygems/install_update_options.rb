@@ -179,6 +179,11 @@ module Gem::InstallUpdateOptions
                "Suggest alternates when gems are not found") do |v,_o|
       options[:suggest_alternate] = v
     end
+
+    add_option(:"Install/Update", "--target-rbconfig [FILE]",
+                "rbconfig.rb for the deployment target platform") do |v, _o|
+      Gem.set_target_rbconfig(v)
+    end
   end
 
   ##

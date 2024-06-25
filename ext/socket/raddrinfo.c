@@ -277,8 +277,9 @@ numeric_getaddrinfo(const char *node, const char *service,
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
-    if (!ai->allocated_by_malloc)
-        freeaddrinfo(ai->ai);
+    if (!ai->allocated_by_malloc) {
+        if (ai->ai) freeaddrinfo(ai->ai);
+    }
     else {
         struct addrinfo *ai1, *ai2;
         ai1 = ai->ai;
@@ -423,7 +424,7 @@ do_getaddrinfo(void *ptr)
         arg->err = err;
         arg->gai_errno = gai_errno;
         if (arg->cancelled) {
-            freeaddrinfo(arg->ai);
+            if (arg->ai) freeaddrinfo(arg->ai);
         }
         else {
             arg->done = 1;
@@ -511,7 +512,7 @@ start:
             if (err == 0) *ai = arg->ai;
         }
         else if (arg->cancelled) {
-            err = EAI_AGAIN;
+            retry = 1;
         }
         else {
             // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
@@ -734,7 +735,7 @@ start:
         }
     }
     else if (arg->cancelled) {
-        err = EAI_AGAIN;
+        retry = 1;
     }
     else {
         // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getnameinfo.

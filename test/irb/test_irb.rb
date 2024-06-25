@@ -56,12 +56,27 @@ module TestIRB
       assert_include output, "=> 12"
     end
 
+    def test_commands_dont_override_stored_last_result
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "1 + 1"
+        type "ls"
+        type "_ + 10"
+        type "exit!"
+      end
+
+      assert_include output, "=> 12"
+    end
+
     def test_evaluate_with_encoding_error_without_lineno
       if RUBY_ENGINE == 'truffleruby'
         omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
       end
 
-      if RUBY_VERSION >= "3.4."
+      if RUBY_VERSION >= "3.3."
         omit "Now raises SyntaxError"
       end
 

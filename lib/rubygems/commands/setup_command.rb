@@ -279,11 +279,7 @@ By default, this RubyGems will install gem as:
           File.open bin_cmd_file, "w" do |file|
             file.puts <<-TEXT
   @ECHO OFF
-  IF NOT "%~f0" == "~f0" GOTO :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-  GOTO :EOF
-  :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
+  @"%~dp0#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
   TEXT
           end
 

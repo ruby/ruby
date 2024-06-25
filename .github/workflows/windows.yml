@@ -54,10 +54,6 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-      # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
-      # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
-      # cf. https://github.com/ruby/openssl/pull/635#issuecomment-1596833720
-      OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
 
     steps:
       - run: md build
@@ -91,31 +87,18 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410 # v1.179.1
+      - uses: ruby/setup-ruby@3783f195e29b74ae398d7caca108814bbafde90e # v1.180.1
         with:
           ruby-version: '3.0'
           bundler: none
           windows-toolchain: none
 
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
         with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-download-
-
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-installed-
-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Install libraries with scoop
         run: |
@@ -123,7 +106,7 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
 
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -158,9 +141,16 @@ jobs:
       - name: compiler version
         run: cl
 
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install --triplet x64-windows
+        working-directory: src
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
       - name: link libraries
         run: |
-          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+          for %%I in (..\src\vcpkg_installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
       # We use OpenSSL instealled by vcpkg instead
@@ -172,10 +162,11 @@ jobs:
         # windows-2019 image doesn't have OpenSSL as of 2023/9/14
         if: ${{ matrix.vs != 2019 }}
 
+      # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/x64-windows
 
       - run: nmake incs
 

@@ -1103,7 +1103,7 @@ parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
 /**
  * The init function that Ruby calls when loading this extension.
  */
-PRISM_EXPORTED_FUNCTION void
+RUBY_FUNC_EXPORTED void
 Init_prism(void) {
     // Make sure that the prism library version matches the expected version.
     // Otherwise something was compiled incorrectly.

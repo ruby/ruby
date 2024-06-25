@@ -89,6 +89,7 @@ cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
+hardenflags = @hardenflags@
 cppflags = @cppflags@
 incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
@@ -418,7 +419,7 @@ lex.c: defs/keywords
 	  $(CP) $(srcdir)/lex.c.blt $@; \
 	else \
 	  [ $(Q) ] && echo generating $@ || set -x; \
-	  gperf -C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? \
+	  gperf -C -L ANSI-C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? \
 	  | sed -f $(tooldir)/gperf.sed \
 	  > $@.tmp && \
 	  $(MV) $@.tmp $@ && \
@@ -426,7 +427,7 @@ lex.c: defs/keywords
 	  $(CP) $@ $(srcdir)/lex.c.blt; \
 	fi
 
-JIS_PROPS_OPTIONS = -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
+JIS_PROPS_OPTIONS =  -L ANSI-C -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
 
 $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	$(MAKEDIRS) $(@D)

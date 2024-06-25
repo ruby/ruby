@@ -1975,8 +1975,8 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["unexpected .., expecting end-of-input", 3..5],
-        ["unexpected .., ignoring it", 3..5],
+        ["unexpected range operator; .. and ... are non-associative and cannot be chained", 3..5],
+        ["unexpected range operator; .. and ... are non-associative and cannot be chained", 10..12],
         ["unexpected .., expecting end-of-input", 10..12],
         ["unexpected .., ignoring it", 10..12]
       ]
@@ -2134,14 +2134,14 @@ module Prism
 
     def test_regular_expression_with_unknown_regexp_options
       source = "/foo/AZaz"
-      errors = [["unknown regexp options: AZaz", 4..9]]
+      errors = [["unknown regexp options - AZaz", 4..9]]
 
       assert_errors expression(source), source, errors
     end
 
     def test_interpolated_regular_expression_with_unknown_regexp_options
       source = "/\#{foo}/AZaz"
-      errors = [["unknown regexp options: AZaz", 7..12]]
+      errors = [["unknown regexp options - AZaz", 7..12]]
 
       assert_errors expression(source), source, errors
     end

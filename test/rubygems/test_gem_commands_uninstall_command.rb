@@ -81,6 +81,35 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_equal "Successfully uninstalled z-2", output.shift
   end
 
+  def test_execute_does_not_remove_default_gem_executables
+    z_1_default = new_default_spec "z", "1", executable: true
+    install_default_gems z_1_default
+
+    z_1, = util_gem "z", "1" do |spec|
+      util_make_exec spec
+    end
+    install_gem z_1, force: true
+
+    Gem::Specification.reset
+
+    @cmd.options[:all] = true
+    @cmd.options[:force] = true
+    @cmd.options[:executables] = true
+    @cmd.options[:args] = %w[z]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert File.exist? File.join(@gemhome, "bin", "executable")
+
+    output = @ui.output.split "\n"
+
+    refute_includes output, "Removing executable"
+    assert_equal "Successfully uninstalled z-1", output.shift
+    assert_equal "There was both a regular copy and a default copy of z-1. The regular copy was successfully uninstalled, but the default copy was left around because default gems can't be removed.", output.shift
+  end
+
   def test_execute_dependency_order
     initial_install
 

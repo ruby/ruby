@@ -75,7 +75,7 @@ module Bundler
     end
 
     def info(name)
-      Bundler::CompactIndexClient.debug { "info(#{names})" }
+      Bundler::CompactIndexClient.debug { "info(#{name})" }
       @parser.info(name)
     end
 

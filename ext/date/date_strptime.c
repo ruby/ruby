@@ -7,6 +7,9 @@
 #include "ruby/re.h"
 #include <ctype.h>
 
+#undef strncasecmp
+#define strncasecmp STRNCASECMP
+
 static const char *day_names[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday",
     "Thursday", "Friday", "Saturday",

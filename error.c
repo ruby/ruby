@@ -480,7 +480,7 @@ rb_warn(const char *fmt, ...)
 void
 rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
-    if (!NIL_P(ruby_verbose)) {
+    if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(category)) {
         with_warning_string(mesg, 0, fmt) {
             rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
@@ -512,7 +512,7 @@ rb_warning(const char *fmt, ...)
 void
 rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
-    if (RTEST(ruby_verbose)) {
+    if (RTEST(ruby_verbose) && rb_warning_category_enabled_p(category)) {
         with_warning_string(mesg, 0, fmt) {
             rb_warn_category(mesg, rb_warning_category_to_name(category));
         }

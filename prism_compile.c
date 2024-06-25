@@ -1561,7 +1561,17 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: {
+                if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+                    *flags |= VM_CALL_FORWARDING;
+
+                    pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
+                    PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
+
+                    break;
+                }
+
                 orig_argc += 2;
+
                 *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
 
                 // Forwarding arguments nodes are treated as foo(*, **, &)
@@ -2980,7 +2990,7 @@ pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry
     INSN *iobj;
     LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
     iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
-    while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+    while (!IS_INSN_ID(iobj, send) && !IS_INSN_ID(iobj, invokesuper) && !IS_INSN_ID(iobj, sendforward) && !IS_INSN_ID(iobj, invokesuperforward)) {
         iobj = (INSN*) get_prev_insn(iobj);
     }
     ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
@@ -3433,19 +3443,83 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
         dtype = DEFINED_FALSE;
         break;
       case PM_ARRAY_NODE: {
-          const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
 
-          if (!PM_NODE_FLAG_P(cast, PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
-              for (size_t index = 0; index < cast->elements.size; index++) {
-                  pm_compile_defined_expr0(iseq, cast->elements.nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
+        if (cast->elements.size > 0 && !lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
 
-                  if (!lfinish[1]) {
-                      lfinish[1] = NEW_LABEL(location.line);
-                  }
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            pm_compile_defined_expr0(iseq, cast->elements.nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        }
 
-                  PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_HASH_NODE:
+      case PM_KEYWORD_HASH_NODE: {
+        const pm_node_list_t *elements;
+
+        if (PM_NODE_TYPE_P(node, PM_HASH_NODE)) {
+            elements = &((const pm_hash_node_t *) node)->elements;
+        }
+        else {
+            elements = &((const pm_keyword_hash_node_t *) node)->elements;
+        }
+
+        if (elements->size > 0 && !lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
+
+        for (size_t index = 0; index < elements->size; index++) {
+            const pm_node_t *element = elements->nodes[index];
+
+            switch (PM_NODE_TYPE(element)) {
+              case PM_ASSOC_NODE: {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+
+                pm_compile_defined_expr0(iseq, assoc->key, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                pm_compile_defined_expr0(iseq, assoc->value, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                break;
               }
-          }
+              case PM_ASSOC_SPLAT_NODE: {
+                const pm_assoc_splat_node_t *assoc_splat = (const pm_assoc_splat_node_t *) element;
+
+                pm_compile_defined_expr0(iseq, assoc_splat->value, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                break;
+              }
+              default:
+                rb_bug("unexpected node type in hash node: %s", pm_node_type_to_str(PM_NODE_TYPE(element)));
+                break;
+            }
+        }
+
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_SPLAT_NODE: {
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+        pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
+
+        if (!lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
+
+        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_IMPLICIT_NODE: {
+        const pm_implicit_node_t *cast = (const pm_implicit_node_t *) node;
+        pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, in_condition, lfinish, explicit_receiver);
+        return;
       }
       case PM_AND_NODE:
       case PM_BEGIN_NODE:
@@ -3457,7 +3531,6 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
       case PM_DEFINED_NODE:
       case PM_FLOAT_NODE:
       case PM_FOR_NODE:
-      case PM_HASH_NODE:
       case PM_IF_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
@@ -3465,7 +3538,6 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
       case PM_INTERPOLATED_STRING_NODE:
       case PM_INTERPOLATED_SYMBOL_NODE:
       case PM_INTERPOLATED_X_STRING_NODE:
-      case PM_KEYWORD_HASH_NODE:
       case PM_LAMBDA_NODE:
       case PM_MATCH_PREDICATE_NODE:
       case PM_MATCH_REQUIRED_NODE:
@@ -6693,6 +6765,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = 0;
         int depth = get_lvar_level(iseq);
 
+        if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+            flag |= VM_CALL_FORWARDING;
+            pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
+            PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
+            PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+            if (popped) PUSH_INSN(ret, location, pop);
+            return;
+        }
+
         if (local_body->param.flags.has_lead) {
             /* required arguments */
             for (int i = 0; i < local_body->param.lead_num; i++) {
@@ -8300,7 +8381,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
                 // we need to leave space for 4 locals: *, **, &, ...
                 if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
-                    table_size += 4;
+                    // Only optimize specifically methods like this: `foo(...)`
+                    if (requireds_list->size == 0 && optionals_list->size == 0 && keywords_list->size == 0) {
+                        ISEQ_BODY(iseq)->param.flags.forwardable = TRUE;
+                        table_size += 1;
+                    }
+                    else {
+                        table_size += 4;
+                    }
                 }
                 else {
                     const pm_keyword_rest_parameter_node_t *kw_rest = (const pm_keyword_rest_parameter_node_t *) parameters_node->keyword_rest;
@@ -8654,29 +8742,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(...)
                   //         ^^^
                   case PM_FORWARDING_PARAMETER_NODE: {
-                    body->param.rest_start = local_index;
-                    body->param.flags.has_rest = true;
+                    if (!ISEQ_BODY(iseq)->param.flags.forwardable) {
+                        body->param.rest_start = local_index;
+                        body->param.flags.has_rest = true;
 
-                    // Add the leading *
-                    pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
+                        // Add the leading *
+                        pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
 
-                    // Add the kwrest **
-                    RUBY_ASSERT(!body->param.flags.has_kw);
+                        // Add the kwrest **
+                        RUBY_ASSERT(!body->param.flags.has_kw);
 
-                    // There are no keywords declared (in the text of the program)
-                    // but the forwarding node implies we support kwrest (**)
-                    body->param.flags.has_kw = false;
-                    body->param.flags.has_kwrest = true;
-                    body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                        // There are no keywords declared (in the text of the program)
+                        // but the forwarding node implies we support kwrest (**)
+                        body->param.flags.has_kw = false;
+                        body->param.flags.has_kwrest = true;
+                        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
 
-                    keyword->rest_start = local_index;
+                        keyword->rest_start = local_index;
 
-                    pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
+                        pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
 
-                    body->param.block_start = local_index;
-                    body->param.flags.has_block = true;
+                        body->param.block_start = local_index;
+                        body->param.flags.has_block = true;
 
-                    pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                        pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                    }
                     pm_insert_local_special(idDot3, local_index++, index_lookup_table, local_table_for_iseq);
                     break;
                   }
@@ -8820,7 +8910,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         scope_node->index_lookup_table = index_lookup_table;
         iseq_calc_param_size(iseq);
-        iseq_set_local_table(iseq, local_table_for_iseq);
+
+        if (ISEQ_BODY(iseq)->param.flags.forwardable) {
+            // We're treating `...` as a parameter so that frame
+            // pushing won't clobber it.
+            ISEQ_BODY(iseq)->param.size += 1;
+        }
+
+        // FIXME: args?
+        iseq_set_local_table(iseq, local_table_for_iseq, 0);
         scope_node->local_table_for_iseq_size = local_table_for_iseq->size;
 
         //********STEP 5************
@@ -9241,8 +9339,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_SEQ(ret, args);
-        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
-        pm_compile_retry_end_label(iseq, ret, retry_end_l);
+        if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+            flags |= VM_CALL_FORWARDING;
+            PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+        }
+        else {
+            PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+            pm_compile_retry_end_label(iseq, ret, retry_end_l);
+        }
 
         if (popped) PUSH_INSN(ret, location, pop);
         ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;

@@ -1593,14 +1593,61 @@ tick(void)
 #define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
-#define RVALUE_MARK_BITMAP(obj)           MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
-#define RVALUE_PIN_BITMAP(obj)            MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
-#define RVALUE_PAGE_MARKED(page, obj)     MARKED_IN_BITMAP((page)->mark_bits, (obj))
+static inline VALUE check_rvalue_consistency(const VALUE obj);
 
+#define RVALUE_MARKED_BITMAP(obj)         MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
 #define RVALUE_WB_UNPROTECTED_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj))
-#define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
 #define RVALUE_MARKING_BITMAP(obj)        MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj))
+#define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
+#define RVALUE_PINNED_BITMAP(obj)         MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
 
+static inline int
+RVALUE_MARKED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return RVALUE_MARKED_BITMAP(obj) != 0;
+}
+
+static inline int
+RVALUE_PINNED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return  RVALUE_PINNED_BITMAP(obj) != 0;
+}
+
+static inline int
+RVALUE_WB_UNPROTECTED(VALUE obj)
+{
+    WHEN_USING_MMTK({
+        return mmtk_is_object_wb_unprotected((MMTk_ObjectReference)obj);
+    })
+
+    check_rvalue_consistency(obj);
+    return RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
+}
+
+static inline int
+RVALUE_MARKING(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return RVALUE_MARKING_BITMAP(obj) != 0;
+}
+
+static inline int
+RVALUE_REMEMBERED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
+}
+
+static inline int
+RVALUE_UNCOLLECTIBLE(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+}
+
+#define RVALUE_PAGE_MARKED(page, obj)         MARKED_IN_BITMAP((page)->mark_bits, (obj))
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
@@ -1651,7 +1698,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         else {
             const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
             const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
-            const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
+            const int mark_bit = RVALUE_MARKED_BITMAP(obj) != 0;
             const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0;
             const int remembered_bit = MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
             const int age = RVALUE_AGE_GET((VALUE)obj);
@@ -1759,52 +1806,6 @@ gc_object_moved_p(rb_objspace_t * objspace, VALUE obj)
         }
         return ret;
     }
-}
-
-static inline int
-RVALUE_MARKED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_MARK_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_PINNED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_PIN_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_WB_UNPROTECTED(VALUE obj)
-{
-    WHEN_USING_MMTK({
-        return mmtk_is_object_wb_unprotected((MMTk_ObjectReference)obj);
-    })
-
-    check_rvalue_consistency(obj);
-    return RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_MARKING(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_MARKING_BITMAP(obj) != 0;
-}
-
-static inline int
-RVALUE_REMEMBERED(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
-}
-
-static inline int
-RVALUE_UNCOLLECTIBLE(VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    return RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
 }
 
 static inline int
@@ -1934,31 +1935,44 @@ static void *rb_gc_impl_objspace_alloc(void);
 #if USE_SHARED_GC
 # include "dln.h"
 
-# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
+typedef struct gc_function_map {
+    void *(*objspace_alloc)(void);
+} rb_gc_function_map_t;
+
+static rb_gc_function_map_t rb_gc_functions;
+
+# define RUBY_GC_LIBRARY_ARG "--gc-library="
 
 void
-ruby_external_gc_init(void)
+ruby_load_external_gc_from_argv(int argc, char **argv)
 {
-    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
+    char *gc_so_path = NULL;
+
+    for (int i = 0; i < argc; i++) {
+        if (strncmp(argv[i], RUBY_GC_LIBRARY_ARG, sizeof(RUBY_GC_LIBRARY_ARG) - 1) == 0) {
+            gc_so_path = argv[i] + sizeof(RUBY_GC_LIBRARY_ARG) - 1;
+        }
+    }
+
     void *handle = NULL;
     if (gc_so_path && dln_supported_p()) {
         char error[1024];
         handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
             fprintf(stderr, "%s", error);
-            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
+            rb_bug("ruby_load_external_gc_from_argv: Shared library %s cannot be opened", gc_so_path);
         }
     }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        rb_gc_functions->name = dln_symbol(handle, "rb_gc_impl_" #name); \
-        if (!rb_gc_functions->name) { \
-            rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+        rb_gc_functions.name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!rb_gc_functions.name) { \
+            rb_bug("ruby_load_external_gc_from_argv: " #name " func not exported by library %s", gc_so_path); \
         } \
     } \
     else { \
-        rb_gc_functions->name = rb_gc_impl_##name; \
+        rb_gc_functions.name = rb_gc_impl_##name; \
     } \
 } while (0)
 
@@ -1967,15 +1981,12 @@ ruby_external_gc_init(void)
 # undef load_external_gc_func
 }
 
-# define rb_gc_impl_objspace_alloc rb_gc_functions->objspace_alloc
+# define rb_gc_impl_objspace_alloc rb_gc_functions.objspace_alloc
 #endif
 
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-#if USE_SHARED_GC
-    ruby_external_gc_init();
-#endif
     return (rb_objspace_t *)rb_gc_impl_objspace_alloc();
 }
 
@@ -3815,6 +3826,11 @@ rb_gc_impl_objspace_alloc(void)
         rb_bug("Could not preregister postponed job for GC");
     }
 
+    // TODO: debug why on Windows Ruby crashes on boot when GC is on.
+#ifdef _WIN32
+    dont_gc_on();
+#endif
+
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
 
@@ -3822,14 +3838,13 @@ rb_gc_impl_objspace_alloc(void)
 
         ccan_list_head_init(&SIZE_POOL_EDEN_HEAP(size_pool)->pages);
         ccan_list_head_init(&SIZE_POOL_TOMB_HEAP(size_pool)->pages);
+
+        gc_params.size_pool_init_slots[i] = GC_HEAP_INIT_SLOTS;
+
+        size_pool->allocatable_pages = minimum_pages_for_size_pool(objspace, size_pool);
     }
 
     rb_darray_make(&objspace->weak_references, 0);
-
-    // TODO: debug why on Windows Ruby crashes on boot when GC is on.
-#ifdef _WIN32
-    dont_gc_on();
-#endif
 
 #if defined(INIT_HEAP_PAGE_ALLOC_USE_MMAP)
     /* Need to determine if we can use mmap at runtime. */
@@ -3847,15 +3862,6 @@ rb_gc_impl_objspace_alloc(void)
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
-    /* Set size pools allocatable pages. */
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
-
-        /* Set the default value of size_pool_init_slots. */
-        gc_params.size_pool_init_slots[i] = GC_HEAP_INIT_SLOTS;
-
-        size_pool->allocatable_pages = minimum_pages_for_size_pool(objspace, size_pool);
-    }
     heap_pages_expand_sorted(objspace);
 
     init_mark_stack(&objspace->mark_stack);
@@ -4701,13 +4707,8 @@ rb_objspace_free_objects_i(VALUE obj, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_NONE:
-      case T_SYMBOL:
-        break;
-      default:
+    if (BUILTIN_TYPE(obj) != T_NONE) {
         obj_free(objspace, obj);
-        break;
     }
 }
 
@@ -4736,7 +4737,16 @@ rb_objspace_call_finalizer_i(VALUE obj, void *data)
         obj_free(objspace, obj);
         break;
       case T_SYMBOL:
-      case T_ARRAY:
+        if (rb_free_at_exit) {
+            if (RSYMBOL(obj)->fstr &&
+                    (BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_NONE ||
+                        BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_ZOMBIE)) {
+                RSYMBOL(obj)->fstr = 0;
+            }
+
+            obj_free(objspace, obj);
+        }
+        break;
       case T_NONE:
         break;
       default:
@@ -4876,7 +4886,7 @@ static inline bool
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
-        !MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr);
+        !RVALUE_MARKED(ptr);
 }
 
 static inline bool
@@ -5501,7 +5511,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
-    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
+    GC_ASSERT(RVALUE_MARKED(src));
 
     asan_unlock_freelist(free_page);
     VALUE dest = (VALUE)free_page->freelist;
@@ -6256,8 +6266,8 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                 VALUE object;
 
                 if (BUILTIN_TYPE(forwarding_object) == T_MOVED) {
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object));
-                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(RVALUE_PINNED(forwarding_object));
+                    GC_ASSERT(!RVALUE_MARKED(forwarding_object));
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
@@ -6280,7 +6290,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                     orig_page->free_slots++;
                     heap_page_add_freeobj(objspace, orig_page, object);
 
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(RVALUE_MARKED(forwarding_object));
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
                 }
@@ -7173,7 +7183,7 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     GC_ASSERT(is_markable_object(obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
-            if (!MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj)) {
+            if (!RVALUE_PINNED(obj)) {
                 GC_ASSERT(GET_HEAP_PAGE(obj)->pinned_slots <= GET_HEAP_PAGE(obj)->total_slots);
                 GET_HEAP_PAGE(obj)->pinned_slots++;
                 MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
@@ -8029,7 +8039,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, st_data_t ptr)
     rb_objspace_t *objspace = (rb_objspace_t *)ptr;
 
     /* object should be marked or oldgen */
-    if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj)) {
+    if (!RVALUE_MARKED(obj)) {
         fprintf(stderr, "gc_check_after_marks_i: %s is not marked and not oldgen.\n", obj_info(obj));
         fprintf(stderr, "gc_check_after_marks_i: %p is referred from ", (void *)obj);
         reflist_dump(refs);
@@ -9412,9 +9422,9 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     if (RVALUE_WB_UNPROTECTED(obj) == 0 && n<max)                   flags[n++] = ID_wb_protected;
     if (RVALUE_OLD_P(obj) && n<max)                                 flags[n++] = ID_old;
     if (RVALUE_UNCOLLECTIBLE(obj) && n<max)                         flags[n++] = ID_uncollectible;
-    if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
-    if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)    flags[n++] = ID_marked;
-    if (MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) && n<max)  flags[n++] = ID_pinned;
+    if (RVALUE_MARKING(obj) && n<max)                               flags[n++] = ID_marking;
+    if (RVALUE_MARKED(obj) && n<max)                                flags[n++] = ID_marked;
+    if (RVALUE_PINNED(obj) && n<max)                                flags[n++] = ID_pinned;
 #if USE_MMTK
     }
 #endif
@@ -14037,8 +14047,8 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
             APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
-                     C(RVALUE_MARK_BITMAP(obj),           "M"),
-                     C(RVALUE_PIN_BITMAP(obj),            "P"),
+                     C(RVALUE_MARKED_BITMAP(obj),         "M"),
+                     C(RVALUE_PINNED_BITMAP(obj),         "P"),
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
@@ -14393,8 +14403,8 @@ rb_gcdebug_print_obj_condition(VALUE obj)
         return;
     }
 
-    fprintf(stderr, "marked?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
-    fprintf(stderr, "pinned?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) ? "true" : "false");
+    fprintf(stderr, "marked?      : %s\n", RVALUE_MARKED(obj) ? "true" : "false");
+    fprintf(stderr, "pinned?      : %s\n", RVALUE_PINNED(obj) ? "true" : "false");
     fprintf(stderr, "age?         : %d\n", RVALUE_AGE_GET(obj));
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
     fprintf(stderr, "WB-protected?: %s\n", RVALUE_WB_UNPROTECTED(obj) ? "false" : "true");
@@ -14520,12 +14530,6 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 Init_GC(void)
 {
-#if USE_SHARED_GC
-    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
-        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
-    }
-#endif
-
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 

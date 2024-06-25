@@ -88,8 +88,7 @@ runs:
       working-directory: ${{ inputs.srcdir }}
       run: |
         set -x
-        PATH=$PATH:$(python -msite --user-base)/bin
-        echo "PATH=$PATH" >> $GITHUB_ENV
+        echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH
         pip install --user launchable
         launchable verify || true
         : # The build name cannot include a slash, so we replace the string here.

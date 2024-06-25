@@ -390,6 +390,125 @@ world"
     assert_lexer(expected, code)
   end
 
+  def test_invalid_escape_string
+    code = "\"hello\\x world"
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "hello", state(:EXPR_BEG)],
+      [[1, 5], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[1, 7], :on_tstring_content, " world", state(:EXPR_BEG)],
+    ]
+
+    code = "\"\nhello\\x world"
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n" "hello", state(:EXPR_BEG)],
+      [[2, 5], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[2, 7], :on_tstring_content, " world", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "\"\n\\Cxx\""
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\Cx", state(:EXPR_BEG)],
+      [[2, 3], :on_tstring_content, "x", state(:EXPR_BEG)],
+      [[2, 4], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "\"\n\\Mxx\""
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\Mx", state(:EXPR_BEG)],
+      [[2, 3], :on_tstring_content, "x", state(:EXPR_BEG)],
+      [[2, 4], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "\"\n\\c\\cx\""
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\c\\c", state(:EXPR_BEG)],
+      [[2, 4], :on_tstring_content, "x", state(:EXPR_BEG)],
+      [[2, 5], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "\"\n\\ux\""
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\u", state(:EXPR_BEG)],
+      [[2, 2], :on_tstring_content, "x", state(:EXPR_BEG)],
+      [[2, 3], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "\"\n\\xx\""
+    expected = [
+      [[1, 0], :on_tstring_beg, "\"", state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[2, 2], :on_tstring_content, "x", state(:EXPR_BEG)],
+      [[2, 3], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "<<A\n\n\\xyz"
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<A", state(:EXPR_BEG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[3, 0], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[3, 2], :on_tstring_content, "yz", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "%(\n\\xyz)"
+    expected = [
+      [[1, 0], :on_tstring_beg, "%(", state(:EXPR_BEG)],
+      [[1, 2], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[2, 2], :on_tstring_content, "yz", state(:EXPR_BEG)],
+      [[2, 4], :on_tstring_end, ")", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "%Q(\n\\xyz)"
+    expected = [
+      [[1, 0], :on_tstring_beg, "%Q(", state(:EXPR_BEG)],
+      [[1, 3], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "\\x", state(:EXPR_BEG)],
+      [[2, 2], :on_tstring_content, "yz", state(:EXPR_BEG)],
+      [[2, 4], :on_tstring_end, ")", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+
+    code = ":\"\n\\xyz\""
+    expected = [
+      [[1, 0], :on_symbeg, ":\"", state(:EXPR_FNAME)],
+      [[1, 2], :on_tstring_content, "\n", state(:EXPR_FNAME)],
+      [[2, 0], :on_tstring_content, "\\x", state(:EXPR_FNAME)],
+      [[2, 2], :on_tstring_content, "yz", state(:EXPR_FNAME)],
+      [[2, 4], :on_tstring_end, "\"", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+  end
+
+  def test_spaces_at_eof
+    code = "1\n\t \t"
+    expected = [
+      [[1, 0], :on_int, "1", state(:EXPR_END)],
+      [[1, 1], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_sp, "\t \t", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+  end
+
   def assert_lexer(expected, code)
     assert_equal(code, Ripper.tokenize(code).join(""))
     assert_equal(expected, result = Ripper.lex(code),

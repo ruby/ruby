@@ -267,7 +267,7 @@ pm_serialize_metadata(pm_parser_t *parser, pm_buffer_t *buffer) {
     pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 }
 
-#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#line <%= __LINE__ + 1 %> "prism/templates/src/<%= File.basename(__FILE__) %>"
 /**
  * Serialize the metadata, nodes, and constant pool.
  */

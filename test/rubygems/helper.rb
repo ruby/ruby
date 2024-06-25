@@ -816,8 +816,14 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::Specification.unresolved_deps.values.map(&:to_s).sort
   end
 
-  def new_default_spec(name, version, deps = nil, *files)
+  def new_default_spec(name, version, deps = nil, *files, executable: false)
     spec = util_spec name, version, deps
+
+    if executable
+      spec.executables = %w[executable]
+
+      write_file File.join(@tempdir, "bin", "executable")
+    end
 
     spec.loaded_from = File.join(@gemhome, "specifications", "default", spec.spec_name)
     spec.files = files
@@ -827,10 +833,8 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.instance_variable_set(:@default_gem_load_paths, [*Gem.send(:default_gem_load_paths), lib_dir])
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
-      rb_path = File.join(lib_dir, file)
-      FileUtils.mkdir_p(File.dirname(rb_path))
-      File.open(rb_path, "w") do |rb|
-        rb << "# #{file}"
+      write_file File.join(lib_dir, file) do |io|
+        io.write "# #{file}"
       end
     end
 

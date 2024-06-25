@@ -224,8 +224,14 @@ goto :loop ;
 goto :loop ;
 :gmp-dir
 :opt-dir
-  set XINCFLAGS=%XINCFLAGS% -I%2/include
-  set XLDFLAGS=%XLDFLAGS% -libpath:%2/lib
+  set opt=%~2
+  for %%I in (%opt:;= %) do (
+    pushd %%I && (
+      call set XINCFLAGS=%%XINCFLAGS%% -I%%CD:\=/%%/include
+      call set XLDFLAGS=%%XLDFLAGS%% -libpath:%%CD:\=/%%/lib
+      popd
+    )
+  )
 :witharg
   echo>>confargs.tmp  %1=%2\
   set witharg=1
@@ -249,9 +255,10 @@ goto :loop ;
   echo   --with-static-linked-ext link external modules statically
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
-  echo   --with-opt-dir=DIR-LIST add optional headers and libraries directories separated by `;'
+  echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by `;'
   echo   --disable-install-doc   do not install rdoc indexes during install
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
+  echo Note that `,' and `;' need to be enclosed within double quotes in batch file command line.
   del *.tmp
   del ~tmp~.mak
 goto :exit

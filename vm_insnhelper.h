@@ -66,6 +66,11 @@ typedef enum call_type {
     CALL_FCALL_KW
 } call_type;
 
+struct rb_forwarding_call_data {
+    struct rb_call_data cd;
+    CALL_INFO caller_ci;
+};
+
 #if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
     VM_REGAN_PC = 0,
@@ -258,8 +263,8 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 static inline bool
 vm_call_cacheable(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
-    return (vm_ci_flag(ci) & VM_CALL_FCALL) ||
-        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED;
+    return !(vm_ci_flag(ci) & VM_CALL_FORWARDING) && ((vm_ci_flag(ci) & VM_CALL_FCALL) ||
+        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED);
 }
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */

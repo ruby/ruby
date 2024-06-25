@@ -4,6 +4,8 @@ require_relative "command_execution"
 
 module Spec
   module Subprocess
+    class TimeoutExceeded < StandardError; end
+
     def command_executions
       @command_executions ||= []
     end

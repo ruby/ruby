@@ -99,6 +99,20 @@ class Gem::BasicSpecification
   end
 
   ##
+  # Regular gems take precedence over default gems
+
+  def default_gem_priority
+    default_gem? ? 1 : -1
+  end
+
+  ##
+  # Gems higher up in +gem_path+ take precedence
+
+  def base_dir_priority(gem_path)
+    gem_path.index(base_dir) || gem_path.size
+  end
+
+  ##
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir

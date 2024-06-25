@@ -1840,6 +1840,25 @@ begin
       EOC
     end
 
+    def test_stop_continue
+      pidfile = Tempfile.create('pidfile')
+      rubyfile = Tempfile.create('rubyfile')
+      rubyfile.write <<~RUBY
+        File.write(#{pidfile.path.inspect}, Process.pid)
+        p Reline.readmultiline('>'){false}
+      RUBY
+      rubyfile.close
+      start_terminal(40, 50, ['bash'])
+      write "ruby -I#{@pwd}/lib -rreline #{rubyfile.path}\n"
+      write "abc\ndef\nhi"
+      pid = pidfile.tap(&:rewind).read.to_i
+      Process.kill(:STOP, pid) unless pid.zero?
+      write "fg\n"
+      write "\ebg"
+      close
+      assert_include result.join("\n"), ">abc\n>def\n>ghi\n"
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

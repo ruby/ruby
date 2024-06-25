@@ -516,9 +516,8 @@ str_precompute_hash(VALUE str)
     RUBY_ASSERT(free_bytes >= sizeof(st_index_t));
 #endif
 
-    typedef struct {char bytes[sizeof(st_index_t)];} unaligned_index;
-    union {st_index_t i; unaligned_index b;} u = {.i = str_do_hash(str)};
-    *(unaligned_index *)(RSTRING_END(str) + TERM_LEN(str)) = u.b;
+    st_index_t hash = str_do_hash(str);
+    memcpy(RSTRING_END(str) + TERM_LEN(str), &hash, sizeof(hash));
 
     FL_SET(str, STR_PRECOMPUTED_HASH);
 
@@ -2394,12 +2393,7 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    long fake_len = capa - termlen;
-    if (fake_len < 0) {
-        fake_len = 0;
-    }
-
-    VALUE str = str_new0(klass, NULL, fake_len, termlen);
+    VALUE str = str_new0(klass, NULL, capa, termlen);
     STR_SET_LEN(str, 0);
     TERM_FILL(RSTRING_PTR(str), termlen);
 
@@ -3608,14 +3602,14 @@ rb_str_resize(VALUE str, long len)
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
+    const int termlen = TERM_LEN(str);
 
-    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+    if (slen > len || (termlen != 1 && slen < len)) {
         ENC_CODERANGE_CLEAR(str);
     }
 
     {
         long capa;
-        const int termlen = TERM_LEN(str);
         if (STR_EMBED_P(str)) {
             if (len == slen) return str;
             if (str_embed_capa(str) >= len + termlen) {
@@ -3730,6 +3724,63 @@ rb_str_cat_cstr(VALUE str, const char *ptr)
 {
     must_not_null(ptr);
     return rb_str_buf_cat(str, ptr, strlen(ptr));
+}
+
+static void
+rb_str_buf_cat_byte(VALUE str, unsigned char byte)
+{
+    RUBY_ASSERT(RB_ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT || RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII);
+
+    // We can't write directly to shared strings without impacting others, so we must make the string independent.
+    if (UNLIKELY(!str_independent(str))) {
+        str_make_independent(str);
+    }
+
+    long string_length = -1;
+    const int null_terminator_length = 1;
+    char *sptr;
+    RSTRING_GETMEM(str, sptr, string_length);
+
+    // Ensure the resulting string wouldn't be too long.
+    if (UNLIKELY(string_length > LONG_MAX - 1)) {
+        rb_raise(rb_eArgError, "string sizes too big");
+    }
+
+    long string_capacity = str_capacity(str, null_terminator_length);
+
+    // Get the code range before any modifications since those might clear the code range.
+    int cr = ENC_CODERANGE(str);
+
+    // Check if the string has spare string_capacity to write the new byte.
+    if (LIKELY(string_capacity >= string_length + 1)) {
+        // In fast path we can write the new byte and note the string's new length.
+        sptr[string_length] = byte;
+        STR_SET_LEN(str, string_length + 1);
+        TERM_FILL(sptr + string_length + 1, null_terminator_length);
+    }
+    else {
+        // If there's not enough string_capacity, make a call into the general string concatenation function.
+        char buf[1] = {byte};
+        str_buf_cat(str, buf, 1);
+    }
+
+    // If the code range is already known, we can derive the resulting code range cheaply by looking at the byte we
+    // just appended. If the code range is unknown, but the string was empty, then we can also derive the code range
+    // by looking at the byte we just appended. Otherwise, we'd have to scan the bytes to determine the code range so
+    // we leave it as unknown. It cannot be broken for binary strings so we don't need to handle that option.
+    if (cr == ENC_CODERANGE_7BIT || string_length == 0) {
+        if (ISASCII(byte)) {
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+        }
+        else {
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+
+            // Promote a US-ASCII string to ASCII-8BIT when a non-ASCII byte is appended.
+            if (UNLIKELY(RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)) {
+                rb_enc_associate_index(str, ENCINDEX_ASCII_8BIT);
+            }
+        }
+    }
 }
 
 RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, long len), rb_str_cat, (str, ptr, len))
@@ -4020,14 +4071,9 @@ rb_str_concat(VALUE str1, VALUE str2)
     }
 
     encidx = rb_ascii8bit_appendable_encoding_index(enc, code);
+
     if (encidx >= 0) {
-        char buf[1];
-        buf[0] = (char)code;
-        rb_str_cat(str1, buf, 1);
-        if (encidx != rb_enc_to_index(enc)) {
-            rb_enc_associate_index(str1, encidx);
-            ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
-        }
+        rb_str_buf_cat_byte(str1, (unsigned char)code);
     }
     else {
         long pos = RSTRING_LEN(str1);
@@ -4120,8 +4166,8 @@ st_index_t
 rb_str_hash(VALUE str)
 {
     if (FL_TEST_RAW(str, STR_PRECOMPUTED_HASH)) {
-        typedef struct {char bytes[sizeof(st_index_t)];} unaligned_index;
-        st_index_t precomputed_hash = ((union {st_index_t i; unaligned_index b;} *)(RSTRING_END(str) + TERM_LEN(str)))->i;
+        st_index_t precomputed_hash;
+        memcpy(&precomputed_hash, RSTRING_END(str) + TERM_LEN(str), sizeof(precomputed_hash));
 
         RUBY_ASSERT(precomputed_hash == str_do_hash(str));
         return precomputed_hash;

@@ -1435,6 +1435,10 @@ module RubyVM::RJIT
       mid = C.vm_ci_mid(cd.ci)
       calling = build_calling(ci: cd.ci, block_handler: blockiseq)
 
+      if calling.flags & C::VM_CALL_FORWARDING != 0
+        return CantCompile
+      end
+
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
@@ -4620,6 +4624,11 @@ module RubyVM::RJIT
           asm.incr_counter(:send_iseq_splat_arity_error)
           return CantCompile
         end
+      end
+
+      # Don't compile forwardable iseqs
+      if iseq.body.param.flags.forwardable
+        return CantCompile
       end
 
       # We will not have CantCompile from here.

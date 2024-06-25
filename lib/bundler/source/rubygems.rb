@@ -22,6 +22,8 @@ module Bundler
         @checksum_store = Checksum::Store.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+
+        @lockfile_remotes = @remotes if options["from_lockfile"]
       end
 
       def caches
@@ -91,13 +93,13 @@ module Bundler
 
       def self.from_lock(options)
         options["remotes"] = Array(options.delete("remote")).reverse
-        new(options)
+        new(options.merge("from_lockfile" => true))
       end
 
       def to_lock
         out = String.new("GEM\n")
-        remotes.reverse_each do |remote|
-          out << "  remote: #{remove_auth remote}\n"
+        lockfile_remotes.reverse_each do |remote|
+          out << "  remote: #{remote}\n"
         end
         out << "  specs:\n"
       end
@@ -462,6 +464,10 @@ module Bundler
       end
 
       private
+
+      def lockfile_remotes
+        @lockfile_remotes || credless_remotes
+      end
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.

@@ -7,7 +7,8 @@
 #++
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd,
+    target_rbconfig=Gem.target_rbconfig)
     require "fileutils"
     require "tempfile"
 
@@ -23,6 +24,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
     begin
       cmd = ruby << File.basename(extension)
+      cmd << "--target-rbconfig=#{target_rbconfig.path}" if target_rbconfig.path
       cmd.push(*args)
 
       run(cmd, results, class_name, extension_dir) do |s, r|
@@ -39,11 +41,14 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       ENV["DESTDIR"] = nil
 
-      make dest_path, results, extension_dir, tmp_dest_relative
+      make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      if Gem.install_extension_in_lib && lib_dir
+      is_cross_compiling = target_rbconfig["platform"] != RbConfig::CONFIG["platform"]
+      # Do not copy extension libraries by default when cross-compiling
+      # not to conflict with the one already built for the host platform.
+      if Gem.install_extension_in_lib && lib_dir && !is_cross_compiling
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]
         entries = entries.map {|entry| File.join full_tmp_dest, entry }
@@ -55,7 +60,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         destent.exist? || FileUtils.mv(ent.path, destent.path)
       end
 
-      make dest_path, results, extension_dir, tmp_dest_relative, ["clean"]
+      make dest_path, results, extension_dir, tmp_dest_relative, ["clean"], target_rbconfig: target_rbconfig
     ensure
       ENV["DESTDIR"] = destdir
     end

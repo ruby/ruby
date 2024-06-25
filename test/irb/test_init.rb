@@ -274,7 +274,6 @@ module TestIRB
       @original_irbrc = ENV["IRBRC"]
       # To prevent the test from using the user's .irbrc file
       ENV["HOME"] = @home = Dir.mktmpdir
-      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
       super
     end
 
@@ -284,6 +283,7 @@ module TestIRB
       ENV["HOME"] = @original_home
       File.unlink(@irbrc)
       Dir.rmdir(@home)
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
     end
 
     def test_irb_name_converts_non_string_values_to_string

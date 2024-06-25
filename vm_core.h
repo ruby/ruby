@@ -110,14 +110,6 @@ extern int ruby_assert_critical_section_entered;
 #include "internal/mmtk_support.h"
 #endif
 
-#if USE_SHARED_GC
-typedef struct gc_function_map {
-    void *(*objspace_alloc)(void);
-} rb_gc_function_map_t;
-
-#define rb_gc_functions (&GET_VM()->gc_functions_map)
-#endif
-
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
@@ -431,6 +423,7 @@ struct rb_iseq_constant_body {
             unsigned int anon_rest: 1;
             unsigned int anon_kwrest: 1;
             unsigned int use_block: 1;
+            unsigned int forwardable: 1;
         } flags;
 
         unsigned int size;
@@ -764,9 +757,6 @@ typedef struct rb_vm_struct {
     int coverage_mode;
 
     struct rb_objspace *objspace;
-#if USE_SHARED_GC
-    rb_gc_function_map_t gc_functions_map;
-#endif
 
     rb_at_exit_list *at_exit;
 

@@ -379,5 +379,3 @@ generic_to_value(VALUE rettype, fiddle_generic retval)
 {
     return rb_fiddle_generic_to_value(rettype, retval);
 }
-
-/* vim: set noet sw=4 sts=4 */

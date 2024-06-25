@@ -125,6 +125,7 @@ assert_equal '[:ae, :ae]', %q{
 
 # regression test for GC marking stubs in invalidated code
 assert_normal_exit %q{
+  skip true unless defined?(GC.compact)
   garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
   eval(<<~RUBY)
   def foo(n, garbage)
@@ -159,7 +160,7 @@ assert_equal '0', "0.abs(&nil)"
 
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
-  return :ok unless defined?(GC.compact)
+  skip :ok unless defined?(GC.compact)
   def foo = yield
   10.times do |i|
     ret = eval("foo { #{i} }")
@@ -594,6 +595,8 @@ assert_equal 'string', %q{
 
 # Check that exceptions work when getting global variable
 assert_equal 'rescued', %q{
+  Warning[:deprecated] = true
+
   module Warning
     def warn(message)
       raise
@@ -1229,6 +1232,7 @@ assert_equal 'special', %q{
 
 # Test that object references in generated code get marked and moved
 assert_equal "good", %q{
+  skip :good unless defined?(GC.compact)
   def bar
     "good"
   end
@@ -2321,6 +2325,7 @@ assert_equal '123', %q{
 
 # Test EP == BP invalidation with moving ISEQs
 assert_equal 'ok', %q{
+  skip :ok unless defined?(GC.compact)
   def entry
     ok = proc { :ok } # set #entry as an EP-escaping ISEQ
     [nil].reverse_each do # avoid exiting the JIT frame on the constant
@@ -4767,6 +4772,22 @@ assert_equal 'foo', %q{
 
   entry(false)
   entry(true)
+}
+
+assert_equal 'ok', %q{
+  def ok
+    :ok
+  end
+
+  def delegator(...)
+    ok(...)
+  end
+
+  def caller
+    send(:delegator)
+  end
+
+  caller
 }
 
 assert_equal '[:ok, :ok, :ok]', %q{

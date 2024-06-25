@@ -371,6 +371,120 @@ RSpec.describe "the lockfile format" do
     G
   end
 
+  it "does not add credentials to lockfile when it does not have them already" do
+    bundle "config set http://localgemserver.test/ user:pass"
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo1)}"
+
+      source "http://localgemserver.test/" do
+
+      end
+
+      source "http://user:pass@othergemserver.test/" do
+        gem "rack-obama", ">= 1.0"
+      end
+    G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
+
+    lockfile_without_credentials = <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      GEM
+        remote: http://localgemserver.test/
+        specs:
+
+      GEM
+        remote: http://othergemserver.test/
+        specs:
+          rack (1.0.0)
+          rack-obama (1.0)
+            rack
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack-obama (>= 1.0)!
+      #{checksums}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile lockfile_without_credentials
+
+    # when not re-resolving
+    bundle "install", artifice: "endpoint_strict_basic_authentication", quiet: true
+    expect(lockfile).to eq lockfile_without_credentials
+
+    # when re-resolving with full unlock
+    bundle "update", artifice: "endpoint_strict_basic_authentication"
+    expect(lockfile).to eq lockfile_without_credentials
+
+    # when re-resolving without ful unlocking
+    bundle "update rack-obama", artifice: "endpoint_strict_basic_authentication"
+    expect(lockfile).to eq lockfile_without_credentials
+  end
+
+  it "keeps credentials in lockfile if already there" do
+    bundle "config set http://localgemserver.test/ user:pass"
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo1)}"
+
+      source "http://localgemserver.test/" do
+
+      end
+
+      source "http://user:pass@othergemserver.test/" do
+        gem "rack-obama", ">= 1.0"
+      end
+    G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
+
+    lockfile_with_credentials = <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      GEM
+        remote: http://localgemserver.test/
+        specs:
+
+      GEM
+        remote: http://user:pass@othergemserver.test/
+        specs:
+          rack (1.0.0)
+          rack-obama (1.0)
+            rack
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack-obama (>= 1.0)!
+      #{checksums}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile lockfile_with_credentials
+
+    bundle "install", artifice: "endpoint_strict_basic_authentication", quiet: true
+
+    expect(lockfile).to eq lockfile_with_credentials
+  end
+
   it "generates lockfiles with multiple requirements" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"

@@ -1176,3 +1176,171 @@ assert_equal 'ok', %q{
   foo
   foo
 }, '[Bug #20178]'
+
+assert_equal 'ok', %q{
+  def bar(x); x; end
+  def foo(...); bar(...); end
+  foo('ok')
+}
+
+assert_equal 'ok', %q{
+  def bar(x); x; end
+  def foo(z, ...); bar(...); end
+  foo(1, 'ok')
+}
+
+assert_equal 'ok', %q{
+  def bar(x, y); x; end
+  def foo(...); bar("ok", ...); end
+  foo(1)
+}
+
+assert_equal 'ok', %q{
+  def bar(x); x; end
+  def foo(...); 1.times { return bar(...) }; end
+  foo("ok")
+}
+
+assert_equal 'ok', %q{
+  def bar(x); x; end
+  def foo(...); x = nil; 1.times { x = bar(...) }; x; end
+  foo("ok")
+}
+
+assert_equal 'ok', %q{
+  def bar(x); yield; end
+  def foo(...); bar(...); end
+  foo(1) { "ok" }
+}
+
+assert_equal 'ok', %q{
+  def baz(x); x; end
+  def bar(...); baz(...); end
+  def foo(...); bar(...); end
+  foo("ok")
+}
+
+assert_equal '[1, 2, 3, 4]', %q{
+  def baz(a, b, c, d); [a, b, c, d]; end
+  def bar(...); baz(1, ...); end
+  def foo(...); bar(2, ...); end
+  foo(3, 4)
+}
+
+assert_equal 'ok', %q{
+  class Foo; def self.foo(x); x; end; end
+  class Bar < Foo; def self.foo(...); super; end; end
+  Bar.foo('ok')
+}
+
+assert_equal 'ok', %q{
+  class Foo; def self.foo(x); x; end; end
+  class Bar < Foo; def self.foo(...); super(...); end; end
+  Bar.foo('ok')
+}
+
+assert_equal 'ok', %q{
+  class Foo; def self.foo(x, y); x + y; end; end
+  class Bar < Foo; def self.foo(...); super("o", ...); end; end
+  Bar.foo('k')
+}
+
+assert_equal 'ok', %q{
+  def bar(a); a; end
+  def foo(...); lambda { bar(...) }; end
+  foo("ok").call
+}
+
+assert_equal 'ok', %q{
+  class Foo; def self.foo(x, y); x + y; end; end
+  class Bar < Foo; def self.y(&b); b; end; def self.foo(...); y { super("o", ...) }; end; end
+  Bar.foo('k').call
+}
+
+assert_equal 'ok', %q{
+  def baz(n); n; end
+  def foo(...); bar = baz(...); lambda { lambda { bar } }; end
+  foo("ok").call.call
+}
+
+assert_equal 'ok', %q{
+  class A; def self.foo(...); new(...); end; attr_reader :b; def initialize(a, b:"ng"); @a = a; @b = b; end end
+  A.foo(1).b
+  A.foo(1, b: "ok").b
+}
+
+assert_equal 'ok', %q{
+  class A; def initialize; @a = ["ok"]; end; def first(...); @a.first(...); end; end
+  def call x; x.first; end
+  def call1 x; x.first(1); end
+  call(A.new)
+  call1(A.new).first
+}
+
+assert_equal 'ok', %q{
+  class A; def foo; yield("o"); end; end
+  class B < A; def foo(...); super { |x| yield(x + "k") }; end; end
+  B.new.foo { |x| x }
+}
+
+assert_equal "[1, 2, 3, 4]", %q{
+  def foo(*b) = b
+
+  def forward(...)
+    splat = [1,2,3]
+    foo(*splat, ...)
+  end
+
+  forward(4)
+}
+
+assert_equal "[1, 2, 3, 4]", %q{
+class A
+  def foo(*b) = b
+end
+
+class B < A
+  def foo(...)
+    splat = [1,2,3]
+    super(*splat, ...)
+  end
+end
+
+B.new.foo(4)
+}
+
+assert_equal 'ok', %q{
+  class A; attr_reader :iv; def initialize(...) = @iv = "ok"; end
+  A.new("foo", bar: []).iv
+}
+
+assert_equal 'ok', %q{
+  def foo(a, b) = a + b
+  def bar(...) = foo(...)
+  bar(1, 2)
+  bar(1, 2)
+  begin
+    bar(1, 2, 3)
+    "ng"
+  rescue ArgumentError
+    "ok"
+  end
+}
+
+assert_equal 'ok', %q{
+  class C
+    def foo(...) = :ok
+    def bar(...) = __send__(:foo, ...)
+  end
+
+  C.new.bar
+}
+
+assert_equal 'ok', %q{
+  class C
+    def method_missing(...) = :ok
+    def foo(...) = xyzzy(...)
+  end
+
+  C.new.foo
+}

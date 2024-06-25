@@ -366,6 +366,7 @@ module RubyVM::YJIT
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
       out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      out.puts "deleted_defer_block_count:" + format_number_pct(10, stats[:deleted_defer_block_count], stats[:compiled_block_count])
       if stats[:compiled_blockid_count] != 0
         out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
@@ -391,8 +392,10 @@ module RubyVM::YJIT
 
       bytes_per_context = stats[:context_data_bytes].fdiv(stats[:num_contexts_encoded])
       out.puts "context_data_bytes:    " + format_number(13, stats[:context_data_bytes])
+      out.puts "context_cache_bytes:   " + format_number(13, stats[:context_cache_bytes])
       out.puts "num_contexts_encoded:  " + format_number(13, stats[:num_contexts_encoded])
       out.puts "bytes_per_context:     " + ("%13.2f" % bytes_per_context)
+      out.puts "context_cache_hit_rate:" + format_number_pct(13, stats[:context_cache_hits], stats[:num_contexts_encoded])
 
       out.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
       out.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
@@ -457,7 +460,7 @@ module RubyVM::YJIT
           out.puts("  #{padded_count}: #{name}")
         end
       else
-        out.puts "total_exits:           " + format_number(10, total_exits)
+        out.puts "total_exits:           " + format_number(13, total_exits)
       end
     end
 

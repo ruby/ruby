@@ -178,7 +178,7 @@ class Gem::Uninstaller
   # Removes installed executables and batch files (windows only) for +spec+.
 
   def remove_executables(spec)
-    return if spec.executables.empty?
+    return if spec.executables.empty? || default_spec_matches?(spec)
 
     executables = spec.executables.clone
 

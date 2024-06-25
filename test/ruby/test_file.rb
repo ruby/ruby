@@ -365,26 +365,38 @@ class TestFile < Test::Unit::TestCase
       file.close
       path = file.path
 
-      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
-      File.write(path, "foo")
-      sleep 2
-      File.write(path, "bar")
-      sleep 2
-      File.read(path)
-      File.chmod(0644, path)
-      sleep 2
-      File.read(path)
+      retry_count = 0
+      while true
+        t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+        File.write(path, "foo")
+        sleep 2
+        t1 = Process.clock_gettime(Process::CLOCK_REALTIME)
+        File.write(path, "bar")
+        sleep 2
+        t2 = Process.clock_gettime(Process::CLOCK_REALTIME)
+        File.read(path)
+        File.chmod(0644, path)
+        sleep 2
+        t3 = Process.clock_gettime(Process::CLOCK_REALTIME)
+        File.read(path)
+
+        t4 = Process.clock_gettime(Process::CLOCK_REALTIME)
+        break if t4 - t0 < 6.5
+
+        retry_count += 1
+        raise "failed to setup; the machine is too slow? #{t0} #{t1} #{t2} #{t3} #{t4}" if retry_count > 3
+      end
 
       delta = 1
       stat = File.stat(path)
-      assert_in_delta tb,   stat.birthtime.to_f, delta
-      assert_in_delta t0+2, stat.mtime.to_f, delta
+      assert_in_delta tb, stat.birthtime.to_f, delta
+      assert_in_delta t1, stat.mtime.to_f, delta
       if stat.birthtime != stat.ctime
-        assert_in_delta t0+4, stat.ctime.to_f, delta
+        assert_in_delta t2, stat.ctime.to_f, delta
       end
       if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
         # Windows delays updating atime
-        assert_in_delta t0+6, stat.atime.to_f, delta
+        assert_in_delta t3, stat.atime.to_f, delta
       end
     }
   rescue NotImplementedError

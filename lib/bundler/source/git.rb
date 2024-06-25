@@ -32,6 +32,20 @@ module Bundler
         @local      = false
       end
 
+      def remote!
+        return if @allow_remote
+
+        @local_specs = nil
+        @allow_remote = true
+      end
+
+      def cached!
+        return if @allow_cached
+
+        @local_specs = nil
+        @allow_cached = true
+      end
+
       def self.from_lock(options)
         new(options.merge("uri" => options.delete("remote")))
       end

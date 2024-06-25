@@ -14,6 +14,6 @@ VALUE pm_integer_new(const pm_integer_t *integer);
 
 void Init_prism_api_node(void);
 void Init_prism_pack(void);
-PRISM_EXPORTED_FUNCTION void Init_prism(void);
+RUBY_FUNC_EXPORTED void Init_prism(void);
 
 #endif

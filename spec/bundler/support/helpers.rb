@@ -11,8 +11,6 @@ module Spec
     include Spec::Options
     include Spec::Subprocess
 
-    class TimeoutExceeded < StandardError; end
-
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
         next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))

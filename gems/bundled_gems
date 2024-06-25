@@ -6,14 +6,14 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest        5.23.1  https://github.com/minitest/minitest
+minitest        5.24.0  https://github.com/minitest/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert 84e85124c5014a139af39161d484156cfe87a9ed
 rake            13.2.1  https://github.com/ruby/rake
 test-unit       3.6.2   https://github.com/test-unit/test-unit
-rexml           3.2.8   https://github.com/ruby/rexml
+rexml           3.3.0   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
-net-ftp         0.3.5   https://github.com/ruby/net-ftp
-net-imap        0.4.12  https://github.com/ruby/net-imap
+net-ftp         0.3.6   https://github.com/ruby/net-ftp
+net-imap        0.4.14  https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.5.0   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix

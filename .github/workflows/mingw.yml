@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410 # v1.179.1
+        uses: ruby/setup-ruby@3783f195e29b74ae398d7caca108814bbafde90e # v1.180.1
         with:
           ruby-version: ${{ matrix.baseruby }}
 
@@ -97,7 +97,7 @@ jobs:
           $result
         working-directory:
 
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -107,6 +107,8 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: configure
         run: >
@@ -119,6 +121,18 @@ jobs:
 
       - name: make install
         run: make DESTDIR=../install install-nodoc
+
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: windows-2022
+          # If we support new test task, we need to change this test-opts.
+          test-opts: --retry --job-status=normal --show-skip --timeout-scale=1.5
+            ${{ matrix.test-all-opts }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
 
       - name: test
         timeout-minutes: 30
@@ -138,6 +152,7 @@ jobs:
           RUBY_TESTOPTS: >-
             --retry --job-status=normal --show-skip --timeout-scale=1.5
             ${{ matrix.test-all-opts }}
+            ${{ env.TESTS }}
           BUNDLER_VERSION:
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/') }}
 

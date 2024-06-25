@@ -266,16 +266,19 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 17] = [
+pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
     Counter::compiled_iseq_count,
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
+    Counter::deleted_defer_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
     Counter::max_inline_versions,
+    Counter::num_contexts_encoded,
+    Counter::context_cache_hits,
 
     Counter::invalidation_count,
     Counter::invalidate_method_lookup,
@@ -375,6 +378,7 @@ make_counters! {
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
     send_iseq_complex_discard_extras,
+    send_iseq_forwarding,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_mismatch,
@@ -382,6 +386,7 @@ make_counters! {
     send_iseq_has_no_kw,
     send_iseq_accepts_no_kwarg,
     send_iseq_materialized_block,
+    send_iseq_send_forwarding,
     send_iseq_splat_not_array,
     send_iseq_splat_with_kw,
     send_iseq_missing_optional_kw,
@@ -411,6 +416,7 @@ make_counters! {
     send_optimized_block_arg,
 
     invokesuper_defined_class_mismatch,
+    invokesuper_forwarding,
     invokesuper_kw_splat,
     invokesuper_kwarg,
     invokesuper_megamorphic,
@@ -552,6 +558,7 @@ make_counters! {
     block_next_count,
     defer_count,
     defer_empty_count,
+    deleted_defer_block_count,
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
@@ -610,6 +617,8 @@ make_counters! {
     temp_reg_opnd,
     temp_mem_opnd,
     temp_spill,
+
+    context_cache_hits,
 }
 
 //===========================================================================
@@ -746,6 +755,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
         hash_aset_usize!(hash, "context_data_bytes", context_data.num_bytes());
+        hash_aset_usize!(hash, "context_cache_bytes", crate::core::CTX_CACHE_BYTES);
 
         // VM instructions count
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);

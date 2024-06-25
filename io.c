@@ -5699,6 +5699,9 @@ rb_io_close(VALUE io)
  *  If the stream was opened by IO.popen, sets global variable <tt>$?</tt>
  *  (child exit status).
  *
+ *  It is not an error to close an IO object that has already been closed.
+ *  It just returns nil.
+ *
  *  Example:
  *
  *    IO.popen('ruby', 'r+') do |pipe|

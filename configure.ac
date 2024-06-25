@@ -361,7 +361,7 @@ test -z "$warnflags" ||
 AS_IF([test -z "${CFLAGS+set}"], [
     cflags=`echo " $cflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
     orig_cflags="$cflags"
-    cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
+    cflags='${hardenflags} '"$cflags "'${optflags} ${debugflags} ${warnflags}'
 ])
 dnl AS_IF([test -z "${CXXFLAGS+set}"], [
 dnl     cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
@@ -814,7 +814,7 @@ AS_IF([test "$GCC" = yes], [
 		  [fortify_source=$enableval])
     AS_IF([test "x$fortify_source" != xno], [
         RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2],
-                        [RUBY_APPEND_OPTION(XCFLAGS, -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2)], [],
+                        [RUBY_PREPEND_OPTION(hardenflags, -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2)], [],
                         [@%:@include <stdio.h>])
     ])
 
@@ -835,20 +835,24 @@ AS_IF([test "$GCC" = yes], [
     AC_MSG_CHECKING([for -fstack-protector])
     AC_MSG_RESULT(["$stack_protector"])
     AS_CASE(["$stack_protector"], [-*], [
-	RUBY_APPEND_OPTION(XCFLAGS, $stack_protector)
-	RUBY_APPEND_OPTION(XLDFLAGS, $stack_protector)
-	RUBY_APPEND_OPTION(LDFLAGS, $stack_protector)
+        RUBY_PREPEND_OPTION(hardenflags, $stack_protector)
+        RUBY_APPEND_OPTION(XLDFLAGS, $stack_protector)
+        RUBY_APPEND_OPTION(LDFLAGS, $stack_protector)
     ])
 
     # aarch64 branch protection
     AS_CASE(["$target_cpu"], [aarch64], [
 	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
-            RUBY_TRY_CFLAGS(option, [branch_protection=yes], [branch_protection=no])
+            # Try these flags in the _prepended_ position - i.e. we want to try building a program
+            # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
+            # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
+            # find some branch protection flags which work if none were provided.
+            RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
             AS_IF([test "x$branch_protection" = xyes], [
-                # C compiler and assembler must be consistent for -mbranch-protection
-                # since they both check `__ARM_FEATURE_PAC_DEFAULT` definition.
-                RUBY_APPEND_OPTION(XCFLAGS, option)
-                RUBY_APPEND_OPTION(ASFLAGS, option)
+                # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
+                # These CFLAGS are used during the configure script to compile further test programs;
+                # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
+                RUBY_PREPEND_OPTION(hardenflags, $opt)
                 break
             ])
         ])
@@ -979,9 +983,17 @@ AC_ARG_WITH(opt-dir,
 	[OPT_DIR="${OPT_DIR:+$OPT_DIR$PATH_SEPARATOR}$withval"], [])
 
 AS_IF([test "x$OPT_DIR" != x], [
+    save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
+    for dir in $OPT_DIR; do
+        test -z "$dir" && continue
+        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        val="${val:+$val$PATH_SEPARATOR}$dir"
+    done
+    IFS="$save_IFS" OPT_DIR="$val"
+    unset PWD
+    unset save_IFS
     val=`IFS="$PATH_SEPARATOR"
         for dir in $OPT_DIR; do
-            test -z "$dir" && continue
             echo x ${LIBPATHFLAG} ${RPATHFLAG} |
             sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
         done | tr '\012' ' ' | sed 's/ *$//'`
@@ -995,6 +1007,59 @@ AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
+
+# The lines above expand out the $cflags/$optflags/$debugflags/$hardenflags variables into the
+# CFLAGS variable. So, at this point, we have a $CFLAGS var with the actual compiler flags we're
+# going to use.
+# That means this is the right time to check what branch protection flags are going to be in use
+# and define appropriate macros for use in Context.S based on this
+AS_CASE(["$target_cpu"], [aarch64], [
+    AC_CACHE_CHECK([whether __ARM_FEATURE_BTI_DEFAULT is defined],
+        rb_cv_aarch64_bti_enabled,
+        AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([[
+                @%:@ifndef __ARM_FEATURE_BTI_DEFAULT
+                @%:@error "__ARM_FEATURE_BTI_DEFAULT not defined"
+                @%:@endif
+            ]])],
+        [rb_cv_aarch64_bti_enabled=yes],
+        [rb_cv_aarch64_bti_enabled=no])
+    )
+    AS_IF([test "$rb_cv_aarch64_bti_enabled" = yes],
+          AC_DEFINE(RUBY_AARCH64_BTI_ENABLED, 1))
+    AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT is defined],
+        rb_cv_aarch64_pac_enabled,
+        AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([[
+                @%:@ifndef __ARM_FEATURE_PAC_DEFAULT
+                @%:@error "__ARM_FEATURE_PAC_DEFAULT not defined"
+                @%:@endif
+            ]])],
+        [rb_cv_aarch64_pac_enabled=yes],
+        [rb_cv_aarch64_pac_enabled=no])
+    )
+    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes],
+          AC_DEFINE(RUBY_AARCH64_PAC_ENABLED, 1))
+    # Context.S will only ever sign its return address with the A-key; it doesn't support
+    # the B-key at the moment.
+    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes], [
+        AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT specifies the b-key bit 0x02],
+            rb_cv_aarch64_pac_b_key,
+            AC_COMPILE_IFELSE(
+                [AC_LANG_PROGRAM([[
+                    @%:@ifdef __ARM_FEATURE_PAC_DEFAULT
+                    @%:@if __ARM_FEATURE_PAC_DEFAULT & 0x02
+                    @%:@error "__ARM_FEATURE_PAC_DEFAULT specifies B key"
+                    @%:@endif
+                    @%:@endif
+                ]])],
+            [rb_cv_aarch64_pac_b_key=no],
+            [rb_cv_aarch64_pac_b_key=yes])
+        )
+        AS_IF([test "$rb_cv_aarch64_pac_b_key" = yes],
+            AC_MSG_ERROR(-mbranch-protection flag specified b-key but Ruby's Context.S does not support this yet.))
+    ])
+])
 
 AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
   rb_cv_have_stmt_and_decl_in_expr,
@@ -2835,7 +2900,7 @@ AS_IF([test "$THREAD_MODEL" = pthread], [
 	    ])
     ])
 
-    AC_CACHE_CHECK([for thread-local storage sepcifier], [rb_cv_tls_specifier],
+    AC_CACHE_CHECK([for thread-local storage specifier], [rb_cv_tls_specifier],
         rb_cv_tls_specifier=none
         RUBY_WERROR_FLAG([
             for attr in \
@@ -3437,7 +3502,7 @@ done
 
 BTESTRUBY='$(MINIRUBY)'
 AS_IF([test x"$cross_compiling" = xyes], [
-  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I`$CHDIR .; pwd` "-r'$(arch)-fake'
+  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I${ac_abs_builddir-.} "-r'$(arch)-fake'
   XRUBY_LIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["libdir"]']`
   XRUBY_RUBYLIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubylibdir"]']`
   XRUBY_RUBYHDRDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubyhdrdir"]']`
@@ -3767,7 +3832,7 @@ AC_ARG_ENABLE(gcov,
        AS_HELP_STRING([--enable-gcov], [enable coverage measurement by gcov]),
        [gcov=yes])
 AS_IF([test x"$gcov" = xyes], [
-    CFLAGS="$CFLAGS -coverage"
+    CFLAGS="$CFLAGS -coverage -fprofile-update=atomic"
     LDFLAGS="$LDFLAGS -coverage"
 ])
 
@@ -4006,7 +4071,9 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
 
-AS_IF([test x"$enable_shared" = xyes], [
+AS_IF([test x"$SOEXT" = xdll], [
+    # DLL on Windows is managed by win32/mkexports.rb
+], [test x"$enable_shared" = xyes], [
     AC_CACHE_CHECK([for default symbols in empty shared library], rb_cv_symbols_in_emptylib, [
         save_CC="$CC"
         eval CC=\"`printf "%s" "${DLDSHARED}" | sed ['s/\$(CC)/${CC}/']`\"
@@ -4229,12 +4296,13 @@ AS_IF([test "${ARCH_FLAG}"], [
 rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
-AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cflags, ['${hardenflags} '"${orig_cflags:+$orig_cflags }"' ${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(cxxflags)dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
 AC_SUBST(strict_warnflags)dnl
+AC_SUBST(hardenflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(EXTLDFLAGS)dnl
@@ -4695,6 +4763,7 @@ config_summary "DLDFLAGS"            "$DLDFLAGS"
 config_summary "optflags"            "$optflags"
 config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
+config_summary "hardenflags"         "$hardenflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"

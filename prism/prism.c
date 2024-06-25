@@ -2548,8 +2548,10 @@ pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 // There are certain flags that we want to use internally but don't want to
 // expose because they are not relevant beyond parsing. Therefore we'll define
 // them here and not define them in config.yml/a header file.
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x10;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x20;
+static const pm_node_flags_t PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY = 0x1;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = 0x10;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x20;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x40;
 
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL or
@@ -3411,6 +3413,20 @@ pm_class_variable_read_node_create(pm_parser_t *parser, const pm_token_t *token)
 }
 
 /**
+ * True if the given node is an implicit array node on a write, as in:
+ *
+ *     a = *b
+ *     a = 1, 2, 3
+ */
+static inline pm_node_flags_t
+pm_implicit_array_write_flags(const pm_node_t *node, pm_node_flags_t flags) {
+    if (PM_NODE_TYPE_P(node, PM_ARRAY_NODE) && ((const pm_array_node_t *) node)->opening_loc.start == NULL) {
+        return flags;
+    }
+    return 0;
+}
+
+/**
  * Initialize a new ClassVariableWriteNode node from a ClassVariableRead node.
  */
 static pm_class_variable_write_node_t *
@@ -3420,6 +3436,7 @@ pm_class_variable_write_node_create(pm_parser_t *parser, pm_class_variable_read_
     *node = (pm_class_variable_write_node_t) {
         {
             .type = PM_CLASS_VARIABLE_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = read_node->base.location.start,
                 .end = value->location.end
@@ -3546,6 +3563,7 @@ pm_constant_path_write_node_create(pm_parser_t *parser, pm_constant_path_node_t 
     *node = (pm_constant_path_write_node_t) {
         {
             .type = PM_CONSTANT_PATH_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = target->base.location.start,
                 .end = value->location.end
@@ -3663,6 +3681,7 @@ pm_constant_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *targ
     *node = (pm_constant_write_node_t) {
         {
             .type = PM_CONSTANT_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = target->base.location.start,
                 .end = value->location.end
@@ -4561,6 +4580,7 @@ pm_global_variable_write_node_create(pm_parser_t *parser, pm_node_t *target, con
     *node = (pm_global_variable_write_node_t) {
         {
             .type = PM_GLOBAL_VARIABLE_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = target->location.start,
                 .end = value->location.end
@@ -5060,6 +5080,7 @@ pm_instance_variable_write_node_create(pm_parser_t *parser, pm_instance_variable
     *node = (pm_instance_variable_write_node_t) {
         {
             .type = PM_INSTANCE_VARIABLE_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = read_node->base.location.start,
                 .end = value->location.end
@@ -5698,6 +5719,7 @@ pm_local_variable_write_node_create(pm_parser_t *parser, pm_constant_id_t name, 
     *node = (pm_local_variable_write_node_t) {
         {
             .type = PM_LOCAL_VARIABLE_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = name_loc->start,
                 .end = value->location.end
@@ -5941,6 +5963,7 @@ pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, 
     *node = (pm_multi_write_node_t) {
         {
             .type = PM_MULTI_WRITE_NODE,
+            .flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
             .location = {
                 .start = target->base.location.start,
                 .end = value->location.end
@@ -13400,7 +13423,8 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     call->base.location.end = arguments->base.location.end;
 
                     parse_write_name(parser, &call->name);
-                    pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
+                    pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
+
                     return (pm_node_t *) call;
                 }
             }
@@ -13418,7 +13442,8 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
                 // Replace the name with "[]=".
                 call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
-                pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
+                pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
+
                 return target;
             }
 
@@ -17712,6 +17737,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+
+            // Unary .. and ... are special because these are non-associative
+            // operators that can also be unary operators. In this case we need
+            // to explicitly reject code that has a .. or ... that follows this
+            // expression.
+            if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
+                pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+            }
+
             return (pm_node_t *) pm_range_node_create(parser, NULL, &operator, right);
         }
         case PM_TOKEN_FLOAT:
@@ -18379,7 +18413,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if (accept1(parser, PM_TOKEN_LESS_LESS)) {
                 pm_token_t operator = parser->previous;
-                pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_NOT, true, PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS);
+                pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS);
 
                 pm_parser_scope_push(parser, true);
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
@@ -20125,6 +20159,11 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CASE_WRITABLE: {
                     parser_lex(parser);
                     pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+
+                    if (PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) && previous_binding_power != PM_BINDING_POWER_STATEMENT) {
+                        pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_MULTI_WRITE);
+                    }
+
                     return parse_write(parser, node, &token, value);
                 }
                 case PM_SPLAT_NODE: {
@@ -20949,19 +20988,11 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         case PM_POST_EXECUTION_NODE:
         case PM_ALIAS_GLOBAL_VARIABLE_NODE:
         case PM_ALIAS_METHOD_NODE:
+        case PM_MULTI_WRITE_NODE:
         case PM_UNDEF_NODE:
             // These expressions are statements, and cannot be followed by
             // operators (except modifiers).
             if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
-                return node;
-            }
-            break;
-        case PM_RANGE_NODE:
-            // Range operators are non-associative, so that it does not
-            // associate with other range operators (i.e. `..1..` should be
-            // rejected). For this reason, we check such a case for unary ranges
-            // here, and if so, it returns the node immediately.
-            if ((((pm_range_node_t *) node)->left == NULL) && pm_binding_powers[parser->current.type].left >= PM_BINDING_POWER_RANGE) {
                 return node;
             }
             break;
@@ -20978,6 +21009,31 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         current_binding_powers.binary
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call);
+
+        switch (PM_NODE_TYPE(node)) {
+            case PM_CLASS_VARIABLE_WRITE_NODE:
+            case PM_CONSTANT_PATH_WRITE_NODE:
+            case PM_CONSTANT_WRITE_NODE:
+            case PM_GLOBAL_VARIABLE_WRITE_NODE:
+            case PM_INSTANCE_VARIABLE_WRITE_NODE:
+            case PM_LOCAL_VARIABLE_WRITE_NODE:
+                // These expressions are statements, by virtue of the right-hand
+                // side of their write being an implicit array.
+                if (PM_NODE_FLAG_P(node, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY) && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    return node;
+                }
+                break;
+            case PM_CALL_NODE:
+                // These expressions are also statements, by virtue of the
+                // right-hand side of the expression (i.e., the last argument to
+                // the call node) being an implicit array.
+                if (PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY) && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    return node;
+                }
+                break;
+            default:
+                break;
+        }
 
         if (current_binding_powers.nonassoc) {
             bool endless_range_p = PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL;

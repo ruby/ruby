@@ -115,19 +115,22 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
     return out;
 }
 
+/// Dump dissassembly for a range in a [CodeBlock]. VM lock required.
 #[cfg(feature = "disasm")]
 pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
-    use std::fs::File;
-    use std::io::Write;
-
     for (start_addr, end_addr) in cb.writable_addrs(start_addr, end_addr) {
         let disasm = disasm_addr_range(cb, start_addr, end_addr);
         if disasm.len() > 0 {
             match dump_disasm {
                 DumpDisasm::Stdout => println!("{disasm}"),
-                DumpDisasm::File(path) => {
-                    let mut f = File::options().create(true).append(true).open(path).unwrap();
-                    f.write_all(disasm.as_bytes()).unwrap();
+                DumpDisasm::File(fd) => {
+                    use std::os::unix::io::{FromRawFd, IntoRawFd};
+                    use std::io::Write;
+
+                    // Write with the fd opened during boot
+                    let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
+                    file.write_all(disasm.as_bytes()).unwrap();
+                    file.into_raw_fd(); // keep the fd open
                 }
             };
         }
