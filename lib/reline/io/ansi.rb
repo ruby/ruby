@@ -347,6 +347,13 @@ class Reline::ANSI < Reline::IO
 
   def set_winch_handler(&handler)
     @old_winch_handler = Signal.trap('WINCH', &handler)
+    @old_cont_handler = Signal.trap('CONT') do
+      @input.raw!(intr: true) if @input.tty?
+      # Rerender the screen. Note that screen size might be changed while suspended.
+      handler.call
+    end
+  rescue ArgumentError
+    # Signal.trap may raise an ArgumentError if the platform doesn't support the signal.
   end
 
   def prep
@@ -360,5 +367,6 @@ class Reline::ANSI < Reline::IO
     # Disable bracketed paste
     @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste && both_tty?
     Signal.trap('WINCH', @old_winch_handler) if @old_winch_handler
+    Signal.trap('CONT', @old_cont_handler) if @old_cont_handler
   end
 end
