@@ -8253,7 +8253,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
             ADD_TRACE(ret, RUBY_EVENT_CLASS);
         }
 
