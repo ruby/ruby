@@ -48,12 +48,14 @@ module Bundler
       spec
     end
 
-    def pre_install_checks
-      super
-    rescue Gem::FilePermissionError
-      # Ignore permission checks in RubyGems. Instead, go on, and try to write
-      # for real. We properly handle permission errors when they happen.
-      nil
+    if Bundler.rubygems.provides?("< 3.5")
+      def pre_install_checks
+        super
+      rescue Gem::FilePermissionError
+        # Ignore permission checks in RubyGems. Instead, go on, and try to write
+        # for real. We properly handle permission errors when they happen.
+        nil
+      end
     end
 
     def generate_plugins
