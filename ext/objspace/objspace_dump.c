@@ -313,9 +313,6 @@ reachable_object_i(VALUE ref, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    if (dc->cur_obj_klass == ref)
-        return;
-
     if (dc->cur_obj_references == 0) {
         dump_append(dc, ", \"references\":[");
         dump_append_ref(dc, ref);
