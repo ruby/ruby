@@ -196,6 +196,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_return # [ruby-dev:38701]
+    pend if RUBY_DESCRIPTION.include?("+PRISM")
+
     events = []
     name = "#{self.class}\##{__method__}"
     eval <<-EOF.gsub(/^.*?: /, ""), nil, name
@@ -244,6 +246,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_return2 # [ruby-core:24463]
+    pend if RUBY_DESCRIPTION.include?("+PRISM")
+
     events = []
     name = "#{self.class}\##{__method__}"
     eval <<-EOF.gsub(/^.*?: /, ""), nil, name
