@@ -901,6 +901,36 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when bundle bin dir does not have write access", :permissions do
+    let(:bin_dir) { bundled_app("vendor/#{Bundler.ruby_scope}/bin") }
+
+    before do
+      FileUtils.mkdir_p(bin_dir)
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-w", bin_dir)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, raise_on_error: false
+      ensure
+        FileUtils.chmod("+w", bin_dir)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to write to `#{bin_dir}`. " \
+        "It is likely that you need to grant write permissions for that path."
+      )
+    end
+  end
+
   describe "when bundle extensions path does not have write access", :permissions do
     let(:extensions_path) { bundled_app("vendor/#{Bundler.ruby_scope}/extensions/#{Gem::Platform.local}/#{Gem.extension_api_version}") }
 
