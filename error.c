@@ -1176,14 +1176,16 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
     FILE *out = stderr;
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
-    fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
+    fputs(expr, out);
 
     if (fmt && *fmt) {
         va_list args;
         va_start(args, fmt);
+        fputs(": ", out);
         vfprintf(out, fmt, args);
         va_end(args);
     }
+    fprintf(out, "\n%s\n\n", rb_dynamic_description);
 
     preface_dump(out);
     rb_vm_bugreport(NULL, out);
