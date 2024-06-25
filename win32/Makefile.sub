@@ -592,6 +592,12 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
+update-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline
+
+install-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install
+
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(hdrdir)/ruby/version.h $(ABI_VERSION_HDR) \
