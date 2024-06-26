@@ -71,7 +71,7 @@ The following bundled gems are updated.
 * rake 13.2.1
 * test-unit 3.6.2
 * rexml 3.3.1
-* net-ftp 0.3.6
+* net-ftp 0.3.7
 * net-imap 0.4.14
 * net-smtp 0.5.0
 * rbs 3.5.1
