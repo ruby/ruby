@@ -3953,11 +3953,11 @@ end
 
   def test_validate_for_resolution_validates_required_attributes
     e = assert_raise Gem::InvalidSpecificationException do
-      @a1.version = nil
+      @a1.name = nil
       @a1.validate_for_resolution
     end
 
-    assert_equal "missing value for attribute version", e.message
+    assert_equal "missing value for attribute name", e.message
   end
 
   def test_validate_for_resolution_validates_name
