@@ -142,7 +142,9 @@ jobs:
         run: cl
 
       - name: Install libraries with vcpkg
-        run: nmake install-vcpkg
+        run: |
+          vcpkg install --triplet x64-windows
+        working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
@@ -160,6 +162,8 @@ jobs:
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/x64-windows
+
+      - run: nmake prepare-vcpkg
 
       - run: nmake incs
 
