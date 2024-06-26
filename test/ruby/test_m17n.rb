@@ -1721,6 +1721,17 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
   end
 
+  def test_encoding_names_of_default_internal
+    # [Bug #20595]
+    assert_separately(%w(-W0), "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      Encoding.default_internal = Encoding::ASCII_8BIT
+      names = Encoding.default_internal.names
+      Encoding.default_internal = nil
+      assert_include names, "int" + "ernal", "[Bug #20595]"
+    end;
+  end
+
   def test_greek_capital_gap
     bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
     assert_equal("\u03A3", "\u03A1".succ, bug12204)
