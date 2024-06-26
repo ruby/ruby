@@ -803,6 +803,25 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Open a file with given flags, and protect access with flock
+
+  def self.open_file_with_flock(path, flags, &block)
+    File.open(path, flags) do |io|
+      begin
+        io.flock(File::LOCK_EX)
+      rescue Errno::ENOSYS, Errno::ENOTSUP
+      end
+      yield io
+    end
+  rescue Errno::ENOLCK # NFS
+    if Thread.main != Thread.current
+      raise
+    else
+      open_file_without_flock(path, flags, &block)
+    end
+  end
+
+  ##
   # The path to the running Ruby interpreter.
 
   def self.ruby
@@ -1297,22 +1316,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     attr_reader :pre_uninstall_hooks
 
     private
-
-    def open_file_with_flock(path, flags, &block)
-      File.open(path, flags) do |io|
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
-        end
-        yield io
-      end
-    rescue Errno::ENOLCK # NFS
-      if Thread.main != Thread.current
-        raise
-      else
-        open_file_without_flock(path, flags, &block)
-      end
-    end
 
     def open_file_without_flock(path, flags, &block)
       File.open(path, flags, &block)
