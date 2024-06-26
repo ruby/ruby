@@ -1797,10 +1797,11 @@ RSpec.describe "bundle lock" do
       G
     end
 
-    it "locks ruby specs" do
+    it "locks both ruby and platform specific specs" do
       checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
-        c.no_checksum "nokogiri", "1.14.2"
+        c.checksum gem_repo4, "nokogiri", "1.14.2"
+        c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
       end
 
       simulate_platform "x86_64-linux" do
@@ -1818,6 +1819,7 @@ RSpec.describe "bundle lock" do
           remote: https://gem.repo4/
           specs:
             nokogiri (1.14.2)
+            nokogiri (1.14.2-x86_64-linux)
 
         PLATFORMS
           ruby
@@ -1829,6 +1831,73 @@ RSpec.describe "bundle lock" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+    end
+
+    context "and a lockfile with platform specific gems only already exists" do
+      before do
+        checksums = checksums_section_when_enabled do |c|
+          c.no_checksum "foo", "1.0"
+          c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
+        end
+
+        lockfile <<~L
+          PATH
+            remote: .
+            specs:
+              foo (1.0)
+                nokogiri
+
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              nokogiri (1.14.2-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            foo!
+          #{checksums}
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "keeps platform specific gems" do
+        checksums = checksums_section_when_enabled do |c|
+          c.no_checksum "foo", "1.0"
+          c.checksum gem_repo4, "nokogiri", "1.14.2"
+          c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
+        end
+
+        simulate_platform "x86_64-linux" do
+          bundle "install"
+        end
+
+        expect(lockfile).to eq <<~L
+          PATH
+            remote: .
+            specs:
+              foo (1.0)
+                nokogiri
+
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              nokogiri (1.14.2)
+              nokogiri (1.14.2-x86_64-linux)
+
+          PLATFORMS
+            ruby
+            x86_64-linux
+
+          DEPENDENCIES
+            foo!
+          #{checksums}
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
     end
   end
 

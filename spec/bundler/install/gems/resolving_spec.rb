@@ -673,4 +673,55 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(err).to end_with(nice_error)
     end
   end
+
+  context "when non platform specific gems bring more dependencies", :truffleruby_only do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0" do |s|
+          s.add_dependency "bar"
+        end
+
+        build_gem "foo", "2.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem "bar"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "foo"
+      G
+    end
+
+    it "locks both ruby and current platform, and resolve to ruby variants that install on truffleruby" do
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "foo", "1.0"
+        c.checksum gem_repo4, "bar", "1.0"
+      end
+
+      simulate_platform "x86_64-linux" do
+        bundle "install"
+
+        expect(lockfile).to eq <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              bar (1.0)
+              foo (1.0)
+                bar
+
+          PLATFORMS
+            ruby
+            x86_64-linux
+
+          DEPENDENCIES
+            foo
+          #{checksums}
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+    end
+  end
 end
