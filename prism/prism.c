@@ -7539,6 +7539,29 @@ pm_unless_node_end_keyword_loc_set(pm_unless_node_t *node, const pm_token_t *end
 }
 
 /**
+ * Loop modifiers could potentially modify an expression that contains block
+ * exits. In this case we need to loop through them and remove them from the
+ * list of block exits so that they do not later get marked as invalid.
+ */
+static void
+pm_loop_modifier_block_exits(pm_parser_t *parser, pm_statements_node_t *statements) {
+    assert(parser->current_block_exits != NULL);
+
+    // All of the block exits that we want to remove should be within the
+    // statements, and since we are modifying the statements, we shouldn't have
+    // to check the end location.
+    const uint8_t *start = statements->base.location.start;
+
+    for (size_t index = parser->current_block_exits->size; index > 0; index--) {
+        pm_node_t *block_exit = parser->current_block_exits->nodes[index - 1];
+        if (block_exit->location.start < start) break;
+
+        // Implicitly remove from the list by lowering the size.
+        parser->current_block_exits->size--;
+    }
+}
+
+/**
  * Allocate a new UntilNode node.
  */
 static pm_until_node_t *
@@ -7571,6 +7594,7 @@ static pm_until_node_t *
 pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_ALLOC_NODE(parser, pm_until_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
+    pm_loop_modifier_block_exits(parser, statements);
 
     *node = (pm_until_node_t) {
         {
@@ -7677,6 +7701,7 @@ static pm_while_node_t *
 pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
+    pm_loop_modifier_block_exits(parser, statements);
 
     *node = (pm_while_node_t) {
         {
@@ -15052,11 +15077,8 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
  * context. If it isn't, add an error to the parser.
  */
 static void
-parse_block_exit(pm_parser_t *parser, pm_node_t *node, const char *type) {
-    pm_context_node_t *context_node = parser->current_context;
-    bool through_expression = false;
-
-    while (context_node != NULL) {
+parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
+    for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
             case PM_CONTEXT_BLOCK_BRACES:
             case PM_CONTEXT_BLOCK_KEYWORDS:
@@ -15090,65 +15112,49 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node, const char *type) {
             case PM_CONTEXT_SCLASS_RESCUE:
                 // These are the bad cases. We're not allowed to have a block
                 // exit in these contexts.
-
-                if (through_expression) {
-                    // If we get here, then we're about to mark this block exit
-                    // as invalid. However, it could later _become_ valid if we
-                    // find a trailing while/until on the expression. In this
-                    // case instead of adding the error here, we'll add the
-                    // block exit to the list of exits for the expression, and
-                    // the node parsing will handle validating it instead.
-                    assert(parser->current_block_exits != NULL);
-                    pm_node_list_append(parser->current_block_exits, node);
-                } else {
-                    // Otherwise, if we haven't gone through an expression
-                    // context, then this is just invalid and we'll add the
-                    // error here.
-                    PM_PARSER_ERR_NODE_FORMAT(parser, node, PM_ERR_INVALID_BLOCK_EXIT, type);
-                }
-
+                //
+                // If we get here, then we're about to mark this block exit
+                // as invalid. However, it could later _become_ valid if we
+                // find a trailing while/until on the expression. In this
+                // case instead of adding the error here, we'll add the
+                // block exit to the list of exits for the expression, and
+                // the node parsing will handle validating it instead.
+                assert(parser->current_block_exits != NULL);
+                pm_node_list_append(parser->current_block_exits, node);
                 return;
+            case PM_CONTEXT_BEGIN_ELSE:
+            case PM_CONTEXT_BEGIN_ENSURE:
+            case PM_CONTEXT_BEGIN_RESCUE:
+            case PM_CONTEXT_BEGIN:
+            case PM_CONTEXT_CASE_IN:
+            case PM_CONTEXT_CASE_WHEN:
+            case PM_CONTEXT_CLASS_ELSE:
+            case PM_CONTEXT_CLASS_ENSURE:
+            case PM_CONTEXT_CLASS_RESCUE:
+            case PM_CONTEXT_CLASS:
+            case PM_CONTEXT_DEFAULT_PARAMS:
+            case PM_CONTEXT_ELSE:
+            case PM_CONTEXT_ELSIF:
+            case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_FOR_INDEX:
+            case PM_CONTEXT_IF:
+            case PM_CONTEXT_MODULE_ELSE:
+            case PM_CONTEXT_MODULE_ENSURE:
+            case PM_CONTEXT_MODULE_RESCUE:
+            case PM_CONTEXT_MODULE:
+            case PM_CONTEXT_PARENS:
+            case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_RESCUE_MODIFIER:
+            case PM_CONTEXT_TERNARY:
+            case PM_CONTEXT_UNLESS:
+                // In these contexts we should continue walking up the list of
+                // contexts.
+                break;
             case PM_CONTEXT_NONE:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
-            case PM_CONTEXT_BEGIN:
-            case PM_CONTEXT_BEGIN_ELSE:
-            case PM_CONTEXT_BEGIN_ENSURE:
-            case PM_CONTEXT_BEGIN_RESCUE:
-            case PM_CONTEXT_CASE_IN:
-            case PM_CONTEXT_CASE_WHEN:
-            case PM_CONTEXT_CLASS:
-            case PM_CONTEXT_CLASS_ELSE:
-            case PM_CONTEXT_CLASS_ENSURE:
-            case PM_CONTEXT_CLASS_RESCUE:
-            case PM_CONTEXT_ELSE:
-            case PM_CONTEXT_ELSIF:
-            case PM_CONTEXT_IF:
-            case PM_CONTEXT_MODULE:
-            case PM_CONTEXT_MODULE_ELSE:
-            case PM_CONTEXT_MODULE_ENSURE:
-            case PM_CONTEXT_MODULE_RESCUE:
-            case PM_CONTEXT_PARENS:
-            case PM_CONTEXT_RESCUE_MODIFIER:
-            case PM_CONTEXT_TERNARY:
-            case PM_CONTEXT_UNLESS:
-                // If we got to an expression that could be modified by a
-                // trailing while/until, then we'll track that we have gotten
-                // here because we need to know it if this block exit is later
-                // marked as invalid.
-                through_expression = true;
-                break;
-            case PM_CONTEXT_EMBEXPR:
-            case PM_CONTEXT_DEFAULT_PARAMS:
-            case PM_CONTEXT_FOR_INDEX:
-            case PM_CONTEXT_PREDICATE:
-                // In these contexts we should continue walking up the list of
-                // contexts.
-                break;
         }
-
-        context_node = context_node->prev;
     }
 }
 
@@ -15164,6 +15170,30 @@ push_block_exits(pm_parser_t *parser, pm_node_list_t *current_block_exits) {
 }
 
 /**
+ * If we did not match a trailing while/until and this was the last chance to do
+ * so, then all of the block exits in the list are invalid and we need to add an
+ * error for each of them.
+ */
+static void
+flush_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
+    pm_node_t *block_exit;
+    PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
+        const char *type;
+
+        switch (PM_NODE_TYPE(block_exit)) {
+            case PM_BREAK_NODE: type = "break"; break;
+            case PM_NEXT_NODE: type = "next"; break;
+            case PM_REDO_NODE: type = "redo"; break;
+            default: assert(false && "unreachable"); type = ""; break;
+        }
+
+        PM_PARSER_ERR_NODE_FORMAT(parser, block_exit, PM_ERR_INVALID_BLOCK_EXIT, type);
+    }
+
+    parser->current_block_exits = previous_block_exits;
+}
+
+/**
  * Pop the current level of block exits from the parser, and add errors to the
  * parser if any of them are deemed to be invalid.
  */
@@ -15173,6 +15203,7 @@ pop_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
         // If we matched a trailing while/until, then all of the block exits in
         // the contained list are valid. In this case we do not need to do
         // anything.
+        parser->current_block_exits = previous_block_exits;
     } else if (previous_block_exits != NULL) {
         // If we did not matching a trailing while/until, then all of the block
         // exits contained in the list are invalid for this specific context.
@@ -15180,26 +15211,13 @@ pop_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
         // there is another list above this one. In this case we'll push all of
         // the block exits up to the previous list.
         pm_node_list_concat(previous_block_exits, parser->current_block_exits);
+        parser->current_block_exits = previous_block_exits;
     } else {
         // If we did not match a trailing while/until and this was the last
         // chance to do so, then all of the block exits in the list are invalid
         // and we need to add an error for each of them.
-        pm_node_t *block_exit;
-        PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
-            const char *type;
-
-            switch (PM_NODE_TYPE(block_exit)) {
-                case PM_BREAK_NODE: type = "break"; break;
-                case PM_NEXT_NODE: type = "next"; break;
-                case PM_REDO_NODE: type = "redo"; break;
-                default: assert(false && "unreachable"); type = ""; break;
-            }
-
-            PM_PARSER_ERR_NODE_FORMAT(parser, block_exit, PM_ERR_INVALID_BLOCK_EXIT, type);
-        }
+        flush_block_exits(parser, previous_block_exits);
     }
-
-    parser->current_block_exits = previous_block_exits;
 }
 
 static inline pm_node_t *
@@ -18305,6 +18323,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) begin_node;
         }
         case PM_TOKEN_KEYWORD_BEGIN_UPCASE: {
+            pm_node_list_t current_block_exits = { 0 };
+            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
             if (binding_power != PM_BINDING_POWER_STATEMENT) {
                 pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
             }
@@ -18321,6 +18342,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if ((context != PM_CONTEXT_MAIN) && (context != PM_CONTEXT_PREEXE)) {
                 pm_parser_err_token(parser, &keyword, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
             }
+
+            flush_block_exits(parser, previous_block_exits);
+            pm_node_list_free(&current_block_exits);
+
             return (pm_node_t *) pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
         }
         case PM_TOKEN_KEYWORD_BREAK:
@@ -18345,12 +18370,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             switch (keyword.type) {
                 case PM_TOKEN_KEYWORD_BREAK: {
                     pm_node_t *node = (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
-                    if (!parser->parsing_eval) parse_block_exit(parser, node, "break");
+                    if (!parser->parsing_eval) parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_NEXT: {
                     pm_node_t *node = (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
-                    if (!parser->parsing_eval) parse_block_exit(parser, node, "next");
+                    if (!parser->parsing_eval) parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_RETURN: {
@@ -18411,6 +18436,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t class_keyword = parser->previous;
             pm_do_loop_stack_push(parser, false);
 
+            pm_node_list_t current_block_exits = { 0 };
+            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
             if (accept1(parser, PM_TOKEN_LESS_LESS)) {
                 pm_token_t operator = parser->previous;
                 pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS);
@@ -18438,11 +18466,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_parser_scope_pop(parser);
                 pm_do_loop_stack_pop(parser);
 
+                flush_block_exits(parser, previous_block_exits);
+                pm_node_list_free(&current_block_exits);
+
                 return (pm_node_t *) pm_singleton_class_node_create(parser, &locals, &class_keyword, &operator, expression, statements, &parser->previous);
             }
-
-            pm_node_list_t current_block_exits = { 0 };
-            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
             pm_node_t *constant_path = parse_expression(parser, PM_BINDING_POWER_INDEX, false, PM_ERR_CLASS_NAME);
             pm_token_t name = parser->previous;
@@ -18508,6 +18536,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) pm_class_node_create(parser, &locals, &class_keyword, constant_path, &name, &inheritance_operator, superclass, statements, &parser->previous);
         }
         case PM_TOKEN_KEYWORD_DEF: {
+            pm_node_list_t current_block_exits = { 0 };
+            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
             pm_token_t def_keyword = parser->current;
 
             pm_node_t *receiver = NULL;
@@ -18767,6 +18798,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
              * the @ in the same way we do for symbols.
              */
             pm_constant_id_t name_id = pm_parser_constant_id_location(parser, name.start, parse_operator_symbol_name(&name));
+
+            flush_block_exits(parser, previous_block_exits);
+            pm_node_list_free(&current_block_exits);
 
             return (pm_node_t *) pm_def_node_create(
                 parser,
@@ -19039,7 +19073,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *node = (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
-            if (!parser->parsing_eval) parse_block_exit(parser, node, "redo");
+            if (!parser->parsing_eval) parse_block_exit(parser, node);
 
             return node;
         }
@@ -21186,6 +21220,9 @@ parse_program(pm_parser_t *parser) {
         pm_parser_scope_push(parser, true);
     }
 
+    pm_node_list_t current_block_exits = { 0 };
+    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
     parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN);
 
@@ -21214,6 +21251,9 @@ parse_program(pm_parser_t *parser) {
     // node with a while loop based on the options.
     if (parser->command_line & (PM_OPTIONS_COMMAND_LINE_P | PM_OPTIONS_COMMAND_LINE_N)) {
         statements = wrap_statements(parser, statements);
+    } else {
+        flush_block_exits(parser, previous_block_exits);
+        pm_node_list_free(&current_block_exits);
     }
 
     return (pm_node_t *) pm_program_node_create(parser, &locals, statements);
