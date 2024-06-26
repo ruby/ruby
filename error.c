@@ -3374,57 +3374,36 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  * NoMemoryError
  *  * ScriptError
- *
  *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
  *    * NotImplementedError
  *    * SyntaxError
- *
  *  * SecurityError
  *  * SignalException
- *
  *    * Interrupt
- *
  *  * StandardError
- *
  *    * ArgumentError
- *
  *      * UncaughtThrowError
- *
  *    * EncodingError
  *    * FiberError
  *    * IOError
- *
  *      * EOFError
- *
  *    * IndexError
- *
  *      * KeyError
  *      * StopIteration
- *
  *        * ClosedQueueError
- *
  *    * LocalJumpError
  *    * NameError
- *
  *      * NoMethodError
- *
  *    * RangeError
- *
  *      * FloatDomainError
- *
  *    * RegexpError
  *    * RuntimeError
- *
  *      * FrozenError
- *
  *    * SystemCallError
- *
  *      * Errno (and its subclasses, representing system errors)
- *
  *    * ThreadError
  *    * TypeError
  *    * ZeroDivisionError
- *
  *  * SystemExit
  *  * SystemStackError
  *  * {fatal}[https://docs.ruby-lang.org/en/master/fatal.html]
