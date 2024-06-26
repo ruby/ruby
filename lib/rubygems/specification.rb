@@ -546,9 +546,9 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_runtime_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_dependency 'example', '~> 1.1', '>= 1.1.4'
 
-  def add_runtime_dependency(gem, *requirements)
+  def add_dependency(gem, *requirements)
     if requirements.uniq.size != requirements.size
       warn "WARNING: duplicated #{gem} dependency #{requirements}"
     end
@@ -1504,7 +1504,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   private :add_dependency_with_type
 
-  alias_method :add_dependency, :add_runtime_dependency
+  alias_method :add_runtime_dependency, :add_dependency
 
   ##
   # Adds this spec's require paths to LOAD_PATH, in the proper location.
