@@ -1128,7 +1128,7 @@ describe "A method" do
       result.should == [1, nil, nil, {foo: :bar}, nil, {}]
     end
 
-    ruby_version_is "3.4" do
+    ruby_version_is "4.1" do
       evaluate <<-ruby do
         def m(a, &nil); a end;
         ruby

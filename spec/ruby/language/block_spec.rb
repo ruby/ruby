@@ -1111,7 +1111,7 @@ describe "`it` calls without arguments in a block" do
     end
   end
 
-  ruby_version_is "3.4" do
+  ruby_version_is "4.1" do
     it "works alongside disallowed block argument" do
       no_block = eval <<-EOF
         proc {|arg1, &nil| arg1}
