@@ -3433,6 +3433,7 @@ method_inspect(VALUE method)
         const VALUE keyrest = ID2SYM(rb_intern("keyrest"));
         const VALUE block = ID2SYM(rb_intern("block"));
         const VALUE nokey = ID2SYM(rb_intern("nokey"));
+        const VALUE noblock = ID2SYM(rb_intern("noblock"));
         int forwarding = 0;
 
         rb_str_buf_cat2(str, "(");
@@ -3465,6 +3466,9 @@ method_inspect(VALUE method)
                     name = rb_str_new2("block");
                 }
                 else if (kind == nokey) {
+                    name = rb_str_new2("nil");
+                }
+                else if (kind == noblock) {
                     name = rb_str_new2("nil");
                 }
                 else {
@@ -3518,6 +3522,9 @@ method_inspect(VALUE method)
             }
             else if (kind == nokey) {
                 rb_str_buf_cat2(str, "**nil");
+            }
+            else if (kind == noblock) {
+                rb_str_buf_cat2(str, "&nil");
             }
 
             if (i < RARRAY_LEN(params) - 1) {

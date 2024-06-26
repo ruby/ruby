@@ -172,4 +172,12 @@ describe "Proc#parameters" do
       eval("lambda { it }").parameters.should == [[:req]]
     end
   end
+
+  ruby_version_is "4.1" do
+    it "returns :noblock for &nil parameter" do
+      eval <<~RUBY
+        proc { |&nil| }.parameters.should == [[:noblock]]
+      RUBY
+    end
+  end
 end
