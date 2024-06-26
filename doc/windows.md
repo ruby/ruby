@@ -78,6 +78,7 @@ make
     * dumpbin
 
 4.  If you want to build from GIT source, following commands are required.
+    * git
     * patch
     * sed
     * ruby 3.0 or later
@@ -85,7 +86,7 @@ make
     You can use [scoop](https://scoop.sh/) to install them like:
 
     ```
-    scoop install git ruby sed patch
+    scoop install git patch sed ruby
     ```
 
 5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
