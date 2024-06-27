@@ -1368,32 +1368,32 @@ RSpec.describe "the lockfile format" do
       end
     end
 
-    simulate_platform "universal-java-16"
+    simulate_platform "universal-java-16" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "platform_specific"
+      G
 
-    install_gemfile <<-G
-      source "https://gem.repo2"
-      gem "platform_specific"
-    G
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
+      end
 
-    checksums = checksums_section_when_existing do |c|
-      c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
+      expect(lockfile).to eq <<~G
+        GEM
+          remote: https://gem.repo2/
+          specs:
+            platform_specific (1.0-universal-java-16)
+
+        PLATFORMS
+          universal-java-16
+
+        DEPENDENCIES
+          platform_specific
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
     end
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: https://gem.repo2/
-        specs:
-          platform_specific (1.0-universal-java-16)
-
-      PLATFORMS
-        universal-java-16
-
-      DEPENDENCIES
-        platform_specific
-      #{checksums}
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    G
   end
 
   it "does not add duplicate gems" do

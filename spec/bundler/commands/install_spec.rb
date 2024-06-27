@@ -258,34 +258,36 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "falls back on plain ruby" do
-        simulate_platform "foo-bar-baz"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "foo-bar-baz" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+          expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+        end
       end
 
       it "installs gems for java" do
-        simulate_platform "java"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "java" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 java")
+          expect(the_bundle).to include_gems("platform_specific 1.0 java")
+        end
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32
+        simulate_platform x86_mswin32 do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
-
-        expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
+        end
       end
     end
 

@@ -1108,7 +1108,7 @@ RSpec.describe "bundle update in more complicated situations" do
   end
 
   context "when the lockfile is for a different platform" do
-    before do
+    around do |example|
       build_repo4 do
         build_gem("a", "0.9")
         build_gem("a", "0.9") {|s| s.platform = "java" }
@@ -1134,7 +1134,7 @@ RSpec.describe "bundle update in more complicated situations" do
           a
       L
 
-      simulate_platform linux
+      simulate_platform linux, &example
     end
 
     it "allows updating" do
@@ -1172,14 +1172,14 @@ RSpec.describe "bundle update in more complicated situations" do
         DEPENDENCIES
           a
       L
-
-      simulate_platform linux
     end
 
     it "is not updated because it is not actually included in the bundle" do
-      bundle "update a"
-      expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
-      expect(the_bundle).to_not include_gem "a"
+      simulate_platform linux do
+        bundle "update a"
+        expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
+        expect(the_bundle).to_not include_gem "a"
+      end
     end
   end
 end

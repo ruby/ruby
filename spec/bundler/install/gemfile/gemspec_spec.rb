@@ -180,22 +180,22 @@ RSpec.describe "bundle install from an existing gemspec" do
   end
 
   it "should match a lockfile without needing to re-resolve with development dependencies" do
-    simulate_platform java
+    simulate_platform java do
+      build_lib("foo", path: tmp("foo")) do |s|
+        s.add_dependency "myrack"
+        s.add_development_dependency "thin"
+      end
 
-    build_lib("foo", path: tmp("foo")) do |s|
-      s.add_dependency "myrack"
-      s.add_development_dependency "thin"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gemspec :path => '#{tmp("foo")}'
+      G
+
+      bundle "install", verbose: true
+
+      message = "Found no changes, using resolution from the lockfile"
+      expect(out.scan(message).size).to eq(1)
     end
-
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gemspec :path => '#{tmp("foo")}'
-    G
-
-    bundle "install", verbose: true
-
-    message = "Found no changes, using resolution from the lockfile"
-    expect(out.scan(message).size).to eq(1)
   end
 
   it "should match a lockfile on non-ruby platforms with a transitive platform dependency", :jruby_only do

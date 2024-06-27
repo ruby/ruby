@@ -40,14 +40,15 @@ RSpec.describe "bundle install across platforms" do
         platform_specific
     G
 
-    simulate_platform "java"
-    install_gemfile <<-G
-      source "https://gem.repo1"
+    simulate_platform "java" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
 
-      gem "platform_specific"
-    G
+        gem "platform_specific"
+      G
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 java"
+      expect(the_bundle).to include_gems "platform_specific 1.0 java"
+    end
   end
 
   it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby_only do
@@ -106,15 +107,16 @@ RSpec.describe "bundle install across platforms" do
           darwin_single_arch
       G
 
-      simulate_platform "universal-darwin-21"
-      simulate_ruby_platform "universal.x86_64-darwin21" do
-        install_gemfile <<-G
-          source "https://gem.repo4"
+      simulate_platform "universal-darwin-21" do
+        simulate_ruby_platform "universal.x86_64-darwin21" do
+          install_gemfile <<-G
+            source "https://gem.repo4"
 
-          gem "darwin_single_arch"
-        G
+            gem "darwin_single_arch"
+          G
 
-        expect(the_bundle).to include_gems "darwin_single_arch 1.0 x86_64-darwin"
+          expect(the_bundle).to include_gems "darwin_single_arch 1.0 x86_64-darwin"
+        end
       end
     end
 
@@ -134,41 +136,42 @@ RSpec.describe "bundle install across platforms" do
           darwin_single_arch
       G
 
-      simulate_platform "universal-darwin-21"
-      simulate_ruby_platform "universal.arm64e-darwin21" do
-        install_gemfile <<-G
-          source "https://gem.repo4"
+      simulate_platform "universal-darwin-21" do
+        simulate_ruby_platform "universal.arm64e-darwin21" do
+          install_gemfile <<-G
+            source "https://gem.repo4"
 
-          gem "darwin_single_arch"
-        G
+            gem "darwin_single_arch"
+          G
 
-        expect(the_bundle).to include_gems "darwin_single_arch 1.0 arm64-darwin"
+          expect(the_bundle).to include_gems "darwin_single_arch 1.0 arm64-darwin"
+        end
       end
     end
   end
 
   it "works with gems that have different dependencies" do
-    simulate_platform "java"
-    install_gemfile <<-G
-      source "https://gem.repo1"
+    simulate_platform "java" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
 
-      gem "nokogiri"
-    G
+        gem "nokogiri"
+      G
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
-    simulate_new_machine
-    bundle "config set --local force_ruby_platform true"
-    bundle "install"
+      simulate_new_machine
+      bundle "config set --local force_ruby_platform true"
+      bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2"
-    expect(the_bundle).not_to include_gems "weakling"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2"
+      expect(the_bundle).not_to include_gems "weakling"
 
-    simulate_new_machine
-    simulate_platform "java"
-    bundle "install"
+      simulate_new_machine
+      bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
+    end
   end
 
   it "does not keep unneeded platforms for gems that are used" do
@@ -191,165 +194,165 @@ RSpec.describe "bundle install across platforms" do
       build_gem("ffi", "1.9.23")
     end
 
-    simulate_platform java
+    simulate_platform java do
+      install_gemfile <<-G
+        source "https://gem.repo4"
 
-    install_gemfile <<-G
-      source "https://gem.repo4"
+        gem "empyrean", "0.1.0"
+        gem "pry"
+      G
 
-      gem "empyrean", "0.1.0"
-      gem "pry"
-    G
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo4, "coderay", "1.1.2"
+        c.checksum gem_repo4, "empyrean", "0.1.0"
+        c.checksum gem_repo4, "ffi", "1.9.23", "java"
+        c.checksum gem_repo4, "method_source", "0.9.0"
+        c.checksum gem_repo4, "pry", "0.11.3", "java"
+        c.checksum gem_repo4, "spoon", "0.0.6"
+      end
 
-    checksums = checksums_section_when_existing do |c|
-      c.checksum gem_repo4, "coderay", "1.1.2"
-      c.checksum gem_repo4, "empyrean", "0.1.0"
-      c.checksum gem_repo4, "ffi", "1.9.23", "java"
-      c.checksum gem_repo4, "method_source", "0.9.0"
-      c.checksum gem_repo4, "pry", "0.11.3", "java"
-      c.checksum gem_repo4, "spoon", "0.0.6"
-    end
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            coderay (1.1.2)
+            empyrean (0.1.0)
+            ffi (1.9.23-java)
+            method_source (0.9.0)
+            pry (0.11.3-java)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
+              spoon (~> 0.0)
+            spoon (0.0.6)
+              ffi
 
-    expect(lockfile).to eq <<~L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          coderay (1.1.2)
-          empyrean (0.1.0)
-          ffi (1.9.23-java)
-          method_source (0.9.0)
-          pry (0.11.3-java)
-            coderay (~> 1.1.0)
-            method_source (~> 0.9.0)
-            spoon (~> 0.0)
-          spoon (0.0.6)
-            ffi
+        PLATFORMS
+          java
 
-      PLATFORMS
-        java
+        DEPENDENCIES
+          empyrean (= 0.1.0)
+          pry
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
 
-      DEPENDENCIES
-        empyrean (= 0.1.0)
-        pry
-      #{checksums}
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
+      bundle "lock --add-platform ruby"
 
-    bundle "lock --add-platform ruby"
+      good_lockfile = <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            coderay (1.1.2)
+            empyrean (0.1.0)
+            ffi (1.9.23-java)
+            method_source (0.9.0)
+            pry (0.11.3)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
+            pry (0.11.3-java)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
+              spoon (~> 0.0)
+            spoon (0.0.6)
+              ffi
 
-    good_lockfile = <<~L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          coderay (1.1.2)
-          empyrean (0.1.0)
-          ffi (1.9.23-java)
-          method_source (0.9.0)
-          pry (0.11.3)
-            coderay (~> 1.1.0)
-            method_source (~> 0.9.0)
-          pry (0.11.3-java)
-            coderay (~> 1.1.0)
-            method_source (~> 0.9.0)
-            spoon (~> 0.0)
-          spoon (0.0.6)
-            ffi
+        PLATFORMS
+          java
+          ruby
 
-      PLATFORMS
-        java
-        ruby
+        DEPENDENCIES
+          empyrean (= 0.1.0)
+          pry
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
 
-      DEPENDENCIES
-        empyrean (= 0.1.0)
-        pry
-      #{checksums}
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    expect(lockfile).to eq good_lockfile
-
-    bad_lockfile = <<~L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          coderay (1.1.2)
-          empyrean (0.1.0)
-          ffi (1.9.23)
-          ffi (1.9.23-java)
-          method_source (0.9.0)
-          pry (0.11.3)
-            coderay (~> 1.1.0)
-            method_source (~> 0.9.0)
-          pry (0.11.3-java)
-            coderay (~> 1.1.0)
-            method_source (~> 0.9.0)
-            spoon (~> 0.0)
-          spoon (0.0.6)
-            ffi
-
-      PLATFORMS
-        java
-        ruby
-
-      DEPENDENCIES
-        empyrean (= 0.1.0)
-        pry
-      #{checksums}
-      BUNDLED WITH
-         1.16.1
-    L
-
-    aggregate_failures do
-      lockfile bad_lockfile
-      bundle :install, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
-      lockfile bad_lockfile
-      bundle :update, all: true, env: { "BUNDLER_VERSION" => Bundler::VERSION }
-      expect(lockfile).to eq good_lockfile
+      bad_lockfile = <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            coderay (1.1.2)
+            empyrean (0.1.0)
+            ffi (1.9.23)
+            ffi (1.9.23-java)
+            method_source (0.9.0)
+            pry (0.11.3)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
+            pry (0.11.3-java)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
+              spoon (~> 0.0)
+            spoon (0.0.6)
+              ffi
 
-      lockfile bad_lockfile
-      bundle "update ffi", env: { "BUNDLER_VERSION" => Bundler::VERSION }
-      expect(lockfile).to eq good_lockfile
+        PLATFORMS
+          java
+          ruby
 
-      lockfile bad_lockfile
-      bundle "update empyrean", env: { "BUNDLER_VERSION" => Bundler::VERSION }
-      expect(lockfile).to eq good_lockfile
+        DEPENDENCIES
+          empyrean (= 0.1.0)
+          pry
+        #{checksums}
+        BUNDLED WITH
+           1.16.1
+      L
 
-      lockfile bad_lockfile
-      bundle :lock, env: { "BUNDLER_VERSION" => Bundler::VERSION }
-      expect(lockfile).to eq good_lockfile
+      aggregate_failures do
+        lockfile bad_lockfile
+        bundle :install, env: { "BUNDLER_VERSION" => Bundler::VERSION }
+        expect(lockfile).to eq good_lockfile
+
+        lockfile bad_lockfile
+        bundle :update, all: true, env: { "BUNDLER_VERSION" => Bundler::VERSION }
+        expect(lockfile).to eq good_lockfile
+
+        lockfile bad_lockfile
+        bundle "update ffi", env: { "BUNDLER_VERSION" => Bundler::VERSION }
+        expect(lockfile).to eq good_lockfile
+
+        lockfile bad_lockfile
+        bundle "update empyrean", env: { "BUNDLER_VERSION" => Bundler::VERSION }
+        expect(lockfile).to eq good_lockfile
+
+        lockfile bad_lockfile
+        bundle :lock, env: { "BUNDLER_VERSION" => Bundler::VERSION }
+        expect(lockfile).to eq good_lockfile
+      end
     end
   end
 
   it "works with gems with platform-specific dependency having different requirements order" do
-    simulate_platform x64_mac
+    simulate_platform x64_mac do
+      update_repo2 do
+        build_gem "fspath", "3"
+        build_gem "image_optim_pack", "1.2.3" do |s|
+          s.add_dependency "fspath", ">= 2.1", "< 4"
+        end
+        build_gem "image_optim_pack", "1.2.3" do |s|
+          s.platform = "universal-darwin"
+          s.add_dependency "fspath", "< 4", ">= 2.1"
+        end
+      end
 
-    update_repo2 do
-      build_gem "fspath", "3"
-      build_gem "image_optim_pack", "1.2.3" do |s|
-        s.add_dependency "fspath", ">= 2.1", "< 4"
-      end
-      build_gem "image_optim_pack", "1.2.3" do |s|
-        s.platform = "universal-darwin"
-        s.add_dependency "fspath", "< 4", ">= 2.1"
-      end
+      install_gemfile <<-G
+        source "https://gem.repo2"
+      G
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "image_optim_pack"
+      G
+
+      expect(err).not_to include "Unable to use the platform-specific"
+
+      expect(the_bundle).to include_gem "image_optim_pack 1.2.3 universal-darwin"
     end
-
-    install_gemfile <<-G
-      source "https://gem.repo2"
-    G
-
-    install_gemfile <<-G
-      source "https://gem.repo2"
-
-      gem "image_optim_pack"
-    G
-
-    expect(err).not_to include "Unable to use the platform-specific"
-
-    expect(the_bundle).to include_gem "image_optim_pack 1.2.3 universal-darwin"
   end
 
   it "fetches gems again after changing the version of Ruby" do
@@ -610,23 +613,23 @@ end
 
 RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
-    simulate_platform x86_mswin32
-
-    build_repo2 do
-      # The rcov gem is platform mswin32, but has no arch
-      build_gem "rcov" do |s|
-        s.platform = Gem::Platform.new([nil, "mswin32", nil])
-        s.write "lib/rcov.rb", "RCOV = '1.0.0'"
+    simulate_platform x86_mswin32 do
+      build_repo2 do
+        # The rcov gem is platform mswin32, but has no arch
+        build_gem "rcov" do |s|
+          s.platform = Gem::Platform.new([nil, "mswin32", nil])
+          s.write "lib/rcov.rb", "RCOV = '1.0.0'"
+        end
       end
+
+      gemfile <<-G
+        # Try to install gem with nil arch
+        source "http://localgemserver.test/"
+        gem "rcov"
+      G
+
+      bundle :install, artifice: "windows", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      expect(the_bundle).to include_gems "rcov 1.0.0"
     end
-
-    gemfile <<-G
-      # Try to install gem with nil arch
-      source "http://localgemserver.test/"
-      gem "rcov"
-    G
-
-    bundle :install, artifice: "windows", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-    expect(the_bundle).to include_gems "rcov 1.0.0"
   end
 end
