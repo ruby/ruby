@@ -1291,7 +1291,7 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
     VALUE *arg = (VALUE *)args;
 
     if ((int)idx == (int)arg[0]) {
-        VALUE str = rb_fstring_cstr((char *)name);
+        VALUE str = rb_interned_str_cstr((char *)name);
         rb_ary_push(arg[1], str);
     }
     return ST_CONTINUE;
