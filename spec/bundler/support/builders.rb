@@ -27,8 +27,6 @@ module Spec
     end
 
     def build_repo1
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
@@ -231,12 +229,9 @@ module Spec
     end
 
     def check_test_gems!
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       if rake_path.nil?
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
-        rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
       end
 
       if rake_path.nil?
