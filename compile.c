@@ -1439,14 +1439,14 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 {
     VM_ASSERT(argc >= 0);
 
-    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
-        kw_arg == NULL && !has_blockiseq) {
-        flag |= VM_CALL_ARGS_SIMPLE;
-    }
-
     if (kw_arg) {
         flag |= VM_CALL_KWARG;
         argc += kw_arg->keyword_len;
+    }
+
+    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))
+        && !has_blockiseq) {
+        flag |= VM_CALL_ARGS_SIMPLE;
     }
 
     ISEQ_BODY(iseq)->ci_size++;
