@@ -1742,14 +1742,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
-        gem "ruport", "= 1.7.0.3", :source => "https://localgemserver.test/extra"
+        gem "ruport", "= 1.7.0.3", :source => "https://gem.repo4/extra"
       G
     end
 
     it "handles that fine" do
-      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra"
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1758,12 +1758,12 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 
         GEM
-          remote: https://localgemserver.test/extra/
+          remote: https://gem.repo4/extra/
           specs:
             ruport (1.7.0.3)
               pdf-writer (= 1.1.8)
@@ -1800,14 +1800,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
-        gem "ruport", "= 1.7.0.3", :source => "https://localgemserver.test/extra"
+        gem "ruport", "= 1.7.0.3", :source => "https://gem.repo4/extra"
       G
     end
 
     it "handles that fine" do
-      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra"
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1816,12 +1816,12 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 
         GEM
-          remote: https://localgemserver.test/extra/
+          remote: https://gem.repo4/extra/
           specs:
             ruport (1.7.0.3)
               pdf-writer (= 1.1.8)
@@ -1852,14 +1852,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
         gem "pdf-writer", "= 1.1.8"
       G
     end
 
     it "handles that fine" do
-      bundle "install --verbose", artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "endpoint"
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1867,7 +1867,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 

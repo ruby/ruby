@@ -210,9 +210,9 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        install_gemfile <<-G
           ruby "#{Gem.ruby_version}"
-          source "http://localgemserver.test/"
+          source "https://gem.repo2"
           gem 'myrack'
         G
 
@@ -231,9 +231,9 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        install_gemfile <<-G, artifice: "endpoint"
           ruby "#{Gem.ruby_version}"
-          source "http://localgemserver.test/"
+          source "https://gem.repo2"
           gem 'myrack'
         G
 
@@ -254,7 +254,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
 
           gemfile <<-G
-            source "http://localgemserver.test/"
+            source "https://gem.repo2"
             gem 'parallel_tests'
           G
 
@@ -264,7 +264,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           lockfile <<~L
             GEM
-              remote: http://localgemserver.test/
+              remote: https://gem.repo2/
               specs:
                 parallel_tests (3.8.0)
 
@@ -280,7 +280,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         it "automatically updates lockfile to use the older version" do
-          bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          bundle "install --verbose"
 
           checksums = checksums_section_when_existing do |c|
             c.checksum gem_repo2, "parallel_tests", "3.7.0"
@@ -288,7 +288,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           expect(lockfile).to eq <<~L
             GEM
-              remote: http://localgemserver.test/
+              remote: https://gem.repo2/
               specs:
                 parallel_tests (3.7.0)
 
@@ -305,7 +305,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "gives a meaningful error if we're in frozen mode" do
           expect do
-            bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s, "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+            bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
           end.not_to change { lockfile }
 
           expect(err).to include("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}")
@@ -338,7 +338,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
 
           gemfile <<-G
-            source "http://localgemserver.test/"
+            source "https://gem.repo2"
             gem 'rubocop'
           G
 
@@ -349,7 +349,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           lockfile <<~L
             GEM
-              remote: http://localgemserver.test/
+              remote: https://gem.repo2/
               specs:
                 rubocop (1.35.0)
                   rubocop-ast (>= 1.20.1, < 2.0)
@@ -367,7 +367,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         it "automatically updates lockfile to use the older compatible versions" do
-          bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          bundle "install --verbose"
 
           checksums = checksums_section_when_existing do |c|
             c.checksum gem_repo2, "rubocop", "1.28.2"
@@ -376,7 +376,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           expect(lockfile).to eq <<~L
             GEM
-              remote: http://localgemserver.test/
+              remote: https://gem.repo2/
               specs:
                 rubocop (1.28.2)
                   rubocop-ast (>= 1.17.0, < 2.0)
@@ -540,9 +540,9 @@ RSpec.describe "bundle install with install-time dependencies" do
           build_gem "foo1", "1.0"
         end
 
-        install_gemfile <<-G, artifice: "compact_index_rate_limited", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+        install_gemfile <<-G, artifice: "compact_index_rate_limited"
           ruby "#{Gem.ruby_version}"
-          source "http://localgemserver.test/"
+          source "https://gem.repo4"
           gem 'myrack'
           gem 'foo1'
         G
@@ -564,9 +564,9 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         simulate_platform x86_mingw32 do
-          install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+          install_gemfile <<-G, artifice: "compact_index"
             ruby "#{Gem.ruby_version}"
-            source "http://localgemserver.test/"
+            source "https://gem.repo4"
             gem 'myrack'
           G
         end
@@ -590,8 +590,8 @@ RSpec.describe "bundle install with install-time dependencies" do
       let(:error_message_requirement) { "= #{Gem.ruby_version}" }
 
       it "raises a proper error that mentions the current Ruby version during resolution" do
-        install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, raise_on_error: false
-          source "http://localgemserver.test/"
+        install_gemfile <<-G, raise_on_error: false
+          source "https://gem.repo2"
           gem 'require_ruby'
         G
 
@@ -611,8 +611,8 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, raise_on_error: false
-            source "http://localgemserver.test/"
+          install_gemfile <<-G, raise_on_error: false
+            source "https://gem.repo2"
             ruby #{ruby_requirement}
             gem 'require_ruby'
           G

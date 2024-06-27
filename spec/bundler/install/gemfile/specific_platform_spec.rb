@@ -149,12 +149,12 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     it "still installs the generic ruby variant if necessary" do
-      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose"
       expect(out).to include("Installing nokogiri 1.3.10")
     end
 
     it "still installs the generic ruby variant if necessary, even in frozen mode" do
-      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
+      bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
   end
@@ -176,14 +176,14 @@ RSpec.describe "bundle install with specific platforms" do
       bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
 
       gemfile <<-G
-        source "https://localgemserver.test"
+        source "https://gem.repo2"
         gem "libv8"
       G
 
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo2/
           specs:
             libv8 (8.4.255.0)
 
@@ -197,10 +197,10 @@ RSpec.describe "bundle install with specific platforms" do
            2.1.4
       L
 
-      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "install --verbose", env: { "BUNDLER_VERSION" => "2.1.4" }
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
-      bundle "add mini_racer --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "add mini_racer --verbose"
       expect(out).to include("Using libv8 8.4.255.0 (universal-darwin)")
     end
   end
@@ -213,14 +213,14 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<-G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
         gem "grpc"
       G
 
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             grpc (1.50.0)
 
@@ -234,7 +234,7 @@ RSpec.describe "bundle install with specific platforms" do
            #{Bundler::VERSION}
       L
 
-      bundle "install --verbose", artifice: "compact_index_precompiled_before", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "compact_index_precompiled_before"
       expect(out).to include("Installing grpc 1.50.0 (universal-darwin)")
     end
   end
@@ -1331,7 +1331,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     simulate_platform "x86_64-linux" do
-      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose"
 
       # locks all compatible platforms, excluding Java and Windows
       expect(lockfile).to eq(<<~L)
@@ -1378,7 +1378,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     simulate_platform "x86_64-linux" do
-      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose"
 
       expect(lockfile).to eq(<<~L)
         GEM
@@ -1418,7 +1418,7 @@ RSpec.describe "bundle install with specific platforms" do
         G
 
         simulate_platform host_platform do
-          bundle "lock", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+          bundle "lock"
 
           expect(lockfile).to eq(<<~L)
             GEM
@@ -1460,7 +1460,7 @@ RSpec.describe "bundle install with specific platforms" do
     G
 
     simulate_platform "x86_64-linux-musl" do
-      bundle "lock", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "lock"
 
       expect(lockfile).to eq(<<~L)
         GEM
@@ -1496,7 +1496,7 @@ RSpec.describe "bundle install with specific platforms" do
     G
 
     simulate_platform "x86_64-darwin-15" do
-      bundle "lock", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "lock"
 
       expect(lockfile).to eq(<<~L)
         GEM
