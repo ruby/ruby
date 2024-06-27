@@ -674,7 +674,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "writes current Ruby version to Gemfile.lock" do
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
         expect(lockfile).to eq <<~L
          GEM
            remote: https://gem.repo1/
@@ -699,7 +699,7 @@ RSpec.describe "bundle install with gem sources" do
           source "https://gem.repo1"
         G
 
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
 
         expect(lockfile).to eq <<~L
          GEM
@@ -1249,7 +1249,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle "install", artifice: "compact_index"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "crass", "1.0.6"
         c.checksum gem_repo4, "loofah", "2.12.0"
         c.checksum gem_repo4, "nokogiri", "1.12.4", "x86_64-darwin"

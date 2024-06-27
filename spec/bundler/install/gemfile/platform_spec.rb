@@ -202,7 +202,7 @@ RSpec.describe "bundle install across platforms" do
         gem "pry"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "coderay", "1.1.2"
         c.checksum gem_repo4, "empyrean", "0.1.0"
         c.checksum gem_repo4, "ffi", "1.9.23", "java"
@@ -238,6 +238,8 @@ RSpec.describe "bundle install across platforms" do
       L
 
       bundle "lock --add-platform ruby"
+
+      checksums.checksum gem_repo4, "pry", "0.11.3"
 
       good_lockfile = <<~L
         GEM
@@ -372,7 +374,7 @@ RSpec.describe "bundle install across platforms" do
   end
 
   it "keeps existing platforms when installing with force_ruby_platform" do
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo1, "platform_specific", "1.0"
       c.checksum gem_repo1, "platform_specific", "1.0", "java"
     end
@@ -584,7 +586,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
       DEPENDENCIES
         myrack
-      #{checksums_section_when_existing}
+      #{checksums_section_when_enabled}
       BUNDLED WITH
          #{Bundler::VERSION}
     L

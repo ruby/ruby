@@ -368,7 +368,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         gemspec :path => "../foo"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
       end
 
@@ -463,7 +463,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 ruby"
 
-            checksums = checksums_section_when_existing do |c|
+            checksums = checksums_section_when_enabled do |c|
               c.no_checksum "foo", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0", "java"
@@ -504,7 +504,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 ruby"
 
-            checksums = checksums_section_when_existing do |c|
+            checksums = checksums_section_when_enabled do |c|
               c.no_checksum "foo", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0", "java"
@@ -546,7 +546,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 ruby"
 
-            checksums = checksums_section_when_existing do |c|
+            checksums = checksums_section_when_enabled do |c|
               c.no_checksum "foo", "1.0"
               c.checksum gem_repo2, "indirect_platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
@@ -641,7 +641,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         gemspec :path => "../chef"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "chef", "17.1.17"
         c.no_checksum "chef", "17.1.17", "universal-mingw32"
         c.checksum gem_repo4, "win32-api", "1.5.3", "universal-mingw32"
@@ -705,9 +705,9 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "does not remove the platform specific specs from the lockfile when re-resolving due to gemspec changes" do
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "activeadmin", "2.9.0"
-        c.no_checksum "jruby-openssl", "0.10.7", "java"
+        c.checksum gem_repo4, "jruby-openssl", "0.10.7", "java"
         c.checksum gem_repo4, "railties", "6.1.4"
       end
 

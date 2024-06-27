@@ -66,7 +66,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       gemfile google_protobuf
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo2, "google-protobuf", "3.0.0.alpha.4.0"
       end
 
@@ -528,7 +528,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "update"
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "sorbet", "0.5.10160"
       c.checksum gem_repo4, "sorbet-runtime", "0.5.10160"
       c.checksum gem_repo4, "sorbet-static", "0.5.10160", Gem::Platform.local
@@ -584,9 +584,9 @@ RSpec.describe "bundle install with specific platforms" do
       G
     end
 
-    checksums = checksums_section_when_existing do |c|
-      c.no_checksum "nokogiri", "1.13.0", "x86_64-darwin"
-      c.no_checksum "sorbet-static", "0.5.10601", "x86_64-darwin"
+    checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "nokogiri", "1.13.0", "x86_64-darwin"
+      c.checksum gem_repo4, "sorbet-static", "0.5.10601", "x86_64-darwin"
     end
 
     lockfile <<~L
@@ -680,7 +680,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "update"
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "sorbet", "0.5.10160"
       c.checksum gem_repo4, "sorbet-runtime", "0.5.10160"
       c.checksum gem_repo4, "sorbet-static", "0.5.10160", Gem::Platform.local
@@ -755,7 +755,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       bundle "update"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "nokogiri", "1.14.0", "x86_64-linux"
         c.checksum gem_repo4, "sorbet-static", "0.5.10696", "x86_64-linux"
       end
@@ -799,7 +799,7 @@ RSpec.describe "bundle install with specific platforms" do
         gem "sorbet-static", "= 0.5.10549"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-20"
         c.checksum gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-21"
       end
@@ -822,8 +822,6 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "install"
-
-      checksums.no_checksum "sorbet-static", "0.5.10549", "universal-darwin-21"
 
       expect(lockfile).to eq <<~L
         GEM
@@ -917,7 +915,7 @@ RSpec.describe "bundle install with specific platforms" do
       gem "tzinfo", "~> 1.2", platform: :#{not_local_tag}
     G
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "nokogiri", "1.13.8"
       c.checksum gem_repo4, "nokogiri", "1.13.8", Gem::Platform.local
     end
@@ -963,9 +961,8 @@ RSpec.describe "bundle install with specific platforms" do
       gem "tzinfo", "~> 1.2", platforms: %i[mingw mswin x64_mingw jruby]
     G
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "nokogiri", "1.13.8"
-      c.checksum gem_repo4, "nokogiri", "1.13.8", "arm64-darwin"
     end
 
     original_lockfile = <<~L
@@ -1007,9 +1004,9 @@ RSpec.describe "bundle install with specific platforms" do
       gem "myrack"
     G
 
-    checksums = checksums_section_when_existing do |c|
-      c.no_checksum "concurrent-ruby", "1.2.2"
-      c.no_checksum "myrack", "3.0.7"
+    checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "concurrent-ruby", "1.2.2"
+      c.checksum gem_repo4, "myrack", "3.0.7"
     end
 
     lockfile <<~L
@@ -1104,7 +1101,7 @@ RSpec.describe "bundle install with specific platforms" do
         gem "nokogiri", "1.14.0"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "nokogiri", "1.14.0", "x86_64-linux"
       end
 
@@ -1126,7 +1123,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       bundle :install
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "nokogiri", "1.14.0"
       end
 
@@ -1235,10 +1232,10 @@ RSpec.describe "bundle install with specific platforms" do
 
       bundle "lock"
 
-      checksums = checksums_section_when_existing do |c|
-        c.no_checksum "nokogiri", "1.14.0"
-        c.no_checksum "nokogiri", "1.14.0", "arm-linux"
-        c.no_checksum "nokogiri", "1.14.0", "x86_64-linux"
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "nokogiri", "1.14.0"
+        c.checksum gem_repo4, "nokogiri", "1.14.0", "arm-linux"
+        c.checksum gem_repo4, "nokogiri", "1.14.0", "x86_64-linux"
       end
 
       # locks all compatible platforms, excluding Java and Windows
@@ -1274,8 +1271,8 @@ RSpec.describe "bundle install with specific platforms" do
       bundle "lock"
 
       checksums.delete "nokogiri", "arm-linux"
-      checksums.no_checksum "sorbet-static", "0.5.10696", "universal-darwin-22"
-      checksums.no_checksum "sorbet-static", "0.5.10696", "x86_64-linux"
+      checksums.checksum gem_repo4, "sorbet-static", "0.5.10696", "universal-darwin-22"
+      checksums.checksum gem_repo4, "sorbet-static", "0.5.10696", "x86_64-linux"
 
       # locks only platforms compatible with all gems in the bundle
       expect(lockfile).to eq(<<~L)
@@ -1324,9 +1321,9 @@ RSpec.describe "bundle install with specific platforms" do
       gem "sass-embedded"
     G
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "nokogiri", "1.15.5"
-      c.no_checksum "sass-embedded", "1.69.5"
+      c.checksum gem_repo4, "sass-embedded", "1.69.5"
       c.checksum gem_repo4, "sass-embedded", "1.69.5", "x86_64-linux-gnu"
     end
 
@@ -1373,7 +1370,7 @@ RSpec.describe "bundle install with specific platforms" do
       gem "nokogiri"
     G
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "nokogiri", "1.15.5", "x86_64-linux"
     end
 
@@ -1420,6 +1417,11 @@ RSpec.describe "bundle install with specific platforms" do
         simulate_platform host_platform do
           bundle "lock"
 
+          checksums = checksums_section_when_enabled do |c|
+            c.checksum gem_repo4, "rcee_precompiled", "0.5.0", "x86_64-linux"
+            c.checksum gem_repo4, "rcee_precompiled", "0.5.0", "x86_64-linux-musl"
+          end
+
           expect(lockfile).to eq(<<~L)
             GEM
               remote: https://gem.repo4/
@@ -1433,7 +1435,7 @@ RSpec.describe "bundle install with specific platforms" do
 
             DEPENDENCIES
               rcee_precompiled (= 0.5.0)
-
+            #{checksums}
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -1462,6 +1464,11 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-linux-musl" do
       bundle "lock"
 
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "rcee_precompiled", "0.5.0", "x86_64-linux-gnu"
+        c.checksum gem_repo4, "rcee_precompiled", "0.5.0", "x86_64-linux-musl"
+      end
+
       expect(lockfile).to eq(<<~L)
         GEM
           remote: https://gem.repo4/
@@ -1475,7 +1482,7 @@ RSpec.describe "bundle install with specific platforms" do
 
         DEPENDENCIES
           rcee_precompiled (= 0.5.0)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -1498,6 +1505,10 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       bundle "lock"
 
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "rcee_precompiled", "0.5.0", "universal-darwin"
+      end
+
       expect(lockfile).to eq(<<~L)
         GEM
           remote: https://gem.repo4/
@@ -1509,7 +1520,7 @@ RSpec.describe "bundle install with specific platforms" do
 
         DEPENDENCIES
           rcee_precompiled (= 0.5.0)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L

@@ -297,6 +297,7 @@ RSpec.describe "bundle cache" do
 
       simulate_new_machine
 
+      FileUtils.rm bundled_app_lock
       bundle :install, raise_on_error: false
 
       expect(err).to eq <<~E.strip

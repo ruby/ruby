@@ -282,7 +282,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         it "automatically updates lockfile to use the older version" do
           bundle "install --verbose"
 
-          checksums = checksums_section_when_existing do |c|
+          checksums = checksums_section_when_enabled do |c|
             c.checksum gem_repo2, "parallel_tests", "3.7.0"
           end
 
@@ -369,7 +369,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         it "automatically updates lockfile to use the older compatible versions" do
           bundle "install --verbose"
 
-          checksums = checksums_section_when_existing do |c|
+          checksums = checksums_section_when_enabled do |c|
             c.checksum gem_repo2, "rubocop", "1.28.2"
             c.checksum gem_repo2, "rubocop-ast", "1.17.0"
           end

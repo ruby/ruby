@@ -275,7 +275,7 @@ RSpec.describe "bundle update" do
         gem "countries"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum(gem_repo4, "countries", "3.1.0")
         c.checksum(gem_repo4, "country_select", "5.1.0")
       end
@@ -510,7 +510,7 @@ RSpec.describe "bundle update" do
 
       original_lockfile = lockfile
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "activesupport", "6.0.4.1"
         c.checksum gem_repo4, "tzinfo", "1.2.9"
       end
@@ -536,10 +536,6 @@ RSpec.describe "bundle update" do
       bundle "update activesupport"
       expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
       expect(lockfile).to eq(expected_lockfile)
-
-      # needed because regressing to versions already present on the system
-      # won't add a checksum
-      expected_lockfile = remove_checksums_from_lockfile(expected_lockfile)
 
       lockfile original_lockfile
       bundle "update"
@@ -1249,7 +1245,7 @@ RSpec.describe "bundle update --ruby" do
          #{lockfile_platforms}
 
        DEPENDENCIES
-
+       #{checksums_section_when_enabled}
        BUNDLED WITH
           #{Bundler::VERSION}
       L
@@ -1281,7 +1277,7 @@ RSpec.describe "bundle update --ruby" do
           #{lockfile_platforms}
 
         DEPENDENCIES
-
+        #{checksums_section_when_enabled}
         RUBY VERSION
            #{Bundler::RubyVersion.system}
 
@@ -1369,7 +1365,7 @@ RSpec.describe "bundle update --bundler" do
       build_gem "myrack", "1.0"
     end
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
     end
 
@@ -1428,7 +1424,7 @@ RSpec.describe "bundle update --bundler" do
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
     end
 
@@ -1623,7 +1619,7 @@ RSpec.describe "bundle update --bundler" do
 
     # Only updates properly on modern RubyGems.
     if Gem.rubygems_version >= Gem::Version.new("3.3.0.dev")
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum(gem_repo4, "myrack", "1.0")
       end
 
@@ -1664,7 +1660,7 @@ RSpec.describe "bundle update --bundler" do
     expect(out).not_to include("Fetching gem metadata from https://rubygems.org/")
 
     # Only updates properly on modern RubyGems.
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
     end
 
@@ -1905,7 +1901,7 @@ RSpec.describe "bundle update conservative" do
     it "should only change direct dependencies when updating the lockfile with --conservative" do
       bundle "lock --update --conservative"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "isolated_dep", "2.0.1"
         c.checksum gem_repo4, "isolated_owner", "1.0.2"
         c.checksum gem_repo4, "shared_dep", "5.0.1"

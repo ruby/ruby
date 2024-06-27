@@ -268,7 +268,7 @@ RSpec.describe "bundle flex_install" do
     it "should work when you install" do
       bundle "install"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo1, "myrack", "0.9.1"
         c.checksum gem_repo1, "myrack-obama", "1.0"
       end
@@ -313,7 +313,7 @@ RSpec.describe "bundle flex_install" do
         gem "myrack"
       G
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
 

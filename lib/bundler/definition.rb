@@ -115,7 +115,7 @@ module Bundler
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_platforms = []
-        @locked_checksums = nil
+        @locked_checksums = Bundler.feature_flag.bundler_3_mode?
       end
 
       locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
