@@ -621,14 +621,19 @@ module Bundler
     end
 
     def start_resolution
-      @platforms |= [local_platform] if @most_specific_non_local_locked_ruby_platform
+      local_platform_needed_for_resolvability = @most_specific_non_local_locked_ruby_platform && !@platforms.include?(local_platform)
+      @platforms << local_platform if local_platform_needed_for_resolvability
 
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
       if @most_specific_non_local_locked_ruby_platform
-        @platforms.delete(result.incomplete_for_platform?(dependencies, @most_specific_non_local_locked_ruby_platform) ? @most_specific_non_local_locked_ruby_platform : local_platform)
+        if result.incomplete_for_platform?(dependencies, @most_specific_non_local_locked_ruby_platform)
+          @platforms.delete(@most_specific_non_local_locked_ruby_platform)
+        elsif local_platform_needed_for_resolvability
+          @platforms.delete(local_platform)
+        end
       end
 
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?

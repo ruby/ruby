@@ -1032,6 +1032,60 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform x86_64-linux"
   end
 
+  it "adds platform specific gems as necessary, even when adding the current platform" do
+    build_repo4 do
+      build_gem "nokogiri", "1.16.0"
+
+      build_gem "nokogiri", "1.16.0" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "nokogiri"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.16.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-platform x86_64-linux"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.16.0)
+          nokogiri (1.16.0-x86_64-linux)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "does not crash on conflicting ruby requirements between platform versions in two different gems" do
     build_repo4 do
       build_gem "unf_ext", "0.0.8.2"
