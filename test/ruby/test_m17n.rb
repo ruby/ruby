@@ -1722,14 +1722,20 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_encoding_names_of_default_internal
-    # [Bug #20595]
-    assert_separately(%w(-W0), "#{<<~"begin;"}\n#{<<~"end;"}")
-    begin;
-      Encoding.default_internal = Encoding::ASCII_8BIT
-      names = Encoding.default_internal.names
-      Encoding.default_internal = nil
-      assert_include names, "int" + "ernal", "[Bug #20595]"
-    end;
+    # [Bug #20595] [Bug #20598]
+    [
+      "default_internal.names",
+      "name_list",
+      "aliases.keys"
+    ].each do |method|
+      assert_separately(%w(-W0), <<~RUBY)
+        exp_name = "int" + "ernal"
+        Encoding.default_internal = Encoding::ASCII_8BIT
+        name = Encoding.#{method}.find { |x| x == exp_name }
+        Encoding.default_internal = nil
+        assert_equal exp_name, name, "Encoding.#{method} [Bug #20595] [Bug #20598]"
+      RUBY
+    end
   end
 
   def test_greek_capital_gap
