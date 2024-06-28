@@ -55,6 +55,8 @@ extern VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
 extern VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
 extern VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
+extern VALUE cASN1EndOfContent;                      /* END OF CONTENT      */
+
 ASN1_TYPE *ossl_asn1_get_asn1type(VALUE);
 
 void Init_ossl_asn1(void);

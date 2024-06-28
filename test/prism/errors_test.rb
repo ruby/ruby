@@ -261,9 +261,9 @@ module Prism
         ["unexpected ',', expecting end-of-input", 6..7],
         ["unexpected ',', ignoring it", 6..7],
         ["expected a matching `)`", 6..6],
-        ["Invalid next", 0..12],
         ["unexpected ')', expecting end-of-input", 12..13],
-        ["unexpected ')', ignoring it", 12..13]
+        ["unexpected ')', ignoring it", 12..13],
+        ["Invalid next", 0..12]
       ]
     end
 
@@ -279,9 +279,9 @@ module Prism
         ["unexpected ',', expecting end-of-input", 7..8],
         ["unexpected ',', ignoring it", 7..8],
         ["expected a matching `)`", 7..7],
-        ["Invalid break", 0..13],
         ["unexpected ')', expecting end-of-input", 13..14],
-        ["unexpected ')', ignoring it", 13..14]
+        ["unexpected ')', ignoring it", 13..14],
+        ["Invalid break", 0..13]
       ]
     end
 

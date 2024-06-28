@@ -24,7 +24,7 @@ RSpec.describe "bundle update" do
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem 'has_funding_and_other_metadata'
       gem 'has_funding', '< 2.0'
     G
@@ -35,7 +35,7 @@ RSpec.describe "bundle update" do
   context "when listed gems are updated" do
     before do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem 'has_funding_and_other_metadata'
         gem 'has_funding'
       G

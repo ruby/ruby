@@ -75,9 +75,15 @@ module Spec
     end
 
     def install_test_deps
+      Gem.clear_paths
+
       install_gems(test_gemfile, Path.base_system_gems.to_s)
       install_gems(rubocop_gemfile, Path.rubocop_gems.to_s)
       install_gems(standard_gemfile, Path.standard_gems.to_s)
+
+      # For some reason, doing this here crashes on JRuby + Windows. So defer to
+      # when the test suite is running in that case.
+      Helpers.install_dev_bundler unless Gem.win_platform? && RUBY_ENGINE == "jruby"
     end
 
     def check_source_control_changes(success_message:, error_message:)

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../support/silent_logger"
+require_relative "../../support/silent_logger"
 
-RSpec.describe "gemcutter's dependency API", realworld: true do
+RSpec.describe "gemcutter's dependency API" do
   context "when Gemcutter API takes too long to respond" do
     before do
       require_rack
@@ -10,7 +10,7 @@ RSpec.describe "gemcutter's dependency API", realworld: true do
       port = find_unused_port
       @server_uri = "http://127.0.0.1:#{port}"
 
-      require_relative "../support/artifice/endpoint_timeout"
+      require_relative "../../support/artifice/endpoint_timeout"
 
       @t = Thread.new do
         server = Rack::Server.start(app: EndpointTimeout,
@@ -34,13 +34,13 @@ RSpec.describe "gemcutter's dependency API", realworld: true do
     end
 
     it "times out and falls back on the modern index" do
-      install_gemfile <<-G, artifice: nil
+      install_gemfile <<-G, artifice: nil, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
         source "#{@server_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       expect(out).to include("Fetching source index from #{@server_uri}/")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
 end

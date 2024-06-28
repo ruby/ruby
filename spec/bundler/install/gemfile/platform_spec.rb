@@ -4,30 +4,30 @@ RSpec.describe "bundle install across platforms" do
   it "maintains the same lockfile if all gems are compatible across platforms" do
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
-          rack (0.9.1)
+          myrack (0.9.1)
 
       PLATFORMS
         #{not_local}
 
       DEPENDENCIES
-        rack
+        myrack
     G
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
-      gem "rack"
+      gem "myrack"
     G
 
-    expect(the_bundle).to include_gems "rack 0.9.1"
+    expect(the_bundle).to include_gems "myrack 0.9.1"
   end
 
   it "pulls in the correct platform specific gem" do
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}
+        remote: https://gem.repo1
         specs:
           platform_specific (1.0)
           platform_specific (1.0-java)
@@ -42,7 +42,7 @@ RSpec.describe "bundle install across platforms" do
 
     simulate_platform "java"
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       gem "platform_specific"
     G
@@ -53,7 +53,7 @@ RSpec.describe "bundle install across platforms" do
   it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby_only do
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}
+        remote: https://gem.repo1
         specs:
           platform_specific (1.0)
 
@@ -67,7 +67,7 @@ RSpec.describe "bundle install across platforms" do
     bundle "config set --local frozen true"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       gem "platform_specific"
     G
@@ -96,7 +96,7 @@ RSpec.describe "bundle install across platforms" do
     it "pulls in the correct architecture gem" do
       lockfile <<-G
         GEM
-          remote: #{file_uri_for(gem_repo4)}
+          remote: https://gem.repo4
           specs:
             darwin_single_arch (1.0)
             darwin_single_arch (1.0-arm64-darwin)
@@ -112,7 +112,7 @@ RSpec.describe "bundle install across platforms" do
       simulate_platform "universal-darwin-21"
       simulate_ruby_platform "universal.x86_64-darwin21" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
+          source "https://gem.repo4"
 
           gem "darwin_single_arch"
         G
@@ -124,7 +124,7 @@ RSpec.describe "bundle install across platforms" do
     it "pulls in the correct architecture gem on arm64e macOS Ruby" do
       lockfile <<-G
         GEM
-          remote: #{file_uri_for(gem_repo4)}
+          remote: https://gem.repo4
           specs:
             darwin_single_arch (1.0)
             darwin_single_arch (1.0-arm64-darwin)
@@ -140,7 +140,7 @@ RSpec.describe "bundle install across platforms" do
       simulate_platform "universal-darwin-21"
       simulate_ruby_platform "universal.arm64e-darwin21" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
+          source "https://gem.repo4"
 
           gem "darwin_single_arch"
         G
@@ -153,7 +153,7 @@ RSpec.describe "bundle install across platforms" do
   it "works with gems that have different dependencies" do
     simulate_platform "java"
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       gem "nokogiri"
     G
@@ -197,7 +197,7 @@ RSpec.describe "bundle install across platforms" do
     simulate_platform java
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "empyrean", "0.1.0"
       gem "pry"
@@ -214,7 +214,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -242,7 +242,7 @@ RSpec.describe "bundle install across platforms" do
 
     good_lockfile = <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -274,7 +274,7 @@ RSpec.describe "bundle install across platforms" do
 
     bad_lockfile = <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -341,11 +341,11 @@ RSpec.describe "bundle install across platforms" do
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
     G
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
 
       gem "image_optim_pack"
     G
@@ -357,9 +357,9 @@ RSpec.describe "bundle install across platforms" do
 
   it "fetches gems again after changing the version of Ruby" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
-      gem "rack", "1.0.0"
+      gem "myrack", "1.0.0"
     G
 
     bundle "config set --local path vendor/bundle"
@@ -368,18 +368,18 @@ RSpec.describe "bundle install across platforms" do
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))
 
     bundle :install
-    expect(vendored_gems("gems/rack-1.0.0")).to exist
+    expect(vendored_gems("gems/myrack-1.0.0")).to exist
   end
 
   it "keeps existing platforms when installing with force_ruby_platform" do
-    checksums = checksums_section do |c|
-      c.no_checksum "platform_specific", "1.0"
-      c.no_checksum "platform_specific", "1.0", "java"
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo1, "platform_specific", "1.0"
+      c.checksum gem_repo1, "platform_specific", "1.0", "java"
     end
 
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           platform_specific (1.0-java)
 
@@ -394,7 +394,7 @@ RSpec.describe "bundle install across platforms" do
     bundle "config set --local force_ruby_platform true"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "platform_specific"
     G
 
@@ -404,7 +404,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(lockfile).to eq <<~G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           platform_specific (1.0)
           platform_specific (1.0-java)
@@ -425,7 +425,7 @@ end
 RSpec.describe "bundle install with platform conditionals" do
   it "installs gems tagged w/ the current platforms" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       platforms :#{local_tag} do
         gem "nokogiri"
@@ -437,14 +437,14 @@ RSpec.describe "bundle install with platform conditionals" do
 
   it "does not install gems tagged w/ another platforms" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
       platforms :#{not_local_tag} do
         gem "nokogiri"
       end
     G
 
-    expect(the_bundle).to include_gems "rack 1.0"
+    expect(the_bundle).to include_gems "myrack 1.0"
     expect(the_bundle).not_to include_gems "nokogiri 1.4.2"
   end
 
@@ -458,7 +458,7 @@ RSpec.describe "bundle install with platform conditionals" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "activesupport"
 
@@ -469,7 +469,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           activesupport (6.1.4.1)
             tzinfo (~> 2.0)
@@ -493,7 +493,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
   it "installs gems tagged w/ the current platforms inline" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri", :platforms => :#{local_tag}
     G
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
@@ -501,17 +501,17 @@ RSpec.describe "bundle install with platform conditionals" do
 
   it "does not install gems tagged w/ another platforms inline" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
       gem "nokogiri", :platforms => :#{not_local_tag}
     G
-    expect(the_bundle).to include_gems "rack 1.0"
+    expect(the_bundle).to include_gems "myrack 1.0"
     expect(the_bundle).not_to include_gems "nokogiri 1.4.2"
   end
 
   it "installs gems tagged w/ the current platform inline" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri", :platform => :#{local_tag}
     G
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
@@ -519,7 +519,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
   it "doesn't install gems tagged w/ another platform inline" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri", :platform => :#{not_local_tag}
     G
     expect(the_bundle).not_to include_gems "nokogiri 1.4.2"
@@ -529,7 +529,7 @@ RSpec.describe "bundle install with platform conditionals" do
     build_git "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       platform :#{not_local_tag} do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -542,7 +542,7 @@ RSpec.describe "bundle install with platform conditionals" do
     bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "some_gem", :platform => :rbx
     G
 
@@ -553,7 +553,7 @@ RSpec.describe "bundle install with platform conditionals" do
   it "does not attempt to install gems from other rubies when using --local" do
     bundle "config set --local force_ruby_platform true"
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "some_gem", platform: :ruby_22
     G
 
@@ -565,9 +565,9 @@ RSpec.describe "bundle install with platform conditionals" do
     bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
-      gem "rack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
+      gem "myrack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
     G
 
     bundle "install"
@@ -576,14 +576,14 @@ RSpec.describe "bundle install with platform conditionals" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
 
       PLATFORMS
         ruby
 
       DEPENDENCIES
-        rack
+        myrack
       #{checksums_section_when_existing}
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -602,7 +602,7 @@ RSpec.describe "bundle install with platform conditionals" do
     end
 
     install_gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "listen"
       gem "ffi", :platform => :windows

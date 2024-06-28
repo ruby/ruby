@@ -236,6 +236,21 @@ RSpec.describe "The library itself" do
     expect(all_bad_requires).to be_empty, "#{all_bad_requires.size} internal requires that should use `require_relative`: #{all_bad_requires}"
   end
 
+  # We don't want our artifice code to activate bundler, but it needs to use the
+  # namespaced implementation of `Net::HTTP`. So we duplicate the file in
+  # bundler that loads that.
+  it "keeps vendored_net_http spec code in sync with the lib implementation" do
+    lib_implementation_path = File.join(source_lib_dir, "bundler", "vendored_net_http.rb")
+    expect(File.exist?(lib_implementation_path)).to be_truthy
+    lib_code = File.read(lib_implementation_path)
+
+    spec_implementation_path = File.join(spec_dir, "support", "vendored_net_http.rb")
+    expect(File.exist?(spec_implementation_path)).to be_truthy
+    spec_code = File.read(spec_implementation_path)
+
+    expect(lib_code).to eq(spec_code)
+  end
+
   private
 
   def each_line(filename, &block)
