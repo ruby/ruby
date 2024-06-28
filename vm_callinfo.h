@@ -12,8 +12,7 @@
 #include "internal/class.h"
 #include "shape.h"
 
-enum vm_call_flag_bits
-{
+enum vm_call_flag_bits {
     VM_CALL_ARGS_SPLAT_bit,     // m(*args)
     VM_CALL_ARGS_BLOCKARG_bit,  // m(&block)
     VM_CALL_FCALL_bit,          // m(args)   # receiver is self
