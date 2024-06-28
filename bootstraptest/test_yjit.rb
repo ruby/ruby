@@ -5121,3 +5121,23 @@ assert_equal 'ok', <<~'RUBY'
 
   ok(["ok"], ->(x) { x })
 RUBY
+
+assert_equal 'ok', <<~'RUBY'
+def baz(a, b)
+  a + b
+end
+
+def bar(...)
+  baz(...)
+end
+
+def foo(a, ...)
+  bar(a, ...)
+end
+
+def test
+  foo("o", "k")
+end
+
+test
+RUBY

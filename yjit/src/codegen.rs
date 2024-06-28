@@ -6962,7 +6962,6 @@ fn gen_send_iseq(
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
-    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
 
     // Is this iseq tagged as "forwardable"? Iseqs that take `...` as a
     // parameter are tagged as forwardable (e.g. `def foo(...); end`)
@@ -6975,6 +6974,7 @@ fn gen_send_iseq(
     //
     // `def foo(...); end; foo(*blah)`
     let splat_call = (flags & VM_CALL_ARGS_SPLAT != 0) && !forwarding;
+    let kw_splat = (flags & VM_CALL_KW_SPLAT != 0) && !forwarding;
 
     // For computing offsets to callee locals
     let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
