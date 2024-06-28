@@ -39,7 +39,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
-    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
+    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }}
 
     if: >-
       ${{!(false
@@ -94,7 +94,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
+          os: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }}
           test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -129,7 +129,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }}
+          label: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
