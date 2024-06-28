@@ -3478,11 +3478,65 @@ nodes:
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the left-hand side of the operator.
+
+              foo => bar
+              ^^^
       - name: pattern
         type: node
         kind: pattern expression
+        comment: |
+          Represents the right-hand side of the operator. The type of the node depends on the expression.
+
+          Anything that looks like a local variable name (including `_`) will result in a `LocalVariableTargetNode`.
+
+              foo => a # This is equivalent to writing `a = foo`
+                     ^
+
+          Using an explicit `Array` or combining expressions with `,` will result in a `ArrayPatternNode`. This can be preceded by a constant.
+
+              foo => [a]
+                     ^^^
+
+              foo => a, b
+                     ^^^^
+
+              foo => Bar[a, b]
+                     ^^^^^^^^^
+
+          If the array pattern contains at least two wildcard matches, a `FindPatternNode` is created instead.
+
+              foo => *, 1, *a
+                     ^^^^^
+
+          Using an explicit `Hash` or a constant with square brackets and hash keys in the square brackets will result in a `HashPatternNode`.
+
+              foo => { a: 1, b: }
+
+              foo => Bar[a: 1, b:]
+
+              foo => Bar[**]
+
+          To use any variable that needs run time evaluation, pinning is required. This results in a `PinnedVariableNode`
+
+              foo => ^a
+                     ^^
+
+          Similar, any expression can be used with pinning. This results in a `PinnedExpressionNode`.
+
+              foo => ^(a + 1)
+
+          Anything else will result in the regular node for that expression, for example a `ConstantReadNode`.
+
+              foo => CONST
       - name: operator_loc
         type: location
+        comment: |
+          The location of the operator.
+
+              foo => bar
+                  ^^
     comment: |
       Represents the use of the `=>` operator.
 
