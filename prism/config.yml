@@ -992,8 +992,19 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the Array
+
+              foo in Bar[]
+                     ^^^
+
+              foo in Bar[1, 2, 3]
+                     ^^^
+
+              foo in Bar::Baz[1, 2, 3]
+                     ^^^^^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
