@@ -2420,23 +2420,68 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the pattern
+
+              foo in Foo(*bar, baz, *qux)
+                     ^^^
       - name: left
         type: node
         kind: SplatNode
+        comment: |
+          Represents the first wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                     ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                         ^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the nodes in between the wildcards.
+
+              foo in *bar, baz, *qux
+                           ^^^
+
+              foo in Foo(*bar, baz, 1, *qux)
+                               ^^^^^^
       - name: right
         type: node
         kind:
           - SplatNode
           - on error: MissingNode
+        comment: |
+          Represents the second wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                                ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                                    ^^^^
       - name: opening_loc
         type: location?
+        comment: |
+          The location of the openingbrace.
+
+              foo in [*bar, baz, *qux]
+                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                        ^
       - name: closing_loc
         type: location?
+        comment: |
+          The location of the closing brace.
+
+              foo in [*bar, baz, *qux]
+                                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                                        ^
     comment: |
       Represents a find pattern in pattern matching.
 
@@ -2448,6 +2493,9 @@ nodes:
 
           foo in Foo(*bar, baz, *qux)
                  ^^^^^^^^^^^^^^^^^^^^
+
+          foo => *bar, baz, *qux
+                 ^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     flags: RangeFlags
     fields:
