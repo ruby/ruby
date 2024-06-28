@@ -62,7 +62,7 @@ class Endpoint < Sinatra::Base
       return [] if gem_names.nil? || gem_names.empty?
 
       all_specs = %w[specs.4.8 prerelease_specs.4.8].map do |filename|
-        Marshal.load(File.open(gem_repo.join(filename)).read)
+        Marshal.load(File.binread(gem_repo.join(filename)))
       end.inject(:+)
 
       all_specs.map do |name, version, platform|

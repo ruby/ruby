@@ -3,16 +3,16 @@
 RSpec.describe "bundle inject", bundler: "< 3" do
   before :each do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
   end
 
   context "without a lockfile" do
     it "locks with the injected gems" do
       expect(bundled_app_lock).not_to exist
-      bundle "inject 'rack-obama' '> 0'"
-      expect(bundled_app_lock.read).to match(/rack-obama/)
+      bundle "inject 'myrack-obama' '> 0'"
+      expect(bundled_app_lock.read).to match(/myrack-obama/)
     end
   end
 
@@ -22,21 +22,21 @@ RSpec.describe "bundle inject", bundler: "< 3" do
     end
 
     it "adds the injected gems to the Gemfile" do
-      expect(bundled_app_gemfile.read).not_to match(/rack-obama/)
-      bundle "inject 'rack-obama' '> 0'"
-      expect(bundled_app_gemfile.read).to match(/rack-obama/)
+      expect(bundled_app_gemfile.read).not_to match(/myrack-obama/)
+      bundle "inject 'myrack-obama' '> 0'"
+      expect(bundled_app_gemfile.read).to match(/myrack-obama/)
     end
 
     it "locks with the injected gems" do
-      expect(bundled_app_lock.read).not_to match(/rack-obama/)
-      bundle "inject 'rack-obama' '> 0'"
-      expect(bundled_app_lock.read).to match(/rack-obama/)
+      expect(bundled_app_lock.read).not_to match(/myrack-obama/)
+      bundle "inject 'myrack-obama' '> 0'"
+      expect(bundled_app_lock.read).to match(/myrack-obama/)
     end
   end
 
   context "with injected gems already in the Gemfile" do
     it "doesn't add existing gems" do
-      bundle "inject 'rack' '> 0'", raise_on_error: false
+      bundle "inject 'myrack' '> 0'", raise_on_error: false
       expect(err).to match(/cannot specify the same gem twice/i)
     end
   end
@@ -53,25 +53,25 @@ Usage: "bundle inject GEM VERSION"
 
   context "with source option" do
     it "add gem with source option in gemfile" do
-      bundle "inject 'foo' '>0' --source #{file_uri_for(gem_repo1)}"
+      bundle "inject 'foo' '>0' --source https://gem.repo1"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"foo\", \"> 0\", :source => \"#{file_uri_for(gem_repo1)}\""
+      str = "gem \"foo\", \"> 0\", :source => \"https://gem.repo1\""
       expect(gemfile).to include str
     end
   end
 
   context "with group option" do
     it "add gem with group option in gemfile" do
-      bundle "inject 'rack-obama' '>0' --group=development"
+      bundle "inject 'myrack-obama' '>0' --group=development"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"rack-obama\", \"> 0\", :group => :development"
+      str = "gem \"myrack-obama\", \"> 0\", :group => :development"
       expect(gemfile).to include str
     end
 
     it "add gem with multiple groups in gemfile" do
-      bundle "inject 'rack-obama' '>0' --group=development,test"
+      bundle "inject 'myrack-obama' '>0' --group=development,test"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"rack-obama\", \"> 0\", :groups => [:development, :test]"
+      str = "gem \"myrack-obama\", \"> 0\", :groups => [:development, :test]"
       expect(gemfile).to include str
     end
   end
@@ -87,31 +87,31 @@ Usage: "bundle inject GEM VERSION"
     end
 
     it "injects anyway" do
-      bundle "inject 'rack-obama' '> 0'"
-      expect(bundled_app_gemfile.read).to match(/rack-obama/)
+      bundle "inject 'myrack-obama' '> 0'"
+      expect(bundled_app_gemfile.read).to match(/myrack-obama/)
     end
 
     it "locks with the injected gems" do
-      expect(bundled_app_lock.read).not_to match(/rack-obama/)
-      bundle "inject 'rack-obama' '> 0'"
-      expect(bundled_app_lock.read).to match(/rack-obama/)
+      expect(bundled_app_lock.read).not_to match(/myrack-obama/)
+      bundle "inject 'myrack-obama' '> 0'"
+      expect(bundled_app_lock.read).to match(/myrack-obama/)
     end
 
     it "restores frozen afterwards" do
-      bundle "inject 'rack-obama' '> 0'"
+      bundle "inject 'myrack-obama' '> 0'"
       config = Psych.load(bundled_app(".bundle/config").read)
       expect(config["BUNDLE_DEPLOYMENT"] || config["BUNDLE_FROZEN"]).to eq("true")
     end
 
     it "doesn't allow Gemfile changes" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack-obama"
+        source "https://gem.repo1"
+        gem "myrack-obama"
       G
-      bundle "inject 'rack' '> 0'", raise_on_error: false
+      bundle "inject 'myrack' '> 0'", raise_on_error: false
       expect(err).to match(/the lockfile can't be updated because frozen mode is set/)
 
-      expect(bundled_app_lock.read).not_to match(/rack-obama/)
+      expect(bundled_app_lock.read).not_to match(/myrack-obama/)
     end
   end
 end
