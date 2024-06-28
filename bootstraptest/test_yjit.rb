@@ -4806,11 +4806,12 @@ assert_equal '[:ok, :ok, :ok]', %q{
 }
 
 # test inlining of simple iseqs with kwargs
-assert_equal '[:ok, :ok, :ok, :ok]', %q{
+assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   def optional_unused(x, opt: :not_ok) = x
   def optional_used(x, opt: :ok) = opt
   def required_unused(x, req:) = x
   def required_used(x, req:) = req
+  def unknown(x) = x
 
   def tests
     [
@@ -4818,6 +4819,7 @@ assert_equal '[:ok, :ok, :ok, :ok]', %q{
       optional_used(:not_ok),
       required_unused(:ok, req: :not_ok),
       required_used(:not_ok, req: :ok),
+      begin unknown(:not_ok, unknown_kwarg: :not_ok) rescue ArgumentError; :ok end,
     ]
   end
 
