@@ -71,31 +71,26 @@ module Spec
       bundle_bin ||= installed_bindir.join("bundle")
 
       env = options.delete(:env) || {}
+      preserve_ruby_flags = options.delete(:preserve_ruby_flags)
 
       requires = options.delete(:requires) || []
-      realworld = RSpec.current_example.metadata[:realworld]
 
-      artifice = options.delete(:artifice) do
-        if realworld
-          "vcr"
-        else
-          "fail"
-        end
-      end
-      if artifice
-        requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
-      end
+      dir = options.delete(:dir) || bundled_app
 
       load_path = []
       load_path << spec_dir
 
-      dir = options.delete(:dir) || bundled_app
+      build_ruby_options = { load_path: load_path, requires: requires, env: env }
+      build_ruby_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice)
+
+      match_source(cmd)
+
+      env, ruby_cmd = build_ruby_cmd(build_ruby_options)
+
       raise_on_error = options.delete(:raise_on_error)
 
       args = options.map do |k, v|
         case v
-        when nil
-          next
         when true
           " --#{k}"
         when false
@@ -105,9 +100,19 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ load_path: load_path, requires: requires, env: env })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
+      env["BUNDLER_SPEC_ORIGINAL_CMD"] = "#{ruby_cmd} #{bundle_bin}" if preserve_ruby_flags
       sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
+    end
+
+    def main_source(dir)
+      gemfile = File.expand_path("Gemfile", dir)
+      return unless File.exist?(gemfile)
+
+      match = File.readlines(gemfile).first.match(/source ["'](?<source>[^"']+)["']/)
+      return unless match
+
+      match[:source]
     end
 
     def bundler(cmd, options = {})
@@ -116,8 +121,9 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      ruby_cmd = build_ruby_cmd
+      env, ruby_cmd = build_ruby_cmd({ artifice: nil }.merge(options))
       escaped_ruby = ruby.shellescape
+      options[:env] = env if env
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
 
@@ -135,17 +141,44 @@ module Spec
       libs = options.delete(:load_path)
       lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
 
+      env = options.delete(:env) || {}
+      current_example = RSpec.current_example
+
+      main_source = @gemfile_source if defined?(@gemfile_source)
+      compact_index_main_source = main_source&.start_with?("https://gem.repo", "https://gems.security")
+
       requires = options.delete(:requires) || []
+      artifice = options.delete(:artifice) do
+        if current_example && current_example.metadata[:realworld]
+          "vcr"
+        elsif compact_index_main_source
+          env["BUNDLER_SPEC_GEM_REPO"] ||=
+            case main_source
+            when "https://gem.repo1" then gem_repo1.to_s
+            when "https://gem.repo2" then gem_repo2.to_s
+            when "https://gem.repo3" then gem_repo3.to_s
+            when "https://gem.repo4" then gem_repo4.to_s
+            when "https://gems.security" then security_repo.to_s
+            end
+
+          "compact_index"
+        else
+          "fail"
+        end
+      end
+      if artifice
+        requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
+      end
 
       hax_path = "#{Path.spec_dir}/support/hax.rb"
 
       # For specs that need to ignore the default Bundler gem, load hax before
       # anything else since other stuff may actually load bundler and not skip
       # the default version
-      options[:env]&.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
+      env.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
       require_option = requires.map {|r| "-r#{r}" }
 
-      [Gem.ruby, *lib_option, *require_option].compact.join(" ")
+      [env, [Gem.ruby, *lib_option, *require_option].compact.join(" ")]
     end
 
     def gembin(cmd, options = {})
@@ -208,6 +241,7 @@ module Spec
       if contents.nil?
         read_gemfile
       else
+        match_source(contents)
         create_file(args.pop || "Gemfile", contents)
       end
     end
@@ -511,6 +545,13 @@ module Spec
     end
 
     private
+
+    def match_source(contents)
+      match = /source ["']?(?<source>http[^"']+)["']?/.match(contents)
+      return unless match
+
+      @gemfile_source = match[:source]
+    end
 
     def git_root_dir?
       root.to_s == `git rev-parse --show-toplevel`.chomp

@@ -9,15 +9,15 @@ RSpec.describe "bundle install with :allow_offline_install" do
     it "still installs" do
       install_gemfile <<-G, artifice: "compact_index"
         source "http://testgemserver.local"
-        gem "rack-obama"
+        gem "myrack-obama"
       G
-      expect(the_bundle).to include_gem("rack 1.0")
+      expect(the_bundle).to include_gem("myrack 1.0")
     end
 
     it "still fails when the network is down" do
       install_gemfile <<-G, artifice: "fail", raise_on_error: false
         source "http://testgemserver.local"
-        gem "rack-obama"
+        gem "myrack-obama"
       G
       expect(err).to include("Could not reach host testgemserver.local.")
       expect(the_bundle).to_not be_locked
@@ -26,26 +26,26 @@ RSpec.describe "bundle install with :allow_offline_install" do
 
   context "with cached data locally" do
     it "will install from the compact index" do
-      system_gems ["rack-1.0.0"], path: default_bundle_path
+      system_gems ["myrack-1.0.0"], path: default_bundle_path
 
       bundle "config set clean false"
       install_gemfile <<-G, artifice: "compact_index"
         source "http://testgemserver.local"
-        gem "rack-obama"
-        gem "rack", "< 1.0"
+        gem "myrack-obama"
+        gem "myrack", "< 1.0"
       G
 
-      expect(the_bundle).to include_gems("rack-obama 1.0", "rack 0.9.1")
+      expect(the_bundle).to include_gems("myrack-obama 1.0", "myrack 0.9.1")
 
       gemfile <<-G
         source "http://testgemserver.local"
-        gem "rack-obama"
+        gem "myrack-obama"
       G
 
       bundle :update, artifice: "fail", all: true
       expect(last_command.stdboth).to include "Using the cached data for the new index because of a network error"
 
-      expect(the_bundle).to include_gems("rack-obama 1.0", "rack 1.0.0")
+      expect(the_bundle).to include_gems("myrack-obama 1.0", "myrack 1.0.0")
     end
 
     def break_git_remote_ops!
@@ -78,7 +78,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
       git = build_git "a", "1.0.0", path: lib_path("a")
       update_git("a", path: git.path, branch: "new_branch")
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "a", :git => #{git.path.to_s.dump}
       G
 
@@ -88,7 +88,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
 
       break_git_remote_ops! do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "a", :git => #{git.path.to_s.dump}, :branch => "new_branch"
         G
       end

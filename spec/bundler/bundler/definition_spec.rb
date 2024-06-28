@@ -45,17 +45,17 @@ RSpec.describe Bundler::Definition do
       build_lib "foo", "1.0", path: lib_path("foo")
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
       build_lib "foo", "1.0", path: lib_path("foo") do |s|
-        s.add_dependency "rack", "1.0"
+        s.add_dependency "myrack", "1.0"
       end
 
       checksums = checksums_section_when_existing do |c|
         c.no_checksum "foo", "1.0"
-        c.checksum gem_repo1, "rack", "1.0.0"
+        c.checksum gem_repo1, "myrack", "1.0.0"
       end
 
       bundle :install, env: { "DEBUG" => "1" }
@@ -66,12 +66,12 @@ RSpec.describe Bundler::Definition do
           remote: #{lib_path("foo")}
           specs:
             foo (1.0)
-              rack (= 1.0)
+              myrack (= 1.0)
 
         GEM
-          remote: #{file_uri_for(gem_repo1)}/
+          remote: https://gem.repo1/
           specs:
-            rack (1.0.0)
+            myrack (1.0.0)
 
         PLATFORMS
           #{lockfile_platforms}
@@ -91,7 +91,7 @@ RSpec.describe Bundler::Definition do
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
         gem "ffi"
       G
 
@@ -104,17 +104,17 @@ RSpec.describe Bundler::Definition do
 
     it "for a path gem with deps and no changes" do
       build_lib "foo", "1.0", path: lib_path("foo") do |s|
-        s.add_dependency "rack", "1.0"
+        s.add_dependency "myrack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"
       end
 
       checksums = checksums_section_when_existing do |c|
         c.no_checksum "foo", "1.0"
-        c.checksum gem_repo1, "rack", "1.0.0"
+        c.checksum gem_repo1, "myrack", "1.0.0"
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -123,12 +123,12 @@ RSpec.describe Bundler::Definition do
           remote: #{lib_path("foo")}
           specs:
             foo (1.0)
-              rack (= 1.0)
+              myrack (= 1.0)
 
         GEM
-          remote: #{file_uri_for(gem_repo1)}/
+          remote: https://gem.repo1/
           specs:
-            rack (1.0.0)
+            myrack (1.0.0)
 
         PLATFORMS
           #{lockfile_platforms}
@@ -154,7 +154,7 @@ RSpec.describe Bundler::Definition do
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "only_java", platform: :jruby
       G
 
@@ -164,7 +164,7 @@ RSpec.describe Bundler::Definition do
       expect(out).to match(/using resolution from the lockfile/)
       expect(lockfile).to eq <<~G
         GEM
-          remote: #{file_uri_for(gem_repo1)}/
+          remote: https://gem.repo1/
           specs:
             only_java (1.1-java)
 
@@ -185,7 +185,7 @@ RSpec.describe Bundler::Definition do
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo"
       G
 
@@ -194,7 +194,7 @@ RSpec.describe Bundler::Definition do
       expect(out).to match(/using resolution from the lockfile/)
       expect(lockfile).to eq <<~G
         GEM
-          remote: #{file_uri_for(gem_repo1)}/
+          remote: https://gem.repo1/
           specs:
             foo (1.0)
 
@@ -215,13 +215,13 @@ RSpec.describe Bundler::Definition do
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|
-            source_list.add_global_rubygems_remote(file_uri_for(gem_repo4))
+            source_list.add_global_rubygems_remote("https://gem.repo4")
           end
         end
 
         before do
           gemfile <<-G
-            source "#{file_uri_for(gem_repo4)}"
+            source "https://gem.repo4"
             gem 'isolated_owner'
 
             gem 'shared_owner_a'
@@ -230,7 +230,7 @@ RSpec.describe Bundler::Definition do
 
           lockfile <<-L
             GEM
-              remote: #{file_uri_for(gem_repo4)}
+              remote: https://gem.repo4
               specs:
                 isolated_dep (2.0.1)
                 isolated_owner (1.0.1)

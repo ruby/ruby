@@ -6,8 +6,8 @@ RSpec.describe "major deprecations" do
   describe "Bundler" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
@@ -114,8 +114,8 @@ RSpec.describe "major deprecations" do
   context "bundle check --path" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle "check --path vendor/bundle", raise_on_error: false
@@ -136,8 +136,8 @@ RSpec.describe "major deprecations" do
   context "bundle check --path=" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle "check --path=vendor/bundle", raise_on_error: false
@@ -158,8 +158,8 @@ RSpec.describe "major deprecations" do
   context "bundle cache --all" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle "cache --all", raise_on_error: false
@@ -180,8 +180,8 @@ RSpec.describe "major deprecations" do
   context "bundle cache --path" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle "cache --path foo", raise_on_error: false
@@ -300,8 +300,8 @@ RSpec.describe "major deprecations" do
   describe "bundle update" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
@@ -321,8 +321,8 @@ RSpec.describe "major deprecations" do
   describe "bundle install --binstubs" do
     before do
       install_gemfile <<-G, binstubs: true
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
@@ -335,9 +335,9 @@ RSpec.describe "major deprecations" do
 
   context "bundle install with both gems.rb and Gemfile present" do
     it "should not warn about gems.rb" do
-      create_file "gems.rb", <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      gemfile "gems.rb", <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle :install
@@ -345,17 +345,17 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
+      gemfile "gems.rb", "source 'https://gem.repo1'"
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       expect(warnings).to include(
         "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
 
-      expect(the_bundle).not_to include_gem "rack 1.0"
+      expect(the_bundle).not_to include_gem "myrack 1.0"
     end
   end
 
@@ -364,8 +364,8 @@ RSpec.describe "major deprecations" do
       bundle "config set --local path vendor/bundle"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
@@ -407,8 +407,8 @@ RSpec.describe "major deprecations" do
   context "bundle install with multiple sources" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo3)}"
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo3"
+        source "https://gem.repo1"
       G
     end
 
@@ -455,28 +455,28 @@ RSpec.describe "major deprecations" do
   context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
     before do
       build_repo gem_repo3 do
-        build_gem "rack", "0.9.1"
+        build_gem "myrack", "0.9.1"
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        source "#{file_uri_for(gem_repo3)}" do
-          gem 'rack'
+        source "https://gem.repo1"
+        source "https://gem.repo3" do
+          gem 'myrack'
         end
       G
 
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo1)}/
-          remote: #{file_uri_for(gem_repo3)}/
+          remote: https://gem.repo1/
+          remote: https://gem.repo3/
           specs:
-            rack (0.9.1)
+            myrack (0.9.1)
 
         PLATFORMS
           ruby
 
         DEPENDENCIES
-          rack!
+          myrack!
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -496,10 +496,10 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
+      create_file "gems.rb", "source 'https://gem.repo1'"
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :group => :test
+        source "https://gem.repo1"
+        gem "myrack", :group => :test
       G
 
       ruby <<-RUBY
@@ -537,8 +537,8 @@ RSpec.describe "major deprecations" do
   context "bundle show" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
@@ -558,14 +558,14 @@ RSpec.describe "major deprecations" do
   context "bundle remove" do
     before do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
     context "with --install" do
       it "shows a deprecation warning", bundler: "< 3" do
-        bundle "remove rack --install"
+        bundle "remove myrack --install"
 
         expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
       end
@@ -590,7 +590,7 @@ RSpec.describe "major deprecations" do
   context "bundle viz", :realworld do
     before do
       realworld_system_gems "ruby-graphviz --version 1.2.5"
-      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
+      create_file "gems.rb", "source 'https://gem.repo1'"
       bundle "viz"
     end
 

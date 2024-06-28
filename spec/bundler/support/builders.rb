@@ -37,23 +37,23 @@ module Spec
         build_gem "puma"
         build_gem "minitest"
 
-        build_gem "rack", %w[0.9.1 1.0.0] do |s|
-          s.executables = "rackup"
-          s.post_install_message = "Rack's post install message"
+        build_gem "myrack", %w[0.9.1 1.0.0] do |s|
+          s.executables = "myrackup"
+          s.post_install_message = "Myrack's post install message"
         end
 
         build_gem "thin" do |s|
-          s.add_dependency "rack"
+          s.add_dependency "myrack"
           s.post_install_message = "Thin's post install message"
         end
 
-        build_gem "rack-obama" do |s|
-          s.add_dependency "rack"
-          s.post_install_message = "Rack-obama's post install message"
+        build_gem "myrack-obama" do |s|
+          s.add_dependency "myrack"
+          s.post_install_message = "Myrack-obama's post install message"
         end
 
-        build_gem "rack_middleware", "1.0" do |s|
-          s.add_dependency "rack", "0.9.1"
+        build_gem "myrack_middleware", "1.0" do |s|
+          s.add_dependency "myrack", "0.9.1"
         end
 
         build_gem "rails", "2.3.2" do |s|
@@ -86,8 +86,8 @@ module Spec
           s.write "lib/spec.rb", "SPEC = '1.2.7'"
         end
 
-        build_gem "rack-test", no_default: true do |s|
-          s.write "lib/rack/test.rb", "RACK_TEST = '1.0'"
+        build_gem "myrack-test", no_default: true do |s|
+          s.write "lib/myrack/test.rb", "MYRACK_TEST = '1.0'"
         end
 
         build_gem "platform_specific" do |s|
@@ -223,7 +223,7 @@ module Spec
 
     def build_security_repo
       build_repo security_repo do
-        build_gem "rack"
+        build_gem "myrack"
 
         build_gem "signed_gem" do |s|
           cert = "signing-cert.pem"

@@ -5,7 +5,7 @@ RSpec.describe Bundler::Plugin::Index do
 
   before do
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    gemfile "source 'https://gem.repo1'"
     path = lib_path(plugin_name)
     index.register_plugin("new-plugin", path.to_s, [path.join("lib").to_s], commands, sources, hooks)
   end
