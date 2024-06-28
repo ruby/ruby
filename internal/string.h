@@ -31,6 +31,7 @@ enum ruby_rstring_private_flags {
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
+void rb_str_buf_cat_byte(VALUE str, unsigned char byte);
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
