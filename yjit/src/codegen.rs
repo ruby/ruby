@@ -6895,6 +6895,8 @@ extern {
 /// Return the ISEQ's return value if it consists of one simple instruction and leave.
 fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Option<BlockHandler>, ci_flags: u32) -> Option<IseqReturn> {
     // Expect only two instructions and one possible operand
+    // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
+    // computation, the ISEQ will always have more than two instructions and won't be inlined.
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     if !(2..=3).contains(&iseq_size) {
         return None;
