@@ -53,43 +53,43 @@ pub struct HalfwordImm {
 
 impl HalfwordImm {
     /// LDRH
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate-->
     pub fn ldrh(rt: u8, rn: u8, imm12: i16) -> Self {
         Self { rt, rn, index: Index::None, imm: imm12, op: Op::Load }
     }
 
     /// LDRH (pre-index)
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate-->
     pub fn ldrh_pre(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, index: Index::PreIndex, imm: imm9, op: Op::Load }
     }
 
     /// LDRH (post-index)
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate-->
     pub fn ldrh_post(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, index: Index::PostIndex, imm: imm9, op: Op::Load }
     }
 
     /// STRH
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate-->
     pub fn strh(rt: u8, rn: u8, imm12: i16) -> Self {
         Self { rt, rn, index: Index::None, imm: imm12, op: Op::Store }
     }
 
     /// STRH (pre-index)
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate-->
     pub fn strh_pre(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, index: Index::PreIndex, imm: imm9, op: Op::Store }
     }
 
     /// STRH (post-index)
-    /// https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate--
+    /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate-->
     pub fn strh_post(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, index: Index::PostIndex, imm: imm9, op: Op::Store }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b111100;
 
 impl From<HalfwordImm> for u32 {

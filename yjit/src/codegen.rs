@@ -41,7 +41,7 @@ type InsnGenFn = fn(
 ) -> Option<CodegenStatus>;
 
 /// Ephemeral code generation state.
-/// Represents a [core::Block] while we build it.
+/// Represents a [crate::core::Block] while we build it.
 pub struct JITState<'a> {
     /// Instruction sequence for the compiling block
     pub iseq: IseqPtr,
@@ -1001,7 +1001,7 @@ pub fn gen_entry_chain_guard(
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
 /// If jit_exception is true, compile JIT code for handling exceptions.
-/// See [jit_compile_exception] for details.
+/// See jit_compile_exception() for details.
 pub fn gen_entry_prologue(
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,

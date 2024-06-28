@@ -3055,7 +3055,7 @@ fn gen_block_series_body(
 /// Generate a block version that is an entry point inserted into an iseq
 /// NOTE: this function assumes that the VM lock has been taken
 /// If jit_exception is true, compile JIT code for handling exceptions.
-/// See [jit_compile_exception] for details.
+/// See jit_compile_exception() for details.
 pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<*const u8> {
     // Compute the current instruction index based on the current PC
     let cfp = unsafe { get_ec_cfp(ec) };
@@ -3149,7 +3149,7 @@ pub fn new_pending_entry() -> PendingEntryRef {
 
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_call_entry_stub_hit].
+    /// See [gen_entry_stub].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_compile_time(|| {
             with_vm_lock(src_loc!(), || {
