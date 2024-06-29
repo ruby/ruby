@@ -1797,7 +1797,10 @@ native_thread_destroy(struct rb_native_thread *nt)
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
-#elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
+#elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP \
+    && (!defined(__linux__) || defined __GLIBC__)
+/* Musl libc `pthread_get_stack{addr,size}_np` can not get the correct
+ * value of the main thread. */
 #define STACKADDR_AVAILABLE 1
 #undef MAINSTACKADDR_AVAILABLE
 #define MAINSTACKADDR_AVAILABLE 1
@@ -1931,7 +1934,7 @@ space_size(size_t stack_size)
     }
 }
 
-#ifdef __linux__
+#if MAINSTACKADDR_AVAILABLE && defined(__linux__)
 static __attribute__((noinline)) void
 reserve_stack(volatile char *limit, size_t size)
 {
