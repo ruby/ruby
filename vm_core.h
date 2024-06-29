@@ -1203,7 +1203,7 @@ rb_iseq_t *rb_iseq_new         (const VALUE ast_value, VALUE name, VALUE path, V
 rb_iseq_t *rb_iseq_new_top     (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,                   const rb_iseq_t *parent);
 rb_iseq_t *rb_iseq_new_main    (const VALUE ast_value,             VALUE path, VALUE realpath,                   const rb_iseq_t *parent, int opt);
 rb_iseq_t *rb_iseq_new_eval    (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
-rb_iseq_t *rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+rb_iseq_t *rb_iseq_new_with_opt(      VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                                 enum rb_iseq_type, const rb_compile_option_t*,
                                 VALUE script_lines);
 
