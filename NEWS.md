@@ -67,7 +67,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.24.0
+* minitest 5.24.1
 * rake 13.2.1
 * test-unit 3.6.2
 * rexml 3.3.1
