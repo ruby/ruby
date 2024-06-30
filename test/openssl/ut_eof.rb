@@ -8,6 +8,10 @@ module OpenSSL::TestEOF
     open_file("") {|f| assert_nil f.getbyte }
   end
 
+  def test_readbyte_eof
+    open_file("") {|f| assert_raise(EOFError) { f.readbyte } }
+  end
+
   def test_eof_0
     open_file("") {|f|
       assert_equal("", f.read(0))
