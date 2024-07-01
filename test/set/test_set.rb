@@ -473,6 +473,16 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[1,2,4,5,7,8,10], set)
 
     set = Set.new(1..10)
+    begin
+      ret = set.delete_if do |i|
+        raise StandardError if i == 5
+        i.odd?
+      end
+    rescue StandardError
+    end
+    assert_equal(Set[2, 4, 5, 6, 7, 8, 9, 10], set)
+
+    set = Set.new(1..10)
     enum = set.delete_if
     assert_equal(set.size, enum.size)
     assert_same(set, enum.each { |i| i % 3 == 0 })
