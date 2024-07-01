@@ -818,6 +818,9 @@ typedef struct rb_objspace {
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
         unsigned int measure_gc : 1;
+#if RUBY_DEBUG
+        unsigned int in_gc_free_region : 1;
+#endif
     } flags;
 
     rb_event_flag_t hook_events;
@@ -1169,6 +1172,27 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define dont_gc_off()         (objspace->flags.dont_gc = 0)
 #define dont_gc_set(b)        (((int)b), objspace->flags.dont_gc = (b))
 #define dont_gc_val()         (objspace->flags.dont_gc)
+#endif
+
+#if RUBY_DEBUG
+#define GC_ASSERT_NOT_IN_GC_FREE_REGION GC_ASSERT(rb_objspace.flags.in_gc_free_region == FALSE);
+
+void
+RUBY_ASSERT_GC_FREE_REGION_BEGIN(void)
+{
+    GC_ASSERT(rb_objspace.flags.in_gc_free_region);
+    rb_objspace.flags.in_gc_free_region = 1;
+}
+
+void
+RUBY_ASSERT_GC_FREE_REGION_END(void)
+{
+    GC_ASSERT(rb_objspace.flags.in_gc_free_region);
+    rb_objspace.flags.in_gc_free_region = 0;
+}
+
+#else
+#define GC_ASSERT_NOT_IN_GC_FREE_REGION
 #endif
 
 static inline enum gc_mode
@@ -2820,6 +2844,8 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
 {
     rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+
+    GC_ASSERT_NOT_IN_GC_FREE_REGION;
 
     VALUE obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
 
@@ -8996,6 +9022,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     GC_ASSERT(gc_mode(objspace) == gc_mode_none);
     GC_ASSERT(!is_lazy_sweeping(objspace));
     GC_ASSERT(!is_incremental_marking(objspace));
+    GC_ASSERT_NOT_IN_GC_FREE_REGION;
 
     unsigned int lock_lev;
     gc_enter(objspace, gc_enter_event_start, &lock_lev);
@@ -11966,6 +11993,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
+    GC_ASSERT_NOT_IN_GC_FREE_REGION;
     check_malloc_not_in_gc(objspace, "realloc");
 
     void *mem;
@@ -12205,6 +12233,8 @@ ruby_xmalloc2_body(size_t n, size_t size)
 static void *
 objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 {
+    GC_ASSERT_NOT_IN_GC_FREE_REGION;
+
     if (UNLIKELY(malloc_during_gc_p(objspace))) {
         rb_warn("calloc during GC detected, this could cause crashes if it triggers another GC");
 #if RGENGC_CHECK_MODE || RUBY_DEBUG
@@ -12266,6 +12296,8 @@ ruby_xrealloc2_body(void *ptr, size_t n, size_t size)
 void
 ruby_sized_xfree(void *x, size_t size)
 {
+    GC_ASSERT_NOT_IN_GC_FREE_REGION;
+
     if (LIKELY(x)) {
         /* It's possible for a C extension's pthread destructor function set by pthread_key_create
          * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
