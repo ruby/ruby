@@ -17389,7 +17389,7 @@ parse_regular_expression_errors(pm_parser_t *parser, pm_regular_expression_node_
         .shared = unescaped->type == PM_STRING_SHARED
     };
 
-    pm_regexp_parse(parser, pm_string_source(unescaped), pm_string_length(unescaped), NULL, NULL, parse_regular_expression_error, &error_data);
+    pm_regexp_parse(parser, pm_string_source(unescaped), pm_string_length(unescaped), PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED), NULL, NULL, parse_regular_expression_error, &error_data);
 }
 
 /**
@@ -20147,7 +20147,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
  * match write node.
  */
 static pm_node_t *
-parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call) {
+parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call, bool extended_mode) {
     parse_regular_expression_named_capture_data_t callback_data = {
         .parser = parser,
         .call = call,
@@ -20162,7 +20162,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
         .shared = content->type == PM_STRING_SHARED
     };
 
-    pm_regexp_parse(parser, pm_string_source(content), pm_string_length(content), parse_regular_expression_named_capture, &callback_data, parse_regular_expression_error, &error_data);
+    pm_regexp_parse(parser, pm_string_source(content), pm_string_length(content), extended_mode, parse_regular_expression_named_capture, &callback_data, parse_regular_expression_error, &error_data);
     pm_constant_id_list_free(&callback_data.names);
 
     if (callback_data.match != NULL) {
@@ -20657,14 +20657,14 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_string_t owned;
                     pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
 
-                    result = parse_regular_expression_named_captures(parser, &owned, call);
+                    result = parse_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
                     pm_string_free(&owned);
                 }
             } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
                 // If we have a regular expression node, then we can just parse
                 // the named captures directly off the unescaped string.
                 const pm_string_t *content = &((pm_regular_expression_node_t *) node)->unescaped;
-                result = parse_regular_expression_named_captures(parser, content, call);
+                result = parse_regular_expression_named_captures(parser, content, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
             }
 
             return result;

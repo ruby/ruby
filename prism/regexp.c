@@ -18,6 +18,12 @@ typedef struct {
     /** A pointer to the end of the source that we are parsing. */
     const uint8_t *end;
 
+    /**
+     * Whether or not the regular expression currently being parsed is in
+     * extended mode, wherein whitespace is ignored and comments are allowed.
+     */
+    bool extended_mode;
+
     /** Whether the encoding has changed from the default. */
     bool encoding_changed;
 
@@ -419,6 +425,19 @@ pm_regexp_options_remove(pm_regexp_options_t *options, uint8_t key) {
 }
 
 /**
+ * True if the given key is set in the options.
+ */
+static bool
+pm_regexp_options_added_p(pm_regexp_options_t *options, uint8_t key) {
+    if (key >= PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
+        key = (uint8_t) (key - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM);
+        return options->values[key] == PM_REGEXP_OPTION_STATE_ADDED;
+    }
+
+    return false;
+}
+
+/**
  * Groups can have quite a few different patterns for syntax. They basically
  * just wrap a set of expressions, but they can potentially have options after a
  * question mark. If there _isn't_ a question mark, then it's just a set of
@@ -443,15 +462,15 @@ static bool
 pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
     const uint8_t *group_start = parser->cursor;
 
+    pm_regexp_options_t options;
+    pm_regexp_options_init(&options);
+
     // First, parse any options for the group.
     if (pm_regexp_char_accept(parser, '?')) {
         if (pm_regexp_char_is_eof(parser)) {
             pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
             return false;
         }
-
-        pm_regexp_options_t options;
-        pm_regexp_options_init(&options);
 
         switch (*parser->cursor) {
             case '#': { // inline comments
@@ -560,6 +579,15 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     return false;
                 }
 
+                // If we are at the end of the group of options and there is no
+                // subexpression, then we are going to be setting the options
+                // for the parent group. In this case we are safe to return now.
+                if (*parser->cursor == ')') {
+                    if (pm_regexp_options_added_p(&options, 'x')) parser->extended_mode = true;
+                    parser->cursor++;
+                    return true;
+                }
+
                 // If we hit a -, then we're done parsing options.
                 if (*parser->cursor != '-') break;
 
@@ -577,6 +605,16 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                 if (pm_regexp_char_is_eof(parser)) {
                     return false;
                 }
+
+                // If we are at the end of the group of options and there is no
+                // subexpression, then we are going to be setting the options
+                // for the parent group. In this case we are safe to return now.
+                if (*parser->cursor == ')') {
+                    if (pm_regexp_options_added_p(&options, 'x')) parser->extended_mode = true;
+                    parser->cursor++;
+                    return true;
+                }
+
                 break;
             default:
                 parser->cursor++;
@@ -585,15 +623,22 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
         }
     }
 
+    bool extended_mode = parser->extended_mode;
+    if (pm_regexp_options_added_p(&options, 'x')) {
+        parser->extended_mode = true;
+    }
+
     // Now, parse the expressions within this group.
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')') {
         if (!pm_regexp_parse_expression(parser, (uint16_t) (depth + 1))) {
+            parser->extended_mode = extended_mode;
             return false;
         }
         pm_regexp_char_accept(parser, '|');
     }
 
     // Finally, make sure we have a closing parenthesis.
+    parser->extended_mode = extended_mode;
     if (pm_regexp_char_expect(parser, ')')) return true;
 
     pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
@@ -641,6 +686,12 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             parser->cursor++;
             pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "unmatched close parenthesis");
             return true;
+        case '#':
+            if (parser->extended_mode) {
+                if (!pm_regexp_char_find(parser, '\n')) parser->cursor = parser->end;
+                return true;
+            }
+        /* fallthrough */
         default: {
             size_t width;
             if (!parser->encoding_changed) {
@@ -702,12 +753,13 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * groups.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, pm_regexp_name_callback_t name_callback, void *name_data, pm_regexp_error_callback_t error_callback, void *error_data) {
+pm_regexp_parse(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data, pm_regexp_error_callback_t error_callback, void *error_data) {
     pm_regexp_parse_pattern(&(pm_regexp_parser_t) {
         .parser = parser,
         .start = source,
         .cursor = source,
         .end = source + size,
+        .extended_mode = extended_mode,
         .encoding_changed = parser->encoding_changed,
         .encoding = parser->encoding,
         .name_callback = name_callback,
