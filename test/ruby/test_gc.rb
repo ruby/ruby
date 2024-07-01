@@ -52,6 +52,81 @@ class TestGc < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_gc_config_full_mark_by_default
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    config = GC.config
+    assert_not_empty(config)
+    assert_true(config[:full_mark])
+  end
+
+  def test_gc_config_invalid_args
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    assert_raise(ArgumentError) { GC.config(0) }
+  end
+
+  def test_gc_config_setting_returns_updated_config_hash
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    old_value = GC.config[:full_mark]
+    assert_true(old_value)
+
+    new_value = GC.config(full_mark: false)[:full_mark]
+    assert_false(new_value)
+  ensure
+    GC.config(full_mark: true)
+    GC.start
+  end
+
+  def test_gc_config_setting_returns_nil_for_missing_keys
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    missing_value = GC.config(no_such_key: true)[:no_such_key]
+    assert_nil(missing_value)
+  ensure
+    GC.config(full_mark: true)
+    GC.start
+  end
+
+  def test_gc_config_disable_major
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    GC.enable
+    GC.start
+
+    GC.config(full_mark: false)
+    major_count = GC.stat[:major_gc_count]
+    minor_count = GC.stat[:minor_gc_count]
+
+    arr = []
+    (GC.stat_heap[0][:heap_eden_slots] * 2).times do
+      arr << Object.new
+      Object.new
+    end
+
+    assert_equal(major_count, GC.stat[:major_gc_count])
+    assert_operator(minor_count, :<=, GC.stat[:minor_gc_count])
+    assert_nil(GC.start)
+  ensure
+    GC.config(full_mark: true)
+    GC.start
+  end
+
+  def test_gc_config_disable_major_gc_start_always_works
+    omit "unsupoported platform/GC" unless defined?(GC.config)
+
+    GC.config(full_mark: false)
+
+    major_count = GC.stat[:major_gc_count]
+    GC.start
+
+    assert_operator(major_count, :<, GC.stat[:major_gc_count])
+  ensure
+    GC.config(full_mark: true)
+    GC.start
+  end
+
   def test_start_full_mark
     return unless use_rgengc?
     omit 'stress' if GC.stress
