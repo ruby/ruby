@@ -2783,6 +2783,12 @@ AS_CASE([$coroutine_type], [yes|''], [
         [aarch64-freebsd*], [
             coroutine_type=arm64
         ],
+        [powerpc64-freebsd*], [
+            coroutine_type=ppc64le
+        ],
+        [powerpc64le-freebsd*], [
+            coroutine_type=ppc64le
+        ],
         [x86_64-netbsd*], [
             coroutine_type=amd64
         ],
