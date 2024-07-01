@@ -34,6 +34,18 @@ describe :net_ftp_puttextfile, shared: true do
     remote_lines.should == local_lines.gsub("\n", "\r\n")
   end
 
+  guard -> { Net::FTP::VERSION < '0.3.6' } do
+    it "returns nil" do
+      @ftp.send(@method, @local_fixture_file, "text").should be_nil
+    end
+  end
+
+  guard -> { Net::FTP::VERSION >= '0.3.6' } do
+    it "returns the response" do
+      @ftp.send(@method, @local_fixture_file, "text").should == @ftp.last_response
+    end
+  end
+
   describe "when passed a block" do
     it "yields each transmitted line" do
       res = []

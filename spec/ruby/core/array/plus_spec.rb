@@ -21,7 +21,7 @@ describe "Array#+" do
       ([1, 2, 3] + obj).should == [1, 2, 3, "x", "y"]
     end
 
-    it "raises a Typeerror if the given argument can't be converted to an array" do
+    it "raises a TypeError if the given argument can't be converted to an array" do
       -> { [1, 2, 3] + nil }.should raise_error(TypeError)
       -> { [1, 2, 3] + "abc" }.should raise_error(TypeError)
     end

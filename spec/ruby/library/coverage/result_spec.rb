@@ -6,6 +6,7 @@ describe 'Coverage.result' do
     @class_file = fixture __FILE__, 'some_class.rb'
     @config_file = fixture __FILE__, 'start_coverage.rb'
     @eval_code_file = fixture __FILE__, 'eval_code.rb'
+    @with_begin_file = fixture __FILE__, 'code_with_begin.rb'
   end
 
   before :each do
@@ -16,6 +17,7 @@ describe 'Coverage.result' do
     $LOADED_FEATURES.delete(@class_file)
     $LOADED_FEATURES.delete(@config_file)
     $LOADED_FEATURES.delete(@eval_code_file)
+    $LOADED_FEATURES.delete(@with_begin_file)
 
     Coverage.result if Coverage.running?
   end
@@ -353,5 +355,17 @@ describe 'Coverage.result' do
     }
 
     Coverage.peek_result.should == result
+  end
+
+  it 'covers 100% lines with begin' do
+    Coverage.start
+    require @with_begin_file.chomp('.rb')
+    result = Coverage.result
+
+    result.should == {
+      @with_begin_file => [
+        nil, 1, nil
+      ]
+    }
   end
 end

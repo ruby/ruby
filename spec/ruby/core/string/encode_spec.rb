@@ -61,10 +61,22 @@ describe "String#encode" do
       str.encode(invalid: :replace).should_not equal(str)
     end
 
-    it "normalizes newlines" do
-      "\r\nfoo".encode(universal_newline: true).should == "\nfoo"
+    it "normalizes newlines with cr_newline option" do
+      "\r\nfoo".encode(cr_newline: true).should == "\r\rfoo"
+      "\rfoo".encode(cr_newline: true).should == "\rfoo"
+      "\nfoo".encode(cr_newline: true).should == "\rfoo"
+    end
 
+    it "normalizes newlines with crlf_newline option" do
+      "\r\nfoo".encode(crlf_newline: true).should == "\r\r\nfoo"
+      "\rfoo".encode(crlf_newline: true).should == "\rfoo"
+      "\nfoo".encode(crlf_newline: true).should == "\r\nfoo"
+    end
+
+    it "normalizes newlines with universal_newline option" do
+      "\r\nfoo".encode(universal_newline: true).should == "\nfoo"
       "\rfoo".encode(universal_newline: true).should == "\nfoo"
+      "\nfoo".encode(universal_newline: true).should == "\nfoo"
     end
 
     it "replaces invalid encoding in source with default replacement" do
