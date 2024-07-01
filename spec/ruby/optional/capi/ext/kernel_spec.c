@@ -221,7 +221,7 @@ static VALUE kernel_spec_rb_eval_string_protect(VALUE self, VALUE str, VALUE ary
 VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
   errno = 1;
   if (msg == Qnil) {
-    rb_sys_fail(0);
+    rb_sys_fail(NULL);
   } else if (self != Qundef) {
     rb_sys_fail(StringValuePtr(msg));
   }

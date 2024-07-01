@@ -2,7 +2,6 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket::IPSocket#getaddress" do
-
   it "returns the IP address of hostname" do
     addr_local = IPSocket.getaddress(SocketSpecs.hostname)
     ["127.0.0.1", "::1"].include?(addr_local).should == true
@@ -12,6 +11,10 @@ describe "Socket::IPSocket#getaddress" do
     IPSocket.getaddress("127.0.0.1").should == "127.0.0.1"
     IPSocket.getaddress("0.0.0.0").should == "0.0.0.0"
     IPSocket.getaddress('::1').should == '::1'
+  end
+
+  it 'returns IPv4 compatible IPv6 addresses' do
+    IPSocket.getaddress('::ffff:192.168.1.1').should == '::ffff:192.168.1.1'
   end
 
   # There is no way to make this fail-proof on all machines, because

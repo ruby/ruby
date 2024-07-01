@@ -5,7 +5,7 @@ describe "Pattern matching" do
     ScratchPad.record []
   end
 
-  describe "can be standalone assoc operator that" do
+  describe "Rightward assignment (`=>`) that can be standalone assoc operator that" do
     it "deconstructs value" do
       suppress_warning do
         [0, 1] => [a, b]
@@ -21,6 +21,23 @@ describe "Pattern matching" do
         }
         [a, defined?(b)].should == [0, nil]
       end
+    end
+
+    it "can work with keywords" do
+      { a: 0, b: 1 } => { a:, b: }
+      [a, b].should == [0, 1]
+    end
+  end
+
+  describe "One-line pattern matching" do
+    it "can be used to check if a pattern matches for Array-like entities" do
+      ([0, 1] in [a, b]).should == true
+      ([0, 1] in [a, b, c]).should == false
+    end
+
+    it "can be used to check if a pattern matches for Hash-like entities" do
+      ({ a: 0, b: 1 } in { a:, b: }).should == true
+      ({ a: 0, b: 1 } in { a:, b:, c: }).should == false
     end
   end
 

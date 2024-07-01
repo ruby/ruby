@@ -20,6 +20,11 @@ describe "MatchData#[]" do
     # negative index is larger than the number of match values
     /(.)(.)(\d+)(\d)/.match("THX1138.")[-30, 2].should == nil
 
+    # positive index larger than number of match values
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[5, 2].should == []
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[6, 2].should == nil
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[30, 2].should == nil
+
     # length argument larger than number of match values is capped to match value length
     /(.)(.)(\d+)(\d)/.match("THX1138.")[3, 10].should == %w|113 8|
 
