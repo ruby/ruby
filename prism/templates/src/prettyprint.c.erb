@@ -36,7 +36,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
             <%- end -%>
             pm_buffer_append_string(output_buffer, "@ <%= node.name %> (location: ", <%= node.name.length + 14 %>);
             prettyprint_location(output_buffer, parser, &node->location);
-            pm_buffer_append_string(output_buffer, ")\n", 2);
+            pm_buffer_append_format(output_buffer, ", id: %" PRIu32 ")\n", node->id);
             <%- node.fields.each_with_index do |field, index| -%>
             <%- preadd = index == node.fields.length - 1 ? "    " : "|   " -%>
 

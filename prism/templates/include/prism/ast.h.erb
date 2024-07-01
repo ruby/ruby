@@ -140,6 +140,13 @@ typedef struct pm_node {
     pm_node_flags_t flags;
 
     /**
+     * This is a unique identifier for the node in the tree. It is used for
+     * reproducable parses, such that we can keep around only an identifier and
+     * then reliably find it again on a subsequent parse.
+     */
+    uint32_t id;
+
+    /**
      * This is the location of the node in the source. It's a range of bytes
      * containing a start and an end.
      */

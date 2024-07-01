@@ -62,7 +62,8 @@ module ErrorHighlight
           # includes "prism" when the ISEQ was compiled with the prism compiler.
           # In this case, we'll try to parse again with prism instead.
           raise unless error.message.include?("prism")
-          prism_find(loc, **opts)
+          require "prism"
+          Prism.of(loc)
         end
 
       Spotter.new(node, **opts).spot
@@ -80,71 +81,6 @@ module ErrorHighlight
 
     return nil
   end
-
-  # Accepts a Thread::Backtrace::Location object and returns a Prism::Node
-  # corresponding to the location in the source code.
-  def self.prism_find(loc, point_type: :name, name: nil)
-    require "prism"
-    return nil if Prism::VERSION < "0.29.0"
-
-    path = loc.absolute_path
-    return unless path
-
-    lineno = loc.lineno
-    column = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
-    tunnel = Prism.parse_file(path).value.tunnel(lineno, column)
-
-    # Prism provides the Prism::Node#tunnel API to find all of the nodes that
-    # correspond to the given line and column in the source code, with the first
-    # node in the list being the top-most node and the last node in the list
-    # being the bottom-most node.
-    tunnel.each_with_index.reverse_each.find do |part, index|
-      case part
-      when Prism::CallNode, Prism::CallOperatorWriteNode, Prism::IndexOperatorWriteNode, Prism::LocalVariableOperatorWriteNode
-        # If we find any of these nodes, we can stop searching as these are the
-        # nodes that triggered the exceptions.
-        break part
-      when Prism::ConstantReadNode, Prism::ConstantPathNode
-        if index != 0 && tunnel[index - 1].is_a?(Prism::ConstantPathOperatorWriteNode)
-          # If we're inside of a constant path operator write node, then this
-          # constant path may be highlighting a couple of different kinds of
-          # parts.
-          if part.name == name
-            # Explicitly turn off Foo::Bar += 1 where Foo and Bar are on
-            # different lines because error highlight expects this to not work.
-            break nil if part.delimiter_loc.end_line != part.name_loc.start_line
-
-            # Otherwise, because we have matched the name we can return this
-            # part.
-            break part
-          end
-
-          # If we haven't matched the name, it's the operator that we're looking
-          # for, and we can return the parent node here.
-          break tunnel[index - 1]
-        elsif part.name == name
-          # If we have matched the name of the constant, then we can return this
-          # inner node as the node that triggered the exception.
-          break part
-        else
-          # If we are at the beginning of the tunnel or we are at the beginning
-          # of a constant lookup chain, then we will return this node.
-          break part if index == 0 || !tunnel[index - 1].is_a?(Prism::ConstantPathNode)
-        end
-      when Prism::LocalVariableReadNode, Prism::ParenthesesNode
-        # If we find any of these nodes, we want to continue searching up the
-        # tree because these nodes cannot trigger the exceptions.
-        false
-      else
-        # If we find a different kind of node that we haven't already handled,
-        # we don't know how to handle it so we'll stop searching and assume this
-        # is not an exception we can decorate.
-        break nil
-      end
-    end
-  end
-
-  private_class_method :prism_find
 
   class Spotter
     class NonAscii < Exception; end
@@ -178,31 +114,49 @@ module ErrorHighlight
     def spot
       return nil unless @node
 
-      if OPT_GETCONSTANT_PATH && @node.type == :COLON2
+      if OPT_GETCONSTANT_PATH
         # In Ruby 3.2 or later, a nested constant access (like `Foo::Bar::Baz`)
         # is compiled to one instruction (opt_getconstant_path).
         # @node points to the node of the whole `Foo::Bar::Baz` even if `Foo`
         # or `Foo::Bar` causes NameError.
         # So we try to spot the sub-node that causes the NameError by using
         # `NameError#name`.
-        subnodes = []
-        node = @node
-        while node.type == :COLON2
-          node2, const = node.children
-          subnodes << node if const == @name
-          node = node2
-        end
-        if node.type == :CONST || node.type == :COLON3
-          if node.children.first == @name
+        case @node.type
+        when :COLON2
+          subnodes = []
+          node = @node
+          while node.type == :COLON2
+            node2, const = node.children
+            subnodes << node if const == @name
+            node = node2
+          end
+          if node.type == :CONST || node.type == :COLON3
+            if node.children.first == @name
+              subnodes << node
+            end
+
+            # If we found only one sub-node whose name is equal to @name, use it
+            return nil if subnodes.size != 1
+            @node = subnodes.first
+          else
+            # Do nothing; opt_getconstant_path is used only when the const base
+            # is NODE_CONST (`Foo`) or NODE_COLON3 (`::Foo`)
+          end
+        when :constant_path_node
+          subnodes = []
+          node = @node
+
+          begin
+            subnodes << node if node.name == @name
+          end while (node = node.parent).is_a?(Prism::ConstantPathNode)
+
+          if node&.type == :constant_read_node && node.name == @name
             subnodes << node
           end
 
           # If we found only one sub-node whose name is equal to @name, use it
           return nil if subnodes.size != 1
           @node = subnodes.first
-        else
-          # Do nothing; opt_getconstant_path is used only when the const base is
-          # NODE_CONST (`Foo`) or NODE_COLON3 (`::Foo`)
         end
       end
 
@@ -847,7 +801,11 @@ module ErrorHighlight
     #   Foo::Bar += 1
     #      ^^^^^^^^
     def prism_spot_constant_path_operator_write
-      prism_location(@node.binary_operator_loc.chop)
+      if @name == (target = @node.target).name
+        prism_location(target.delimiter_loc.join(target.name_loc))
+      else
+        prism_location(@node.binary_operator_loc.chop)
+      end
     end
   end
 
