@@ -61,6 +61,7 @@
   transcode_tblgen_singlebyte "IBM861"
   transcode_tblgen_singlebyte "IBM862"
   transcode_tblgen_singlebyte "IBM863"
+  transcode_tblgen_singlebyte "IBM864"
   transcode_tblgen_singlebyte "IBM865"
   transcode_tblgen_singlebyte "IBM866"
   transcode_tblgen_singlebyte "IBM869"
