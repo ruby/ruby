@@ -77,13 +77,14 @@ VALUE rb_check_array_type(VALUE obj);
 VALUE rb_ary_new(void);
 
 /**
- * Identical to rb_ary_new(),  except it additionally specifies  how many rooms
- * of  objects it  should allocate.   This way  you can  create an  array whose
- * capacity is  bigger than the  length of  it.  If you  can say that  an array
- * grows to a  specific amount, this could be effective  than resizing an array
- * over and over again and again.
+ * Identical to rb_ary_new(), except it accepts the `capa` parameter to specify
+ * the length of the array.
  *
- * @param[in]  capa  Designed capacity of the generating array.
+ * This way you can create an array whose capacity is bigger than the length of
+ * it. If you can say that an array grows to a specific amount, this could be
+ * more efficient than resizing an array over and over again and again.
+ *
+ * @param[in]  capa  Desired capacity of the array.
  * @return     An empty array, whose capacity is `capa`.
  */
 VALUE rb_ary_new_capa(long capa);
