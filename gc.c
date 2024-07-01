@@ -3468,6 +3468,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
       case T_SYMBOL:
         {
+            RSYMBOL(obj)->fstr = rb_gc_location(RSYMBOL(obj)->fstr);
             rb_gc_free_dsymbol(obj);
             RB_DEBUG_COUNTER_INC(obj_symbol);
         }
@@ -6336,25 +6337,10 @@ pin_key_pin_value(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-static int
-pin_key_mark_value(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-
-    gc_mark_and_pin(objspace, (VALUE)key);
-    gc_mark(objspace, (VALUE)value);
-    return ST_CONTINUE;
-}
-
 static void
 mark_hash(rb_objspace_t *objspace, VALUE hash)
 {
-    if (rb_hash_compare_by_id_p(hash)) {
-        rb_hash_stlike_foreach(hash, pin_key_mark_value, (st_data_t)objspace);
-    }
-    else {
-        rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
-    }
+    rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
 
     gc_mark(objspace, RHASH(hash)->ifnone);
 }
@@ -9870,10 +9856,65 @@ rb_gc_update_tbl_refs(st_table *ptr)
     gc_update_table_refs(objspace, ptr);
 }
 
+static int
+ref_update_compare_by_id_hash_copy(st_data_t key, st_data_t val, st_data_t d)
+{
+    st_table *tmp = (st_table *)d;
+
+    st_insert(tmp, rb_gc_location(key), rb_gc_location(val));
+
+    return ST_CONTINUE;
+}
+
+struct ref_update_compare_by_id_hash_check_moved_data {
+    rb_objspace_t *objspace;
+    bool has_moved_objs;
+};
+
+static int
+ref_update_compare_by_id_hash_check_moved_i(st_data_t key, st_data_t val, st_data_t d, int error)
+{
+    struct ref_update_compare_by_id_hash_check_moved_data *data = (struct ref_update_compare_by_id_hash_check_moved_data *)d;
+
+    if (gc_object_moved_p(data->objspace, (VALUE)key)) {
+        data->has_moved_objs = true;
+        return ST_STOP;
+    }
+
+    if (gc_object_moved_p(data->objspace, (VALUE)val)) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 gc_ref_update_hash(rb_objspace_t * objspace, VALUE v)
 {
-    rb_hash_stlike_foreach_with_replace(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
+    if (rb_hash_compare_by_id_p(v)) {
+        struct ref_update_compare_by_id_hash_check_moved_data data = {
+            .objspace = objspace,
+            .has_moved_objs = false,
+        };
+
+        st_foreach_with_replace(RHASH_ST_TABLE(v), ref_update_compare_by_id_hash_check_moved_i, hash_replace_ref, (st_data_t)&data);
+
+        if (data.has_moved_objs) {
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                st_table *tmp = rb_init_identtable();
+
+                st_foreach(RHASH_ST_TABLE(v), ref_update_compare_by_id_hash_copy, (st_data_t)tmp);
+
+                rb_hash_free(v);
+                rb_hash_st_table_set(v, tmp);
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
+        }
+    }
+    else {
+        rb_hash_stlike_foreach_with_replace(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
+    }
 }
 
 static void
