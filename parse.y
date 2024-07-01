@@ -1868,25 +1868,20 @@ static int looking_at_eol_p(struct parser_params *p);
 static NODE *
 get_nd_value(struct parser_params *p, NODE *node)
 {
+#define get_node_nd_value(node_type) node_type: return R##node_type(node)->nd_value
     switch (nd_type(node)) {
-      case NODE_GASGN:
-        return RNODE_GASGN(node)->nd_value;
-      case NODE_IASGN:
-        return RNODE_IASGN(node)->nd_value;
-      case NODE_LASGN:
-        return RNODE_LASGN(node)->nd_value;
-      case NODE_DASGN:
-        return RNODE_DASGN(node)->nd_value;
-      case NODE_MASGN:
-        return RNODE_MASGN(node)->nd_value;
-      case NODE_CVASGN:
-        return RNODE_CVASGN(node)->nd_value;
-      case NODE_CDECL:
-        return RNODE_CDECL(node)->nd_value;
+      case get_node_nd_value(NODE_GASGN);
+      case get_node_nd_value(NODE_IASGN);
+      case get_node_nd_value(NODE_LASGN);
+      case get_node_nd_value(NODE_DASGN);
+      case get_node_nd_value(NODE_MASGN);
+      case get_node_nd_value(NODE_CVASGN);
+      case get_node_nd_value(NODE_CDECL);
       default:
         compile_error(p, "get_nd_value: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
+#undef get_node_nd_value
 }
 
 static void
@@ -1923,23 +1918,19 @@ set_nd_value(struct parser_params *p, NODE *node, NODE *rhs)
 static ID
 get_nd_vid(struct parser_params *p, NODE *node)
 {
+#define get_node_nd_vid(node_type) node_type: return R##node_type(node)->nd_vid
     switch (nd_type(node)) {
-      case NODE_CDECL:
-        return RNODE_CDECL(node)->nd_vid;
-      case NODE_GASGN:
-        return RNODE_GASGN(node)->nd_vid;
-      case NODE_IASGN:
-        return RNODE_IASGN(node)->nd_vid;
-      case NODE_LASGN:
-        return RNODE_LASGN(node)->nd_vid;
-      case NODE_DASGN:
-        return RNODE_DASGN(node)->nd_vid;
-      case NODE_CVASGN:
-        return RNODE_CVASGN(node)->nd_vid;
+      case get_node_nd_vid(NODE_CDECL);
+      case get_node_nd_vid(NODE_GASGN);
+      case get_node_nd_vid(NODE_IASGN);
+      case get_node_nd_vid(NODE_LASGN);
+      case get_node_nd_vid(NODE_DASGN);
+      case get_node_nd_vid(NODE_CVASGN);
       default:
         compile_error(p, "get_nd_vid: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
+#undef get_node_nd_vid
 }
 
 static NODE *
