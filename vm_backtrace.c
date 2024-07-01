@@ -1766,6 +1766,12 @@ int
 rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines)
 {
     rb_thread_t *th = rb_thread_ptr(thread);
+
+    // If the threads is already in the KILLED state, there are no frames to capture.
+    if (th->status == THREAD_KILLED) {
+        return 0;
+    }
+
     return thread_profile_frames(th->ec, start, limit, buff, lines);
 }
 
