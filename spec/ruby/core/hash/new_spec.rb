@@ -34,7 +34,7 @@ describe "Hash.new" do
     -> { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.3" do
+  ruby_version_is "3.3"..."3.4" do
     it "emits a deprecation warning if keyword arguments are passed" do
       -> { Hash.new(unknown: true) }.should complain(
         Regexp.new(Regexp.escape("Calling Hash.new with keyword arguments is deprecated and will be removed in Ruby 3.4; use Hash.new({ key: value }) instead"))
@@ -44,6 +44,24 @@ describe "Hash.new" do
       -> { Hash.new(unknown: true) { 0 } }.should raise_error(ArgumentError)
 
       Hash.new({ unknown: true }).default.should == { unknown: true }
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "accepts a capacity: argument" do
+      Hash.new(5, capacity: 42).default.should == 5
+      Hash.new(capacity: 42).default.should == nil
+      (Hash.new(capacity: 42) { 1 }).default_proc.should_not == nil
+    end
+
+    it "ignores negative capacity" do
+      -> { Hash.new(capacity: -42) }.should_not raise_error
+    end
+
+    it "raises an error if unknown keyword arguments are passed" do
+      -> { Hash.new(unknown: true) }.should raise_error(ArgumentError)
+      -> { Hash.new(1, unknown: true) }.should raise_error(ArgumentError)
+      -> { Hash.new(unknown: true) { 0 } }.should raise_error(ArgumentError)
     end
   end
 end
