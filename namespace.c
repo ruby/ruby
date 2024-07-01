@@ -19,6 +19,7 @@
 VALUE rb_cNamespace;
 VALUE rb_cNamespaceEntry;
 
+/*
 static VALUE ns_builtin_load_path;
 static VALUE ns_builtin_expanded_load_path;
 static VALUE ns_builtin_loaded_features;
@@ -26,6 +27,7 @@ static VALUE ns_builtin_loaded_features_realpaths;
 static VALUE ns_builtin_loaded_features_realpath_map;
 
 static VALUE load_path_tree_root;
+*/
 
 static rb_namespace_t builtin_namespace_data = {
     .ns_object = Qnil,
@@ -183,11 +185,14 @@ rb_current_namespace(void)
 static void
 namespace_entry_initialize(rb_namespace_t *ns)
 {
+    rb_vm_t *vm = GET_VM();
+
     // These will be updated immediately
     ns->ns_object = 0;
     ns->ns_id = 0;
 
     ns->top_self = 0;
+    /*
     ns->load_path = rb_ary_dup(ns_builtin_load_path);
     ns->expanded_load_path = rb_ary_dup(ns_builtin_expanded_load_path);
     ns->load_path_snapshot = rb_ary_new();
@@ -197,6 +202,16 @@ namespace_entry_initialize(rb_namespace_t *ns)
     ns->loaded_features_index = st_init_numtable();
     ns->loaded_features_realpaths = rb_hash_dup(ns_builtin_loaded_features_realpaths);
     ns->loaded_features_realpath_map = rb_hash_dup(ns_builtin_loaded_features_realpath_map);
+    */
+    ns->load_path = rb_ary_dup(vm->load_path);
+    ns->expanded_load_path = rb_ary_dup(vm->expanded_load_path);
+    ns->load_path_snapshot = rb_ary_new();
+    ns->load_path_check_cache = 0;
+    ns->loaded_features = rb_ary_dup(vm->loaded_features);
+    ns->loaded_features_snapshot = rb_ary_new();
+    ns->loaded_features_index = st_init_numtable();
+    ns->loaded_features_realpaths = rb_hash_dup(vm->loaded_features_realpaths);
+    ns->loaded_features_realpath_map = rb_hash_dup(vm->loaded_features_realpath_map);
     ns->loading_table = st_init_strtable();
     ns->ruby_dln_libmap = rb_hash_new_with_size(0);
     ns->gvar_tbl = rb_hash_new_with_size(0);
@@ -220,10 +235,8 @@ void rb_namespace_gc_update_references(void *ptr)
     }
     ns->loaded_features = rb_gc_location(ns->loaded_features);
     ns->loaded_features_snapshot = rb_gc_location(ns->loaded_features_snapshot);
-    rb_gc_update_tbl_refs(ns->loaded_features_index);
     ns->loaded_features_realpaths = rb_gc_location(ns->loaded_features_realpaths);
     ns->loaded_features_realpath_map = rb_gc_location(ns->loaded_features_realpath_map);
-    rb_gc_update_tbl_refs(ns->loading_table);
     ns->ruby_dln_libmap = rb_gc_location(ns->ruby_dln_libmap);
     ns->gvar_tbl = rb_gc_location(ns->gvar_tbl);
 }
@@ -692,7 +705,7 @@ rb_namespace_require_relative(VALUE namespace, VALUE fname)
     return rb_ensure(rb_require_relative_entrypoint, fname, namespace_pop, (VALUE) th);
 }
 
-#define NS_BUILTIN_INIT(x) (rb_ary_unshift(load_path_tree_root, (x)))
+// #define NS_BUILTIN_INIT(x) (rb_ary_unshift(load_path_tree_root, (x)))
 
 void
 rb_initialize_main_namespace(void)
@@ -702,6 +715,7 @@ rb_initialize_main_namespace(void)
     rb_thread_t *th = GET_THREAD();
     VALUE main_ns;
 
+    /*
     // TODO: it's better if those values are hidden (but not GCed)
     load_path_tree_root = rb_ary_new();
     NS_BUILTIN_INIT(ns_builtin_load_path = rb_ary_dup(vm->load_path));
@@ -710,6 +724,7 @@ rb_initialize_main_namespace(void)
     NS_BUILTIN_INIT(ns_builtin_loaded_features_realpaths = rb_funcall(rb_cHash, rb_intern("[]"), 1, vm->loaded_features_realpaths));
     NS_BUILTIN_INIT(ns_builtin_loaded_features_realpath_map = rb_funcall(rb_cHash, rb_intern("[]"), 1, vm->loaded_features_realpath_map));
     rb_gc_register_mark_object(load_path_tree_root);
+    */
 
     // main_ns initialization must follow initializations of ns_builtin_x members
     // because Namespace#initialize uses those values.
