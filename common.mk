@@ -2057,7 +2057,6 @@ array.$(OBJEXT): {$(VPATH)}id.h
 array.$(OBJEXT): {$(VPATH)}id_table.h
 array.$(OBJEXT): {$(VPATH)}intern.h
 array.$(OBJEXT): {$(VPATH)}internal.h
-array.$(OBJEXT): {$(VPATH)}internal/abi.h
 array.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -2292,7 +2291,6 @@ ast.$(OBJEXT): {$(VPATH)}id.h
 ast.$(OBJEXT): {$(VPATH)}id_table.h
 ast.$(OBJEXT): {$(VPATH)}intern.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
-ast.$(OBJEXT): {$(VPATH)}internal/abi.h
 ast.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -2505,7 +2503,6 @@ bignum.$(OBJEXT): {$(VPATH)}id.h
 bignum.$(OBJEXT): {$(VPATH)}id_table.h
 bignum.$(OBJEXT): {$(VPATH)}intern.h
 bignum.$(OBJEXT): {$(VPATH)}internal.h
-bignum.$(OBJEXT): {$(VPATH)}internal/abi.h
 bignum.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -2729,7 +2726,6 @@ builtin.$(OBJEXT): {$(VPATH)}id.h
 builtin.$(OBJEXT): {$(VPATH)}id_table.h
 builtin.$(OBJEXT): {$(VPATH)}intern.h
 builtin.$(OBJEXT): {$(VPATH)}internal.h
-builtin.$(OBJEXT): {$(VPATH)}internal/abi.h
 builtin.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -2940,7 +2936,6 @@ class.$(OBJEXT): {$(VPATH)}id.h
 class.$(OBJEXT): {$(VPATH)}id_table.h
 class.$(OBJEXT): {$(VPATH)}intern.h
 class.$(OBJEXT): {$(VPATH)}internal.h
-class.$(OBJEXT): {$(VPATH)}internal/abi.h
 class.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -3134,7 +3129,6 @@ compar.$(OBJEXT): {$(VPATH)}encoding.h
 compar.$(OBJEXT): {$(VPATH)}id.h
 compar.$(OBJEXT): {$(VPATH)}intern.h
 compar.$(OBJEXT): {$(VPATH)}internal.h
-compar.$(OBJEXT): {$(VPATH)}internal/abi.h
 compar.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -3371,7 +3365,6 @@ compile.$(OBJEXT): {$(VPATH)}insns.inc
 compile.$(OBJEXT): {$(VPATH)}insns_info.inc
 compile.$(OBJEXT): {$(VPATH)}intern.h
 compile.$(OBJEXT): {$(VPATH)}internal.h
-compile.$(OBJEXT): {$(VPATH)}internal/abi.h
 compile.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -3600,7 +3593,6 @@ complex.$(OBJEXT): {$(VPATH)}id.h
 complex.$(OBJEXT): {$(VPATH)}id_table.h
 complex.$(OBJEXT): {$(VPATH)}intern.h
 complex.$(OBJEXT): {$(VPATH)}internal.h
-complex.$(OBJEXT): {$(VPATH)}internal/abi.h
 complex.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -3833,7 +3825,6 @@ cont.$(OBJEXT): {$(VPATH)}id.h
 cont.$(OBJEXT): {$(VPATH)}id_table.h
 cont.$(OBJEXT): {$(VPATH)}intern.h
 cont.$(OBJEXT): {$(VPATH)}internal.h
-cont.$(OBJEXT): {$(VPATH)}internal/abi.h
 cont.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4049,7 +4040,6 @@ debug.$(OBJEXT): {$(VPATH)}id.h
 debug.$(OBJEXT): {$(VPATH)}id_table.h
 debug.$(OBJEXT): {$(VPATH)}intern.h
 debug.$(OBJEXT): {$(VPATH)}internal.h
-debug.$(OBJEXT): {$(VPATH)}internal/abi.h
 debug.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4237,7 +4227,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}debug_counter.h
 debug_counter.$(OBJEXT): {$(VPATH)}defines.h
 debug_counter.$(OBJEXT): {$(VPATH)}intern.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal.h
-debug_counter.$(OBJEXT): {$(VPATH)}internal/abi.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4429,7 +4418,6 @@ dir.$(OBJEXT): {$(VPATH)}id.h
 dir.$(OBJEXT): {$(VPATH)}id_table.h
 dir.$(OBJEXT): {$(VPATH)}intern.h
 dir.$(OBJEXT): {$(VPATH)}internal.h
-dir.$(OBJEXT): {$(VPATH)}internal/abi.h
 dir.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4615,7 +4603,6 @@ dln.$(OBJEXT): {$(VPATH)}dln.c
 dln.$(OBJEXT): {$(VPATH)}dln.h
 dln.$(OBJEXT): {$(VPATH)}intern.h
 dln.$(OBJEXT): {$(VPATH)}internal.h
-dln.$(OBJEXT): {$(VPATH)}internal/abi.h
 dln.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4773,7 +4760,6 @@ dln_find.$(OBJEXT): {$(VPATH)}defines.h
 dln_find.$(OBJEXT): {$(VPATH)}dln.h
 dln_find.$(OBJEXT): {$(VPATH)}dln_find.c
 dln_find.$(OBJEXT): {$(VPATH)}intern.h
-dln_find.$(OBJEXT): {$(VPATH)}internal/abi.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -4930,7 +4916,6 @@ dmydln.$(OBJEXT): {$(VPATH)}config.h
 dmydln.$(OBJEXT): {$(VPATH)}defines.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c
 dmydln.$(OBJEXT): {$(VPATH)}intern.h
-dmydln.$(OBJEXT): {$(VPATH)}internal/abi.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -5940,7 +5925,6 @@ encoding.$(OBJEXT): {$(VPATH)}id.h
 encoding.$(OBJEXT): {$(VPATH)}id_table.h
 encoding.$(OBJEXT): {$(VPATH)}intern.h
 encoding.$(OBJEXT): {$(VPATH)}internal.h
-encoding.$(OBJEXT): {$(VPATH)}internal/abi.h
 encoding.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -6150,7 +6134,6 @@ enum.$(OBJEXT): {$(VPATH)}id.h
 enum.$(OBJEXT): {$(VPATH)}id_table.h
 enum.$(OBJEXT): {$(VPATH)}intern.h
 enum.$(OBJEXT): {$(VPATH)}internal.h
-enum.$(OBJEXT): {$(VPATH)}internal/abi.h
 enum.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -6358,7 +6341,6 @@ enumerator.$(OBJEXT): {$(VPATH)}id.h
 enumerator.$(OBJEXT): {$(VPATH)}id_table.h
 enumerator.$(OBJEXT): {$(VPATH)}intern.h
 enumerator.$(OBJEXT): {$(VPATH)}internal.h
-enumerator.$(OBJEXT): {$(VPATH)}internal/abi.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -6574,7 +6556,6 @@ error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
 error.$(OBJEXT): {$(VPATH)}intern.h
 error.$(OBJEXT): {$(VPATH)}internal.h
-error.$(OBJEXT): {$(VPATH)}internal/abi.h
 error.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -6818,7 +6799,6 @@ eval.$(OBJEXT): {$(VPATH)}id.h
 eval.$(OBJEXT): {$(VPATH)}id_table.h
 eval.$(OBJEXT): {$(VPATH)}intern.h
 eval.$(OBJEXT): {$(VPATH)}internal.h
-eval.$(OBJEXT): {$(VPATH)}internal/abi.h
 eval.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -7058,7 +7038,6 @@ file.$(OBJEXT): {$(VPATH)}id.h
 file.$(OBJEXT): {$(VPATH)}id_table.h
 file.$(OBJEXT): {$(VPATH)}intern.h
 file.$(OBJEXT): {$(VPATH)}internal.h
-file.$(OBJEXT): {$(VPATH)}internal/abi.h
 file.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -7300,7 +7279,6 @@ gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
 gc.$(OBJEXT): {$(VPATH)}internal.h
-gc.$(OBJEXT): {$(VPATH)}internal/abi.h
 gc.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -7553,7 +7531,6 @@ goruby.$(OBJEXT): {$(VPATH)}id.h
 goruby.$(OBJEXT): {$(VPATH)}id_table.h
 goruby.$(OBJEXT): {$(VPATH)}intern.h
 goruby.$(OBJEXT): {$(VPATH)}internal.h
-goruby.$(OBJEXT): {$(VPATH)}internal/abi.h
 goruby.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -7795,7 +7772,6 @@ hash.$(OBJEXT): {$(VPATH)}id.h
 hash.$(OBJEXT): {$(VPATH)}id_table.h
 hash.$(OBJEXT): {$(VPATH)}intern.h
 hash.$(OBJEXT): {$(VPATH)}internal.h
-hash.$(OBJEXT): {$(VPATH)}internal/abi.h
 hash.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -8197,7 +8173,6 @@ inits.$(OBJEXT): {$(VPATH)}config.h
 inits.$(OBJEXT): {$(VPATH)}defines.h
 inits.$(OBJEXT): {$(VPATH)}inits.c
 inits.$(OBJEXT): {$(VPATH)}intern.h
-inits.$(OBJEXT): {$(VPATH)}internal/abi.h
 inits.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -8396,7 +8371,6 @@ io.$(OBJEXT): {$(VPATH)}id.h
 io.$(OBJEXT): {$(VPATH)}id_table.h
 io.$(OBJEXT): {$(VPATH)}intern.h
 io.$(OBJEXT): {$(VPATH)}internal.h
-io.$(OBJEXT): {$(VPATH)}internal/abi.h
 io.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -8603,7 +8577,6 @@ io_buffer.$(OBJEXT): {$(VPATH)}encoding.h
 io_buffer.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 io_buffer.$(OBJEXT): {$(VPATH)}intern.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal.h
-io_buffer.$(OBJEXT): {$(VPATH)}internal/abi.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -8841,7 +8814,6 @@ iseq.$(OBJEXT): {$(VPATH)}insns.inc
 iseq.$(OBJEXT): {$(VPATH)}insns_info.inc
 iseq.$(OBJEXT): {$(VPATH)}intern.h
 iseq.$(OBJEXT): {$(VPATH)}internal.h
-iseq.$(OBJEXT): {$(VPATH)}internal/abi.h
 iseq.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -9094,7 +9066,6 @@ load.$(OBJEXT): {$(VPATH)}id.h
 load.$(OBJEXT): {$(VPATH)}id_table.h
 load.$(OBJEXT): {$(VPATH)}intern.h
 load.$(OBJEXT): {$(VPATH)}internal.h
-load.$(OBJEXT): {$(VPATH)}internal/abi.h
 load.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -9282,7 +9253,6 @@ loadpath.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 loadpath.$(OBJEXT): {$(VPATH)}config.h
 loadpath.$(OBJEXT): {$(VPATH)}defines.h
 loadpath.$(OBJEXT): {$(VPATH)}intern.h
-loadpath.$(OBJEXT): {$(VPATH)}internal/abi.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -9443,7 +9413,6 @@ localeinit.$(OBJEXT): {$(VPATH)}encindex.h
 localeinit.$(OBJEXT): {$(VPATH)}encoding.h
 localeinit.$(OBJEXT): {$(VPATH)}intern.h
 localeinit.$(OBJEXT): {$(VPATH)}internal.h
-localeinit.$(OBJEXT): {$(VPATH)}internal/abi.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -9617,7 +9586,6 @@ main.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 main.$(OBJEXT): {$(VPATH)}config.h
 main.$(OBJEXT): {$(VPATH)}defines.h
 main.$(OBJEXT): {$(VPATH)}intern.h
-main.$(OBJEXT): {$(VPATH)}internal/abi.h
 main.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -9814,7 +9782,6 @@ marshal.$(OBJEXT): {$(VPATH)}id.h
 marshal.$(OBJEXT): {$(VPATH)}id_table.h
 marshal.$(OBJEXT): {$(VPATH)}intern.h
 marshal.$(OBJEXT): {$(VPATH)}internal.h
-marshal.$(OBJEXT): {$(VPATH)}internal/abi.h
 marshal.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -10013,7 +9980,6 @@ math.$(OBJEXT): {$(VPATH)}defines.h
 math.$(OBJEXT): {$(VPATH)}id_table.h
 math.$(OBJEXT): {$(VPATH)}intern.h
 math.$(OBJEXT): {$(VPATH)}internal.h
-math.$(OBJEXT): {$(VPATH)}internal/abi.h
 math.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -10195,7 +10161,6 @@ memory_view.$(OBJEXT): {$(VPATH)}id.h
 memory_view.$(OBJEXT): {$(VPATH)}id_table.h
 memory_view.$(OBJEXT): {$(VPATH)}intern.h
 memory_view.$(OBJEXT): {$(VPATH)}internal.h
-memory_view.$(OBJEXT): {$(VPATH)}internal/abi.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -10434,7 +10399,6 @@ miniinit.$(OBJEXT): {$(VPATH)}id.h
 miniinit.$(OBJEXT): {$(VPATH)}id_table.h
 miniinit.$(OBJEXT): {$(VPATH)}intern.h
 miniinit.$(OBJEXT): {$(VPATH)}internal.h
-miniinit.$(OBJEXT): {$(VPATH)}internal/abi.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -10658,7 +10622,6 @@ node.$(OBJEXT): {$(VPATH)}id.h
 node.$(OBJEXT): {$(VPATH)}id_table.h
 node.$(OBJEXT): {$(VPATH)}intern.h
 node.$(OBJEXT): {$(VPATH)}internal.h
-node.$(OBJEXT): {$(VPATH)}internal/abi.h
 node.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -10870,7 +10833,6 @@ node_dump.$(OBJEXT): {$(VPATH)}id.h
 node_dump.$(OBJEXT): {$(VPATH)}id_table.h
 node_dump.$(OBJEXT): {$(VPATH)}intern.h
 node_dump.$(OBJEXT): {$(VPATH)}internal.h
-node_dump.$(OBJEXT): {$(VPATH)}internal/abi.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -11085,7 +11047,6 @@ numeric.$(OBJEXT): {$(VPATH)}id.h
 numeric.$(OBJEXT): {$(VPATH)}id_table.h
 numeric.$(OBJEXT): {$(VPATH)}intern.h
 numeric.$(OBJEXT): {$(VPATH)}internal.h
-numeric.$(OBJEXT): {$(VPATH)}internal/abi.h
 numeric.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -11303,7 +11264,6 @@ object.$(OBJEXT): {$(VPATH)}id.h
 object.$(OBJEXT): {$(VPATH)}id_table.h
 object.$(OBJEXT): {$(VPATH)}intern.h
 object.$(OBJEXT): {$(VPATH)}internal.h
-object.$(OBJEXT): {$(VPATH)}internal/abi.h
 object.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -11517,7 +11477,6 @@ pack.$(OBJEXT): {$(VPATH)}id.h
 pack.$(OBJEXT): {$(VPATH)}id_table.h
 pack.$(OBJEXT): {$(VPATH)}intern.h
 pack.$(OBJEXT): {$(VPATH)}internal.h
-pack.$(OBJEXT): {$(VPATH)}internal/abi.h
 pack.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -11739,7 +11698,6 @@ parse.$(OBJEXT): {$(VPATH)}id.h
 parse.$(OBJEXT): {$(VPATH)}id_table.h
 parse.$(OBJEXT): {$(VPATH)}intern.h
 parse.$(OBJEXT): {$(VPATH)}internal.h
-parse.$(OBJEXT): {$(VPATH)}internal/abi.h
 parse.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -12016,7 +11974,6 @@ prism/api_node.$(OBJEXT): {$(VPATH)}config.h
 prism/api_node.$(OBJEXT): {$(VPATH)}defines.h
 prism/api_node.$(OBJEXT): {$(VPATH)}encoding.h
 prism/api_node.$(OBJEXT): {$(VPATH)}intern.h
-prism/api_node.$(OBJEXT): {$(VPATH)}internal/abi.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -12211,7 +12168,6 @@ prism/api_pack.$(OBJEXT): {$(VPATH)}config.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}defines.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}encoding.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}intern.h
-prism/api_pack.$(OBJEXT): {$(VPATH)}internal/abi.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -12420,7 +12376,6 @@ prism/extension.$(OBJEXT): {$(VPATH)}config.h
 prism/extension.$(OBJEXT): {$(VPATH)}defines.h
 prism/extension.$(OBJEXT): {$(VPATH)}encoding.h
 prism/extension.$(OBJEXT): {$(VPATH)}intern.h
-prism/extension.$(OBJEXT): {$(VPATH)}internal/abi.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -12807,7 +12762,6 @@ prism_init.$(OBJEXT): {$(VPATH)}config.h
 prism_init.$(OBJEXT): {$(VPATH)}defines.h
 prism_init.$(OBJEXT): {$(VPATH)}encoding.h
 prism_init.$(OBJEXT): {$(VPATH)}intern.h
-prism_init.$(OBJEXT): {$(VPATH)}internal/abi.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -13030,7 +12984,6 @@ proc.$(OBJEXT): {$(VPATH)}id.h
 proc.$(OBJEXT): {$(VPATH)}id_table.h
 proc.$(OBJEXT): {$(VPATH)}intern.h
 proc.$(OBJEXT): {$(VPATH)}internal.h
-proc.$(OBJEXT): {$(VPATH)}internal/abi.h
 proc.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -13259,7 +13212,6 @@ process.$(OBJEXT): {$(VPATH)}id.h
 process.$(OBJEXT): {$(VPATH)}id_table.h
 process.$(OBJEXT): {$(VPATH)}intern.h
 process.$(OBJEXT): {$(VPATH)}internal.h
-process.$(OBJEXT): {$(VPATH)}internal/abi.h
 process.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -13482,7 +13434,6 @@ ractor.$(OBJEXT): {$(VPATH)}id.h
 ractor.$(OBJEXT): {$(VPATH)}id_table.h
 ractor.$(OBJEXT): {$(VPATH)}intern.h
 ractor.$(OBJEXT): {$(VPATH)}internal.h
-ractor.$(OBJEXT): {$(VPATH)}internal/abi.h
 ractor.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -13696,7 +13647,6 @@ random.$(OBJEXT): {$(VPATH)}id.h
 random.$(OBJEXT): {$(VPATH)}id_table.h
 random.$(OBJEXT): {$(VPATH)}intern.h
 random.$(OBJEXT): {$(VPATH)}internal.h
-random.$(OBJEXT): {$(VPATH)}internal/abi.h
 random.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -13903,7 +13853,6 @@ range.$(OBJEXT): {$(VPATH)}encoding.h
 range.$(OBJEXT): {$(VPATH)}id.h
 range.$(OBJEXT): {$(VPATH)}intern.h
 range.$(OBJEXT): {$(VPATH)}internal.h
-range.$(OBJEXT): {$(VPATH)}internal/abi.h
 range.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14102,7 +14051,6 @@ rational.$(OBJEXT): {$(VPATH)}id.h
 rational.$(OBJEXT): {$(VPATH)}id_table.h
 rational.$(OBJEXT): {$(VPATH)}intern.h
 rational.$(OBJEXT): {$(VPATH)}internal.h
-rational.$(OBJEXT): {$(VPATH)}internal/abi.h
 rational.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14314,7 +14262,6 @@ re.$(OBJEXT): {$(VPATH)}id.h
 re.$(OBJEXT): {$(VPATH)}id_table.h
 re.$(OBJEXT): {$(VPATH)}intern.h
 re.$(OBJEXT): {$(VPATH)}internal.h
-re.$(OBJEXT): {$(VPATH)}internal/abi.h
 re.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14499,7 +14446,6 @@ regcomp.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regcomp.$(OBJEXT): {$(VPATH)}config.h
 regcomp.$(OBJEXT): {$(VPATH)}defines.h
 regcomp.$(OBJEXT): {$(VPATH)}intern.h
-regcomp.$(OBJEXT): {$(VPATH)}internal/abi.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14661,7 +14607,6 @@ regenc.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regenc.$(OBJEXT): {$(VPATH)}config.h
 regenc.$(OBJEXT): {$(VPATH)}defines.h
 regenc.$(OBJEXT): {$(VPATH)}intern.h
-regenc.$(OBJEXT): {$(VPATH)}internal/abi.h
 regenc.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14822,7 +14767,6 @@ regerror.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regerror.$(OBJEXT): {$(VPATH)}config.h
 regerror.$(OBJEXT): {$(VPATH)}defines.h
 regerror.$(OBJEXT): {$(VPATH)}intern.h
-regerror.$(OBJEXT): {$(VPATH)}internal/abi.h
 regerror.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -14983,7 +14927,6 @@ regexec.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regexec.$(OBJEXT): {$(VPATH)}config.h
 regexec.$(OBJEXT): {$(VPATH)}defines.h
 regexec.$(OBJEXT): {$(VPATH)}intern.h
-regexec.$(OBJEXT): {$(VPATH)}internal/abi.h
 regexec.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -15148,7 +15091,6 @@ regparse.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regparse.$(OBJEXT): {$(VPATH)}config.h
 regparse.$(OBJEXT): {$(VPATH)}defines.h
 regparse.$(OBJEXT): {$(VPATH)}intern.h
-regparse.$(OBJEXT): {$(VPATH)}internal/abi.h
 regparse.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -15310,7 +15252,6 @@ regsyntax.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 regsyntax.$(OBJEXT): {$(VPATH)}config.h
 regsyntax.$(OBJEXT): {$(VPATH)}defines.h
 regsyntax.$(OBJEXT): {$(VPATH)}intern.h
-regsyntax.$(OBJEXT): {$(VPATH)}internal/abi.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -15530,7 +15471,6 @@ rjit.$(OBJEXT): {$(VPATH)}insns.inc
 rjit.$(OBJEXT): {$(VPATH)}insns_info.inc
 rjit.$(OBJEXT): {$(VPATH)}intern.h
 rjit.$(OBJEXT): {$(VPATH)}internal.h
-rjit.$(OBJEXT): {$(VPATH)}internal/abi.h
 rjit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 rjit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 rjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -15782,7 +15722,6 @@ rjit_c.$(OBJEXT): {$(VPATH)}insns.inc
 rjit_c.$(OBJEXT): {$(VPATH)}insns_info.inc
 rjit_c.$(OBJEXT): {$(VPATH)}intern.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal.h
-rjit_c.$(OBJEXT): {$(VPATH)}internal/abi.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 rjit_c.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -16058,7 +15997,6 @@ ruby.$(OBJEXT): {$(VPATH)}id.h
 ruby.$(OBJEXT): {$(VPATH)}id_table.h
 ruby.$(OBJEXT): {$(VPATH)}intern.h
 ruby.$(OBJEXT): {$(VPATH)}internal.h
-ruby.$(OBJEXT): {$(VPATH)}internal/abi.h
 ruby.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -16266,7 +16204,6 @@ ruby_parser.$(OBJEXT): {$(VPATH)}defines.h
 ruby_parser.$(OBJEXT): {$(VPATH)}encoding.h
 ruby_parser.$(OBJEXT): {$(VPATH)}intern.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal.h
-ruby_parser.$(OBJEXT): {$(VPATH)}internal/abi.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -16461,7 +16398,6 @@ scheduler.$(OBJEXT): {$(VPATH)}id.h
 scheduler.$(OBJEXT): {$(VPATH)}id_table.h
 scheduler.$(OBJEXT): {$(VPATH)}intern.h
 scheduler.$(OBJEXT): {$(VPATH)}internal.h
-scheduler.$(OBJEXT): {$(VPATH)}internal/abi.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -16642,7 +16578,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 setproctitle.$(OBJEXT): {$(VPATH)}config.h
 setproctitle.$(OBJEXT): {$(VPATH)}defines.h
 setproctitle.$(OBJEXT): {$(VPATH)}intern.h
-setproctitle.$(OBJEXT): {$(VPATH)}internal/abi.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -16829,7 +16764,6 @@ shape.$(OBJEXT): {$(VPATH)}id.h
 shape.$(OBJEXT): {$(VPATH)}id_table.h
 shape.$(OBJEXT): {$(VPATH)}intern.h
 shape.$(OBJEXT): {$(VPATH)}internal.h
-shape.$(OBJEXT): {$(VPATH)}internal/abi.h
 shape.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 shape.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 shape.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -17041,7 +16975,6 @@ signal.$(OBJEXT): {$(VPATH)}id.h
 signal.$(OBJEXT): {$(VPATH)}id_table.h
 signal.$(OBJEXT): {$(VPATH)}intern.h
 signal.$(OBJEXT): {$(VPATH)}internal.h
-signal.$(OBJEXT): {$(VPATH)}internal/abi.h
 signal.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -17247,7 +17180,6 @@ sprintf.$(OBJEXT): {$(VPATH)}id.h
 sprintf.$(OBJEXT): {$(VPATH)}id_table.h
 sprintf.$(OBJEXT): {$(VPATH)}intern.h
 sprintf.$(OBJEXT): {$(VPATH)}internal.h
-sprintf.$(OBJEXT): {$(VPATH)}internal/abi.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -17430,7 +17362,6 @@ st.$(OBJEXT): {$(VPATH)}config.h
 st.$(OBJEXT): {$(VPATH)}defines.h
 st.$(OBJEXT): {$(VPATH)}intern.h
 st.$(OBJEXT): {$(VPATH)}internal.h
-st.$(OBJEXT): {$(VPATH)}internal/abi.h
 st.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -17597,7 +17528,6 @@ strftime.$(OBJEXT): {$(VPATH)}defines.h
 strftime.$(OBJEXT): {$(VPATH)}encoding.h
 strftime.$(OBJEXT): {$(VPATH)}intern.h
 strftime.$(OBJEXT): {$(VPATH)}internal.h
-strftime.$(OBJEXT): {$(VPATH)}internal/abi.h
 strftime.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -17805,7 +17735,6 @@ string.$(OBJEXT): {$(VPATH)}id.h
 string.$(OBJEXT): {$(VPATH)}id_table.h
 string.$(OBJEXT): {$(VPATH)}intern.h
 string.$(OBJEXT): {$(VPATH)}internal.h
-string.$(OBJEXT): {$(VPATH)}internal/abi.h
 string.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -18054,7 +17983,6 @@ struct.$(OBJEXT): {$(VPATH)}id.h
 struct.$(OBJEXT): {$(VPATH)}id_table.h
 struct.$(OBJEXT): {$(VPATH)}intern.h
 struct.$(OBJEXT): {$(VPATH)}internal.h
-struct.$(OBJEXT): {$(VPATH)}internal/abi.h
 struct.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -18267,7 +18195,6 @@ symbol.$(OBJEXT): {$(VPATH)}id_table.c
 symbol.$(OBJEXT): {$(VPATH)}id_table.h
 symbol.$(OBJEXT): {$(VPATH)}intern.h
 symbol.$(OBJEXT): {$(VPATH)}internal.h
-symbol.$(OBJEXT): {$(VPATH)}internal/abi.h
 symbol.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -18515,7 +18442,6 @@ thread.$(OBJEXT): {$(VPATH)}id.h
 thread.$(OBJEXT): {$(VPATH)}id_table.h
 thread.$(OBJEXT): {$(VPATH)}intern.h
 thread.$(OBJEXT): {$(VPATH)}internal.h
-thread.$(OBJEXT): {$(VPATH)}internal/abi.h
 thread.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -18742,7 +18668,6 @@ time.$(OBJEXT): {$(VPATH)}id.h
 time.$(OBJEXT): {$(VPATH)}id_table.h
 time.$(OBJEXT): {$(VPATH)}intern.h
 time.$(OBJEXT): {$(VPATH)}internal.h
-time.$(OBJEXT): {$(VPATH)}internal/abi.h
 time.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -18940,7 +18865,6 @@ transcode.$(OBJEXT): {$(VPATH)}id.h
 transcode.$(OBJEXT): {$(VPATH)}id_table.h
 transcode.$(OBJEXT): {$(VPATH)}intern.h
 transcode.$(OBJEXT): {$(VPATH)}internal.h
-transcode.$(OBJEXT): {$(VPATH)}internal/abi.h
 transcode.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -19121,7 +19045,6 @@ util.$(OBJEXT): {$(VPATH)}defines.h
 util.$(OBJEXT): {$(VPATH)}dtoa.c
 util.$(OBJEXT): {$(VPATH)}intern.h
 util.$(OBJEXT): {$(VPATH)}internal.h
-util.$(OBJEXT): {$(VPATH)}internal/abi.h
 util.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -19313,7 +19236,6 @@ variable.$(OBJEXT): {$(VPATH)}id.h
 variable.$(OBJEXT): {$(VPATH)}id_table.h
 variable.$(OBJEXT): {$(VPATH)}intern.h
 variable.$(OBJEXT): {$(VPATH)}internal.h
-variable.$(OBJEXT): {$(VPATH)}internal/abi.h
 variable.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -19525,7 +19447,6 @@ version.$(OBJEXT): {$(VPATH)}id.h
 version.$(OBJEXT): {$(VPATH)}id_table.h
 version.$(OBJEXT): {$(VPATH)}intern.h
 version.$(OBJEXT): {$(VPATH)}internal.h
-version.$(OBJEXT): {$(VPATH)}internal/abi.h
 version.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -19784,7 +19705,6 @@ vm.$(OBJEXT): {$(VPATH)}insns.inc
 vm.$(OBJEXT): {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}intern.h
 vm.$(OBJEXT): {$(VPATH)}internal.h
-vm.$(OBJEXT): {$(VPATH)}internal/abi.h
 vm.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -20038,7 +19958,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}id.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}id_table.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}intern.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal.h
-vm_backtrace.$(OBJEXT): {$(VPATH)}internal/abi.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -20266,7 +20185,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}id.h
 vm_dump.$(OBJEXT): {$(VPATH)}id_table.h
 vm_dump.$(OBJEXT): {$(VPATH)}intern.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal.h
-vm_dump.$(OBJEXT): {$(VPATH)}internal/abi.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -20477,7 +20395,6 @@ vm_sync.$(OBJEXT): {$(VPATH)}id.h
 vm_sync.$(OBJEXT): {$(VPATH)}id_table.h
 vm_sync.$(OBJEXT): {$(VPATH)}intern.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal.h
-vm_sync.$(OBJEXT): {$(VPATH)}internal/abi.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -20711,7 +20628,6 @@ vm_trace.$(OBJEXT): {$(VPATH)}id.h
 vm_trace.$(OBJEXT): {$(VPATH)}id_table.h
 vm_trace.$(OBJEXT): {$(VPATH)}intern.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal.h
-vm_trace.$(OBJEXT): {$(VPATH)}internal/abi.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -20921,7 +20837,6 @@ weakmap.$(OBJEXT): {$(VPATH)}encoding.h
 weakmap.$(OBJEXT): {$(VPATH)}id.h
 weakmap.$(OBJEXT): {$(VPATH)}intern.h
 weakmap.$(OBJEXT): {$(VPATH)}internal.h
-weakmap.$(OBJEXT): {$(VPATH)}internal/abi.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -21155,7 +21070,6 @@ yjit.$(OBJEXT): {$(VPATH)}insns.inc
 yjit.$(OBJEXT): {$(VPATH)}insns_info.inc
 yjit.$(OBJEXT): {$(VPATH)}intern.h
 yjit.$(OBJEXT): {$(VPATH)}internal.h
-yjit.$(OBJEXT): {$(VPATH)}internal/abi.h
 yjit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h

@@ -14,7 +14,6 @@ break.o: $(hdrdir)/ruby/backward/2/stdalign.h
 break.o: $(hdrdir)/ruby/backward/2/stdarg.h
 break.o: $(hdrdir)/ruby/defines.h
 break.o: $(hdrdir)/ruby/intern.h
-break.o: $(hdrdir)/ruby/internal/abi.h
 break.o: $(hdrdir)/ruby/internal/anyargs.h
 break.o: $(hdrdir)/ruby/internal/arithmetic.h
 break.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,7 +173,6 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -334,7 +332,6 @@ yield.o: $(hdrdir)/ruby/backward/2/stdalign.h
 yield.o: $(hdrdir)/ruby/backward/2/stdarg.h
 yield.o: $(hdrdir)/ruby/defines.h
 yield.o: $(hdrdir)/ruby/intern.h
-yield.o: $(hdrdir)/ruby/internal/abi.h
 yield.o: $(hdrdir)/ruby/internal/anyargs.h
 yield.o: $(hdrdir)/ruby/internal/arithmetic.h
 yield.o: $(hdrdir)/ruby/internal/arithmetic/char.h

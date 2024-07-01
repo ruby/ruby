@@ -14,7 +14,6 @@ memory_view.o: $(hdrdir)/ruby/backward/2/stdalign.h
 memory_view.o: $(hdrdir)/ruby/backward/2/stdarg.h
 memory_view.o: $(hdrdir)/ruby/defines.h
 memory_view.o: $(hdrdir)/ruby/intern.h
-memory_view.o: $(hdrdir)/ruby/internal/abi.h
 memory_view.o: $(hdrdir)/ruby/internal/anyargs.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic/char.h

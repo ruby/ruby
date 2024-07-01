@@ -194,7 +194,6 @@ enc/ascii.$(OBJEXT): defines.h
 enc/ascii.$(OBJEXT): enc/ascii.c
 enc/ascii.$(OBJEXT): encoding.h
 enc/ascii.$(OBJEXT): intern.h
-enc/ascii.$(OBJEXT): internal/abi.h
 enc/ascii.$(OBJEXT): internal/anyargs.h
 enc/ascii.$(OBJEXT): internal/arithmetic.h
 enc/ascii.$(OBJEXT): internal/arithmetic/char.h
@@ -365,7 +364,6 @@ enc/big5.$(OBJEXT): config.h
 enc/big5.$(OBJEXT): defines.h
 enc/big5.$(OBJEXT): enc/big5.c
 enc/big5.$(OBJEXT): intern.h
-enc/big5.$(OBJEXT): internal/abi.h
 enc/big5.$(OBJEXT): internal/anyargs.h
 enc/big5.$(OBJEXT): internal/arithmetic.h
 enc/big5.$(OBJEXT): internal/arithmetic/char.h
@@ -528,7 +526,6 @@ enc/cesu_8.$(OBJEXT): defines.h
 enc/cesu_8.$(OBJEXT): enc/cesu_8.c
 enc/cesu_8.$(OBJEXT): encoding.h
 enc/cesu_8.$(OBJEXT): intern.h
-enc/cesu_8.$(OBJEXT): internal/abi.h
 enc/cesu_8.$(OBJEXT): internal/anyargs.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic/char.h
@@ -699,7 +696,6 @@ enc/cp949.$(OBJEXT): config.h
 enc/cp949.$(OBJEXT): defines.h
 enc/cp949.$(OBJEXT): enc/cp949.c
 enc/cp949.$(OBJEXT): intern.h
-enc/cp949.$(OBJEXT): internal/abi.h
 enc/cp949.$(OBJEXT): internal/anyargs.h
 enc/cp949.$(OBJEXT): internal/arithmetic.h
 enc/cp949.$(OBJEXT): internal/arithmetic/char.h
@@ -860,7 +856,6 @@ enc/emacs_mule.$(OBJEXT): config.h
 enc/emacs_mule.$(OBJEXT): defines.h
 enc/emacs_mule.$(OBJEXT): enc/emacs_mule.c
 enc/emacs_mule.$(OBJEXT): intern.h
-enc/emacs_mule.$(OBJEXT): internal/abi.h
 enc/emacs_mule.$(OBJEXT): internal/anyargs.h
 enc/emacs_mule.$(OBJEXT): internal/arithmetic.h
 enc/emacs_mule.$(OBJEXT): internal/arithmetic/char.h
@@ -1022,7 +1017,6 @@ enc/encdb.$(OBJEXT): enc/encdb.c
 enc/encdb.$(OBJEXT): encdb.h
 enc/encdb.$(OBJEXT): encoding.h
 enc/encdb.$(OBJEXT): intern.h
-enc/encdb.$(OBJEXT): internal/abi.h
 enc/encdb.$(OBJEXT): internal/anyargs.h
 enc/encdb.$(OBJEXT): internal/arithmetic.h
 enc/encdb.$(OBJEXT): internal/arithmetic/char.h
@@ -1195,7 +1189,6 @@ enc/euc_jp.$(OBJEXT): enc/euc_jp.c
 enc/euc_jp.$(OBJEXT): enc/jis/props.h
 enc/euc_jp.$(OBJEXT): enc/jis/props.kwd
 enc/euc_jp.$(OBJEXT): intern.h
-enc/euc_jp.$(OBJEXT): internal/abi.h
 enc/euc_jp.$(OBJEXT): internal/anyargs.h
 enc/euc_jp.$(OBJEXT): internal/arithmetic.h
 enc/euc_jp.$(OBJEXT): internal/arithmetic/char.h
@@ -1356,7 +1349,6 @@ enc/euc_kr.$(OBJEXT): config.h
 enc/euc_kr.$(OBJEXT): defines.h
 enc/euc_kr.$(OBJEXT): enc/euc_kr.c
 enc/euc_kr.$(OBJEXT): intern.h
-enc/euc_kr.$(OBJEXT): internal/abi.h
 enc/euc_kr.$(OBJEXT): internal/anyargs.h
 enc/euc_kr.$(OBJEXT): internal/arithmetic.h
 enc/euc_kr.$(OBJEXT): internal/arithmetic/char.h
@@ -1517,7 +1509,6 @@ enc/euc_tw.$(OBJEXT): config.h
 enc/euc_tw.$(OBJEXT): defines.h
 enc/euc_tw.$(OBJEXT): enc/euc_tw.c
 enc/euc_tw.$(OBJEXT): intern.h
-enc/euc_tw.$(OBJEXT): internal/abi.h
 enc/euc_tw.$(OBJEXT): internal/anyargs.h
 enc/euc_tw.$(OBJEXT): internal/arithmetic.h
 enc/euc_tw.$(OBJEXT): internal/arithmetic/char.h
@@ -1678,7 +1669,6 @@ enc/gb18030.$(OBJEXT): config.h
 enc/gb18030.$(OBJEXT): defines.h
 enc/gb18030.$(OBJEXT): enc/gb18030.c
 enc/gb18030.$(OBJEXT): intern.h
-enc/gb18030.$(OBJEXT): internal/abi.h
 enc/gb18030.$(OBJEXT): internal/anyargs.h
 enc/gb18030.$(OBJEXT): internal/arithmetic.h
 enc/gb18030.$(OBJEXT): internal/arithmetic/char.h
@@ -1839,7 +1829,6 @@ enc/gb2312.$(OBJEXT): config.h
 enc/gb2312.$(OBJEXT): defines.h
 enc/gb2312.$(OBJEXT): enc/gb2312.c
 enc/gb2312.$(OBJEXT): intern.h
-enc/gb2312.$(OBJEXT): internal/abi.h
 enc/gb2312.$(OBJEXT): internal/anyargs.h
 enc/gb2312.$(OBJEXT): internal/arithmetic.h
 enc/gb2312.$(OBJEXT): internal/arithmetic/char.h
@@ -2000,7 +1989,6 @@ enc/gbk.$(OBJEXT): config.h
 enc/gbk.$(OBJEXT): defines.h
 enc/gbk.$(OBJEXT): enc/gbk.c
 enc/gbk.$(OBJEXT): intern.h
-enc/gbk.$(OBJEXT): internal/abi.h
 enc/gbk.$(OBJEXT): internal/anyargs.h
 enc/gbk.$(OBJEXT): internal/arithmetic.h
 enc/gbk.$(OBJEXT): internal/arithmetic/char.h
@@ -2162,7 +2150,6 @@ enc/iso_8859_1.$(OBJEXT): defines.h
 enc/iso_8859_1.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_1.$(OBJEXT): enc/iso_8859_1.c
 enc/iso_8859_1.$(OBJEXT): intern.h
-enc/iso_8859_1.$(OBJEXT): internal/abi.h
 enc/iso_8859_1.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_1.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_1.$(OBJEXT): internal/arithmetic/char.h
@@ -2324,7 +2311,6 @@ enc/iso_8859_10.$(OBJEXT): defines.h
 enc/iso_8859_10.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_10.$(OBJEXT): enc/iso_8859_10.c
 enc/iso_8859_10.$(OBJEXT): intern.h
-enc/iso_8859_10.$(OBJEXT): internal/abi.h
 enc/iso_8859_10.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_10.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_10.$(OBJEXT): internal/arithmetic/char.h
@@ -2485,7 +2471,6 @@ enc/iso_8859_11.$(OBJEXT): config.h
 enc/iso_8859_11.$(OBJEXT): defines.h
 enc/iso_8859_11.$(OBJEXT): enc/iso_8859_11.c
 enc/iso_8859_11.$(OBJEXT): intern.h
-enc/iso_8859_11.$(OBJEXT): internal/abi.h
 enc/iso_8859_11.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_11.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_11.$(OBJEXT): internal/arithmetic/char.h
@@ -2647,7 +2632,6 @@ enc/iso_8859_13.$(OBJEXT): defines.h
 enc/iso_8859_13.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_13.$(OBJEXT): enc/iso_8859_13.c
 enc/iso_8859_13.$(OBJEXT): intern.h
-enc/iso_8859_13.$(OBJEXT): internal/abi.h
 enc/iso_8859_13.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_13.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_13.$(OBJEXT): internal/arithmetic/char.h
@@ -2809,7 +2793,6 @@ enc/iso_8859_14.$(OBJEXT): defines.h
 enc/iso_8859_14.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_14.$(OBJEXT): enc/iso_8859_14.c
 enc/iso_8859_14.$(OBJEXT): intern.h
-enc/iso_8859_14.$(OBJEXT): internal/abi.h
 enc/iso_8859_14.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_14.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_14.$(OBJEXT): internal/arithmetic/char.h
@@ -2971,7 +2954,6 @@ enc/iso_8859_15.$(OBJEXT): defines.h
 enc/iso_8859_15.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_15.$(OBJEXT): enc/iso_8859_15.c
 enc/iso_8859_15.$(OBJEXT): intern.h
-enc/iso_8859_15.$(OBJEXT): internal/abi.h
 enc/iso_8859_15.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_15.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_15.$(OBJEXT): internal/arithmetic/char.h
@@ -3133,7 +3115,6 @@ enc/iso_8859_16.$(OBJEXT): defines.h
 enc/iso_8859_16.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_16.$(OBJEXT): enc/iso_8859_16.c
 enc/iso_8859_16.$(OBJEXT): intern.h
-enc/iso_8859_16.$(OBJEXT): internal/abi.h
 enc/iso_8859_16.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_16.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_16.$(OBJEXT): internal/arithmetic/char.h
@@ -3295,7 +3276,6 @@ enc/iso_8859_2.$(OBJEXT): defines.h
 enc/iso_8859_2.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_2.$(OBJEXT): enc/iso_8859_2.c
 enc/iso_8859_2.$(OBJEXT): intern.h
-enc/iso_8859_2.$(OBJEXT): internal/abi.h
 enc/iso_8859_2.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_2.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_2.$(OBJEXT): internal/arithmetic/char.h
@@ -3457,7 +3437,6 @@ enc/iso_8859_3.$(OBJEXT): defines.h
 enc/iso_8859_3.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_3.$(OBJEXT): enc/iso_8859_3.c
 enc/iso_8859_3.$(OBJEXT): intern.h
-enc/iso_8859_3.$(OBJEXT): internal/abi.h
 enc/iso_8859_3.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_3.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_3.$(OBJEXT): internal/arithmetic/char.h
@@ -3619,7 +3598,6 @@ enc/iso_8859_4.$(OBJEXT): defines.h
 enc/iso_8859_4.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_4.$(OBJEXT): enc/iso_8859_4.c
 enc/iso_8859_4.$(OBJEXT): intern.h
-enc/iso_8859_4.$(OBJEXT): internal/abi.h
 enc/iso_8859_4.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_4.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_4.$(OBJEXT): internal/arithmetic/char.h
@@ -3780,7 +3758,6 @@ enc/iso_8859_5.$(OBJEXT): config.h
 enc/iso_8859_5.$(OBJEXT): defines.h
 enc/iso_8859_5.$(OBJEXT): enc/iso_8859_5.c
 enc/iso_8859_5.$(OBJEXT): intern.h
-enc/iso_8859_5.$(OBJEXT): internal/abi.h
 enc/iso_8859_5.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_5.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_5.$(OBJEXT): internal/arithmetic/char.h
@@ -3941,7 +3918,6 @@ enc/iso_8859_6.$(OBJEXT): config.h
 enc/iso_8859_6.$(OBJEXT): defines.h
 enc/iso_8859_6.$(OBJEXT): enc/iso_8859_6.c
 enc/iso_8859_6.$(OBJEXT): intern.h
-enc/iso_8859_6.$(OBJEXT): internal/abi.h
 enc/iso_8859_6.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_6.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_6.$(OBJEXT): internal/arithmetic/char.h
@@ -4102,7 +4078,6 @@ enc/iso_8859_7.$(OBJEXT): config.h
 enc/iso_8859_7.$(OBJEXT): defines.h
 enc/iso_8859_7.$(OBJEXT): enc/iso_8859_7.c
 enc/iso_8859_7.$(OBJEXT): intern.h
-enc/iso_8859_7.$(OBJEXT): internal/abi.h
 enc/iso_8859_7.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_7.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_7.$(OBJEXT): internal/arithmetic/char.h
@@ -4263,7 +4238,6 @@ enc/iso_8859_8.$(OBJEXT): config.h
 enc/iso_8859_8.$(OBJEXT): defines.h
 enc/iso_8859_8.$(OBJEXT): enc/iso_8859_8.c
 enc/iso_8859_8.$(OBJEXT): intern.h
-enc/iso_8859_8.$(OBJEXT): internal/abi.h
 enc/iso_8859_8.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_8.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_8.$(OBJEXT): internal/arithmetic/char.h
@@ -4425,7 +4399,6 @@ enc/iso_8859_9.$(OBJEXT): defines.h
 enc/iso_8859_9.$(OBJEXT): enc/iso_8859.h
 enc/iso_8859_9.$(OBJEXT): enc/iso_8859_9.c
 enc/iso_8859_9.$(OBJEXT): intern.h
-enc/iso_8859_9.$(OBJEXT): internal/abi.h
 enc/iso_8859_9.$(OBJEXT): internal/anyargs.h
 enc/iso_8859_9.$(OBJEXT): internal/arithmetic.h
 enc/iso_8859_9.$(OBJEXT): internal/arithmetic/char.h
@@ -4586,7 +4559,6 @@ enc/koi8_r.$(OBJEXT): config.h
 enc/koi8_r.$(OBJEXT): defines.h
 enc/koi8_r.$(OBJEXT): enc/koi8_r.c
 enc/koi8_r.$(OBJEXT): intern.h
-enc/koi8_r.$(OBJEXT): internal/abi.h
 enc/koi8_r.$(OBJEXT): internal/anyargs.h
 enc/koi8_r.$(OBJEXT): internal/arithmetic.h
 enc/koi8_r.$(OBJEXT): internal/arithmetic/char.h
@@ -4747,7 +4719,6 @@ enc/koi8_u.$(OBJEXT): config.h
 enc/koi8_u.$(OBJEXT): defines.h
 enc/koi8_u.$(OBJEXT): enc/koi8_u.c
 enc/koi8_u.$(OBJEXT): intern.h
-enc/koi8_u.$(OBJEXT): internal/abi.h
 enc/koi8_u.$(OBJEXT): internal/anyargs.h
 enc/koi8_u.$(OBJEXT): internal/arithmetic.h
 enc/koi8_u.$(OBJEXT): internal/arithmetic/char.h
@@ -4911,7 +4882,6 @@ enc/shift_jis.$(OBJEXT): enc/jis/props.kwd
 enc/shift_jis.$(OBJEXT): enc/shift_jis.c
 enc/shift_jis.$(OBJEXT): enc/shift_jis.h
 enc/shift_jis.$(OBJEXT): intern.h
-enc/shift_jis.$(OBJEXT): internal/abi.h
 enc/shift_jis.$(OBJEXT): internal/anyargs.h
 enc/shift_jis.$(OBJEXT): internal/arithmetic.h
 enc/shift_jis.$(OBJEXT): internal/arithmetic/char.h
@@ -5071,7 +5041,6 @@ enc/trans/big5.$(OBJEXT): config.h
 enc/trans/big5.$(OBJEXT): defines.h
 enc/trans/big5.$(OBJEXT): enc/trans/big5.c
 enc/trans/big5.$(OBJEXT): intern.h
-enc/trans/big5.$(OBJEXT): internal/abi.h
 enc/trans/big5.$(OBJEXT): internal/anyargs.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic/char.h
@@ -5230,7 +5199,6 @@ enc/trans/cesu_8.$(OBJEXT): config.h
 enc/trans/cesu_8.$(OBJEXT): defines.h
 enc/trans/cesu_8.$(OBJEXT): enc/trans/cesu_8.c
 enc/trans/cesu_8.$(OBJEXT): intern.h
-enc/trans/cesu_8.$(OBJEXT): internal/abi.h
 enc/trans/cesu_8.$(OBJEXT): internal/anyargs.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/char.h
@@ -5389,7 +5357,6 @@ enc/trans/chinese.$(OBJEXT): config.h
 enc/trans/chinese.$(OBJEXT): defines.h
 enc/trans/chinese.$(OBJEXT): enc/trans/chinese.c
 enc/trans/chinese.$(OBJEXT): intern.h
-enc/trans/chinese.$(OBJEXT): internal/abi.h
 enc/trans/chinese.$(OBJEXT): internal/anyargs.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic/char.h
@@ -5548,7 +5515,6 @@ enc/trans/ebcdic.$(OBJEXT): config.h
 enc/trans/ebcdic.$(OBJEXT): defines.h
 enc/trans/ebcdic.$(OBJEXT): enc/trans/ebcdic.c
 enc/trans/ebcdic.$(OBJEXT): intern.h
-enc/trans/ebcdic.$(OBJEXT): internal/abi.h
 enc/trans/ebcdic.$(OBJEXT): internal/anyargs.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/char.h
@@ -5707,7 +5673,6 @@ enc/trans/emoji.$(OBJEXT): config.h
 enc/trans/emoji.$(OBJEXT): defines.h
 enc/trans/emoji.$(OBJEXT): enc/trans/emoji.c
 enc/trans/emoji.$(OBJEXT): intern.h
-enc/trans/emoji.$(OBJEXT): internal/abi.h
 enc/trans/emoji.$(OBJEXT): internal/anyargs.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic/char.h
@@ -5866,7 +5831,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): config.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): defines.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): enc/trans/emoji_iso2022_kddi.c
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): intern.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/abi.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/anyargs.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/char.h
@@ -6025,7 +5989,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): config.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): defines.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): enc/trans/emoji_sjis_docomo.c
 enc/trans/emoji_sjis_docomo.$(OBJEXT): intern.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/abi.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/anyargs.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/char.h
@@ -6184,7 +6147,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): config.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): defines.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): enc/trans/emoji_sjis_kddi.c
 enc/trans/emoji_sjis_kddi.$(OBJEXT): intern.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/abi.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/anyargs.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/char.h
@@ -6343,7 +6305,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): config.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): defines.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): enc/trans/emoji_sjis_softbank.c
 enc/trans/emoji_sjis_softbank.$(OBJEXT): intern.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/abi.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/anyargs.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/char.h
@@ -6502,7 +6463,6 @@ enc/trans/escape.$(OBJEXT): config.h
 enc/trans/escape.$(OBJEXT): defines.h
 enc/trans/escape.$(OBJEXT): enc/trans/escape.c
 enc/trans/escape.$(OBJEXT): intern.h
-enc/trans/escape.$(OBJEXT): internal/abi.h
 enc/trans/escape.$(OBJEXT): internal/anyargs.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic/char.h
@@ -6661,7 +6621,6 @@ enc/trans/gb18030.$(OBJEXT): config.h
 enc/trans/gb18030.$(OBJEXT): defines.h
 enc/trans/gb18030.$(OBJEXT): enc/trans/gb18030.c
 enc/trans/gb18030.$(OBJEXT): intern.h
-enc/trans/gb18030.$(OBJEXT): internal/abi.h
 enc/trans/gb18030.$(OBJEXT): internal/anyargs.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic/char.h
@@ -6820,7 +6779,6 @@ enc/trans/gbk.$(OBJEXT): config.h
 enc/trans/gbk.$(OBJEXT): defines.h
 enc/trans/gbk.$(OBJEXT): enc/trans/gbk.c
 enc/trans/gbk.$(OBJEXT): intern.h
-enc/trans/gbk.$(OBJEXT): internal/abi.h
 enc/trans/gbk.$(OBJEXT): internal/anyargs.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic/char.h
@@ -6979,7 +6937,6 @@ enc/trans/iso2022.$(OBJEXT): config.h
 enc/trans/iso2022.$(OBJEXT): defines.h
 enc/trans/iso2022.$(OBJEXT): enc/trans/iso2022.c
 enc/trans/iso2022.$(OBJEXT): intern.h
-enc/trans/iso2022.$(OBJEXT): internal/abi.h
 enc/trans/iso2022.$(OBJEXT): internal/anyargs.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic/char.h
@@ -7138,7 +7095,6 @@ enc/trans/japanese.$(OBJEXT): config.h
 enc/trans/japanese.$(OBJEXT): defines.h
 enc/trans/japanese.$(OBJEXT): enc/trans/japanese.c
 enc/trans/japanese.$(OBJEXT): intern.h
-enc/trans/japanese.$(OBJEXT): internal/abi.h
 enc/trans/japanese.$(OBJEXT): internal/anyargs.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic/char.h
@@ -7297,7 +7253,6 @@ enc/trans/japanese_euc.$(OBJEXT): config.h
 enc/trans/japanese_euc.$(OBJEXT): defines.h
 enc/trans/japanese_euc.$(OBJEXT): enc/trans/japanese_euc.c
 enc/trans/japanese_euc.$(OBJEXT): intern.h
-enc/trans/japanese_euc.$(OBJEXT): internal/abi.h
 enc/trans/japanese_euc.$(OBJEXT): internal/anyargs.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/char.h
@@ -7456,7 +7411,6 @@ enc/trans/japanese_sjis.$(OBJEXT): config.h
 enc/trans/japanese_sjis.$(OBJEXT): defines.h
 enc/trans/japanese_sjis.$(OBJEXT): enc/trans/japanese_sjis.c
 enc/trans/japanese_sjis.$(OBJEXT): intern.h
-enc/trans/japanese_sjis.$(OBJEXT): internal/abi.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/anyargs.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/char.h
@@ -7615,7 +7569,6 @@ enc/trans/korean.$(OBJEXT): config.h
 enc/trans/korean.$(OBJEXT): defines.h
 enc/trans/korean.$(OBJEXT): enc/trans/korean.c
 enc/trans/korean.$(OBJEXT): intern.h
-enc/trans/korean.$(OBJEXT): internal/abi.h
 enc/trans/korean.$(OBJEXT): internal/anyargs.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic/char.h
@@ -7773,7 +7726,6 @@ enc/trans/newline.$(OBJEXT): config.h
 enc/trans/newline.$(OBJEXT): defines.h
 enc/trans/newline.$(OBJEXT): enc/trans/newline.c
 enc/trans/newline.$(OBJEXT): intern.h
-enc/trans/newline.$(OBJEXT): internal/abi.h
 enc/trans/newline.$(OBJEXT): internal/anyargs.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic/char.h
@@ -7932,7 +7884,6 @@ enc/trans/single_byte.$(OBJEXT): config.h
 enc/trans/single_byte.$(OBJEXT): defines.h
 enc/trans/single_byte.$(OBJEXT): enc/trans/single_byte.c
 enc/trans/single_byte.$(OBJEXT): intern.h
-enc/trans/single_byte.$(OBJEXT): internal/abi.h
 enc/trans/single_byte.$(OBJEXT): internal/anyargs.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic/char.h
@@ -8091,7 +8042,6 @@ enc/trans/transdb.$(OBJEXT): config.h
 enc/trans/transdb.$(OBJEXT): defines.h
 enc/trans/transdb.$(OBJEXT): enc/trans/transdb.c
 enc/trans/transdb.$(OBJEXT): intern.h
-enc/trans/transdb.$(OBJEXT): internal/abi.h
 enc/trans/transdb.$(OBJEXT): internal/anyargs.h
 enc/trans/transdb.$(OBJEXT): internal/arithmetic.h
 enc/trans/transdb.$(OBJEXT): internal/arithmetic/char.h
@@ -8251,7 +8201,6 @@ enc/trans/utf8_mac.$(OBJEXT): config.h
 enc/trans/utf8_mac.$(OBJEXT): defines.h
 enc/trans/utf8_mac.$(OBJEXT): enc/trans/utf8_mac.c
 enc/trans/utf8_mac.$(OBJEXT): intern.h
-enc/trans/utf8_mac.$(OBJEXT): internal/abi.h
 enc/trans/utf8_mac.$(OBJEXT): internal/anyargs.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/char.h
@@ -8410,7 +8359,6 @@ enc/trans/utf_16_32.$(OBJEXT): config.h
 enc/trans/utf_16_32.$(OBJEXT): defines.h
 enc/trans/utf_16_32.$(OBJEXT): enc/trans/utf_16_32.c
 enc/trans/utf_16_32.$(OBJEXT): intern.h
-enc/trans/utf_16_32.$(OBJEXT): internal/abi.h
 enc/trans/utf_16_32.$(OBJEXT): internal/anyargs.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/char.h
@@ -8572,7 +8520,6 @@ enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c
 enc/unicode.$(OBJEXT): intern.h
-enc/unicode.$(OBJEXT): internal/abi.h
 enc/unicode.$(OBJEXT): internal/anyargs.h
 enc/unicode.$(OBJEXT): internal/arithmetic.h
 enc/unicode.$(OBJEXT): internal/arithmetic/char.h
@@ -8734,7 +8681,6 @@ enc/us_ascii.$(OBJEXT): defines.h
 enc/us_ascii.$(OBJEXT): enc/us_ascii.c
 enc/us_ascii.$(OBJEXT): encoding.h
 enc/us_ascii.$(OBJEXT): intern.h
-enc/us_ascii.$(OBJEXT): internal/abi.h
 enc/us_ascii.$(OBJEXT): internal/anyargs.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic/char.h
@@ -8906,7 +8852,6 @@ enc/utf_16be.$(OBJEXT): defines.h
 enc/utf_16be.$(OBJEXT): enc/iso_8859.h
 enc/utf_16be.$(OBJEXT): enc/utf_16be.c
 enc/utf_16be.$(OBJEXT): intern.h
-enc/utf_16be.$(OBJEXT): internal/abi.h
 enc/utf_16be.$(OBJEXT): internal/anyargs.h
 enc/utf_16be.$(OBJEXT): internal/arithmetic.h
 enc/utf_16be.$(OBJEXT): internal/arithmetic/char.h
@@ -9068,7 +9013,6 @@ enc/utf_16le.$(OBJEXT): defines.h
 enc/utf_16le.$(OBJEXT): enc/iso_8859.h
 enc/utf_16le.$(OBJEXT): enc/utf_16le.c
 enc/utf_16le.$(OBJEXT): intern.h
-enc/utf_16le.$(OBJEXT): internal/abi.h
 enc/utf_16le.$(OBJEXT): internal/anyargs.h
 enc/utf_16le.$(OBJEXT): internal/arithmetic.h
 enc/utf_16le.$(OBJEXT): internal/arithmetic/char.h
@@ -9230,7 +9174,6 @@ enc/utf_32be.$(OBJEXT): defines.h
 enc/utf_32be.$(OBJEXT): enc/iso_8859.h
 enc/utf_32be.$(OBJEXT): enc/utf_32be.c
 enc/utf_32be.$(OBJEXT): intern.h
-enc/utf_32be.$(OBJEXT): internal/abi.h
 enc/utf_32be.$(OBJEXT): internal/anyargs.h
 enc/utf_32be.$(OBJEXT): internal/arithmetic.h
 enc/utf_32be.$(OBJEXT): internal/arithmetic/char.h
@@ -9392,7 +9335,6 @@ enc/utf_32le.$(OBJEXT): defines.h
 enc/utf_32le.$(OBJEXT): enc/iso_8859.h
 enc/utf_32le.$(OBJEXT): enc/utf_32le.c
 enc/utf_32le.$(OBJEXT): intern.h
-enc/utf_32le.$(OBJEXT): internal/abi.h
 enc/utf_32le.$(OBJEXT): internal/anyargs.h
 enc/utf_32le.$(OBJEXT): internal/arithmetic.h
 enc/utf_32le.$(OBJEXT): internal/arithmetic/char.h
@@ -9554,7 +9496,6 @@ enc/utf_8.$(OBJEXT): defines.h
 enc/utf_8.$(OBJEXT): enc/utf_8.c
 enc/utf_8.$(OBJEXT): encoding.h
 enc/utf_8.$(OBJEXT): intern.h
-enc/utf_8.$(OBJEXT): internal/abi.h
 enc/utf_8.$(OBJEXT): internal/anyargs.h
 enc/utf_8.$(OBJEXT): internal/arithmetic.h
 enc/utf_8.$(OBJEXT): internal/arithmetic/char.h
@@ -9726,7 +9667,6 @@ enc/windows_1250.$(OBJEXT): defines.h
 enc/windows_1250.$(OBJEXT): enc/iso_8859.h
 enc/windows_1250.$(OBJEXT): enc/windows_1250.c
 enc/windows_1250.$(OBJEXT): intern.h
-enc/windows_1250.$(OBJEXT): internal/abi.h
 enc/windows_1250.$(OBJEXT): internal/anyargs.h
 enc/windows_1250.$(OBJEXT): internal/arithmetic.h
 enc/windows_1250.$(OBJEXT): internal/arithmetic/char.h
@@ -9887,7 +9827,6 @@ enc/windows_1251.$(OBJEXT): config.h
 enc/windows_1251.$(OBJEXT): defines.h
 enc/windows_1251.$(OBJEXT): enc/windows_1251.c
 enc/windows_1251.$(OBJEXT): intern.h
-enc/windows_1251.$(OBJEXT): internal/abi.h
 enc/windows_1251.$(OBJEXT): internal/anyargs.h
 enc/windows_1251.$(OBJEXT): internal/arithmetic.h
 enc/windows_1251.$(OBJEXT): internal/arithmetic/char.h
@@ -10049,7 +9988,6 @@ enc/windows_1252.$(OBJEXT): defines.h
 enc/windows_1252.$(OBJEXT): enc/iso_8859.h
 enc/windows_1252.$(OBJEXT): enc/windows_1252.c
 enc/windows_1252.$(OBJEXT): intern.h
-enc/windows_1252.$(OBJEXT): internal/abi.h
 enc/windows_1252.$(OBJEXT): internal/anyargs.h
 enc/windows_1252.$(OBJEXT): internal/arithmetic.h
 enc/windows_1252.$(OBJEXT): internal/arithmetic/char.h
@@ -10210,7 +10148,6 @@ enc/windows_1253.$(OBJEXT): config.h
 enc/windows_1253.$(OBJEXT): defines.h
 enc/windows_1253.$(OBJEXT): enc/windows_1253.c
 enc/windows_1253.$(OBJEXT): intern.h
-enc/windows_1253.$(OBJEXT): internal/abi.h
 enc/windows_1253.$(OBJEXT): internal/anyargs.h
 enc/windows_1253.$(OBJEXT): internal/arithmetic.h
 enc/windows_1253.$(OBJEXT): internal/arithmetic/char.h
@@ -10372,7 +10309,6 @@ enc/windows_1254.$(OBJEXT): defines.h
 enc/windows_1254.$(OBJEXT): enc/iso_8859.h
 enc/windows_1254.$(OBJEXT): enc/windows_1254.c
 enc/windows_1254.$(OBJEXT): intern.h
-enc/windows_1254.$(OBJEXT): internal/abi.h
 enc/windows_1254.$(OBJEXT): internal/anyargs.h
 enc/windows_1254.$(OBJEXT): internal/arithmetic.h
 enc/windows_1254.$(OBJEXT): internal/arithmetic/char.h
@@ -10534,7 +10470,6 @@ enc/windows_1257.$(OBJEXT): defines.h
 enc/windows_1257.$(OBJEXT): enc/iso_8859.h
 enc/windows_1257.$(OBJEXT): enc/windows_1257.c
 enc/windows_1257.$(OBJEXT): intern.h
-enc/windows_1257.$(OBJEXT): internal/abi.h
 enc/windows_1257.$(OBJEXT): internal/anyargs.h
 enc/windows_1257.$(OBJEXT): internal/arithmetic.h
 enc/windows_1257.$(OBJEXT): internal/arithmetic/char.h
@@ -10698,7 +10633,6 @@ enc/windows_31j.$(OBJEXT): enc/jis/props.kwd
 enc/windows_31j.$(OBJEXT): enc/shift_jis.h
 enc/windows_31j.$(OBJEXT): enc/windows_31j.c
 enc/windows_31j.$(OBJEXT): intern.h
-enc/windows_31j.$(OBJEXT): internal/abi.h
 enc/windows_31j.$(OBJEXT): internal/anyargs.h
 enc/windows_31j.$(OBJEXT): internal/arithmetic.h
 enc/windows_31j.$(OBJEXT): internal/arithmetic/char.h

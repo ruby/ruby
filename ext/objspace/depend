@@ -17,7 +17,6 @@ object_tracing.o: $(hdrdir)/ruby/debug.h
 object_tracing.o: $(hdrdir)/ruby/defines.h
 object_tracing.o: $(hdrdir)/ruby/encoding.h
 object_tracing.o: $(hdrdir)/ruby/intern.h
-object_tracing.o: $(hdrdir)/ruby/internal/abi.h
 object_tracing.o: $(hdrdir)/ruby/internal/anyargs.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -216,7 +215,6 @@ objspace.o: $(hdrdir)/ruby/backward/2/stdarg.h
 objspace.o: $(hdrdir)/ruby/defines.h
 objspace.o: $(hdrdir)/ruby/encoding.h
 objspace.o: $(hdrdir)/ruby/intern.h
-objspace.o: $(hdrdir)/ruby/internal/abi.h
 objspace.o: $(hdrdir)/ruby/internal/anyargs.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -429,7 +427,6 @@ objspace_dump.o: $(hdrdir)/ruby/debug.h
 objspace_dump.o: $(hdrdir)/ruby/defines.h
 objspace_dump.o: $(hdrdir)/ruby/encoding.h
 objspace_dump.o: $(hdrdir)/ruby/intern.h
-objspace_dump.o: $(hdrdir)/ruby/internal/abi.h
 objspace_dump.o: $(hdrdir)/ruby/internal/anyargs.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/char.h

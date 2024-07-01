@@ -19,7 +19,6 @@ ossl.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl.o: $(hdrdir)/ruby/defines.h
 ossl.o: $(hdrdir)/ruby/encoding.h
 ossl.o: $(hdrdir)/ruby/intern.h
-ossl.o: $(hdrdir)/ruby/internal/abi.h
 ossl.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -214,7 +213,6 @@ ossl_asn1.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_asn1.o: $(hdrdir)/ruby/defines.h
 ossl_asn1.o: $(hdrdir)/ruby/encoding.h
 ossl_asn1.o: $(hdrdir)/ruby/intern.h
-ossl_asn1.o: $(hdrdir)/ruby/internal/abi.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -409,7 +407,6 @@ ossl_bio.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_bio.o: $(hdrdir)/ruby/defines.h
 ossl_bio.o: $(hdrdir)/ruby/encoding.h
 ossl_bio.o: $(hdrdir)/ruby/intern.h
-ossl_bio.o: $(hdrdir)/ruby/internal/abi.h
 ossl_bio.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -604,7 +601,6 @@ ossl_bn.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_bn.o: $(hdrdir)/ruby/defines.h
 ossl_bn.o: $(hdrdir)/ruby/encoding.h
 ossl_bn.o: $(hdrdir)/ruby/intern.h
-ossl_bn.o: $(hdrdir)/ruby/internal/abi.h
 ossl_bn.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -800,7 +796,6 @@ ossl_cipher.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_cipher.o: $(hdrdir)/ruby/defines.h
 ossl_cipher.o: $(hdrdir)/ruby/encoding.h
 ossl_cipher.o: $(hdrdir)/ruby/intern.h
-ossl_cipher.o: $(hdrdir)/ruby/internal/abi.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -995,7 +990,6 @@ ossl_config.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_config.o: $(hdrdir)/ruby/defines.h
 ossl_config.o: $(hdrdir)/ruby/encoding.h
 ossl_config.o: $(hdrdir)/ruby/intern.h
-ossl_config.o: $(hdrdir)/ruby/internal/abi.h
 ossl_config.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1190,7 +1184,6 @@ ossl_digest.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_digest.o: $(hdrdir)/ruby/defines.h
 ossl_digest.o: $(hdrdir)/ruby/encoding.h
 ossl_digest.o: $(hdrdir)/ruby/intern.h
-ossl_digest.o: $(hdrdir)/ruby/internal/abi.h
 ossl_digest.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1385,7 +1378,6 @@ ossl_engine.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_engine.o: $(hdrdir)/ruby/defines.h
 ossl_engine.o: $(hdrdir)/ruby/encoding.h
 ossl_engine.o: $(hdrdir)/ruby/intern.h
-ossl_engine.o: $(hdrdir)/ruby/internal/abi.h
 ossl_engine.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1580,7 +1572,6 @@ ossl_hmac.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_hmac.o: $(hdrdir)/ruby/defines.h
 ossl_hmac.o: $(hdrdir)/ruby/encoding.h
 ossl_hmac.o: $(hdrdir)/ruby/intern.h
-ossl_hmac.o: $(hdrdir)/ruby/internal/abi.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1775,7 +1766,6 @@ ossl_kdf.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_kdf.o: $(hdrdir)/ruby/defines.h
 ossl_kdf.o: $(hdrdir)/ruby/encoding.h
 ossl_kdf.o: $(hdrdir)/ruby/intern.h
-ossl_kdf.o: $(hdrdir)/ruby/internal/abi.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1970,7 +1960,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_ns_spki.o: $(hdrdir)/ruby/defines.h
 ossl_ns_spki.o: $(hdrdir)/ruby/encoding.h
 ossl_ns_spki.o: $(hdrdir)/ruby/intern.h
-ossl_ns_spki.o: $(hdrdir)/ruby/internal/abi.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2165,7 +2154,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_ocsp.o: $(hdrdir)/ruby/defines.h
 ossl_ocsp.o: $(hdrdir)/ruby/encoding.h
 ossl_ocsp.o: $(hdrdir)/ruby/intern.h
-ossl_ocsp.o: $(hdrdir)/ruby/internal/abi.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2360,7 +2348,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkcs12.o: $(hdrdir)/ruby/defines.h
 ossl_pkcs12.o: $(hdrdir)/ruby/encoding.h
 ossl_pkcs12.o: $(hdrdir)/ruby/intern.h
-ossl_pkcs12.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2555,7 +2542,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkcs7.o: $(hdrdir)/ruby/defines.h
 ossl_pkcs7.o: $(hdrdir)/ruby/encoding.h
 ossl_pkcs7.o: $(hdrdir)/ruby/intern.h
-ossl_pkcs7.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2750,7 +2736,6 @@ ossl_pkey.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkey.o: $(hdrdir)/ruby/defines.h
 ossl_pkey.o: $(hdrdir)/ruby/encoding.h
 ossl_pkey.o: $(hdrdir)/ruby/intern.h
-ossl_pkey.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2945,7 +2930,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/defines.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/encoding.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/intern.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -3140,7 +3124,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/defines.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/encoding.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/intern.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -3335,7 +3318,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/defines.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/encoding.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/intern.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -3530,7 +3512,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/defines.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/encoding.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/intern.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/abi.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -3725,7 +3706,6 @@ ossl_provider.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_provider.o: $(hdrdir)/ruby/defines.h
 ossl_provider.o: $(hdrdir)/ruby/encoding.h
 ossl_provider.o: $(hdrdir)/ruby/intern.h
-ossl_provider.o: $(hdrdir)/ruby/internal/abi.h
 ossl_provider.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_provider.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_provider.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -3920,7 +3900,6 @@ ossl_rand.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_rand.o: $(hdrdir)/ruby/defines.h
 ossl_rand.o: $(hdrdir)/ruby/encoding.h
 ossl_rand.o: $(hdrdir)/ruby/intern.h
-ossl_rand.o: $(hdrdir)/ruby/internal/abi.h
 ossl_rand.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -4115,7 +4094,6 @@ ossl_ssl.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_ssl.o: $(hdrdir)/ruby/defines.h
 ossl_ssl.o: $(hdrdir)/ruby/encoding.h
 ossl_ssl.o: $(hdrdir)/ruby/intern.h
-ossl_ssl.o: $(hdrdir)/ruby/internal/abi.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -4310,7 +4288,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_ssl_session.o: $(hdrdir)/ruby/defines.h
 ossl_ssl_session.o: $(hdrdir)/ruby/encoding.h
 ossl_ssl_session.o: $(hdrdir)/ruby/intern.h
-ossl_ssl_session.o: $(hdrdir)/ruby/internal/abi.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -4505,7 +4482,6 @@ ossl_ts.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_ts.o: $(hdrdir)/ruby/defines.h
 ossl_ts.o: $(hdrdir)/ruby/encoding.h
 ossl_ts.o: $(hdrdir)/ruby/intern.h
-ossl_ts.o: $(hdrdir)/ruby/internal/abi.h
 ossl_ts.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -4700,7 +4676,6 @@ ossl_x509.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509.o: $(hdrdir)/ruby/defines.h
 ossl_x509.o: $(hdrdir)/ruby/encoding.h
 ossl_x509.o: $(hdrdir)/ruby/intern.h
-ossl_x509.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -4895,7 +4870,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509attr.o: $(hdrdir)/ruby/defines.h
 ossl_x509attr.o: $(hdrdir)/ruby/encoding.h
 ossl_x509attr.o: $(hdrdir)/ruby/intern.h
-ossl_x509attr.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -5090,7 +5064,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509cert.o: $(hdrdir)/ruby/defines.h
 ossl_x509cert.o: $(hdrdir)/ruby/encoding.h
 ossl_x509cert.o: $(hdrdir)/ruby/intern.h
-ossl_x509cert.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -5285,7 +5258,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509crl.o: $(hdrdir)/ruby/defines.h
 ossl_x509crl.o: $(hdrdir)/ruby/encoding.h
 ossl_x509crl.o: $(hdrdir)/ruby/intern.h
-ossl_x509crl.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -5480,7 +5452,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509ext.o: $(hdrdir)/ruby/defines.h
 ossl_x509ext.o: $(hdrdir)/ruby/encoding.h
 ossl_x509ext.o: $(hdrdir)/ruby/intern.h
-ossl_x509ext.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -5675,7 +5646,6 @@ ossl_x509name.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509name.o: $(hdrdir)/ruby/defines.h
 ossl_x509name.o: $(hdrdir)/ruby/encoding.h
 ossl_x509name.o: $(hdrdir)/ruby/intern.h
-ossl_x509name.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -5870,7 +5840,6 @@ ossl_x509req.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509req.o: $(hdrdir)/ruby/defines.h
 ossl_x509req.o: $(hdrdir)/ruby/encoding.h
 ossl_x509req.o: $(hdrdir)/ruby/intern.h
-ossl_x509req.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -6065,7 +6034,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509revoked.o: $(hdrdir)/ruby/defines.h
 ossl_x509revoked.o: $(hdrdir)/ruby/encoding.h
 ossl_x509revoked.o: $(hdrdir)/ruby/intern.h
-ossl_x509revoked.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -6260,7 +6228,6 @@ ossl_x509store.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ossl_x509store.o: $(hdrdir)/ruby/defines.h
 ossl_x509store.o: $(hdrdir)/ruby/encoding.h
 ossl_x509store.o: $(hdrdir)/ruby/intern.h
-ossl_x509store.o: $(hdrdir)/ruby/internal/abi.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/anyargs.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -13,7 +13,6 @@ at_exit.o: $(hdrdir)/ruby/backward/2/stdalign.h
 at_exit.o: $(hdrdir)/ruby/backward/2/stdarg.h
 at_exit.o: $(hdrdir)/ruby/defines.h
 at_exit.o: $(hdrdir)/ruby/intern.h
-at_exit.o: $(hdrdir)/ruby/internal/abi.h
 at_exit.o: $(hdrdir)/ruby/internal/anyargs.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic/char.h

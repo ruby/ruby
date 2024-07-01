@@ -15,7 +15,6 @@ printf.o: $(hdrdir)/ruby/backward/2/stdarg.h
 printf.o: $(hdrdir)/ruby/defines.h
 printf.o: $(hdrdir)/ruby/encoding.h
 printf.o: $(hdrdir)/ruby/intern.h
-printf.o: $(hdrdir)/ruby/internal/abi.h
 printf.o: $(hdrdir)/ruby/internal/anyargs.h
 printf.o: $(hdrdir)/ruby/internal/arithmetic.h
 printf.o: $(hdrdir)/ruby/internal/arithmetic/char.h

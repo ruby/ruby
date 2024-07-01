@@ -184,9 +184,6 @@ sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
 ruby_version = $(MAJOR).$(MINOR).0
 !endif
-!if defined(ABI_VERSION)
-ruby_version = $(ruby_version)+$(ABI_VERSION)
-!endif
 !if !defined(RUBY_VERSION_NAME)
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
 !endif
@@ -558,8 +555,6 @@ ACTIONS_GROUP = @:: $(empty)
 ACTIONS_ENDGROUP = @::
 !endif
 
-ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
-
 !include $(srcdir)/common.mk
 
 !ifdef SCRIPTPROGRAMS
@@ -605,7 +600,7 @@ prepare-vcpkg::
 
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
-	    $(hdrdir)/ruby/version.h $(ABI_VERSION_HDR) \
+	    $(hdrdir)/ruby/version.h \
 	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
 	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
 	    $(srcdir)/enc/Makefile.in
@@ -656,9 +651,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #endif
 !endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
-!if defined(ABI_VERSION)
-#define RUBY_ABI_VERSION $(ABI_VERSION)
-!endif
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1

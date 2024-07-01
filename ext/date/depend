@@ -15,7 +15,6 @@ date_core.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_core.o: $(hdrdir)/ruby/defines.h
 date_core.o: $(hdrdir)/ruby/encoding.h
 date_core.o: $(hdrdir)/ruby/intern.h
-date_core.o: $(hdrdir)/ruby/internal/abi.h
 date_core.o: $(hdrdir)/ruby/internal/anyargs.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -189,7 +188,6 @@ date_parse.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_parse.o: $(hdrdir)/ruby/defines.h
 date_parse.o: $(hdrdir)/ruby/encoding.h
 date_parse.o: $(hdrdir)/ruby/intern.h
-date_parse.o: $(hdrdir)/ruby/internal/abi.h
 date_parse.o: $(hdrdir)/ruby/internal/anyargs.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -364,7 +362,6 @@ date_strftime.o: $(hdrdir)/ruby/backward/2/stdalign.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_strftime.o: $(hdrdir)/ruby/defines.h
 date_strftime.o: $(hdrdir)/ruby/intern.h
-date_strftime.o: $(hdrdir)/ruby/internal/abi.h
 date_strftime.o: $(hdrdir)/ruby/internal/anyargs.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -526,7 +523,6 @@ date_strptime.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_strptime.o: $(hdrdir)/ruby/defines.h
 date_strptime.o: $(hdrdir)/ruby/encoding.h
 date_strptime.o: $(hdrdir)/ruby/intern.h
-date_strptime.o: $(hdrdir)/ruby/internal/abi.h
 date_strptime.o: $(hdrdir)/ruby/internal/anyargs.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/char.h

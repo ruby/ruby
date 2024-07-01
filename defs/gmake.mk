@@ -533,12 +533,11 @@ matz: up
 	$(eval MINOR := $(shell expr $(MINOR) + 1))
 	$(eval NEW := $(MAJOR).$(MINOR).0)
 	$(eval message := Development of $(NEW) started.)
-	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
+	$(eval files := include/ruby/version.h)
 	$(GIT) -C $(srcdir) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
 	$(GIT) -C $(srcdir) commit -m "[DOC] Flush NEWS.md"
 	sed -i~ \
 	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
-	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
 	$(GIT) -C $(srcdir) add $(files)
 	$(BASERUBY) -C $(srcdir) -p -00 \

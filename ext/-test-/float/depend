@@ -17,7 +17,6 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -177,7 +176,6 @@ nextafter.o: $(hdrdir)/ruby/backward/2/stdalign.h
 nextafter.o: $(hdrdir)/ruby/backward/2/stdarg.h
 nextafter.o: $(hdrdir)/ruby/defines.h
 nextafter.o: $(hdrdir)/ruby/intern.h
-nextafter.o: $(hdrdir)/ruby/internal/abi.h
 nextafter.o: $(hdrdir)/ruby/internal/anyargs.h
 nextafter.o: $(hdrdir)/ruby/internal/arithmetic.h
 nextafter.o: $(hdrdir)/ruby/internal/arithmetic/char.h

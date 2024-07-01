@@ -13,7 +13,6 @@ big2str.o: $(hdrdir)/ruby/backward/2/stdalign.h
 big2str.o: $(hdrdir)/ruby/backward/2/stdarg.h
 big2str.o: $(hdrdir)/ruby/defines.h
 big2str.o: $(hdrdir)/ruby/intern.h
-big2str.o: $(hdrdir)/ruby/internal/abi.h
 big2str.o: $(hdrdir)/ruby/internal/anyargs.h
 big2str.o: $(hdrdir)/ruby/internal/arithmetic.h
 big2str.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -173,7 +172,6 @@ bigzero.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bigzero.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bigzero.o: $(hdrdir)/ruby/defines.h
 bigzero.o: $(hdrdir)/ruby/intern.h
-bigzero.o: $(hdrdir)/ruby/internal/abi.h
 bigzero.o: $(hdrdir)/ruby/internal/anyargs.h
 bigzero.o: $(hdrdir)/ruby/internal/arithmetic.h
 bigzero.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -333,7 +331,6 @@ div.o: $(hdrdir)/ruby/backward/2/stdalign.h
 div.o: $(hdrdir)/ruby/backward/2/stdarg.h
 div.o: $(hdrdir)/ruby/defines.h
 div.o: $(hdrdir)/ruby/intern.h
-div.o: $(hdrdir)/ruby/internal/abi.h
 div.o: $(hdrdir)/ruby/internal/anyargs.h
 div.o: $(hdrdir)/ruby/internal/arithmetic.h
 div.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -494,7 +491,6 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -653,7 +649,6 @@ intpack.o: $(hdrdir)/ruby/backward/2/stdalign.h
 intpack.o: $(hdrdir)/ruby/backward/2/stdarg.h
 intpack.o: $(hdrdir)/ruby/defines.h
 intpack.o: $(hdrdir)/ruby/intern.h
-intpack.o: $(hdrdir)/ruby/internal/abi.h
 intpack.o: $(hdrdir)/ruby/internal/anyargs.h
 intpack.o: $(hdrdir)/ruby/internal/arithmetic.h
 intpack.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -813,7 +808,6 @@ mul.o: $(hdrdir)/ruby/backward/2/stdalign.h
 mul.o: $(hdrdir)/ruby/backward/2/stdarg.h
 mul.o: $(hdrdir)/ruby/defines.h
 mul.o: $(hdrdir)/ruby/intern.h
-mul.o: $(hdrdir)/ruby/internal/abi.h
 mul.o: $(hdrdir)/ruby/internal/anyargs.h
 mul.o: $(hdrdir)/ruby/internal/arithmetic.h
 mul.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -973,7 +967,6 @@ str2big.o: $(hdrdir)/ruby/backward/2/stdalign.h
 str2big.o: $(hdrdir)/ruby/backward/2/stdarg.h
 str2big.o: $(hdrdir)/ruby/defines.h
 str2big.o: $(hdrdir)/ruby/intern.h
-str2big.o: $(hdrdir)/ruby/internal/abi.h
 str2big.o: $(hdrdir)/ruby/internal/anyargs.h
 str2big.o: $(hdrdir)/ruby/internal/arithmetic.h
 str2big.o: $(hdrdir)/ruby/internal/arithmetic/char.h

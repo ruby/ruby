@@ -14,7 +14,6 @@
 #define RUBY_PATCHLEVEL -1
 
 #include "ruby/version.h"
-#include "ruby/internal/abi.h"
 
 #ifndef RUBY_REVISION
 #include "revision.h"
@@ -39,18 +38,12 @@
 
 #endif
 
-#ifdef RUBY_ABI_VERSION
-# define RUBY_ABI_VERSION_SUFFIX "+"STRINGIZE(RUBY_ABI_VERSION)
-#else
-# define RUBY_ABI_VERSION_SUFFIX ""
-#endif
 #if !defined RUBY_LIB_VERSION && defined RUBY_LIB_VERSION_STYLE
 # if RUBY_LIB_VERSION_STYLE == 3
 #   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
-        "."STRINGIZE(RUBY_API_VERSION_TEENY) RUBY_ABI_VERSION_SUFFIX
+        "."STRINGIZE(RUBY_API_VERSION_TEENY)
 # elif RUBY_LIB_VERSION_STYLE == 2
-#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
-        RUBY_ABI_VERSION_SUFFIX
+#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR)
 # endif
 #endif
 
@@ -60,8 +53,6 @@
 # else
 #  define RUBY_PATCHLEVEL_STR "dev"
 # endif
-#elif defined RUBY_ABI_VERSION
-# error RUBY_ABI_VERSION is defined in non-development branch
 #else
 # define RUBY_PATCHLEVEL_STR ""
 #endif

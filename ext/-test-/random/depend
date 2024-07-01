@@ -13,7 +13,6 @@ bad_version.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bad_version.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bad_version.o: $(hdrdir)/ruby/defines.h
 bad_version.o: $(hdrdir)/ruby/intern.h
-bad_version.o: $(hdrdir)/ruby/internal/abi.h
 bad_version.o: $(hdrdir)/ruby/internal/anyargs.h
 bad_version.o: $(hdrdir)/ruby/internal/arithmetic.h
 bad_version.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,7 +173,6 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -333,7 +331,6 @@ loop.o: $(hdrdir)/ruby/backward/2/stdalign.h
 loop.o: $(hdrdir)/ruby/backward/2/stdarg.h
 loop.o: $(hdrdir)/ruby/defines.h
 loop.o: $(hdrdir)/ruby/intern.h
-loop.o: $(hdrdir)/ruby/internal/abi.h
 loop.o: $(hdrdir)/ruby/internal/anyargs.h
 loop.o: $(hdrdir)/ruby/internal/arithmetic.h
 loop.o: $(hdrdir)/ruby/internal/arithmetic/char.h

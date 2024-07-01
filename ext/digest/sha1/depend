@@ -17,7 +17,6 @@ sha1.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sha1.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sha1.o: $(hdrdir)/ruby/defines.h
 sha1.o: $(hdrdir)/ruby/intern.h
-sha1.o: $(hdrdir)/ruby/internal/abi.h
 sha1.o: $(hdrdir)/ruby/internal/anyargs.h
 sha1.o: $(hdrdir)/ruby/internal/arithmetic.h
 sha1.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -179,7 +178,6 @@ sha1init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sha1init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sha1init.o: $(hdrdir)/ruby/defines.h
 sha1init.o: $(hdrdir)/ruby/intern.h
-sha1init.o: $(hdrdir)/ruby/internal/abi.h
 sha1init.o: $(hdrdir)/ruby/internal/anyargs.h
 sha1init.o: $(hdrdir)/ruby/internal/arithmetic.h
 sha1init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

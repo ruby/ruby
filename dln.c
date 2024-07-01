@@ -490,16 +490,6 @@ dln_symbol(void *handle, const char *symbol)
 #endif
 }
 
-
-#if defined(RUBY_DLN_CHECK_ABI) && defined(USE_DLN_DLOPEN)
-static bool
-abi_check_enabled_p(void)
-{
-    const char *val = getenv("RUBY_ABI_CHECK");
-    return val == NULL || !(val[0] == '0' && val[1] == '\0');
-}
-#endif
-
 void *
 dln_load(const char *file)
 {
@@ -510,15 +500,6 @@ dln_load(const char *file)
     if (handle == NULL) {
         dln_loaderror("%s - %s", error, file);
     }
-
-#ifdef RUBY_DLN_CHECK_ABI
-    typedef unsigned long long abi_version_number;
-    abi_version_number binary_abi_version =
-        dln_sym_callable(abi_version_number, (void), handle, EXTERNAL_PREFIX "ruby_abi_version")();
-    if (binary_abi_version != RUBY_ABI_VERSION && abi_check_enabled_p()) {
-        dln_loaderror("incompatible ABI version of binary - %s", file);
-    }
-#endif
 
     char *init_fct_name;
     init_funcname(&init_fct_name, file);

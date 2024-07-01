@@ -14,7 +14,6 @@ delete.o: $(hdrdir)/ruby/backward/2/stdalign.h
 delete.o: $(hdrdir)/ruby/backward/2/stdarg.h
 delete.o: $(hdrdir)/ruby/defines.h
 delete.o: $(hdrdir)/ruby/intern.h
-delete.o: $(hdrdir)/ruby/internal/abi.h
 delete.o: $(hdrdir)/ruby/internal/anyargs.h
 delete.o: $(hdrdir)/ruby/internal/arithmetic.h
 delete.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,7 +173,6 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

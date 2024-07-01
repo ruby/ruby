@@ -28,7 +28,6 @@ ancdata.o: $(hdrdir)/ruby/defines.h
 ancdata.o: $(hdrdir)/ruby/encoding.h
 ancdata.o: $(hdrdir)/ruby/fiber/scheduler.h
 ancdata.o: $(hdrdir)/ruby/intern.h
-ancdata.o: $(hdrdir)/ruby/internal/abi.h
 ancdata.o: $(hdrdir)/ruby/internal/anyargs.h
 ancdata.o: $(hdrdir)/ruby/internal/arithmetic.h
 ancdata.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -239,7 +238,6 @@ basicsocket.o: $(hdrdir)/ruby/defines.h
 basicsocket.o: $(hdrdir)/ruby/encoding.h
 basicsocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 basicsocket.o: $(hdrdir)/ruby/intern.h
-basicsocket.o: $(hdrdir)/ruby/internal/abi.h
 basicsocket.o: $(hdrdir)/ruby/internal/anyargs.h
 basicsocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 basicsocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -450,7 +448,6 @@ constants.o: $(hdrdir)/ruby/defines.h
 constants.o: $(hdrdir)/ruby/encoding.h
 constants.o: $(hdrdir)/ruby/fiber/scheduler.h
 constants.o: $(hdrdir)/ruby/intern.h
-constants.o: $(hdrdir)/ruby/internal/abi.h
 constants.o: $(hdrdir)/ruby/internal/anyargs.h
 constants.o: $(hdrdir)/ruby/internal/arithmetic.h
 constants.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -662,7 +659,6 @@ ifaddr.o: $(hdrdir)/ruby/defines.h
 ifaddr.o: $(hdrdir)/ruby/encoding.h
 ifaddr.o: $(hdrdir)/ruby/fiber/scheduler.h
 ifaddr.o: $(hdrdir)/ruby/intern.h
-ifaddr.o: $(hdrdir)/ruby/internal/abi.h
 ifaddr.o: $(hdrdir)/ruby/internal/anyargs.h
 ifaddr.o: $(hdrdir)/ruby/internal/arithmetic.h
 ifaddr.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -873,7 +869,6 @@ init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/encoding.h
 init.o: $(hdrdir)/ruby/fiber/scheduler.h
 init.o: $(hdrdir)/ruby/intern.h
-init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1084,7 +1079,6 @@ ipsocket.o: $(hdrdir)/ruby/defines.h
 ipsocket.o: $(hdrdir)/ruby/encoding.h
 ipsocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 ipsocket.o: $(hdrdir)/ruby/intern.h
-ipsocket.o: $(hdrdir)/ruby/internal/abi.h
 ipsocket.o: $(hdrdir)/ruby/internal/anyargs.h
 ipsocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 ipsocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1295,7 +1289,6 @@ option.o: $(hdrdir)/ruby/defines.h
 option.o: $(hdrdir)/ruby/encoding.h
 option.o: $(hdrdir)/ruby/fiber/scheduler.h
 option.o: $(hdrdir)/ruby/intern.h
-option.o: $(hdrdir)/ruby/internal/abi.h
 option.o: $(hdrdir)/ruby/internal/anyargs.h
 option.o: $(hdrdir)/ruby/internal/arithmetic.h
 option.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1506,7 +1499,6 @@ raddrinfo.o: $(hdrdir)/ruby/defines.h
 raddrinfo.o: $(hdrdir)/ruby/encoding.h
 raddrinfo.o: $(hdrdir)/ruby/fiber/scheduler.h
 raddrinfo.o: $(hdrdir)/ruby/intern.h
-raddrinfo.o: $(hdrdir)/ruby/internal/abi.h
 raddrinfo.o: $(hdrdir)/ruby/internal/anyargs.h
 raddrinfo.o: $(hdrdir)/ruby/internal/arithmetic.h
 raddrinfo.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1717,7 +1709,6 @@ socket.o: $(hdrdir)/ruby/defines.h
 socket.o: $(hdrdir)/ruby/encoding.h
 socket.o: $(hdrdir)/ruby/fiber/scheduler.h
 socket.o: $(hdrdir)/ruby/intern.h
-socket.o: $(hdrdir)/ruby/internal/abi.h
 socket.o: $(hdrdir)/ruby/internal/anyargs.h
 socket.o: $(hdrdir)/ruby/internal/arithmetic.h
 socket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1928,7 +1919,6 @@ sockssocket.o: $(hdrdir)/ruby/defines.h
 sockssocket.o: $(hdrdir)/ruby/encoding.h
 sockssocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 sockssocket.o: $(hdrdir)/ruby/intern.h
-sockssocket.o: $(hdrdir)/ruby/internal/abi.h
 sockssocket.o: $(hdrdir)/ruby/internal/anyargs.h
 sockssocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 sockssocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2139,7 +2129,6 @@ tcpserver.o: $(hdrdir)/ruby/defines.h
 tcpserver.o: $(hdrdir)/ruby/encoding.h
 tcpserver.o: $(hdrdir)/ruby/fiber/scheduler.h
 tcpserver.o: $(hdrdir)/ruby/intern.h
-tcpserver.o: $(hdrdir)/ruby/internal/abi.h
 tcpserver.o: $(hdrdir)/ruby/internal/anyargs.h
 tcpserver.o: $(hdrdir)/ruby/internal/arithmetic.h
 tcpserver.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2350,7 +2339,6 @@ tcpsocket.o: $(hdrdir)/ruby/defines.h
 tcpsocket.o: $(hdrdir)/ruby/encoding.h
 tcpsocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 tcpsocket.o: $(hdrdir)/ruby/intern.h
-tcpsocket.o: $(hdrdir)/ruby/internal/abi.h
 tcpsocket.o: $(hdrdir)/ruby/internal/anyargs.h
 tcpsocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 tcpsocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2561,7 +2549,6 @@ udpsocket.o: $(hdrdir)/ruby/defines.h
 udpsocket.o: $(hdrdir)/ruby/encoding.h
 udpsocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 udpsocket.o: $(hdrdir)/ruby/intern.h
-udpsocket.o: $(hdrdir)/ruby/internal/abi.h
 udpsocket.o: $(hdrdir)/ruby/internal/anyargs.h
 udpsocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 udpsocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2772,7 +2759,6 @@ unixserver.o: $(hdrdir)/ruby/defines.h
 unixserver.o: $(hdrdir)/ruby/encoding.h
 unixserver.o: $(hdrdir)/ruby/fiber/scheduler.h
 unixserver.o: $(hdrdir)/ruby/intern.h
-unixserver.o: $(hdrdir)/ruby/internal/abi.h
 unixserver.o: $(hdrdir)/ruby/internal/anyargs.h
 unixserver.o: $(hdrdir)/ruby/internal/arithmetic.h
 unixserver.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2983,7 +2969,6 @@ unixsocket.o: $(hdrdir)/ruby/defines.h
 unixsocket.o: $(hdrdir)/ruby/encoding.h
 unixsocket.o: $(hdrdir)/ruby/fiber/scheduler.h
 unixsocket.o: $(hdrdir)/ruby/intern.h
-unixsocket.o: $(hdrdir)/ruby/internal/abi.h
 unixsocket.o: $(hdrdir)/ruby/internal/anyargs.h
 unixsocket.o: $(hdrdir)/ruby/internal/arithmetic.h
 unixsocket.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -18,7 +18,6 @@ parser.o: $(hdrdir)/ruby/backward/2/stdarg.h
 parser.o: $(hdrdir)/ruby/defines.h
 parser.o: $(hdrdir)/ruby/encoding.h
 parser.o: $(hdrdir)/ruby/intern.h
-parser.o: $(hdrdir)/ruby/internal/abi.h
 parser.o: $(hdrdir)/ruby/internal/anyargs.h
 parser.o: $(hdrdir)/ruby/internal/arithmetic.h
 parser.o: $(hdrdir)/ruby/internal/arithmetic/char.h

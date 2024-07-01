@@ -114,9 +114,7 @@ AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
 
 eval `sed -n -e ['s/^@%:@define RUBY_[A-Z_]*VERSION_\([A-Z][A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)$/\1=\2/p'] \
-      -e ['s/^@%:@define \(RUBY_ABI_VERSION\) \([0-9][0-9]*\).*/\1=\2/p'] \
       -e ['s/^@%:@define \(RUBY_PATCHLEVEL\) \(.*\)/\1=\2/p'] \
-     $srcdir/include/ruby/internal/abi.h \
      $srcdir/include/ruby/version.h $srcdir/version.h`
 for v in MAJOR MINOR TEENY; do
     AS_IF([eval "test \"\$$v\" = ''"], [
@@ -128,9 +126,6 @@ AC_SUBST(MINOR)
 AC_SUBST(TEENY)
 AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
 AC_SUBST(RUBY_PROGRAM_VERSION, '$(MAJOR).$(MINOR).$(TEENY)')
-AS_CASE([$RUBY_PATCHLEVEL], [-*], [
-    AC_DEFINE_UNQUOTED(RUBY_ABI_VERSION, [${RUBY_ABI_VERSION}])
-], [RUBY_ABI_VERSION=])
 
 AS_IF([test "$program_prefix" = NONE], [
   program_prefix=

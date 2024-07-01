@@ -67,7 +67,6 @@ eventids1.o: $(hdrdir)/ruby/backward/2/stdalign.h
 eventids1.o: $(hdrdir)/ruby/backward/2/stdarg.h
 eventids1.o: $(hdrdir)/ruby/defines.h
 eventids1.o: $(hdrdir)/ruby/intern.h
-eventids1.o: $(hdrdir)/ruby/internal/abi.h
 eventids1.o: $(hdrdir)/ruby/internal/anyargs.h
 eventids1.o: $(hdrdir)/ruby/internal/arithmetic.h
 eventids1.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -229,7 +228,6 @@ eventids2.o: $(hdrdir)/ruby/backward/2/stdarg.h
 eventids2.o: $(hdrdir)/ruby/defines.h
 eventids2.o: $(hdrdir)/ruby/encoding.h
 eventids2.o: $(hdrdir)/ruby/intern.h
-eventids2.o: $(hdrdir)/ruby/internal/abi.h
 eventids2.o: $(hdrdir)/ruby/internal/anyargs.h
 eventids2.o: $(hdrdir)/ruby/internal/arithmetic.h
 eventids2.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -409,7 +407,6 @@ ripper.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ripper.o: $(hdrdir)/ruby/defines.h
 ripper.o: $(hdrdir)/ruby/encoding.h
 ripper.o: $(hdrdir)/ruby/intern.h
-ripper.o: $(hdrdir)/ruby/internal/abi.h
 ripper.o: $(hdrdir)/ruby/internal/anyargs.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -647,7 +644,6 @@ ripper_init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ripper_init.o: $(hdrdir)/ruby/defines.h
 ripper_init.o: $(hdrdir)/ruby/encoding.h
 ripper_init.o: $(hdrdir)/ruby/intern.h
-ripper_init.o: $(hdrdir)/ruby/internal/abi.h
 ripper_init.o: $(hdrdir)/ruby/internal/anyargs.h
 ripper_init.o: $(hdrdir)/ruby/internal/arithmetic.h
 ripper_init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

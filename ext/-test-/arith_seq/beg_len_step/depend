@@ -13,7 +13,6 @@ beg_len_step.o: $(hdrdir)/ruby/backward/2/stdalign.h
 beg_len_step.o: $(hdrdir)/ruby/backward/2/stdarg.h
 beg_len_step.o: $(hdrdir)/ruby/defines.h
 beg_len_step.o: $(hdrdir)/ruby/intern.h
-beg_len_step.o: $(hdrdir)/ruby/internal/abi.h
 beg_len_step.o: $(hdrdir)/ruby/internal/anyargs.h
 beg_len_step.o: $(hdrdir)/ruby/internal/arithmetic.h
 beg_len_step.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -14,7 +14,6 @@ gc_hook.o: $(hdrdir)/ruby/backward/2/stdarg.h
 gc_hook.o: $(hdrdir)/ruby/debug.h
 gc_hook.o: $(hdrdir)/ruby/defines.h
 gc_hook.o: $(hdrdir)/ruby/intern.h
-gc_hook.o: $(hdrdir)/ruby/internal/abi.h
 gc_hook.o: $(hdrdir)/ruby/internal/anyargs.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,7 +173,6 @@ tracepoint.o: $(hdrdir)/ruby/backward/2/stdarg.h
 tracepoint.o: $(hdrdir)/ruby/debug.h
 tracepoint.o: $(hdrdir)/ruby/defines.h
 tracepoint.o: $(hdrdir)/ruby/intern.h
-tracepoint.o: $(hdrdir)/ruby/internal/abi.h
 tracepoint.o: $(hdrdir)/ruby/internal/anyargs.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/char.h

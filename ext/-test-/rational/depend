@@ -18,7 +18,6 @@ rat.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rat.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rat.o: $(hdrdir)/ruby/defines.h
 rat.o: $(hdrdir)/ruby/intern.h
-rat.o: $(hdrdir)/ruby/internal/abi.h
 rat.o: $(hdrdir)/ruby/internal/anyargs.h
 rat.o: $(hdrdir)/ruby/internal/arithmetic.h
 rat.o: $(hdrdir)/ruby/internal/arithmetic/char.h

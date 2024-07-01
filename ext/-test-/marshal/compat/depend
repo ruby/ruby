@@ -14,7 +14,6 @@ usrcompat.o: $(hdrdir)/ruby/backward/2/stdalign.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/stdarg.h
 usrcompat.o: $(hdrdir)/ruby/defines.h
 usrcompat.o: $(hdrdir)/ruby/intern.h
-usrcompat.o: $(hdrdir)/ruby/internal/abi.h
 usrcompat.o: $(hdrdir)/ruby/internal/anyargs.h
 usrcompat.o: $(hdrdir)/ruby/internal/arithmetic.h
 usrcompat.o: $(hdrdir)/ruby/internal/arithmetic/char.h
