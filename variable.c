@@ -911,7 +911,7 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 }
 
 #define USE_NAMESPACE_GVAR_TBL(ns,entry) \
-    (NAMESPACE_LOCAL_P(ns) && \
+    (NAMESPACE_OPTIONAL_P(ns) && \
      (!entry || !entry->var->namespace_ready || entry->var->setter != rb_gvar_readonly_setter))
 
 VALUE
@@ -2687,7 +2687,7 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
     rb_namespace_t *ns = GET_THREAD()->ns;
     VALUE current_namespace = Qnil;
-    if (NAMESPACE_LOCAL_P(ns)) {
+    if (NAMESPACE_USER_P(ns)) {
         current_namespace = ns->ns_object;
     } else if (NAMESPACE_BUILTIN_P(ns)) {
         current_namespace = Qnil;

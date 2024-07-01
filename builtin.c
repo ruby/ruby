@@ -33,7 +33,7 @@ builtin_lookup(const char *feature, size_t *psize)
 }
 
 static void
-load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table, bool in_root_namespace)
+load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     // search binary
     size_t size;
@@ -50,18 +50,18 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
 
-    if (!in_root_namespace) rb_namespace_enable_builtin();
+    rb_namespace_enable_builtin();
 
     // exec
     rb_iseq_eval(rb_iseq_check(iseq));
 
-    if (!in_root_namespace) rb_namespace_disable_builtin();
+    rb_namespace_disable_builtin();
 }
 
 void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
-    load_with_builtin_functions(feature_name, table, false);
+    load_with_builtin_functions(feature_name, table);
 }
 
 #endif
@@ -81,5 +81,5 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
-    load_with_builtin_functions("gem_prelude", NULL, true);
+    load_with_builtin_functions("gem_prelude", NULL);
 }

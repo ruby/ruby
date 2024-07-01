@@ -36,13 +36,15 @@ struct rb_namespace_struct {
     VALUE gvar_tbl;
 
     bool is_builtin;
-    bool is_local;
+    bool is_user;
+    bool is_optional;
 };
 typedef struct rb_namespace_struct rb_namespace_t;
 
 #define NAMESPACE_BUILTIN_P(ns) (ns && ns->is_builtin)
-#define NAMESPACE_LOCAL_P(ns) (ns && ns->is_local)
-#define NAMESPACE_EFFECTIVE_P(ns) (ns && !ns->is_builtin)
+#define NAMESPACE_USER_P(ns) (ns && ns->is_user)
+#define NAMESPACE_OPTIONAL_P(ns) (ns && ns->is_optional)
+#define NAMESPACE_MAIN_P(ns) (ns && !ns->is_optional)
 
 #define NAMESPACE_METHOD_DEFINITION(mdef) (mdef ? mdef->ns : NULL)
 #define NAMESPACE_METHOD_ENTRY(me) (me ? NAMESPACE_METHOD_DEFINITION(me->def) : NULL)
@@ -58,6 +60,8 @@ const rb_namespace_t * rb_current_namespace(void);
 void rb_namespace_entry_mark(void *);
 
 rb_namespace_t * rb_get_namespace_t(VALUE ns);
+typedef VALUE namespace_exec_func(VALUE arg);
+VALUE rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg);
 
 VALUE rb_namespace_local_extension(VALUE namespace, VALUE path);
 

@@ -2015,6 +2015,21 @@ method_owner(VALUE obj)
     return data->owner;
 }
 
+static VALUE
+method_namespace(VALUE obj)
+{
+    struct METHOD *data;
+    const rb_namespace_t *ns;
+
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
+    ns = data->me->def->ns;
+    if (!ns) return Qfalse;
+    if (ns->ns_object) return ns->ns_object;
+    // This should not happen
+    rb_bug("Unexpected namespace on the method definition: %p", ns);
+    return Qtrue;
+}
+
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
@@ -4474,6 +4489,8 @@ Init_Proc(void)
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
+
+    rb_define_method(rb_cMethod, "namespace", method_namespace, 0);
 
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);

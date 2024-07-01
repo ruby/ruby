@@ -28,10 +28,11 @@ static VALUE ns_builtin_loaded_features_realpath_map;
 static VALUE load_path_tree_root;
 
 static rb_namespace_t builtin_namespace_data = {
-    .ns_object = (VALUE)NULL,
+    .ns_object = Qnil,
     .ns_id = 0,
     .is_builtin = true,
-    .is_local = false
+    .is_user = false,
+    .is_optional = false
 };
 static rb_namespace_t * const root_namespace = 0;
 static rb_namespace_t * const builtin_namespace = &builtin_namespace_data;
@@ -140,12 +141,14 @@ rb_current_namespace(void)
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int calling = 1;
 
+    if (using_builtin_namespace)
+        return builtin_namespace;
+
     if (!main_namespace) {
         // Namespaces are not ready to be created
-        if (using_builtin_namespace)
-            return builtin_namespace;
         return root_namespace;
     }
+
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
         // temp code to detect the context is in require/load
         calling = 0;
@@ -199,13 +202,15 @@ namespace_entry_initialize(rb_namespace_t *ns)
     ns->gvar_tbl = rb_hash_new_with_size(0);
 
     ns->is_builtin = false;
-    ns->is_local = true;
+    ns->is_user = true;
+    ns->is_optional = true;
 }
 
 void rb_namespace_gc_update_references(void *ptr)
 {
     rb_namespace_t *ns = (rb_namespace_t *)ptr;
-    ns->ns_object = rb_gc_location(ns->ns_object);
+    if (!NIL_P(ns->ns_object))
+        ns->ns_object = rb_gc_location(ns->ns_object);
     ns->top_self = rb_gc_location(ns->top_self);
     ns->load_path = rb_gc_location(ns->load_path);
     ns->expanded_load_path = rb_gc_location(ns->expanded_load_path);
@@ -286,6 +291,10 @@ rb_get_namespace_t(VALUE namespace)
 {
     VALUE entry;
     ID id_namespace_entry;
+
+    if (NIL_P(namespace))
+        return builtin_namespace;
+
     CONST_ID(id_namespace_entry, "__namespace_entry__");
     entry = rb_attr_get(namespace, id_namespace_entry);
     return get_namespace_struct_internal(entry);
@@ -311,7 +320,7 @@ namespace_initialize(VALUE namespace)
     ns->ns_object = namespace;
     ns->ns_id = NUM2LONG(rb_obj_id(namespace));
     ns->load_path = rb_ary_dup(GET_VM()->load_path);
-    ns->is_local = true;
+    ns->is_user = true;
     rb_define_singleton_method(ns->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
     // Set the Namespace object unique/consistent from any namespaces to have just single
@@ -358,10 +367,13 @@ static VALUE
 rb_namespace_current(VALUE klass)
 {
     const rb_namespace_t *ns = rb_current_namespace();
-    if (NAMESPACE_LOCAL_P(ns)) {
+    if (NAMESPACE_USER_P(ns)) {
         return ns->ns_object;
     }
-    return Qnil;
+    if (NAMESPACE_BUILTIN_P(ns)) {
+        return Qnil;
+    }
+    return Qfalse;
 }
 
 static VALUE
@@ -643,6 +655,14 @@ namespace_pop(VALUE th_value)
     return Qnil;
 }
 
+VALUE
+rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg)
+{
+    rb_thread_t *th = GET_THREAD();
+    namespace_push(th, ns->ns_object);
+    return rb_ensure(func, arg, namespace_pop, (VALUE)th);
+}
+
 static VALUE
 rb_namespace_load(int argc, VALUE *argv, VALUE namespace)
 {
@@ -698,7 +718,10 @@ rb_initialize_main_namespace(void)
     ns->ns_object = main_ns;
     ns->ns_id = NUM2LONG(rb_obj_id(main_ns));
     ns->is_builtin = false;
-    ns->is_local = false;
+    ns->is_user = true;
+    ns->is_optional = false;
+
+    rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_ns);
 
     vm->main_namespace = th->ns = main_namespace = ns;
 }
@@ -712,11 +735,13 @@ rb_namespace_inspect(VALUE obj)
     if (NAMESPACE_BUILTIN_P(ns)) {
         rb_str_cat_cstr(r, ",builtin");
     }
-    if (NAMESPACE_LOCAL_P(ns)) {
-        rb_str_cat_cstr(r, ",local");
+    if (NAMESPACE_USER_P(ns)) {
+        rb_str_cat_cstr(r, ",user");
     }
-    if (!NAMESPACE_BUILTIN_P(ns) && !NAMESPACE_LOCAL_P(ns)) {
+    if (NAMESPACE_MAIN_P(ns)) {
         rb_str_cat_cstr(r, ",main");
+    } else if (NAMESPACE_OPTIONAL_P(ns)) {
+        rb_str_cat_cstr(r, ",optional");
     }
     rb_str_cat_cstr(r, ">");
     return r;

@@ -5291,7 +5291,7 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                   rsp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size, ISEQ_BODY(iseq)->stack_max);
 
-    if (calling->proc_ns && ns != calling->proc_ns && NAMESPACE_LOCAL_P(calling->proc_ns)) {
+    if (calling->proc_ns && ns != calling->proc_ns && NAMESPACE_USER_P(calling->proc_ns)) {
         // TODO: fix this wild manner way to tell namespace
         ec->cfp->ns = calling->proc_ns;
     }

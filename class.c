@@ -512,7 +512,14 @@ debug_dump_ivars_foreach_i(ID key, VALUE value, st_data_t arg)
     rb_str_cat_cstr(result, "  ");
     rb_str_cat_cstr(result, rb_id2name(key));
     rb_str_cat_cstr(result, " -> ");
-    rb_str_concat(result, debug_dump_inspect_or_return_type(value));
+    // to suppress the very long Gem ivar values
+    if (key == rb_intern("@loaded_specs")) {
+        rb_str_cat_cstr(result, "[ ... ]");
+    } else if (key == rb_intern("@path_to_default_spec_map")) {
+        rb_str_cat_cstr(result, "{ ... }");
+    } else {
+        rb_str_concat(result, debug_dump_inspect_or_return_type(value));
+    }
     rb_str_cat_cstr(result, "\n");
     return ST_CONTINUE;
 }
@@ -1021,7 +1028,7 @@ class_alloc(VALUE flags, VALUE klass)
 
     // Classes/Modules defined in main/local namespaces are
     // writable directly.
-    RCLASS_SET_PRIME_CLASSEXT_READWRITE((VALUE)obj, true, NAMESPACE_EFFECTIVE_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_READWRITE((VALUE)obj, true, NAMESPACE_USER_P(ns) ? true : false);
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
@@ -1793,7 +1800,7 @@ rb_define_class(const char *name, VALUE super)
     rb_namespace_t *ns = GET_THREAD()->ns;
 
     id = rb_intern(name);
-    if (NAMESPACE_LOCAL_P(ns)) {
+    if (NAMESPACE_OPTIONAL_P(ns)) {
         return rb_define_class_id_under(ns->ns_object, id, super);
     }
     if (rb_const_defined(rb_cObject, id)) {
@@ -1912,7 +1919,7 @@ rb_define_module(const char *name)
     rb_namespace_t *ns = GET_THREAD()->ns;
 
     id = rb_intern(name);
-    if (NAMESPACE_LOCAL_P(ns)) {
+    if (NAMESPACE_OPTIONAL_P(ns)) {
         return rb_define_module_id_under(ns->ns_object, id);
     }
     if (rb_const_defined(rb_cObject, id)) {

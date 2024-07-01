@@ -3531,7 +3531,7 @@ thread_mark(void *ptr)
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
     rb_gc_mark(th->namespaces);
-    if (NAMESPACE_LOCAL_P(th->ns)) rb_namespace_entry_mark(th->ns);
+    if (NAMESPACE_USER_P(th->ns)) rb_namespace_entry_mark(th->ns);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));

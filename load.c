@@ -49,10 +49,10 @@ typedef struct vm_and_namespace_struct vm_ns_t;
 #define GET_vm_ns() vm_ns_t vm_ns_v = { .vm = GET_VM(), .ns = (rb_namespace_t *)rb_current_namespace(), }; vm_ns_t *vm_ns = &vm_ns_v;
 #define GET_vm_ns_from(th) vm_ns_t vm_ns_v = { .vm = th->vm, .ns = (rb_namespace_t *)rb_current_namespace(), }; vm_ns_t *vm_ns = &vm_ns_v;
 
-#define CURRENT_NS_attr(vm_ns, attr) (NAMESPACE_LOCAL_P(vm_ns->ns) ? vm_ns->ns->attr : vm_ns->vm->attr)
-#define SET_NS_attr(vm_ns, attr, value) do {                       \
-    if (NAMESPACE_LOCAL_P(vm_ns->ns)) { vm_ns->ns->attr = value; } \
-    else { vm_ns->vm->attr = value; }                              \
+#define CURRENT_NS_attr(vm_ns, attr) (NAMESPACE_USER_P(vm_ns->ns) ? vm_ns->ns->attr : vm_ns->vm->attr)
+#define SET_NS_attr(vm_ns, attr, value) do {                      \
+    if (NAMESPACE_USER_P(vm_ns->ns)) { vm_ns->ns->attr = value; } \
+    else { vm_ns->vm->attr = value; }                             \
 } while (0)
 
 #define SET_NS_LOAD_PATH_CHECK_CACHE(vm_ns, value) SET_NS_attr(vm_ns, load_path_check_cache, value)
@@ -69,7 +69,7 @@ typedef struct vm_and_namespace_struct vm_ns_t;
 #define CURRENT_NS_LOADED_FEATURES_REALPATH_MAP(vm_ns) CURRENT_NS_attr(vm_ns, loaded_features_realpath_map)
 #define CURRENT_NS_LOADED_FEATURES_INDEX(vm_ns)        CURRENT_NS_attr(vm_ns, loaded_features_index)
 
-#define CURRENT_NS_RUBY_DLN_LIBMAP(vm_ns, map) (NAMESPACE_LOCAL_P(vm_ns->ns) ? vm_ns->ns->ruby_dln_libmap : map)
+#define CURRENT_NS_RUBY_DLN_LIBMAP(vm_ns, map) (NAMESPACE_USER_P(vm_ns->ns) ? vm_ns->ns->ruby_dln_libmap : map)
 
 enum {
     loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
@@ -908,7 +908,7 @@ rb_load_internal(VALUE fname, VALUE wrap)
         }
         state = load_wrapping(ec, fname, wrap);
     }
-    else if (NAMESPACE_LOCAL_P(ns)) {
+    else if (NAMESPACE_OPTIONAL_P(ns)) {
         namespace = ns->ns_object;
         state = load_wrapping(ec, fname, namespace);
     }
@@ -1255,7 +1255,7 @@ load_ext(VALUE path, VALUE fname)
 {
     VALUE loaded = path;
     GET_vm_ns();
-    if (NAMESPACE_LOCAL_P(vm_ns->ns)) {
+    if (NAMESPACE_OPTIONAL_P(vm_ns->ns)) {
         loaded = rb_namespace_local_extension(vm_ns->ns->ns_object, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
@@ -1390,7 +1390,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    if (NAMESPACE_LOCAL_P(vm_ns->ns)) {
+                    if (NAMESPACE_OPTIONAL_P(vm_ns->ns)) {
                         load_wrapping(saved.ec, path, vm_ns->ns->ns_object);
                     } else {
                         load_iseq_eval(saved.ec, path);
@@ -1459,18 +1459,52 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     return result;
 }
 
+struct require_internal_args {
+    rb_execution_context_t *ec;
+    VALUE fname;
+    int exception;
+    bool warn;
+};
+
+static VALUE
+call_require_internal(VALUE arg)
+{
+    struct require_internal_args *args = (struct require_internal_args *)arg;
+    int result = require_internal(args->ec, args->fname, args->exception, args->warn);
+    return INT2FIX(result);
+}
+
+static int
+require_internal_in_current_namespace(rb_execution_context_t *ec, VALUE fname, int exception, bool warn)
+{
+    const rb_namespace_t *ns = rb_current_namespace();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    if (th->ns != ns) {
+        struct require_internal_args args = {
+            .ec = ec,
+            .fname = fname,
+            .exception = exception,
+            .warn = warn
+        };
+        VALUE rvalue = rb_namespace_exec(ns, call_require_internal, (VALUE)&args);
+        return FIX2INT(rvalue);
+    } else {
+        return require_internal(ec, fname, exception, warn);
+    }
+}
+
 int
 rb_require_internal_silent(VALUE fname)
 {
     rb_execution_context_t *ec = GET_EC();
-    return require_internal(ec, fname, 1, false);
+    return require_internal_in_current_namespace(ec, fname, 1, false);
 }
 
 int
 rb_require_internal(VALUE fname)
 {
     rb_execution_context_t *ec = GET_EC();
-    return require_internal(ec, fname, 1, RTEST(ruby_verbose));
+    return require_internal_in_current_namespace(ec, fname, 1, RTEST(ruby_verbose));
 }
 
 int
@@ -1479,7 +1513,7 @@ ruby_require_internal(const char *fname, unsigned int len)
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, str, 0, RTEST(ruby_verbose));
+    int result = require_internal_in_current_namespace(ec, str, 0, RTEST(ruby_verbose));
     rb_set_errinfo(Qnil);
     return result == TAG_RETURN ? 1 : result ? -1 : 0;
 }
@@ -1501,7 +1535,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
         return rb_ractor_require(fname);
     }
     else {
-        int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
+        int result = require_internal_in_current_namespace(ec, fname, 1, RTEST(ruby_verbose));
 
         if (result > TAG_RETURN) {
             EC_JUMP_TAG(ec, result);
