@@ -20,6 +20,16 @@ describe "IO#readlines" do
     -> { @io.readlines }.should raise_error(IOError)
   end
 
+  ruby_version_is "3.3" do
+    describe "when invoked with a block" do
+      it "yields each line to the block" do
+        lines = []
+        @io.readlines { |line| lines << line }
+        lines.should == IOSpecs.lines
+      end
+    end
+  end
+
   describe "when passed no arguments" do
     before :each do
       suppress_warning {@sep, $/ = $/, " "}
@@ -213,6 +223,14 @@ describe "IO.readlines" do
       -> {
         IO.readlines(cmd)
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+
+    describe "when invoked with a block" do
+      it "yields each line to the block" do
+        lines = []
+        IO.readlines(@name) { |line| lines << line }
+        lines.should == IOSpecs.lines
+      end
     end
   end
 
