@@ -17049,9 +17049,9 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
     }
 
     if ((flags & PM_PARSE_PATTERN_MULTI) && match1(parser, PM_TOKEN_COMMA)) {
-        // If we have a comma, then we are now parsing either an array pattern or a
-        // find pattern. We need to parse all of the patterns, put them into a big
-        // list, and then determine which type of node we have.
+        // If we have a comma, then we are now parsing either an array pattern
+        // or a find pattern. We need to parse all of the patterns, put them
+        // into a big list, and then determine which type of node we have.
         pm_node_list_t nodes = { 0 };
         pm_node_list_append(&nodes, node);
 
@@ -17067,9 +17067,9 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             if (accept1(parser, PM_TOKEN_USTAR)) {
                 node = (pm_node_t *) parse_pattern_rest(parser, captures);
 
-                // If we have already parsed a splat pattern, then this is an error. We
-                // will continue to parse the rest of the patterns, but we will indicate
-                // it as an error.
+                // If we have already parsed a splat pattern, then this is an
+                // error. We will continue to parse the rest of the patterns,
+                // but we will indicate it as an error.
                 if (trailing_rest) {
                     pm_parser_err_previous(parser, PM_ERR_PATTERN_REST);
                 }
@@ -17082,20 +17082,28 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             pm_node_list_append(&nodes, node);
         }
 
-        // If the first pattern and the last pattern are rest patterns, then we will
-        // call this a find pattern, regardless of how many rest patterns are in
-        // between because we know we already added the appropriate errors.
-        // Otherwise we will create an array pattern.
-        if (PM_NODE_TYPE_P(nodes.nodes[0], PM_SPLAT_NODE) && PM_NODE_TYPE_P(nodes.nodes[nodes.size - 1], PM_SPLAT_NODE)) {
+        // If the first pattern and the last pattern are rest patterns, then we
+        // will call this a find pattern, regardless of how many rest patterns
+        // are in between because we know we already added the appropriate
+        // errors. Otherwise we will create an array pattern.
+        if (leading_rest && PM_NODE_TYPE_P(nodes.nodes[nodes.size - 1], PM_SPLAT_NODE)) {
             node = (pm_node_t *) pm_find_pattern_node_create(parser, &nodes);
+
+            if (nodes.size == 2) {
+                pm_parser_err_node(parser, node, PM_ERR_PATTERN_FIND_MISSING_INNER);
+            }
         } else {
             node = (pm_node_t *) pm_array_pattern_node_node_list_create(parser, &nodes);
+
+            if (leading_rest && trailing_rest) {
+                pm_parser_err_node(parser, node, PM_ERR_PATTERN_ARRAY_MULTIPLE_RESTS);
+            }
         }
 
         xfree(nodes.nodes);
     } else if (leading_rest) {
-        // Otherwise, if we parsed a single splat pattern, then we know we have an
-        // array pattern, so we can go ahead and create that node.
+        // Otherwise, if we parsed a single splat pattern, then we know we have
+        // an array pattern, so we can go ahead and create that node.
         node = (pm_node_t *) pm_array_pattern_node_rest_create(parser, node);
     }
 
