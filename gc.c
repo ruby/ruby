@@ -1876,7 +1876,10 @@ ruby_load_external_gc_from_argv(int argc, char **argv)
     char *gc_so_path = NULL;
 
     for (int i = 0; i < argc; i++) {
-        if (strncmp(argv[i], RUBY_GC_LIBRARY_ARG, sizeof(RUBY_GC_LIBRARY_ARG) - 1) == 0) {
+        if (strcmp(argv[i], "--") == 0) {
+            break;
+        }
+        else if (strncmp(argv[i], RUBY_GC_LIBRARY_ARG, sizeof(RUBY_GC_LIBRARY_ARG) - 1) == 0) {
             gc_so_path = argv[i] + sizeof(RUBY_GC_LIBRARY_ARG) - 1;
         }
     }
