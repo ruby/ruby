@@ -780,6 +780,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
     open_file(path, "wb") do |io|
       io.write data
