@@ -234,3 +234,19 @@ rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
 
     VM_ASSERT(recorded_lock_rec == rb_ec_vm_lock_rec(ec));
 }
+
+/* These two methods exist so that we can exclude concurrent ractors from the
+ * objspace extension; we can't actually call the inline rb_vm_lock_enter()
+ * functions from there because the ruby_current_vm_ptr symbol is not exported.
+ * These functions thus exist to expose them to the extension */
+void
+rb_vm_lock_enter_ext(unsigned int *lev, const char *file, int line)
+{
+    rb_vm_lock_enter(lev, file, line);
+}
+
+void
+rb_vm_lock_leave_ext(unsigned int *lev, const char *file, int line)
+{
+    rb_vm_lock_leave(lev, file, line);
+}

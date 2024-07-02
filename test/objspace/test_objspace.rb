@@ -541,6 +541,48 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_all_parallel
+    # Rather than writing the dump to stdout, create 20 tempfiles and dump to each tempfile separately.
+    # Although this test asserts that dump_all works consistently when called in parallel, and does not crash,
+    # writing the result to one stdout stream from multiple threads still will produce garbage.
+    files = 20.times.map { Tempfile.new }
+    child_env = { 'DUMP_TEMPFILES' => JSON.dump(files.map { |f| f.path }) }
+    assert_in_out_err([child_env, '-robjspace', '-rjson'], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        $obj = Object.new
+        puts ObjectSpace.dump($obj)
+
+        $dump_tempfiles = JSON.parse(ENV['DUMP_TEMPFILES'])
+
+        def dump_my_heap_please(i)
+          File.open($dump_tempfiles[i], 'w') do |f|
+            ObjectSpace.dump_all(output: f, full: true)
+          end
+        end
+
+        threads = 20.times.map do |i|
+          Thread.new { dump_my_heap_please(i) }
+        end
+
+        threads.each(&:join)
+      end;
+
+      needle = JSON.parse(output.shift)
+      addr = needle['address']
+
+      dump_contents = files.map { |f| f.rewind; f.read; }
+      found = dump_contents.map { |fcontents|
+        fcontents.lines.find { |ln| JSON.parse(ln)['address'] == addr }
+      }.compact
+
+      # This test will crash without the fix for bug 19922
+      assert_equal found.size, 20, '[Bug #19922]'
+    end
+  ensure
+    files&.each(&:unlink)
+    files&.each(&:close)
+  end
+
   def test_dump_objects_dumps_page_slot_sizes
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
