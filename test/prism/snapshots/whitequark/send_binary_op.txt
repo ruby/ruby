@@ -238,7 +238,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (19,0)-(19,7))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ CallNode (location: (19,0)-(19,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -290,7 +290,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (23,0)-(23,8))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ CallNode (location: (23,0)-(23,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -420,7 +420,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (33,0)-(33,7))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ CallNode (location: (33,0)-(33,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -446,7 +446,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,8))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ CallNode (location: (35,0)-(35,3))
         │   │   ├── flags: variable_call, ignore_visibility

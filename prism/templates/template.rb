@@ -357,27 +357,6 @@ module Prism
       end
     end
 
-    # This represents a set of flags. It is very similar to the UInt32Field, but
-    # can be directly embedded into the flags field on the struct and provides
-    # convenient methods for checking if a flag is set.
-    class FlagsField < Field
-      def rbs_class
-        "Integer"
-      end
-
-      def rbi_class
-        "Integer"
-      end
-
-      def java_type
-        "short"
-      end
-
-      def kind
-        options.fetch(:kind)
-      end
-    end
-
     # This represents an arbitrarily-sized integer. When it gets to Ruby it will
     # be an Integer.
     class IntegerField < Field
@@ -414,9 +393,9 @@ module Prism
     # in YAML format. It contains information about the name of the node and the
     # various child nodes it contains.
     class NodeType
-      attr_reader :name, :type, :human, :fields, :newline, :comment
+      attr_reader :name, :type, :human, :flags, :fields, :newline, :comment
 
-      def initialize(config)
+      def initialize(config, flags)
         @name = config.fetch("name")
 
         type = @name.gsub(/(?<=.)[A-Z]/, "_\\0")
@@ -430,13 +409,14 @@ module Prism
             options = field.transform_keys(&:to_sym)
             options.delete(:type)
 
-            # If/when we have documentation on every field, this should be changed
-            # to use fetch instead of delete.
+            # If/when we have documentation on every field, this should be
+            # changed to use fetch instead of delete.
             comment = options.delete(:comment)
 
             type.new(comment: comment, **options)
           end
 
+        @flags = config.key?("flags") ? flags.fetch(config.fetch("flags")) : nil
         @newline = config.fetch("newline", true)
         @comment = config.fetch("comment")
       end
@@ -474,7 +454,6 @@ module Prism
         when "location?"  then OptionalLocationField
         when "uint8"      then UInt8Field
         when "uint32"     then UInt32Field
-        when "flags"      then FlagsField
         when "integer"    then IntegerField
         when "double"     then DoubleField
         else raise("Unknown field type: #{name.inspect}")
@@ -603,13 +582,14 @@ module Prism
         @locals ||=
           begin
             config = YAML.load_file(File.expand_path("../config.yml", __dir__))
+            flags = config.fetch("flags").to_h { |flags| [flags["name"], Flags.new(flags)] }
 
             {
               errors: config.fetch("errors").map { |name| Error.new(name) },
               warnings: config.fetch("warnings").map { |name| Warning.new(name) },
-              nodes: config.fetch("nodes").map { |node| NodeType.new(node) }.sort_by(&:name),
+              nodes: config.fetch("nodes").map { |node| NodeType.new(node, flags) }.sort_by(&:name),
               tokens: config.fetch("tokens").map { |token| Token.new(token) },
-              flags: config.fetch("flags").map { |flags| Flags.new(flags) }
+              flags: flags.values
             }
           end
       end

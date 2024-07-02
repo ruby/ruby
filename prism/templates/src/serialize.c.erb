@@ -89,6 +89,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             size_t length_offset = buffer->length;
             pm_buffer_append_string(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
             <%- end -%>
+            pm_buffer_append_varuint(buffer, (uint32_t) node->flags);
             <%- node.fields.each do |field| -%>
             <%- case field -%>
             <%- when Prism::Template::NodeField -%>
@@ -132,8 +133,6 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::Template::UInt32Field -%>
             pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Prism::Template::FlagsField -%>
-            pm_buffer_append_varuint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
             <%- when Prism::Template::IntegerField -%>
             pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- when Prism::Template::DoubleField -%>

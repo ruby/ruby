@@ -31,14 +31,14 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
             return;
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
-            <%- if node.fields.any? -%>
+            <%- if !node.flags.nil? || node.fields.any? -%>
             pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
             <%- end -%>
             pm_buffer_append_string(output_buffer, "@ <%= node.name %> (location: ", <%= node.name.length + 14 %>);
             prettyprint_location(output_buffer, parser, &node->location);
             pm_buffer_append_string(output_buffer, ")\n", 2);
-            <%- node.fields.each_with_index do |field, index| -%>
-            <%- preadd = index == node.fields.length - 1 ? "    " : "|   " -%>
+            <%- (fields = [*node.flags, *node.fields]).each_with_index do |field, index| -%>
+            <%- preadd = index == fields.length - 1 ? "    " : "|   " -%>
 
             // <%= field.name %>
             {
@@ -123,11 +123,10 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_format(output_buffer, " %" PRIu8 "\n", cast-><%= field.name %>);
             <%- when Prism::Template::UInt32Field -%>
                 pm_buffer_append_format(output_buffer, " %" PRIu32 "\n", cast-><%= field.name %>);
-            <%- when Prism::Template::FlagsField -%>
+            <%- when Prism::Template::Flags -%>
                 bool found = false;
-                <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
-                <%- found.values.each do |value| -%>
-                if (cast->base.<%= field.name %> & PM_<%= found.human.upcase %>_<%= value.name %>) {
+                <%- field.values.each do |value| -%>
+                if (cast->base.flags & PM_<%= field.human.upcase %>_<%= value.name %>) {
                     if (found) pm_buffer_append_byte(output_buffer, ',');
                     pm_buffer_append_string(output_buffer, " <%= value.name.downcase %>", <%= value.name.bytesize + 1 %>);
                     found = true;

@@ -88,7 +88,7 @@ module Prism
 
       while node = queue.shift
         queue.concat(node.compact_child_nodes)
-        newlines << result.source.line(node.location.start_offset) if node&.newline?
+        newlines << result.source.line(node.location.start_offset) if node&.newline_flag?
       end
 
       newlines.sort

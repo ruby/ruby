@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,6))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,6))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver:
             │   @ IntegerNode (location: (1,0)-(1,1))
             │   ├── flags: decimal
