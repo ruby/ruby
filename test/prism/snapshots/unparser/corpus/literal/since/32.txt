@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(11,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(11,3))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ DefNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,8)-(1,20))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,8)-(1,16))
         │   │   │       ├── flags: ∅
@@ -26,9 +30,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (2,2)-(2,19))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,2)-(2,19))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -39,12 +44,14 @@
         │   │           │   ├── flags: contains_keywords, contains_keyword_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ LocalVariableReadNode (location: (2,6)-(2,14))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── name: :argument
         │   │           │       │   └── depth: 0
         │   │           │       └── @ KeywordHashNode (location: (2,16)-(2,18))
         │   │           │           ├── flags: ∅
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocSplatNode (location: (2,16)-(2,18))
+        │   │           │                   ├── flags: ∅
         │   │           │                   ├── value: ∅
         │   │           │                   └── operator_loc: (2,16)-(2,18) = "**"
         │   │           ├── closing_loc: (2,18)-(2,19) = ")"
@@ -57,11 +64,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ DefNode (location: (5,0)-(7,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (5,4)-(5,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (5,8)-(5,19))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (5,8)-(5,16))
         │   │   │       ├── flags: ∅
@@ -79,9 +88,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (6,2)-(6,18))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (6,2)-(6,18))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -92,9 +102,11 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ LocalVariableReadNode (location: (6,6)-(6,14))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── name: :argument
         │   │           │       │   └── depth: 0
         │   │           │       └── @ SplatNode (location: (6,16)-(6,17))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (6,16)-(6,17) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (6,17)-(6,18) = ")"
@@ -107,11 +119,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (7,0)-(7,3) = "end"
         └── @ DefNode (location: (9,0)-(11,3))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (9,4)-(9,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (9,8)-(9,10))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -126,24 +140,28 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (10,2)-(10,20))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ HashNode (location: (10,2)-(10,20))
+            │           ├── flags: newline
             │           ├── opening_loc: (10,2)-(10,3) = "{"
             │           ├── elements: (length: 2)
             │           │   ├── @ AssocNode (location: (10,4)-(10,14))
+            │           │   │   ├── flags: static_literal
             │           │   │   ├── key:
             │           │   │   │   @ SymbolNode (location: (10,4)-(10,12))
-            │           │   │   │   ├── flags: forced_us_ascii_encoding
+            │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │           │   │   │   ├── opening_loc: ∅
             │           │   │   │   ├── value_loc: (10,4)-(10,11) = "default"
             │           │   │   │   ├── closing_loc: (10,11)-(10,12) = ":"
             │           │   │   │   └── unescaped: "default"
             │           │   │   ├── value:
             │           │   │   │   @ IntegerNode (location: (10,13)-(10,14))
-            │           │   │   │   ├── flags: decimal
+            │           │   │   │   ├── flags: static_literal, decimal
             │           │   │   │   └── value: 1
             │           │   │   └── operator_loc: ∅
             │           │   └── @ AssocSplatNode (location: (10,16)-(10,18))
+            │           │       ├── flags: ∅
             │           │       ├── value: ∅
             │           │       └── operator_loc: (10,16)-(10,18) = "**"
             │           └── closing_loc: (10,19)-(10,20) = "}"

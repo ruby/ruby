@@ -1,23 +1,29 @@
 @ ProgramNode (location: (1,0)-(7,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,13))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ LambdaNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,3)-(1,5) = "do"
         │   ├── closing_loc: (1,14)-(1,17) = "end"
         │   ├── parameters:
         │   │   @ NumberedParametersNode (location: (1,0)-(1,17))
+        │   │   ├── flags: ∅
         │   │   └── maximum: 9
         │   └── body:
         │       @ StatementsNode (location: (1,6)-(1,13))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (1,6)-(1,13))
-        │               ├── flags: ∅
+        │               ├── flags: newline
         │               ├── receiver:
         │               │   @ LocalVariableReadNode (location: (1,6)-(1,8))
+        │               │   ├── flags: ∅
         │               │   ├── name: :_1
         │               │   └── depth: 0
         │               ├── call_operator_loc: ∅
@@ -29,25 +35,30 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 1)
         │               │       └── @ LocalVariableReadNode (location: (1,11)-(1,13))
+        │               │           ├── flags: ∅
         │               │           ├── name: :_9
         │               │           └── depth: 0
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ LambdaNode (location: (3,0)-(3,13))
+        │   ├── flags: newline
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,4) = "{"
         │   ├── closing_loc: (3,12)-(3,13) = "}"
         │   ├── parameters:
         │   │   @ NumberedParametersNode (location: (3,0)-(3,13))
+        │   │   ├── flags: ∅
         │   │   └── maximum: 9
         │   └── body:
         │       @ StatementsNode (location: (3,5)-(3,12))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (3,5)-(3,12))
-        │               ├── flags: ∅
+        │               ├── flags: newline
         │               ├── receiver:
         │               │   @ LocalVariableReadNode (location: (3,5)-(3,7))
+        │               │   ├── flags: ∅
         │               │   ├── name: :_1
         │               │   └── depth: 0
         │               ├── call_operator_loc: ∅
@@ -59,12 +70,13 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 1)
         │               │       └── @ LocalVariableReadNode (location: (3,10)-(3,12))
+        │               │           ├── flags: ∅
         │               │           ├── name: :_9
         │               │           └── depth: 0
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :m
@@ -74,17 +86,21 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,2)-(5,16))
+        │       ├── flags: ∅
         │       ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
         │       ├── parameters:
         │       │   @ NumberedParametersNode (location: (5,2)-(5,16))
+        │       │   ├── flags: ∅
         │       │   └── maximum: 9
         │       ├── body:
         │       │   @ StatementsNode (location: (5,5)-(5,12))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ CallNode (location: (5,5)-(5,12))
-        │       │           ├── flags: ∅
+        │       │           ├── flags: newline
         │       │           ├── receiver:
         │       │           │   @ LocalVariableReadNode (location: (5,5)-(5,7))
+        │       │           │   ├── flags: ∅
         │       │           │   ├── name: :_1
         │       │           │   └── depth: 0
         │       │           ├── call_operator_loc: ∅
@@ -96,6 +112,7 @@
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ LocalVariableReadNode (location: (5,10)-(5,12))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── name: :_9
         │       │           │           └── depth: 0
         │       │           ├── closing_loc: ∅
@@ -103,7 +120,7 @@
         │       ├── opening_loc: (5,2)-(5,4) = "do"
         │       └── closing_loc: (5,13)-(5,16) = "end"
         └── @ CallNode (location: (7,0)-(7,13))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :m
@@ -113,17 +130,21 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (7,2)-(7,13))
+                ├── flags: ∅
                 ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (7,2)-(7,13))
+                │   ├── flags: ∅
                 │   └── maximum: 9
                 ├── body:
                 │   @ StatementsNode (location: (7,4)-(7,11))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (7,4)-(7,11))
-                │           ├── flags: ∅
+                │           ├── flags: newline
                 │           ├── receiver:
                 │           │   @ LocalVariableReadNode (location: (7,4)-(7,6))
+                │           │   ├── flags: ∅
                 │           │   ├── name: :_1
                 │           │   └── depth: 0
                 │           ├── call_operator_loc: ∅
@@ -135,6 +156,7 @@
                 │           │   ├── flags: ∅
                 │           │   └── arguments: (length: 1)
                 │           │       └── @ LocalVariableReadNode (location: (7,9)-(7,11))
+                │           │           ├── flags: ∅
                 │           │           ├── name: :_9
                 │           │           └── depth: 0
                 │           ├── closing_loc: ∅

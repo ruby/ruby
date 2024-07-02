@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,43))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,43))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,43))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (1,4)-(1,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,8)-(1,19))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,8)-(1,16))
             │   │       ├── flags: ∅
@@ -26,9 +30,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,22)-(1,38))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,22)-(1,38))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -39,9 +44,11 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,26)-(1,34))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── name: :argument
             │           │       │   └── depth: 0
             │           │       └── @ SplatNode (location: (1,36)-(1,37))
+            │           │           ├── flags: ∅
             │           │           ├── operator_loc: (1,36)-(1,37) = "*"
             │           │           └── expression: ∅
             │           ├── closing_loc: (1,37)-(1,38) = ")"

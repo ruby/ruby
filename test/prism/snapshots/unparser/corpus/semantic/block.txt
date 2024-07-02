@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(26,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(26,3))
+    ├── flags: ∅
     └── body: (length: 6)
         ├── @ CallNode (location: (1,0)-(2,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -14,13 +16,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,4)-(2,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,4)-(1,6) = "do"
         │       └── closing_loc: (2,0)-(2,3) = "end"
         ├── @ CallNode (location: (4,0)-(6,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -30,14 +33,17 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (4,4)-(6,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ BeginNode (location: (4,4)-(6,3))
+        │       │   ├── flags: ∅
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:
         │       │   │   @ RescueNode (location: (5,0)-(5,6))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── keyword_loc: (5,0)-(5,6) = "rescue"
         │       │   │   ├── exceptions: (length: 0)
         │       │   │   ├── operator_loc: ∅
@@ -50,7 +56,7 @@
         │       ├── opening_loc: (4,4)-(4,6) = "do"
         │       └── closing_loc: (6,0)-(6,3) = "end"
         ├── @ CallNode (location: (8,0)-(11,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -60,22 +66,28 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (8,4)-(11,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (9,2)-(10,5))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 2)
         │       │       ├── @ RescueModifierNode (location: (9,2)-(9,16))
+        │       │       │   ├── flags: newline
         │       │       │   ├── expression:
         │       │       │   │   @ NilNode (location: (9,2)-(9,5))
+        │       │       │   │   └── flags: static_literal
         │       │       │   ├── keyword_loc: (9,6)-(9,12) = "rescue"
         │       │       │   └── rescue_expression:
         │       │       │       @ NilNode (location: (9,13)-(9,16))
+        │       │       │       └── flags: static_literal
         │       │       └── @ NilNode (location: (10,2)-(10,5))
+        │       │           └── flags: newline, static_literal
         │       ├── opening_loc: (8,4)-(8,6) = "do"
         │       └── closing_loc: (11,0)-(11,3) = "end"
         ├── @ CallNode (location: (13,0)-(14,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -85,11 +97,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (13,4)-(14,3))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (13,7)-(13,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (13,8)-(13,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (13,8)-(13,9))
         │       │   │   │       ├── flags: ∅
@@ -107,7 +122,7 @@
         │       ├── opening_loc: (13,4)-(13,6) = "do"
         │       └── closing_loc: (14,0)-(14,3) = "end"
         ├── @ CallNode (location: (16,0)-(20,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -126,11 +141,14 @@
         │   ├── closing_loc: (16,10)-(16,11) = ")"
         │   └── block:
         │       @ BlockNode (location: (16,12)-(20,3))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (16,15)-(16,18))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (16,16)-(16,17))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (16,16)-(16,17))
         │       │   │   │       ├── flags: ∅
@@ -146,14 +164,16 @@
         │       │   └── closing_loc: (16,17)-(16,18) = "|"
         │       ├── body:
         │       │   @ StatementsNode (location: (19,2)-(19,3))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ LocalVariableReadNode (location: (19,2)-(19,3))
+        │       │           ├── flags: newline
         │       │           ├── name: :a
         │       │           └── depth: 0
         │       ├── opening_loc: (16,12)-(16,14) = "do"
         │       └── closing_loc: (20,0)-(20,3) = "end"
         └── @ CallNode (location: (22,0)-(26,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -172,13 +192,15 @@
             ├── closing_loc: (22,10)-(22,11) = ")"
             └── block:
                 @ BlockNode (location: (22,12)-(26,3))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (25,2)-(25,3))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (25,2)-(25,3))
-                │           ├── flags: variable_call, ignore_visibility
+                │           ├── flags: newline, variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :a

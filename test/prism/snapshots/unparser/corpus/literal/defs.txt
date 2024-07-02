@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(40,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(40,3))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ DefNode (location: (1,0)-(2,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,9)-(1,12) = "foo"
         │   ├── receiver:
         │   │   @ SelfNode (location: (1,4)-(1,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -18,16 +22,19 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (2,0)-(2,3) = "end"
         ├── @ DefNode (location: (4,0)-(6,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (4,9)-(4,12) = "foo"
         │   ├── receiver:
         │   │   @ SelfNode (location: (4,4)-(4,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,2)-(5,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,2)-(5,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -44,16 +51,19 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ DefNode (location: (8,0)-(11,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (8,9)-(8,12) = "foo"
         │   ├── receiver:
         │   │   @ SelfNode (location: (8,4)-(8,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (9,2)-(10,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 2)
         │   │       ├── @ CallNode (location: (9,2)-(9,5))
-        │   │       │   ├── flags: variable_call, ignore_visibility
+        │   │       │   ├── flags: newline, variable_call, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :bar
@@ -63,7 +73,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ CallNode (location: (10,2)-(10,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -80,17 +90,20 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ DefNode (location: (13,0)-(15,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (13,8)-(13,11) = "bar"
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (13,4)-(13,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (14,2)-(14,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (14,2)-(14,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -107,10 +120,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (15,0)-(15,3) = "end"
         ├── @ DefNode (location: (17,0)-(20,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (18,3)-(18,6) = "bar"
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (17,4)-(18,2))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ CallNode (location: (17,5)-(18,1))
         │   │   │   ├── flags: ignore_visibility
@@ -123,11 +138,14 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block:
         │   │   │       @ BlockNode (location: (17,9)-(18,1))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── locals: [:bar]
         │   │   │       ├── parameters:
         │   │   │       │   @ BlockParametersNode (location: (17,11)-(17,16))
+        │   │   │       │   ├── flags: ∅
         │   │   │       │   ├── parameters:
         │   │   │       │   │   @ ParametersNode (location: (17,12)-(17,15))
+        │   │   │       │   │   ├── flags: ∅
         │   │   │       │   │   ├── requireds: (length: 1)
         │   │   │       │   │   │   └── @ RequiredParameterNode (location: (17,12)-(17,15))
         │   │   │       │   │   │       ├── flags: ∅
@@ -149,9 +167,10 @@
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (19,2)-(19,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (19,2)-(19,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -168,10 +187,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (20,0)-(20,3) = "end"
         ├── @ DefNode (location: (22,0)-(24,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (22,13)-(22,16) = "bar"
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (22,4)-(22,12))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ CallNode (location: (22,5)-(22,11))
         │   │   │   ├── flags: ignore_visibility
@@ -185,7 +206,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (22,9)-(22,10))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   ├── closing_loc: (22,10)-(22,11) = ")"
         │   │   │   └── block: ∅
@@ -194,9 +215,10 @@
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (23,2)-(23,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (23,2)-(23,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -213,17 +235,21 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
         ├── @ DefNode (location: (26,0)-(28,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (26,19)-(26,22) = "bar"
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (26,4)-(26,18))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ CallNode (location: (26,5)-(26,17))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ ConstantPathNode (location: (26,5)-(26,13))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── parent:
         │   │   │   │   │   @ ConstantReadNode (location: (26,5)-(26,8))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── name: :Foo
         │   │   │   │   ├── name: :Bar
         │   │   │   │   ├── delimiter_loc: (26,8)-(26,10) = "::"
@@ -240,9 +266,10 @@
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (27,2)-(27,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (27,2)-(27,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -259,14 +286,18 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (28,0)-(28,3) = "end"
         ├── @ DefNode (location: (30,0)-(32,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (30,15)-(30,18) = "bar"
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (30,4)-(30,14))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ ConstantPathNode (location: (30,5)-(30,13))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (30,5)-(30,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :Foo
         │   │   │   ├── name: :Bar
         │   │   │   ├── delimiter_loc: (30,8)-(30,10) = "::"
@@ -276,9 +307,10 @@
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (31,2)-(31,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (31,2)-(31,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -295,17 +327,20 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (32,0)-(32,3) = "end"
         ├── @ DefNode (location: (34,0)-(36,3))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── name_loc: (34,8)-(34,11) = "bar"
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (34,4)-(34,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (35,2)-(35,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (35,2)-(35,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -322,6 +357,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (36,0)-(36,3) = "end"
         └── @ DefNode (location: (38,0)-(40,3))
+            ├── flags: newline
             ├── name: :bar
             ├── name_loc: (38,8)-(38,11) = "bar"
             ├── receiver:
@@ -338,9 +374,10 @@
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (39,2)-(39,5))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (39,2)-(39,5))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :baz

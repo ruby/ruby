@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,9))
+├── flags: ∅
 ├── locals: [:s]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,9))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableWriteNode (location: (1,0)-(1,9))
+            ├── flags: newline
             ├── name: :s
             ├── depth: 0
             ├── name_loc: (1,0)-(1,1) = "s"

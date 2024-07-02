@@ -1,19 +1,22 @@
 @ ProgramNode (location: (1,0)-(2,3))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(2,3))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ LocalVariableWriteNode (location: (1,0)-(1,6))
+        │   ├── flags: newline
         │   ├── name: :a
         │   ├── depth: 0
         │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (1,4)-(1,6))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 42
         │   └── operator_loc: (1,2)-(1,3) = "="
         └── @ CallNode (location: (2,0)-(2,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -24,6 +27,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LocalVariableReadNode (location: (2,2)-(2,3))
+            │           ├── flags: ∅
             │           ├── name: :a
             │           └── depth: 0
             ├── closing_loc: ∅

@@ -1,29 +1,35 @@
 @ ProgramNode (location: (1,0)-(1,26))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,26))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(1,26))
+            ├── flags: newline
             ├── predicate:
             │   @ IntegerNode (location: (1,5)-(1,6))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (1,8)-(1,15))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ IntegerNode (location: (1,11)-(1,12))
-            │       │   ├── flags: decimal
+            │       │   ├── flags: static_literal, decimal
             │       │   └── value: 2
             │       ├── statements:
             │       │   @ StatementsNode (location: (1,14)-(1,15))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ IntegerNode (location: (1,14)-(1,15))
-            │       │           ├── flags: decimal
+            │       │           ├── flags: newline, static_literal, decimal
             │       │           └── value: 3
             │       ├── in_loc: (1,8)-(1,10) = "in"
             │       └── then_loc: ∅
             ├── consequent:
             │   @ ElseNode (location: (1,17)-(1,26))
+            │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,17)-(1,21) = "else"
             │   ├── statements: ∅
             │   └── end_keyword_loc: (1,23)-(1,26) = "end"

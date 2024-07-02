@@ -1,18 +1,22 @@
 @ ProgramNode (location: (1,0)-(1,33))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,33))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,33))
+            ├── flags: newline
             ├── name: :some_method
             ├── name_loc: (1,4)-(1,15) = "some_method"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (1,18)-(1,33))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,18)-(1,33))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :other_method
@@ -23,7 +27,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (1,31)-(1,33))
-            │           │           ├── flags: decimal
+            │           │           ├── flags: static_literal, decimal
             │           │           └── value: 42
             │           ├── closing_loc: ∅
             │           └── block: ∅

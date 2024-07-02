@@ -1,68 +1,70 @@
 @ ProgramNode (location: (1,0)-(4,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,8))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ StringNode (location: (1,0)-(1,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,7) = "<<-HERE"
         │   ├── content_loc: (2,0)-(2,0) = ""
         │   ├── closing_loc: (2,0)-(3,0) = "HERE\n"
         │   └── unescaped: ""
         └── @ InterpolatedStringNode (location: (4,0)-(4,8))
-            ├── flags: ∅
+            ├── flags: newline, static_literal
             ├── opening_loc: (4,0)-(4,8) = "<<~THERE"
             ├── parts: (length: 9)
             │   ├── @ StringNode (location: (5,0)-(6,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (5,0)-(6,0) = "  way over\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "way over\n"
             │   ├── @ StringNode (location: (6,0)-(7,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (6,0)-(7,0) = "  <<HERE\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "<<HERE\n"
             │   ├── @ StringNode (location: (7,0)-(8,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (7,0)-(8,0) = "    not here\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "  not here\n"
             │   ├── @ StringNode (location: (8,0)-(9,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (8,0)-(9,0) = "  HERE\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "HERE\n"
             │   ├── @ StringNode (location: (9,0)-(10,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (9,0)-(10,0) = "\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "\n"
             │   ├── @ StringNode (location: (10,0)-(11,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (10,0)-(11,0) = "  <<~BUT\\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "<<~BUT"
             │   ├── @ StringNode (location: (11,0)-(12,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (11,0)-(12,0) = "    but\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "  but\n"
             │   ├── @ StringNode (location: (12,0)-(13,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (12,0)-(13,0) = "  BUT\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "BUT\n"
             │   └── @ StringNode (location: (13,0)-(14,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (13,0)-(14,0) = "    there\n"
             │       ├── closing_loc: ∅

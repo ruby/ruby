@@ -1,165 +1,179 @@
 @ ProgramNode (location: (1,0)-(23,9))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(23,9))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ ReturnNode (location: (1,0)-(1,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,6) = "return"
         │   └── arguments: ∅
         ├── @ ReturnNode (location: (3,0)-(3,20))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (3,7)-(3,20))
         │       ├── flags: ∅
         │       └── arguments: (length: 3)
         │           ├── @ ParenthesesNode (location: (3,7)-(3,10))
+        │           │   ├── flags: ∅
         │           │   ├── body:
         │           │   │   @ StatementsNode (location: (3,8)-(3,9))
+        │           │   │   ├── flags: ∅
         │           │   │   └── body: (length: 1)
         │           │   │       └── @ IntegerNode (location: (3,8)-(3,9))
-        │           │   │           ├── flags: decimal
+        │           │   │           ├── flags: newline, static_literal, decimal
         │           │   │           └── value: 1
         │           │   ├── opening_loc: (3,7)-(3,8) = "("
         │           │   └── closing_loc: (3,9)-(3,10) = ")"
         │           ├── @ ParenthesesNode (location: (3,12)-(3,15))
+        │           │   ├── flags: ∅
         │           │   ├── body:
         │           │   │   @ StatementsNode (location: (3,13)-(3,14))
+        │           │   │   ├── flags: ∅
         │           │   │   └── body: (length: 1)
         │           │   │       └── @ IntegerNode (location: (3,13)-(3,14))
-        │           │   │           ├── flags: decimal
+        │           │   │           ├── flags: newline, static_literal, decimal
         │           │   │           └── value: 2
         │           │   ├── opening_loc: (3,12)-(3,13) = "("
         │           │   └── closing_loc: (3,14)-(3,15) = ")"
         │           └── @ ParenthesesNode (location: (3,17)-(3,20))
+        │               ├── flags: ∅
         │               ├── body:
         │               │   @ StatementsNode (location: (3,18)-(3,19))
+        │               │   ├── flags: ∅
         │               │   └── body: (length: 1)
         │               │       └── @ IntegerNode (location: (3,18)-(3,19))
-        │               │           ├── flags: decimal
+        │               │           ├── flags: newline, static_literal, decimal
         │               │           └── value: 3
         │               ├── opening_loc: (3,17)-(3,18) = "("
         │               └── closing_loc: (3,19)-(3,20) = ")"
         ├── @ ReturnNode (location: (5,0)-(5,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,7)-(5,9))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ SplatNode (location: (5,7)-(5,9))
+        │               ├── flags: ∅
         │               ├── operator_loc: (5,7)-(5,8) = "*"
         │               └── expression:
         │                   @ IntegerNode (location: (5,8)-(5,9))
-        │                   ├── flags: decimal
+        │                   ├── flags: static_literal, decimal
         │                   └── value: 1
         ├── @ ReturnNode (location: (7,0)-(7,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (7,0)-(7,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (7,7)-(7,8))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ IntegerNode (location: (7,7)-(7,8))
-        │               ├── flags: decimal
+        │               ├── flags: static_literal, decimal
         │               └── value: 1
         ├── @ ReturnNode (location: (9,0)-(10,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (9,0)-(9,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (9,7)-(10,1))
         │       ├── flags: ∅
         │       └── arguments: (length: 3)
         │           ├── @ IntegerNode (location: (9,7)-(9,8))
-        │           │   ├── flags: decimal
+        │           │   ├── flags: static_literal, decimal
         │           │   └── value: 1
         │           ├── @ IntegerNode (location: (9,10)-(9,11))
-        │           │   ├── flags: decimal
+        │           │   ├── flags: static_literal, decimal
         │           │   └── value: 2
         │           └── @ IntegerNode (location: (10,0)-(10,1))
-        │               ├── flags: decimal
+        │               ├── flags: static_literal, decimal
         │               └── value: 3
         ├── @ ReturnNode (location: (12,0)-(12,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (12,0)-(12,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (12,7)-(12,14))
         │       ├── flags: ∅
         │       └── arguments: (length: 3)
         │           ├── @ IntegerNode (location: (12,7)-(12,8))
-        │           │   ├── flags: decimal
+        │           │   ├── flags: static_literal, decimal
         │           │   └── value: 1
         │           ├── @ IntegerNode (location: (12,10)-(12,11))
-        │           │   ├── flags: decimal
+        │           │   ├── flags: static_literal, decimal
         │           │   └── value: 2
         │           └── @ IntegerNode (location: (12,13)-(12,14))
-        │               ├── flags: decimal
+        │               ├── flags: static_literal, decimal
         │               └── value: 3
         ├── @ ReturnNode (location: (14,0)-(14,16))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (14,0)-(14,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (14,7)-(14,16))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ ArrayNode (location: (14,7)-(14,16))
-        │               ├── flags: ∅
+        │               ├── flags: static_literal
         │               ├── elements: (length: 3)
         │               │   ├── @ IntegerNode (location: (14,8)-(14,9))
-        │               │   │   ├── flags: decimal
+        │               │   │   ├── flags: static_literal, decimal
         │               │   │   └── value: 1
         │               │   ├── @ IntegerNode (location: (14,11)-(14,12))
-        │               │   │   ├── flags: decimal
+        │               │   │   ├── flags: static_literal, decimal
         │               │   │   └── value: 2
         │               │   └── @ IntegerNode (location: (14,14)-(14,15))
-        │               │       ├── flags: decimal
+        │               │       ├── flags: static_literal, decimal
         │               │       └── value: 3
         │               ├── opening_loc: (14,7)-(14,8) = "["
         │               └── closing_loc: (14,15)-(14,16) = "]"
         ├── @ ReturnNode (location: (16,0)-(19,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (16,0)-(16,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (16,6)-(19,1))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ ParenthesesNode (location: (16,6)-(19,1))
+        │               ├── flags: ∅
         │               ├── body:
         │               │   @ StatementsNode (location: (17,2)-(18,3))
+        │               │   ├── flags: ∅
         │               │   └── body: (length: 2)
         │               │       ├── @ IntegerNode (location: (17,2)-(17,3))
-        │               │       │   ├── flags: decimal
+        │               │       │   ├── flags: newline, static_literal, decimal
         │               │       │   └── value: 1
         │               │       └── @ IntegerNode (location: (18,2)-(18,3))
-        │               │           ├── flags: decimal
+        │               │           ├── flags: newline, static_literal, decimal
         │               │           └── value: 2
         │               ├── opening_loc: (16,6)-(16,7) = "("
         │               └── closing_loc: (19,0)-(19,1) = ")"
         ├── @ ReturnNode (location: (21,0)-(21,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (21,0)-(21,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (21,6)-(21,8))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ ParenthesesNode (location: (21,6)-(21,8))
+        │               ├── flags: ∅
         │               ├── body: ∅
         │               ├── opening_loc: (21,6)-(21,7) = "("
         │               └── closing_loc: (21,7)-(21,8) = ")"
         └── @ ReturnNode (location: (23,0)-(23,9))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (23,0)-(23,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (23,6)-(23,9))
                 ├── flags: ∅
                 └── arguments: (length: 1)
                     └── @ ParenthesesNode (location: (23,6)-(23,9))
+                        ├── flags: ∅
                         ├── body:
                         │   @ StatementsNode (location: (23,7)-(23,8))
+                        │   ├── flags: ∅
                         │   └── body: (length: 1)
                         │       └── @ IntegerNode (location: (23,7)-(23,8))
-                        │           ├── flags: decimal
+                        │           ├── flags: newline, static_literal, decimal
                         │           └── value: 1
                         ├── opening_loc: (23,6)-(23,7) = "("
                         └── closing_loc: (23,8)-(23,9) = ")"

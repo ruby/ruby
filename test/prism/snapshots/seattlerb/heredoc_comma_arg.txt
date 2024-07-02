@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(7,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,1))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ ArrayNode (location: (1,0)-(2,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (1,1)-(2,1))
         │   │       ├── flags: ∅
@@ -15,7 +17,7 @@
         │   ├── opening_loc: (1,0)-(1,1) = "["
         │   └── closing_loc: (2,2)-(2,3) = "]"
         └── @ ArrayNode (location: (4,0)-(7,1))
-            ├── flags: ∅
+            ├── flags: newline
             ├── elements: (length: 1)
             │   └── @ StringNode (location: (4,1)-(4,8))
             │       ├── flags: ∅

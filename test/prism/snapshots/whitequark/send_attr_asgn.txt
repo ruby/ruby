@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(7,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,10))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(1,9))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -25,12 +27,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (1,8)-(1,9))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,9))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -51,13 +53,15 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (3,8)-(3,9))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathWriteNode (location: (5,0)-(5,10))
+        │   ├── flags: newline
         │   ├── target:
         │   │   @ ConstantPathNode (location: (5,0)-(5,6))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (5,0)-(5,3))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -75,10 +79,10 @@
         │   ├── operator_loc: (5,7)-(5,8) = "="
         │   └── value:
         │       @ IntegerNode (location: (5,9)-(5,10))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         └── @ CallNode (location: (7,0)-(7,10))
-            ├── flags: attribute_write
+            ├── flags: newline, attribute_write
             ├── receiver:
             │   @ CallNode (location: (7,0)-(7,3))
             │   ├── flags: variable_call, ignore_visibility
@@ -99,7 +103,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (7,9)-(7,10))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 1
             ├── closing_loc: ∅
             └── block: ∅

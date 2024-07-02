@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(12,3))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(12,3))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(3,4))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :bar
@@ -15,8 +17,10 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ ForNode (location: (1,4)-(3,3))
+        │   │           ├── flags: ∅
         │   │           ├── index:
         │   │           │   @ LocalVariableTargetNode (location: (1,8)-(1,9))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── name: :a
         │   │           │   └── depth: 0
         │   │           ├── collection:
@@ -32,9 +36,10 @@
         │   │           │   └── block: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (2,2)-(2,5))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (2,2)-(2,5))
-        │   │           │           ├── flags: variable_call, ignore_visibility
+        │   │           │           ├── flags: newline, variable_call, ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :baz
@@ -50,8 +55,10 @@
         │   ├── closing_loc: (3,3)-(3,4) = ")"
         │   └── block: ∅
         ├── @ ForNode (location: (4,0)-(6,3))
+        │   ├── flags: newline
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (4,4)-(4,5))
+        │   │   ├── flags: ∅
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── collection:
@@ -67,9 +74,10 @@
         │   │   └── block: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,2)-(5,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,2)-(5,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -83,17 +91,22 @@
         │   ├── do_keyword_loc: (4,13)-(4,15) = "do"
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ ForNode (location: (7,0)-(9,3))
+        │   ├── flags: newline
         │   ├── index:
         │   │   @ MultiTargetNode (location: (7,4)-(7,11))
+        │   │   ├── flags: ∅
         │   │   ├── lefts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (7,5)-(7,6))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :a
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (7,8)-(7,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (7,8)-(7,9) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (7,9)-(7,10))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       └── depth: 0
         │   │   ├── rights: (length: 0)
@@ -112,9 +125,10 @@
         │   │   └── block: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,2)-(8,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (8,2)-(8,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -128,13 +142,17 @@
         │   ├── do_keyword_loc: (7,19)-(7,21) = "do"
         │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         └── @ ForNode (location: (10,0)-(12,3))
+            ├── flags: newline
             ├── index:
             │   @ MultiTargetNode (location: (10,4)-(10,10))
+            │   ├── flags: ∅
             │   ├── lefts: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (10,5)-(10,6))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── name: :a
             │   │   │   └── depth: 0
             │   │   └── @ LocalVariableTargetNode (location: (10,8)-(10,9))
+            │   │       ├── flags: ∅
             │   │       ├── name: :b
             │   │       └── depth: 0
             │   ├── rest: ∅
@@ -154,9 +172,10 @@
             │   └── block: ∅
             ├── statements:
             │   @ StatementsNode (location: (11,2)-(11,5))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,2)-(11,5))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :baz

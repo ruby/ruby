@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallOperatorWriteNode (location: (1,0)-(1,11))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ ConstantReadNode (location: (1,0)-(1,1))
+            │   ├── flags: ∅
             │   └── name: :A
             ├── call_operator_loc: (1,1)-(1,3) = "::"
             ├── message_loc: (1,3)-(1,4) = "b"

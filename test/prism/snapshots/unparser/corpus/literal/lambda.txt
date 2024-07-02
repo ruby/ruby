@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(13,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(13,1))
+    ├── flags: ∅
     └── body: (length: 6)
         ├── @ CallNode (location: (1,0)-(2,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :lambda
@@ -14,13 +16,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,7)-(2,1))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,7)-(1,8) = "{"
         │       └── closing_loc: (2,0)-(2,1) = "}"
         ├── @ CallNode (location: (3,0)-(5,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :lambda
@@ -30,11 +33,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,7)-(5,1))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (3,9)-(3,15))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (3,10)-(3,14))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (3,10)-(3,11))
         │       │   │   │   │   ├── flags: ∅
@@ -53,33 +59,40 @@
         │       │   └── closing_loc: (3,14)-(3,15) = "|"
         │       ├── body:
         │       │   @ StatementsNode (location: (4,2)-(4,3))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ LocalVariableReadNode (location: (4,2)-(4,3))
+        │       │           ├── flags: newline
         │       │           ├── name: :a
         │       │           └── depth: 0
         │       ├── opening_loc: (3,7)-(3,8) = "{"
         │       └── closing_loc: (5,0)-(5,1) = "}"
         ├── @ LambdaNode (location: (6,0)-(7,1))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── operator_loc: (6,0)-(6,2) = "->"
         │   ├── opening_loc: (6,5)-(6,6) = "{"
         │   ├── closing_loc: (7,0)-(7,1) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (6,2)-(6,4))
+        │   │   ├── flags: ∅
         │   │   ├── parameters: ∅
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (6,2)-(6,3) = "("
         │   │   └── closing_loc: (6,3)-(6,4) = ")"
         │   └── body: ∅
         ├── @ LambdaNode (location: (8,0)-(9,1))
+        │   ├── flags: newline
         │   ├── locals: [:a]
         │   ├── operator_loc: (8,0)-(8,2) = "->"
         │   ├── opening_loc: (8,6)-(8,7) = "{"
         │   ├── closing_loc: (9,0)-(9,1) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (8,2)-(8,5))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (8,3)-(8,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (8,3)-(8,4))
         │   │   │   │       ├── flags: ∅
@@ -95,14 +108,17 @@
         │   │   └── closing_loc: (8,4)-(8,5) = ")"
         │   └── body: ∅
         ├── @ LambdaNode (location: (10,0)-(11,1))
+        │   ├── flags: newline
         │   ├── locals: [:a, :b]
         │   ├── operator_loc: (10,0)-(10,2) = "->"
         │   ├── opening_loc: (10,9)-(10,10) = "{"
         │   ├── closing_loc: (11,0)-(11,1) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (10,2)-(10,8))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (10,3)-(10,7))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 2)
         │   │   │   │   ├── @ RequiredParameterNode (location: (10,3)-(10,4))
         │   │   │   │   │   ├── flags: ∅
@@ -121,14 +137,17 @@
         │   │   └── closing_loc: (10,7)-(10,8) = ")"
         │   └── body: ∅
         └── @ LambdaNode (location: (12,0)-(13,1))
+            ├── flags: newline
             ├── locals: [:a, :b, :c]
             ├── operator_loc: (12,0)-(12,2) = "->"
             ├── opening_loc: (12,12)-(12,13) = "{"
             ├── closing_loc: (13,0)-(13,1) = "}"
             ├── parameters:
             │   @ BlockParametersNode (location: (12,2)-(12,11))
+            │   ├── flags: ∅
             │   ├── parameters:
             │   │   @ ParametersNode (location: (12,3)-(12,7))
+            │   │   ├── flags: ∅
             │   │   ├── requireds: (length: 2)
             │   │   │   ├── @ RequiredParameterNode (location: (12,3)-(12,4))
             │   │   │   │   ├── flags: ∅

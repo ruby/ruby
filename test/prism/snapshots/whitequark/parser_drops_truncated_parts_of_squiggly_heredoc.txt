@@ -1,18 +1,21 @@
 @ ProgramNode (location: (1,0)-(1,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,7))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,7))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,7) = "<<~HERE"
             ├── parts: (length: 2)
             │   ├── @ EmbeddedStatementsNode (location: (2,2)-(2,5))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (2,2)-(2,4) = "\#{"
             │   │   ├── statements: ∅
             │   │   └── closing_loc: (2,4)-(2,5) = "}"
             │   └── @ StringNode (location: (2,5)-(3,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (2,5)-(3,0) = "\n"
             │       ├── closing_loc: ∅

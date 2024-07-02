@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,22))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,22))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :let
@@ -15,11 +17,13 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ ParenthesesNode (location: (1,4)-(1,8))
+            │           ├── flags: ∅
             │           ├── body:
             │           │   @ StatementsNode (location: (1,5)-(1,7))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ SymbolNode (location: (1,5)-(1,7))
-            │           │           ├── flags: forced_us_ascii_encoding
+            │           │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │           │           ├── opening_loc: (1,5)-(1,6) = ":"
             │           │           ├── value_loc: (1,6)-(1,7) = "a"
             │           │           ├── closing_loc: ∅
@@ -29,13 +33,15 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,9)-(1,22))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,11)-(1,20))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,11)-(1,20))
-                │           ├── flags: ignore_visibility
+                │           ├── flags: newline, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :m
@@ -45,6 +51,7 @@
                 │           ├── closing_loc: ∅
                 │           └── block:
                 │               @ BlockNode (location: (1,13)-(1,20))
+                │               ├── flags: ∅
                 │               ├── locals: []
                 │               ├── parameters: ∅
                 │               ├── body: ∅

@@ -1,18 +1,23 @@
 @ ProgramNode (location: (1,0)-(4,17))
+├── flags: ∅
 ├── locals: [:a, :foo]
 └── statements:
     @ StatementsNode (location: (1,0)-(4,17))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ MatchRequiredNode (location: (1,0)-(1,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ IntegerNode (location: (1,0)-(1,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (1,6)-(1,7))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :a
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -21,16 +26,19 @@
         │   │   └── closing_loc: (1,7)-(1,8) = "]"
         │   └── operator_loc: (1,2)-(1,4) = "=>"
         ├── @ MatchRequiredNode (location: (2,0)-(2,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ IntegerNode (location: (2,0)-(2,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (2,5)-(2,8))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (2,6)-(2,7))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (2,6)-(2,7) = "*"
         │   │   │   └── expression: ∅
         │   │   ├── posts: (length: 0)
@@ -38,49 +46,59 @@
         │   │   └── closing_loc: (2,7)-(2,8) = "]"
         │   └── operator_loc: (2,2)-(2,4) = "=>"
         ├── @ MatchPredicateNode (location: (3,0)-(3,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ IntegerNode (location: (3,0)-(3,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (3,5)-(3,15))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── left:
         │   │   │   @ SplatNode (location: (3,6)-(3,7))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (3,6)-(3,7) = "*"
         │   │   │   └── expression: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (3,9)-(3,11))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 42
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (3,13)-(3,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (3,13)-(3,14) = "*"
         │   │   │   └── expression: ∅
         │   │   ├── opening_loc: (3,5)-(3,6) = "["
         │   │   └── closing_loc: (3,14)-(3,15) = "]"
         │   └── operator_loc: (3,2)-(3,4) = "in"
         └── @ MatchPredicateNode (location: (4,0)-(4,17))
+            ├── flags: newline
             ├── value:
             │   @ IntegerNode (location: (4,0)-(4,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── pattern:
             │   @ FindPatternNode (location: (4,5)-(4,17))
+            │   ├── flags: ∅
             │   ├── constant: ∅
             │   ├── left:
             │   │   @ SplatNode (location: (4,6)-(4,7))
+            │   │   ├── flags: ∅
             │   │   ├── operator_loc: (4,6)-(4,7) = "*"
             │   │   └── expression: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ LocalVariableTargetNode (location: (4,9)-(4,10))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       └── depth: 0
             │   ├── right:
             │   │   @ SplatNode (location: (4,12)-(4,16))
+            │   │   ├── flags: ∅
             │   │   ├── operator_loc: (4,12)-(4,13) = "*"
             │   │   └── expression:
             │   │       @ LocalVariableTargetNode (location: (4,13)-(4,16))
+            │   │       ├── flags: ∅
             │   │       ├── name: :foo
             │   │       └── depth: 0
             │   ├── opening_loc: (4,5)-(4,6) = "["

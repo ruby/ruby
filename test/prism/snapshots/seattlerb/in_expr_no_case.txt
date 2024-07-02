@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,16))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ MatchPredicateNode (location: (1,0)-(1,16))
+            ├── flags: newline
             ├── value:
             │   @ StringNode (location: (1,0)-(1,6))
             │   ├── flags: ∅
@@ -13,5 +16,6 @@
             │   └── unescaped: "woot"
             ├── pattern:
             │   @ ConstantReadNode (location: (1,10)-(1,16))
+            │   ├── flags: ∅
             │   └── name: :String
             └── operator_loc: (1,7)-(1,9) = "in"

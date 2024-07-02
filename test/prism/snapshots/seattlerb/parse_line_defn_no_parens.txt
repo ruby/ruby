@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(6,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(6,3))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ DefNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (1,4)-(1,5) = "f"
         │   ├── receiver: ∅
@@ -17,6 +20,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         └── @ DefNode (location: (5,0)-(6,3))
+            ├── flags: newline
             ├── name: :f
             ├── name_loc: (5,4)-(5,5) = "f"
             ├── receiver: ∅

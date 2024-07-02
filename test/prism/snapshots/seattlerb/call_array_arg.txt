@@ -1,13 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,13))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ IntegerNode (location: (1,0)-(1,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── call_operator_loc: ∅
             ├── name: :==
@@ -18,16 +20,16 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ ArrayNode (location: (1,5)-(1,13))
-            │           ├── flags: ∅
+            │           ├── flags: static_literal
             │           ├── elements: (length: 2)
             │           │   ├── @ SymbolNode (location: (1,6)-(1,8))
-            │           │   │   ├── flags: forced_us_ascii_encoding
+            │           │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │           │   │   ├── opening_loc: (1,6)-(1,7) = ":"
             │           │   │   ├── value_loc: (1,7)-(1,8) = "b"
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "b"
             │           │   └── @ SymbolNode (location: (1,10)-(1,12))
-            │           │       ├── flags: forced_us_ascii_encoding
+            │           │       ├── flags: static_literal, forced_us_ascii_encoding
             │           │       ├── opening_loc: (1,10)-(1,11) = ":"
             │           │       ├── value_loc: (1,11)-(1,12) = "c"
             │           │       ├── closing_loc: ∅

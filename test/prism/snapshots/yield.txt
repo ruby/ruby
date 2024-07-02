@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(7,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,28))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ DefNode (location: (1,0)-(1,19))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (1,9)-(1,14))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ YieldNode (location: (1,9)-(1,14))
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (1,9)-(1,14) = "yield"
         │   │           ├── lparen_loc: ∅
         │   │           ├── arguments: ∅
@@ -24,14 +29,17 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1,16)-(1,19) = "end"
         ├── @ DefNode (location: (3,0)-(3,21))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (3,4)-(3,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (3,9)-(3,16))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ YieldNode (location: (3,9)-(3,16))
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (3,9)-(3,14) = "yield"
         │   │           ├── lparen_loc: (3,14)-(3,15) = "("
         │   │           ├── arguments: ∅
@@ -44,14 +52,17 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,18)-(3,21) = "end"
         ├── @ DefNode (location: (5,0)-(5,22))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (5,4)-(5,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,9)-(5,17))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ YieldNode (location: (5,9)-(5,17))
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (5,9)-(5,14) = "yield"
         │   │           ├── lparen_loc: (5,14)-(5,15) = "("
         │   │           ├── arguments:
@@ -59,7 +70,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (5,15)-(5,16))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 1
         │   │           └── rparen_loc: (5,16)-(5,17) = ")"
         │   ├── locals: []
@@ -70,14 +81,17 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,19)-(5,22) = "end"
         └── @ DefNode (location: (7,0)-(7,28))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (7,4)-(7,7) = "foo"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (7,9)-(7,23))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ YieldNode (location: (7,9)-(7,23))
+            │           ├── flags: newline
             │           ├── keyword_loc: (7,9)-(7,14) = "yield"
             │           ├── lparen_loc: (7,14)-(7,15) = "("
             │           ├── arguments:
@@ -85,13 +99,13 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 3)
             │           │       ├── @ IntegerNode (location: (7,15)-(7,16))
-            │           │       │   ├── flags: decimal
+            │           │       │   ├── flags: static_literal, decimal
             │           │       │   └── value: 1
             │           │       ├── @ IntegerNode (location: (7,18)-(7,19))
-            │           │       │   ├── flags: decimal
+            │           │       │   ├── flags: static_literal, decimal
             │           │       │   └── value: 2
             │           │       └── @ IntegerNode (location: (7,21)-(7,22))
-            │           │           ├── flags: decimal
+            │           │           ├── flags: static_literal, decimal
             │           │           └── value: 3
             │           └── rparen_loc: (7,22)-(7,23) = ")"
             ├── locals: []

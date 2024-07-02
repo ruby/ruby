@@ -1,20 +1,26 @@
 @ ProgramNode (location: (1,0)-(28,9))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(28,9))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ HashNode (location: (1,0)-(1,2))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (1,0)-(1,1) = "{"
         │   ├── elements: (length: 0)
         │   └── closing_loc: (1,1)-(1,2) = "}"
         ├── @ HashNode (location: (3,0)-(4,1))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (3,0)-(3,1) = "{"
         │   ├── elements: (length: 0)
         │   └── closing_loc: (4,0)-(4,1) = "}"
         ├── @ HashNode (location: (6,0)-(6,18))
+        │   ├── flags: newline
         │   ├── opening_loc: (6,0)-(6,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (6,2)-(6,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ CallNode (location: (6,2)-(6,3))
         │   │   │   │   ├── flags: variable_call, ignore_visibility
@@ -39,6 +45,7 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: (6,4)-(6,6) = "=>"
         │   │   └── @ AssocNode (location: (6,10)-(6,16))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ CallNode (location: (6,10)-(6,11))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -64,9 +71,11 @@
         │   │       └── operator_loc: (6,12)-(6,14) = "=>"
         │   └── closing_loc: (6,17)-(6,18) = "}"
         ├── @ HashNode (location: (8,0)-(8,15))
+        │   ├── flags: newline
         │   ├── opening_loc: (8,0)-(8,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (8,2)-(8,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ CallNode (location: (8,2)-(8,3))
         │   │   │   │   ├── flags: variable_call, ignore_visibility
@@ -91,6 +100,7 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: (8,4)-(8,6) = "=>"
         │   │   └── @ AssocSplatNode (location: (8,10)-(8,13))
+        │   │       ├── flags: ∅
         │   │       ├── value:
         │   │       │   @ CallNode (location: (8,12)-(8,13))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -105,12 +115,14 @@
         │   │       └── operator_loc: (8,10)-(8,12) = "**"
         │   └── closing_loc: (8,14)-(8,15) = "}"
         ├── @ HashNode (location: (10,0)-(16,5))
+        │   ├── flags: newline
         │   ├── opening_loc: (10,0)-(10,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (11,6)-(11,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (11,6)-(11,8))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (11,6)-(11,7) = "a"
         │   │   │   │   ├── closing_loc: (11,7)-(11,8) = ":"
@@ -128,9 +140,10 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (12,6)-(12,10))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (12,6)-(12,8))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (12,6)-(12,7) = "c"
         │   │       │   ├── closing_loc: (12,7)-(12,8) = ":"
@@ -149,12 +162,14 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (16,4)-(16,5) = "}"
         ├── @ HashNode (location: (18,0)-(18,25))
+        │   ├── flags: newline
         │   ├── opening_loc: (18,0)-(18,1) = "{"
         │   ├── elements: (length: 4)
         │   │   ├── @ AssocNode (location: (18,2)-(18,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (18,2)-(18,4))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (18,2)-(18,3) = "a"
         │   │   │   │   ├── closing_loc: (18,3)-(18,4) = ":"
@@ -172,9 +187,10 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: ∅
         │   │   ├── @ AssocNode (location: (18,8)-(18,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (18,8)-(18,10))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (18,8)-(18,9) = "c"
         │   │   │   │   ├── closing_loc: (18,9)-(18,10) = ":"
@@ -192,6 +208,7 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: ∅
         │   │   ├── @ AssocSplatNode (location: (18,14)-(18,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (18,16)-(18,17))
         │   │   │   │   ├── flags: variable_call, ignore_visibility
@@ -205,9 +222,10 @@
         │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: (18,14)-(18,16) = "**"
         │   │   └── @ AssocNode (location: (18,19)-(18,23))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (18,19)-(18,21))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (18,19)-(18,20) = "f"
         │   │       │   ├── closing_loc: (18,20)-(18,21) = ":"
@@ -226,12 +244,14 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (18,24)-(18,25) = "}"
         ├── @ HashNode (location: (20,0)-(20,12))
+        │   ├── flags: newline
         │   ├── opening_loc: (20,0)-(20,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (20,2)-(20,10))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (20,2)-(20,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (20,2)-(20,3) = "\""
         │   │       │   ├── value_loc: (20,3)-(20,4) = "a"
         │   │       │   ├── closing_loc: (20,4)-(20,6) = "\":"
@@ -260,16 +280,17 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (20,11)-(20,12) = "}"
         ├── @ LocalVariableWriteNode (location: (22,0)-(22,5))
+        │   ├── flags: newline
         │   ├── name: :a
         │   ├── depth: 0
         │   ├── name_loc: (22,0)-(22,1) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (22,4)-(22,5))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (22,2)-(22,3) = "="
         ├── @ CallNode (location: (23,0)-(26,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -279,63 +300,75 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (23,4)-(26,3))
+        │       ├── flags: ∅
         │       ├── locals: [:b]
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (24,2)-(25,20))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 2)
         │       │       ├── @ LocalVariableWriteNode (location: (24,2)-(24,7))
+        │       │       │   ├── flags: newline
         │       │       │   ├── name: :b
         │       │       │   ├── depth: 0
         │       │       │   ├── name_loc: (24,2)-(24,3) = "b"
         │       │       │   ├── value:
         │       │       │   │   @ IntegerNode (location: (24,6)-(24,7))
-        │       │       │   │   ├── flags: decimal
+        │       │       │   │   ├── flags: static_literal, decimal
         │       │       │   │   └── value: 1
         │       │       │   └── operator_loc: (24,4)-(24,5) = "="
         │       │       └── @ HashNode (location: (25,2)-(25,20))
+        │       │           ├── flags: newline
         │       │           ├── opening_loc: (25,2)-(25,3) = "{"
         │       │           ├── elements: (length: 4)
         │       │           │   ├── @ AssocNode (location: (25,4)-(25,6))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── key:
         │       │           │   │   │   @ SymbolNode (location: (25,4)-(25,6))
-        │       │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │       │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │           │   │   │   ├── opening_loc: ∅
         │       │           │   │   │   ├── value_loc: (25,4)-(25,5) = "a"
         │       │           │   │   │   ├── closing_loc: (25,5)-(25,6) = ":"
         │       │           │   │   │   └── unescaped: "a"
         │       │           │   │   ├── value:
         │       │           │   │   │   @ ImplicitNode (location: (25,4)-(25,6))
+        │       │           │   │   │   ├── flags: ∅
         │       │           │   │   │   └── value:
         │       │           │   │   │       @ LocalVariableReadNode (location: (25,4)-(25,6))
+        │       │           │   │   │       ├── flags: ∅
         │       │           │   │   │       ├── name: :a
         │       │           │   │   │       └── depth: 1
         │       │           │   │   └── operator_loc: ∅
         │       │           │   ├── @ AssocNode (location: (25,8)-(25,10))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── key:
         │       │           │   │   │   @ SymbolNode (location: (25,8)-(25,10))
-        │       │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │       │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │           │   │   │   ├── opening_loc: ∅
         │       │           │   │   │   ├── value_loc: (25,8)-(25,9) = "b"
         │       │           │   │   │   ├── closing_loc: (25,9)-(25,10) = ":"
         │       │           │   │   │   └── unescaped: "b"
         │       │           │   │   ├── value:
         │       │           │   │   │   @ ImplicitNode (location: (25,8)-(25,10))
+        │       │           │   │   │   ├── flags: ∅
         │       │           │   │   │   └── value:
         │       │           │   │   │       @ LocalVariableReadNode (location: (25,8)-(25,10))
+        │       │           │   │   │       ├── flags: ∅
         │       │           │   │   │       ├── name: :b
         │       │           │   │   │       └── depth: 0
         │       │           │   │   └── operator_loc: ∅
         │       │           │   ├── @ AssocNode (location: (25,12)-(25,14))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── key:
         │       │           │   │   │   @ SymbolNode (location: (25,12)-(25,14))
-        │       │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │       │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │           │   │   │   ├── opening_loc: ∅
         │       │           │   │   │   ├── value_loc: (25,12)-(25,13) = "c"
         │       │           │   │   │   ├── closing_loc: (25,13)-(25,14) = ":"
         │       │           │   │   │   └── unescaped: "c"
         │       │           │   │   ├── value:
         │       │           │   │   │   @ ImplicitNode (location: (25,12)-(25,14))
+        │       │           │   │   │   ├── flags: ∅
         │       │           │   │   │   └── value:
         │       │           │   │   │       @ CallNode (location: (25,12)-(25,14))
         │       │           │   │   │       ├── flags: ignore_visibility
@@ -349,36 +382,41 @@
         │       │           │   │   │       └── block: ∅
         │       │           │   │   └── operator_loc: ∅
         │       │           │   └── @ AssocNode (location: (25,16)-(25,18))
+        │       │           │       ├── flags: ∅
         │       │           │       ├── key:
         │       │           │       │   @ SymbolNode (location: (25,16)-(25,18))
-        │       │           │       │   ├── flags: forced_us_ascii_encoding
+        │       │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │           │       │   ├── opening_loc: ∅
         │       │           │       │   ├── value_loc: (25,16)-(25,17) = "D"
         │       │           │       │   ├── closing_loc: (25,17)-(25,18) = ":"
         │       │           │       │   └── unescaped: "D"
         │       │           │       ├── value:
         │       │           │       │   @ ImplicitNode (location: (25,16)-(25,18))
+        │       │           │       │   ├── flags: ∅
         │       │           │       │   └── value:
         │       │           │       │       @ ConstantReadNode (location: (25,16)-(25,18))
+        │       │           │       │       ├── flags: ∅
         │       │           │       │       └── name: :D
         │       │           │       └── operator_loc: ∅
         │       │           └── closing_loc: (25,19)-(25,20) = "}"
         │       ├── opening_loc: (23,4)-(23,6) = "do"
         │       └── closing_loc: (26,0)-(26,3) = "end"
         └── @ HashNode (location: (28,0)-(28,9))
+            ├── flags: newline, static_literal
             ├── opening_loc: (28,0)-(28,1) = "{"
             ├── elements: (length: 1)
             │   └── @ AssocNode (location: (28,2)-(28,7))
+            │       ├── flags: static_literal
             │       ├── key:
             │       │   @ SymbolNode (location: (28,2)-(28,4))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (28,2)-(28,3) = "a"
             │       │   ├── closing_loc: (28,3)-(28,4) = ":"
             │       │   └── unescaped: "a"
             │       ├── value:
             │       │   @ IntegerNode (location: (28,5)-(28,7))
-            │       │   ├── flags: decimal
+            │       │   ├── flags: static_literal, decimal
             │       │   └── value: -1
             │       └── operator_loc: ∅
             └── closing_loc: (28,8)-(28,9) = "}"

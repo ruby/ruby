@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,20))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,20))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -14,22 +16,27 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(1,20))
+                ├── flags: ∅
                 ├── locals: [:a, :b, :c]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,18))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,17))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
                 │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :a
                 │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,17))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── lefts: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
                 │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rest:
                 │   │   │       │   @ SplatNode (location: (1,12)-(1,13))
+                │   │   │       │   ├── flags: ∅
                 │   │   │       │   ├── operator_loc: (1,12)-(1,13) = "*"
                 │   │   │       │   └── expression: ∅
                 │   │   │       ├── rights: (length: 1)

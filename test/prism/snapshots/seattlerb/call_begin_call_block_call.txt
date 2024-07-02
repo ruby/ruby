@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(3,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -15,12 +17,14 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ BeginNode (location: (1,2)-(3,3))
+            │           ├── flags: ∅
             │           ├── begin_keyword_loc: (1,2)-(1,7) = "begin"
             │           ├── statements:
             │           │   @ StatementsNode (location: (2,0)-(2,10))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ CallNode (location: (2,0)-(2,10))
-            │           │           ├── flags: ∅
+            │           │           ├── flags: newline
             │           │           ├── receiver:
             │           │           │   @ CallNode (location: (2,0)-(2,1))
             │           │           │   ├── flags: variable_call, ignore_visibility
@@ -40,6 +44,7 @@
             │           │           ├── closing_loc: ∅
             │           │           └── block:
             │           │               @ BlockNode (location: (2,4)-(2,10))
+            │           │               ├── flags: ∅
             │           │               ├── locals: []
             │           │               ├── parameters: ∅
             │           │               ├── body: ∅

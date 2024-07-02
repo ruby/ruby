@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(24,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(24,5))
+    ├── flags: ∅
     └── body: (length: 9)
         ├── @ CallNode (location: (1,0)-(1,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -14,7 +16,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :b
@@ -24,7 +26,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :c
@@ -34,7 +36,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (6,0)-(6,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :d
@@ -44,7 +46,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (8,0)-(10,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (8,0)-(8,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -64,7 +66,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (12,0)-(14,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (12,0)-(12,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -84,7 +86,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (16,0)-(17,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (16,0)-(16,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -104,7 +106,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (19,0)-(20,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (19,0)-(19,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -124,7 +126,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (22,0)-(24,5))
-            ├── flags: safe_navigation
+            ├── flags: newline, safe_navigation
             ├── receiver:
             │   @ CallNode (location: (22,0)-(22,1))
             │   ├── flags: variable_call, ignore_visibility

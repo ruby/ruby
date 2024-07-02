@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(37,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(37,16))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ AndNode (location: (1,0)-(1,19))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ CallNode (location: (1,0)-(1,7))
         │   │   ├── flags: ∅
@@ -48,9 +51,10 @@
         │   │   └── block: ∅
         │   └── operator_loc: (1,8)-(1,11) = "and"
         ├── @ CallNode (location: (3,0)-(3,16))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ AndNode (location: (3,4)-(3,15))
+        │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ CallNode (location: (3,4)-(3,7))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -82,7 +86,7 @@
         │   ├── closing_loc: (3,15)-(3,16) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (5,4)-(5,7))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -102,6 +106,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ AndNode (location: (7,0)-(8,5))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ CallNode (location: (7,0)-(7,7))
         │   │   ├── flags: ∅
@@ -146,6 +151,7 @@
         │   │   └── block: ∅
         │   └── operator_loc: (7,8)-(7,11) = "and"
         ├── @ AndNode (location: (11,0)-(13,5))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ CallNode (location: (11,0)-(11,7))
         │   │   ├── flags: ∅
@@ -190,6 +196,7 @@
         │   │   └── block: ∅
         │   └── operator_loc: (11,8)-(11,11) = "and"
         ├── @ AndNode (location: (16,0)-(20,5))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ CallNode (location: (16,0)-(16,7))
         │   │   ├── flags: ∅
@@ -234,7 +241,7 @@
         │   │   └── block: ∅
         │   └── operator_loc: (16,8)-(16,11) = "and"
         ├── @ CallNode (location: (22,0)-(25,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (22,4)-(22,7))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -254,7 +261,7 @@
         │   ├── closing_loc: (25,0)-(25,1) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (27,0)-(33,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (30,0)-(30,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -274,7 +281,7 @@
         │   ├── closing_loc: (33,2)-(33,3) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ FlipFlopNode (location: (35,4)-(35,14))
         │   │   ├── flags: ∅
@@ -309,14 +316,16 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (37,0)-(37,16))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ ParenthesesNode (location: (37,4)-(37,16))
+            │   ├── flags: ∅
             │   ├── body:
             │   │   @ StatementsNode (location: (37,5)-(37,15))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ FlipFlopNode (location: (37,5)-(37,15))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: newline
             │   │           ├── left:
             │   │           │   @ CallNode (location: (37,5)-(37,8))
             │   │           │   ├── flags: variable_call, ignore_visibility

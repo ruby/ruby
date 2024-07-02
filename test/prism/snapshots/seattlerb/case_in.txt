@@ -1,34 +1,42 @@
 @ ProgramNode (location: (1,0)-(111,3))
+├── flags: ∅
 ├── locals: [:b, :_, :lhs, :x, :rhs, :c, :e]
 └── statements:
     @ StatementsNode (location: (1,0)-(111,3))
+    ├── flags: ∅
     └── body: (length: 28)
         ├── @ CaseMatchNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (1,5)-(1,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (1,5)-(1,6) = ":"
         │   │   ├── value_loc: (1,6)-(1,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (2,0)-(2,8))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (2,4)-(2,8))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (2,4)-(2,8))
-        │   │       │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       │   ├── opening_loc: (2,4)-(2,5) = "\""
         │   │       │   │       │   ├── value_loc: (2,5)-(2,6) = "b"
         │   │       │   │       │   ├── closing_loc: (2,6)-(2,8) = "\":"
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value:
         │   │       │   │       │   @ ImplicitNode (location: (2,5)-(2,6))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   └── value:
         │   │       │   │       │       @ LocalVariableTargetNode (location: (2,5)-(2,6))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── name: :b
         │   │       │   │       │       └── depth: 0
         │   │       │   │       └── operator_loc: ∅
@@ -42,27 +50,29 @@
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ CaseMatchNode (location: (5,0)-(7,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (5,5)-(5,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (5,5)-(5,6) = ":"
         │   │   ├── value_loc: (5,6)-(5,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (6,0)-(6,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (6,3)-(6,10))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: static_literal
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (6,6)-(6,7))
-        │   │       │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── value_loc: (6,6)-(6,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ SymbolNode (location: (6,8)-(6,9))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (6,8)-(6,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -76,15 +86,17 @@
         │   ├── case_keyword_loc: (5,0)-(5,4) = "case"
         │   └── end_keyword_loc: (7,0)-(7,3) = "end"
         ├── @ CaseMatchNode (location: (9,0)-(11,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (9,5)-(9,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (9,5)-(9,6) = ":"
         │   │   ├── value_loc: (9,6)-(9,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (10,0)-(10,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (10,3)-(10,10))
         │   │       │   ├── flags: ∅
@@ -110,27 +122,29 @@
         │   ├── case_keyword_loc: (9,0)-(9,4) = "case"
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ CaseMatchNode (location: (13,0)-(15,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (13,5)-(13,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (13,5)-(13,6) = ":"
         │   │   ├── value_loc: (13,6)-(13,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (14,0)-(14,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (14,3)-(14,10))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: static_literal
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (14,6)-(14,7))
-        │   │       │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── value_loc: (14,6)-(14,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ SymbolNode (location: (14,8)-(14,9))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (14,8)-(14,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -144,15 +158,17 @@
         │   ├── case_keyword_loc: (13,0)-(13,4) = "case"
         │   └── end_keyword_loc: (15,0)-(15,3) = "end"
         ├── @ CaseMatchNode (location: (17,0)-(19,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (17,5)-(17,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (17,5)-(17,6) = ":"
         │   │   ├── value_loc: (17,6)-(17,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (18,0)-(18,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (18,3)-(18,10))
         │   │       │   ├── flags: ∅
@@ -178,24 +194,27 @@
         │   ├── case_keyword_loc: (17,0)-(17,4) = "case"
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         ├── @ CaseMatchNode (location: (21,0)-(23,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (21,5)-(21,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (21,5)-(21,6) = ":"
         │   │   ├── value_loc: (21,6)-(21,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (22,0)-(22,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ParenthesesNode (location: (22,3)-(22,10))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body:
         │   │       │   │   @ RangeNode (location: (22,4)-(22,9))
-        │   │       │   │   ├── flags: exclude_end
+        │   │       │   │   ├── flags: static_literal, exclude_end
         │   │       │   │   ├── left: ∅
         │   │       │   │   ├── right:
         │   │       │   │   │   @ IntegerNode (location: (22,7)-(22,9))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 10
         │   │       │   │   └── operator_loc: (22,4)-(22,7) = "..."
         │   │       │   ├── opening_loc: (22,3)-(22,4) = "("
@@ -207,24 +226,27 @@
         │   ├── case_keyword_loc: (21,0)-(21,4) = "case"
         │   └── end_keyword_loc: (23,0)-(23,3) = "end"
         ├── @ CaseMatchNode (location: (25,0)-(27,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (25,5)-(25,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (25,5)-(25,6) = ":"
         │   │   ├── value_loc: (25,6)-(25,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (26,0)-(26,9))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ParenthesesNode (location: (26,3)-(26,9))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body:
         │   │       │   │   @ RangeNode (location: (26,4)-(26,8))
-        │   │       │   │   ├── flags: ∅
+        │   │       │   │   ├── flags: static_literal
         │   │       │   │   ├── left: ∅
         │   │       │   │   ├── right:
         │   │       │   │   │   @ IntegerNode (location: (26,6)-(26,8))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 10
         │   │       │   │   └── operator_loc: (26,4)-(26,6) = ".."
         │   │       │   ├── opening_loc: (26,3)-(26,4) = "("
@@ -236,23 +258,26 @@
         │   ├── case_keyword_loc: (25,0)-(25,4) = "case"
         │   └── end_keyword_loc: (27,0)-(27,3) = "end"
         ├── @ CaseMatchNode (location: (29,0)-(31,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (29,5)-(29,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (29,5)-(29,6) = ":"
         │   │   ├── value_loc: (29,6)-(29,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (30,0)-(30,9))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ParenthesesNode (location: (30,3)-(30,9))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body:
         │   │       │   │   @ RangeNode (location: (30,4)-(30,8))
-        │   │       │   │   ├── flags: exclude_end
+        │   │       │   │   ├── flags: static_literal, exclude_end
         │   │       │   │   ├── left:
         │   │       │   │   │   @ IntegerNode (location: (30,4)-(30,5))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 1
         │   │       │   │   ├── right: ∅
         │   │       │   │   └── operator_loc: (30,5)-(30,8) = "..."
@@ -265,27 +290,30 @@
         │   ├── case_keyword_loc: (29,0)-(29,4) = "case"
         │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         ├── @ CaseMatchNode (location: (33,0)-(35,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (33,5)-(33,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (33,5)-(33,6) = ":"
         │   │   ├── value_loc: (33,6)-(33,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (34,0)-(34,10))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ParenthesesNode (location: (34,3)-(34,10))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body:
         │   │       │   │   @ RangeNode (location: (34,4)-(34,9))
-        │   │       │   │   ├── flags: exclude_end
+        │   │       │   │   ├── flags: static_literal, exclude_end
         │   │       │   │   ├── left:
         │   │       │   │   │   @ IntegerNode (location: (34,4)-(34,5))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 1
         │   │       │   │   ├── right:
         │   │       │   │   │   @ IntegerNode (location: (34,8)-(34,9))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 3
         │   │       │   │   └── operator_loc: (34,5)-(34,8) = "..."
         │   │       │   ├── opening_loc: (34,3)-(34,4) = "("
@@ -297,20 +325,23 @@
         │   ├── case_keyword_loc: (33,0)-(33,4) = "case"
         │   └── end_keyword_loc: (35,0)-(35,3) = "end"
         ├── @ CaseMatchNode (location: (37,0)-(39,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (37,5)-(37,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (37,5)-(37,6) = ":"
         │   │   ├── value_loc: (37,6)-(37,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,7))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ParenthesesNode (location: (38,3)-(38,7))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body:
         │   │       │   │   @ IntegerNode (location: (38,4)-(38,6))
-        │   │       │   │   ├── flags: decimal
+        │   │       │   │   ├── flags: static_literal, decimal
         │   │       │   │   └── value: 42
         │   │       │   ├── opening_loc: (38,3)-(38,4) = "("
         │   │       │   └── closing_loc: (38,6)-(38,7) = ")"
@@ -321,21 +352,25 @@
         │   ├── case_keyword_loc: (37,0)-(37,4) = "case"
         │   └── end_keyword_loc: (39,0)-(39,3) = "end"
         ├── @ CaseMatchNode (location: (41,0)-(43,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (41,5)-(41,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (41,5)-(41,6) = ":"
         │   │   ├── value_loc: (41,6)-(41,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (42,0)-(42,8))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (42,3)-(42,8))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── elements: (length: 0)
         │   │       │   ├── rest:
         │   │       │   │   @ NoKeywordsParameterNode (location: (42,3)-(42,8))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (42,3)-(42,5) = "**"
         │   │       │   │   └── keyword_loc: (42,5)-(42,8) = "nil"
         │   │       │   ├── opening_loc: ∅
@@ -347,18 +382,20 @@
         │   ├── case_keyword_loc: (41,0)-(41,4) = "case"
         │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         ├── @ CaseMatchNode (location: (45,0)-(47,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (45,5)-(45,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (45,5)-(45,6) = ":"
         │   │   ├── value_loc: (45,6)-(45,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (46,0)-(46,11))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ RegularExpressionNode (location: (46,3)-(46,11))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (46,3)-(46,4) = "/"
         │   │       │   ├── content_loc: (46,4)-(46,10) = "regexp"
         │   │       │   ├── closing_loc: (46,10)-(46,11) = "/"
@@ -370,35 +407,40 @@
         │   ├── case_keyword_loc: (45,0)-(45,4) = "case"
         │   └── end_keyword_loc: (47,0)-(47,3) = "end"
         ├── @ CaseMatchNode (location: (49,0)-(51,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (49,5)-(49,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (49,5)-(49,6) = ":"
         │   │   ├── value_loc: (49,6)-(49,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (50,0)-(50,13))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (50,3)-(50,13))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (50,3)-(50,5))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: (50,3)-(50,4) = ":"
         │   │       │   │       ├── value_loc: (50,4)-(50,5) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── rest:
         │   │       │   │   @ SplatNode (location: (50,7)-(50,9))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (50,7)-(50,8) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (50,8)-(50,9))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :_
         │   │       │   │       └── depth: 0
         │   │       │   ├── posts: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (50,11)-(50,13))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: (50,11)-(50,12) = ":"
         │   │       │   │       ├── value_loc: (50,12)-(50,13) = "c"
         │   │       │   │       ├── closing_loc: ∅
@@ -412,30 +454,34 @@
         │   ├── case_keyword_loc: (49,0)-(49,4) = "case"
         │   └── end_keyword_loc: (51,0)-(51,3) = "end"
         ├── @ CaseMatchNode (location: (53,0)-(55,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (53,5)-(53,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (53,5)-(53,6) = ":"
         │   │   ├── value_loc: (53,6)-(53,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (54,0)-(54,11))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (54,3)-(54,11))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (54,3)-(54,5))
-        │   │       │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │   │   ├── opening_loc: (54,3)-(54,4) = ":"
         │   │       │   │   │   ├── value_loc: (54,4)-(54,5) = "b"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "b"
         │   │       │   │   └── @ ArrayPatternNode (location: (54,7)-(54,11))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
         │   │       │   │       │   └── @ SymbolNode (location: (54,8)-(54,10))
-        │   │       │   │       │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       │       ├── opening_loc: (54,8)-(54,9) = ":"
         │   │       │   │       │       ├── value_loc: (54,9)-(54,10) = "c"
         │   │       │   │       │       ├── closing_loc: ∅
@@ -455,19 +501,23 @@
         │   ├── case_keyword_loc: (53,0)-(53,4) = "case"
         │   └── end_keyword_loc: (55,0)-(55,3) = "end"
         ├── @ CaseMatchNode (location: (57,0)-(59,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (57,5)-(57,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (57,5)-(57,6) = ":"
         │   │   ├── value_loc: (57,6)-(57,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (58,0)-(58,11))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (58,3)-(58,11))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant:
         │   │       │   │   @ ConstantReadNode (location: (58,3)-(58,9))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── requireds: (length: 0)
         │   │       │   ├── rest: ∅
@@ -481,36 +531,45 @@
         │   ├── case_keyword_loc: (57,0)-(57,4) = "case"
         │   └── end_keyword_loc: (59,0)-(59,3) = "end"
         ├── @ CaseMatchNode (location: (61,0)-(63,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (61,5)-(61,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (61,5)-(61,6) = ":"
         │   │   ├── value_loc: (61,6)-(61,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (62,0)-(62,24))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ FindPatternNode (location: (62,3)-(62,24))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant:
         │   │       │   │   @ ConstantReadNode (location: (62,3)-(62,9))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── left:
         │   │       │   │   @ SplatNode (location: (62,10)-(62,14))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (62,10)-(62,11) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (62,11)-(62,14))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :lhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ LocalVariableTargetNode (location: (62,16)-(62,17))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :x
         │   │       │   │       └── depth: 0
         │   │       │   ├── right:
         │   │       │   │   @ SplatNode (location: (62,19)-(62,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (62,19)-(62,20) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (62,20)-(62,23))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :rhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── opening_loc: (62,9)-(62,10) = "("
@@ -522,36 +581,45 @@
         │   ├── case_keyword_loc: (61,0)-(61,4) = "case"
         │   └── end_keyword_loc: (63,0)-(63,3) = "end"
         ├── @ CaseMatchNode (location: (65,0)-(67,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (65,5)-(65,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (65,5)-(65,6) = ":"
         │   │   ├── value_loc: (65,6)-(65,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (66,0)-(66,24))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ FindPatternNode (location: (66,3)-(66,24))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant:
         │   │       │   │   @ ConstantReadNode (location: (66,3)-(66,9))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── left:
         │   │       │   │   @ SplatNode (location: (66,10)-(66,14))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (66,10)-(66,11) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (66,11)-(66,14))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :lhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ LocalVariableTargetNode (location: (66,16)-(66,17))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :x
         │   │       │   │       └── depth: 0
         │   │       │   ├── right:
         │   │       │   │   @ SplatNode (location: (66,19)-(66,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (66,19)-(66,20) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (66,20)-(66,23))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :rhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── opening_loc: (66,9)-(66,10) = "["
@@ -563,28 +631,34 @@
         │   ├── case_keyword_loc: (65,0)-(65,4) = "case"
         │   └── end_keyword_loc: (67,0)-(67,3) = "end"
         ├── @ CaseMatchNode (location: (69,0)-(71,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (69,5)-(69,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (69,5)-(69,6) = ":"
         │   │   ├── value_loc: (69,6)-(69,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (70,0)-(70,22))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (70,3)-(70,22))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ LambdaNode (location: (70,4)-(70,18))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── locals: [:b]
         │   │       │   │   │   ├── operator_loc: (70,4)-(70,6) = "->"
         │   │       │   │   │   ├── opening_loc: (70,10)-(70,11) = "{"
         │   │       │   │   │   ├── closing_loc: (70,17)-(70,18) = "}"
         │   │       │   │   │   ├── parameters:
         │   │       │   │   │   │   @ BlockParametersNode (location: (70,6)-(70,9))
+        │   │       │   │   │   │   ├── flags: ∅
         │   │       │   │   │   │   ├── parameters:
         │   │       │   │   │   │   │   @ ParametersNode (location: (70,7)-(70,8))
+        │   │       │   │   │   │   │   ├── flags: ∅
         │   │       │   │   │   │   │   ├── requireds: (length: 1)
         │   │       │   │   │   │   │   │   └── @ RequiredParameterNode (location: (70,7)-(70,8))
         │   │       │   │   │   │   │   │       ├── flags: ∅
@@ -600,9 +674,12 @@
         │   │       │   │   │   │   └── closing_loc: (70,8)-(70,9) = ")"
         │   │       │   │   │   └── body:
         │   │       │   │   │       @ StatementsNode (location: (70,12)-(70,16))
+        │   │       │   │   │       ├── flags: ∅
         │   │       │   │   │       └── body: (length: 1)
         │   │       │   │   │           └── @ TrueNode (location: (70,12)-(70,16))
+        │   │       │   │   │               └── flags: newline, static_literal
         │   │       │   │   └── @ LocalVariableTargetNode (location: (70,20)-(70,21))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :c
         │   │       │   │       └── depth: 0
         │   │       │   ├── rest: ∅
@@ -616,49 +693,58 @@
         │   ├── case_keyword_loc: (69,0)-(69,4) = "case"
         │   └── end_keyword_loc: (71,0)-(71,3) = "end"
         ├── @ CaseMatchNode (location: (73,0)-(75,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (73,5)-(73,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (73,5)-(73,6) = ":"
         │   │   ├── value_loc: (73,6)-(73,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (74,0)-(74,28))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (74,3)-(74,28))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 4)
         │   │       │   │   ├── @ SymbolNode (location: (74,4)-(74,6))
-        │   │       │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │   │   ├── opening_loc: (74,4)-(74,5) = ":"
         │   │       │   │   │   ├── value_loc: (74,5)-(74,6) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   ├── @ LocalVariableTargetNode (location: (74,8)-(74,9))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── name: :b
         │   │       │   │   │   └── depth: 0
         │   │       │   │   ├── @ LocalVariableTargetNode (location: (74,11)-(74,12))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── name: :c
         │   │       │   │   │   └── depth: 0
         │   │       │   │   └── @ ArrayPatternNode (location: (74,14)-(74,27))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
         │   │       │   │       │   └── @ SymbolNode (location: (74,15)-(74,17))
-        │   │       │   │       │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       │       ├── opening_loc: (74,15)-(74,16) = ":"
         │   │       │   │       │       ├── value_loc: (74,16)-(74,17) = "d"
         │   │       │   │       │       ├── closing_loc: ∅
         │   │       │   │       │       └── unescaped: "d"
         │   │       │   │       ├── rest:
         │   │       │   │       │   @ SplatNode (location: (74,19)-(74,21))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   ├── operator_loc: (74,19)-(74,20) = "*"
         │   │       │   │       │   └── expression:
         │   │       │   │       │       @ LocalVariableTargetNode (location: (74,20)-(74,21))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── name: :e
         │   │       │   │       │       └── depth: 0
         │   │       │   │       ├── posts: (length: 1)
         │   │       │   │       │   └── @ NilNode (location: (74,23)-(74,26))
+        │   │       │   │       │       └── flags: static_literal
         │   │       │   │       ├── opening_loc: (74,14)-(74,15) = "["
         │   │       │   │       └── closing_loc: (74,26)-(74,27) = "]"
         │   │       │   ├── rest: ∅
@@ -672,27 +758,33 @@
         │   ├── case_keyword_loc: (73,0)-(73,4) = "case"
         │   └── end_keyword_loc: (75,0)-(75,3) = "end"
         ├── @ CaseMatchNode (location: (77,0)-(79,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (77,5)-(77,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (77,5)-(77,6) = ":"
         │   │   ├── value_loc: (77,6)-(77,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (78,0)-(78,12))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (78,3)-(78,12))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ ConstantReadNode (location: (78,4)-(78,5))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       └── name: :A
         │   │       │   ├── rest:
         │   │       │   │   @ SplatNode (location: (78,7)-(78,8))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (78,7)-(78,8) = "*"
         │   │       │   │   └── expression: ∅
         │   │       │   ├── posts: (length: 1)
         │   │       │   │   └── @ ConstantReadNode (location: (78,10)-(78,11))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       └── name: :B
         │   │       │   ├── opening_loc: (78,3)-(78,4) = "["
         │   │       │   └── closing_loc: (78,11)-(78,12) = "]"
@@ -703,29 +795,34 @@
         │   ├── case_keyword_loc: (77,0)-(77,4) = "case"
         │   └── end_keyword_loc: (79,0)-(79,3) = "end"
         ├── @ CaseMatchNode (location: (81,0)-(83,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (81,5)-(81,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (81,5)-(81,6) = ":"
         │   │   ├── value_loc: (81,6)-(81,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (82,0)-(82,22))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (82,3)-(82,22))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ ArrayPatternNode (location: (82,4)-(82,11))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── constant: ∅
         │   │       │   │   │   ├── requireds: (length: 2)
         │   │       │   │   │   │   ├── @ SymbolNode (location: (82,5)-(82,7))
-        │   │       │   │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │   │   │   │   ├── opening_loc: (82,5)-(82,6) = ":"
         │   │       │   │   │   │   │   ├── value_loc: (82,6)-(82,7) = "b"
         │   │       │   │   │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   │   │   └── unescaped: "b"
         │   │       │   │   │   │   └── @ LocalVariableTargetNode (location: (82,9)-(82,10))
+        │   │       │   │   │   │       ├── flags: ∅
         │   │       │   │   │   │       ├── name: :c
         │   │       │   │   │   │       └── depth: 0
         │   │       │   │   │   ├── rest: ∅
@@ -733,17 +830,20 @@
         │   │       │   │   │   ├── opening_loc: (82,4)-(82,5) = "["
         │   │       │   │   │   └── closing_loc: (82,10)-(82,11) = "]"
         │   │       │   │   └── @ ArrayPatternNode (location: (82,13)-(82,21))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 2)
         │   │       │   │       │   ├── @ SymbolNode (location: (82,14)-(82,16))
-        │   │       │   │       │   │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │       │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       │   │   ├── opening_loc: (82,14)-(82,15) = ":"
         │   │       │   │       │   │   ├── value_loc: (82,15)-(82,16) = "d"
         │   │       │   │       │   │   ├── closing_loc: ∅
         │   │       │   │       │   │   └── unescaped: "d"
         │   │       │   │       │   └── @ PinnedVariableNode (location: (82,18)-(82,20))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── variable:
         │   │       │   │       │       │   @ LocalVariableReadNode (location: (82,19)-(82,20))
+        │   │       │   │       │       │   ├── flags: ∅
         │   │       │   │       │       │   ├── name: :e
         │   │       │   │       │       │   └── depth: 0
         │   │       │   │       │       └── operator_loc: (82,18)-(82,19) = "^"
@@ -762,17 +862,20 @@
         │   ├── case_keyword_loc: (81,0)-(81,4) = "case"
         │   └── end_keyword_loc: (83,0)-(83,3) = "end"
         ├── @ CaseMatchNode (location: (85,0)-(87,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (85,5)-(85,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (85,5)-(85,6) = ":"
         │   │   ├── value_loc: (85,6)-(85,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (86,0)-(86,5))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (86,3)-(86,5))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 0)
         │   │       │   ├── rest: ∅
@@ -786,20 +889,24 @@
         │   ├── case_keyword_loc: (85,0)-(85,4) = "case"
         │   └── end_keyword_loc: (87,0)-(87,3) = "end"
         ├── @ CaseMatchNode (location: (89,0)-(91,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (89,5)-(89,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (89,5)-(89,6) = ":"
         │   │   ├── value_loc: (89,6)-(89,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (90,0)-(90,9))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (90,3)-(90,9))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ PinnedExpressionNode (location: (90,4)-(90,8))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── expression:
         │   │       │   │       │   @ CallNode (location: (90,6)-(90,7))
         │   │       │   │       │   ├── flags: variable_call, ignore_visibility
@@ -825,32 +932,41 @@
         │   ├── case_keyword_loc: (89,0)-(89,4) = "case"
         │   └── end_keyword_loc: (91,0)-(91,3) = "end"
         ├── @ CaseMatchNode (location: (93,0)-(95,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (93,5)-(93,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (93,5)-(93,6) = ":"
         │   │   ├── value_loc: (93,6)-(93,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (94,0)-(94,19))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (94,3)-(94,19))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 3)
         │   │       │   │   ├── @ PinnedVariableNode (location: (94,4)-(94,7))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── variable:
         │   │       │   │   │   │   @ InstanceVariableReadNode (location: (94,5)-(94,7))
+        │   │       │   │   │   │   ├── flags: ∅
         │   │       │   │   │   │   └── name: :@a
         │   │       │   │   │   └── operator_loc: (94,4)-(94,5) = "^"
         │   │       │   │   ├── @ PinnedVariableNode (location: (94,9)-(94,12))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── variable:
         │   │       │   │   │   │   @ GlobalVariableReadNode (location: (94,10)-(94,12))
+        │   │       │   │   │   │   ├── flags: ∅
         │   │       │   │   │   │   └── name: :$b
         │   │       │   │   │   └── operator_loc: (94,9)-(94,10) = "^"
         │   │       │   │   └── @ PinnedVariableNode (location: (94,14)-(94,18))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── variable:
         │   │       │   │       │   @ ClassVariableReadNode (location: (94,15)-(94,18))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   └── name: :@@c
         │   │       │   │       └── operator_loc: (94,14)-(94,15) = "^"
         │   │       │   ├── rest: ∅
@@ -864,15 +980,17 @@
         │   ├── case_keyword_loc: (93,0)-(93,4) = "case"
         │   └── end_keyword_loc: (95,0)-(95,3) = "end"
         ├── @ CaseMatchNode (location: (97,0)-(99,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (97,5)-(97,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (97,5)-(97,6) = ":"
         │   │   ├── value_loc: (97,6)-(97,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (98,0)-(98,12))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (98,3)-(98,12))
         │   │       │   ├── flags: ∅
@@ -887,22 +1005,28 @@
         │   ├── case_keyword_loc: (97,0)-(97,4) = "case"
         │   └── end_keyword_loc: (99,0)-(99,3) = "end"
         ├── @ CaseMatchNode (location: (101,0)-(103,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (101,5)-(101,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (101,5)-(101,6) = ":"
         │   │   ├── value_loc: (101,6)-(101,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (102,0)-(102,16))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (102,3)-(102,16))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 3)
         │   │       │   │   ├── @ NilNode (location: (102,3)-(102,6))
+        │   │       │   │   │   └── flags: static_literal
         │   │       │   │   ├── @ NilNode (location: (102,8)-(102,11))
+        │   │       │   │   │   └── flags: static_literal
         │   │       │   │   └── @ NilNode (location: (102,13)-(102,16))
+        │   │       │   │       └── flags: static_literal
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
         │   │       │   ├── opening_loc: ∅
@@ -914,31 +1038,37 @@
         │   ├── case_keyword_loc: (101,0)-(101,4) = "case"
         │   └── end_keyword_loc: (103,0)-(103,3) = "end"
         ├── @ CaseMatchNode (location: (105,0)-(107,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ SymbolNode (location: (105,5)-(105,7))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (105,5)-(105,6) = ":"
         │   │   ├── value_loc: (105,6)-(105,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (106,0)-(106,11))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (106,3)-(106,11))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant: ∅
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ AssocNode (location: (106,5)-(106,9))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (106,5)-(106,9))
-        │   │       │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       │   ├── opening_loc: (106,5)-(106,6) = "\""
         │   │       │   │       │   ├── value_loc: (106,6)-(106,7) = "b"
         │   │       │   │       │   ├── closing_loc: (106,7)-(106,9) = "\":"
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value:
         │   │       │   │       │   @ ImplicitNode (location: (106,6)-(106,7))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   └── value:
         │   │       │   │       │       @ LocalVariableTargetNode (location: (106,6)-(106,7))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── name: :b
         │   │       │   │       │       └── depth: 0
         │   │       │   │       └── operator_loc: ∅
@@ -952,17 +1082,20 @@
         │   ├── case_keyword_loc: (105,0)-(105,4) = "case"
         │   └── end_keyword_loc: (107,0)-(107,3) = "end"
         └── @ CaseMatchNode (location: (109,0)-(111,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (109,5)-(109,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (109,5)-(109,6) = ":"
             │   ├── value_loc: (109,6)-(109,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (110,0)-(110,5))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (110,3)-(110,5))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── elements: (length: 0)
             │       │   ├── rest: ∅

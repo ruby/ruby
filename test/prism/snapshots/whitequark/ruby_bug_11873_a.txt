@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(39,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(39,20))
+    ├── flags: ∅
     └── body: (length: 20)
         ├── @ CallNode (location: (1,0)-(1,18))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -51,18 +53,19 @@
         │   │       │   ├── closing_loc: (1,7)-(1,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,12)-(1,18))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,12)-(1,14) = "do"
         │       └── closing_loc: (1,15)-(1,18) = "end"
         ├── @ CallNode (location: (3,0)-(3,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -109,17 +112,19 @@
         │   │       │   ├── closing_loc: (3,7)-(3,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ FloatNode (location: (3,10)-(3,13))
+        │   │           ├── flags: static_literal
         │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,14)-(3,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (3,14)-(3,16) = "do"
         │       └── closing_loc: (3,17)-(3,20) = "end"
         ├── @ CallNode (location: (5,0)-(5,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -166,19 +171,22 @@
         │   │       │   ├── closing_loc: (5,7)-(5,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ ImaginaryNode (location: (5,10)-(5,14))
+        │   │           ├── flags: static_literal
         │   │           └── numeric:
         │   │               @ FloatNode (location: (5,10)-(5,13))
+        │   │               ├── flags: static_literal
         │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,15)-(5,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (5,15)-(5,17) = "do"
         │       └── closing_loc: (5,18)-(5,21) = "end"
         ├── @ CallNode (location: (7,0)-(7,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -225,19 +233,20 @@
         │   │       │   ├── closing_loc: (7,7)-(7,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RationalNode (location: (7,10)-(7,14))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           ├── numerator: 1
         │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,15)-(7,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (7,15)-(7,17) = "do"
         │       └── closing_loc: (7,18)-(7,21) = "end"
         ├── @ CallNode (location: (9,0)-(9,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -284,7 +293,7 @@
         │   │       │   ├── closing_loc: (9,7)-(9,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ SymbolNode (location: (9,10)-(9,12))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (9,10)-(9,11) = ":"
         │   │           ├── value_loc: (9,11)-(9,12) = "e"
         │   │           ├── closing_loc: ∅
@@ -292,13 +301,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (9,13)-(9,19))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (9,13)-(9,15) = "do"
         │       └── closing_loc: (9,16)-(9,19) = "end"
         ├── @ CallNode (location: (11,0)-(11,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -345,18 +355,19 @@
         │   │       │   ├── closing_loc: (11,8)-(11,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ IntegerNode (location: (11,11)-(11,12))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (11,13)-(11,19))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (11,13)-(11,15) = "do"
         │       └── closing_loc: (11,16)-(11,19) = "end"
         ├── @ CallNode (location: (13,0)-(13,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -403,17 +414,19 @@
         │   │       │   ├── closing_loc: (13,8)-(13,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ FloatNode (location: (13,11)-(13,14))
+        │   │           ├── flags: static_literal
         │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (13,15)-(13,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (13,15)-(13,17) = "do"
         │       └── closing_loc: (13,18)-(13,21) = "end"
         ├── @ CallNode (location: (15,0)-(15,22))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -460,19 +473,22 @@
         │   │       │   ├── closing_loc: (15,8)-(15,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ ImaginaryNode (location: (15,11)-(15,15))
+        │   │           ├── flags: static_literal
         │   │           └── numeric:
         │   │               @ FloatNode (location: (15,11)-(15,14))
+        │   │               ├── flags: static_literal
         │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (15,16)-(15,22))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (15,16)-(15,18) = "do"
         │       └── closing_loc: (15,19)-(15,22) = "end"
         ├── @ CallNode (location: (17,0)-(17,22))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -519,19 +535,20 @@
         │   │       │   ├── closing_loc: (17,8)-(17,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RationalNode (location: (17,11)-(17,15))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           ├── numerator: 1
         │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (17,16)-(17,22))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (17,16)-(17,18) = "do"
         │       └── closing_loc: (17,19)-(17,22) = "end"
         ├── @ CallNode (location: (19,0)-(19,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -578,7 +595,7 @@
         │   │       │   ├── closing_loc: (19,8)-(19,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ SymbolNode (location: (19,11)-(19,13))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (19,11)-(19,12) = ":"
         │   │           ├── value_loc: (19,12)-(19,13) = "e"
         │   │           ├── closing_loc: ∅
@@ -586,13 +603,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (19,14)-(19,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (19,14)-(19,16) = "do"
         │       └── closing_loc: (19,17)-(19,20) = "end"
         ├── @ CallNode (location: (21,0)-(21,18))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -613,13 +631,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (21,3)-(21,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (21,4)-(21,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (21,4)-(21,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -644,18 +664,19 @@
         │   │       │       ├── opening_loc: (21,3)-(21,4) = "{"
         │   │       │       └── closing_loc: (21,7)-(21,8) = "}"
         │   │       └── @ IntegerNode (location: (21,10)-(21,11))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (21,12)-(21,18))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (21,12)-(21,14) = "do"
         │       └── closing_loc: (21,15)-(21,18) = "end"
         ├── @ CallNode (location: (23,0)-(23,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -676,13 +697,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (23,3)-(23,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (23,4)-(23,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (23,4)-(23,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -707,17 +730,19 @@
         │   │       │       ├── opening_loc: (23,3)-(23,4) = "{"
         │   │       │       └── closing_loc: (23,7)-(23,8) = "}"
         │   │       └── @ FloatNode (location: (23,10)-(23,13))
+        │   │           ├── flags: static_literal
         │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (23,14)-(23,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (23,14)-(23,16) = "do"
         │       └── closing_loc: (23,17)-(23,20) = "end"
         ├── @ CallNode (location: (25,0)-(25,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -738,13 +763,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (25,3)-(25,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (25,4)-(25,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (25,4)-(25,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -769,19 +796,22 @@
         │   │       │       ├── opening_loc: (25,3)-(25,4) = "{"
         │   │       │       └── closing_loc: (25,7)-(25,8) = "}"
         │   │       └── @ ImaginaryNode (location: (25,10)-(25,14))
+        │   │           ├── flags: static_literal
         │   │           └── numeric:
         │   │               @ FloatNode (location: (25,10)-(25,13))
+        │   │               ├── flags: static_literal
         │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (25,15)-(25,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (25,15)-(25,17) = "do"
         │       └── closing_loc: (25,18)-(25,21) = "end"
         ├── @ CallNode (location: (27,0)-(27,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -802,13 +832,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (27,3)-(27,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (27,4)-(27,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (27,4)-(27,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -833,19 +865,20 @@
         │   │       │       ├── opening_loc: (27,3)-(27,4) = "{"
         │   │       │       └── closing_loc: (27,7)-(27,8) = "}"
         │   │       └── @ RationalNode (location: (27,10)-(27,14))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           ├── numerator: 1
         │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (27,15)-(27,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (27,15)-(27,17) = "do"
         │       └── closing_loc: (27,18)-(27,21) = "end"
         ├── @ CallNode (location: (29,0)-(29,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -866,13 +899,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (29,3)-(29,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (29,4)-(29,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (29,4)-(29,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -897,7 +932,7 @@
         │   │       │       ├── opening_loc: (29,3)-(29,4) = "{"
         │   │       │       └── closing_loc: (29,7)-(29,8) = "}"
         │   │       └── @ SymbolNode (location: (29,10)-(29,12))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (29,10)-(29,11) = ":"
         │   │           ├── value_loc: (29,11)-(29,12) = "e"
         │   │           ├── closing_loc: ∅
@@ -905,13 +940,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (29,13)-(29,19))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (29,13)-(29,15) = "do"
         │       └── closing_loc: (29,16)-(29,19) = "end"
         ├── @ CallNode (location: (31,0)-(31,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -932,13 +968,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (31,3)-(31,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (31,4)-(31,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (31,4)-(31,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -963,18 +1001,19 @@
         │   │       │       ├── opening_loc: (31,3)-(31,4) = "{"
         │   │       │       └── closing_loc: (31,8)-(31,9) = "}"
         │   │       └── @ IntegerNode (location: (31,11)-(31,12))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (31,13)-(31,19))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (31,13)-(31,15) = "do"
         │       └── closing_loc: (31,16)-(31,19) = "end"
         ├── @ CallNode (location: (33,0)-(33,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -995,13 +1034,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (33,3)-(33,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (33,4)-(33,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (33,4)-(33,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -1026,17 +1067,19 @@
         │   │       │       ├── opening_loc: (33,3)-(33,4) = "{"
         │   │       │       └── closing_loc: (33,8)-(33,9) = "}"
         │   │       └── @ FloatNode (location: (33,11)-(33,14))
+        │   │           ├── flags: static_literal
         │   │           └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (33,15)-(33,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (33,15)-(33,17) = "do"
         │       └── closing_loc: (33,18)-(33,21) = "end"
         ├── @ CallNode (location: (35,0)-(35,22))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -1057,13 +1100,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (35,3)-(35,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (35,4)-(35,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (35,4)-(35,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -1088,19 +1133,22 @@
         │   │       │       ├── opening_loc: (35,3)-(35,4) = "{"
         │   │       │       └── closing_loc: (35,8)-(35,9) = "}"
         │   │       └── @ ImaginaryNode (location: (35,11)-(35,15))
+        │   │           ├── flags: static_literal
         │   │           └── numeric:
         │   │               @ FloatNode (location: (35,11)-(35,14))
+        │   │               ├── flags: static_literal
         │   │               └── value: 1.0
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (35,16)-(35,22))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (35,16)-(35,18) = "do"
         │       └── closing_loc: (35,19)-(35,22) = "end"
         ├── @ CallNode (location: (37,0)-(37,22))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -1121,13 +1169,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (37,3)-(37,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (37,4)-(37,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (37,4)-(37,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -1152,19 +1202,20 @@
         │   │       │       ├── opening_loc: (37,3)-(37,4) = "{"
         │   │       │       └── closing_loc: (37,8)-(37,9) = "}"
         │   │       └── @ RationalNode (location: (37,11)-(37,15))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           ├── numerator: 1
         │   │           └── denominator: 1
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (37,16)-(37,22))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (37,16)-(37,18) = "do"
         │       └── closing_loc: (37,19)-(37,22) = "end"
         └── @ CallNode (location: (39,0)-(39,20))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -1185,13 +1236,15 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block:
             │       │       @ BlockNode (location: (39,3)-(39,9))
+            │       │       ├── flags: ∅
             │       │       ├── locals: []
             │       │       ├── parameters: ∅
             │       │       ├── body:
             │       │       │   @ StatementsNode (location: (39,4)-(39,8))
+            │       │       │   ├── flags: ∅
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ CallNode (location: (39,4)-(39,8))
-            │       │       │           ├── flags: ignore_visibility
+            │       │       │           ├── flags: newline, ignore_visibility
             │       │       │           ├── receiver: ∅
             │       │       │           ├── call_operator_loc: ∅
             │       │       │           ├── name: :c
@@ -1216,7 +1269,7 @@
             │       │       ├── opening_loc: (39,3)-(39,4) = "{"
             │       │       └── closing_loc: (39,8)-(39,9) = "}"
             │       └── @ SymbolNode (location: (39,11)-(39,13))
-            │           ├── flags: forced_us_ascii_encoding
+            │           ├── flags: static_literal, forced_us_ascii_encoding
             │           ├── opening_loc: (39,11)-(39,12) = ":"
             │           ├── value_loc: (39,12)-(39,13) = "e"
             │           ├── closing_loc: ∅
@@ -1224,6 +1277,7 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (39,14)-(39,20))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

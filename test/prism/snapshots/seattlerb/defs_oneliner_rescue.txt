@@ -1,15 +1,20 @@
 @ ProgramNode (location: (1,0)-(13,43))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(13,43))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ DefNode (location: (1,0)-(5,3))
+        │   ├── flags: newline
         │   ├── name: :exec
         │   ├── name_loc: (1,9)-(1,13) = "exec"
         │   ├── receiver:
         │   │   @ SelfNode (location: (1,4)-(1,8))
+        │   │   └── flags: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,14)-(1,17))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,14)-(1,17))
         │   │   │       ├── flags: ∅
@@ -22,12 +27,14 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ BeginNode (location: (1,0)-(5,3))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (2,2)-(2,13))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (2,2)-(2,13))
-        │   │   │           ├── flags: ignore_visibility
+        │   │   │           ├── flags: newline, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :system
@@ -38,20 +45,24 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ LocalVariableReadNode (location: (2,9)-(2,12))
+        │   │   │           │           ├── flags: ∅
         │   │   │           │           ├── name: :cmd
         │   │   │           │           └── depth: 0
         │   │   │           ├── closing_loc: (2,12)-(2,13) = ")"
         │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (4,2)-(4,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ NilNode (location: (4,2)-(4,5))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
@@ -64,12 +75,15 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ DefNode (location: (8,0)-(10,3))
+        │   ├── flags: newline
         │   ├── name: :exec
         │   ├── name_loc: (8,9)-(8,13) = "exec"
         │   ├── receiver:
         │   │   @ SelfNode (location: (8,4)-(8,8))
+        │   │   └── flags: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (8,14)-(8,17))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (8,14)-(8,17))
         │   │   │       ├── flags: ∅
@@ -82,8 +96,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (9,2)-(9,24))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RescueModifierNode (location: (9,2)-(9,24))
+        │   │           ├── flags: newline
         │   │           ├── expression:
         │   │           │   @ CallNode (location: (9,2)-(9,13))
         │   │           │   ├── flags: ignore_visibility
@@ -97,6 +113,7 @@
         │   │           │   │   ├── flags: ∅
         │   │           │   │   └── arguments: (length: 1)
         │   │           │   │       └── @ LocalVariableReadNode (location: (9,9)-(9,12))
+        │   │           │   │           ├── flags: ∅
         │   │           │   │           ├── name: :cmd
         │   │           │   │           └── depth: 0
         │   │           │   ├── closing_loc: (9,12)-(9,13) = ")"
@@ -104,6 +121,7 @@
         │   │           ├── keyword_loc: (9,14)-(9,20) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (9,21)-(9,24))
+        │   │               └── flags: static_literal
         │   ├── locals: [:cmd]
         │   ├── def_keyword_loc: (8,0)-(8,3) = "def"
         │   ├── operator_loc: (8,8)-(8,9) = "."
@@ -112,12 +130,15 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (10,0)-(10,3) = "end"
         └── @ DefNode (location: (13,0)-(13,43))
+            ├── flags: newline
             ├── name: :exec
             ├── name_loc: (13,9)-(13,13) = "exec"
             ├── receiver:
             │   @ SelfNode (location: (13,4)-(13,8))
+            │   └── flags: ∅
             ├── parameters:
             │   @ ParametersNode (location: (13,14)-(13,17))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (13,14)-(13,17))
             │   │       ├── flags: ∅
@@ -130,8 +151,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (13,21)-(13,43))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (13,21)-(13,43))
+            │           ├── flags: newline
             │           ├── expression:
             │           │   @ CallNode (location: (13,21)-(13,32))
             │           │   ├── flags: ignore_visibility
@@ -145,6 +168,7 @@
             │           │   │   ├── flags: ∅
             │           │   │   └── arguments: (length: 1)
             │           │   │       └── @ LocalVariableReadNode (location: (13,28)-(13,31))
+            │           │   │           ├── flags: ∅
             │           │   │           ├── name: :cmd
             │           │   │           └── depth: 0
             │           │   ├── closing_loc: (13,31)-(13,32) = ")"
@@ -152,6 +176,7 @@
             │           ├── keyword_loc: (13,33)-(13,39) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (13,40)-(13,43))
+            │               └── flags: static_literal
             ├── locals: [:cmd]
             ├── def_keyword_loc: (13,0)-(13,3) = "def"
             ├── operator_loc: (13,8)-(13,9) = "."

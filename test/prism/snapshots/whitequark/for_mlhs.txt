@@ -1,16 +1,22 @@
 @ ProgramNode (location: (1,0)-(1,28))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,28))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ForNode (location: (1,0)-(1,28))
+            ├── flags: newline
             ├── index:
             │   @ MultiTargetNode (location: (1,4)-(1,8))
+            │   ├── flags: ∅
             │   ├── lefts: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (1,4)-(1,5))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── name: :a
             │   │   │   └── depth: 0
             │   │   └── @ LocalVariableTargetNode (location: (1,7)-(1,8))
+            │   │       ├── flags: ∅
             │   │       ├── name: :b
             │   │       └── depth: 0
             │   ├── rest: ∅
@@ -30,9 +36,10 @@
             │   └── block: ∅
             ├── statements:
             │   @ StatementsNode (location: (1,17)-(1,23))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,17)-(1,23))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :p
@@ -43,9 +50,11 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,19)-(1,20))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── name: :a
             │           │       │   └── depth: 0
             │           │       └── @ LocalVariableReadNode (location: (1,22)-(1,23))
+            │           │           ├── flags: ∅
             │           │           ├── name: :b
             │           │           └── depth: 0
             │           ├── closing_loc: ∅

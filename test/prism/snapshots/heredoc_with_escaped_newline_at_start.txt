@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,25))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,25))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,25))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ StringNode (location: (1,0)-(1,9))
         │   │   ├── flags: ∅
@@ -21,7 +23,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ RegularExpressionNode (location: (1,15)-(1,21))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (1,15)-(1,16) = "/"
         │   │       │   ├── content_loc: (1,16)-(1,20) = "^\\s{"
         │   │       │   ├── closing_loc: (1,20)-(1,21) = "/"
@@ -35,7 +37,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (5,0)-(5,25))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ StringNode (location: (5,0)-(5,9))
             │   ├── flags: ∅
@@ -52,7 +54,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ RegularExpressionNode (location: (5,15)-(5,21))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: (5,15)-(5,16) = "/"
             │       │   ├── content_loc: (5,16)-(5,20) = "^\\s{"
             │       │   ├── closing_loc: (5,20)-(5,21) = "/"

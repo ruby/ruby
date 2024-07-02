@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── name: :f
             ├── name_loc: (1,4)-(1,5) = "f"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,9))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -16,12 +20,14 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ ForwardingParameterNode (location: (1,6)-(1,9))
+            │   │   └── flags: ∅
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (2,2)-(2,8))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (2,2)-(2,8))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :m
@@ -32,6 +38,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ ForwardingArgumentsNode (location: (2,4)-(2,7))
+            │           │           └── flags: ∅
             │           ├── closing_loc: (2,7)-(2,8) = ")"
             │           └── block: ∅
             ├── locals: []

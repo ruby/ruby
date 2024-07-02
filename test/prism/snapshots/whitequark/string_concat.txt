@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,14))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,14))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: ∅
             ├── parts: (length: 2)
             │   ├── @ InterpolatedStringNode (location: (1,0)-(1,8))
@@ -12,19 +14,21 @@
             │   │   ├── opening_loc: (1,0)-(1,1) = "\""
             │   │   ├── parts: (length: 2)
             │   │   │   ├── @ StringNode (location: (1,1)-(1,4))
-            │   │   │   │   ├── flags: frozen
+            │   │   │   │   ├── flags: static_literal, frozen
             │   │   │   │   ├── opening_loc: ∅
             │   │   │   │   ├── content_loc: (1,1)-(1,4) = "foo"
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   └── unescaped: "foo"
             │   │   │   └── @ EmbeddedVariableNode (location: (1,4)-(1,7))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── operator_loc: (1,4)-(1,5) = "#"
             │   │   │       └── variable:
             │   │   │           @ InstanceVariableReadNode (location: (1,5)-(1,7))
+            │   │   │           ├── flags: ∅
             │   │   │           └── name: :@a
             │   │   └── closing_loc: (1,7)-(1,8) = "\""
             │   └── @ StringNode (location: (1,9)-(1,14))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: (1,9)-(1,10) = "\""
             │       ├── content_loc: (1,10)-(1,13) = "bar"
             │       ├── closing_loc: (1,13)-(1,14) = "\""

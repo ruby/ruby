@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(2,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(2,1))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(2,1))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -15,6 +17,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ InstanceVariableReadNode (location: (1,2)-(1,4))
+            │           ├── flags: ∅
             │           └── name: :@b
             ├── closing_loc: (2,0)-(2,1) = ")"
             └── block: ∅

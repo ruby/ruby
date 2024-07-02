@@ -1,58 +1,71 @@
 @ ProgramNode (location: (1,0)-(14,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(14,22))
+    ├── flags: ∅
     └── body: (length: 7)
         ├── @ UnlessNode (location: (1,0)-(1,19))
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,6) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,7)-(1,11))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,13)-(1,14))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (1,13)-(1,14))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (1,16)-(1,19) = "end"
         ├── @ UnlessNode (location: (3,0)-(4,12))
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,6) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (3,7)-(3,11))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (4,0)-(4,1))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (4,0)-(4,1))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
         │   ├── consequent:
         │   │   @ ElseNode (location: (4,2)-(4,12))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (4,2)-(4,6) = "else"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (4,7)-(4,8))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ IntegerNode (location: (4,7)-(4,8))
-        │   │   │           ├── flags: decimal
+        │   │   │           ├── flags: newline, static_literal, decimal
         │   │   │           └── value: 2
         │   │   └── end_keyword_loc: (4,9)-(4,12) = "end"
         │   └── end_keyword_loc: (4,9)-(4,12) = "end"
         ├── @ UnlessNode (location: (6,0)-(6,13))
+        │   ├── flags: newline
         │   ├── keyword_loc: (6,2)-(6,8) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (6,9)-(6,13))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (6,0)-(6,1))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (6,0)-(6,1))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (8,0)-(8,25))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -62,20 +75,26 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (8,4)-(8,25))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (8,6)-(8,23))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ UnlessNode (location: (8,6)-(8,23))
+        │       │           ├── flags: newline
         │       │           ├── keyword_loc: (8,12)-(8,18) = "unless"
         │       │           ├── predicate:
         │       │           │   @ TrueNode (location: (8,19)-(8,23))
+        │       │           │   └── flags: static_literal
         │       │           ├── then_keyword_loc: ∅
         │       │           ├── statements:
         │       │           │   @ StatementsNode (location: (8,6)-(8,11))
+        │       │           │   ├── flags: ∅
         │       │           │   └── body: (length: 1)
         │       │           │       └── @ BreakNode (location: (8,6)-(8,11))
+        │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (8,6)-(8,11) = "break"
         │       │           ├── consequent: ∅
@@ -83,7 +102,7 @@
         │       ├── opening_loc: (8,4)-(8,5) = "{"
         │       └── closing_loc: (8,24)-(8,25) = "}"
         ├── @ CallNode (location: (10,0)-(10,24))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -93,20 +112,26 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (10,4)-(10,24))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (10,6)-(10,22))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ UnlessNode (location: (10,6)-(10,22))
+        │       │           ├── flags: newline
         │       │           ├── keyword_loc: (10,11)-(10,17) = "unless"
         │       │           ├── predicate:
         │       │           │   @ TrueNode (location: (10,18)-(10,22))
+        │       │           │   └── flags: static_literal
         │       │           ├── then_keyword_loc: ∅
         │       │           ├── statements:
         │       │           │   @ StatementsNode (location: (10,6)-(10,10))
+        │       │           │   ├── flags: ∅
         │       │           │   └── body: (length: 1)
         │       │           │       └── @ NextNode (location: (10,6)-(10,10))
+        │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (10,6)-(10,10) = "next"
         │       │           ├── consequent: ∅
@@ -114,20 +139,24 @@
         │       ├── opening_loc: (10,4)-(10,5) = "{"
         │       └── closing_loc: (10,23)-(10,24) = "}"
         ├── @ UnlessNode (location: (12,0)-(12,18))
+        │   ├── flags: newline
         │   ├── keyword_loc: (12,7)-(12,13) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (12,14)-(12,18))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (12,0)-(12,6))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (12,0)-(12,6))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (12,0)-(12,6) = "return"
         │   │           └── arguments: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
         └── @ UnlessNode (location: (14,0)-(14,22))
+            ├── flags: newline
             ├── keyword_loc: (14,11)-(14,17) = "unless"
             ├── predicate:
             │   @ CallNode (location: (14,18)-(14,22))
@@ -143,9 +172,10 @@
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (14,0)-(14,10))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (14,0)-(14,10))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo
@@ -156,13 +186,13 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 2)
             │           │       ├── @ SymbolNode (location: (14,4)-(14,6))
-            │           │       │   ├── flags: forced_us_ascii_encoding
+            │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │           │       │   ├── opening_loc: (14,4)-(14,5) = ":"
             │           │       │   ├── value_loc: (14,5)-(14,6) = "a"
             │           │       │   ├── closing_loc: ∅
             │           │       │   └── unescaped: "a"
             │           │       └── @ SymbolNode (location: (14,8)-(14,10))
-            │           │           ├── flags: forced_us_ascii_encoding
+            │           │           ├── flags: static_literal, forced_us_ascii_encoding
             │           │           ├── opening_loc: (14,8)-(14,9) = ":"
             │           │           ├── value_loc: (14,9)-(14,10) = "b"
             │           │           ├── closing_loc: ∅

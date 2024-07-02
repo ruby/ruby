@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,29))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,29))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,29))
+            ├── flags: newline
             ├── name: :call
             ├── name_loc: (1,4)-(1,8) = "call"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,9)-(1,24))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,9)-(1,15))
             │   │       ├── flags: ∅

@@ -1,26 +1,32 @@
 @ ProgramNode (location: (1,0)-(37,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(37,1))
+    ├── flags: ∅
     └── body: (length: 11)
         ├── @ IfNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,3)-(1,7))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (2,2)-(2,8))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ InterpolatedStringNode (location: (2,2)-(2,8))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── opening_loc: (2,2)-(2,3) = "\""
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ EmbeddedStatementsNode (location: (2,3)-(2,6))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: (2,3)-(2,5) = "\#{"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (2,5)-(2,6) = "}"
         │   │           │   └── @ StringNode (location: (2,6)-(2,7))
-        │   │           │       ├── flags: frozen
+        │   │           │       ├── flags: static_literal, frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (2,6)-(2,7) = "a"
         │   │           │       ├── closing_loc: ∅
@@ -29,36 +35,40 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ IfNode (location: (4,0)-(11,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (4,0)-(4,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (4,3)-(4,7))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,2)-(10,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 2)
         │   │       ├── @ InterpolatedStringNode (location: (5,2)-(5,12))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: newline
         │   │       │   ├── opening_loc: (5,2)-(5,12) = "<<-HEREDOC"
         │   │       │   ├── parts: (length: 3)
         │   │       │   │   ├── @ StringNode (location: (6,0)-(7,0))
-        │   │       │   │   │   ├── flags: frozen
+        │   │       │   │   │   ├── flags: static_literal, frozen
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── content_loc: (6,0)-(7,0) = "a\n"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a\n"
         │   │       │   │   ├── @ EmbeddedStatementsNode (location: (7,0)-(7,3))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: (7,0)-(7,2) = "\#{"
         │   │       │   │   │   ├── statements: ∅
         │   │       │   │   │   └── closing_loc: (7,2)-(7,3) = "}"
         │   │       │   │   └── @ StringNode (location: (7,3)-(9,0))
-        │   │       │   │       ├── flags: frozen
+        │   │       │   │       ├── flags: static_literal, frozen
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── content_loc: (7,3)-(9,0) = "a\nb\n"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "a\nb\n"
         │   │       │   └── closing_loc: (9,0)-(10,0) = "  HEREDOC\n"
         │   │       └── @ CallNode (location: (10,2)-(10,3))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :x
@@ -70,58 +80,63 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ InterpolatedStringNode (location: (12,0)-(12,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (12,0)-(12,10) = "<<-HEREDOC"
         │   ├── parts: (length: 7)
         │   │   ├── @ StringNode (location: (13,0)-(14,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (13,0)-(14,0) = "\\\#{}\\\#{}\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\#{}\#{}\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (14,0)-(14,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (14,0)-(14,2) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (14,2)-(14,3) = "}"
         │   │   ├── @ StringNode (location: (14,3)-(15,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (14,3)-(15,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (15,0)-(15,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (15,0)-(15,2) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (15,2)-(15,3) = "}"
         │   │   ├── @ StringNode (location: (15,3)-(16,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (15,3)-(16,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (16,0)-(16,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (16,0)-(16,2) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (16,2)-(16,3) = "}"
         │   │   └── @ StringNode (location: (16,3)-(17,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (16,3)-(17,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (17,0)-(18,0) = "HEREDOC\n"
         ├── @ RescueModifierNode (location: (18,0)-(18,21))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ InterpolatedStringNode (location: (18,0)-(18,10))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (18,0)-(18,10) = "<<-HEREDOC"
         │   │   ├── parts: (length: 2)
         │   │   │   ├── @ EmbeddedStatementsNode (location: (19,0)-(19,3))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (19,0)-(19,2) = "\#{"
         │   │   │   │   ├── statements: ∅
         │   │   │   │   └── closing_loc: (19,2)-(19,3) = "}"
         │   │   │   └── @ StringNode (location: (19,3)-(21,0))
-        │   │   │       ├── flags: frozen
+        │   │   │       ├── flags: static_literal, frozen
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (19,3)-(21,0) = "\na\n"
         │   │   │       ├── closing_loc: ∅
@@ -130,80 +145,92 @@
         │   ├── keyword_loc: (18,11)-(18,17) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (18,18)-(18,21))
+        │       └── flags: static_literal
         ├── @ InterpolatedStringNode (location: (22,0)-(22,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (22,0)-(22,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (22,1)-(22,2))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (22,1)-(22,2) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ EmbeddedVariableNode (location: (22,2)-(22,5))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (22,2)-(22,3) = "#"
         │   │       └── variable:
         │   │           @ NumberedReferenceReadNode (location: (22,3)-(22,5))
+        │   │           ├── flags: ∅
         │   │           └── number: 1
         │   └── closing_loc: (22,5)-(22,6) = "\""
         ├── @ InterpolatedStringNode (location: (23,0)-(23,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (23,0)-(23,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (23,1)-(23,2))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (23,1)-(23,2) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ EmbeddedVariableNode (location: (23,2)-(23,5))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (23,2)-(23,3) = "#"
         │   │       └── variable:
         │   │           @ GlobalVariableReadNode (location: (23,3)-(23,5))
+        │   │           ├── flags: ∅
         │   │           └── name: :$a
         │   └── closing_loc: (23,5)-(23,6) = "\""
         ├── @ InterpolatedStringNode (location: (24,0)-(24,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (24,0)-(24,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (24,1)-(24,2))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (24,1)-(24,2) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ EmbeddedVariableNode (location: (24,2)-(24,5))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (24,2)-(24,3) = "#"
         │   │       └── variable:
         │   │           @ InstanceVariableReadNode (location: (24,3)-(24,5))
+        │   │           ├── flags: ∅
         │   │           └── name: :@a
         │   └── closing_loc: (24,5)-(24,6) = "\""
         ├── @ InterpolatedStringNode (location: (25,0)-(25,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (25,0)-(25,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (25,1)-(25,2))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (25,1)-(25,2) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ EmbeddedVariableNode (location: (25,2)-(25,6))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (25,2)-(25,3) = "#"
         │   │       └── variable:
         │   │           @ ClassVariableReadNode (location: (25,3)-(25,6))
+        │   │           ├── flags: ∅
         │   │           └── name: :@@a
         │   └── closing_loc: (25,6)-(25,7) = "\""
         ├── @ IfNode (location: (26,0)-(30,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (26,0)-(26,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (26,3)-(26,7))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (27,2)-(27,19))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (27,2)-(27,19))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (27,2)-(27,8) = "return"
         │   │           └── arguments:
         │   │               @ ArgumentsNode (location: (27,9)-(27,19))
@@ -214,22 +241,24 @@
         │   │                       ├── opening_loc: (27,9)-(27,19) = "<<-HEREDOC"
         │   │                       ├── parts: (length: 3)
         │   │                       │   ├── @ StringNode (location: (28,0)-(28,4))
-        │   │                       │   │   ├── flags: frozen
+        │   │                       │   │   ├── flags: static_literal, frozen
         │   │                       │   │   ├── opening_loc: ∅
         │   │                       │   │   ├── content_loc: (28,0)-(28,4) = "    "
         │   │                       │   │   ├── closing_loc: ∅
         │   │                       │   │   └── unescaped: "    "
         │   │                       │   ├── @ EmbeddedStatementsNode (location: (28,4)-(28,9))
+        │   │                       │   │   ├── flags: ∅
         │   │                       │   │   ├── opening_loc: (28,4)-(28,6) = "\#{"
         │   │                       │   │   ├── statements:
         │   │                       │   │   │   @ StatementsNode (location: (28,6)-(28,8))
+        │   │                       │   │   │   ├── flags: ∅
         │   │                       │   │   │   └── body: (length: 1)
         │   │                       │   │   │       └── @ IntegerNode (location: (28,6)-(28,8))
-        │   │                       │   │   │           ├── flags: decimal
+        │   │                       │   │   │           ├── flags: static_literal, decimal
         │   │                       │   │   │           └── value: 42
         │   │                       │   │   └── closing_loc: (28,8)-(28,9) = "}"
         │   │                       │   └── @ StringNode (location: (28,9)-(29,0))
-        │   │                       │       ├── flags: frozen
+        │   │                       │       ├── flags: static_literal, frozen
         │   │                       │       ├── opening_loc: ∅
         │   │                       │       ├── content_loc: (28,9)-(29,0) = "\n"
         │   │                       │       ├── closing_loc: ∅
@@ -238,7 +267,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ CallNode (location: (31,0)-(31,15))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -253,15 +282,17 @@
         │   │           ├── opening_loc: (31,4)-(31,14) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (32,0)-(32,2))
-        │   │           │   │   ├── flags: frozen
+        │   │           │   │   ├── flags: static_literal, frozen
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (32,0)-(32,2) = "  "
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  "
         │   │           │   ├── @ EmbeddedStatementsNode (location: (32,2)-(32,8))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: (32,2)-(32,4) = "\#{"
         │   │           │   │   ├── statements:
         │   │           │   │   │   @ StatementsNode (location: (32,4)-(32,7))
+        │   │           │   │   │   ├── flags: ∅
         │   │           │   │   │   └── body: (length: 1)
         │   │           │   │   │       └── @ CallNode (location: (32,4)-(32,7))
         │   │           │   │   │           ├── flags: variable_call, ignore_visibility
@@ -275,7 +306,7 @@
         │   │           │   │   │           └── block: ∅
         │   │           │   │   └── closing_loc: (32,7)-(32,8) = "}"
         │   │           │   └── @ StringNode (location: (32,8)-(33,0))
-        │   │           │       ├── flags: frozen
+        │   │           │       ├── flags: static_literal, frozen
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (32,8)-(33,0) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -284,7 +315,7 @@
         │   ├── closing_loc: (31,14)-(31,15) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (34,0)-(37,1))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -299,15 +330,17 @@
             │           ├── opening_loc: (34,4)-(34,14) = "<<-HEREDOC"
             │           ├── parts: (length: 3)
             │           │   ├── @ StringNode (location: (35,0)-(35,2))
-            │           │   │   ├── flags: frozen
+            │           │   │   ├── flags: static_literal, frozen
             │           │   │   ├── opening_loc: ∅
             │           │   │   ├── content_loc: (35,0)-(35,2) = "  "
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "  "
             │           │   ├── @ EmbeddedStatementsNode (location: (35,2)-(35,8))
+            │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: (35,2)-(35,4) = "\#{"
             │           │   │   ├── statements:
             │           │   │   │   @ StatementsNode (location: (35,4)-(35,7))
+            │           │   │   │   ├── flags: ∅
             │           │   │   │   └── body: (length: 1)
             │           │   │   │       └── @ CallNode (location: (35,4)-(35,7))
             │           │   │   │           ├── flags: variable_call, ignore_visibility
@@ -321,7 +354,7 @@
             │           │   │   │           └── block: ∅
             │           │   │   └── closing_loc: (35,7)-(35,8) = "}"
             │           │   └── @ StringNode (location: (35,8)-(36,0))
-            │           │       ├── flags: frozen
+            │           │       ├── flags: static_literal, frozen
             │           │       ├── opening_loc: ∅
             │           │       ├── content_loc: (35,8)-(36,0) = "\n"
             │           │       ├── closing_loc: ∅
@@ -330,11 +363,14 @@
             ├── closing_loc: (34,14)-(34,15) = ")"
             └── block:
                 @ BlockNode (location: (34,16)-(37,1))
+                ├── flags: ∅
                 ├── locals: [:x]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (34,18)-(34,21))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (34,19)-(34,20))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (34,19)-(34,20))
                 │   │   │       ├── flags: ∅

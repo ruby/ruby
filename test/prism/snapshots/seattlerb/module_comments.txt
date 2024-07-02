@@ -1,18 +1,24 @@
 @ ProgramNode (location: (5,0)-(10,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (5,0)-(10,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ModuleNode (location: (5,0)-(10,3))
+            ├── flags: newline
             ├── locals: []
             ├── module_keyword_loc: (5,0)-(5,6) = "module"
             ├── constant_path:
             │   @ ConstantReadNode (location: (5,7)-(5,8))
+            │   ├── flags: ∅
             │   └── name: :X
             ├── body:
             │   @ StatementsNode (location: (7,2)-(9,5))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ DefNode (location: (7,2)-(9,5))
+            │           ├── flags: newline
             │           ├── name: :blah
             │           ├── name_loc: (7,6)-(7,10) = "blah"
             │           ├── receiver: ∅

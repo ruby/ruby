@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,27))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,27))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,27))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -19,22 +21,26 @@
             │           ├── opening_loc: (1,4)-(1,5) = "\""
             │           ├── parts: (length: 1)
             │           │   └── @ EmbeddedStatementsNode (location: (1,5)-(1,18))
+            │           │       ├── flags: ∅
             │           │       ├── opening_loc: (1,5)-(1,7) = "\#{"
             │           │       ├── statements:
             │           │       │   @ StatementsNode (location: (1,7)-(1,17))
+            │           │       │   ├── flags: ∅
             │           │       │   └── body: (length: 1)
             │           │       │       └── @ CallNode (location: (1,7)-(1,17))
             │           │       │           ├── flags: ∅
             │           │       │           ├── receiver:
             │           │       │           │   @ ParenthesesNode (location: (1,7)-(1,12))
+            │           │       │           │   ├── flags: ∅
             │           │       │           │   ├── body:
             │           │       │           │   │   @ StatementsNode (location: (1,8)-(1,11))
+            │           │       │           │   │   ├── flags: ∅
             │           │       │           │   │   └── body: (length: 1)
             │           │       │           │   │       └── @ CallNode (location: (1,8)-(1,11))
-            │           │       │           │   │           ├── flags: ∅
+            │           │       │           │   │           ├── flags: newline
             │           │       │           │   │           ├── receiver:
             │           │       │           │   │           │   @ IntegerNode (location: (1,8)-(1,9))
-            │           │       │           │   │           │   ├── flags: decimal
+            │           │       │           │   │           │   ├── flags: static_literal, decimal
             │           │       │           │   │           │   └── value: 1
             │           │       │           │   │           ├── call_operator_loc: ∅
             │           │       │           │   │           ├── name: :+
@@ -45,7 +51,7 @@
             │           │       │           │   │           │   ├── flags: ∅
             │           │       │           │   │           │   └── arguments: (length: 1)
             │           │       │           │   │           │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │           │       │           │   │           │           ├── flags: decimal
+            │           │       │           │   │           │           ├── flags: static_literal, decimal
             │           │       │           │   │           │           └── value: 1
             │           │       │           │   │           ├── closing_loc: ∅
             │           │       │           │   │           └── block: ∅
@@ -63,6 +69,7 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,20)-(1,27))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

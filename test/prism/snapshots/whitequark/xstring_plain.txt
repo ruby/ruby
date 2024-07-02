@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ XStringNode (location: (1,0)-(1,8))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,1) = "`"
             ├── content_loc: (1,1)-(1,7) = "foobar"
             ├── closing_loc: (1,7)-(1,8) = "`"

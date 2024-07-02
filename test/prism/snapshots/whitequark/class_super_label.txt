@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,20))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ClassNode (location: (1,0)-(1,20))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (1,0)-(1,5) = "class"
             ├── constant_path:
             │   @ ConstantReadNode (location: (1,6)-(1,9))
+            │   ├── flags: ∅
             │   └── name: :Foo
             ├── inheritance_operator_loc: (1,10)-(1,11) = "<"
             ├── superclass:
@@ -23,7 +27,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ SymbolNode (location: (1,13)-(1,15))
-            │   │           ├── flags: forced_us_ascii_encoding
+            │   │           ├── flags: static_literal, forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,13)-(1,14) = ":"
             │   │           ├── value_loc: (1,14)-(1,15) = "b"
             │   │           ├── closing_loc: ∅

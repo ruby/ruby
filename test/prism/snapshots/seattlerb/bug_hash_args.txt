@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,19))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,19))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,19))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -15,7 +17,7 @@
             │   ├── flags: contains_keywords
             │   └── arguments: (length: 2)
             │       ├── @ SymbolNode (location: (1,4)-(1,8))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: (1,4)-(1,5) = ":"
             │       │   ├── value_loc: (1,5)-(1,8) = "bar"
             │       │   ├── closing_loc: ∅
@@ -24,15 +26,17 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,10)-(1,18))
+            │                   ├── flags: static_literal
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,10)-(1,14))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,10)-(1,13) = "baz"
             │                   │   ├── closing_loc: (1,13)-(1,14) = ":"
             │                   │   └── unescaped: "baz"
             │                   ├── value:
             │                   │   @ NilNode (location: (1,15)-(1,18))
+            │                   │   └── flags: static_literal
             │                   └── operator_loc: ∅
             ├── closing_loc: (1,18)-(1,19) = ")"
             └── block: ∅

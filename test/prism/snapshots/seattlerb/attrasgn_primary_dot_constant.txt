@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,7))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,7))
-            ├── flags: attribute_write
+            ├── flags: newline, attribute_write
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
             │   ├── flags: variable_call, ignore_visibility
@@ -25,7 +27,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,6)-(1,7))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 1
             ├── closing_loc: ∅
             └── block: ∅

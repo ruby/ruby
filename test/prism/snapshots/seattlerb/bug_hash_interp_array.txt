@@ -1,24 +1,30 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ HashNode (location: (1,0)-(1,13))
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,1) = "{"
             ├── elements: (length: 1)
             │   └── @ AssocNode (location: (1,2)-(1,11))
+            │       ├── flags: ∅
             │       ├── key:
             │       │   @ InterpolatedSymbolNode (location: (1,2)-(1,8))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: (1,2)-(1,3) = "\""
             │       │   ├── parts: (length: 1)
             │       │   │   └── @ EmbeddedStatementsNode (location: (1,3)-(1,6))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── opening_loc: (1,3)-(1,5) = "\#{"
             │       │   │       ├── statements: ∅
             │       │   │       └── closing_loc: (1,5)-(1,6) = "}"
             │       │   └── closing_loc: (1,6)-(1,8) = "\":"
             │       ├── value:
             │       │   @ ArrayNode (location: (1,9)-(1,11))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: static_literal
             │       │   ├── elements: (length: 0)
             │       │   ├── opening_loc: (1,9)-(1,10) = "["
             │       │   └── closing_loc: (1,10)-(1,11) = "]"

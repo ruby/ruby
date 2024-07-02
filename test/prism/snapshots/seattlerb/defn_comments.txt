@@ -1,9 +1,12 @@
 @ ProgramNode (location: (4,0)-(5,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (4,0)-(5,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (4,0)-(5,3))
+            ├── flags: newline
             ├── name: :blah
             ├── name_loc: (4,4)-(4,8) = "blah"
             ├── receiver: ∅

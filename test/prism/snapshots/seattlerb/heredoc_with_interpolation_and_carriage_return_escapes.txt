@@ -1,25 +1,29 @@
 @ ProgramNode (location: (1,0)-(1,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,5))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,5))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,5) = "<<EOS"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (2,0)-(2,5))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2,0)-(2,5) = "foo\\r"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo\r"
             │   ├── @ EmbeddedVariableNode (location: (2,5)-(2,10))
+            │   │   ├── flags: ∅
             │   │   ├── operator_loc: (2,5)-(2,6) = "#"
             │   │   └── variable:
             │   │       @ InstanceVariableReadNode (location: (2,6)-(2,10))
+            │   │       ├── flags: ∅
             │   │       └── name: :@bar
             │   └── @ StringNode (location: (2,10)-(3,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (2,10)-(3,0) = "\n"
             │       ├── closing_loc: ∅

@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,41))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,41))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,41))
+            ├── flags: newline
             ├── name: :a
             ├── name_loc: (1,4)-(1,5) = "a"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,18))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 3)
             │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
             │   │   │   ├── flags: ∅
@@ -25,12 +29,14 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ ForwardingParameterNode (location: (1,15)-(1,18))
+            │   │   └── flags: ∅
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,21)-(1,36))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,21)-(1,36))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :b
@@ -41,15 +47,17 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 3)
             │           │       ├── @ SymbolNode (location: (1,23)-(1,27))
-            │           │       │   ├── flags: forced_us_ascii_encoding
+            │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │           │       │   ├── opening_loc: (1,23)-(1,24) = ":"
             │           │       │   ├── value_loc: (1,24)-(1,27) = "get"
             │           │       │   ├── closing_loc: ∅
             │           │       │   └── unescaped: "get"
             │           │       ├── @ LocalVariableReadNode (location: (1,29)-(1,30))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── name: :z
             │           │       │   └── depth: 0
             │           │       └── @ ForwardingArgumentsNode (location: (1,32)-(1,35))
+            │           │           └── flags: ∅
             │           ├── closing_loc: (1,35)-(1,36) = ")"
             │           └── block: ∅
             ├── locals: [:x, :y, :z]

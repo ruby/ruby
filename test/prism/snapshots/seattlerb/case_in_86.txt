@@ -1,21 +1,24 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ ArrayNode (location: (1,5)-(1,13))
-            │   ├── flags: ∅
+            │   ├── flags: static_literal
             │   ├── elements: (length: 2)
             │   │   ├── @ SymbolNode (location: (1,6)-(1,8))
-            │   │   │   ├── flags: forced_us_ascii_encoding
+            │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   │   ├── opening_loc: (1,6)-(1,7) = ":"
             │   │   │   ├── value_loc: (1,7)-(1,8) = "a"
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── unescaped: "a"
             │   │   └── @ SymbolNode (location: (1,10)-(1,12))
-            │   │       ├── flags: forced_us_ascii_encoding
+            │   │       ├── flags: static_literal, forced_us_ascii_encoding
             │   │       ├── opening_loc: (1,10)-(1,11) = ":"
             │   │       ├── value_loc: (1,11)-(1,12) = "b"
             │   │       ├── closing_loc: ∅
@@ -24,17 +27,21 @@
             │   └── closing_loc: (1,12)-(1,13) = "]"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,25))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,16))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ ConstantPathNode (location: (2,3)-(2,13))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── parent: ∅
             │       │   │       ├── name: :NilClass
             │       │   │       ├── delimiter_loc: (2,3)-(2,5) = "::"
             │       │   │       └── name_loc: (2,5)-(2,13) = "NilClass"
             │       │   ├── rest:
             │       │   │   @ SplatNode (location: (2,15)-(2,16))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,15)-(2,16) = "*"
             │       │   │   └── expression: ∅
             │       │   ├── posts: (length: 0)
@@ -42,8 +49,10 @@
             │       │   └── closing_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,22)-(2,25))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ NilNode (location: (2,22)-(2,25))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: (2,17)-(2,21) = "then"
             ├── consequent: ∅

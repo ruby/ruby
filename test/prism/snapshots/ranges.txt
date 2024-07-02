@@ -1,49 +1,55 @@
 @ ProgramNode (location: (1,0)-(49,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(49,7))
+    ├── flags: ∅
     └── body: (length: 25)
         ├── @ ParenthesesNode (location: (1,0)-(1,6))
+        │   ├── flags: newline
         │   ├── body:
         │   │   @ StatementsNode (location: (1,1)-(1,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RangeNode (location: (1,1)-(1,5))
-        │   │           ├── flags: exclude_end
+        │   │           ├── flags: newline, static_literal, exclude_end
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (1,4)-(1,5))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 2
         │   │           └── operator_loc: (1,1)-(1,4) = "..."
         │   ├── opening_loc: (1,0)-(1,1) = "("
         │   └── closing_loc: (1,5)-(1,6) = ")"
         ├── @ ParenthesesNode (location: (3,0)-(3,5))
+        │   ├── flags: newline
         │   ├── body:
         │   │   @ StatementsNode (location: (3,1)-(3,4))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RangeNode (location: (3,1)-(3,4))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline, static_literal
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (3,3)-(3,4))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 2
         │   │           └── operator_loc: (3,1)-(3,3) = ".."
         │   ├── opening_loc: (3,0)-(3,1) = "("
         │   └── closing_loc: (3,4)-(3,5) = ")"
         ├── @ RangeNode (location: (5,0)-(5,5))
-        │   ├── flags: exclude_end
+        │   ├── flags: newline, static_literal, exclude_end
         │   ├── left:
         │   │   @ IntegerNode (location: (5,0)-(5,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (5,4)-(5,5))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 2
         │   └── operator_loc: (5,1)-(5,4) = "..."
         ├── @ CallNode (location: (7,0)-(7,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (7,0)-(7,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -64,22 +70,24 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ RangeNode (location: (7,4)-(7,8))
-        │   │           ├── flags: exclude_end
+        │   │           ├── flags: static_literal, exclude_end
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (7,7)-(7,8))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 2
         │   │           └── operator_loc: (7,4)-(7,7) = "..."
         │   ├── closing_loc: (7,8)-(7,9) = "]"
         │   └── block: ∅
         ├── @ HashNode (location: (9,0)-(9,15))
+        │   ├── flags: newline
         │   ├── opening_loc: (9,0)-(9,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (9,2)-(9,13))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (9,2)-(9,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (9,2)-(9,5) = "foo"
         │   │       │   ├── closing_loc: (9,5)-(9,6) = ":"
@@ -103,37 +111,41 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (9,14)-(9,15) = "}"
         ├── @ ParenthesesNode (location: (11,0)-(11,6))
+        │   ├── flags: newline
         │   ├── body:
         │   │   @ StatementsNode (location: (11,1)-(11,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RangeNode (location: (11,1)-(11,5))
-        │   │           ├── flags: exclude_end
+        │   │           ├── flags: newline, static_literal, exclude_end
         │   │           ├── left:
         │   │           │   @ IntegerNode (location: (11,1)-(11,2))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           ├── right: ∅
         │   │           └── operator_loc: (11,2)-(11,5) = "..."
         │   ├── opening_loc: (11,0)-(11,1) = "("
         │   └── closing_loc: (11,5)-(11,6) = ")"
         ├── @ RangeNode (location: (13,0)-(13,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── left:
         │   │   @ IntegerNode (location: (13,0)-(13,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── right:
         │   │   @ IntegerNode (location: (13,3)-(13,4))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 2
         │   └── operator_loc: (13,1)-(13,3) = ".."
         ├── @ HashNode (location: (15,0)-(15,14))
+        │   ├── flags: newline
         │   ├── opening_loc: (15,0)-(15,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (15,2)-(15,12))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (15,2)-(15,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (15,2)-(15,5) = "foo"
         │   │       │   ├── closing_loc: (15,5)-(15,6) = ":"
@@ -157,58 +169,61 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (15,13)-(15,14) = "}"
         ├── @ ParenthesesNode (location: (17,0)-(17,5))
+        │   ├── flags: newline
         │   ├── body:
         │   │   @ StatementsNode (location: (17,1)-(17,4))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RangeNode (location: (17,1)-(17,4))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline, static_literal
         │   │           ├── left:
         │   │           │   @ IntegerNode (location: (17,1)-(17,2))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           ├── right: ∅
         │   │           └── operator_loc: (17,2)-(17,4) = ".."
         │   ├── opening_loc: (17,0)-(17,1) = "("
         │   └── closing_loc: (17,4)-(17,5) = ")"
         ├── @ RangeNode (location: (19,0)-(19,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ IntegerNode (location: (19,0)-(19,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── right:
         │   │   @ RangeNode (location: (19,5)-(19,8))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left: ∅
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (19,7)-(19,8))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── operator_loc: (19,5)-(19,7) = ".."
         │   └── operator_loc: (19,2)-(19,4) = ".."
         ├── @ AndNode (location: (21,0)-(21,8))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ RangeNode (location: (21,0)-(21,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (21,0)-(21,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (21,1)-(21,3) = ".."
         │   ├── right:
         │   │   @ IntegerNode (location: (21,7)-(21,8))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 2
         │   └── operator_loc: (21,4)-(21,6) = "&&"
         ├── @ CallNode (location: (23,0)-(23,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (23,0)-(23,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (23,0)-(23,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (23,1)-(23,3) = ".."
@@ -221,18 +236,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (23,7)-(23,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (25,0)-(25,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (25,0)-(25,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (25,1)-(25,3) = ".."
@@ -245,18 +260,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (25,7)-(25,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (27,0)-(27,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (27,0)-(27,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (27,0)-(27,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (27,1)-(27,3) = ".."
@@ -269,18 +284,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (27,8)-(27,9))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (29,0)-(29,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (29,0)-(29,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (29,0)-(29,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (29,1)-(29,3) = ".."
@@ -293,18 +308,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (29,8)-(29,9))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (31,0)-(31,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (31,0)-(31,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (31,0)-(31,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (31,1)-(31,3) = ".."
@@ -317,18 +332,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (31,7)-(31,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (33,0)-(33,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (33,0)-(33,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (33,0)-(33,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (33,1)-(33,3) = ".."
@@ -341,18 +356,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (33,7)-(33,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,7))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver:
         │   │   @ RangeNode (location: (35,0)-(35,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (35,0)-(35,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (35,1)-(35,3) = ".."
@@ -365,18 +380,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (35,6)-(35,7))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (37,0)-(37,7))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver:
         │   │   @ RangeNode (location: (37,0)-(37,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (37,0)-(37,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (37,1)-(37,3) = ".."
@@ -389,18 +404,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (37,6)-(37,7))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver:
         │   │   @ RangeNode (location: (39,0)-(39,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (39,0)-(39,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (39,1)-(39,3) = ".."
@@ -413,18 +428,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (39,7)-(39,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (41,0)-(41,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver:
         │   │   @ RangeNode (location: (41,0)-(41,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (41,0)-(41,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (41,1)-(41,3) = ".."
@@ -437,18 +452,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (41,7)-(41,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (43,0)-(43,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (43,0)-(43,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (43,0)-(43,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (43,1)-(43,3) = ".."
@@ -461,18 +476,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (43,7)-(43,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (45,0)-(45,3))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (45,0)-(45,1))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right: ∅
         │   │   └── operator_loc: (45,1)-(45,3) = ".."
@@ -485,22 +500,22 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (45,7)-(45,8))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ RangeNode (location: (47,0)-(47,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ IntegerNode (location: (47,0)-(47,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── right:
         │   │   @ CallNode (location: (47,4)-(47,7))
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (47,6)-(47,7))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 2
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :+@
@@ -511,17 +526,17 @@
         │   │   └── block: ∅
         │   └── operator_loc: (47,1)-(47,3) = ".."
         └── @ RangeNode (location: (49,0)-(49,7))
-            ├── flags: ∅
+            ├── flags: newline
             ├── left:
             │   @ IntegerNode (location: (49,0)-(49,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── right:
             │   @ CallNode (location: (49,4)-(49,7))
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ IntegerNode (location: (49,6)-(49,7))
-            │   │   ├── flags: decimal
+            │   │   ├── flags: static_literal, decimal
             │   │   └── value: 2
             │   ├── call_operator_loc: ∅
             │   ├── name: :-@

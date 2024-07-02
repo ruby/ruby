@@ -1,12 +1,16 @@
 @ ProgramNode (location: (1,0)-(19,16))
+├── flags: ∅
 ├── locals: [:c, :d, :b, :a]
 └── statements:
     @ StatementsNode (location: (1,0)-(19,16))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ MultiWriteNode (location: (1,0)-(1,7))
+        │   ├── flags: newline
         │   ├── lefts: (length: 0)
         │   ├── rest:
         │   │   @ SplatNode (location: (1,0)-(1,1))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (1,0)-(1,1) = "*"
         │   │   └── expression: ∅
         │   ├── rights: (length: 0)
@@ -25,16 +29,20 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (3,0)-(3,13))
+        │   ├── flags: newline
         │   ├── lefts: (length: 0)
         │   ├── rest:
         │   │   @ SplatNode (location: (3,0)-(3,1))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (3,0)-(3,1) = "*"
         │   │   └── expression: ∅
         │   ├── rights: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (3,3)-(3,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :c
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (3,6)-(3,7))
+        │   │       ├── flags: ∅
         │   │       ├── name: :d
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
@@ -52,12 +60,15 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (5,0)-(5,8))
+        │   ├── flags: newline
         │   ├── lefts: (length: 0)
         │   ├── rest:
         │   │   @ SplatNode (location: (5,0)-(5,2))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (5,0)-(5,1) = "*"
         │   │   └── expression:
         │   │       @ LocalVariableTargetNode (location: (5,1)-(5,2))
+        │   │       ├── flags: ∅
         │   │       ├── name: :b
         │   │       └── depth: 0
         │   ├── rights: (length: 0)
@@ -76,16 +87,20 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (7,0)-(7,11))
+        │   ├── flags: newline
         │   ├── lefts: (length: 0)
         │   ├── rest:
         │   │   @ SplatNode (location: (7,0)-(7,2))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (7,0)-(7,1) = "*"
         │   │   └── expression:
         │   │       @ LocalVariableTargetNode (location: (7,1)-(7,2))
+        │   │       ├── flags: ∅
         │   │       ├── name: :b
         │   │       └── depth: 0
         │   ├── rights: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (7,4)-(7,5))
+        │   │       ├── flags: ∅
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
@@ -103,10 +118,13 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (9,0)-(9,18))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ InstanceVariableTargetNode (location: (9,0)-(9,4))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :@foo
         │   │   └── @ ClassVariableTargetNode (location: (9,6)-(9,11))
+        │   │       ├── flags: ∅
         │   │       └── name: :@@bar
         │   ├── rest: ∅
         │   ├── rights: (length: 0)
@@ -118,6 +136,7 @@
         │       ├── flags: contains_splat
         │       ├── elements: (length: 1)
         │       │   └── @ SplatNode (location: (9,14)-(9,18))
+        │       │       ├── flags: ∅
         │       │       ├── operator_loc: (9,14)-(9,15) = "*"
         │       │       └── expression:
         │       │           @ CallNode (location: (9,15)-(9,18))
@@ -133,12 +152,15 @@
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (11,0)-(11,10))
+        │   ├── flags: newline
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (11,0)-(11,1))
+        │   │       ├── flags: ∅
         │   │       ├── name: :a
         │   │       └── depth: 0
         │   ├── rest:
         │   │   @ SplatNode (location: (11,3)-(11,4))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (11,3)-(11,4) = "*"
         │   │   └── expression: ∅
         │   ├── rights: (length: 0)
@@ -157,16 +179,20 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (13,0)-(13,13))
+        │   ├── flags: newline
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (13,0)-(13,1))
+        │   │       ├── flags: ∅
         │   │       ├── name: :a
         │   │       └── depth: 0
         │   ├── rest:
         │   │   @ SplatNode (location: (13,3)-(13,4))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (13,3)-(13,4) = "*"
         │   │   └── expression: ∅
         │   ├── rights: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (13,6)-(13,7))
+        │   │       ├── flags: ∅
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
@@ -184,15 +210,19 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (15,0)-(15,11))
+        │   ├── flags: newline
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (15,0)-(15,1))
+        │   │       ├── flags: ∅
         │   │       ├── name: :a
         │   │       └── depth: 0
         │   ├── rest:
         │   │   @ SplatNode (location: (15,3)-(15,5))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (15,3)-(15,4) = "*"
         │   │   └── expression:
         │   │       @ LocalVariableTargetNode (location: (15,4)-(15,5))
+        │   │       ├── flags: ∅
         │   │       ├── name: :b
         │   │       └── depth: 0
         │   ├── rights: (length: 0)
@@ -211,19 +241,24 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         ├── @ MultiWriteNode (location: (17,0)-(17,14))
+        │   ├── flags: newline
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (17,0)-(17,1))
+        │   │       ├── flags: ∅
         │   │       ├── name: :a
         │   │       └── depth: 0
         │   ├── rest:
         │   │   @ SplatNode (location: (17,3)-(17,5))
+        │   │   ├── flags: ∅
         │   │   ├── operator_loc: (17,3)-(17,4) = "*"
         │   │   └── expression:
         │   │       @ LocalVariableTargetNode (location: (17,4)-(17,5))
+        │   │       ├── flags: ∅
         │   │       ├── name: :b
         │   │       └── depth: 0
         │   ├── rights: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (17,7)-(17,8))
+        │   │       ├── flags: ∅
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
@@ -241,11 +276,14 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         └── @ MultiWriteNode (location: (19,0)-(19,16))
+            ├── flags: newline
             ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (19,0)-(19,1))
+            │   │   ├── flags: ∅
             │   │   ├── name: :a
             │   │   └── depth: 0
             │   └── @ LocalVariableTargetNode (location: (19,3)-(19,4))
+            │       ├── flags: ∅
             │       ├── name: :b
             │       └── depth: 0
             ├── rest: ∅
@@ -258,6 +296,7 @@
                 ├── flags: contains_splat
                 ├── elements: (length: 2)
                 │   ├── @ SplatNode (location: (19,7)-(19,11))
+                │   │   ├── flags: ∅
                 │   │   ├── operator_loc: (19,7)-(19,8) = "*"
                 │   │   └── expression:
                 │   │       @ CallNode (location: (19,8)-(19,11))

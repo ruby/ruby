@@ -1,14 +1,19 @@
 @ ProgramNode (location: (1,0)-(3,1))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,1))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ MultiWriteNode (location: (1,0)-(2,5))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (1,0)-(1,1))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :a
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (2,0)-(2,1))
+        │   │       ├── flags: ∅
         │   │       ├── name: :b
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -28,7 +33,7 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         └── @ CallNode (location: (3,0)-(3,1))
-            ├── flags: variable_call, ignore_visibility
+            ├── flags: newline, variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :d

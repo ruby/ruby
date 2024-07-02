@@ -1,17 +1,23 @@
 @ ProgramNode (location: (1,0)-(1,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,10))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ IfNode (location: (1,0)-(1,10))
+            ├── flags: newline
             ├── if_keyword_loc: (1,3)-(1,5) = "if"
             ├── predicate:
             │   @ TrueNode (location: (1,6)-(1,10))
+            │   └── flags: static_literal
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (1,0)-(1,3))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ FloatNode (location: (1,0)-(1,3))
+            │           ├── flags: newline, static_literal
             │           └── value: 1.0
             ├── consequent: ∅
             └── end_keyword_loc: ∅

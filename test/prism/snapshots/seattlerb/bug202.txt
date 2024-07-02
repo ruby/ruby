@@ -1,22 +1,26 @@
 @ ProgramNode (location: (1,0)-(2,10))
+├── flags: ∅
 ├── locals: [:测试]
 └── statements:
     @ StatementsNode (location: (1,0)-(2,10))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ GlobalVariableWriteNode (location: (1,0)-(1,11))
+        │   ├── flags: newline
         │   ├── name: :$测试
         │   ├── name_loc: (1,0)-(1,7) = "$测试"
         │   ├── value:
         │   │   @ IntegerNode (location: (1,10)-(1,11))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (1,8)-(1,9) = "="
         └── @ LocalVariableWriteNode (location: (2,0)-(2,10))
+            ├── flags: newline
             ├── name: :测试
             ├── depth: 0
             ├── name_loc: (2,0)-(2,6) = "测试"
             ├── value:
             │   @ IntegerNode (location: (2,9)-(2,10))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             └── operator_loc: (2,7)-(2,8) = "="

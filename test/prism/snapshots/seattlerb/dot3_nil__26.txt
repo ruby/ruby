@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,4))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ RangeNode (location: (1,0)-(1,4))
-            ├── flags: exclude_end
+            ├── flags: newline, exclude_end
             ├── left:
             │   @ CallNode (location: (1,0)-(1,1))
             │   ├── flags: variable_call, ignore_visibility

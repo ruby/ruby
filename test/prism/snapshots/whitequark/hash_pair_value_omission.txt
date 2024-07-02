@@ -1,39 +1,48 @@
 @ ProgramNode (location: (1,0)-(5,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,7))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ HashNode (location: (1,0)-(1,6))
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (1,1)-(1,5))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (1,1)-(1,5))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (1,1)-(1,4) = "BAR"
         │   │       │   ├── closing_loc: (1,4)-(1,5) = ":"
         │   │       │   └── unescaped: "BAR"
         │   │       ├── value:
         │   │       │   @ ImplicitNode (location: (1,1)-(1,5))
+        │   │       │   ├── flags: ∅
         │   │       │   └── value:
         │   │       │       @ ConstantReadNode (location: (1,1)-(1,5))
+        │   │       │       ├── flags: ∅
         │   │       │       └── name: :BAR
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (1,5)-(1,6) = "}"
         ├── @ HashNode (location: (3,0)-(3,8))
+        │   ├── flags: newline
         │   ├── opening_loc: (3,0)-(3,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (3,1)-(3,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (3,1)-(3,3))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (3,1)-(3,2) = "a"
         │   │   │   │   ├── closing_loc: (3,2)-(3,3) = ":"
         │   │   │   │   └── unescaped: "a"
         │   │   │   ├── value:
         │   │   │   │   @ ImplicitNode (location: (3,1)-(3,3))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── value:
         │   │   │   │       @ CallNode (location: (3,1)-(3,3))
         │   │   │   │       ├── flags: ignore_visibility
@@ -47,15 +56,17 @@
         │   │   │   │       └── block: ∅
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (3,5)-(3,7))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (3,5)-(3,7))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (3,5)-(3,6) = "b"
         │   │       │   ├── closing_loc: (3,6)-(3,7) = ":"
         │   │       │   └── unescaped: "b"
         │   │       ├── value:
         │   │       │   @ ImplicitNode (location: (3,5)-(3,7))
+        │   │       │   ├── flags: ∅
         │   │       │   └── value:
         │   │       │       @ CallNode (location: (3,5)-(3,7))
         │   │       │       ├── flags: ignore_visibility
@@ -70,18 +81,21 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (3,7)-(3,8) = "}"
         └── @ HashNode (location: (5,0)-(5,7))
+            ├── flags: newline
             ├── opening_loc: (5,0)-(5,1) = "{"
             ├── elements: (length: 1)
             │   └── @ AssocNode (location: (5,1)-(5,6))
+            │       ├── flags: ∅
             │       ├── key:
             │       │   @ SymbolNode (location: (5,1)-(5,6))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (5,1)-(5,5) = "puts"
             │       │   ├── closing_loc: (5,5)-(5,6) = ":"
             │       │   └── unescaped: "puts"
             │       ├── value:
             │       │   @ ImplicitNode (location: (5,1)-(5,6))
+            │       │   ├── flags: ∅
             │       │   └── value:
             │       │       @ CallNode (location: (5,1)-(5,6))
             │       │       ├── flags: ignore_visibility

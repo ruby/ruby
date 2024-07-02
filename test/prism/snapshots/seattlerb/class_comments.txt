@@ -1,20 +1,26 @@
 @ ProgramNode (location: (4,0)-(9,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (4,0)-(9,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ClassNode (location: (4,0)-(9,3))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (4,0)-(4,5) = "class"
             ├── constant_path:
             │   @ ConstantReadNode (location: (4,6)-(4,7))
+            │   ├── flags: ∅
             │   └── name: :X
             ├── inheritance_operator_loc: ∅
             ├── superclass: ∅
             ├── body:
             │   @ StatementsNode (location: (6,2)-(8,5))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ DefNode (location: (6,2)-(8,5))
+            │           ├── flags: newline
             │           ├── name: :blah
             │           ├── name_loc: (6,6)-(6,10) = "blah"
             │           ├── receiver: ∅

@@ -1,26 +1,34 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ClassNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (1,0)-(1,5) = "class"
             ├── constant_path:
             │   @ ConstantReadNode (location: (1,6)-(1,7))
+            │   ├── flags: ∅
             │   └── name: :X
             ├── inheritance_operator_loc: ∅
             ├── superclass: ∅
             ├── body:
             │   @ StatementsNode (location: (2,2)-(2,21))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ DefNode (location: (2,2)-(2,21))
+            │           ├── flags: newline
             │           ├── name: :==
             │           ├── name_loc: (2,11)-(2,13) = "=="
             │           ├── receiver:
             │           │   @ SelfNode (location: (2,6)-(2,10))
+            │           │   └── flags: ∅
             │           ├── parameters:
             │           │   @ ParametersNode (location: (2,14)-(2,15))
+            │           │   ├── flags: ∅
             │           │   ├── requireds: (length: 1)
             │           │   │   └── @ RequiredParameterNode (location: (2,14)-(2,15))
             │           │   │       ├── flags: ∅
@@ -33,9 +41,10 @@
             │           │   └── block: ∅
             │           ├── body:
             │           │   @ StatementsNode (location: (2,19)-(2,21))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,19)-(2,21))
-            │           │           ├── flags: decimal
+            │           │           ├── flags: newline, static_literal, decimal
             │           │           └── value: 42
             │           ├── locals: [:o]
             │           ├── def_keyword_loc: (2,2)-(2,5) = "def"

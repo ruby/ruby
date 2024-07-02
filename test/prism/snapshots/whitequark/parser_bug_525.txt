@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,32))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,32))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,32))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :m1
@@ -18,9 +20,10 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,3)-(1,11))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,3)-(1,5))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,3)-(1,4) = ":"
             │                   │   ├── value_loc: (1,4)-(1,5) = "k"
             │                   │   ├── closing_loc: ∅
@@ -40,13 +43,15 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,12)-(1,32))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,16)-(1,27))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,16)-(1,27))
-                │           ├── flags: ignore_visibility
+                │           ├── flags: newline, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :m3
@@ -56,6 +61,7 @@
                 │           ├── closing_loc: (1,19)-(1,20) = ")"
                 │           └── block:
                 │               @ BlockNode (location: (1,21)-(1,27))
+                │               ├── flags: ∅
                 │               ├── locals: []
                 │               ├── parameters: ∅
                 │               ├── body: ∅

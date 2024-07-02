@@ -1,21 +1,26 @@
 @ ProgramNode (location: (1,0)-(93,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(93,13))
+    ├── flags: ∅
     └── body: (length: 47)
         ├── @ SymbolNode (location: (1,0)-(1,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (1,0)-(1,2) = ":'"
         │   ├── value_loc: (1,2)-(1,5) = "abc"
         │   ├── closing_loc: (1,5)-(1,6) = "'"
         │   └── unescaped: "abc"
         ├── @ InterpolatedSymbolNode (location: (3,0)-(3,9))
+        │   ├── flags: newline
         │   ├── opening_loc: (3,0)-(3,2) = ":\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (3,2)-(3,8))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (3,2)-(3,4) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (3,4)-(3,7))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ CallNode (location: (3,4)-(3,7))
         │   │       │           ├── flags: variable_call, ignore_visibility
@@ -30,47 +35,50 @@
         │   │       └── closing_loc: (3,7)-(3,8) = "}"
         │   └── closing_loc: (3,8)-(3,9) = "\""
         ├── @ InterpolatedSymbolNode (location: (5,0)-(5,10))
+        │   ├── flags: newline
         │   ├── opening_loc: (5,0)-(5,2) = ":\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (5,2)-(5,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (5,2)-(5,5) = "abc"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "abc"
         │   │   └── @ EmbeddedStatementsNode (location: (5,5)-(5,9))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (5,5)-(5,7) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (5,7)-(5,8))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ IntegerNode (location: (5,7)-(5,8))
-        │   │       │           ├── flags: decimal
+        │   │       │           ├── flags: static_literal, decimal
         │   │       │           └── value: 1
         │   │       └── closing_loc: (5,8)-(5,9) = "}"
         │   └── closing_loc: (5,9)-(5,10) = "\""
         ├── @ ArrayNode (location: (7,0)-(7,20))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 4)
         │   │   ├── @ SymbolNode (location: (7,1)-(7,4))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── opening_loc: (7,1)-(7,2) = ":"
         │   │   │   ├── value_loc: (7,2)-(7,4) = "Υ"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "Υ"
         │   │   ├── @ SymbolNode (location: (7,6)-(7,9))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── opening_loc: (7,6)-(7,7) = ":"
         │   │   │   ├── value_loc: (7,7)-(7,9) = "ά"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "ά"
         │   │   ├── @ SymbolNode (location: (7,11)-(7,14))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── opening_loc: (7,11)-(7,12) = ":"
         │   │   │   ├── value_loc: (7,12)-(7,14) = "ŗ"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "ŗ"
         │   │   └── @ SymbolNode (location: (7,16)-(7,19))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: static_literal
         │   │       ├── opening_loc: (7,16)-(7,17) = ":"
         │   │       ├── value_loc: (7,17)-(7,19) = "ρ"
         │   │       ├── closing_loc: ∅
@@ -78,113 +86,115 @@
         │   ├── opening_loc: (7,0)-(7,1) = "["
         │   └── closing_loc: (7,19)-(7,20) = "]"
         ├── @ SymbolNode (location: (9,0)-(9,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (9,0)-(9,1) = ":"
         │   ├── value_loc: (9,1)-(9,3) = "-@"
         │   ├── closing_loc: ∅
         │   └── unescaped: "-@"
         ├── @ SymbolNode (location: (11,0)-(11,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (11,0)-(11,1) = ":"
         │   ├── value_loc: (11,1)-(11,2) = "-"
         │   ├── closing_loc: ∅
         │   └── unescaped: "-"
         ├── @ SymbolNode (location: (13,0)-(13,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (13,0)-(13,1) = ":"
         │   ├── value_loc: (13,1)-(13,2) = "%"
         │   ├── closing_loc: ∅
         │   └── unescaped: "%"
         ├── @ SymbolNode (location: (15,0)-(15,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (15,0)-(15,1) = ":"
         │   ├── value_loc: (15,1)-(15,2) = "|"
         │   ├── closing_loc: ∅
         │   └── unescaped: "|"
         ├── @ SymbolNode (location: (17,0)-(17,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (17,0)-(17,1) = ":"
         │   ├── value_loc: (17,1)-(17,3) = "+@"
         │   ├── closing_loc: ∅
         │   └── unescaped: "+@"
         ├── @ SymbolNode (location: (19,0)-(19,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (19,0)-(19,1) = ":"
         │   ├── value_loc: (19,1)-(19,2) = "+"
         │   ├── closing_loc: ∅
         │   └── unescaped: "+"
         ├── @ SymbolNode (location: (21,0)-(21,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (21,0)-(21,1) = ":"
         │   ├── value_loc: (21,1)-(21,2) = "/"
         │   ├── closing_loc: ∅
         │   └── unescaped: "/"
         ├── @ SymbolNode (location: (23,0)-(23,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (23,0)-(23,1) = ":"
         │   ├── value_loc: (23,1)-(23,3) = "**"
         │   ├── closing_loc: ∅
         │   └── unescaped: "**"
         ├── @ SymbolNode (location: (25,0)-(25,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (25,0)-(25,1) = ":"
         │   ├── value_loc: (25,1)-(25,2) = "*"
         │   ├── closing_loc: ∅
         │   └── unescaped: "*"
         ├── @ SymbolNode (location: (27,0)-(27,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (27,0)-(27,1) = ":"
         │   ├── value_loc: (27,1)-(27,3) = "~@"
         │   ├── closing_loc: ∅
         │   └── unescaped: "~"
         ├── @ ArrayNode (location: (29,0)-(29,16))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 4)
         │   │   ├── @ IntegerNode (location: (29,1)-(29,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── @ FloatNode (location: (29,4)-(29,7))
+        │   │   │   ├── flags: static_literal
         │   │   │   └── value: 1.0
         │   │   ├── @ RationalNode (location: (29,9)-(29,11))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   ├── numerator: 1
         │   │   │   └── denominator: 1
         │   │   └── @ ImaginaryNode (location: (29,13)-(29,15))
+        │   │       ├── flags: static_literal
         │   │       └── numeric:
         │   │           @ IntegerNode (location: (29,13)-(29,14))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── opening_loc: (29,0)-(29,1) = "["
         │   └── closing_loc: (29,15)-(29,16) = "]"
         ├── @ SymbolNode (location: (31,0)-(31,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (31,0)-(31,1) = ":"
         │   ├── value_loc: (31,1)-(31,2) = "~"
         │   ├── closing_loc: ∅
         │   └── unescaped: "~"
         ├── @ SymbolNode (location: (33,0)-(33,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (33,0)-(33,1) = ":"
         │   ├── value_loc: (33,1)-(33,2) = "a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "a"
         ├── @ ArrayNode (location: (35,0)-(35,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 3)
         │   │   ├── @ SymbolNode (location: (35,3)-(35,4))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (35,3)-(35,4) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ SymbolNode (location: (35,5)-(35,6))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (35,5)-(35,6) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
         │   │   └── @ SymbolNode (location: (35,7)-(35,8))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (35,7)-(35,8) = "c"
         │   │       ├── closing_loc: ∅
@@ -192,28 +202,28 @@
         │   ├── opening_loc: (35,0)-(35,3) = "%i["
         │   └── closing_loc: (35,8)-(35,9) = "]"
         ├── @ ArrayNode (location: (37,0)-(37,24))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 4)
         │   │   ├── @ SymbolNode (location: (37,3)-(37,4))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (37,3)-(37,4) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ SymbolNode (location: (37,5)-(37,10))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (37,5)-(37,10) = "b\#{1}"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b\#{1}"
         │   │   ├── @ SymbolNode (location: (37,11)-(37,16))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (37,11)-(37,16) = "\#{2}c"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\#{2}c"
         │   │   └── @ SymbolNode (location: (37,17)-(37,23))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (37,17)-(37,23) = "d\#{3}f"
         │   │       ├── closing_loc: ∅
@@ -221,72 +231,81 @@
         │   ├── opening_loc: (37,0)-(37,3) = "%i["
         │   └── closing_loc: (37,23)-(37,24) = "]"
         ├── @ ArrayNode (location: (39,0)-(39,24))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 4)
         │   │   ├── @ SymbolNode (location: (39,3)-(39,4))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (39,3)-(39,4) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ InterpolatedSymbolNode (location: (39,5)-(39,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── parts: (length: 2)
         │   │   │   │   ├── @ StringNode (location: (39,5)-(39,6))
-        │   │   │   │   │   ├── flags: frozen
+        │   │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   ├── content_loc: (39,5)-(39,6) = "b"
         │   │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   │   └── unescaped: "b"
         │   │   │   │   └── @ EmbeddedStatementsNode (location: (39,6)-(39,10))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: (39,6)-(39,8) = "\#{"
         │   │   │   │       ├── statements:
         │   │   │   │       │   @ StatementsNode (location: (39,8)-(39,9))
+        │   │   │   │       │   ├── flags: ∅
         │   │   │   │       │   └── body: (length: 1)
         │   │   │   │       │       └── @ IntegerNode (location: (39,8)-(39,9))
-        │   │   │   │       │           ├── flags: decimal
+        │   │   │   │       │           ├── flags: static_literal, decimal
         │   │   │   │       │           └── value: 1
         │   │   │   │       └── closing_loc: (39,9)-(39,10) = "}"
         │   │   │   └── closing_loc: ∅
         │   │   ├── @ InterpolatedSymbolNode (location: (39,11)-(39,16))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── parts: (length: 2)
         │   │   │   │   ├── @ EmbeddedStatementsNode (location: (39,11)-(39,15))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── opening_loc: (39,11)-(39,13) = "\#{"
         │   │   │   │   │   ├── statements:
         │   │   │   │   │   │   @ StatementsNode (location: (39,13)-(39,14))
+        │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │   │       └── @ IntegerNode (location: (39,13)-(39,14))
-        │   │   │   │   │   │           ├── flags: decimal
+        │   │   │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │   │   │           └── value: 2
         │   │   │   │   │   └── closing_loc: (39,14)-(39,15) = "}"
         │   │   │   │   └── @ StringNode (location: (39,15)-(39,16))
-        │   │   │   │       ├── flags: frozen
+        │   │   │   │       ├── flags: static_literal, frozen
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (39,15)-(39,16) = "c"
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       └── unescaped: "c"
         │   │   │   └── closing_loc: ∅
         │   │   └── @ InterpolatedSymbolNode (location: (39,17)-(39,23))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── parts: (length: 3)
         │   │       │   ├── @ StringNode (location: (39,17)-(39,18))
-        │   │       │   │   ├── flags: frozen
+        │   │       │   │   ├── flags: static_literal, frozen
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── content_loc: (39,17)-(39,18) = "d"
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   └── unescaped: "d"
         │   │       │   ├── @ EmbeddedStatementsNode (location: (39,18)-(39,22))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── opening_loc: (39,18)-(39,20) = "\#{"
         │   │       │   │   ├── statements:
         │   │       │   │   │   @ StatementsNode (location: (39,20)-(39,21))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   └── body: (length: 1)
         │   │       │   │   │       └── @ IntegerNode (location: (39,20)-(39,21))
-        │   │       │   │   │           ├── flags: decimal
+        │   │       │   │   │           ├── flags: static_literal, decimal
         │   │       │   │   │           └── value: 3
         │   │       │   │   └── closing_loc: (39,21)-(39,22) = "}"
         │   │       │   └── @ StringNode (location: (39,22)-(39,23))
-        │   │       │       ├── flags: frozen
+        │   │       │       ├── flags: static_literal, frozen
         │   │       │       ├── opening_loc: ∅
         │   │       │       ├── content_loc: (39,22)-(39,23) = "f"
         │   │       │       ├── closing_loc: ∅
@@ -295,22 +314,22 @@
         │   ├── opening_loc: (39,0)-(39,3) = "%I["
         │   └── closing_loc: (39,23)-(39,24) = "]"
         ├── @ SymbolNode (location: (41,0)-(41,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (41,0)-(41,1) = ":"
         │   ├── value_loc: (41,1)-(41,4) = "@@a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "@@a"
         ├── @ SymbolNode (location: (43,0)-(43,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (43,0)-(43,1) = ":"
         │   ├── value_loc: (43,1)-(43,5) = "👍"
         │   ├── closing_loc: ∅
         │   └── unescaped: "👍"
         ├── @ ArrayNode (location: (45,0)-(45,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (45,3)-(45,6))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (45,3)-(45,6) = "a\\b"
         │   │       ├── closing_loc: ∅
@@ -318,145 +337,145 @@
         │   ├── opening_loc: (45,0)-(45,3) = "%i["
         │   └── closing_loc: (45,6)-(45,7) = "]"
         ├── @ SymbolNode (location: (47,0)-(47,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (47,0)-(47,1) = ":"
         │   ├── value_loc: (47,1)-(47,3) = "$a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "$a"
         ├── @ SymbolNode (location: (49,0)-(49,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (49,0)-(49,1) = ":"
         │   ├── value_loc: (49,1)-(49,3) = "@a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "@a"
         ├── @ SymbolNode (location: (51,0)-(51,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (51,0)-(51,1) = ":"
         │   ├── value_loc: (51,1)-(51,3) = "do"
         │   ├── closing_loc: ∅
         │   └── unescaped: "do"
         ├── @ SymbolNode (location: (53,0)-(53,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (53,0)-(53,1) = ":"
         │   ├── value_loc: (53,1)-(53,2) = "&"
         │   ├── closing_loc: ∅
         │   └── unescaped: "&"
         ├── @ SymbolNode (location: (55,0)-(55,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (55,0)-(55,1) = ":"
         │   ├── value_loc: (55,1)-(55,2) = "`"
         │   ├── closing_loc: ∅
         │   └── unescaped: "`"
         ├── @ SymbolNode (location: (57,0)-(57,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (57,0)-(57,1) = ":"
         │   ├── value_loc: (57,1)-(57,3) = "!@"
         │   ├── closing_loc: ∅
         │   └── unescaped: "!"
         ├── @ SymbolNode (location: (59,0)-(59,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (59,0)-(59,1) = ":"
         │   ├── value_loc: (59,1)-(59,3) = "!~"
         │   ├── closing_loc: ∅
         │   └── unescaped: "!~"
         ├── @ SymbolNode (location: (61,0)-(61,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (61,0)-(61,1) = ":"
         │   ├── value_loc: (61,1)-(61,2) = "!"
         │   ├── closing_loc: ∅
         │   └── unescaped: "!"
         ├── @ SymbolNode (location: (63,0)-(63,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (63,0)-(63,1) = ":"
         │   ├── value_loc: (63,1)-(63,3) = "[]"
         │   ├── closing_loc: ∅
         │   └── unescaped: "[]"
         ├── @ SymbolNode (location: (65,0)-(65,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (65,0)-(65,1) = ":"
         │   ├── value_loc: (65,1)-(65,4) = "[]="
         │   ├── closing_loc: ∅
         │   └── unescaped: "[]="
         ├── @ SymbolNode (location: (67,0)-(67,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (67,0)-(67,1) = ":"
         │   ├── value_loc: (67,1)-(67,2) = "^"
         │   ├── closing_loc: ∅
         │   └── unescaped: "^"
         ├── @ SymbolNode (location: (69,0)-(69,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (69,0)-(69,1) = ":"
         │   ├── value_loc: (69,1)-(69,3) = "=="
         │   ├── closing_loc: ∅
         │   └── unescaped: "=="
         ├── @ SymbolNode (location: (71,0)-(71,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (71,0)-(71,1) = ":"
         │   ├── value_loc: (71,1)-(71,4) = "==="
         │   ├── closing_loc: ∅
         │   └── unescaped: "==="
         ├── @ SymbolNode (location: (73,0)-(73,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (73,0)-(73,1) = ":"
         │   ├── value_loc: (73,1)-(73,3) = "=~"
         │   ├── closing_loc: ∅
         │   └── unescaped: "=~"
         ├── @ SymbolNode (location: (75,0)-(75,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (75,0)-(75,1) = ":"
         │   ├── value_loc: (75,1)-(75,3) = ">="
         │   ├── closing_loc: ∅
         │   └── unescaped: ">="
         ├── @ SymbolNode (location: (77,0)-(77,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (77,0)-(77,1) = ":"
         │   ├── value_loc: (77,1)-(77,3) = ">>"
         │   ├── closing_loc: ∅
         │   └── unescaped: ">>"
         ├── @ SymbolNode (location: (79,0)-(79,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (79,0)-(79,1) = ":"
         │   ├── value_loc: (79,1)-(79,2) = ">"
         │   ├── closing_loc: ∅
         │   └── unescaped: ">"
         ├── @ SymbolNode (location: (81,0)-(81,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (81,0)-(81,1) = ":"
         │   ├── value_loc: (81,1)-(81,4) = "<=>"
         │   ├── closing_loc: ∅
         │   └── unescaped: "<=>"
         ├── @ SymbolNode (location: (83,0)-(83,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (83,0)-(83,1) = ":"
         │   ├── value_loc: (83,1)-(83,3) = "<="
         │   ├── closing_loc: ∅
         │   └── unescaped: "<="
         ├── @ SymbolNode (location: (85,0)-(85,3))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (85,0)-(85,1) = ":"
         │   ├── value_loc: (85,1)-(85,3) = "<<"
         │   ├── closing_loc: ∅
         │   └── unescaped: "<<"
         ├── @ SymbolNode (location: (87,0)-(87,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (87,0)-(87,1) = ":"
         │   ├── value_loc: (87,1)-(87,2) = "<"
         │   ├── closing_loc: ∅
         │   └── unescaped: "<"
         ├── @ SymbolNode (location: (89,0)-(89,9))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (89,0)-(89,1) = ":"
         │   ├── value_loc: (89,1)-(89,9) = "__LINE__"
         │   ├── closing_loc: ∅
         │   └── unescaped: "__LINE__"
         ├── @ SymbolNode (location: (91,0)-(91,9))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (91,0)-(91,1) = ":"
         │   ├── value_loc: (91,1)-(91,9) = "__FILE__"
         │   ├── closing_loc: ∅
         │   └── unescaped: "__FILE__"
         └── @ SymbolNode (location: (93,0)-(93,13))
-            ├── flags: forced_us_ascii_encoding
+            ├── flags: newline, static_literal, forced_us_ascii_encoding
             ├── opening_loc: (93,0)-(93,1) = ":"
             ├── value_loc: (93,1)-(93,13) = "__ENCODING__"
             ├── closing_loc: ∅

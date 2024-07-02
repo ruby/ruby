@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(11,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(11,14))
+    ├── flags: ∅
     └── body: (length: 6)
         ├── @ DefNode (location: (1,0)-(1,14))
+        │   ├── flags: newline
         │   ├── name: :BEGIN
         │   ├── name_loc: (1,4)-(1,9) = "BEGIN"
         │   ├── receiver: ∅
@@ -17,6 +20,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1,11)-(1,14) = "end"
         ├── @ DefNode (location: (3,0)-(3,12))
+        │   ├── flags: newline
         │   ├── name: :END
         │   ├── name_loc: (3,4)-(3,7) = "END"
         │   ├── receiver: ∅
@@ -30,6 +34,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,9)-(3,12) = "end"
         ├── @ DefNode (location: (5,0)-(5,15))
+        │   ├── flags: newline
         │   ├── name: :String
         │   ├── name_loc: (5,4)-(5,10) = "String"
         │   ├── receiver: ∅
@@ -43,6 +48,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,12)-(5,15) = "end"
         ├── @ DefNode (location: (7,0)-(7,16))
+        │   ├── flags: newline
         │   ├── name: :String=
         │   ├── name_loc: (7,4)-(7,11) = "String="
         │   ├── receiver: ∅
@@ -56,6 +62,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (7,13)-(7,16) = "end"
         ├── @ DefNode (location: (9,0)-(9,12))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (9,4)-(9,7) = "foo"
         │   ├── receiver: ∅
@@ -69,6 +76,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (9,9)-(9,12) = "end"
         └── @ DefNode (location: (11,0)-(11,14))
+            ├── flags: newline
             ├── name: :until
             ├── name_loc: (11,4)-(11,9) = "until"
             ├── receiver: ∅

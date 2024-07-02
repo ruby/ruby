@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,12))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :puts
@@ -18,15 +20,17 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,5)-(1,12))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,5)-(1,9))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,5)-(1,6) = "'"
             │                   │   ├── value_loc: (1,6)-(1,7) = "a"
             │                   │   ├── closing_loc: (1,7)-(1,9) = "':"
             │                   │   └── unescaped: "a"
             │                   ├── value:
             │                   │   @ HashNode (location: (1,10)-(1,12))
+            │                   │   ├── flags: static_literal
             │                   │   ├── opening_loc: (1,10)-(1,11) = "{"
             │                   │   ├── elements: (length: 0)
             │                   │   └── closing_loc: (1,11)-(1,12) = "}"

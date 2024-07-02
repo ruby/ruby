@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,22))
+├── flags: ∅
 ├── locals: [:foo]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,22))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,22))
+            ├── flags: newline
             ├── name_loc: (1,0)-(1,3) = "foo"
             ├── binary_operator_loc: (1,4)-(1,6) = "+="
             ├── value:
             │   @ RescueModifierNode (location: (1,7)-(1,22))
+            │   ├── flags: ∅
             │   ├── expression:
             │   │   @ CallNode (location: (1,7)-(1,11))
             │   │   ├── flags: variable_call, ignore_visibility

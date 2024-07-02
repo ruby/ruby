@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(4,11))
-            ├── flags: ∅
+            ├── flags: newline
             ├── elements: (length: 5)
             │   ├── @ StringNode (location: (1,4)-(1,5))
             │   │   ├── flags: ∅
@@ -13,16 +15,18 @@
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "1"
             │   ├── @ InterpolatedStringNode (location: (1,6)-(1,12))
-            │   │   ├── flags: mutable
+            │   │   ├── flags: static_literal, mutable
             │   │   ├── opening_loc: ∅
             │   │   ├── parts: (length: 1)
             │   │   │   └── @ EmbeddedStatementsNode (location: (1,6)-(1,12))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── opening_loc: (1,6)-(1,8) = "\#{"
             │   │   │       ├── statements:
             │   │   │       │   @ StatementsNode (location: (1,8)-(1,11))
+            │   │   │       │   ├── flags: ∅
             │   │   │       │   └── body: (length: 1)
             │   │   │       │       └── @ StringNode (location: (1,8)-(1,11))
-            │   │   │       │           ├── flags: frozen
+            │   │   │       │           ├── flags: static_literal, frozen
             │   │   │       │           ├── opening_loc: (1,8)-(1,11) = "<<A"
             │   │   │       │           ├── content_loc: (2,0)-(3,0) = "2\n"
             │   │   │       │           ├── closing_loc: (3,0)-(4,0) = "A\n"
