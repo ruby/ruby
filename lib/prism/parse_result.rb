@@ -575,6 +575,7 @@ module Prism
   # This is a result specific to the `parse` and `parse_file` methods.
   class ParseResult < Result
     autoload :Comments, "prism/parse_result/comments"
+    autoload :Errors, "prism/parse_result/errors"
     autoload :Newlines, "prism/parse_result/newlines"
 
     private_constant :Comments
@@ -603,6 +604,12 @@ module Prism
     # the behavior of CRuby's `:line` tracepoint event.
     def mark_newlines!
       value.accept(Newlines.new(source.offsets.size)) # steep:ignore
+    end
+
+    # Returns a string representation of the syntax tree with the errors
+    # displayed inline.
+    def errors_format
+      Errors.new(self).format
     end
   end
 

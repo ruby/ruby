@@ -1,0 +1,4 @@
+1e1r; 1e1ri
+   ^ unexpected local variable or method, expecting end-of-input
+         ^~ unexpected local variable or method, expecting end-of-input
+

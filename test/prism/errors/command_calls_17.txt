@@ -1,0 +1,5 @@
+a ? b c : d e
+     ^ expected a `:` after the true expression of a ternary operator
+        ^ unexpected ':', expecting end-of-input
+        ^ unexpected ':', ignoring it
+

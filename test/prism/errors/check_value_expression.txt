@@ -1,0 +1,20 @@
+1 => ^(return)
+       ^~~~~~ unexpected void value expression
+while true
+  1 => ^(break)
+         ^~~~~ unexpected void value expression
+  1 => ^(next)
+         ^~~~ unexpected void value expression
+  1 => ^(redo)
+         ^~~~ unexpected void value expression
+  1 => ^(retry)
+         ^~~~~ Invalid retry without rescue
+         ^~~~~ unexpected void value expression
+  1 => ^(2 => a)
+         ^~~~~~ unexpected void value expression
+end
+1 => ^(if 1; (return) else (return) end)
+              ^~~~~~ unexpected void value expression
+1 => ^(unless 1; (return) else (return) end)
+                  ^~~~~~ unexpected void value expression
+

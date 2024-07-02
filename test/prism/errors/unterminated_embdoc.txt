@@ -1,0 +1,3 @@
+=begin
+^~~~~~ embedded document meets end of file
+

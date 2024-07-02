@@ -75,6 +75,37 @@ module Prism
       assert_warning("1 if 2..foo", "integer")
     end
 
+    def test_literal_in_conditionals
+      source = <<~RUBY
+        if (a = 2); a; end
+        if ($a = 2); end
+        if (@a = 2); end
+        if (@@a = 2); end
+        if a; elsif b = 2; b end
+        unless (a = 2); a; end
+        unless ($a = 2); end
+        unless (@a = 2); end
+        unless (@@a = 2); end
+        while (a = 2); a; end
+        while ($a = 2); end
+        while (@a = 2); end
+        while (@@a = 2); end
+        until (a = 2); a; end
+        until ($a = 2); end
+        until (@a = 2); end
+        until (@@a = 2); end
+        foo if (a, b = 2); [a, b]
+        foo if a = 2 and a
+        (@foo = 1) ? a : b
+        !(a = 2) and a
+        not a = 2 and a
+      RUBY
+
+      source.each_line(chomp: true) do |line|
+        assert_warning(line, "found '= literal' in conditional, should be ==")
+      end
+    end
+
     def test_keyword_eol
       assert_warning("if\ntrue; end", "end of line")
       assert_warning("if true\nelsif\nfalse; end", "end of line")
@@ -227,12 +258,22 @@ module Prism
       assert_warning("tap { redo; foo }", "statement not reached")
     end
 
+    def test_warnings_verbosity
+      warning = Prism.parse("def foo; END { }; end").warnings.first
+      assert_equal "END in method; use at_exit", warning.message
+      assert_equal :default, warning.level
+
+      warning = Prism.parse("foo /regexp/").warnings.first
+      assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
+      assert_equal :verbose, warning.level
+    end
+
     private
 
     def assert_warning(source, message)
       warnings = Prism.parse(source).warnings
 
-      assert_equal 1, warnings.length
+      assert_equal 1, warnings.length, "Expected only one warning in #{source.inspect}, got #{warnings.map(&:message).inspect}"
       assert_include warnings.first.message, message
 
       if defined?(RubyVM::AbstractSyntaxTree)

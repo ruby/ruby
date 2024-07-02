@@ -1,0 +1,3 @@
+?\u{3
+ ^~~~ unterminated Unicode escape
+
