@@ -236,7 +236,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,5))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ IntegerNode (location: (25,0)-(25,1))
         │   │   ├── flags: decimal
@@ -274,7 +274,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (29,0)-(29,6))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ IntegerNode (location: (29,0)-(29,1))
         │   │   ├── flags: decimal
@@ -369,7 +369,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,5))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ IntegerNode (location: (39,0)-(39,1))
         │   │   ├── flags: decimal
@@ -388,7 +388,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (41,0)-(41,6))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ IntegerNode (location: (41,0)-(41,1))
         │   │   ├── flags: decimal

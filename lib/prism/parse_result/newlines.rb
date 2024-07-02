@@ -45,7 +45,7 @@ module Prism
 
       # Mark if/unless nodes as newlines.
       def visit_if_node(node)
-        node.newline!(@lines)
+        node.newline_flag!(@lines)
         super(node)
       end
 
@@ -54,7 +54,7 @@ module Prism
       # Permit statements lists to mark newlines within themselves.
       def visit_statements_node(node)
         node.body.each do |child|
-          child.newline!(@lines)
+          child.newline_flag!(@lines)
         end
         super(node)
       end
@@ -62,93 +62,93 @@ module Prism
   end
 
   class Node
-    def newline? # :nodoc:
-      @newline ? true : false
+    def newline_flag? # :nodoc:
+      @newline_flag ? true : false
     end
 
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       line = location.start_line
       unless lines[line]
         lines[line] = true
-        @newline = true
+        @newline_flag = true
       end
     end
   end
 
   class BeginNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       # Never mark BeginNode with a newline flag, mark children instead.
     end
   end
 
   class ParenthesesNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       # Never mark ParenthesesNode with a newline flag, mark children instead.
     end
   end
 
   class IfNode < Node
-    def newline!(lines) # :nodoc:
-      predicate.newline!(lines)
+    def newline_flag!(lines) # :nodoc:
+      predicate.newline_flag!(lines)
     end
   end
 
   class UnlessNode < Node
-    def newline!(lines) # :nodoc:
-      predicate.newline!(lines)
+    def newline_flag!(lines) # :nodoc:
+      predicate.newline_flag!(lines)
     end
   end
 
   class UntilNode < Node
-    def newline!(lines) # :nodoc:
-      predicate.newline!(lines)
+    def newline_flag!(lines) # :nodoc:
+      predicate.newline_flag!(lines)
     end
   end
 
   class WhileNode < Node
-    def newline!(lines) # :nodoc:
-      predicate.newline!(lines)
+    def newline_flag!(lines) # :nodoc:
+      predicate.newline_flag!(lines)
     end
   end
 
   class RescueModifierNode < Node
-    def newline!(lines) # :nodoc:
-      expression.newline!(lines)
+    def newline_flag!(lines) # :nodoc:
+      expression.newline_flag!(lines)
     end
   end
 
   class InterpolatedMatchLastLineNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       first = parts.first
-      first.newline!(lines) if first
+      first.newline_flag!(lines) if first
     end
   end
 
   class InterpolatedRegularExpressionNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       first = parts.first
-      first.newline!(lines) if first
+      first.newline_flag!(lines) if first
     end
   end
 
   class InterpolatedStringNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       first = parts.first
-      first.newline!(lines) if first
+      first.newline_flag!(lines) if first
     end
   end
 
   class InterpolatedSymbolNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       first = parts.first
-      first.newline!(lines) if first
+      first.newline_flag!(lines) if first
     end
   end
 
   class InterpolatedXStringNode < Node
-    def newline!(lines) # :nodoc:
+    def newline_flag!(lines) # :nodoc:
       first = parts.first
-      first.newline!(lines) if first
+      first.newline_flag!(lines) if first
     end
   end
 end

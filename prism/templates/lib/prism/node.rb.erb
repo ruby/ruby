@@ -49,6 +49,21 @@ module Prism
       location.slice_lines
     end
 
+    # An bitset of flags for this node. There are certain flags that are common
+    # for all nodes, and then some nodes have specific flags.
+    attr_reader :flags
+    protected :flags
+
+    # Returns true if the node has the newline flag set.
+    def newline?
+      flags.anybits?(NodeFlags::NEWLINE)
+    end
+
+    # Returns true if the node has the static literal flag set.
+    def static_literal?
+      flags.anybits?(NodeFlags::STATIC_LITERAL)
+    end
+
     # Similar to inspect, but respects the current level of indentation given by
     # the pretty print object.
     def pretty_print(q)
@@ -167,9 +182,10 @@ module Prism
   <%- end -%>
   class <%= node.name -%> < Node
     # Initialize a new <%= node.name %> node.
-    def initialize(<%= ["source", "location", *node.fields.map(&:name)].join(", ") %>)
+    def initialize(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
       @source = source
       @location = location
+      @flags = flags
       <%- node.fields.each do |field| -%>
       <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
       raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
@@ -228,9 +244,9 @@ module Prism
       }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (<%= (["?location: Location"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
-    def copy(<%= (["location"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
-      <%= node.name %>.new(<%= ["source", "location", *node.fields.map(&:name)].join(", ") %>)
+    # def copy: (<%= (["?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (["location", "flags"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]
@@ -240,10 +256,19 @@ module Prism
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
+    <%- if (node_flags = node.flags) -%>
+    <%- node_flags.values.each do |value| -%>
+
+    # def <%= value.name.downcase %>?: () -> bool
+    def <%= value.name.downcase %>?
+      flags.anybits?(<%= node_flags.name %>::<%= value.name %>)
+    end
+    <%- end -%>
+    <%- end -%>
     <%- node.fields.each do |field| -%>
 
     <%- if field.comment.nil? -%>
-    # <%= "protected " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    # attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%- else -%>
     <%- field.each_comment_line do |line| -%>
     #<%= line %>
@@ -269,7 +294,7 @@ module Prism
       end
     end
     <%- else -%>
-    attr_reader :<%= field.name -%><%= "\n    protected :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
+    attr_reader :<%= field.name -%>
     <%- end -%>
     <%- end -%>
     <%- node.fields.each do |field| -%>
@@ -290,14 +315,6 @@ module Prism
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>&.slice
     end
-    <%- when Prism::Template::FlagsField -%>
-    <%- flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag }.values.each do |value| -%>
-
-    # def <%= value.name.downcase %>?: () -> bool
-    def <%= value.name.downcase %>?
-      <%= field.name %>.anybits?(<%= field.kind %>::<%= value.name %>)
-    end
-    <%- end -%>
     <%- end -%>
     <%- end -%>
 
@@ -337,15 +354,17 @@ module Prism
     # Implements case-equality for the node. This is effectively == but without
     # comparing the value of locations. Locations are checked only for presence.
     def ===(other)
-      other.is_a?(<%= node.name %>)<%= " &&" if node.fields.any? %>
-        <%- node.fields.each_with_index do |field, index| -%>
+      other.is_a?(<%= node.name %>)<%= " &&" if (fields = [*node.flags, *node.fields]).any? %>
+        <%- fields.each_with_index do |field, index| -%>
         <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
-        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != node.fields.length - 1 %>
+        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != fields.length - 1 %>
         <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
         (<%= field.name %>.length == other.<%= field.name %>.length) &&
-        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != node.fields.length - 1 %>
+        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::Flags) -%>
+        (flags === other.flags)<%= " &&" if index != fields.length - 1 %>
         <%- else -%>
-        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != node.fields.length - 1 %>
+        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != fields.length - 1 %>
         <%- end -%>
         <%- end -%>
     end
@@ -357,9 +376,20 @@ module Prism
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
-    <%= value.name %> = 1 << <%= index %>
+    <%= value.name %> = 1 << <%= (index + 2) %>
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end
   <%- end -%>
+
+  # The flags that are common to all nodes.
+  module NodeFlags
+    # A flag to indicate that the node is a candidate to emit a :line event
+    # through tracepoint when compiled.
+    NEWLINE = 1
+
+    # A flag to indicate that the value that the node represents is a value that
+    # can be determined at parse-time.
+    STATIC_LITERAL = 2
+  end
 end

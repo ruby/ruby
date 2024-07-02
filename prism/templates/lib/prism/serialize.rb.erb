@@ -330,7 +330,7 @@ module Prism
             <%- if node.needs_serialized_length? -%>
             load_uint32
             <%- end -%>
-            <%= node.name %>.new(<%= ["source", "location", *node.fields.map { |field|
+            <%= node.name %>.new(<%= ["source", "location", "load_varuint", *node.fields.map { |field|
               case field
               when Prism::Template::NodeField then "load_node"
               when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -342,7 +342,7 @@ module Prism
               when Prism::Template::LocationField then "load_location"
               when Prism::Template::OptionalLocationField then "load_optional_location"
               when Prism::Template::UInt8Field then "io.getbyte"
-              when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+              when Prism::Template::UInt32Field then "load_varuint"
               when Prism::Template::IntegerField then "load_integer"
               when Prism::Template::DoubleField then "load_double"
               else raise
@@ -366,7 +366,7 @@ module Prism
               <%- if node.needs_serialized_length? -%>
               load_uint32
               <%- end -%>
-              <%= node.name %>.new(<%= ["source", "location", *node.fields.map { |field|
+              <%= node.name %>.new(<%= ["source", "location", "load_varuint", *node.fields.map { |field|
                 case field
                 when Prism::Template::NodeField then "load_node"
                 when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -378,7 +378,7 @@ module Prism
                 when Prism::Template::LocationField then "load_location"
                 when Prism::Template::OptionalLocationField then "load_optional_location"
                 when Prism::Template::UInt8Field then "io.getbyte"
-                when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+                when Prism::Template::UInt32Field then "load_varuint"
                 when Prism::Template::IntegerField then "load_integer"
                 when Prism::Template::DoubleField then "load_double"
                 else raise

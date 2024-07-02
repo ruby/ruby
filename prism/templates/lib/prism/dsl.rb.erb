@@ -65,7 +65,7 @@ module Prism
     <%- nodes.each do |node| -%>
 
     # Create a new <%= node.name %> node.
-    def <%= node.human %>(<%= ["source: default_source", "location: default_location", *node.fields.map { |field|
+    def <%= node.human %>(<%= ["source: default_source", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
       when Prism::Template::NodeField, Prism::Template::ConstantField
         "#{field.name}: default_node(source, location)"
@@ -77,13 +77,13 @@ module Prism
         "#{field.name}: \"\""
       when Prism::Template::LocationField
         "#{field.name}: location"
-      when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::IntegerField, Prism::Template::DoubleField
+      when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField, Prism::Template::DoubleField
         "#{field.name}: 0"
       else
         raise
       end
     }].join(", ") %>)
-      <%= node.name %>.new(<%= ["source", "location", *node.fields.map(&:name)].join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
     <%- end -%>
     <%- flags.each do |flag| -%>
