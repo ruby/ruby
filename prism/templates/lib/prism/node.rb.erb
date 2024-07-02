@@ -166,8 +166,8 @@ module Prism
   #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
-    # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
-    def initialize(source, <%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    # Initialize a new <%= node.name %> node.
+    def initialize(<%= ["source", "location", *node.fields.map(&:name)].join(", ") %>)
       @source = source
       @location = location
       <%- node.fields.each do |field| -%>
@@ -228,9 +228,9 @@ module Prism
       }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (<%= (node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" } + ["?location: Location"]).join(", ") %>) -> <%= node.name %>
-    def copy(<%= (node.fields.map(&:name) + ["location"]).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
-      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
+    # def copy: (<%= (["?location: Location"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (["location"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "location", *node.fields.map(&:name)].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]

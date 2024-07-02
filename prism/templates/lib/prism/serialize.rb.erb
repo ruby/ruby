@@ -319,7 +319,7 @@ module Prism
         end
       end
 
-      if RUBY_ENGINE == 'ruby'
+      if RUBY_ENGINE == "ruby"
         def load_node
           type = io.getbyte
           location = load_location
@@ -330,8 +330,7 @@ module Prism
             <%- if node.needs_serialized_length? -%>
             load_uint32
             <%- end -%>
-            <%= node.name %>.new(
-              source, <%= (node.fields.map { |field|
+            <%= node.name %>.new(<%= ["source", "location", *node.fields.map { |field|
               case field
               when Prism::Template::NodeField then "load_node"
               when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -348,7 +347,7 @@ module Prism
               when Prism::Template::DoubleField then "load_double"
               else raise
               end
-            } + ["location"]).join(", ") -%>)
+            }].join(", ") -%>)
             <%- end -%>
           end
         end
@@ -367,8 +366,7 @@ module Prism
               <%- if node.needs_serialized_length? -%>
               load_uint32
               <%- end -%>
-              <%= node.name %>.new(
-                source, <%= (node.fields.map { |field|
+              <%= node.name %>.new(<%= ["source", "location", *node.fields.map { |field|
                 case field
                 when Prism::Template::NodeField then "load_node"
                 when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -385,7 +383,7 @@ module Prism
                 when Prism::Template::DoubleField then "load_double"
                 else raise
                 end
-              } + ["location"]).join(", ") -%>)
+              }].join(", ") -%>)
             },
             <%- end -%>
           ]

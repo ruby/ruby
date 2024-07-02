@@ -4,13 +4,18 @@ require "stringio"
 
 module Prism
   class ParseResult < Result
+    # An object to represent the set of errors on a parse result. This object
+    # can be used to format the errors in a human-readable way.
     class Errors
+      # The parse result that contains the errors.
       attr_reader :parse_result
 
+      # Initialize a new set of errors from the given parse result.
       def initialize(parse_result)
         @parse_result = parse_result
       end
 
+      # Formats the errors in a human-readable way and return them as a string.
       def format
         error_lines = {}
         parse_result.errors.each do |error|
