@@ -1344,3 +1344,18 @@ assert_equal 'ok', %q{
 
   C.new.foo
 }
+
+assert_equal 'ok', %q{
+  class C
+    def initialize(a)
+    end
+  end
+
+  def foo(...)
+    C.new(...)
+    :ok
+  end
+
+  foo(*["bar"])
+  foo("baz")
+}
