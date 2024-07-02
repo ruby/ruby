@@ -6934,7 +6934,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
 
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx));
-            } else if unsafe {  rb_iseq_only_kwparam_p(iseq) } {
+            } else if unsafe { rb_iseq_only_kwparam_p(iseq) } {
                 // Inline if only positional parameters are used
                 if let Ok(i) = i32::try_from(local_idx) {
                     if i < unsafe { rb_get_iseq_body_param_lead_num(iseq) } {
