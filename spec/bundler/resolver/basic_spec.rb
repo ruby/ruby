@@ -6,15 +6,15 @@ RSpec.describe "Resolving" do
   end
 
   it "resolves a single gem" do
-    dep "rack"
+    dep "myrack"
 
-    should_resolve_as %w[rack-1.1]
+    should_resolve_as %w[myrack-1.1]
   end
 
   it "resolves a gem with dependencies" do
     dep "actionpack"
 
-    should_resolve_as %w[actionpack-2.3.5 activesupport-2.3.5 rack-1.0]
+    should_resolve_as %w[actionpack-2.3.5 activesupport-2.3.5 myrack-1.0]
   end
 
   it "resolves a conflicting index" do
@@ -84,7 +84,7 @@ RSpec.describe "Resolving" do
     dep "activesupport", "= 3.0.0.beta"
     dep "actionpack"
 
-    should_resolve_as %w[activesupport-3.0.0.beta actionpack-3.0.0.beta rack-1.1 rack-mount-0.6]
+    should_resolve_as %w[activesupport-3.0.0.beta actionpack-3.0.0.beta myrack-1.1 myrack-mount-0.6]
   end
 
   it "prefers non-pre-releases when doing conservative updates" do
@@ -313,10 +313,10 @@ RSpec.describe "Resolving" do
 
   it "handles versions that redundantly depend on themselves" do
     @index = build_index do
-      gem "rack", "3.0.0"
+      gem "myrack", "3.0.0"
 
       gem "standalone_migrations", "7.1.0" do
-        dep "rack", "~> 2.0"
+        dep "myrack", "~> 2.0"
       end
 
       gem "standalone_migrations", "2.0.4" do
@@ -324,22 +324,22 @@ RSpec.describe "Resolving" do
       end
 
       gem "standalone_migrations", "1.0.13" do
-        dep "rack", ">= 0"
+        dep "myrack", ">= 0"
       end
     end
 
-    dep "rack", "~> 3.0"
+    dep "myrack", "~> 3.0"
     dep "standalone_migrations"
 
-    should_resolve_as %w[rack-3.0.0 standalone_migrations-2.0.4]
+    should_resolve_as %w[myrack-3.0.0 standalone_migrations-2.0.4]
   end
 
   it "ignores versions that incorrectly depend on themselves" do
     @index = build_index do
-      gem "rack", "3.0.0"
+      gem "myrack", "3.0.0"
 
       gem "standalone_migrations", "7.1.0" do
-        dep "rack", "~> 2.0"
+        dep "myrack", "~> 2.0"
       end
 
       gem "standalone_migrations", "2.0.4" do
@@ -347,22 +347,22 @@ RSpec.describe "Resolving" do
       end
 
       gem "standalone_migrations", "1.0.13" do
-        dep "rack", ">= 0"
+        dep "myrack", ">= 0"
       end
     end
 
-    dep "rack", "~> 3.0"
+    dep "myrack", "~> 3.0"
     dep "standalone_migrations"
 
-    should_resolve_as %w[rack-3.0.0 standalone_migrations-1.0.13]
+    should_resolve_as %w[myrack-3.0.0 standalone_migrations-1.0.13]
   end
 
   it "does not ignore versions that incorrectly depend on themselves when dependency_api is not available" do
     @index = build_index do
-      gem "rack", "3.0.0"
+      gem "myrack", "3.0.0"
 
       gem "standalone_migrations", "7.1.0" do
-        dep "rack", "~> 2.0"
+        dep "myrack", "~> 2.0"
       end
 
       gem "standalone_migrations", "2.0.4" do
@@ -370,13 +370,13 @@ RSpec.describe "Resolving" do
       end
 
       gem "standalone_migrations", "1.0.13" do
-        dep "rack", ">= 0"
+        dep "myrack", ">= 0"
       end
     end
 
-    dep "rack", "~> 3.0"
+    dep "myrack", "~> 3.0"
     dep "standalone_migrations"
 
-    should_resolve_without_dependency_api %w[rack-3.0.0 standalone_migrations-2.0.4]
+    should_resolve_without_dependency_api %w[myrack-3.0.0 standalone_migrations-2.0.4]
   end
 end

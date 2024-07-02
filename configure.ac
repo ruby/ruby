@@ -982,9 +982,17 @@ AC_ARG_WITH(opt-dir,
 	[OPT_DIR="${OPT_DIR:+$OPT_DIR$PATH_SEPARATOR}$withval"], [])
 
 AS_IF([test "x$OPT_DIR" != x], [
+    save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
+    for dir in $OPT_DIR; do
+        test -z "$dir" && continue
+        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        val="${val:+$val$PATH_SEPARATOR}$dir"
+    done
+    IFS="$save_IFS" OPT_DIR="$val"
+    unset PWD
+    unset save_IFS
     val=`IFS="$PATH_SEPARATOR"
         for dir in $OPT_DIR; do
-            test -z "$dir" && continue
             echo x ${LIBPATHFLAG} ${RPATHFLAG} |
             sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
         done | tr '\012' ' ' | sed 's/ *$//'`
@@ -3493,7 +3501,7 @@ done
 
 BTESTRUBY='$(MINIRUBY)'
 AS_IF([test x"$cross_compiling" = xyes], [
-  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I`$CHDIR .; pwd` "-r'$(arch)-fake'
+  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I${ac_abs_builddir-.} "-r'$(arch)-fake'
   XRUBY_LIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["libdir"]']`
   XRUBY_RUBYLIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubylibdir"]']`
   XRUBY_RUBYHDRDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubyhdrdir"]']`
@@ -4060,7 +4068,9 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
 
-AS_IF([test x"$enable_shared" = xyes], [
+AS_IF([test x"$SOEXT" = xdll], [
+    # DLL on Windows is managed by win32/mkexports.rb
+], [test x"$enable_shared" = xyes], [
     AC_CACHE_CHECK([for default symbols in empty shared library], rb_cv_symbols_in_emptylib, [
         save_CC="$CC"
         eval CC=\"`printf "%s" "${DLDSHARED}" | sed ['s/\$(CC)/${CC}/']`\"

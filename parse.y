@@ -2512,6 +2512,7 @@ parser_ary_new_capa(rb_parser_t *p, long len)
         rb_bug("negative array size (or size too big): %ld", len);
     }
     rb_parser_ary_t *ary = xcalloc(1, sizeof(rb_parser_ary_t));
+    ary->data_type = 0;
     ary->len = 0;
     ary->capa = len;
     if (0 < len) {
@@ -14039,16 +14040,12 @@ reduce_nodes(struct parser_params *p, NODE **body)
      (reduce_nodes(p, &type(node)->n1), body = &type(node)->n2, 1))
 
     while (node) {
-        int newline = (int)(nd_fl_newline(node));
+        int newline = (int)nd_fl_newline(node);
         switch (nd_type(node)) {
           end:
           case NODE_NIL:
             *body = 0;
             return;
-          case NODE_RETURN:
-            *body = node = RNODE_RETURN(node)->nd_stts;
-            if (newline && node) nd_set_fl_newline(node);
-            continue;
           case NODE_BEGIN:
             *body = node = RNODE_BEGIN(node)->nd_body;
             if (newline && node) nd_set_fl_newline(node);

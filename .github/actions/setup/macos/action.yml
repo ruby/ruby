@@ -13,7 +13,7 @@ runs:
     - name: brew
       shell: bash
       run: |
-        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool
+        brew install --quiet gmp libffi openssl@3 zlib autoconf automake libtool
 
     - name: Set ENV
       shell: bash
@@ -21,7 +21,7 @@ runs:
         for lib in gmp; do
           ruby_configure_args="${ruby_configure_args:+$ruby_configure_args }--with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
-        for lib in openssl@1.1; do
+        for lib in openssl@3; do
           CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
         echo ruby_configure_args="${ruby_configure_args}" >> $GITHUB_ENV

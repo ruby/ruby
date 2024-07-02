@@ -7,6 +7,9 @@
 #include "ruby/re.h"
 #include <ctype.h>
 
+#undef strncasecmp
+#define strncasecmp STRNCASECMP
+
 RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
 RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 

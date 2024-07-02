@@ -3443,19 +3443,83 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
         dtype = DEFINED_FALSE;
         break;
       case PM_ARRAY_NODE: {
-          const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
 
-          if (!PM_NODE_FLAG_P(cast, PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
-              for (size_t index = 0; index < cast->elements.size; index++) {
-                  pm_compile_defined_expr0(iseq, cast->elements.nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
+        if (cast->elements.size > 0 && !lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
 
-                  if (!lfinish[1]) {
-                      lfinish[1] = NEW_LABEL(location.line);
-                  }
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            pm_compile_defined_expr0(iseq, cast->elements.nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        }
 
-                  PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_HASH_NODE:
+      case PM_KEYWORD_HASH_NODE: {
+        const pm_node_list_t *elements;
+
+        if (PM_NODE_TYPE_P(node, PM_HASH_NODE)) {
+            elements = &((const pm_hash_node_t *) node)->elements;
+        }
+        else {
+            elements = &((const pm_keyword_hash_node_t *) node)->elements;
+        }
+
+        if (elements->size > 0 && !lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
+
+        for (size_t index = 0; index < elements->size; index++) {
+            const pm_node_t *element = elements->nodes[index];
+
+            switch (PM_NODE_TYPE(element)) {
+              case PM_ASSOC_NODE: {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+
+                pm_compile_defined_expr0(iseq, assoc->key, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                pm_compile_defined_expr0(iseq, assoc->value, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                break;
               }
-          }
+              case PM_ASSOC_SPLAT_NODE: {
+                const pm_assoc_splat_node_t *assoc_splat = (const pm_assoc_splat_node_t *) element;
+
+                pm_compile_defined_expr0(iseq, assoc_splat->value, node_location, ret, popped, scope_node, true, lfinish, false);
+                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+                break;
+              }
+              default:
+                rb_bug("unexpected node type in hash node: %s", pm_node_type_to_str(PM_NODE_TYPE(element)));
+                break;
+            }
+        }
+
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_SPLAT_NODE: {
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+        pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
+
+        if (!lfinish[1]) {
+            lfinish[1] = NEW_LABEL(location.line);
+        }
+
+        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_IMPLICIT_NODE: {
+        const pm_implicit_node_t *cast = (const pm_implicit_node_t *) node;
+        pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, in_condition, lfinish, explicit_receiver);
+        return;
       }
       case PM_AND_NODE:
       case PM_BEGIN_NODE:
@@ -3467,7 +3531,6 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
       case PM_DEFINED_NODE:
       case PM_FLOAT_NODE:
       case PM_FOR_NODE:
-      case PM_HASH_NODE:
       case PM_IF_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
@@ -3475,7 +3538,6 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_line_c
       case PM_INTERPOLATED_STRING_NODE:
       case PM_INTERPOLATED_SYMBOL_NODE:
       case PM_INTERPOLATED_X_STRING_NODE:
-      case PM_KEYWORD_HASH_NODE:
       case PM_LAMBDA_NODE:
       case PM_MATCH_PREDICATE_NODE:
       case PM_MATCH_REQUIRED_NODE:
@@ -8191,7 +8253,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
             ADD_TRACE(ret, RUBY_EVENT_CLASS);
         }
 

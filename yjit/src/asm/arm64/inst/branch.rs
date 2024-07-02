@@ -28,25 +28,25 @@ pub struct Branch {
 
 impl Branch {
     /// BR
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BR--Branch-to-Register-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BR--Branch-to-Register-?lang=en>
     pub fn br(rn: u8) -> Self {
         Self { rn, op: Op::BR }
     }
 
     /// BLR
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BLR--Branch-with-Link-to-Register-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BLR--Branch-with-Link-to-Register-?lang=en>
     pub fn blr(rn: u8) -> Self {
         Self { rn, op: Op::BLR }
     }
 
     /// RET
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/RET--Return-from-subroutine-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/RET--Return-from-subroutine-?lang=en>
     pub fn ret(rn: u8) -> Self {
         Self { rn, op: Op::RET }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en>
 const FAMILY: u32 = 0b101;
 
 impl From<Branch> for u32 {

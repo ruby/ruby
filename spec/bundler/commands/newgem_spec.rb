@@ -937,6 +937,15 @@ RSpec.describe "bundle gem" do
       it_behaves_like "test framework is absent"
     end
 
+    context "gem.test setting set to a test framework and --no-test" do
+      before do
+        bundle "config set gem.test rspec"
+        bundle "gem #{gem_name} --no-test"
+      end
+
+      it_behaves_like "test framework is absent"
+    end
+
     context "--ci with no argument" do
       it "does not generate any CI config" do
         bundle "gem #{gem_name}"
@@ -1075,6 +1084,19 @@ RSpec.describe "bundle gem" do
       end
     end
 
+    context "gem.ci setting set to a CI service and --no-ci" do
+      before do
+        bundle "config set gem.ci github"
+        bundle "gem #{gem_name} --no-ci"
+      end
+
+      it "does not generate any CI config" do
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
     context "--linter with no argument" do
       it "does not generate any linter config" do
         bundle "gem #{gem_name}"
@@ -1199,6 +1221,18 @@ RSpec.describe "bundle gem" do
         hint = "Future `bundle gem` calls will use your choice. " \
                "This setting can be changed anytime with `bundle config gem.linter`."
         expect(out).to match(hint)
+      end
+    end
+
+    context "gem.linter setting set to a linter and --no-linter" do
+      before do
+        bundle "config set gem.linter rubocop"
+        bundle "gem #{gem_name} --no-linter"
+      end
+
+      it "does not generate any linter config" do
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
       end
     end
 

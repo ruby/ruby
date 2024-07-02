@@ -1439,14 +1439,14 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 {
     VM_ASSERT(argc >= 0);
 
-    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
-        kw_arg == NULL && !has_blockiseq) {
-        flag |= VM_CALL_ARGS_SIMPLE;
-    }
-
     if (kw_arg) {
         flag |= VM_CALL_KWARG;
         argc += kw_arg->keyword_len;
+    }
+
+    if (!(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))
+        && !has_blockiseq) {
+        flag |= VM_CALL_ARGS_SIMPLE;
     }
 
     ISEQ_BODY(iseq)->ci_size++;
@@ -5859,17 +5859,22 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         expr_type = DEFINED_FALSE;
         break;
 
+      case NODE_HASH:
       case NODE_LIST:{
-        const NODE *vals = node;
+        const NODE *vals = (nd_type(node) == NODE_HASH) ? RNODE_HASH(node)->nd_head : node;
 
-        do {
-            defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
+        if (vals) {
+            do {
+                if (RNODE_LIST(vals)->nd_head) {
+                    defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
 
-            if (!lfinish[1]) {
-                lfinish[1] = NEW_LABEL(line);
-            }
-            ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-        } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
+                    if (!lfinish[1]) {
+                        lfinish[1] = NEW_LABEL(line);
+                    }
+                    ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
+                }
+            } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
+        }
       }
         /* fall through */
       case NODE_STR:
@@ -5886,6 +5891,15 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_AND:
       case NODE_OR:
       default:
+        expr_type = DEFINED_EXPR;
+        break;
+
+      case NODE_SPLAT:
+        defined_expr0(iseq, ret, RNODE_LIST(node)->nd_head, lfinish, Qfalse, false);
+        if (!lfinish[1]) {
+            lfinish[1] = NEW_LABEL(line);
+        }
+        ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
         expr_type = DEFINED_EXPR;
         break;
 

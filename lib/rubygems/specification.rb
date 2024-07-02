@@ -2586,6 +2586,10 @@ class Gem::Specification < Gem::BasicSpecification
     @test_files.delete_if       {|x| File.directory?(x) && !File.symlink?(x) }
   end
 
+  def validate_for_resolution
+    Gem::SpecificationPolicy.new(self).validate_for_resolution
+  end
+
   def validate_metadata
     Gem::SpecificationPolicy.new(self).validate_metadata
   end

@@ -592,6 +592,17 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
+update-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline
+
+install-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install
+
+prepare-vcpkg::
+	for %%I in ($(srcdir:/=\)\vcpkg_installed\x64-windows\bin\*.dll) do ( \
+		if not %%~nI == readline mklink %%~nxI %%I \
+	)
+
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(hdrdir)/ruby/version.h $(ABI_VERSION_HDR) \

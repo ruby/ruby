@@ -768,17 +768,16 @@ mod manual_defs {
 pub use manual_defs::*;
 
 /// Interned ID values for Ruby symbols and method names.
-/// See [crate::cruby::ID] and usages outside of YJIT.
+/// See [type@crate::cruby::ID] and usages outside of YJIT.
 pub(crate) mod ids {
     use std::sync::atomic::AtomicU64;
     /// Globals to cache IDs on boot. Atomic to use with relaxed ordering
-    /// so reads can happen without `unsafe`. Initialization is done
-    /// single-threaded and release-acquire on [crate::yjit::YJIT_ENABLED]
-    /// makes sure we read the cached values after initialization is done.
+    /// so reads can happen without `unsafe`. Synchronization done through
+    /// the VM lock.
     macro_rules! def_ids {
         ($(name: $ident:ident content: $str:literal)*) => {
             $(
-                #[doc = concat!("[crate::cruby::ID] for `", stringify!($str), "`")]
+                #[doc = concat!("[type@crate::cruby::ID] for `", stringify!($str), "`")]
                 pub static $ident: AtomicU64 = AtomicU64::new(0);
             )*
 

@@ -78,6 +78,7 @@ make
     * dumpbin
 
 4.  If you want to build from GIT source, following commands are required.
+    * git
     * patch
     * sed
     * ruby 3.0 or later
@@ -85,7 +86,7 @@ make
     You can use [scoop](https://scoop.sh/) to install them like:
 
     ```
-    scoop install git ruby sed patch
+    scoop install git patch sed ruby
     ```
 
 5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
@@ -124,9 +125,12 @@ make
 
 5.  Run `nmake`
 
-6.  Run `nmake check`
+6.  Run `nmake prepare-vcpkg` if you need to copy
+    vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
 
-7.  Run `nmake install`
+7.  Run `nmake check`
+
+8.  Run `nmake install`
 
 ### Build examples
 
@@ -209,6 +213,18 @@ of `!INCLUDE` directives of `NMAKE`.
 You can build ruby in any directory including the source directory,
 except `win32` directory in the source directory.
 This is restriction originating in the path search method of `NMAKE`.
+
+### Dependency management
+
+Ruby uses [vcpkg](https://vcpkg.io/) to manage dependencies on mswin platform.
+
+You can update and install it under the build directory like:
+
+```
+nmake update-vcpkg # Update baseline version of vcpkg
+nmake install-vcpkg # Install vcpkg from build directory
+```
+
 
 ## Icons
 

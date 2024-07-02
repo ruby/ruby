@@ -117,6 +117,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
+    DEFINE_FEATURE(frozen_string_literal_set),
     feature_debug_flag_first,
 #if defined(RJIT_FORCE_ENABLE) || !USE_YJIT
     DEFINE_FEATURE(jit) = feature_rjit,
@@ -189,6 +190,7 @@ enum {
     COMPILATION_FEATURES = (
         0
         | FEATURE_BIT(frozen_string_literal)
+        | FEATURE_BIT(frozen_string_literal_set)
         | FEATURE_BIT(debug_frozen_string_literal)
         ),
     DEFAULT_FEATURES = (
@@ -197,6 +199,7 @@ enum {
         & ~FEATURE_BIT(gems)
 #endif
         & ~FEATURE_BIT(frozen_string_literal)
+        & ~FEATURE_BIT(frozen_string_literal_set)
         & ~feature_jit_mask
         )
 };
@@ -1033,6 +1036,9 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 
   found:
     FEATURE_SET_TO(*argp, mask, (mask & enable));
+    if (NAME_MATCH_P("frozen_string_literal", str, len)) {
+        FEATURE_SET_TO(*argp, FEATURE_BIT(frozen_string_literal_set), FEATURE_BIT(frozen_string_literal_set));
+    }
     return;
 }
 
@@ -1434,6 +1440,16 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
 #if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
     else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
         set_source_encoding_once(opt, s, 0);
+    }
+#endif
+#if defined(USE_SHARED_GC) && USE_SHARED_GC
+    else if (is_option_with_arg("gc-library", Qfalse, Qfalse)) {
+        // no-op
+        // Handled by ruby_load_external_gc_from_argv
+
+        if (!dln_supported_p()) {
+            rb_warn("--gc-library is ignored because this executable file can't load extension libraries");
+        }
     }
 #endif
     else if (strcmp("version", s) == 0) {
@@ -2427,7 +2443,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #define SET_COMPILE_OPTION(h, o, name) \
         rb_hash_aset((h), ID2SYM(rb_intern_const(#name)), \
                      RBOOL(FEATURE_SET_P(o->features, name)))
-        SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+
+        if (FEATURE_SET_P(opt->features, frozen_string_literal_set)) {
+            SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+        }
         SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
         rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION

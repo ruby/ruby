@@ -4,7 +4,7 @@ RSpec.describe "bundle show", bundler: "< 3" do
   context "with a standard Gemfile" do
     before :each do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
     end
@@ -155,7 +155,7 @@ RSpec.describe "bundle show", bundler: "< 3" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo"
     G
 
@@ -167,20 +167,20 @@ RSpec.describe "bundle show", bundler: "< 3" do
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-        gem "rack-obama"
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
       G
 
       bundle "show rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>|\z)/)
+      expect(out).to match(/\A1 : myrack\n2 : myrack-obama\n0 : - exit -(\n>|\z)/)
     end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
 
@@ -199,7 +199,7 @@ RSpec.describe "bundle show", bundler: "< 3" do
 
     it "doesn't update gems to newer versions" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails"
       G
 

@@ -9,7 +9,7 @@ RSpec.describe "bundle licenses" do
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem "rails"
       gem "with_license"
     G
@@ -24,7 +24,7 @@ RSpec.describe "bundle licenses" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem "rails"
       gem "with_license"
       gem "foo"

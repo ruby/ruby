@@ -16,6 +16,23 @@ describe :enumerable_inject, shared: true do
 
   it "can take two argument" do
     EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, :-).should == 4
+    EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, "-").should == 4
+
+    [1, 2, 3].send(@method, 10, :-).should == 4
+    [1, 2, 3].send(@method, 10, "-").should == 4
+  end
+
+  it "converts non-Symbol method name argument to String with #to_str if two arguments" do
+    name = Object.new
+    def name.to_str; "-"; end
+
+    EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, name).should == 4
+    [1, 2, 3].send(@method, 10, name).should == 4
+  end
+
+  it "raises TypeError when the second argument is not Symbol or String and it cannot be converted to String if two arguments" do
+    -> { EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { [1, 2, 3].send(@method, 10, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
   end
 
   it "ignores the block if two arguments" do
@@ -39,6 +56,25 @@ describe :enumerable_inject, shared: true do
 
   it "can take a symbol argument" do
     EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, :-).should == 4
+    [10, 1, 2, 3].send(@method, :-).should == 4
+  end
+
+  it "can take a String argument" do
+    EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, "-").should == 4
+    [10, 1, 2, 3].send(@method, "-").should == 4
+  end
+
+  it "converts non-Symbol method name argument to String with #to_str" do
+    name = Object.new
+    def name.to_str; "-"; end
+
+    EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, name).should == 4
+    [10, 1, 2, 3].send(@method, name).should == 4
+  end
+
+  it "raises TypeError when passed not Symbol or String method name argument and it cannot be converted to String" do
+    -> { EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { [10, 1, 2, 3].send(@method, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
   end
 
   it "without argument takes a block with an accumulator (with first element as initial value) and the current element. Value of block becomes new accumulator" do
@@ -77,7 +113,6 @@ describe :enumerable_inject, shared: true do
     EnumerableSpecs::EachDefiner.new('a','b','c').send(@method) {|result, i| i+result}.should == "cba"
     EnumerableSpecs::EachDefiner.new(3, 4, 5).send(@method) {|result, i| result*i}.should == 60
     EnumerableSpecs::EachDefiner.new([1], 2, 'a','b').send(@method){|r,i| r<<i}.should == [1, 2, 'a', 'b']
-
   end
 
   it "returns nil when fails(legacy rubycon)" do

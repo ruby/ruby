@@ -1862,31 +1862,44 @@ static void *rb_gc_impl_objspace_alloc(void);
 #if USE_SHARED_GC
 # include "dln.h"
 
-# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
+typedef struct gc_function_map {
+    void *(*objspace_alloc)(void);
+} rb_gc_function_map_t;
 
-static void
-ruby_external_gc_init(void)
+static rb_gc_function_map_t rb_gc_functions;
+
+# define RUBY_GC_LIBRARY_ARG "--gc-library="
+
+void
+ruby_load_external_gc_from_argv(int argc, char **argv)
 {
-    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
+    char *gc_so_path = NULL;
+
+    for (int i = 0; i < argc; i++) {
+        if (strncmp(argv[i], RUBY_GC_LIBRARY_ARG, sizeof(RUBY_GC_LIBRARY_ARG) - 1) == 0) {
+            gc_so_path = argv[i] + sizeof(RUBY_GC_LIBRARY_ARG) - 1;
+        }
+    }
+
     void *handle = NULL;
     if (gc_so_path && dln_supported_p()) {
         char error[1024];
         handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
             fprintf(stderr, "%s", error);
-            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
+            rb_bug("ruby_load_external_gc_from_argv: Shared library %s cannot be opened", gc_so_path);
         }
     }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        rb_gc_functions->name = dln_symbol(handle, "rb_gc_impl_" #name); \
-        if (!rb_gc_functions->name) { \
-            rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+        rb_gc_functions.name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        if (!rb_gc_functions.name) { \
+            rb_bug("ruby_load_external_gc_from_argv: " #name " func not exported by library %s", gc_so_path); \
         } \
     } \
     else { \
-        rb_gc_functions->name = rb_gc_impl_##name; \
+        rb_gc_functions.name = rb_gc_impl_##name; \
     } \
 } while (0)
 
@@ -1895,15 +1908,12 @@ ruby_external_gc_init(void)
 # undef load_external_gc_func
 }
 
-# define rb_gc_impl_objspace_alloc rb_gc_functions->objspace_alloc
+# define rb_gc_impl_objspace_alloc rb_gc_functions.objspace_alloc
 #endif
 
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-#if USE_SHARED_GC
-    ruby_external_gc_init();
-#endif
     return (rb_objspace_t *)rb_gc_impl_objspace_alloc();
 }
 
@@ -13638,12 +13648,6 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 Init_GC(void)
 {
-#if USE_SHARED_GC
-    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
-        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
-    }
-#endif
-
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 

@@ -110,5 +110,17 @@ module Spec
       _checksums, tail = remaining.split("\n\n", 2)
       head.concat(tail)
     end
+
+    def checksum_from_package(gem_file, name, version)
+      name_tuple = Gem::NameTuple.new(name, version)
+
+      checksum = nil
+
+      File.open(gem_file, "rb") do |f|
+        checksum = Bundler::Checksum.from_gem(f, gemfile)
+      end
+
+      "#{name_tuple.lock_name} #{checksum.to_lock}"
+    end
   end
 end

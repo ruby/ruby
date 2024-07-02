@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle exec" do
-  let(:system_gems_to_install) { %w[rack-1.0.0 rack-0.9.1] }
+  let(:system_gems_to_install) { %w[myrack-1.0.0 myrack-0.9.1] }
 
   it "works with --gemfile flag" do
     system_gems(system_gems_to_install, path: default_bundle_path)
 
-    create_file "CustomGemfile", <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "1.0.0"
+    gemfile "CustomGemfile", <<-G
+      source "https://gem.repo1"
+      gem "myrack", "1.0.0"
     G
 
-    bundle "exec --gemfile CustomGemfile rackup"
+    bundle "exec --gemfile CustomGemfile myrackup"
     expect(out).to eq("1.0.0")
   end
 
@@ -19,11 +19,11 @@ RSpec.describe "bundle exec" do
     system_gems(system_gems_to_install, path: default_bundle_path)
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
     G
 
-    bundle "exec rackup"
+    bundle "exec myrackup"
     expect(out).to eq("0.9.1")
   end
 
@@ -31,86 +31,69 @@ RSpec.describe "bundle exec" do
     system_gems(system_gems_to_install, path: default_bundle_path)
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
     G
 
-    bundle "exec rackup", env: { "HOME" => "/" }
+    bundle "exec myrackup", env: { "HOME" => "/" }
     expect(out).to eq("0.9.1")
     expect(err).to be_empty
   end
 
   it "works when the bins are in ~/.bundle" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
-    bundle "exec rackup"
+    bundle "exec myrackup"
     expect(out).to eq("1.0.0")
   end
 
   it "works when running from a random directory" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
-    bundle "exec 'cd #{tmp("gems")} && rackup'"
+    bundle "exec 'cd #{tmp("gems")} && myrackup'"
 
     expect(out).to eq("1.0.0")
   end
 
   it "works when exec'ing something else" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec echo exec"
     expect(out).to eq("exec")
   end
 
   it "works when exec'ing to ruby" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec ruby -e 'puts %{hi}'"
     expect(out).to eq("hi")
   end
 
   it "works when exec'ing to rubygems" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec #{gem_cmd} --version"
     expect(out).to eq(Gem::VERSION)
   end
 
   it "works when exec'ing to rubygems through sh -c" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec sh -c '#{gem_cmd} --version'"
     expect(out).to eq(Gem::VERSION)
   end
 
-  it "works when exec'ing back to bundler with a lockfile that doesn't include the current platform" do
+  it "works when exec'ing back to bundler to run a remote resolve" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
     G
 
-    # simulate lockfile generated with old version not including specific platform
-    lockfile <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
-          rack (0.9.1)
+    bundle "exec bundle lock", env: { "BUNDLER_VERSION" => Bundler::VERSION }
 
-      PLATFORMS
-        RUBY
-
-      DEPENDENCIES
-        rack (= 0.9.1)
-
-      BUNDLED WITH
-          2.1.4
-    L
-
-    bundle "exec bundle cache", env: { "BUNDLER_VERSION" => Bundler::VERSION }
-
-    expect(out).to include("Updating files in vendor/cache")
+    expect(out).to include("Writing lockfile")
   end
 
   it "respects custom process title when loading through ruby" do
@@ -120,20 +103,20 @@ RSpec.describe "bundle exec" do
       Process.setproctitle("1-2-3-4-5-6-7")
       puts `ps -ocommand= -p#{$$}`
     RUBY
-    create_file "Gemfile", "source \"#{file_uri_for(gem_repo1)}\""
+    gemfile "Gemfile", "source \"https://gem.repo1\""
     create_file "a.rb", script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility
     bundle "exec ruby a.rb"
     expect(out).to eq("1-2-3-4-5-6-7")
   end
 
   it "accepts --verbose" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec --verbose echo foobar"
     expect(out).to eq("foobar")
   end
 
   it "passes --verbose to command if it is given after the command" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec echo --verbose"
     expect(out).to eq("--verbose")
   end
@@ -157,7 +140,7 @@ RSpec.describe "bundle exec" do
       end
     G
 
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    install_gemfile "source \"https://gem.repo1\""
     sys_exec "#{Gem.ruby} #{command.path}"
 
     expect(out).to be_empty
@@ -165,7 +148,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "accepts --keep-file-descriptors" do
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    install_gemfile "source \"https://gem.repo1\""
     bundle "exec --keep-file-descriptors echo foobar"
 
     expect(err).to be_empty
@@ -174,7 +157,7 @@ RSpec.describe "bundle exec" do
   it "can run a command named --verbose" do
     skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
-    install_gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem \"rack\""
+    install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     File.open(bundled_app("--verbose"), "w") do |f|
       f.puts "#!/bin/sh"
       f.puts "echo foobar"
@@ -188,26 +171,26 @@ RSpec.describe "bundle exec" do
 
   it "handles different versions in different bundles" do
     build_repo2 do
-      build_gem "rack_two", "1.0.0" do |s|
-        s.executables = "rackup"
+      build_gem "myrack_two", "1.0.0" do |s|
+        s.executables = "myrackup"
       end
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
     G
 
     install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
-      source "#{file_uri_for(gem_repo2)}"
-      gem "rack_two", "1.0.0"
+      source "https://gem.repo2"
+      gem "myrack_two", "1.0.0"
     G
 
-    bundle "exec rackup"
+    bundle "exec myrackup"
 
     expect(out).to eq("0.9.1")
 
-    bundle "exec rackup", dir: bundled_app2
+    bundle "exec myrackup", dir: bundled_app2
     expect(out).to eq("1.0.0")
   end
 
@@ -218,7 +201,7 @@ RSpec.describe "bundle exec" do
       before do
         skip "irb isn't a default gem" if default_irb_version.empty?
 
-        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+        install_gemfile "source \"https://gem.repo1\""
       end
 
       it "uses version provided by ruby" do
@@ -241,7 +224,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem "irb", "#{specified_irb_version}"
         G
       end
@@ -271,7 +254,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem "gem_depending_on_old_irb"
         G
 
@@ -287,54 +270,54 @@ RSpec.describe "bundle exec" do
 
   it "warns about executable conflicts" do
     build_repo2 do
-      build_gem "rack_two", "1.0.0" do |s|
-        s.executables = "rackup"
+      build_gem "myrack_two", "1.0.0" do |s|
+        s.executables = "myrackup"
       end
     end
 
     bundle "config set --global path.system true"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
     G
 
     install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
-      source "#{file_uri_for(gem_repo2)}"
-      gem "rack_two", "1.0.0"
+      source "https://gem.repo2"
+      gem "myrack_two", "1.0.0"
     G
 
-    bundle "exec rackup"
+    bundle "exec myrackup"
 
     expect(last_command.stderr).to eq(
-      "Bundler is using a binstub that was created for a different gem (rack).\n" \
-      "You should run `bundle binstub rack_two` to work around a system/bundle conflict."
+      "Bundler is using a binstub that was created for a different gem (myrack).\n" \
+      "You should run `bundle binstub myrack_two` to work around a system/bundle conflict."
     )
   end
 
   it "handles gems installed with --without" do
     bundle "config set --local without middleware"
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack" # rack 0.9.1 and 1.0 exist
+      source "https://gem.repo1"
+      gem "myrack" # myrack 0.9.1 and 1.0 exist
 
       group :middleware do
-        gem "rack_middleware" # rack_middleware depends on rack 0.9.1
+        gem "myrack_middleware" # myrack_middleware depends on myrack 0.9.1
       end
     G
 
-    bundle "exec rackup"
+    bundle "exec myrackup"
 
     expect(out).to eq("0.9.1")
-    expect(the_bundle).not_to include_gems "rack_middleware 1.0"
+    expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
   end
 
   it "does not duplicate already exec'ed RUBYOPT" do
     skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     bundler_setup_opt = "-r#{lib_dir}/bundler/setup"
@@ -352,8 +335,8 @@ RSpec.describe "bundle exec" do
     skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     rubylib = ENV["RUBYLIB"]
@@ -369,8 +352,8 @@ RSpec.describe "bundle exec" do
 
   it "errors nicely when the argument doesn't exist" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     bundle "exec foobarbaz", raise_on_error: false
@@ -381,8 +364,8 @@ RSpec.describe "bundle exec" do
 
   it "errors nicely when the argument is not executable" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     bundle "exec touch foo"
@@ -393,8 +376,8 @@ RSpec.describe "bundle exec" do
 
   it "errors nicely when no arguments are passed" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     bundle "exec", raise_on_error: false
@@ -405,15 +388,15 @@ RSpec.describe "bundle exec" do
   it "raises a helpful error when exec'ing to something outside of the bundle" do
     system_gems(system_gems_to_install, path: default_bundle_path)
 
-    bundle "config set clean false" # want to keep the rackup binstub
+    bundle "config set clean false" # want to keep the myrackup binstub
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo"
     G
     [true, false].each do |l|
       bundle "config set disable_exec_load #{l}"
-      bundle "exec rackup", raise_on_error: false
-      expect(err).to include "can't find executable rackup for gem rack. rack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
+      bundle "exec myrackup", raise_on_error: false
+      expect(err).to include "can't find executable myrackup for gem myrack. myrack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
     end
   end
 
@@ -427,8 +410,8 @@ RSpec.describe "bundle exec" do
           skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
           install_gemfile <<-G
-            source "#{file_uri_for(gem_repo1)}"
-            gem "rack"
+            source "https://gem.repo1"
+            gem "myrack"
           G
 
           create_file("print_args", <<-'RUBY')
@@ -512,19 +495,19 @@ RSpec.describe "bundle exec" do
     describe "run from a random directory" do
       before(:each) do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
         G
       end
 
       it "works when unlocked" do
-        bundle "exec 'cd #{tmp("gems")} && rackup'"
+        bundle "exec 'cd #{tmp("gems")} && myrackup'"
         expect(out).to eq("1.0.0")
       end
 
       it "works when locked" do
         expect(the_bundle).to be_locked
-        bundle "exec 'cd #{tmp("gems")} && rackup'"
+        bundle "exec 'cd #{tmp("gems")} && myrackup'"
         expect(out).to eq("1.0.0")
       end
     end
@@ -536,7 +519,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "fizz", :path => "#{File.expand_path(home("fizz"))}"
         G
       end
@@ -561,7 +544,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "fizz_git", :git => "#{lib_path("fizz_git-1.0")}"
         G
       end
@@ -585,7 +568,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "fizz_no_gemspec", "1.0", :git => "#{lib_path("fizz_no_gemspec-1.0")}"
         G
       end
@@ -605,13 +588,13 @@ RSpec.describe "bundle exec" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
       gem "foo"
     G
 
     bundle "config set auto_install 1"
-    bundle "exec rackup"
+    bundle "exec myrackup"
     expect(out).to include("Installing foo 1.0")
   end
 
@@ -620,14 +603,14 @@ RSpec.describe "bundle exec" do
       s.executables = "foo"
     end
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack", "0.9.1"
+      source "https://gem.repo1"
+      gem "myrack", "0.9.1"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
     bundle "config set auto_install 1"
     bundle "exec foo"
-    expect(out).to include("Fetching rack 0.9.1")
+    expect(out).to include("Fetching myrack 0.9.1")
     expect(out).to include("Fetching #{lib_path("foo-1.0")}")
     expect(out.lines).to end_with("1.0")
   end
@@ -653,7 +636,7 @@ RSpec.describe "bundle exec" do
     bundle "config set --local path vendor/bundle"
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
       gem "fastlane"
     G
 
@@ -674,19 +657,20 @@ RSpec.describe "bundle exec" do
             s.version = '1.0'
             s.summary = 'TODO: Add summary'
             s.authors = 'Me'
+            s.rubygems_version = nil
           end
         G
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :path => "#{lib_path("foo-1.0")}"
       G
 
       bundle "exec irb", raise_on_error: false
 
       expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
-      expect(err).to match('"TODO" is not a summary')
+      expect(err).to match(/missing value for attribute rubygems_version|rubygems_version must not be nil/)
     end
   end
 
@@ -695,7 +679,7 @@ RSpec.describe "bundle exec" do
       skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
       gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       module Monkey
         def bin_path(a,b,c)
@@ -717,10 +701,10 @@ RSpec.describe "bundle exec" do
     let(:executable) { <<~RUBY.strip }
       #{shebang}
 
-      require "rack"
+      require "myrack"
       puts "EXEC: \#{caller.grep(/load/).empty? ? 'exec' : 'load'}"
       puts "ARGS: \#{$0} \#{ARGV.join(' ')}"
-      puts "RACK: \#{RACK}"
+      puts "MYRACK: \#{MYRACK}"
       process_title = `ps -o args -p \#{Process.pid}`.split("\n", 2).last.strip
       puts "PROCESS: \#{process_title}"
     RUBY
@@ -732,21 +716,21 @@ RSpec.describe "bundle exec" do
       bundled_app(path).chmod(0o755)
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
     let(:exec) { "EXEC: load" }
     let(:args) { "ARGS: #{path} arg1 arg2" }
-    let(:rack) { "RACK: 1.0.0" }
+    let(:myrack) { "MYRACK: 1.0.0" }
     let(:process) do
       title = "PROCESS: #{path}"
       title += " arg1 arg2"
       title
     end
     let(:exit_code) { 0 }
-    let(:expected) { [exec, args, rack, process].join("\n") }
+    let(:expected) { [exec, args, myrack, process].join("\n") }
     let(:expected_err) { "" }
 
     subject { bundle "exec #{path} arg1 arg2", raise_on_error: false }
@@ -876,8 +860,8 @@ RSpec.describe "bundle exec" do
     context "when Bundler.setup fails", bundler: "< 3" do
       before do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack', '2'
+          source "https://gem.repo1"
+          gem 'myrack', '2'
         G
         ENV["BUNDLER_FORCE_TTY"] = "true"
       end
@@ -885,11 +869,11 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'myrack (= 2)' in locally installed gems.
 
-The source contains the following gems matching 'rack':
-  * rack-0.9.1
-  * rack-1.0.0
+The source contains the following gems matching 'myrack':
+  * myrack-0.9.1
+  * myrack-1.0.0
 Run `bundle install` to install missing gems.
       EOS
 
@@ -906,8 +890,8 @@ Run `bundle install` to install missing gems.
     context "when Bundler.setup fails", bundler: "3" do
       before do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack', '2'
+          source "https://gem.repo1"
+          gem 'myrack', '2'
         G
         ENV["BUNDLER_FORCE_TTY"] = "true"
       end
@@ -915,10 +899,10 @@ Run `bundle install` to install missing gems.
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-Could not find gem 'rack (= 2)' in locally installed gems.
+Could not find gem 'myrack (= 2)' in locally installed gems.
 
-The source contains the following gems matching 'rack':
-  * rack-1.0.0
+The source contains the following gems matching 'myrack':
+  * myrack-1.0.0
 Run `bundle install` to install missing gems.
       EOS
 
@@ -934,9 +918,9 @@ Run `bundle install` to install missing gems.
 
     context "when Bundler.setup fails and Gemfile is not the default" do
       before do
-        create_file "CustomGemfile", <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack', '2'
+        gemfile "CustomGemfile", <<-G
+          source "https://gem.repo1"
+          gem 'myrack', '2'
         G
         ENV["BUNDLER_FORCE_TTY"] = "true"
         ENV["BUNDLE_GEMFILE"] = "CustomGemfile"
@@ -1098,8 +1082,8 @@ __FILE__: #{path.to_s.inspect}
         skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
         G
         bundle "config set path vendor/bundler"
         bundle :install
@@ -1121,7 +1105,7 @@ __FILE__: #{path.to_s.inspect}
       before do
         skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
-        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+        install_gemfile "source \"https://gem.repo1\""
       end
 
       it "does not undo the monkeypatches" do
@@ -1171,18 +1155,18 @@ __FILE__: #{path.to_s.inspect}
         end
 
         bundle "config set path vendor/bundle"
-        bundle "config set gemfile gemfiles/rack_6_1.gemfile"
+        bundle "config set gemfile gemfiles/myrack_6_1.gemfile"
 
-        create_file(bundled_app("gemfiles/rack_6_1.gemfile"), <<~RUBY)
-          source "#{file_uri_for(gem_repo2)}"
+        gemfile(bundled_app("gemfiles/myrack_6_1.gemfile"), <<~RUBY)
+          source "https://gem.repo2"
 
           gem "rails", "6.1.0"
         RUBY
 
         # A Gemfile needs to be in the root to trick bundler's root resolution
-        create_file(bundled_app("Gemfile"), "source \"#{file_uri_for(gem_repo1)}\"")
+        gemfile "source 'https://gem.repo1'"
 
-        bundle "install"
+        bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       end
 
       it "can still find gems after a nested subprocess" do
@@ -1211,7 +1195,7 @@ __FILE__: #{path.to_s.inspect}
         skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
         skip "openssl isn't a default gem" if expected.empty?
 
-        install_gemfile "source \"#{file_uri_for(gem_repo1)}\"" # must happen before installing the broken system gem
+        install_gemfile "source \"https://gem.repo1\"" # must happen before installing the broken system gem
 
         build_repo4 do
           build_gem "openssl", openssl_version do |s|
@@ -1252,7 +1236,7 @@ __FILE__: #{path.to_s.inspect}
         build_git "simple_git_binary", &:add_c_extension
         bundle "config set --local path .bundle"
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "simple_git_binary", :git => '#{lib_path("simple_git_binary-1.0")}'
         G
       end

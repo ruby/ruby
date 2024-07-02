@@ -67,12 +67,12 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.24.0
+* minitest 5.24.1
 * rake 13.2.1
 * test-unit 3.6.2
-* rexml 3.3.0
-* net-ftp 0.3.6
-* net-imap 0.4.13
+* rexml 3.3.1
+* net-ftp 0.3.7
+* net-imap 0.4.14
 * net-smtp 0.5.0
 * rbs 3.5.1
 * typeprof 0.21.11
@@ -152,3 +152,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
+[Feature #20497]: https://bugs.ruby-lang.org/issues/20497

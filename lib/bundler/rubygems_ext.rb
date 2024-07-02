@@ -32,6 +32,9 @@ module Gem
 
   require "rubygems/specification"
 
+  # Can be removed once RubyGems 3.5.15 support is dropped
+  VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
+
   class Specification
     require_relative "match_metadata"
     require_relative "match_platform"
@@ -131,6 +134,12 @@ module Gem
       !default_gem? && !File.directory?(full_gem_path)
     end
 
+    unless VALIDATES_FOR_RESOLUTION
+      def validate_for_resolution
+        SpecificationPolicy.new(self).validate_for_resolution
+      end
+    end
+
     private
 
     def dependencies_to_gemfile(dependencies, group = nil)
@@ -147,6 +156,14 @@ module Gem
         gemfile << "end\n" if group
       end
       gemfile
+    end
+  end
+
+  unless VALIDATES_FOR_RESOLUTION
+    class SpecificationPolicy
+      def validate_for_resolution
+        validate_required!
+      end
     end
   end
 

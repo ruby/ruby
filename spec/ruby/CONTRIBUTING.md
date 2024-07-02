@@ -277,13 +277,13 @@ describe :kernel_sprintf, shared: true do
 end
 
 describe "Kernel#sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     sprintf(format, *args)
   }
 end
 
 describe "Kernel.sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     Kernel.sprintf(format, *args)
   }
 end

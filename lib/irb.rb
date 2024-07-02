@@ -1138,6 +1138,8 @@ module IRB
       end
     end
 
+    ASSIGN_OPERATORS_REGEXP = Regexp.union(%w[= += -= *= /= %= **= &= |= &&= ||= ^= <<= >>=])
+
     def parse_command(code)
       command_name, arg = code.strip.split(/\s+/, 2)
       return unless code.lines.size == 1 && command_name
@@ -1148,6 +1150,12 @@ module IRB
       if (alias_name = @context.command_aliases[command])
         return [alias_name, arg]
       end
+
+      # Assignment-like expression is not a command
+      return if arg.start_with?(ASSIGN_OPERATORS_REGEXP) && !arg.start_with?(/==|=~/)
+
+      # Local variable have precedence over command
+      return if @context.local_variables.include?(command)
 
       # Check visibility
       public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
