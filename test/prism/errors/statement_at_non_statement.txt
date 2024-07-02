@@ -1,0 +1,9 @@
+foo(alias x y)
+    ^~~~~ unexpected an `alias` at a non-statement position
+foo(BEGIN { bar })
+    ^~~~~ unexpected a `BEGIN` at a non-statement position
+foo(END { bar })
+    ^~~ unexpected an `END` at a non-statement position
+foo(undef x)
+    ^~~~~ unexpected an `undef` at a non-statement position
+

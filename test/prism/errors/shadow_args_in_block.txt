@@ -1,0 +1,3 @@
+tap{|a;a|}
+       ^ duplicated argument name
+

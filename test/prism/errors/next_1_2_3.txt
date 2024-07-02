@@ -1,0 +1,8 @@
+next(1, 2, 3)
+      ^ unexpected ',', expecting end-of-input
+      ^ unexpected ',', ignoring it
+      ^ expected a matching `)`
+            ^ unexpected ')', expecting end-of-input
+            ^ unexpected ')', ignoring it
+^~~~~~~~~~~~ Invalid next
+

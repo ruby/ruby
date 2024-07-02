@@ -1,0 +1,11 @@
+1 + (return)
+     ^~~~~~ unexpected void value expression
+(return) + 1
+ ^~~~~~ unexpected void value expression
+1 and (return)
+(return) and 1
+ ^~~~~~ unexpected void value expression
+1 or (return)
+(return) or 1
+ ^~~~~~ unexpected void value expression
+

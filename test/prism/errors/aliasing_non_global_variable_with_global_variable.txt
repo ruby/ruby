@@ -1,0 +1,3 @@
+alias a $b
+        ^~ invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable
+

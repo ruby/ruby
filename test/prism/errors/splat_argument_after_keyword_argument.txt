@@ -1,0 +1,3 @@
+a(foo: bar, *args)
+            ^~~~~ unexpected `*` splat argument after a `**` keyword splat argument
+

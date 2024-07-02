@@ -1,0 +1,13 @@
+1 if (return)
+      ^~~~~~ unexpected void value expression
+1 unless (return)
+          ^~~~~~ unexpected void value expression
+1 while (return)
+         ^~~~~~ unexpected void value expression
+1 until (return)
+         ^~~~~~ unexpected void value expression
+(return) => a
+ ^~~~~~ unexpected void value expression
+(return) in a
+ ^~~~~~ unexpected void value expression
+

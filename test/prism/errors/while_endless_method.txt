@@ -1,0 +1,5 @@
+while def f = g do end
+                      ^ expected a predicate expression for the `while` statement
+                      ^ unexpected end-of-input, assuming it is closing the parent top level context
+                      ^ expected an `end` to close the `while` statement
+

@@ -1,0 +1,4 @@
+::foo
+  ^ expected a constant after the `::` operator
+  ^~~ unexpected local variable or method, expecting end-of-input
+

@@ -1,0 +1,2 @@
+<<~FOO.foo
+   ^~~ unterminated heredoc; can't find string "FOO" anywhere before EOF
