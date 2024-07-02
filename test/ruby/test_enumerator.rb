@@ -569,15 +569,19 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_array
     arr = %w[hello world]
-    %i[each each_with_index reverse_each sort_by! sort_by map map!
-      keep_if reject! reject select! select filter! filter delete_if].each do |method|
+    methods = %i[each each_with_index reverse_each sort_by! sort_by map map!
+      keep_if reject! reject select! select filter! filter delete_if]
+    methods += %i[uniq_map] if RUBY_VERSION >= "3.4"
+    methods.each do |method|
       assert_equal arr.size, arr.send(method).size
     end
   end
 
   def test_size_for_enum_created_from_enumerable
-    %i[find_all reject map flat_map partition group_by sort_by min_by max_by
-      minmax_by each_with_index reverse_each each_entry filter_map].each do |method|
+    methods = %i[find_all reject map flat_map partition group_by sort_by min_by max_by
+      minmax_by each_with_index reverse_each each_entry filter_map]
+    methods += %i[uniq_map] if RUBY_VERSION >= "3.4"
+    methods.each do |method|
       assert_equal nil, @obj.send(method).size
       assert_equal 42, @sized.send(method).size
     end
@@ -597,14 +601,18 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_size_for_enum_created_from_env
-    %i[each_pair reject! delete_if select select! filter filter! keep_if].each do |method|
+    methods = %i[each_pair reject! delete_if select select! filter filter! keep_if]
+    methods += %i[uniq_map] if RUBY_VERSION >= "3.4"
+    methods.each do |method|
       assert_equal ENV.size, ENV.send(method).size
     end
   end
 
   def test_size_for_enum_created_from_struct
     s = Struct.new(:foo, :bar, :baz).new(1, 2)
-    %i[each each_pair select].each do |method|
+    methods = %i[each each_pair select]
+    methods += %i[uniq_map] if RUBY_VERSION >= "3.4"
+    methods.each do |method|
       assert_equal 3, s.send(method).size
     end
   end
