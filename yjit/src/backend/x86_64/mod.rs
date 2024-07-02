@@ -492,9 +492,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "disasm") {
-                        cb.add_comment(text);
-                    }
+                    cb.add_comment(text);
                 },
 
                 // Write the label at the current position

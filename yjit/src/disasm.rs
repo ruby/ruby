@@ -1,14 +1,10 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
-#[cfg(feature = "disasm")]
 use crate::asm::CodeBlock;
-#[cfg(feature = "disasm")]
 use crate::codegen::CodePtr;
-#[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
-#[cfg(feature = "disasm")]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb
@@ -116,7 +112,6 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
 }
 
 /// Dump dissassembly for a range in a [CodeBlock]. VM lock required.
-#[cfg(feature = "disasm")]
 pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
     for (start_addr, end_addr) in cb.writable_addrs(start_addr, end_addr) {
         let disasm = disasm_addr_range(cb, start_addr, end_addr);
@@ -190,6 +185,44 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     }
 
     return out;
+}
+
+#[cfg(not(feature = "disasm"))]
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
+    let mut out = String::new();
+    let mut line_byte_idx = 0;
+    const MAX_BYTES_PER_LINE: usize = 16;
+
+    for addr in start_addr..end_addr {
+        if let Some(comment_list) = cb.comments_at(addr) {
+            // Start a new line if we're in the middle of one
+            if line_byte_idx != 0 {
+                writeln!(&mut out).unwrap();
+                line_byte_idx = 0;
+            }
+            for comment in comment_list {
+                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
+            }
+        }
+        if line_byte_idx == 0 {
+            write!(&mut out, "  0x{addr:x}: ").unwrap();
+        } else {
+            write!(&mut out, " ").unwrap();
+        }
+        let byte = unsafe { (addr as *const u8).read() };
+        write!(&mut out, "{byte:02x}").unwrap();
+        line_byte_idx += 1;
+        if line_byte_idx == MAX_BYTES_PER_LINE - 1 {
+            writeln!(&mut out).unwrap();
+            line_byte_idx = 0;
+        }
+    }
+
+    if !out.is_empty() {
+        writeln!(&mut out).unwrap();
+    }
+
+    out
 }
 
 /// Assert that CodeBlock has the code specified with hex. In addition, if tested with
