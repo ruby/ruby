@@ -247,6 +247,10 @@ void rb_gc_update_values(long n, VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
+
+#if USE_SHARED_GC
+void ruby_load_external_gc_from_argv(int argc, char **argv);
+#endif
 RUBY_SYMBOL_EXPORT_END
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
