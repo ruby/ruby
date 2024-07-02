@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,16))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ IfNode (location: (1,0)-(1,16))
+            ├── flags: newline
             ├── if_keyword_loc: (1,0)-(1,2) = "if"
             ├── predicate:
             │   @ FlipFlopNode (location: (1,3)-(1,7))

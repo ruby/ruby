@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,14))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ UntilNode (location: (1,0)-(1,14))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (1,5)-(1,10) = "until"
             ├── closing_loc: ∅
             ├── predicate:
@@ -20,9 +22,10 @@
             │   └── block: ∅
             └── statements:
                 @ StatementsNode (location: (1,0)-(1,4))
+                ├── flags: ∅
                 └── body: (length: 1)
                     └── @ CallNode (location: (1,0)-(1,4))
-                        ├── flags: variable_call, ignore_visibility
+                        ├── flags: newline, variable_call, ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :meth

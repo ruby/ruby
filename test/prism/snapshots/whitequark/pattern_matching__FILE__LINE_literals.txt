@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,8)-(3,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,8)-(3,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,8)-(3,11))
+            ├── flags: newline
             ├── predicate:
             │   @ ArrayNode (location: (1,13)-(1,51))
             │   ├── flags: ∅
@@ -15,6 +18,7 @@
             │   │   │   ├── flags: ∅
             │   │   │   ├── receiver:
             │   │   │   │   @ SourceLineNode (location: (1,24)-(1,32))
+            │   │   │   │   └── flags: static_literal
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :+
             │   │   │   ├── message_loc: (1,33)-(1,34) = "+"
@@ -24,24 +28,29 @@
             │   │   │   │   ├── flags: ∅
             │   │   │   │   └── arguments: (length: 1)
             │   │   │   │       └── @ IntegerNode (location: (1,35)-(1,36))
-            │   │   │   │           ├── flags: decimal
+            │   │   │   │           ├── flags: static_literal, decimal
             │   │   │   │           └── value: 1
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── block: ∅
             │   │   └── @ SourceEncodingNode (location: (1,38)-(1,50))
+            │   │       └── flags: static_literal
             │   ├── opening_loc: (1,13)-(1,14) = "["
             │   └── closing_loc: (1,50)-(1,51) = "]"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,10)-(2,47))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,13)-(2,47))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 3)
             │       │   │   ├── @ SourceFileNode (location: (2,14)-(2,22))
             │       │   │   │   ├── flags: ∅
             │       │   │   │   └── filepath: "whitequark/pattern_matching__FILE__LINE_literals.txt"
             │       │   │   ├── @ SourceLineNode (location: (2,24)-(2,32))
+            │       │   │   │   └── flags: static_literal
             │       │   │   └── @ SourceEncodingNode (location: (2,34)-(2,46))
+            │       │   │       └── flags: static_literal
             │       │   ├── rest: ∅
             │       │   ├── posts: (length: 0)
             │       │   ├── opening_loc: (2,13)-(2,14) = "["

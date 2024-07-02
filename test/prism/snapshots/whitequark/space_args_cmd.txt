@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,11))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :fun
@@ -15,11 +17,13 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ ParenthesesNode (location: (1,4)-(1,11))
+            │           ├── flags: ∅
             │           ├── body:
             │           │   @ StatementsNode (location: (1,5)-(1,10))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ CallNode (location: (1,5)-(1,10))
-            │           │           ├── flags: ignore_visibility
+            │           │           ├── flags: newline, ignore_visibility
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
             │           │           ├── name: :f

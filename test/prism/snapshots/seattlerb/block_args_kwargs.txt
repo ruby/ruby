@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,23))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,23))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,23))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -14,11 +16,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(1,23))
+                ├── flags: ∅
                 ├── locals: [:kwargs]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,14))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,13))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅
@@ -36,8 +41,10 @@
                 │   └── closing_loc: (1,13)-(1,14) = "|"
                 ├── body:
                 │   @ StatementsNode (location: (1,15)-(1,21))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ LocalVariableReadNode (location: (1,15)-(1,21))
+                │           ├── flags: newline
                 │           ├── name: :kwargs
                 │           └── depth: 0
                 ├── opening_loc: (1,2)-(1,3) = "{"

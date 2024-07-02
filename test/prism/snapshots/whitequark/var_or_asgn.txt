@@ -1,14 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,7))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,7))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableOrWriteNode (location: (1,0)-(1,7))
+            ├── flags: newline
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── operator_loc: (1,2)-(1,5) = "||="
             ├── value:
             │   @ IntegerNode (location: (1,6)-(1,7))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── name: :a
             └── depth: 0

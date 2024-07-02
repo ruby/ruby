@@ -493,6 +493,10 @@ module Prism
         @values = config.fetch("values").map { |flag| Flag.new(flag) }
         @comment = config.fetch("comment")
       end
+
+      def self.empty
+        new("name" => "", "values" => [], "comment" => "")
+      end
     end
 
     class << self

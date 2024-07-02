@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,6))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,6))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ StringNode (location: (1,0)-(1,6))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,6) = "<<-EOE"
             ├── content_loc: (2,0)-(4,0) = " some\n heredocs\n"
             ├── closing_loc: (4,0)-(4,3) = "EOE"

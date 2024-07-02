@@ -1,16 +1,18 @@
 @ ProgramNode (location: (1,0)-(3,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,8))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ RegularExpressionNode (location: (1,0)-(1,15))
-        │   ├── flags: forced_utf8_encoding
+        │   ├── flags: newline, static_literal, forced_utf8_encoding
         │   ├── opening_loc: (1,0)-(1,1) = "/"
         │   ├── content_loc: (1,1)-(1,14) = "\\u{c0de babe}"
         │   ├── closing_loc: (1,14)-(1,15) = "/"
         │   └── unescaped: "\\u{c0de babe}"
         └── @ RegularExpressionNode (location: (3,0)-(3,8))
-            ├── flags: forced_utf8_encoding
+            ├── flags: newline, static_literal, forced_utf8_encoding
             ├── opening_loc: (3,0)-(3,1) = "/"
             ├── content_loc: (3,1)-(3,7) = "\\u{df}"
             ├── closing_loc: (3,7)-(3,8) = "/"

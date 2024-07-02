@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ UndefNode (location: (1,0)-(1,13))
+            ├── flags: newline
             ├── names: (length: 1)
             │   └── @ SymbolNode (location: (1,6)-(1,13))
-            │       ├── flags: forced_us_ascii_encoding
+            │       ├── flags: static_literal, forced_us_ascii_encoding
             │       ├── opening_loc: (1,6)-(1,9) = "%s("
             │       ├── value_loc: (1,9)-(1,12) = "foo"
             │       ├── closing_loc: (1,12)-(1,13) = ")"

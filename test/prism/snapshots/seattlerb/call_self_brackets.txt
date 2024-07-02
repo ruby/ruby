@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,7))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,7))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver:
             │   @ SelfNode (location: (1,0)-(1,4))
+            │   └── flags: ∅
             ├── call_operator_loc: ∅
             ├── name: :[]
             ├── message_loc: (1,4)-(1,7) = "[1]"
@@ -16,7 +19,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,5)-(1,6))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 1
             ├── closing_loc: (1,6)-(1,7) = "]"
             └── block: ∅

@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(1,29))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,29))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ BeginNode (location: (1,0)-(1,29))
+            ├── flags: newline
             ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
             │   @ StatementsNode (location: (1,7)-(1,11))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,7)-(1,11))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -22,12 +26,14 @@
             ├── else_clause: ∅
             ├── ensure_clause:
             │   @ EnsureNode (location: (1,13)-(1,29))
+            │   ├── flags: ∅
             │   ├── ensure_keyword_loc: (1,13)-(1,19) = "ensure"
             │   ├── statements:
             │   │   @ StatementsNode (location: (1,21)-(1,24))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,21)-(1,24))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar

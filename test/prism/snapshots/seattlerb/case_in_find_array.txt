@@ -1,37 +1,45 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: [:c]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,16))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ FindPatternNode (location: (2,3)-(2,16))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── left:
             │       │   │   @ SplatNode (location: (2,4)-(2,5))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,4)-(2,5) = "*"
             │       │   │   └── expression: ∅
             │       │   ├── requireds: (length: 2)
             │       │   │   ├── @ SymbolNode (location: (2,7)-(2,9))
-            │       │   │   │   ├── flags: forced_us_ascii_encoding
+            │       │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │   │   ├── opening_loc: (2,7)-(2,8) = ":"
             │       │   │   │   ├── value_loc: (2,8)-(2,9) = "b"
             │       │   │   │   ├── closing_loc: ∅
             │       │   │   │   └── unescaped: "b"
             │       │   │   └── @ LocalVariableTargetNode (location: (2,11)-(2,12))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── name: :c
             │       │   │       └── depth: 0
             │       │   ├── right:
             │       │   │   @ SplatNode (location: (2,14)-(2,15))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,14)-(2,15) = "*"
             │       │   │   └── expression: ∅
             │       │   ├── opening_loc: (2,3)-(2,4) = "["

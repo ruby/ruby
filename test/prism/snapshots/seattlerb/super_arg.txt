@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ SuperNode (location: (1,0)-(1,8))
+            ├── flags: newline
             ├── keyword_loc: (1,0)-(1,5) = "super"
             ├── lparen_loc: ∅
             ├── arguments:
@@ -11,7 +14,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,6)-(1,8))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 42
             ├── rparen_loc: ∅
             └── block: ∅

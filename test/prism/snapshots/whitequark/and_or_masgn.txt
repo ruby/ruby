@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,19))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,19))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ AndNode (location: (1,0)-(1,19))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -17,15 +20,20 @@
         │   │   └── block: ∅
         │   ├── right:
         │   │   @ ParenthesesNode (location: (1,7)-(1,19))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ StatementsNode (location: (1,8)-(1,18))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ MultiWriteNode (location: (1,8)-(1,18))
+        │   │   │           ├── flags: newline
         │   │   │           ├── lefts: (length: 2)
         │   │   │           │   ├── @ LocalVariableTargetNode (location: (1,8)-(1,9))
+        │   │   │           │   │   ├── flags: ∅
         │   │   │           │   │   ├── name: :a
         │   │   │           │   │   └── depth: 0
         │   │   │           │   └── @ LocalVariableTargetNode (location: (1,11)-(1,12))
+        │   │   │           │       ├── flags: ∅
         │   │   │           │       ├── name: :b
         │   │   │           │       └── depth: 0
         │   │   │           ├── rest: ∅
@@ -48,6 +56,7 @@
         │   │   └── closing_loc: (1,18)-(1,19) = ")"
         │   └── operator_loc: (1,4)-(1,6) = "&&"
         └── @ OrNode (location: (3,0)-(3,19))
+            ├── flags: newline
             ├── left:
             │   @ CallNode (location: (3,0)-(3,3))
             │   ├── flags: variable_call, ignore_visibility
@@ -61,15 +70,20 @@
             │   └── block: ∅
             ├── right:
             │   @ ParenthesesNode (location: (3,7)-(3,19))
+            │   ├── flags: ∅
             │   ├── body:
             │   │   @ StatementsNode (location: (3,8)-(3,18))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ MultiWriteNode (location: (3,8)-(3,18))
+            │   │           ├── flags: newline
             │   │           ├── lefts: (length: 2)
             │   │           │   ├── @ LocalVariableTargetNode (location: (3,8)-(3,9))
+            │   │           │   │   ├── flags: ∅
             │   │           │   │   ├── name: :a
             │   │           │   │   └── depth: 0
             │   │           │   └── @ LocalVariableTargetNode (location: (3,11)-(3,12))
+            │   │           │       ├── flags: ∅
             │   │           │       ├── name: :b
             │   │           │       └── depth: 0
             │   │           ├── rest: ∅

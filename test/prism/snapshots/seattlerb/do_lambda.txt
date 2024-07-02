@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LambdaNode (location: (1,0)-(1,11))
+            ├── flags: newline
             ├── locals: []
             ├── operator_loc: (1,0)-(1,2) = "->"
             ├── opening_loc: (1,5)-(1,7) = "do"
             ├── closing_loc: (1,8)-(1,11) = "end"
             ├── parameters:
             │   @ BlockParametersNode (location: (1,2)-(1,4))
+            │   ├── flags: ∅
             │   ├── parameters: ∅
             │   ├── locals: (length: 0)
             │   ├── opening_loc: (1,2)-(1,3) = "("

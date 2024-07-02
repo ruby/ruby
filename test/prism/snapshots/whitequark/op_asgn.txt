@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,11))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ CallOperatorWriteNode (location: (1,0)-(1,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -24,10 +26,10 @@
         │   ├── binary_operator_loc: (1,6)-(1,8) = "+="
         │   └── value:
         │       @ IntegerNode (location: (1,9)-(1,10))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ CallOperatorWriteNode (location: (3,0)-(3,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -47,10 +49,10 @@
         │   ├── binary_operator_loc: (3,6)-(3,8) = "+="
         │   └── value:
         │       @ IntegerNode (location: (3,9)-(3,10))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         └── @ CallOperatorWriteNode (location: (5,0)-(5,11))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (5,0)-(5,3))
             │   ├── flags: variable_call, ignore_visibility
@@ -70,5 +72,5 @@
             ├── binary_operator_loc: (5,7)-(5,9) = "+="
             └── value:
                 @ IntegerNode (location: (5,10)-(5,11))
-                ├── flags: decimal
+                ├── flags: static_literal, decimal
                 └── value: 1

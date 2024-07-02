@@ -1,18 +1,22 @@
 @ ProgramNode (location: (1,6)-(11,9))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,6)-(11,9))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ DefNode (location: (1,6)-(3,9))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (1,10)-(1,11) = "f"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (2,8)-(2,17))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,8)-(2,17))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :g
@@ -23,16 +27,18 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ ParenthesesNode (location: (2,10)-(2,14))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── body:
         │   │           │       │   │   @ StatementsNode (location: (2,12)-(2,13))
+        │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   └── body: (length: 1)
         │   │           │       │   │       └── @ IntegerNode (location: (2,12)-(2,13))
-        │   │           │       │   │           ├── flags: decimal
+        │   │           │       │   │           ├── flags: newline, static_literal, decimal
         │   │           │       │   │           └── value: 1
         │   │           │       │   ├── opening_loc: (2,10)-(2,11) = "("
         │   │           │       │   └── closing_loc: (2,13)-(2,14) = ")"
         │   │           │       └── @ IntegerNode (location: (2,16)-(2,17))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
@@ -44,15 +50,17 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,6)-(3,9) = "end"
         ├── @ DefNode (location: (6,6)-(8,9))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (6,10)-(6,11) = "f"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (7,8)-(7,16))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,8)-(7,16))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :g
@@ -63,16 +71,18 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ ParenthesesNode (location: (7,10)-(7,13))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── body:
         │   │           │       │   │   @ StatementsNode (location: (7,11)-(7,12))
+        │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   └── body: (length: 1)
         │   │           │       │   │       └── @ IntegerNode (location: (7,11)-(7,12))
-        │   │           │       │   │           ├── flags: decimal
+        │   │           │       │   │           ├── flags: newline, static_literal, decimal
         │   │           │       │   │           └── value: 1
         │   │           │       │   ├── opening_loc: (7,10)-(7,11) = "("
         │   │           │       │   └── closing_loc: (7,12)-(7,13) = ")"
         │   │           │       └── @ IntegerNode (location: (7,15)-(7,16))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
@@ -84,7 +94,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (8,6)-(8,9) = "end"
         └── @ CallNode (location: (11,0)-(11,9))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :g
@@ -95,16 +105,18 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ ParenthesesNode (location: (11,2)-(11,6))
+            │       │   ├── flags: ∅
             │       │   ├── body:
             │       │   │   @ StatementsNode (location: (11,4)-(11,5))
+            │       │   │   ├── flags: ∅
             │       │   │   └── body: (length: 1)
             │       │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-            │       │   │           ├── flags: decimal
+            │       │   │           ├── flags: newline, static_literal, decimal
             │       │   │           └── value: 1
             │       │   ├── opening_loc: (11,2)-(11,3) = "("
             │       │   └── closing_loc: (11,5)-(11,6) = ")"
             │       └── @ IntegerNode (location: (11,8)-(11,9))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 2
             ├── closing_loc: ∅
             └── block: ∅

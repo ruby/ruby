@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,30))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,30))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,30))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :meth
@@ -14,16 +16,19 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,5)-(1,30))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ BeginNode (location: (1,5)-(1,30))
+                │   ├── flags: ∅
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements:
                 │   │   @ StatementsNode (location: (1,9)-(1,12))
+                │   │   ├── flags: ∅
                 │   │   └── body: (length: 1)
                 │   │       └── @ CallNode (location: (1,9)-(1,12))
-                │   │           ├── flags: variable_call, ignore_visibility
+                │   │           ├── flags: newline, variable_call, ignore_visibility
                 │   │           ├── receiver: ∅
                 │   │           ├── call_operator_loc: ∅
                 │   │           ├── name: :foo
@@ -34,15 +39,17 @@
                 │   │           └── block: ∅
                 │   ├── rescue_clause:
                 │   │   @ RescueNode (location: (1,14)-(1,25))
+                │   │   ├── flags: ∅
                 │   │   ├── keyword_loc: (1,14)-(1,20) = "rescue"
                 │   │   ├── exceptions: (length: 0)
                 │   │   ├── operator_loc: ∅
                 │   │   ├── reference: ∅
                 │   │   ├── statements:
                 │   │   │   @ StatementsNode (location: (1,22)-(1,25))
+                │   │   │   ├── flags: ∅
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ CallNode (location: (1,22)-(1,25))
-                │   │   │           ├── flags: variable_call, ignore_visibility
+                │   │   │           ├── flags: newline, variable_call, ignore_visibility
                 │   │   │           ├── receiver: ∅
                 │   │   │           ├── call_operator_loc: ∅
                 │   │   │           ├── name: :bar

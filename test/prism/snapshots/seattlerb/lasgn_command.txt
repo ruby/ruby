@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,9))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,9))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableWriteNode (location: (1,0)-(1,9))
+            ├── flags: newline
             ├── name: :a
             ├── depth: 0
             ├── name_loc: (1,0)-(1,1) = "a"
@@ -30,7 +33,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (1,8)-(1,9))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: static_literal, decimal
             │   │           └── value: 1
             │   ├── closing_loc: ∅
             │   └── block: ∅

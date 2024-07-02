@@ -1,13 +1,15 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ RationalNode (location: (1,0)-(1,5))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 421
         │   └── denominator: 10
         └── @ RationalNode (location: (3,0)-(3,3))
-            ├── flags: decimal
+            ├── flags: newline, static_literal, decimal
             ├── numerator: 42
             └── denominator: 1

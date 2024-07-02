@@ -1,26 +1,32 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: [:t]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ LocalVariableWriteNode (location: (1,0)-(1,3))
+        │   ├── flags: newline
         │   ├── name: :t
         │   ├── depth: 0
         │   ├── name_loc: (1,0)-(1,1) = "t"
         │   ├── value:
         │   │   @ IntegerNode (location: (1,2)-(1,3))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (1,1)-(1,2) = "="
         └── @ IfNode (location: (1,4)-(1,13))
+            ├── flags: newline
             ├── if_keyword_loc: ∅
             ├── predicate:
             │   @ ParenthesesNode (location: (1,4)-(1,9))
+            │   ├── flags: ∅
             │   ├── body:
             │   │   @ StatementsNode (location: (1,5)-(1,8))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,5)-(1,8))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :foo
@@ -34,17 +40,22 @@
             ├── then_keyword_loc: (1,9)-(1,10) = "?"
             ├── statements:
             │   @ StatementsNode (location: (1,10)-(1,11))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ LocalVariableReadNode (location: (1,10)-(1,11))
+            │           ├── flags: newline
             │           ├── name: :t
             │           └── depth: 0
             ├── consequent:
             │   @ ElseNode (location: (1,11)-(1,13))
+            │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,11)-(1,12) = ":"
             │   ├── statements:
             │   │   @ StatementsNode (location: (1,12)-(1,13))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ ConstantReadNode (location: (1,12)-(1,13))
+            │   │           ├── flags: newline
             │   │           └── name: :T
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

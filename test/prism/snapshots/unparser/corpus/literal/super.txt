@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(21,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(21,1))
+    ├── flags: ∅
     └── body: (length: 11)
         ├── @ ForwardingSuperNode (location: (1,0)-(1,5))
+        │   ├── flags: newline
         │   └── block: ∅
         ├── @ SuperNode (location: (2,0)-(2,7))
+        │   ├── flags: newline
         │   ├── keyword_loc: (2,0)-(2,5) = "super"
         │   ├── lparen_loc: (2,5)-(2,6) = "("
         │   ├── arguments: ∅
         │   ├── rparen_loc: (2,6)-(2,7) = ")"
         │   └── block: ∅
         ├── @ SuperNode (location: (3,0)-(3,8))
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,5) = "super"
         │   ├── lparen_loc: (3,5)-(3,6) = "("
         │   ├── arguments:
@@ -31,6 +36,7 @@
         │   ├── rparen_loc: (3,7)-(3,8) = ")"
         │   └── block: ∅
         ├── @ SuperNode (location: (4,0)-(4,11))
+        │   ├── flags: newline
         │   ├── keyword_loc: (4,0)-(4,5) = "super"
         │   ├── lparen_loc: (4,5)-(4,6) = "("
         │   ├── arguments:
@@ -60,12 +66,14 @@
         │   ├── rparen_loc: (4,10)-(4,11) = ")"
         │   └── block: ∅
         ├── @ SuperNode (location: (5,0)-(5,13))
+        │   ├── flags: newline
         │   ├── keyword_loc: (5,0)-(5,5) = "super"
         │   ├── lparen_loc: (5,5)-(5,6) = "("
         │   ├── arguments: ∅
         │   ├── rparen_loc: (5,12)-(5,13) = ")"
         │   └── block:
         │       @ BlockArgumentNode (location: (5,6)-(5,12))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ CallNode (location: (5,7)-(5,12))
         │       │   ├── flags: variable_call, ignore_visibility
@@ -79,6 +87,7 @@
         │       │   └── block: ∅
         │       └── operator_loc: (5,6)-(5,7) = "&"
         ├── @ SuperNode (location: (6,0)-(6,16))
+        │   ├── flags: newline
         │   ├── keyword_loc: (6,0)-(6,5) = "super"
         │   ├── lparen_loc: (6,5)-(6,6) = "("
         │   ├── arguments:
@@ -98,6 +107,7 @@
         │   ├── rparen_loc: (6,15)-(6,16) = ")"
         │   └── block:
         │       @ BlockArgumentNode (location: (6,9)-(6,15))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ CallNode (location: (6,10)-(6,15))
         │       │   ├── flags: variable_call, ignore_visibility
@@ -111,6 +121,7 @@
         │       │   └── block: ∅
         │       └── operator_loc: (6,9)-(6,10) = "&"
         ├── @ SuperNode (location: (7,0)-(9,2))
+        │   ├── flags: newline
         │   ├── keyword_loc: (7,0)-(7,5) = "super"
         │   ├── lparen_loc: (7,5)-(7,6) = "("
         │   ├── arguments:
@@ -128,13 +139,15 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (7,8)-(9,1))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body:
         │   │               │   @ StatementsNode (location: (8,2)-(8,5))
+        │   │               │   ├── flags: ∅
         │   │               │   └── body: (length: 1)
         │   │               │       └── @ CallNode (location: (8,2)-(8,5))
-        │   │               │           ├── flags: variable_call, ignore_visibility
+        │   │               │           ├── flags: newline, variable_call, ignore_visibility
         │   │               │           ├── receiver: ∅
         │   │               │           ├── call_operator_loc: ∅
         │   │               │           ├── name: :foo
@@ -148,15 +161,18 @@
         │   ├── rparen_loc: (9,1)-(9,2) = ")"
         │   └── block: ∅
         ├── @ ForwardingSuperNode (location: (10,0)-(12,1))
+        │   ├── flags: newline
         │   └── block:
         │       @ BlockNode (location: (10,6)-(12,1))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (11,2)-(11,5))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ CallNode (location: (11,2)-(11,5))
-        │       │           ├── flags: variable_call, ignore_visibility
+        │       │           ├── flags: newline, variable_call, ignore_visibility
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
         │       │           ├── name: :foo
@@ -168,6 +184,7 @@
         │       ├── opening_loc: (10,6)-(10,7) = "{"
         │       └── closing_loc: (12,0)-(12,1) = "}"
         ├── @ SuperNode (location: (13,0)-(15,1))
+        │   ├── flags: newline
         │   ├── keyword_loc: (13,0)-(13,5) = "super"
         │   ├── lparen_loc: (13,5)-(13,6) = "("
         │   ├── arguments:
@@ -187,13 +204,15 @@
         │   ├── rparen_loc: (13,7)-(13,8) = ")"
         │   └── block:
         │       @ BlockNode (location: (13,9)-(15,1))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (14,2)-(14,5))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ CallNode (location: (14,2)-(14,5))
-        │       │           ├── flags: variable_call, ignore_visibility
+        │       │           ├── flags: newline, variable_call, ignore_visibility
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
         │       │           ├── name: :foo
@@ -205,19 +224,22 @@
         │       ├── opening_loc: (13,9)-(13,10) = "{"
         │       └── closing_loc: (15,0)-(15,1) = "}"
         ├── @ SuperNode (location: (16,0)-(18,1))
+        │   ├── flags: newline
         │   ├── keyword_loc: (16,0)-(16,5) = "super"
         │   ├── lparen_loc: (16,5)-(16,6) = "("
         │   ├── arguments: ∅
         │   ├── rparen_loc: (16,6)-(16,7) = ")"
         │   └── block:
         │       @ BlockNode (location: (16,8)-(18,1))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (17,2)-(17,5))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ CallNode (location: (17,2)-(17,5))
-        │       │           ├── flags: variable_call, ignore_visibility
+        │       │           ├── flags: newline, variable_call, ignore_visibility
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
         │       │           ├── name: :foo
@@ -229,6 +251,7 @@
         │       ├── opening_loc: (16,8)-(16,9) = "{"
         │       └── closing_loc: (18,0)-(18,1) = "}"
         └── @ SuperNode (location: (19,0)-(21,1))
+            ├── flags: newline
             ├── keyword_loc: (19,0)-(19,5) = "super"
             ├── lparen_loc: (19,5)-(19,6) = "("
             ├── arguments:
@@ -258,13 +281,15 @@
             ├── rparen_loc: (19,10)-(19,11) = ")"
             └── block:
                 @ BlockNode (location: (19,12)-(21,1))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (20,2)-(20,5))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (20,2)-(20,5))
-                │           ├── flags: variable_call, ignore_visibility
+                │           ├── flags: newline, variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :foo

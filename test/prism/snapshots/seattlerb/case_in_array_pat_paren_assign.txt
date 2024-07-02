@@ -1,30 +1,39 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: [:d]
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,4))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,12))
+            │       │   ├── flags: ∅
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,4))
+            │       │   │   ├── flags: ∅
             │       │   │   └── name: :B
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ CapturePatternNode (location: (2,5)-(2,11))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── value:
             │       │   │       │   @ ConstantReadNode (location: (2,5)-(2,6))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   └── name: :C
             │       │   │       ├── target:
             │       │   │       │   @ LocalVariableTargetNode (location: (2,10)-(2,11))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   ├── name: :d
             │       │   │       │   └── depth: 0
             │       │   │       └── operator_loc: (2,7)-(2,9) = "=>"
@@ -34,9 +43,10 @@
             │       │   └── closing_loc: (2,11)-(2,12) = ")"
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,4))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: forced_us_ascii_encoding
+            │       │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "d"
             │       │           ├── closing_loc: ∅

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,27))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,27))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ReturnNode (location: (1,0)-(1,27))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (1,0)-(1,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (1,7)-(1,27))
@@ -34,11 +36,14 @@
                         ├── closing_loc: ∅
                         └── block:
                             @ BlockNode (location: (1,15)-(1,27))
+                            ├── flags: ∅
                             ├── locals: [:bar]
                             ├── parameters:
                             │   @ BlockParametersNode (location: (1,18)-(1,23))
+                            │   ├── flags: ∅
                             │   ├── parameters:
                             │   │   @ ParametersNode (location: (1,19)-(1,22))
+                            │   │   ├── flags: ∅
                             │   │   ├── requireds: (length: 1)
                             │   │   │   └── @ RequiredParameterNode (location: (1,19)-(1,22))
                             │   │   │       ├── flags: ∅

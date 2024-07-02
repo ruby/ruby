@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(42,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(42,3))
+    ├── flags: ∅
     └── body: (length: 8)
         ├── @ BeginNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
         │   ├── statements: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (2,0)-(2,6))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (2,0)-(2,6) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: ∅
@@ -18,10 +22,12 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ BeginNode (location: (5,0)-(8,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (5,0)-(5,5) = "begin"
         │   ├── statements: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (6,0)-(6,6))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (6,0)-(6,6) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: ∅
@@ -30,18 +36,21 @@
         │   │   └── consequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (7,0)-(8,3))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (7,0)-(7,4) = "else"
         │   │   ├── statements: ∅
         │   │   └── end_keyword_loc: (8,0)-(8,3) = "end"
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (8,0)-(8,3) = "end"
         ├── @ BeginNode (location: (10,0)-(12,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (10,0)-(10,5) = "begin"
         │   ├── statements:
         │   │   @ StatementsNode (location: (11,2)-(11,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (11,2)-(11,3))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :a
@@ -55,12 +64,14 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (12,0)-(12,3) = "end"
         ├── @ BeginNode (location: (14,0)-(18,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (14,0)-(14,5) = "begin"
         │   ├── statements:
         │   │   @ StatementsNode (location: (15,2)-(15,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (15,2)-(15,3))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :a
@@ -71,15 +82,17 @@
         │   │           └── block: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (16,0)-(17,3))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (16,0)-(16,6) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (17,2)-(17,3))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (17,2)-(17,3))
-        │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :b
@@ -93,12 +106,14 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (18,0)-(18,3) = "end"
         ├── @ BeginNode (location: (20,0)-(25,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (20,0)-(20,5) = "begin"
         │   ├── statements:
         │   │   @ StatementsNode (location: (21,2)-(22,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 2)
         │   │       ├── @ CallNode (location: (21,2)-(21,3))
-        │   │       │   ├── flags: variable_call, ignore_visibility
+        │   │       │   ├── flags: newline, variable_call, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :a
@@ -108,7 +123,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ CallNode (location: (22,2)-(22,3))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -119,15 +134,17 @@
         │   │           └── block: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (23,0)-(24,3))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (23,0)-(23,6) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (24,2)-(24,3))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (24,2)-(24,3))
-        │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :b
@@ -141,13 +158,16 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (25,0)-(25,3) = "end"
         ├── @ BeginNode (location: (27,0)-(30,3))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (27,0)-(27,5) = "begin"
         │   ├── statements: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (28,0)-(28,8))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (28,0)-(28,6) = "rescue"
         │   │   ├── exceptions: (length: 1)
         │   │   │   └── @ ConstantReadNode (location: (28,7)-(28,8))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :A
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
@@ -155,19 +175,23 @@
         │   │   └── consequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (29,0)-(30,3))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (29,0)-(29,4) = "else"
         │   │   ├── statements: ∅
         │   │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ BeginNode (location: (32,0)-(32,26))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (32,0)-(32,5) = "begin"
         │   ├── statements: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (32,7)-(32,15))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (32,7)-(32,13) = "rescue"
         │   │   ├── exceptions: (length: 1)
         │   │   │   └── @ ConstantReadNode (location: (32,14)-(32,15))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :A
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
@@ -175,18 +199,21 @@
         │   │   └── consequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (32,17)-(32,26))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (32,17)-(32,21) = "else"
         │   │   ├── statements: ∅
         │   │   └── end_keyword_loc: (32,23)-(32,26) = "end"
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (32,23)-(32,26) = "end"
         └── @ BeginNode (location: (34,0)-(42,3))
+            ├── flags: newline
             ├── begin_keyword_loc: (34,0)-(34,5) = "begin"
             ├── statements:
             │   @ StatementsNode (location: (35,2)-(35,3))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (35,2)-(35,3))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :a
@@ -197,17 +224,20 @@
             │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (36,0)-(39,3))
+            │   ├── flags: ∅
             │   ├── keyword_loc: (36,0)-(36,6) = "rescue"
             │   ├── exceptions: (length: 1)
             │   │   └── @ ConstantReadNode (location: (36,7)-(36,8))
+            │   │       ├── flags: ∅
             │   │       └── name: :A
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
             │   │   @ StatementsNode (location: (37,2)-(37,3))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (37,2)-(37,3))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :b
@@ -218,17 +248,20 @@
             │   │           └── block: ∅
             │   └── consequent:
             │       @ RescueNode (location: (38,0)-(39,3))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (38,0)-(38,6) = "rescue"
             │       ├── exceptions: (length: 1)
             │       │   └── @ ConstantReadNode (location: (38,7)-(38,8))
+            │       │       ├── flags: ∅
             │       │       └── name: :B
             │       ├── operator_loc: ∅
             │       ├── reference: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (39,2)-(39,3))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (39,2)-(39,3))
-            │       │           ├── flags: variable_call, ignore_visibility
+            │       │           ├── flags: newline, variable_call, ignore_visibility
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :c
@@ -241,12 +274,14 @@
             ├── else_clause: ∅
             ├── ensure_clause:
             │   @ EnsureNode (location: (40,0)-(42,3))
+            │   ├── flags: ∅
             │   ├── ensure_keyword_loc: (40,0)-(40,6) = "ensure"
             │   ├── statements:
             │   │   @ StatementsNode (location: (41,2)-(41,3))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (41,2)-(41,3))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :d

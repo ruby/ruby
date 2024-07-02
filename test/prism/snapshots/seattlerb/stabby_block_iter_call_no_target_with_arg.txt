@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(4,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :x
@@ -15,21 +17,24 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(4,3))
+            │           ├── flags: ∅
             │           ├── locals: []
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,8)-(1,10) = "do"
             │           ├── closing_loc: (4,0)-(4,3) = "end"
             │           ├── parameters:
             │           │   @ BlockParametersNode (location: (1,5)-(1,7))
+            │           │   ├── flags: ∅
             │           │   ├── parameters: ∅
             │           │   ├── locals: (length: 0)
             │           │   ├── opening_loc: (1,5)-(1,6) = "("
             │           │   └── closing_loc: (1,6)-(1,7) = ")"
             │           └── body:
             │               @ StatementsNode (location: (2,0)-(3,3))
+            │               ├── flags: ∅
             │               └── body: (length: 1)
             │                   └── @ CallNode (location: (2,0)-(3,3))
-            │                       ├── flags: ignore_visibility
+            │                       ├── flags: newline, ignore_visibility
             │                       ├── receiver: ∅
             │                       ├── call_operator_loc: ∅
             │                       ├── name: :a
@@ -40,11 +45,12 @@
             │                       │   ├── flags: ∅
             │                       │   └── arguments: (length: 1)
             │                       │       └── @ IntegerNode (location: (2,2)-(2,3))
-            │                       │           ├── flags: decimal
+            │                       │           ├── flags: static_literal, decimal
             │                       │           └── value: 1
             │                       ├── closing_loc: (2,3)-(2,4) = ")"
             │                       └── block:
             │                           @ BlockNode (location: (2,5)-(3,3))
+            │                           ├── flags: ∅
             │                           ├── locals: []
             │                           ├── parameters: ∅
             │                           ├── body: ∅

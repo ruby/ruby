@@ -1,22 +1,28 @@
 @ ProgramNode (location: (1,0)-(7,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,3))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ DefNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (2,2)-(2,9))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ParenthesesNode (location: (2,2)-(2,9))
+        │   │           ├── flags: newline
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (2,3)-(2,8))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (2,3)-(2,8))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: newline
         │   │           │           ├── receiver:
         │   │           │           │   @ CallNode (location: (2,3)-(2,4))
         │   │           │           │   ├── flags: variable_call, ignore_visibility
@@ -58,14 +64,17 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         └── @ DefNode (location: (5,0)-(7,3))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (5,4)-(5,7) = "foo"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (6,2)-(6,20))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (6,2)-(6,20))
+            │           ├── flags: newline
             │           ├── expression:
             │           │   @ CallNode (location: (6,2)-(6,3))
             │           │   ├── flags: variable_call, ignore_visibility
@@ -80,6 +89,7 @@
             │           ├── keyword_loc: (6,4)-(6,10) = "rescue"
             │           └── rescue_expression:
             │               @ ConstantReadNode (location: (6,11)-(6,20))
+            │               ├── flags: ∅
             │               └── name: :Exception
             ├── locals: []
             ├── def_keyword_loc: (5,0)-(5,3) = "def"

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(7,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,7))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ ArrayNode (location: (1,0)-(1,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (1,1)-(1,9))
         │   │       ├── flags: ∅
@@ -15,19 +17,19 @@
         │   ├── opening_loc: (1,0)-(1,1) = "["
         │   └── closing_loc: (1,9)-(1,10) = "]"
         ├── @ RegularExpressionNode (location: (3,0)-(3,8))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (3,0)-(3,1) = "/"
         │   ├── content_loc: (3,1)-(3,7) = "\\c\#{1}"
         │   ├── closing_loc: (3,7)-(3,8) = "/"
         │   └── unescaped: "\\x03{1}"
         ├── @ StringNode (location: (5,0)-(5,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (5,0)-(5,1) = "\""
         │   ├── content_loc: (5,1)-(5,7) = "\\c\#{1}"
         │   ├── closing_loc: (5,7)-(5,8) = "\""
         │   └── unescaped: "\u0003{1}"
         └── @ StringNode (location: (7,0)-(7,7))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (7,0)-(7,7) = "<<~HERE"
             ├── content_loc: (8,0)-(9,0) = "   \\c\#{1}\n"
             ├── closing_loc: (9,0)-(10,0) = "HERE\n"

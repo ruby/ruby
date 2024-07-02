@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,6))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,6))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,6))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -18,9 +20,10 @@
             │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocSplatNode (location: (1,2)-(1,5))
+            │                   ├── flags: ∅
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,4)-(1,5))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 1
             │                   └── operator_loc: (1,2)-(1,4) = "**"
             ├── closing_loc: (1,5)-(1,6) = ")"

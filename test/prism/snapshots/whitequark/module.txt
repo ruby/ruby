@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ModuleNode (location: (1,0)-(1,15))
+            ├── flags: newline
             ├── locals: []
             ├── module_keyword_loc: (1,0)-(1,6) = "module"
             ├── constant_path:
             │   @ ConstantReadNode (location: (1,7)-(1,10))
+            │   ├── flags: ∅
             │   └── name: :Foo
             ├── body: ∅
             ├── end_keyword_loc: (1,12)-(1,15) = "end"

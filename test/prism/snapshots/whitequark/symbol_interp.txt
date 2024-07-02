@@ -1,21 +1,26 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedSymbolNode (location: (1,0)-(1,15))
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,2) = ":\""
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (1,2)-(1,5))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,2)-(1,5) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   ├── @ EmbeddedStatementsNode (location: (1,5)-(1,11))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (1,5)-(1,7) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (1,7)-(1,10))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ CallNode (location: (1,7)-(1,10))
             │   │   │           ├── flags: variable_call, ignore_visibility
@@ -29,7 +34,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (1,10)-(1,11) = "}"
             │   └── @ StringNode (location: (1,11)-(1,14))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,11)-(1,14) = "baz"
             │       ├── closing_loc: ∅

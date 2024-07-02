@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,14))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,14))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -14,20 +16,24 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(1,14))
+                ├── flags: ∅
                 ├── locals: [:_1]
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (1,2)-(1,14))
+                │   ├── flags: ∅
                 │   └── maximum: 1
                 ├── body:
                 │   @ StatementsNode (location: (1,4)-(1,12))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ ArrayNode (location: (1,4)-(1,12))
-                │           ├── flags: ∅
+                │           ├── flags: newline
                 │           ├── elements: (length: 1)
                 │           │   └── @ CallNode (location: (1,5)-(1,11))
                 │           │       ├── flags: ∅
                 │           │       ├── receiver:
                 │           │       │   @ LocalVariableReadNode (location: (1,5)-(1,7))
+                │           │       │   ├── flags: ∅
                 │           │       │   ├── name: :_1
                 │           │       │   └── depth: 0
                 │           │       ├── call_operator_loc: ∅
@@ -39,7 +45,7 @@
                 │           │       │   ├── flags: ∅
                 │           │       │   └── arguments: (length: 1)
                 │           │       │       └── @ IntegerNode (location: (1,10)-(1,11))
-                │           │       │           ├── flags: decimal
+                │           │       │           ├── flags: static_literal, decimal
                 │           │       │           └── value: 2
                 │           │       ├── closing_loc: ∅
                 │           │       └── block: ∅

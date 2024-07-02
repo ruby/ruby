@@ -1,42 +1,50 @@
 @ ProgramNode (location: (1,0)-(18,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(18,3))
+    ├── flags: ∅
     └── body: (length: 7)
         ├── @ ModuleNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── locals: [:a]
         │   ├── module_keyword_loc: (1,0)-(1,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (1,7)-(1,8))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── body:
         │   │   @ StatementsNode (location: (1,9)-(1,14))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ LocalVariableWriteNode (location: (1,9)-(1,14))
+        │   │           ├── flags: newline
         │   │           ├── name: :a
         │   │           ├── depth: 0
         │   │           ├── name_loc: (1,9)-(1,10) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (1,13)-(1,14))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           └── operator_loc: (1,11)-(1,12) = "="
         │   ├── end_keyword_loc: (1,15)-(1,18) = "end"
         │   └── name: :A
         ├── @ InterpolatedStringNode (location: (3,0)-(3,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (3,0)-(3,3) = "%Q{"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (3,3)-(3,7))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (3,3)-(3,7) = "aaa "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "aaa "
         │   │   ├── @ EmbeddedStatementsNode (location: (3,7)-(3,13))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (3,7)-(3,9) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (3,9)-(3,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (3,9)-(3,12))
         │   │   │   │           ├── flags: variable_call, ignore_visibility
@@ -50,17 +58,19 @@
         │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (3,12)-(3,13) = "}"
         │   │   └── @ StringNode (location: (3,13)-(3,17))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (3,13)-(3,17) = " ccc"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " ccc"
         │   └── closing_loc: (3,17)-(3,18) = "}"
         ├── @ ModuleNode (location: (5,0)-(6,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (5,0)-(5,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (5,7)-(5,11))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (5,7)-(5,8))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -79,28 +89,34 @@
         │   ├── end_keyword_loc: (6,0)-(6,3) = "end"
         │   └── name: :M
         ├── @ ModuleNode (location: (8,0)-(9,19))
+        │   ├── flags: newline
         │   ├── locals: [:x]
         │   ├── module_keyword_loc: (8,0)-(8,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (8,7)-(8,8))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── body:
         │   │   @ BeginNode (location: (8,0)-(9,19))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (9,1)-(9,6))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ LocalVariableWriteNode (location: (9,1)-(9,6))
+        │   │   │           ├── flags: newline
         │   │   │           ├── name: :x
         │   │   │           ├── depth: 0
         │   │   │           ├── name_loc: (9,1)-(9,2) = "x"
         │   │   │           ├── value:
         │   │   │           │   @ IntegerNode (location: (9,5)-(9,6))
-        │   │   │           │   ├── flags: decimal
+        │   │   │           │   ├── flags: static_literal, decimal
         │   │   │           │   └── value: 1
         │   │   │           └── operator_loc: (9,3)-(9,4) = "="
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (9,8)-(9,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (9,8)-(9,14) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
@@ -113,10 +129,12 @@
         │   ├── end_keyword_loc: (9,16)-(9,19) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (11,0)-(12,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (11,0)-(11,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (11,7)-(11,10))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :A
         │   │   ├── delimiter_loc: (11,7)-(11,9) = "::"
@@ -125,15 +143,18 @@
         │   ├── end_keyword_loc: (12,0)-(12,3) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (14,0)-(15,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (14,0)-(14,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (14,7)-(14,13))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (14,7)-(14,10))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ ConstantReadNode (location: (14,7)-(14,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :A
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :[]
@@ -149,15 +170,18 @@
         │   ├── end_keyword_loc: (15,0)-(15,3) = "end"
         │   └── name: :B
         └── @ ModuleNode (location: (17,0)-(18,3))
+            ├── flags: newline
             ├── locals: []
             ├── module_keyword_loc: (17,0)-(17,6) = "module"
             ├── constant_path:
             │   @ ConstantPathNode (location: (17,7)-(17,14))
+            │   ├── flags: ∅
             │   ├── parent:
             │   │   @ CallNode (location: (17,7)-(17,11))
             │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ ConstantReadNode (location: (17,7)-(17,8))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :A
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :[]
@@ -168,7 +192,7 @@
             │   │   │   ├── flags: ∅
             │   │   │   └── arguments: (length: 1)
             │   │   │       └── @ IntegerNode (location: (17,9)-(17,10))
-            │   │   │           ├── flags: decimal
+            │   │   │           ├── flags: static_literal, decimal
             │   │   │           └── value: 1
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   └── block: ∅

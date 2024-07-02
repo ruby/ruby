@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,11))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -18,15 +20,17 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 2)
             │               ├── @ AssocNode (location: (1,4)-(1,6))
+            │               │   ├── flags: ∅
             │               │   ├── key:
             │               │   │   @ SymbolNode (location: (1,4)-(1,6))
-            │               │   │   ├── flags: forced_us_ascii_encoding
+            │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │               │   │   ├── opening_loc: ∅
             │               │   │   ├── value_loc: (1,4)-(1,5) = "a"
             │               │   │   ├── closing_loc: (1,5)-(1,6) = ":"
             │               │   │   └── unescaped: "a"
             │               │   ├── value:
             │               │   │   @ ImplicitNode (location: (1,4)-(1,6))
+            │               │   │   ├── flags: ∅
             │               │   │   └── value:
             │               │   │       @ CallNode (location: (1,4)-(1,6))
             │               │   │       ├── flags: ignore_visibility
@@ -40,15 +44,17 @@
             │               │   │       └── block: ∅
             │               │   └── operator_loc: ∅
             │               └── @ AssocNode (location: (1,8)-(1,10))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,8)-(1,10))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,8)-(1,9) = "b"
             │                   │   ├── closing_loc: (1,9)-(1,10) = ":"
             │                   │   └── unescaped: "b"
             │                   ├── value:
             │                   │   @ ImplicitNode (location: (1,8)-(1,10))
+            │                   │   ├── flags: ∅
             │                   │   └── value:
             │                   │       @ CallNode (location: (1,8)-(1,10))
             │                   │       ├── flags: ignore_visibility

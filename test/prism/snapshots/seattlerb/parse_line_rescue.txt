@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(7,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ BeginNode (location: (1,0)-(7,3))
+            ├── flags: newline
             ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
             │   @ StatementsNode (location: (2,2)-(2,3))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (2,2)-(2,3))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :a
@@ -20,15 +24,17 @@
             │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (3,0)-(6,3))
+            │   ├── flags: ∅
             │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
             │   │   @ StatementsNode (location: (4,2)-(4,3))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (4,2)-(4,3))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :b
@@ -39,15 +45,17 @@
             │   │           └── block: ∅
             │   └── consequent:
             │       @ RescueNode (location: (5,0)-(6,3))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (5,0)-(5,6) = "rescue"
             │       ├── exceptions: (length: 0)
             │       ├── operator_loc: ∅
             │       ├── reference: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (6,2)-(6,3))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (6,2)-(6,3))
-            │       │           ├── flags: variable_call, ignore_visibility
+            │       │           ├── flags: newline, variable_call, ignore_visibility
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :c

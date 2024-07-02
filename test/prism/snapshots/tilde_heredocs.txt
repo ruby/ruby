@@ -1,403 +1,419 @@
 @ ProgramNode (location: (1,0)-(94,6))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(94,6))
+    ├── flags: ∅
     └── body: (length: 19)
         ├── @ InterpolatedStringNode (location: (1,0)-(1,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,6) = "<<~EOF"
         │   ├── parts: (length: 4)
         │   │   ├── @ StringNode (location: (2,0)-(3,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (2,0)-(3,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "  a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (3,0)-(3,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (3,0)-(3,2) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (3,2)-(3,3))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (3,2)-(3,3))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (3,3)-(3,4) = "}"
         │   │   ├── @ StringNode (location: (3,4)-(4,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (3,4)-(4,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   └── @ StringNode (location: (4,0)-(5,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (4,0)-(5,0) = "  a\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "  a\n"
         │   └── closing_loc: (5,0)-(6,0) = "EOF\n"
         ├── @ StringNode (location: (7,0)-(7,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (7,0)-(7,6) = "<<~EOF"
         │   ├── content_loc: (8,0)-(9,0) = "  a\n"
         │   ├── closing_loc: (9,0)-(10,0) = "EOF\n"
         │   └── unescaped: "a\n"
         ├── @ InterpolatedStringNode (location: (11,0)-(11,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (11,0)-(11,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (12,0)-(13,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (12,0)-(13,0) = "\ta\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\ta\n"
         │   │   ├── @ StringNode (location: (13,0)-(14,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (13,0)-(14,0) = "  b\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b\n"
         │   │   └── @ StringNode (location: (14,0)-(15,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (14,0)-(15,0) = "\t\tc\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\t\tc\n"
         │   └── closing_loc: (15,0)-(16,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (17,0)-(17,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (17,0)-(17,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ EmbeddedStatementsNode (location: (18,2)-(18,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (18,2)-(18,4) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (18,4)-(18,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (18,4)-(18,5))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (18,5)-(18,6) = "}"
         │   │   └── @ StringNode (location: (18,6)-(19,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (18,6)-(19,0) = " a\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " a\n"
         │   └── closing_loc: (19,0)-(20,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (21,0)-(21,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (21,0)-(21,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (22,0)-(22,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (22,0)-(22,4) = "  a "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a "
         │   │   ├── @ EmbeddedStatementsNode (location: (22,4)-(22,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (22,4)-(22,6) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (22,6)-(22,7))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (22,6)-(22,7))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (22,7)-(22,8) = "}"
         │   │   └── @ StringNode (location: (22,8)-(23,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (22,8)-(23,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (23,0)-(24,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (25,0)-(25,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (25,0)-(25,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (26,0)-(27,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (26,0)-(27,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: " a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (27,1)-(27,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (27,1)-(27,3) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (27,3)-(27,4))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (27,3)-(27,4))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (27,4)-(27,5) = "}"
         │   │   └── @ StringNode (location: (27,5)-(28,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (27,5)-(28,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (28,0)-(29,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (30,0)-(30,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (30,0)-(30,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (31,0)-(32,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (31,0)-(32,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (32,2)-(32,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (32,2)-(32,4) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (32,4)-(32,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (32,4)-(32,5))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (32,5)-(32,6) = "}"
         │   │   └── @ StringNode (location: (32,6)-(33,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (32,6)-(33,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (33,0)-(34,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (35,0)-(35,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (35,0)-(35,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (36,0)-(37,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (36,0)-(37,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (37,0)-(38,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (37,0)-(38,0) = "  b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (38,0)-(39,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (40,0)-(40,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (40,0)-(40,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (41,0)-(42,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (41,0)-(42,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (42,0)-(43,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (42,0)-(43,0) = "   b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " b\n"
         │   └── closing_loc: (43,0)-(44,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (45,0)-(45,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (45,0)-(45,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (46,0)-(47,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (46,0)-(47,0) = "\t\t\ta\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\ta\n"
         │   │   └── @ StringNode (location: (47,0)-(48,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (47,0)-(48,0) = "\t\tb\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (48,0)-(49,0) = "EOF\n"
         ├── @ StringNode (location: (50,0)-(50,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (50,0)-(50,8) = "<<~'EOF'"
         │   ├── content_loc: (51,0)-(52,0) = "  a \#{1}\n"
         │   ├── closing_loc: (52,0)-(53,0) = "EOF\n"
         │   └── unescaped: "a \#{1}\n"
         ├── @ InterpolatedStringNode (location: (54,0)-(54,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (54,0)-(54,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (55,0)-(56,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (55,0)-(56,0) = "\ta\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (56,0)-(57,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (56,0)-(57,0) = "\t b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " b\n"
         │   └── closing_loc: (57,0)-(58,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (59,0)-(59,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (59,0)-(59,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (60,0)-(61,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (60,0)-(61,0) = "\t a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: " a\n"
         │   │   └── @ StringNode (location: (61,0)-(62,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (61,0)-(62,0) = "\tb\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (62,0)-(63,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (64,0)-(64,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (64,0)-(64,6) = "<<~EOF"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (65,0)-(66,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (65,0)-(66,0) = "  \ta\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ StringNode (location: (66,0)-(67,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (66,0)-(67,0) = "        b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (67,0)-(68,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (69,0)-(69,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (69,0)-(69,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (70,0)-(71,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (70,0)-(71,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ StringNode (location: (71,0)-(72,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (71,0)-(72,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   └── @ StringNode (location: (72,0)-(73,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (72,0)-(73,0) = "  b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (73,0)-(74,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (75,0)-(75,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (75,0)-(75,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (76,0)-(77,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (76,0)-(77,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ StringNode (location: (77,0)-(78,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (77,0)-(78,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   └── @ StringNode (location: (78,0)-(79,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (78,0)-(79,0) = "  b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (79,0)-(80,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (81,0)-(81,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (81,0)-(81,6) = "<<~EOF"
         │   ├── parts: (length: 5)
         │   │   ├── @ StringNode (location: (82,0)-(83,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (82,0)-(83,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ StringNode (location: (83,0)-(84,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (83,0)-(84,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ StringNode (location: (84,0)-(85,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (84,0)-(85,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ StringNode (location: (85,0)-(86,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (85,0)-(86,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   └── @ StringNode (location: (86,0)-(87,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (86,0)-(87,0) = "  b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
         │   └── closing_loc: (87,0)-(88,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (89,0)-(89,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (89,0)-(89,6) = "<<~EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (90,0)-(91,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (90,0)-(91,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (91,2)-(91,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (91,2)-(91,4) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (91,4)-(91,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (91,4)-(91,5))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (91,5)-(91,6) = "}"
         │   │   └── @ StringNode (location: (91,6)-(92,0))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (91,6)-(92,0) = "a\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\n"
         │   └── closing_loc: (92,0)-(93,0) = "    EOF\n"
         └── @ InterpolatedStringNode (location: (94,0)-(94,6))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (94,0)-(94,6) = "<<~EOT"
             ├── parts: (length: 3)
             │   ├── @ EmbeddedStatementsNode (location: (95,2)-(95,6))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (95,2)-(95,4) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (95,4)-(95,5))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ IntegerNode (location: (95,4)-(95,5))
-            │   │   │           ├── flags: decimal
+            │   │   │           ├── flags: static_literal, decimal
             │   │   │           └── value: 1
             │   │   └── closing_loc: (95,5)-(95,6) = "}"
             │   ├── @ StringNode (location: (95,6)-(96,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (95,6)-(96,0) = "\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "\n"
             │   └── @ StringNode (location: (96,0)-(97,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (96,0)-(97,0) = "\tb\n"
             │       ├── closing_loc: ∅

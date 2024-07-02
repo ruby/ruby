@@ -1,20 +1,27 @@
 @ ProgramNode (location: (1,0)-(184,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(184,10))
+    ├── flags: ∅
     └── body: (length: 90)
         ├── @ ConstantPathNode (location: (1,0)-(1,4))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (1,0)-(1,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── name: :B
         │   ├── delimiter_loc: (1,1)-(1,3) = "::"
         │   └── name_loc: (1,3)-(1,4) = "B"
         ├── @ ConstantPathNode (location: (3,0)-(3,7))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantPathNode (location: (3,0)-(3,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (3,0)-(3,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (3,1)-(3,3) = "::"
@@ -23,6 +30,7 @@
         │   ├── delimiter_loc: (3,4)-(3,6) = "::"
         │   └── name_loc: (3,6)-(3,7) = "C"
         ├── @ ConstantPathNode (location: (5,0)-(5,4))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ CallNode (location: (5,0)-(5,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -38,10 +46,13 @@
         │   ├── delimiter_loc: (5,1)-(5,3) = "::"
         │   └── name_loc: (5,3)-(5,4) = "B"
         ├── @ ConstantPathWriteNode (location: (7,0)-(7,8))
+        │   ├── flags: newline
         │   ├── target:
         │   │   @ ConstantPathNode (location: (7,0)-(7,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (7,0)-(7,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (7,1)-(7,3) = "::"
@@ -49,20 +60,22 @@
         │   ├── operator_loc: (7,5)-(7,6) = "="
         │   └── value:
         │       @ IntegerNode (location: (7,7)-(7,8))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ ConstantWriteNode (location: (9,0)-(9,5))
+        │   ├── flags: newline
         │   ├── name: :A
         │   ├── name_loc: (9,0)-(9,1) = "A"
         │   ├── value:
         │   │   @ IntegerNode (location: (9,4)-(9,5))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (9,2)-(9,3) = "="
         ├── @ ConstantReadNode (location: (11,0)-(11,3))
+        │   ├── flags: newline
         │   └── name: :ABC
         ├── @ CallNode (location: (13,0)-(13,5))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :Foo
@@ -73,12 +86,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (13,4)-(13,5))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (15,0)-(15,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :Foo
@@ -89,6 +102,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (15,4)-(15,8))
+        │   │           ├── flags: ∅
         │   │           ├── operator_loc: (15,4)-(15,5) = "*"
         │   │           └── expression:
         │   │               @ CallNode (location: (15,5)-(15,8))
@@ -104,7 +118,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (17,0)-(17,9))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :Foo
@@ -118,6 +132,7 @@
         │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (17,4)-(17,9))
+        │   │                   ├── flags: ∅
         │   │                   ├── value:
         │   │                   │   @ CallNode (location: (17,6)-(17,9))
         │   │                   │   ├── flags: variable_call, ignore_visibility
@@ -133,7 +148,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (19,0)-(19,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :Foo
@@ -143,6 +158,7 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockArgumentNode (location: (19,4)-(19,8))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ CallNode (location: (19,5)-(19,8))
         │       │   ├── flags: variable_call, ignore_visibility
@@ -156,9 +172,10 @@
         │       │   └── block: ∅
         │       └── operator_loc: (19,4)-(19,5) = "&"
         ├── @ CallNode (location: (21,0)-(21,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (21,0)-(21,3))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   ├── call_operator_loc: (21,3)-(21,5) = "::"
         │   ├── name: :Bar
@@ -169,6 +186,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (21,9)-(21,13))
+        │   │           ├── flags: ∅
         │   │           ├── operator_loc: (21,9)-(21,10) = "*"
         │   │           └── expression:
         │   │               @ CallNode (location: (21,10)-(21,13))
@@ -184,9 +202,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (23,0)-(23,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (23,0)-(23,3))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   ├── call_operator_loc: (23,3)-(23,5) = "::"
         │   ├── name: :Bar
@@ -200,6 +219,7 @@
         │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (23,9)-(23,14))
+        │   │                   ├── flags: ∅
         │   │                   ├── value:
         │   │                   │   @ CallNode (location: (23,11)-(23,14))
         │   │                   │   ├── flags: variable_call, ignore_visibility
@@ -215,9 +235,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (25,0)-(25,3))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   ├── call_operator_loc: (25,3)-(25,5) = "::"
         │   ├── name: :Bar
@@ -227,6 +248,7 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockArgumentNode (location: (25,9)-(25,13))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ CallNode (location: (25,10)-(25,13))
         │       │   ├── flags: variable_call, ignore_visibility
@@ -240,9 +262,10 @@
         │       │   └── block: ∅
         │       └── operator_loc: (25,9)-(25,10) = "&"
         ├── @ CallNode (location: (27,0)-(27,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantPathNode (location: (27,0)-(27,3))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :A
         │   │   ├── delimiter_loc: (27,0)-(27,2) = "::"
@@ -255,8 +278,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathWriteNode (location: (29,0)-(29,7))
+        │   ├── flags: newline
         │   ├── target:
         │   │   @ ConstantPathNode (location: (29,0)-(29,3))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :A
         │   │   ├── delimiter_loc: (29,0)-(29,2) = "::"
@@ -264,13 +289,16 @@
         │   ├── operator_loc: (29,4)-(29,5) = "="
         │   └── value:
         │       @ IntegerNode (location: (29,6)-(29,7))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ ConstantPathWriteNode (location: (31,0)-(31,10))
+        │   ├── flags: newline
         │   ├── target:
         │   │   @ ConstantPathNode (location: (31,0)-(31,6))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantPathNode (location: (31,0)-(31,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── parent: ∅
         │   │   │   ├── name: :A
         │   │   │   ├── delimiter_loc: (31,0)-(31,2) = "::"
@@ -281,11 +309,13 @@
         │   ├── operator_loc: (31,7)-(31,8) = "="
         │   └── value:
         │       @ IntegerNode (location: (31,9)-(31,10))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ ConstantPathNode (location: (33,0)-(33,6))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantPathNode (location: (33,0)-(33,3))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :A
         │   │   ├── delimiter_loc: (33,0)-(33,2) = "::"
@@ -294,14 +324,16 @@
         │   ├── delimiter_loc: (33,3)-(33,5) = "::"
         │   └── name_loc: (33,5)-(33,6) = "B"
         ├── @ ConstantPathNode (location: (35,0)-(35,3))
+        │   ├── flags: newline
         │   ├── parent: ∅
         │   ├── name: :A
         │   ├── delimiter_loc: (35,0)-(35,2) = "::"
         │   └── name_loc: (35,2)-(35,3) = "A"
         ├── @ CallNode (location: (37,0)-(37,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (37,0)-(37,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (37,1)-(37,3) = "::"
         │   ├── name: :false
@@ -311,11 +343,13 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantPathNode (location: (39,0)-(39,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (39,0)-(39,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (39,1)-(39,3) = "::"
@@ -328,9 +362,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (41,0)-(41,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (41,0)-(41,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (41,1)-(41,3) = "::"
         │   ├── name: :&
@@ -340,9 +375,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (43,0)-(43,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (43,0)-(43,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (43,1)-(43,3) = "::"
         │   ├── name: :`
@@ -352,9 +388,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (45,0)-(45,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (45,1)-(45,3) = "::"
         │   ├── name: :!
@@ -364,9 +401,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (47,0)-(47,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (47,0)-(47,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (47,1)-(47,3) = "::"
         │   ├── name: :!=
@@ -376,9 +414,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (49,0)-(49,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (49,0)-(49,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (49,1)-(49,3) = "::"
         │   ├── name: :^
@@ -388,9 +427,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (51,0)-(51,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (51,0)-(51,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (51,1)-(51,3) = "::"
         │   ├── name: :==
@@ -400,9 +440,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (53,0)-(53,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (53,0)-(53,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (53,1)-(53,3) = "::"
         │   ├── name: :===
@@ -412,9 +453,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (55,0)-(55,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (55,0)-(55,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (55,1)-(55,3) = "::"
         │   ├── name: :=~
@@ -424,9 +466,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (57,0)-(57,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (57,0)-(57,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (57,1)-(57,3) = "::"
         │   ├── name: :>
@@ -436,9 +479,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (59,0)-(59,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (59,0)-(59,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (59,1)-(59,3) = "::"
         │   ├── name: :>=
@@ -448,9 +492,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (61,0)-(61,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (61,0)-(61,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (61,1)-(61,3) = "::"
         │   ├── name: :>>
@@ -460,9 +505,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (63,0)-(63,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (63,0)-(63,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (63,1)-(63,3) = "::"
         │   ├── name: :<<
@@ -472,16 +518,19 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathNode (location: (65,0)-(67,1))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (65,0)-(65,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── name: :C
         │   ├── delimiter_loc: (65,1)-(65,3) = "::"
         │   └── name_loc: (67,0)-(67,1) = "C"
         ├── @ CallNode (location: (69,0)-(69,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (69,0)-(69,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (69,1)-(69,3) = "::"
         │   ├── name: :alias
@@ -491,9 +540,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (71,0)-(71,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (71,0)-(71,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (71,1)-(71,3) = "::"
         │   ├── name: :and
@@ -503,9 +553,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (73,0)-(73,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (73,0)-(73,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (73,1)-(73,3) = "::"
         │   ├── name: :begin
@@ -515,16 +566,19 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathNode (location: (75,0)-(75,8))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (75,0)-(75,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── name: :BEGIN
         │   ├── delimiter_loc: (75,1)-(75,3) = "::"
         │   └── name_loc: (75,3)-(75,8) = "BEGIN"
         ├── @ CallNode (location: (77,0)-(77,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (77,0)-(77,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (77,1)-(77,3) = "::"
         │   ├── name: :break
@@ -534,9 +588,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (79,0)-(79,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (79,0)-(79,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (79,1)-(79,3) = "::"
         │   ├── name: :class
@@ -546,9 +601,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (81,0)-(81,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (81,0)-(81,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (81,1)-(81,3) = "::"
         │   ├── name: :def
@@ -558,9 +614,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (83,0)-(83,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (83,0)-(83,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (83,1)-(83,3) = "::"
         │   ├── name: :defined
@@ -570,9 +627,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (85,0)-(85,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (85,0)-(85,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (85,1)-(85,3) = "::"
         │   ├── name: :do
@@ -582,9 +640,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (87,0)-(87,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (87,0)-(87,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (87,1)-(87,3) = "::"
         │   ├── name: :else
@@ -594,9 +653,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (89,0)-(89,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (89,0)-(89,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (89,1)-(89,3) = "::"
         │   ├── name: :elsif
@@ -606,9 +666,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (91,0)-(91,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (91,0)-(91,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (91,1)-(91,3) = "::"
         │   ├── name: :end
@@ -618,16 +679,19 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathNode (location: (93,0)-(93,6))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (93,0)-(93,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── name: :END
         │   ├── delimiter_loc: (93,1)-(93,3) = "::"
         │   └── name_loc: (93,3)-(93,6) = "END"
         ├── @ CallNode (location: (95,0)-(95,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (95,0)-(95,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (95,1)-(95,3) = "::"
         │   ├── name: :ensure
@@ -637,9 +701,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (97,0)-(97,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (97,0)-(97,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (97,1)-(97,3) = "::"
         │   ├── name: :false
@@ -649,9 +714,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (99,0)-(99,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (99,0)-(99,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (99,1)-(99,3) = "::"
         │   ├── name: :for
@@ -661,9 +727,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (101,0)-(101,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (101,0)-(101,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (101,1)-(101,3) = "::"
         │   ├── name: :if
@@ -673,9 +740,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (103,0)-(103,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (103,0)-(103,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (103,1)-(103,3) = "::"
         │   ├── name: :in
@@ -685,9 +753,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (105,0)-(105,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (105,0)-(105,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (105,1)-(105,3) = "::"
         │   ├── name: :next
@@ -697,9 +766,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (107,0)-(107,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (107,0)-(107,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (107,1)-(107,3) = "::"
         │   ├── name: :nil
@@ -709,9 +779,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (109,0)-(109,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (109,0)-(109,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (109,1)-(109,3) = "::"
         │   ├── name: :not
@@ -721,9 +792,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (111,0)-(111,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (111,0)-(111,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (111,1)-(111,3) = "::"
         │   ├── name: :or
@@ -733,9 +805,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (113,0)-(113,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (113,0)-(113,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (113,1)-(113,3) = "::"
         │   ├── name: :redo
@@ -745,9 +818,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (115,0)-(115,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (115,0)-(115,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (115,1)-(115,3) = "::"
         │   ├── name: :rescue
@@ -757,9 +831,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (117,0)-(117,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (117,0)-(117,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (117,1)-(117,3) = "::"
         │   ├── name: :retry
@@ -769,9 +844,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (119,0)-(119,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (119,0)-(119,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (119,1)-(119,3) = "::"
         │   ├── name: :return
@@ -781,9 +857,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (121,0)-(121,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (121,0)-(121,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (121,1)-(121,3) = "::"
         │   ├── name: :self
@@ -793,9 +870,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (123,0)-(123,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (123,0)-(123,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (123,1)-(123,3) = "::"
         │   ├── name: :super
@@ -805,9 +883,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (125,0)-(125,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (125,0)-(125,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (125,1)-(125,3) = "::"
         │   ├── name: :then
@@ -817,9 +896,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (127,0)-(127,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (127,0)-(127,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (127,1)-(127,3) = "::"
         │   ├── name: :true
@@ -829,9 +909,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (129,0)-(129,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (129,0)-(129,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (129,1)-(129,3) = "::"
         │   ├── name: :undef
@@ -841,9 +922,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (131,0)-(131,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (131,0)-(131,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (131,1)-(131,3) = "::"
         │   ├── name: :unless
@@ -853,9 +935,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (133,0)-(133,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (133,0)-(133,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (133,1)-(133,3) = "::"
         │   ├── name: :until
@@ -865,9 +948,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (135,0)-(135,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (135,0)-(135,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (135,1)-(135,3) = "::"
         │   ├── name: :when
@@ -877,9 +961,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (137,0)-(137,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (137,0)-(137,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (137,1)-(137,3) = "::"
         │   ├── name: :while
@@ -889,9 +974,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (139,0)-(139,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (139,0)-(139,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (139,1)-(139,3) = "::"
         │   ├── name: :yield
@@ -901,9 +987,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (141,0)-(141,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (141,0)-(141,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (141,1)-(141,3) = "::"
         │   ├── name: :__ENCODING__
@@ -913,9 +1000,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (143,0)-(143,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (143,0)-(143,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (143,1)-(143,3) = "::"
         │   ├── name: :__FILE__
@@ -925,9 +1013,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (145,0)-(145,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (145,0)-(145,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (145,1)-(145,3) = "::"
         │   ├── name: :__LINE__
@@ -937,9 +1026,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (147,0)-(147,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (147,0)-(147,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (147,1)-(147,3) = "::"
         │   ├── name: :<
@@ -949,9 +1039,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (149,0)-(149,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (149,0)-(149,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (149,1)-(149,3) = "::"
         │   ├── name: :<=>
@@ -961,9 +1052,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (151,0)-(151,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (151,0)-(151,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (151,1)-(151,3) = "::"
         │   ├── name: :<<
@@ -973,9 +1065,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (153,0)-(153,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (153,0)-(153,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (153,1)-(153,3) = "::"
         │   ├── name: :-
@@ -985,9 +1078,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (155,0)-(155,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (155,0)-(155,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (155,1)-(155,3) = "::"
         │   ├── name: :%
@@ -997,9 +1091,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (157,0)-(157,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (157,0)-(157,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (157,1)-(157,3) = "::"
         │   ├── name: :%
@@ -1022,9 +1117,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (159,0)-(159,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (159,0)-(159,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (159,1)-(159,3) = "::"
         │   ├── name: :%
@@ -1047,9 +1143,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (161,0)-(161,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (161,0)-(161,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (161,1)-(161,3) = "::"
         │   ├── name: :%
@@ -1072,9 +1169,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (163,0)-(163,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (163,0)-(163,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (163,1)-(163,3) = "::"
         │   ├── name: :%
@@ -1085,13 +1183,15 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ ConstantReadNode (location: (163,4)-(163,5))
+        │   │           ├── flags: ∅
         │   │           └── name: :I
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (165,0)-(165,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (165,0)-(165,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (165,1)-(165,3) = "::"
         │   ├── name: :%
@@ -1102,13 +1202,15 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ ConstantReadNode (location: (165,4)-(165,5))
+        │   │           ├── flags: ∅
         │   │           └── name: :W
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (167,0)-(167,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (167,0)-(167,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (167,1)-(167,3) = "::"
         │   ├── name: :|
@@ -1118,9 +1220,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (169,0)-(169,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (169,0)-(169,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (169,1)-(169,3) = "::"
         │   ├── name: :+
@@ -1130,9 +1233,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (171,0)-(171,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (171,0)-(171,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (171,1)-(171,3) = "::"
         │   ├── name: :/
@@ -1142,9 +1246,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (173,0)-(173,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (173,0)-(173,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (173,1)-(173,3) = "::"
         │   ├── name: :*
@@ -1154,9 +1259,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (175,0)-(175,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (175,0)-(175,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (175,1)-(175,3) = "::"
         │   ├── name: :**
@@ -1166,9 +1272,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (177,0)-(177,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (177,0)-(177,1))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── call_operator_loc: (177,1)-(177,3) = "::"
         │   ├── name: :~
@@ -1178,11 +1285,13 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ ConstantPathNode (location: (179,0)-(180,1))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ CallNode (location: (179,0)-(179,4))
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ ConstantReadNode (location: (179,0)-(179,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── call_operator_loc: (179,1)-(179,3) = "::"
         │   │   ├── name: :_
@@ -1195,12 +1304,13 @@
         │   ├── delimiter_loc: (179,4)-(179,6) = "::"
         │   └── name_loc: (180,0)-(180,1) = "C"
         └── @ RangeNode (location: (182,0)-(184,10))
-            ├── flags: ∅
+            ├── flags: newline
             ├── left:
             │   @ CallNode (location: (182,0)-(182,4))
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ ConstantReadNode (location: (182,0)-(182,1))
+            │   │   ├── flags: ∅
             │   │   └── name: :A
             │   ├── call_operator_loc: (182,1)-(182,3) = "::"
             │   ├── name: :_
@@ -1214,6 +1324,7 @@
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ ConstantReadNode (location: (184,0)-(184,1))
+            │   │   ├── flags: ∅
             │   │   └── name: :A
             │   ├── call_operator_loc: (184,1)-(184,3) = "::"
             │   ├── name: :__END__

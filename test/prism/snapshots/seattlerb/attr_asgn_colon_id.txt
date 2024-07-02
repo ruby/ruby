@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,8))
-            ├── flags: attribute_write
+            ├── flags: newline, attribute_write
             ├── receiver:
             │   @ ConstantReadNode (location: (1,0)-(1,1))
+            │   ├── flags: ∅
             │   └── name: :A
             ├── call_operator_loc: (1,1)-(1,3) = "::"
             ├── name: :b=
@@ -17,7 +20,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (1,7)-(1,8))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 1
             ├── closing_loc: ∅
             └── block: ∅

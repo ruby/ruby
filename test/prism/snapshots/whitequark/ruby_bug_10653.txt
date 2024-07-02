@@ -1,18 +1,23 @@
 @ ProgramNode (location: (1,0)-(5,31))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,31))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ IfNode (location: (1,0)-(1,33))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
         │   │   @ FalseNode (location: (1,0)-(1,5))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: (1,6)-(1,7) = "?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,8)-(1,20))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,8)-(1,20))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :raise
@@ -22,6 +27,7 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (1,14)-(1,20))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
@@ -29,12 +35,14 @@
         │   │               └── closing_loc: (1,17)-(1,20) = "end"
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,21)-(1,33))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (1,21)-(1,22) = ":"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (1,23)-(1,33))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (1,23)-(1,33))
-        │   │   │           ├── flags: ignore_visibility
+        │   │   │           ├── flags: newline, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -44,6 +52,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (1,27)-(1,33))
+        │   │   │               ├── flags: ∅
         │   │   │               ├── locals: []
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
@@ -52,15 +61,18 @@
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         ├── @ IfNode (location: (3,0)-(3,25))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
         │   │   @ FalseNode (location: (3,0)-(3,5))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: (3,6)-(3,7) = "?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (3,8)-(3,16))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,8)-(3,16))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :raise
@@ -70,6 +82,7 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (3,14)-(3,16))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
@@ -77,12 +90,14 @@
         │   │               └── closing_loc: (3,15)-(3,16) = "}"
         │   ├── consequent:
         │   │   @ ElseNode (location: (3,17)-(3,25))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (3,17)-(3,18) = ":"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (3,19)-(3,25))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (3,19)-(3,25))
-        │   │   │           ├── flags: ignore_visibility
+        │   │   │           ├── flags: newline, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -92,6 +107,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block:
         │   │   │               @ BlockNode (location: (3,23)-(3,25))
+        │   │   │               ├── flags: ∅
         │   │   │               ├── locals: []
         │   │   │               ├── parameters: ∅
         │   │   │               ├── body: ∅
@@ -100,18 +116,21 @@
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         └── @ IfNode (location: (5,0)-(5,31))
+            ├── flags: newline
             ├── if_keyword_loc: ∅
             ├── predicate:
             │   @ TrueNode (location: (5,0)-(5,4))
+            │   └── flags: static_literal
             ├── then_keyword_loc: (5,5)-(5,6) = "?"
             ├── statements:
             │   @ StatementsNode (location: (5,7)-(5,27))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (5,7)-(5,27))
-            │           ├── flags: ∅
+            │           ├── flags: newline
             │           ├── receiver:
             │           │   @ IntegerNode (location: (5,7)-(5,8))
-            │           │   ├── flags: decimal
+            │           │   ├── flags: static_literal, decimal
             │           │   └── value: 1
             │           ├── call_operator_loc: (5,8)-(5,9) = "."
             │           ├── name: :tap
@@ -121,11 +140,14 @@
             │           ├── closing_loc: ∅
             │           └── block:
             │               @ BlockNode (location: (5,13)-(5,27))
+            │               ├── flags: ∅
             │               ├── locals: [:n]
             │               ├── parameters:
             │               │   @ BlockParametersNode (location: (5,16)-(5,19))
+            │               │   ├── flags: ∅
             │               │   ├── parameters:
             │               │   │   @ ParametersNode (location: (5,17)-(5,18))
+            │               │   │   ├── flags: ∅
             │               │   │   ├── requireds: (length: 1)
             │               │   │   │   └── @ RequiredParameterNode (location: (5,17)-(5,18))
             │               │   │   │       ├── flags: ∅
@@ -141,9 +163,10 @@
             │               │   └── closing_loc: (5,18)-(5,19) = "|"
             │               ├── body:
             │               │   @ StatementsNode (location: (5,20)-(5,23))
+            │               │   ├── flags: ∅
             │               │   └── body: (length: 1)
             │               │       └── @ CallNode (location: (5,20)-(5,23))
-            │               │           ├── flags: ignore_visibility
+            │               │           ├── flags: newline, ignore_visibility
             │               │           ├── receiver: ∅
             │               │           ├── call_operator_loc: ∅
             │               │           ├── name: :p
@@ -154,6 +177,7 @@
             │               │           │   ├── flags: ∅
             │               │           │   └── arguments: (length: 1)
             │               │           │       └── @ LocalVariableReadNode (location: (5,22)-(5,23))
+            │               │           │           ├── flags: ∅
             │               │           │           ├── name: :n
             │               │           │           └── depth: 0
             │               │           ├── closing_loc: ∅
@@ -162,12 +186,14 @@
             │               └── closing_loc: (5,24)-(5,27) = "end"
             ├── consequent:
             │   @ ElseNode (location: (5,28)-(5,31))
+            │   ├── flags: ∅
             │   ├── else_keyword_loc: (5,28)-(5,29) = ":"
             │   ├── statements:
             │   │   @ StatementsNode (location: (5,30)-(5,31))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (5,30)-(5,31))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: newline, static_literal, decimal
             │   │           └── value: 0
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

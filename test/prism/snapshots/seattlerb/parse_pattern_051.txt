@@ -1,45 +1,53 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ ArrayNode (location: (1,5)-(1,14))
-            │   ├── flags: ∅
+            │   ├── flags: static_literal
             │   ├── elements: (length: 3)
             │   │   ├── @ IntegerNode (location: (1,6)-(1,7))
-            │   │   │   ├── flags: decimal
+            │   │   │   ├── flags: static_literal, decimal
             │   │   │   └── value: 0
             │   │   ├── @ IntegerNode (location: (1,9)-(1,10))
-            │   │   │   ├── flags: decimal
+            │   │   │   ├── flags: static_literal, decimal
             │   │   │   └── value: 1
             │   │   └── @ IntegerNode (location: (1,12)-(1,13))
-            │   │       ├── flags: decimal
+            │   │       ├── flags: static_literal, decimal
             │   │       └── value: 2
             │   ├── opening_loc: (1,5)-(1,6) = "["
             │   └── closing_loc: (1,13)-(1,14) = "]"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,6))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,10))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 2)
             │       │   │   ├── @ IntegerNode (location: (2,4)-(2,5))
-            │       │   │   │   ├── flags: decimal
+            │       │   │   │   ├── flags: static_literal, decimal
             │       │   │   │   └── value: 0
             │       │   │   └── @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │       ├── flags: decimal
+            │       │   │       ├── flags: static_literal, decimal
             │       │   │       └── value: 1
             │       │   ├── rest:
             │       │   │   @ ImplicitRestNode (location: (2,8)-(2,9))
+            │       │   │   └── flags: ∅
             │       │   ├── posts: (length: 0)
             │       │   ├── opening_loc: (2,3)-(2,4) = "["
             │       │   └── closing_loc: (2,9)-(2,10) = "]"
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,6))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ TrueNode (location: (3,2)-(3,6))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

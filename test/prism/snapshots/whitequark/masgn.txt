@@ -1,14 +1,19 @@
 @ ProgramNode (location: (1,0)-(5,20))
+├── flags: ∅
 ├── locals: [:foo, :bar, :baz]
 └── statements:
     @ StatementsNode (location: (1,0)-(5,20))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (1,1)-(1,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (1,6)-(1,9))
+        │   │       ├── flags: ∅
         │   │       ├── name: :bar
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -18,22 +23,25 @@
         │   ├── operator_loc: (1,11)-(1,12) = "="
         │   └── value:
         │       @ ArrayNode (location: (1,13)-(1,17))
-        │       ├── flags: ∅
+        │       ├── flags: static_literal
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (1,13)-(1,14))
-        │       │   │   ├── flags: decimal
+        │       │   │   ├── flags: static_literal, decimal
         │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (1,16)-(1,17))
-        │       │       ├── flags: decimal
+        │       │       ├── flags: static_literal, decimal
         │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (3,0)-(3,15))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (3,0)-(3,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (3,5)-(3,8))
+        │   │       ├── flags: ∅
         │   │       ├── name: :bar
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -43,25 +51,29 @@
         │   ├── operator_loc: (3,9)-(3,10) = "="
         │   └── value:
         │       @ ArrayNode (location: (3,11)-(3,15))
-        │       ├── flags: ∅
+        │       ├── flags: static_literal
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (3,11)-(3,12))
-        │       │   │   ├── flags: decimal
+        │       │   │   ├── flags: static_literal, decimal
         │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (3,14)-(3,15))
-        │       │       ├── flags: decimal
+        │       │       ├── flags: static_literal, decimal
         │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         └── @ MultiWriteNode (location: (5,0)-(5,20))
+            ├── flags: newline
             ├── lefts: (length: 3)
             │   ├── @ LocalVariableTargetNode (location: (5,0)-(5,3))
+            │   │   ├── flags: ∅
             │   │   ├── name: :foo
             │   │   └── depth: 0
             │   ├── @ LocalVariableTargetNode (location: (5,5)-(5,8))
+            │   │   ├── flags: ∅
             │   │   ├── name: :bar
             │   │   └── depth: 0
             │   └── @ LocalVariableTargetNode (location: (5,10)-(5,13))
+            │       ├── flags: ∅
             │       ├── name: :baz
             │       └── depth: 0
             ├── rest: ∅
@@ -71,13 +83,13 @@
             ├── operator_loc: (5,14)-(5,15) = "="
             └── value:
                 @ ArrayNode (location: (5,16)-(5,20))
-                ├── flags: ∅
+                ├── flags: static_literal
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (5,16)-(5,17))
-                │   │   ├── flags: decimal
+                │   │   ├── flags: static_literal, decimal
                 │   │   └── value: 1
                 │   └── @ IntegerNode (location: (5,19)-(5,20))
-                │       ├── flags: decimal
+                │       ├── flags: static_literal, decimal
                 │       └── value: 2
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

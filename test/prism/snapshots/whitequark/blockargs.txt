@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(71,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(71,7))
+    ├── flags: ∅
     └── body: (length: 35)
         ├── @ CallNode (location: (1,0)-(1,5))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -14,13 +16,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,1)-(1,5))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,1)-(1,2) = "{"
         │       └── closing_loc: (1,4)-(1,5) = "}"
         ├── @ CallNode (location: (3,0)-(3,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -30,9 +33,11 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,1)-(3,8))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (3,3)-(3,6))
+        │       │   ├── flags: ∅
         │       │   ├── parameters: ∅
         │       │   ├── locals: (length: 0)
         │       │   ├── opening_loc: (3,3)-(3,4) = "|"
@@ -41,7 +46,7 @@
         │       ├── opening_loc: (3,1)-(3,2) = "{"
         │       └── closing_loc: (3,7)-(3,8) = "}"
         ├── @ CallNode (location: (5,0)-(5,9))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -51,11 +56,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,1)-(5,9))
+        │       ├── flags: ∅
         │       ├── locals: [:b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (5,3)-(5,7))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (5,4)-(5,6))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -75,7 +83,7 @@
         │       ├── opening_loc: (5,1)-(5,2) = "{"
         │       └── closing_loc: (5,8)-(5,9) = "}"
         ├── @ CallNode (location: (7,0)-(7,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -85,11 +93,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,1)-(7,16))
+        │       ├── flags: ∅
         │       ├── locals: [:baz, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (7,3)-(7,14))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (7,4)-(7,13))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -114,7 +125,7 @@
         │       ├── opening_loc: (7,1)-(7,2) = "{"
         │       └── closing_loc: (7,15)-(7,16) = "}"
         ├── @ CallNode (location: (9,0)-(9,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -124,11 +135,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (9,1)-(9,12))
+        │       ├── flags: ∅
         │       ├── locals: [:b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (9,3)-(9,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (9,4)-(9,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -153,7 +167,7 @@
         │       ├── opening_loc: (9,1)-(9,2) = "{"
         │       └── closing_loc: (9,11)-(9,12) = "}"
         ├── @ CallNode (location: (11,0)-(11,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -163,11 +177,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (11,1)-(11,16))
+        │       ├── flags: ∅
         │       ├── locals: [:r, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (11,3)-(11,14))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (11,4)-(11,13))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -195,7 +212,7 @@
         │       ├── opening_loc: (11,1)-(11,2) = "{"
         │       └── closing_loc: (11,15)-(11,16) = "}"
         ├── @ CallNode (location: (13,0)-(13,13))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -205,11 +222,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (13,1)-(13,13))
+        │       ├── flags: ∅
         │       ├── locals: [:s, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (13,3)-(13,11))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (13,4)-(13,10))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -234,7 +254,7 @@
         │       ├── opening_loc: (13,1)-(13,2) = "{"
         │       └── closing_loc: (13,12)-(13,13) = "}"
         ├── @ CallNode (location: (15,0)-(15,9))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -244,11 +264,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (15,1)-(15,9))
+        │       ├── flags: ∅
         │       ├── locals: [:s]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (15,3)-(15,7))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (15,4)-(15,6))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -268,7 +291,7 @@
         │       ├── opening_loc: (15,1)-(15,2) = "{"
         │       └── closing_loc: (15,8)-(15,9) = "}"
         ├── @ CallNode (location: (17,0)-(17,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -278,11 +301,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (17,1)-(17,8))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (17,3)-(17,6))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (17,4)-(17,5))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -302,7 +328,7 @@
         │       ├── opening_loc: (17,1)-(17,2) = "{"
         │       └── closing_loc: (17,7)-(17,8) = "}"
         ├── @ CallNode (location: (19,0)-(21,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -312,9 +338,11 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (19,1)-(21,3))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (19,3)-(21,1))
+        │       │   ├── flags: ∅
         │       │   ├── parameters: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (20,0)-(20,1))
@@ -326,7 +354,7 @@
         │       ├── opening_loc: (19,1)-(19,2) = "{"
         │       └── closing_loc: (21,2)-(21,3) = "}"
         ├── @ CallNode (location: (23,0)-(23,9))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -336,9 +364,11 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (23,1)-(23,9))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (23,3)-(23,7))
+        │       │   ├── flags: ∅
         │       │   ├── parameters: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (23,5)-(23,6))
@@ -350,7 +380,7 @@
         │       ├── opening_loc: (23,1)-(23,2) = "{"
         │       └── closing_loc: (23,8)-(23,9) = "}"
         ├── @ CallNode (location: (25,0)-(25,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -360,11 +390,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (25,1)-(25,12))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (25,3)-(25,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (25,4)-(25,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (25,4)-(25,5))
         │       │   │   │       ├── flags: ∅
@@ -387,7 +420,7 @@
         │       ├── opening_loc: (25,1)-(25,2) = "{"
         │       └── closing_loc: (25,11)-(25,12) = "}"
         ├── @ CallNode (location: (27,0)-(27,15))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -397,11 +430,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (27,1)-(27,15))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (27,3)-(27,13))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (27,4)-(27,12))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (27,4)-(27,5))
         │       │   │   │       ├── flags: ∅
@@ -429,7 +465,7 @@
         │       ├── opening_loc: (27,1)-(27,2) = "{"
         │       └── closing_loc: (27,14)-(27,15) = "}"
         ├── @ CallNode (location: (29,0)-(29,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -439,11 +475,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (29,1)-(29,19))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :r, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (29,3)-(29,17))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (29,4)-(29,16))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (29,4)-(29,5))
         │       │   │   │       ├── flags: ∅
@@ -474,7 +513,7 @@
         │       ├── opening_loc: (29,1)-(29,2) = "{"
         │       └── closing_loc: (29,18)-(29,19) = "}"
         ├── @ CallNode (location: (31,0)-(31,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -484,11 +523,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (31,1)-(31,16))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :s, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (31,3)-(31,14))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (31,4)-(31,13))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (31,4)-(31,5))
         │       │   │   │       ├── flags: ∅
@@ -516,7 +558,7 @@
         │       ├── opening_loc: (31,1)-(31,2) = "{"
         │       └── closing_loc: (31,15)-(31,16) = "}"
         ├── @ CallNode (location: (33,0)-(33,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -526,11 +568,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (33,1)-(33,12))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :s]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (33,3)-(33,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (33,4)-(33,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (33,4)-(33,5))
         │       │   │   │       ├── flags: ∅
@@ -553,7 +598,7 @@
         │       ├── opening_loc: (33,1)-(33,2) = "{"
         │       └── closing_loc: (33,11)-(33,12) = "}"
         ├── @ CallNode (location: (35,0)-(35,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -563,11 +608,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (35,1)-(35,11))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (35,3)-(35,9))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (35,4)-(35,8))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (35,4)-(35,5))
         │       │   │   │       ├── flags: ∅
@@ -590,7 +638,7 @@
         │       ├── opening_loc: (35,1)-(35,2) = "{"
         │       └── closing_loc: (35,10)-(35,11) = "}"
         ├── @ CallNode (location: (37,0)-(37,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -600,11 +648,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (37,1)-(37,12))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (37,3)-(37,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (37,4)-(37,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (37,4)-(37,5))
         │       │   │   │   │   ├── flags: ∅
@@ -615,6 +666,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ ImplicitRestNode (location: (37,8)-(37,9))
+        │       │   │   │   └── flags: ∅
         │       │   │   ├── posts: (length: 0)
         │       │   │   ├── keywords: (length: 0)
         │       │   │   ├── keyword_rest: ∅
@@ -626,7 +678,7 @@
         │       ├── opening_loc: (37,1)-(37,2) = "{"
         │       └── closing_loc: (37,11)-(37,12) = "}"
         ├── @ CallNode (location: (39,0)-(39,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -636,11 +688,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (39,1)-(39,11))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :c]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (39,3)-(39,9))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (39,4)-(39,8))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (39,4)-(39,5))
         │       │   │   │   │   ├── flags: ∅
@@ -661,7 +716,7 @@
         │       ├── opening_loc: (39,1)-(39,2) = "{"
         │       └── closing_loc: (39,10)-(39,11) = "}"
         ├── @ CallNode (location: (41,0)-(41,17))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -671,11 +726,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (41,1)-(41,17))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :o, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (41,3)-(41,15))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (41,4)-(41,14))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (41,4)-(41,5))
         │       │   │   │       ├── flags: ∅
@@ -688,7 +746,7 @@
         │       │   │   │       ├── operator_loc: (41,8)-(41,9) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (41,9)-(41,10))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest: ∅
         │       │   │   ├── posts: (length: 0)
@@ -707,7 +765,7 @@
         │       ├── opening_loc: (41,1)-(41,2) = "{"
         │       └── closing_loc: (41,16)-(41,17) = "}"
         ├── @ CallNode (location: (43,0)-(43,24))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -717,11 +775,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (43,1)-(43,24))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :o, :r, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (43,3)-(43,22))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (43,4)-(43,21))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (43,4)-(43,5))
         │       │   │   │       ├── flags: ∅
@@ -734,7 +795,7 @@
         │       │   │   │       ├── operator_loc: (43,8)-(43,9) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (43,9)-(43,10))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (43,12)-(43,14))
@@ -761,7 +822,7 @@
         │       ├── opening_loc: (43,1)-(43,2) = "{"
         │       └── closing_loc: (43,23)-(43,24) = "}"
         ├── @ CallNode (location: (45,0)-(45,27))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -771,11 +832,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (45,1)-(45,27))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :o, :o1, :r, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (45,3)-(45,25))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (45,4)-(45,24))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (45,4)-(45,5))
         │       │   │   │       ├── flags: ∅
@@ -788,7 +852,7 @@
         │       │   │   │   │   ├── operator_loc: (45,8)-(45,9) = "="
         │       │   │   │   │   └── value:
         │       │   │   │   │       @ IntegerNode (location: (45,9)-(45,10))
-        │       │   │   │   │       ├── flags: decimal
+        │       │   │   │   │       ├── flags: static_literal, decimal
         │       │   │   │   │       └── value: 1
         │       │   │   │   └── @ OptionalParameterNode (location: (45,12)-(45,16))
         │       │   │   │       ├── flags: ∅
@@ -797,7 +861,7 @@
         │       │   │   │       ├── operator_loc: (45,14)-(45,15) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (45,15)-(45,16))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 2
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (45,18)-(45,20))
@@ -821,7 +885,7 @@
         │       ├── opening_loc: (45,1)-(45,2) = "{"
         │       └── closing_loc: (45,26)-(45,27) = "}"
         ├── @ CallNode (location: (47,0)-(47,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -831,11 +895,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (47,1)-(47,20))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :o, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (47,3)-(47,18))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (47,4)-(47,17))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (47,4)-(47,5))
         │       │   │   │       ├── flags: ∅
@@ -848,7 +915,7 @@
         │       │   │   │       ├── operator_loc: (47,8)-(47,9) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (47,9)-(47,10))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest: ∅
         │       │   │   ├── posts: (length: 1)
@@ -870,7 +937,7 @@
         │       ├── opening_loc: (47,1)-(47,2) = "{"
         │       └── closing_loc: (47,19)-(47,20) = "}"
         ├── @ CallNode (location: (49,0)-(49,9))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -880,11 +947,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (49,1)-(49,9))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (49,3)-(49,7))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (49,4)-(49,6))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (49,4)-(49,5))
         │       │   │   │       ├── flags: ∅
@@ -892,6 +962,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ ImplicitRestNode (location: (49,5)-(49,6))
+        │       │   │   │   └── flags: ∅
         │       │   │   ├── posts: (length: 0)
         │       │   │   ├── keywords: (length: 0)
         │       │   │   ├── keyword_rest: ∅
@@ -903,7 +974,7 @@
         │       ├── opening_loc: (49,1)-(49,2) = "{"
         │       └── closing_loc: (49,8)-(49,9) = "}"
         ├── @ CallNode (location: (51,0)-(51,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -913,11 +984,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (51,1)-(51,8))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (51,3)-(51,6))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (51,4)-(51,5))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (51,4)-(51,5))
         │       │   │   │       ├── flags: ∅
@@ -935,7 +1009,7 @@
         │       ├── opening_loc: (51,1)-(51,2) = "{"
         │       └── closing_loc: (51,7)-(51,8) = "}"
         ├── @ CallNode (location: (53,0)-(53,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -945,11 +1019,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (53,1)-(53,8))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (53,3)-(53,6))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (53,4)-(53,5))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (53,4)-(53,5))
         │       │   │   │       ├── flags: ∅
@@ -967,7 +1044,7 @@
         │       ├── opening_loc: (53,1)-(53,2) = "{"
         │       └── closing_loc: (53,7)-(53,8) = "}"
         ├── @ CallNode (location: (55,0)-(55,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -977,11 +1054,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (55,1)-(55,8))
+        │       ├── flags: ∅
         │       ├── locals: [:a]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (55,3)-(55,6))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (55,4)-(55,5))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (55,4)-(55,5))
         │       │   │   │       ├── flags: ∅
@@ -999,7 +1079,7 @@
         │       ├── opening_loc: (55,1)-(55,2) = "{"
         │       └── closing_loc: (55,7)-(55,8) = "}"
         ├── @ CallNode (location: (57,0)-(57,17))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1009,11 +1089,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (57,1)-(57,17))
+        │       ├── flags: ∅
         │       ├── locals: [:foo, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (57,3)-(57,15))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (57,4)-(57,14))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -1025,7 +1108,7 @@
         │       │   │   │       ├── name_loc: (57,4)-(57,8) = "foo:"
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (57,9)-(57,10))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── keyword_rest: ∅
         │       │   │   └── block:
@@ -1041,7 +1124,7 @@
         │       ├── opening_loc: (57,1)-(57,2) = "{"
         │       └── closing_loc: (57,16)-(57,17) = "}"
         ├── @ CallNode (location: (59,0)-(59,32))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1051,11 +1134,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (59,1)-(59,32))
+        │       ├── flags: ∅
         │       ├── locals: [:foo, :bar, :baz, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (59,3)-(59,30))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (59,4)-(59,29))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -1067,7 +1153,7 @@
         │       │   │   │   │   ├── name_loc: (59,4)-(59,8) = "foo:"
         │       │   │   │   │   └── value:
         │       │   │   │   │       @ IntegerNode (location: (59,9)-(59,10))
-        │       │   │   │   │       ├── flags: decimal
+        │       │   │   │   │       ├── flags: static_literal, decimal
         │       │   │   │   │       └── value: 1
         │       │   │   │   └── @ OptionalKeywordParameterNode (location: (59,12)-(59,18))
         │       │   │   │       ├── flags: ∅
@@ -1075,7 +1161,7 @@
         │       │   │   │       ├── name_loc: (59,12)-(59,16) = "bar:"
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (59,17)-(59,18))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 2
         │       │   │   ├── keyword_rest:
         │       │   │   │   @ KeywordRestParameterNode (location: (59,20)-(59,25))
@@ -1096,7 +1182,7 @@
         │       ├── opening_loc: (59,1)-(59,2) = "{"
         │       └── closing_loc: (59,31)-(59,32) = "}"
         ├── @ CallNode (location: (61,0)-(61,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1106,11 +1192,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (61,1)-(61,11))
+        │       ├── flags: ∅
         │       ├── locals: [:foo]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (61,3)-(61,9))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (61,4)-(61,8))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -1129,7 +1218,7 @@
         │       ├── opening_loc: (61,1)-(61,2) = "{"
         │       └── closing_loc: (61,10)-(61,11) = "}"
         ├── @ CallNode (location: (63,0)-(63,14))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1139,11 +1228,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (63,1)-(63,14))
+        │       ├── flags: ∅
         │       ├── locals: [:o, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (63,3)-(63,12))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (63,4)-(63,11))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (63,4)-(63,7))
@@ -1153,7 +1245,7 @@
         │       │   │   │       ├── operator_loc: (63,5)-(63,6) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (63,6)-(63,7))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest: ∅
         │       │   │   ├── posts: (length: 0)
@@ -1172,7 +1264,7 @@
         │       ├── opening_loc: (63,1)-(63,2) = "{"
         │       └── closing_loc: (63,13)-(63,14) = "}"
         ├── @ CallNode (location: (65,0)-(65,18))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1182,11 +1274,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (65,1)-(65,18))
+        │       ├── flags: ∅
         │       ├── locals: [:o, :r, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (65,3)-(65,16))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (65,4)-(65,15))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (65,4)-(65,7))
@@ -1196,7 +1291,7 @@
         │       │   │   │       ├── operator_loc: (65,5)-(65,6) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (65,6)-(65,7))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (65,9)-(65,11))
@@ -1220,7 +1315,7 @@
         │       ├── opening_loc: (65,1)-(65,2) = "{"
         │       └── closing_loc: (65,17)-(65,18) = "}"
         ├── @ CallNode (location: (67,0)-(67,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1230,11 +1325,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (67,1)-(67,21))
+        │       ├── flags: ∅
         │       ├── locals: [:o, :r, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (67,3)-(67,19))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (67,4)-(67,18))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (67,4)-(67,7))
@@ -1244,7 +1342,7 @@
         │       │   │   │       ├── operator_loc: (67,5)-(67,6) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (67,6)-(67,7))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (67,9)-(67,11))
@@ -1271,7 +1369,7 @@
         │       ├── opening_loc: (67,1)-(67,2) = "{"
         │       └── closing_loc: (67,20)-(67,21) = "}"
         ├── @ CallNode (location: (69,0)-(69,17))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -1281,11 +1379,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (69,1)-(69,17))
+        │       ├── flags: ∅
         │       ├── locals: [:o, :p, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (69,3)-(69,15))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (69,4)-(69,14))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (69,4)-(69,7))
@@ -1295,7 +1396,7 @@
         │       │   │   │       ├── operator_loc: (69,5)-(69,6) = "="
         │       │   │   │       └── value:
         │       │   │   │           @ IntegerNode (location: (69,6)-(69,7))
-        │       │   │   │           ├── flags: decimal
+        │       │   │   │           ├── flags: static_literal, decimal
         │       │   │   │           └── value: 1
         │       │   │   ├── rest: ∅
         │       │   │   ├── posts: (length: 1)
@@ -1317,7 +1418,7 @@
         │       ├── opening_loc: (69,1)-(69,2) = "{"
         │       └── closing_loc: (69,16)-(69,17) = "}"
         └── @ CallNode (location: (71,0)-(71,7))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -1327,9 +1428,11 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (71,1)-(71,7))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters:
                 │   @ BlockParametersNode (location: (71,3)-(71,5))
+                │   ├── flags: ∅
                 │   ├── parameters: ∅
                 │   ├── locals: (length: 0)
                 │   ├── opening_loc: (71,3)-(71,4) = "|"

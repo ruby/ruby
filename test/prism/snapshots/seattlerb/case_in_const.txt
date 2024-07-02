@@ -1,22 +1,29 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ ConstantReadNode (location: (1,5)-(1,10))
+            │   ├── flags: ∅
             │   └── name: :Array
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,4))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ConstantReadNode (location: (2,3)-(2,8))
+            │       │   ├── flags: ∅
             │       │   └── name: :Class
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,4))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: forced_us_ascii_encoding
+            │       │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "b"
             │       │           ├── closing_loc: ∅

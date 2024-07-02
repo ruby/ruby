@@ -1,19 +1,25 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,11))
+            ├── flags: newline
             ├── lefts: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,0)-(1,1))
+            │       ├── flags: ∅
             │       ├── name: :a
             │       └── depth: 0
             ├── rest:
             │   @ SplatNode (location: (1,3)-(1,4))
+            │   ├── flags: ∅
             │   ├── operator_loc: (1,3)-(1,4) = "*"
             │   └── expression: ∅
             ├── rights: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,6)-(1,7))
+            │       ├── flags: ∅
             │       ├── name: :b
             │       └── depth: 0
             ├── lparen_loc: ∅

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,13))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :lambda
@@ -14,9 +16,11 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,6)-(1,13))
+                ├── flags: ∅
                 ├── locals: [:a]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,7)-(1,11))
+                │   ├── flags: ∅
                 │   ├── parameters: ∅
                 │   ├── locals: (length: 1)
                 │   │   └── @ BlockLocalVariableNode (location: (1,9)-(1,10))
@@ -26,8 +30,10 @@
                 │   └── closing_loc: (1,10)-(1,11) = "|"
                 ├── body:
                 │   @ StatementsNode (location: (1,11)-(1,12))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ LocalVariableReadNode (location: (1,11)-(1,12))
+                │           ├── flags: newline
                 │           ├── name: :a
                 │           └── depth: 0
                 ├── opening_loc: (1,6)-(1,7) = "{"

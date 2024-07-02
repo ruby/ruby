@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,8))
             │   ├── flags: variable_call, ignore_visibility
@@ -17,10 +20,13 @@
             │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,6))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,11))
+            │       │   ├── flags: ∅
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,9))
+            │       │   │   ├── flags: ∅
             │       │   │   └── name: :Object
             │       │   ├── requireds: (length: 0)
             │       │   ├── rest: ∅
@@ -29,8 +35,10 @@
             │       │   └── closing_loc: (2,10)-(2,11) = "]"
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,6))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ TrueNode (location: (3,2)-(3,6))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

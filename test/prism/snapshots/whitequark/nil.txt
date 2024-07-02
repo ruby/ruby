@@ -1,6 +1,9 @@
 @ ProgramNode (location: (1,0)-(1,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ NilNode (location: (1,0)-(1,3))
+            └── flags: newline, static_literal

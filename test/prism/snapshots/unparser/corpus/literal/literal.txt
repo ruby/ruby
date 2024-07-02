@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(91,2))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(91,2))
+    ├── flags: ∅
     └── body: (length: 78)
         ├── @ HashNode (location: (1,0)-(1,38))
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (1,2)-(1,21))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ StringNode (location: (1,2)-(1,7))
-        │   │   │   │   ├── flags: frozen
+        │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   ├── opening_loc: (1,2)-(1,3) = "\""
         │   │   │   │   ├── content_loc: (1,3)-(1,6) = "foo"
         │   │   │   │   ├── closing_loc: (1,6)-(1,7) = "\""
@@ -20,17 +24,18 @@
         │   │   │   │   ├── opening_loc: (1,11)-(1,21) = "<<-HEREDOC"
         │   │   │   │   ├── parts: (length: 3)
         │   │   │   │   │   ├── @ StringNode (location: (2,0)-(2,2))
-        │   │   │   │   │   │   ├── flags: frozen
+        │   │   │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   ├── content_loc: (2,0)-(2,2) = "  "
         │   │   │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   │   │   └── unescaped: "  "
         │   │   │   │   │   ├── @ EmbeddedStatementsNode (location: (2,2)-(2,5))
+        │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   ├── opening_loc: (2,2)-(2,4) = "\#{"
         │   │   │   │   │   │   ├── statements: ∅
         │   │   │   │   │   │   └── closing_loc: (2,4)-(2,5) = "}"
         │   │   │   │   │   └── @ StringNode (location: (2,5)-(3,0))
-        │   │   │   │   │       ├── flags: frozen
+        │   │   │   │   │       ├── flags: static_literal, frozen
         │   │   │   │   │       ├── opening_loc: ∅
         │   │   │   │   │       ├── content_loc: (2,5)-(3,0) = "\n"
         │   │   │   │   │       ├── closing_loc: ∅
@@ -38,16 +43,17 @@
         │   │   │   │   └── closing_loc: (3,0)-(4,0) = "HEREDOC\n"
         │   │   │   └── operator_loc: (1,8)-(1,10) = "=>"
         │   │   └── @ AssocNode (location: (1,23)-(1,36))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ StringNode (location: (1,23)-(1,28))
-        │   │       │   ├── flags: frozen
+        │   │       │   ├── flags: static_literal, frozen
         │   │       │   ├── opening_loc: (1,23)-(1,24) = "\""
         │   │       │   ├── content_loc: (1,24)-(1,27) = "bar"
         │   │       │   ├── closing_loc: (1,27)-(1,28) = "\""
         │   │       │   └── unescaped: "bar"
         │   │       ├── value:
         │   │       │   @ SymbolNode (location: (1,32)-(1,36))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (1,32)-(1,33) = ":"
         │   │       │   ├── value_loc: (1,33)-(1,36) = "baz"
         │   │       │   ├── closing_loc: ∅
@@ -55,12 +61,14 @@
         │   │       └── operator_loc: (1,29)-(1,31) = "=>"
         │   └── closing_loc: (1,37)-(1,38) = "}"
         ├── @ HashNode (location: (4,0)-(4,31))
+        │   ├── flags: newline
         │   ├── opening_loc: (4,0)-(4,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (4,2)-(4,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ StringNode (location: (4,2)-(4,7))
-        │   │   │   │   ├── flags: frozen
+        │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   ├── opening_loc: (4,2)-(4,3) = "\""
         │   │   │   │   ├── content_loc: (4,3)-(4,6) = "foo"
         │   │   │   │   ├── closing_loc: (4,6)-(4,7) = "\""
@@ -74,16 +82,17 @@
         │   │   │   │   └── unescaped: ""
         │   │   │   └── operator_loc: (4,8)-(4,10) = "=>"
         │   │   └── @ AssocNode (location: (4,16)-(4,29))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ StringNode (location: (4,16)-(4,21))
-        │   │       │   ├── flags: frozen
+        │   │       │   ├── flags: static_literal, frozen
         │   │       │   ├── opening_loc: (4,16)-(4,17) = "\""
         │   │       │   ├── content_loc: (4,17)-(4,20) = "bar"
         │   │       │   ├── closing_loc: (4,20)-(4,21) = "\""
         │   │       │   └── unescaped: "bar"
         │   │       ├── value:
         │   │       │   @ SymbolNode (location: (4,25)-(4,29))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (4,25)-(4,26) = ":"
         │   │       │   ├── value_loc: (4,26)-(4,29) = "baz"
         │   │       │   ├── closing_loc: ∅
@@ -91,7 +100,7 @@
         │   │       └── operator_loc: (4,22)-(4,24) = "=>"
         │   └── closing_loc: (4,30)-(4,31) = "}"
         ├── @ ArrayNode (location: (5,0)-(5,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (5,1)-(5,6))
         │   │   │   ├── flags: ∅
@@ -108,7 +117,7 @@
         │   ├── opening_loc: (5,0)-(5,1) = "["
         │   └── closing_loc: (5,11)-(5,12) = "]"
         ├── @ CallNode (location: (6,0)-(6,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (6,0)-(6,13))
         │   │   ├── flags: ignore_visibility
@@ -126,17 +135,18 @@
         │   │   │           ├── opening_loc: (6,2)-(6,12) = "<<-HEREDOC"
         │   │   │           ├── parts: (length: 3)
         │   │   │           │   ├── @ StringNode (location: (7,0)-(7,2))
-        │   │   │           │   │   ├── flags: frozen
+        │   │   │           │   │   ├── flags: static_literal, frozen
         │   │   │           │   │   ├── opening_loc: ∅
         │   │   │           │   │   ├── content_loc: (7,0)-(7,2) = "  "
         │   │   │           │   │   ├── closing_loc: ∅
         │   │   │           │   │   └── unescaped: "  "
         │   │   │           │   ├── @ EmbeddedStatementsNode (location: (7,2)-(7,5))
+        │   │   │           │   │   ├── flags: ∅
         │   │   │           │   │   ├── opening_loc: (7,2)-(7,4) = "\#{"
         │   │   │           │   │   ├── statements: ∅
         │   │   │           │   │   └── closing_loc: (7,4)-(7,5) = "}"
         │   │   │           │   └── @ StringNode (location: (7,5)-(8,0))
-        │   │   │           │       ├── flags: frozen
+        │   │   │           │       ├── flags: static_literal, frozen
         │   │   │           │       ├── opening_loc: ∅
         │   │   │           │       ├── content_loc: (7,5)-(8,0) = "\n"
         │   │   │           │       ├── closing_loc: ∅
@@ -152,7 +162,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (9,0)-(9,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (9,0)-(9,6))
         │   │   ├── flags: ignore_visibility
@@ -181,12 +191,14 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ HashNode (location: (10,0)-(10,30))
+        │   ├── flags: newline
         │   ├── opening_loc: (10,0)-(10,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (10,2)-(10,21))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ StringNode (location: (10,2)-(10,7))
-        │   │   │   │   ├── flags: frozen
+        │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   ├── opening_loc: (10,2)-(10,3) = "\""
         │   │   │   │   ├── content_loc: (10,3)-(10,6) = "foo"
         │   │   │   │   ├── closing_loc: (10,6)-(10,7) = "\""
@@ -197,17 +209,18 @@
         │   │   │   │   ├── opening_loc: (10,11)-(10,21) = "<<-HEREDOC"
         │   │   │   │   ├── parts: (length: 3)
         │   │   │   │   │   ├── @ StringNode (location: (11,0)-(11,2))
-        │   │   │   │   │   │   ├── flags: frozen
+        │   │   │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   ├── content_loc: (11,0)-(11,2) = "  "
         │   │   │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   │   │   └── unescaped: "  "
         │   │   │   │   │   ├── @ EmbeddedStatementsNode (location: (11,2)-(11,5))
+        │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   ├── opening_loc: (11,2)-(11,4) = "\#{"
         │   │   │   │   │   │   ├── statements: ∅
         │   │   │   │   │   │   └── closing_loc: (11,4)-(11,5) = "}"
         │   │   │   │   │   └── @ StringNode (location: (11,5)-(12,0))
-        │   │   │   │   │       ├── flags: frozen
+        │   │   │   │   │       ├── flags: static_literal, frozen
         │   │   │   │   │       ├── opening_loc: ∅
         │   │   │   │   │       ├── content_loc: (11,5)-(12,0) = "\n"
         │   │   │   │   │       ├── closing_loc: ∅
@@ -215,6 +228,7 @@
         │   │   │   │   └── closing_loc: (12,0)-(13,0) = "HEREDOC\n"
         │   │   │   └── operator_loc: (10,8)-(10,10) = "=>"
         │   │   └── @ AssocSplatNode (location: (10,23)-(10,28))
+        │   │       ├── flags: ∅
         │   │       ├── value:
         │   │       │   @ CallNode (location: (10,25)-(10,28))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -229,12 +243,14 @@
         │   │       └── operator_loc: (10,23)-(10,25) = "**"
         │   └── closing_loc: (10,29)-(10,30) = "}"
         ├── @ HashNode (location: (13,0)-(13,23))
+        │   ├── flags: newline
         │   ├── opening_loc: (13,0)-(13,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (13,2)-(13,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ StringNode (location: (13,2)-(13,7))
-        │   │   │   │   ├── flags: frozen
+        │   │   │   │   ├── flags: static_literal, frozen
         │   │   │   │   ├── opening_loc: (13,2)-(13,3) = "\""
         │   │   │   │   ├── content_loc: (13,3)-(13,6) = "foo"
         │   │   │   │   ├── closing_loc: (13,6)-(13,7) = "\""
@@ -248,6 +264,7 @@
         │   │   │   │   └── unescaped: ""
         │   │   │   └── operator_loc: (13,8)-(13,10) = "=>"
         │   │   └── @ AssocSplatNode (location: (13,16)-(13,21))
+        │   │       ├── flags: ∅
         │   │       ├── value:
         │   │       │   @ CallNode (location: (13,18)-(13,21))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -262,45 +279,51 @@
         │   │       └── operator_loc: (13,16)-(13,18) = "**"
         │   └── closing_loc: (13,22)-(13,23) = "}"
         ├── @ InterpolatedStringNode (location: (14,0)-(14,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (14,0)-(14,1) = "\""
         │   ├── parts: (length: 5)
         │   │   ├── @ EmbeddedVariableNode (location: (14,1)-(14,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (14,1)-(14,2) = "#"
         │   │   │   └── variable:
         │   │   │       @ InstanceVariableReadNode (location: (14,2)-(14,4))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :@a
         │   │   ├── @ StringNode (location: (14,4)-(14,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (14,4)-(14,5) = " "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: " "
         │   │   ├── @ EmbeddedVariableNode (location: (14,5)-(14,9))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (14,5)-(14,6) = "#"
         │   │   │   └── variable:
         │   │   │       @ ClassVariableReadNode (location: (14,6)-(14,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :@@a
         │   │   ├── @ StringNode (location: (14,9)-(14,10))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (14,9)-(14,10) = " "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: " "
         │   │   └── @ EmbeddedVariableNode (location: (14,10)-(14,13))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (14,10)-(14,11) = "#"
         │   │       └── variable:
         │   │           @ GlobalVariableReadNode (location: (14,11)-(14,13))
+        │   │           ├── flags: ∅
         │   │           └── name: :$a
         │   └── closing_loc: (14,13)-(14,14) = "\""
         ├── @ IntegerNode (location: (15,0)-(15,1))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: 0
         ├── @ CallNode (location: (16,0)-(16,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ IntegerNode (location: (16,1)-(16,3))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── call_operator_loc: ∅
         │   ├── name: :+@
@@ -310,83 +333,93 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ IntegerNode (location: (17,0)-(17,1))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: 1
         ├── @ IntegerNode (location: (18,0)-(18,1))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: 1
         ├── @ RationalNode (location: (19,0)-(19,2))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 1
         │   └── denominator: 1
         ├── @ RationalNode (location: (20,0)-(20,4))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 3
         │   └── denominator: 2
         ├── @ RationalNode (location: (21,0)-(21,4))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 13
         │   └── denominator: 10
         ├── @ ImaginaryNode (location: (22,0)-(22,2))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ IntegerNode (location: (22,0)-(22,1))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 5
         ├── @ ImaginaryNode (location: (23,0)-(23,3))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ IntegerNode (location: (23,0)-(23,2))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: -5
         ├── @ ImaginaryNode (location: (24,0)-(24,4))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ FloatNode (location: (24,0)-(24,3))
+        │       ├── flags: static_literal
         │       └── value: 0.6
         ├── @ ImaginaryNode (location: (25,0)-(25,5))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ FloatNode (location: (25,0)-(25,4))
+        │       ├── flags: static_literal
         │       └── value: -0.6
         ├── @ ImaginaryNode (location: (26,0)-(26,32))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ IntegerNode (location: (26,0)-(26,31))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1000000000000000000000000000000
         ├── @ ImaginaryNode (location: (27,0)-(27,3))
+        │   ├── flags: newline, static_literal
         │   └── numeric:
         │       @ RationalNode (location: (27,0)-(27,2))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       ├── numerator: 1
         │       └── denominator: 1
         ├── @ InterpolatedStringNode (location: (28,0)-(28,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: ∅
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (28,0)-(28,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: (28,0)-(28,1) = "\""
         │   │   │   ├── content_loc: (28,1)-(28,4) = "foo"
         │   │   │   ├── closing_loc: (28,4)-(28,5) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   └── @ StringNode (location: (28,6)-(28,11))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: (28,6)-(28,7) = "\""
         │   │       ├── content_loc: (28,7)-(28,10) = "bar"
         │   │       ├── closing_loc: (28,10)-(28,11) = "\""
         │   │       └── unescaped: "bar"
         │   └── closing_loc: ∅
         ├── @ InterpolatedStringNode (location: (29,0)-(29,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (29,0)-(29,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (29,1)-(29,8))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (29,1)-(29,8) = "foobar "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foobar "
         │   │   └── @ EmbeddedStatementsNode (location: (29,8)-(29,14))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (29,8)-(29,10) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (29,10)-(29,13))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ CallNode (location: (29,10)-(29,13))
         │   │       │           ├── flags: variable_call, ignore_visibility
@@ -401,239 +434,256 @@
         │   │       └── closing_loc: (29,13)-(29,14) = "}"
         │   └── closing_loc: (29,14)-(29,15) = "\""
         ├── @ InterpolatedStringNode (location: (30,0)-(30,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (30,0)-(30,1) = "\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (30,1)-(30,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (30,1)-(30,4) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   ├── @ EmbeddedStatementsNode (location: (30,4)-(30,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (30,4)-(30,6) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (30,6)-(30,7))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (30,6)-(30,7))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 1
         │   │   │   └── closing_loc: (30,7)-(30,8) = "}"
         │   │   └── @ StringNode (location: (30,8)-(30,11))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (30,8)-(30,11) = "bar"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "bar"
         │   └── closing_loc: (30,11)-(30,12) = "\""
         ├── @ InterpolatedStringNode (location: (31,0)-(31,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (31,0)-(31,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (31,1)-(31,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (31,1)-(31,5) = "\\\\\\\\"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\\\\"
         │   │   └── @ EmbeddedStatementsNode (location: (31,5)-(31,8))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (31,5)-(31,7) = "\#{"
         │   │       ├── statements: ∅
         │   │       └── closing_loc: (31,7)-(31,8) = "}"
         │   └── closing_loc: (31,8)-(31,9) = "\""
         ├── @ InterpolatedStringNode (location: (32,0)-(32,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (32,0)-(32,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ EmbeddedStatementsNode (location: (32,1)-(32,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (32,1)-(32,3) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (32,3)-(32,4) = "}"
         │   │   └── @ StringNode (location: (32,4)-(32,8))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (32,4)-(32,8) = "\\\#{}"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#{}"
         │   └── closing_loc: (32,8)-(32,9) = "\""
         ├── @ InterpolatedStringNode (location: (33,0)-(33,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (33,0)-(33,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (33,1)-(33,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (33,1)-(33,5) = "\\\#{}"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\#{}"
         │   │   └── @ EmbeddedStatementsNode (location: (33,5)-(33,8))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (33,5)-(33,7) = "\#{"
         │   │       ├── statements: ∅
         │   │       └── closing_loc: (33,7)-(33,8) = "}"
         │   └── closing_loc: (33,8)-(33,9) = "\""
         ├── @ StringNode (location: (34,0)-(34,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (34,0)-(34,1) = "\""
         │   ├── content_loc: (34,1)-(34,14) = "foo\\\\\\\#{@bar}"
         │   ├── closing_loc: (34,14)-(34,15) = "\""
         │   └── unescaped: "foo\\\#{@bar}"
         ├── @ StringNode (location: (35,0)-(35,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (35,0)-(35,1) = "\""
         │   ├── content_loc: (35,1)-(35,3) = "\\\""
         │   ├── closing_loc: (35,3)-(35,4) = "\""
         │   └── unescaped: "\""
         ├── @ StringNode (location: (36,0)-(36,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (36,0)-(36,1) = "\""
         │   ├── content_loc: (36,1)-(36,8) = "foo bar"
         │   ├── closing_loc: (36,8)-(36,9) = "\""
         │   └── unescaped: "foo bar"
         ├── @ StringNode (location: (37,0)-(37,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (37,0)-(37,1) = "\""
         │   ├── content_loc: (37,1)-(37,9) = "foo\\nbar"
         │   ├── closing_loc: (37,9)-(37,10) = "\""
         │   └── unescaped: "foo\nbar"
         ├── @ XStringNode (location: (38,0)-(38,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (38,0)-(38,1) = "`"
         │   ├── content_loc: (38,1)-(38,4) = "foo"
         │   ├── closing_loc: (38,4)-(38,5) = "`"
         │   └── unescaped: "foo"
         ├── @ InterpolatedXStringNode (location: (39,0)-(39,12))
+        │   ├── flags: newline
         │   ├── opening_loc: (39,0)-(39,1) = "`"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (39,1)-(39,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (39,1)-(39,4) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   └── @ EmbeddedStatementsNode (location: (39,4)-(39,11))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (39,4)-(39,6) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (39,6)-(39,10))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ InstanceVariableReadNode (location: (39,6)-(39,10))
+        │   │       │           ├── flags: ∅
         │   │       │           └── name: :@bar
         │   │       └── closing_loc: (39,10)-(39,11) = "}"
         │   └── closing_loc: (39,11)-(39,12) = "`"
         ├── @ XStringNode (location: (40,0)-(40,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (40,0)-(40,1) = "`"
         │   ├── content_loc: (40,1)-(40,2) = ")"
         │   ├── closing_loc: (40,2)-(40,3) = "`"
         │   └── unescaped: ")"
         ├── @ XStringNode (location: (41,0)-(41,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (41,0)-(41,1) = "`"
         │   ├── content_loc: (41,1)-(41,3) = "\\`"
         │   ├── closing_loc: (41,3)-(41,4) = "`"
         │   └── unescaped: "`"
         ├── @ XStringNode (location: (42,0)-(42,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (42,0)-(42,1) = "`"
         │   ├── content_loc: (42,1)-(42,2) = "\""
         │   ├── closing_loc: (42,2)-(42,3) = "`"
         │   └── unescaped: "\""
         ├── @ SymbolNode (location: (43,0)-(43,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (43,0)-(43,1) = ":"
         │   ├── value_loc: (43,1)-(43,4) = "foo"
         │   ├── closing_loc: ∅
         │   └── unescaped: "foo"
         ├── @ SymbolNode (location: (44,0)-(44,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (44,0)-(44,2) = ":\""
         │   ├── value_loc: (44,2)-(44,5) = "A B"
         │   ├── closing_loc: (44,5)-(44,6) = "\""
         │   └── unescaped: "A B"
         ├── @ SymbolNode (location: (45,0)-(45,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (45,0)-(45,1) = ":"
         │   ├── value_loc: (45,1)-(45,4) = "foo"
         │   ├── closing_loc: ∅
         │   └── unescaped: "foo"
         ├── @ SymbolNode (location: (46,0)-(46,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (46,0)-(46,2) = ":\""
         │   ├── value_loc: (46,2)-(46,5) = "A B"
         │   ├── closing_loc: (46,5)-(46,6) = "\""
         │   └── unescaped: "A B"
         ├── @ SymbolNode (location: (47,0)-(47,7))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (47,0)-(47,2) = ":\""
         │   ├── value_loc: (47,2)-(47,6) = "A\\\"B"
         │   ├── closing_loc: (47,6)-(47,7) = "\""
         │   └── unescaped: "A\"B"
         ├── @ SymbolNode (location: (48,0)-(48,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (48,0)-(48,2) = ":\""
         │   ├── value_loc: (1,0)-(1,0) = ""
         │   ├── closing_loc: (48,2)-(48,3) = "\""
         │   └── unescaped: ""
         ├── @ RegularExpressionNode (location: (49,0)-(49,5))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (49,0)-(49,1) = "/"
         │   ├── content_loc: (49,1)-(49,4) = "foo"
         │   ├── closing_loc: (49,4)-(49,5) = "/"
         │   └── unescaped: "foo"
         ├── @ RegularExpressionNode (location: (50,0)-(50,28))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (50,0)-(50,1) = "/"
         │   ├── content_loc: (50,1)-(50,27) = "[^-+',.\\/:@[:alnum:]\\[\\]]+"
         │   ├── closing_loc: (50,27)-(50,28) = "/"
         │   └── unescaped: "[^-+',./:@[:alnum:]\\[\\]]+"
         ├── @ InterpolatedRegularExpressionNode (location: (51,0)-(51,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (51,0)-(51,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (51,1)-(51,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (51,1)-(51,4) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   └── @ EmbeddedStatementsNode (location: (51,4)-(51,11))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (51,4)-(51,6) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (51,6)-(51,10))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ InstanceVariableReadNode (location: (51,6)-(51,10))
+        │   │       │           ├── flags: ∅
         │   │       │           └── name: :@bar
         │   │       └── closing_loc: (51,10)-(51,11) = "}"
         │   └── closing_loc: (51,11)-(51,12) = "/"
         ├── @ InterpolatedRegularExpressionNode (location: (52,0)-(52,15))
-        │   ├── flags: ignore_case, extended, multi_line
+        │   ├── flags: newline, ignore_case, extended, multi_line
         │   ├── opening_loc: (52,0)-(52,1) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (52,1)-(52,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (52,1)-(52,4) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   └── @ EmbeddedStatementsNode (location: (52,4)-(52,11))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (52,4)-(52,6) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (52,6)-(52,10))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ InstanceVariableReadNode (location: (52,6)-(52,10))
+        │   │       │           ├── flags: ∅
         │   │       │           └── name: :@bar
         │   │       └── closing_loc: (52,10)-(52,11) = "}"
         │   └── closing_loc: (52,11)-(52,15) = "/imx"
         ├── @ InterpolatedRegularExpressionNode (location: (53,0)-(53,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (53,0)-(53,1) = "/"
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (53,1)-(53,12))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (53,1)-(53,3) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (53,3)-(53,11))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ StringNode (location: (53,3)-(53,11))
-        │   │       │           ├── flags: frozen
+        │   │       │           ├── flags: static_literal, frozen
         │   │       │           ├── opening_loc: (53,3)-(53,4) = "\""
         │   │       │           ├── content_loc: (53,4)-(53,10) = "\\u0000"
         │   │       │           ├── closing_loc: (53,10)-(53,11) = "\""
@@ -641,42 +691,45 @@
         │   │       └── closing_loc: (53,11)-(53,12) = "}"
         │   └── closing_loc: (53,12)-(53,13) = "/"
         ├── @ RegularExpressionNode (location: (54,0)-(54,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (54,0)-(54,1) = "/"
         │   ├── content_loc: (54,1)-(54,3) = "\\n"
         │   ├── closing_loc: (54,3)-(54,4) = "/"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (55,0)-(55,4))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (55,0)-(55,1) = "/"
         │   ├── content_loc: (55,1)-(55,3) = "\\n"
         │   ├── closing_loc: (55,3)-(55,4) = "/"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (56,0)-(56,5))
-        │   ├── flags: extended, forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, extended, forced_us_ascii_encoding
         │   ├── opening_loc: (56,0)-(56,1) = "/"
         │   ├── content_loc: (56,1)-(56,3) = "\\n"
         │   ├── closing_loc: (56,3)-(56,5) = "/x"
         │   └── unescaped: "\\n"
         ├── @ RegularExpressionNode (location: (57,0)-(57,7))
-        │   ├── flags: extended, forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, extended, forced_us_ascii_encoding
         │   ├── opening_loc: (57,0)-(57,1) = "/"
         │   ├── content_loc: (57,1)-(57,5) = "\\/\\/"
         │   ├── closing_loc: (57,5)-(57,7) = "/x"
         │   └── unescaped: "//"
         ├── @ InterpolatedSymbolNode (location: (58,0)-(58,15))
+        │   ├── flags: newline
         │   ├── opening_loc: (58,0)-(58,2) = ":\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (58,2)-(58,5))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (58,2)-(58,5) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   ├── @ EmbeddedStatementsNode (location: (58,5)-(58,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (58,5)-(58,7) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (58,7)-(58,10))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (58,7)-(58,10))
         │   │   │   │           ├── flags: variable_call, ignore_visibility
@@ -690,22 +743,25 @@
         │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (58,10)-(58,11) = "}"
         │   │   └── @ StringNode (location: (58,11)-(58,14))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (58,11)-(58,14) = "baz"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "baz"
         │   └── closing_loc: (58,14)-(58,15) = "\""
         ├── @ InterpolatedSymbolNode (location: (59,0)-(59,11))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (59,0)-(59,2) = ":\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (59,2)-(59,10))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (59,2)-(59,4) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (59,4)-(59,9))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ StringNode (location: (59,4)-(59,9))
-        │   │       │           ├── flags: frozen
+        │   │       │           ├── flags: static_literal, frozen
         │   │       │           ├── opening_loc: (59,4)-(59,5) = "\""
         │   │       │           ├── content_loc: (59,5)-(59,8) = "foo"
         │   │       │           ├── closing_loc: (59,8)-(59,9) = "\""
@@ -713,16 +769,19 @@
         │   │       └── closing_loc: (59,9)-(59,10) = "}"
         │   └── closing_loc: (59,10)-(59,11) = "\""
         ├── @ RangeNode (location: (60,0)-(60,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ ParenthesesNode (location: (60,0)-(60,11))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ StatementsNode (location: (60,1)-(60,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (60,1)-(60,10))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: newline
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (60,1)-(60,4))
+        │   │   │           │   ├── flags: static_literal
         │   │   │           │   └── value: 0.0
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :/
@@ -733,6 +792,7 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ FloatNode (location: (60,7)-(60,10))
+        │   │   │           │           ├── flags: static_literal
         │   │   │           │           └── value: 0.0
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
@@ -740,24 +800,27 @@
         │   │   └── closing_loc: (60,10)-(60,11) = ")"
         │   ├── right:
         │   │   @ IntegerNode (location: (60,13)-(60,14))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (60,11)-(60,13) = ".."
         ├── @ RangeNode (location: (61,0)-(61,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ IntegerNode (location: (61,0)-(61,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── right:
         │   │   @ ParenthesesNode (location: (61,3)-(61,14))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ StatementsNode (location: (61,4)-(61,13))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (61,4)-(61,13))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: newline
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (61,4)-(61,7))
+        │   │   │           │   ├── flags: static_literal
         │   │   │           │   └── value: 0.0
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :/
@@ -768,6 +831,7 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ FloatNode (location: (61,10)-(61,13))
+        │   │   │           │           ├── flags: static_literal
         │   │   │           │           └── value: 0.0
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
@@ -775,16 +839,19 @@
         │   │   └── closing_loc: (61,13)-(61,14) = ")"
         │   └── operator_loc: (61,1)-(61,3) = ".."
         ├── @ RangeNode (location: (62,0)-(62,16))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ ParenthesesNode (location: (62,0)-(62,11))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ StatementsNode (location: (62,1)-(62,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (62,1)-(62,10))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: newline
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (62,1)-(62,4))
+        │   │   │           │   ├── flags: static_literal
         │   │   │           │   └── value: 0.0
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :/
@@ -795,6 +862,7 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ FloatNode (location: (62,7)-(62,10))
+        │   │   │           │           ├── flags: static_literal
         │   │   │           │           └── value: 0.0
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
@@ -802,31 +870,34 @@
         │   │   └── closing_loc: (62,10)-(62,11) = ")"
         │   ├── right:
         │   │   @ IntegerNode (location: (62,13)-(62,16))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 100
         │   └── operator_loc: (62,11)-(62,13) = ".."
         ├── @ FloatNode (location: (63,0)-(63,4))
+        │   ├── flags: newline, static_literal
         │   └── value: -0.1
         ├── @ FloatNode (location: (64,0)-(64,3))
+        │   ├── flags: newline, static_literal
         │   └── value: 0.1
         ├── @ ArrayNode (location: (65,0)-(65,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (65,1)-(65,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ IntegerNode (location: (65,4)-(65,5))
-        │   │       ├── flags: decimal
+        │   │       ├── flags: static_literal, decimal
         │   │       └── value: 2
         │   ├── opening_loc: (65,0)-(65,1) = "["
         │   └── closing_loc: (65,5)-(65,6) = "]"
         ├── @ ArrayNode (location: (66,0)-(66,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 3)
         │   │   ├── @ IntegerNode (location: (66,1)-(66,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── @ ParenthesesNode (location: (66,4)-(66,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (66,4)-(66,5) = "("
         │   │   │   └── closing_loc: (66,5)-(66,6) = ")"
@@ -843,137 +914,160 @@
         │   ├── opening_loc: (66,0)-(66,1) = "["
         │   └── closing_loc: (66,10)-(66,11) = "]"
         ├── @ ArrayNode (location: (67,0)-(67,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ IntegerNode (location: (67,1)-(67,2))
-        │   │       ├── flags: decimal
+        │   │       ├── flags: static_literal, decimal
         │   │       └── value: 1
         │   ├── opening_loc: (67,0)-(67,1) = "["
         │   └── closing_loc: (67,2)-(67,3) = "]"
         ├── @ ArrayNode (location: (68,0)-(68,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (68,0)-(68,1) = "["
         │   └── closing_loc: (68,1)-(68,2) = "]"
         ├── @ ArrayNode (location: (69,0)-(69,10))
-        │   ├── flags: contains_splat
+        │   ├── flags: newline, contains_splat
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (69,1)-(69,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ SplatNode (location: (69,4)-(69,9))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (69,4)-(69,5) = "*"
         │   │       └── expression:
         │   │           @ InstanceVariableReadNode (location: (69,5)-(69,9))
+        │   │           ├── flags: ∅
         │   │           └── name: :@foo
         │   ├── opening_loc: (69,0)-(69,1) = "["
         │   └── closing_loc: (69,9)-(69,10) = "]"
         ├── @ ArrayNode (location: (70,0)-(70,10))
-        │   ├── flags: contains_splat
+        │   ├── flags: newline, contains_splat
         │   ├── elements: (length: 2)
         │   │   ├── @ SplatNode (location: (70,1)-(70,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (70,1)-(70,2) = "*"
         │   │   │   └── expression:
         │   │   │       @ InstanceVariableReadNode (location: (70,2)-(70,6))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :@foo
         │   │   └── @ IntegerNode (location: (70,8)-(70,9))
-        │   │       ├── flags: decimal
+        │   │       ├── flags: static_literal, decimal
         │   │       └── value: 1
         │   ├── opening_loc: (70,0)-(70,1) = "["
         │   └── closing_loc: (70,9)-(70,10) = "]"
         ├── @ ArrayNode (location: (71,0)-(71,14))
-        │   ├── flags: contains_splat
+        │   ├── flags: newline, contains_splat
         │   ├── elements: (length: 2)
         │   │   ├── @ SplatNode (location: (71,1)-(71,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (71,1)-(71,2) = "*"
         │   │   │   └── expression:
         │   │   │       @ InstanceVariableReadNode (location: (71,2)-(71,6))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :@foo
         │   │   └── @ SplatNode (location: (71,8)-(71,13))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (71,8)-(71,9) = "*"
         │   │       └── expression:
         │   │           @ InstanceVariableReadNode (location: (71,9)-(71,13))
+        │   │           ├── flags: ∅
         │   │           └── name: :@baz
         │   ├── opening_loc: (71,0)-(71,1) = "["
         │   └── closing_loc: (71,13)-(71,14) = "]"
         ├── @ HashNode (location: (72,0)-(72,2))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (72,0)-(72,1) = "{"
         │   ├── elements: (length: 0)
         │   └── closing_loc: (72,1)-(72,2) = "}"
         ├── @ HashNode (location: (73,0)-(73,12))
+        │   ├── flags: newline
         │   ├── opening_loc: (73,0)-(73,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (73,2)-(73,10))
+        │   │       ├── flags: ∅
         │   │       ├── key:
         │   │       │   @ ParenthesesNode (location: (73,2)-(73,4))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body: ∅
         │   │       │   ├── opening_loc: (73,2)-(73,3) = "("
         │   │       │   └── closing_loc: (73,3)-(73,4) = ")"
         │   │       ├── value:
         │   │       │   @ ParenthesesNode (location: (73,8)-(73,10))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── body: ∅
         │   │       │   ├── opening_loc: (73,8)-(73,9) = "("
         │   │       │   └── closing_loc: (73,9)-(73,10) = ")"
         │   │       └── operator_loc: (73,5)-(73,7) = "=>"
         │   └── closing_loc: (73,11)-(73,12) = "}"
         ├── @ HashNode (location: (74,0)-(74,10))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (74,0)-(74,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (74,2)-(74,8))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ IntegerNode (location: (74,2)-(74,3))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (74,7)-(74,8))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       └── operator_loc: (74,4)-(74,6) = "=>"
         │   └── closing_loc: (74,9)-(74,10) = "}"
         ├── @ HashNode (location: (75,0)-(75,18))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (75,0)-(75,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (75,2)-(75,8))
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── key:
         │   │   │   │   @ IntegerNode (location: (75,2)-(75,3))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 1
         │   │   │   ├── value:
         │   │   │   │   @ IntegerNode (location: (75,7)-(75,8))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 2
         │   │   │   └── operator_loc: (75,4)-(75,6) = "=>"
         │   │   └── @ AssocNode (location: (75,10)-(75,16))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ IntegerNode (location: (75,10)-(75,11))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 3
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (75,15)-(75,16))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 4
         │   │       └── operator_loc: (75,12)-(75,14) = "=>"
         │   └── closing_loc: (75,17)-(75,18) = "}"
         ├── @ HashNode (location: (76,0)-(76,27))
+        │   ├── flags: newline
         │   ├── opening_loc: (76,0)-(76,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (76,2)-(76,19))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (76,2)-(76,4))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (76,2)-(76,3) = "a"
         │   │   │   │   ├── closing_loc: (76,3)-(76,4) = ":"
         │   │   │   │   └── unescaped: "a"
         │   │   │   ├── value:
         │   │   │   │   @ ParenthesesNode (location: (76,5)-(76,19))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── body:
         │   │   │   │   │   @ StatementsNode (location: (76,6)-(76,18))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │       └── @ RescueModifierNode (location: (76,6)-(76,18))
+        │   │   │   │   │           ├── flags: newline
         │   │   │   │   │           ├── expression:
         │   │   │   │   │           │   @ IntegerNode (location: (76,6)-(76,7))
-        │   │   │   │   │           │   ├── flags: decimal
+        │   │   │   │   │           │   ├── flags: static_literal, decimal
         │   │   │   │   │           │   └── value: 1
         │   │   │   │   │           ├── keyword_loc: (76,8)-(76,14) = "rescue"
         │   │   │   │   │           └── rescue_expression:
@@ -991,63 +1085,69 @@
         │   │   │   │   └── closing_loc: (76,18)-(76,19) = ")"
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (76,21)-(76,25))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (76,21)-(76,23))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (76,21)-(76,22) = "b"
         │   │       │   ├── closing_loc: (76,22)-(76,23) = ":"
         │   │       │   └── unescaped: "b"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (76,24)-(76,25))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (76,26)-(76,27) = "}"
         ├── @ HashNode (location: (77,0)-(77,14))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (77,0)-(77,1) = "{"
         │   ├── elements: (length: 2)
         │   │   ├── @ AssocNode (location: (77,2)-(77,6))
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── key:
         │   │   │   │   @ SymbolNode (location: (77,2)-(77,4))
-        │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── value_loc: (77,2)-(77,3) = "a"
         │   │   │   │   ├── closing_loc: (77,3)-(77,4) = ":"
         │   │   │   │   └── unescaped: "a"
         │   │   │   ├── value:
         │   │   │   │   @ IntegerNode (location: (77,5)-(77,6))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 1
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (77,8)-(77,12))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (77,8)-(77,10))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (77,8)-(77,9) = "b"
         │   │       │   ├── closing_loc: (77,9)-(77,10) = ":"
         │   │       │   └── unescaped: "b"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (77,11)-(77,12))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (77,13)-(77,14) = "}"
         ├── @ HashNode (location: (78,0)-(78,9))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (78,0)-(78,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (78,2)-(78,7))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (78,2)-(78,4))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── value_loc: (78,2)-(78,3) = "a"
         │   │       │   ├── closing_loc: (78,3)-(78,4) = ":"
         │   │       │   └── unescaped: "a"
         │   │       ├── value:
         │   │       │   @ SymbolNode (location: (78,5)-(78,7))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (78,5)-(78,6) = ":"
         │   │       │   ├── value_loc: (78,6)-(78,7) = "a"
         │   │       │   ├── closing_loc: ∅
@@ -1055,66 +1155,72 @@
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (78,8)-(78,9) = "}"
         ├── @ HashNode (location: (79,0)-(79,15))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (79,0)-(79,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (79,2)-(79,13))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (79,2)-(79,8))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (79,2)-(79,4) = ":\""
         │   │       │   ├── value_loc: (79,4)-(79,7) = "a b"
         │   │       │   ├── closing_loc: (79,7)-(79,8) = "\""
         │   │       │   └── unescaped: "a b"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (79,12)-(79,13))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       └── operator_loc: (79,9)-(79,11) = "=>"
         │   └── closing_loc: (79,14)-(79,15) = "}"
         ├── @ HashNode (location: (80,0)-(80,12))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (80,0)-(80,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (80,2)-(80,10))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (80,2)-(80,5))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (80,2)-(80,3) = ":"
         │   │       │   ├── value_loc: (80,3)-(80,5) = "-@"
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "-@"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (80,9)-(80,10))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       └── operator_loc: (80,6)-(80,8) = "=>"
         │   └── closing_loc: (80,11)-(80,12) = "}"
         ├── @ InterpolatedStringNode (location: (81,0)-(82,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (81,0)-(81,1) = "\""
         │   ├── parts: (length: 4)
         │   │   ├── @ EmbeddedStatementsNode (location: (81,1)-(81,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (81,1)-(81,3) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (81,3)-(81,4) = "}"
         │   │   ├── @ StringNode (location: (81,4)-(82,0))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (81,4)-(82,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (82,0)-(82,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (82,0)-(82,2) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (82,2)-(82,3) = "}"
         │   │   └── @ StringNode (location: (82,3)-(82,6))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (82,3)-(82,6) = "\\na"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\na"
         │   └── closing_loc: (82,6)-(82,7) = "\""
         ├── @ CallNode (location: (83,0)-(86,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1124,31 +1230,35 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (83,4)-(86,1))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (84,2)-(85,7))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ InterpolatedStringNode (location: (84,2)-(85,7))
-        │       │           ├── flags: ∅
+        │       │           ├── flags: newline
         │       │           ├── opening_loc: (84,2)-(84,3) = "\""
         │       │           ├── parts: (length: 4)
         │       │           │   ├── @ EmbeddedStatementsNode (location: (84,3)-(84,6))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── opening_loc: (84,3)-(84,5) = "\#{"
         │       │           │   │   ├── statements: ∅
         │       │           │   │   └── closing_loc: (84,5)-(84,6) = "}"
         │       │           │   ├── @ StringNode (location: (84,6)-(85,0))
-        │       │           │   │   ├── flags: frozen
+        │       │           │   │   ├── flags: static_literal, frozen
         │       │           │   │   ├── opening_loc: ∅
         │       │           │   │   ├── content_loc: (84,6)-(85,0) = "\n"
         │       │           │   │   ├── closing_loc: ∅
         │       │           │   │   └── unescaped: "\n"
         │       │           │   ├── @ EmbeddedStatementsNode (location: (85,0)-(85,3))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── opening_loc: (85,0)-(85,2) = "\#{"
         │       │           │   │   ├── statements: ∅
         │       │           │   │   └── closing_loc: (85,2)-(85,3) = "}"
         │       │           │   └── @ StringNode (location: (85,3)-(85,6))
-        │       │           │       ├── flags: frozen
+        │       │           │       ├── flags: static_literal, frozen
         │       │           │       ├── opening_loc: ∅
         │       │           │       ├── content_loc: (85,3)-(85,6) = "\\na"
         │       │           │       ├── closing_loc: ∅
@@ -1157,24 +1267,27 @@
         │       ├── opening_loc: (83,4)-(83,5) = "{"
         │       └── closing_loc: (86,0)-(86,1) = "}"
         ├── @ SymbolNode (location: (87,0)-(88,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (87,0)-(87,2) = ":\""
         │   ├── value_loc: (87,2)-(88,1) = "a\\\\\nb"
         │   ├── closing_loc: (88,1)-(88,2) = "\""
         │   └── unescaped: "a\\\nb"
         └── @ InterpolatedXStringNode (location: (89,0)-(91,2))
+            ├── flags: newline
             ├── opening_loc: (89,0)-(89,1) = "`"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (89,1)-(90,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (89,1)-(90,0) = "  x\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "  x\n"
             │   ├── @ EmbeddedStatementsNode (location: (90,0)-(90,6))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (90,0)-(90,2) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (90,2)-(90,5))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ CallNode (location: (90,2)-(90,5))
             │   │   │           ├── flags: variable_call, ignore_visibility
@@ -1188,7 +1301,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (90,5)-(90,6) = "}"
             │   └── @ StringNode (location: (90,6)-(91,1))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (90,6)-(91,1) = "\n#"
             │       ├── closing_loc: ∅

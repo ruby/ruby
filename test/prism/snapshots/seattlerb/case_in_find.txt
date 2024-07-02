@@ -1,40 +1,49 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,2)-(2,15))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ FindPatternNode (location: (2,5)-(2,15))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── left:
             │       │   │   @ SplatNode (location: (2,5)-(2,7))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,5)-(2,6) = "*"
             │       │   │   └── expression:
             │       │   │       @ LocalVariableTargetNode (location: (2,6)-(2,7))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── name: :a
             │       │   │       └── depth: 0
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ SymbolNode (location: (2,9)-(2,11))
-            │       │   │       ├── flags: forced_us_ascii_encoding
+            │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │       ├── opening_loc: (2,9)-(2,10) = ":"
             │       │   │       ├── value_loc: (2,10)-(2,11) = "+"
             │       │   │       ├── closing_loc: ∅
             │       │   │       └── unescaped: "+"
             │       │   ├── right:
             │       │   │   @ SplatNode (location: (2,13)-(2,15))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,13)-(2,14) = "*"
             │       │   │   └── expression:
             │       │   │       @ LocalVariableTargetNode (location: (2,14)-(2,15))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── name: :b
             │       │   │       └── depth: 0
             │       │   ├── opening_loc: ∅

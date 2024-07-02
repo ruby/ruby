@@ -1,21 +1,25 @@
 @ ProgramNode (location: (1,0)-(3,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,4))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ InterpolatedStringNode (location: (1,0)-(2,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (1,1)-(1,4))
-        │   │   │   ├── flags: frozen
+        │   │   │   ├── flags: static_literal, frozen
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (1,1)-(1,4) = "a\\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   └── @ EmbeddedStatementsNode (location: (1,4)-(2,1))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (1,4)-(1,6) = "\#{"
         │   │       ├── statements: ∅
         │   │       └── closing_loc: (2,0)-(2,1) = "}"
         │   └── closing_loc: (2,1)-(2,2) = "\""
         └── @ TrueNode (location: (3,0)-(3,4))
+            └── flags: newline, static_literal

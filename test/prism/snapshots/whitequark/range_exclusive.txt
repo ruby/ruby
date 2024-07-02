@@ -1,16 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,5))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ RangeNode (location: (1,0)-(1,5))
-            ├── flags: exclude_end
+            ├── flags: newline, static_literal, exclude_end
             ├── left:
             │   @ IntegerNode (location: (1,0)-(1,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── right:
             │   @ IntegerNode (location: (1,4)-(1,5))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 2
             └── operator_loc: (1,1)-(1,4) = "..."

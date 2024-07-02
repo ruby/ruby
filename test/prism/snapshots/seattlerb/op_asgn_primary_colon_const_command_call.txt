@@ -1,13 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ConstantPathOperatorWriteNode (location: (1,0)-(1,11))
+            ├── flags: newline
             ├── target:
             │   @ ConstantPathNode (location: (1,0)-(1,4))
+            │   ├── flags: ∅
             │   ├── parent:
             │   │   @ ConstantReadNode (location: (1,0)-(1,1))
+            │   │   ├── flags: ∅
             │   │   └── name: :A
             │   ├── name: :B
             │   ├── delimiter_loc: (1,1)-(1,3) = "::"

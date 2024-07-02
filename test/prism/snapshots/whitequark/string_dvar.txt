@@ -1,37 +1,45 @@
 @ ProgramNode (location: (1,0)-(1,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,14))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,14))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 5)
             │   ├── @ EmbeddedVariableNode (location: (1,1)-(1,4))
+            │   │   ├── flags: ∅
             │   │   ├── operator_loc: (1,1)-(1,2) = "#"
             │   │   └── variable:
             │   │       @ InstanceVariableReadNode (location: (1,2)-(1,4))
+            │   │       ├── flags: ∅
             │   │       └── name: :@a
             │   ├── @ StringNode (location: (1,4)-(1,5))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,4)-(1,5) = " "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: " "
             │   ├── @ EmbeddedVariableNode (location: (1,5)-(1,9))
+            │   │   ├── flags: ∅
             │   │   ├── operator_loc: (1,5)-(1,6) = "#"
             │   │   └── variable:
             │   │       @ ClassVariableReadNode (location: (1,6)-(1,9))
+            │   │       ├── flags: ∅
             │   │       └── name: :@@a
             │   ├── @ StringNode (location: (1,9)-(1,10))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,9)-(1,10) = " "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: " "
             │   └── @ EmbeddedVariableNode (location: (1,10)-(1,13))
+            │       ├── flags: ∅
             │       ├── operator_loc: (1,10)-(1,11) = "#"
             │       └── variable:
             │           @ GlobalVariableReadNode (location: (1,11)-(1,13))
+            │           ├── flags: ∅
             │           └── name: :$a
             └── closing_loc: (1,13)-(1,14) = "\""

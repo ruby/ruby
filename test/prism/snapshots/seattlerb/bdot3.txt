@@ -1,18 +1,20 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ RangeNode (location: (1,0)-(1,5))
-        │   ├── flags: exclude_end
+        │   ├── flags: newline, static_literal, exclude_end
         │   ├── left: ∅
         │   ├── right:
         │   │   @ IntegerNode (location: (1,3)-(1,5))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 10
         │   └── operator_loc: (1,0)-(1,3) = "..."
         ├── @ RangeNode (location: (2,2)-(2,6))
-        │   ├── flags: exclude_end
+        │   ├── flags: newline, exclude_end
         │   ├── left: ∅
         │   ├── right:
         │   │   @ CallNode (location: (2,5)-(2,6))
@@ -27,7 +29,7 @@
         │   │   └── block: ∅
         │   └── operator_loc: (2,2)-(2,5) = "..."
         └── @ CallNode (location: (3,2)-(3,3))
-            ├── flags: variable_call, ignore_visibility
+            ├── flags: newline, variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :c

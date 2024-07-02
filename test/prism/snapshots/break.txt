@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(29,21))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(29,21))
+    ├── flags: ∅
     └── body: (length: 13)
         ├── @ CallNode (location: (1,0)-(1,13))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -14,18 +16,21 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,4)-(1,13))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (1,6)-(1,11))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (1,6)-(1,11))
+        │       │           ├── flags: newline
         │       │           ├── arguments: ∅
         │       │           └── keyword_loc: (1,6)-(1,11) = "break"
         │       ├── opening_loc: (1,4)-(1,5) = "{"
         │       └── closing_loc: (1,12)-(1,13) = "}"
         ├── @ CallNode (location: (3,0)-(3,27))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -35,40 +40,49 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,4)-(3,27))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (3,6)-(3,25))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (3,6)-(3,25))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (3,12)-(3,25))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 3)
         │       │           │       ├── @ ParenthesesNode (location: (3,12)-(3,15))
+        │       │           │       │   ├── flags: ∅
         │       │           │       │   ├── body:
         │       │           │       │   │   @ StatementsNode (location: (3,13)-(3,14))
+        │       │           │       │   │   ├── flags: ∅
         │       │           │       │   │   └── body: (length: 1)
         │       │           │       │   │       └── @ IntegerNode (location: (3,13)-(3,14))
-        │       │           │       │   │           ├── flags: decimal
+        │       │           │       │   │           ├── flags: newline, static_literal, decimal
         │       │           │       │   │           └── value: 1
         │       │           │       │   ├── opening_loc: (3,12)-(3,13) = "("
         │       │           │       │   └── closing_loc: (3,14)-(3,15) = ")"
         │       │           │       ├── @ ParenthesesNode (location: (3,17)-(3,20))
+        │       │           │       │   ├── flags: ∅
         │       │           │       │   ├── body:
         │       │           │       │   │   @ StatementsNode (location: (3,18)-(3,19))
+        │       │           │       │   │   ├── flags: ∅
         │       │           │       │   │   └── body: (length: 1)
         │       │           │       │   │       └── @ IntegerNode (location: (3,18)-(3,19))
-        │       │           │       │   │           ├── flags: decimal
+        │       │           │       │   │           ├── flags: newline, static_literal, decimal
         │       │           │       │   │           └── value: 2
         │       │           │       │   ├── opening_loc: (3,17)-(3,18) = "("
         │       │           │       │   └── closing_loc: (3,19)-(3,20) = ")"
         │       │           │       └── @ ParenthesesNode (location: (3,22)-(3,25))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── body:
         │       │           │           │   @ StatementsNode (location: (3,23)-(3,24))
+        │       │           │           │   ├── flags: ∅
         │       │           │           │   └── body: (length: 1)
         │       │           │           │       └── @ IntegerNode (location: (3,23)-(3,24))
-        │       │           │           │           ├── flags: decimal
+        │       │           │           │           ├── flags: newline, static_literal, decimal
         │       │           │           │           └── value: 3
         │       │           │           ├── opening_loc: (3,22)-(3,23) = "("
         │       │           │           └── closing_loc: (3,24)-(3,25) = ")"
@@ -76,7 +90,7 @@
         │       ├── opening_loc: (3,4)-(3,5) = "{"
         │       └── closing_loc: (3,26)-(3,27) = "}"
         ├── @ CallNode (location: (5,0)-(5,15))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -86,24 +100,27 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,4)-(5,15))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (5,6)-(5,13))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (5,6)-(5,13))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (5,12)-(5,13))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ IntegerNode (location: (5,12)-(5,13))
-        │       │           │           ├── flags: decimal
+        │       │           │           ├── flags: static_literal, decimal
         │       │           │           └── value: 1
         │       │           └── keyword_loc: (5,6)-(5,11) = "break"
         │       ├── opening_loc: (5,4)-(5,5) = "{"
         │       └── closing_loc: (5,14)-(5,15) = "}"
         ├── @ CallNode (location: (7,0)-(8,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -113,30 +130,33 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,4)-(8,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (7,6)-(8,1))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (7,6)-(8,1))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (7,12)-(8,1))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 3)
         │       │           │       ├── @ IntegerNode (location: (7,12)-(7,13))
-        │       │           │       │   ├── flags: decimal
+        │       │           │       │   ├── flags: static_literal, decimal
         │       │           │       │   └── value: 1
         │       │           │       ├── @ IntegerNode (location: (7,15)-(7,16))
-        │       │           │       │   ├── flags: decimal
+        │       │           │       │   ├── flags: static_literal, decimal
         │       │           │       │   └── value: 2
         │       │           │       └── @ IntegerNode (location: (8,0)-(8,1))
-        │       │           │           ├── flags: decimal
+        │       │           │           ├── flags: static_literal, decimal
         │       │           │           └── value: 3
         │       │           └── keyword_loc: (7,6)-(7,11) = "break"
         │       ├── opening_loc: (7,4)-(7,5) = "{"
         │       └── closing_loc: (8,2)-(8,3) = "}"
         ├── @ CallNode (location: (10,0)-(10,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -146,30 +166,33 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (10,4)-(10,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (10,6)-(10,19))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (10,6)-(10,19))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (10,12)-(10,19))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 3)
         │       │           │       ├── @ IntegerNode (location: (10,12)-(10,13))
-        │       │           │       │   ├── flags: decimal
+        │       │           │       │   ├── flags: static_literal, decimal
         │       │           │       │   └── value: 1
         │       │           │       ├── @ IntegerNode (location: (10,15)-(10,16))
-        │       │           │       │   ├── flags: decimal
+        │       │           │       │   ├── flags: static_literal, decimal
         │       │           │       │   └── value: 2
         │       │           │       └── @ IntegerNode (location: (10,18)-(10,19))
-        │       │           │           ├── flags: decimal
+        │       │           │           ├── flags: static_literal, decimal
         │       │           │           └── value: 3
         │       │           └── keyword_loc: (10,6)-(10,11) = "break"
         │       ├── opening_loc: (10,4)-(10,5) = "{"
         │       └── closing_loc: (10,20)-(10,21) = "}"
         ├── @ CallNode (location: (12,0)-(12,23))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -179,27 +202,30 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (12,4)-(12,23))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (12,6)-(12,21))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (12,6)-(12,21))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (12,12)-(12,21))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ ArrayNode (location: (12,12)-(12,21))
-        │       │           │           ├── flags: ∅
+        │       │           │           ├── flags: static_literal
         │       │           │           ├── elements: (length: 3)
         │       │           │           │   ├── @ IntegerNode (location: (12,13)-(12,14))
-        │       │           │           │   │   ├── flags: decimal
+        │       │           │           │   │   ├── flags: static_literal, decimal
         │       │           │           │   │   └── value: 1
         │       │           │           │   ├── @ IntegerNode (location: (12,16)-(12,17))
-        │       │           │           │   │   ├── flags: decimal
+        │       │           │           │   │   ├── flags: static_literal, decimal
         │       │           │           │   │   └── value: 2
         │       │           │           │   └── @ IntegerNode (location: (12,19)-(12,20))
-        │       │           │           │       ├── flags: decimal
+        │       │           │           │       ├── flags: static_literal, decimal
         │       │           │           │       └── value: 3
         │       │           │           ├── opening_loc: (12,12)-(12,13) = "["
         │       │           │           └── closing_loc: (12,20)-(12,21) = "]"
@@ -207,7 +233,7 @@
         │       ├── opening_loc: (12,4)-(12,5) = "{"
         │       └── closing_loc: (12,22)-(12,23) = "}"
         ├── @ CallNode (location: (14,0)-(17,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -217,25 +243,30 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (14,4)-(17,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (14,6)-(17,1))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (14,6)-(17,1))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (14,11)-(17,1))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ ParenthesesNode (location: (14,11)-(17,1))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── body:
         │       │           │           │   @ StatementsNode (location: (15,2)-(16,3))
+        │       │           │           │   ├── flags: ∅
         │       │           │           │   └── body: (length: 2)
         │       │           │           │       ├── @ IntegerNode (location: (15,2)-(15,3))
-        │       │           │           │       │   ├── flags: decimal
+        │       │           │           │       │   ├── flags: newline, static_literal, decimal
         │       │           │           │       │   └── value: 1
         │       │           │           │       └── @ IntegerNode (location: (16,2)-(16,3))
-        │       │           │           │           ├── flags: decimal
+        │       │           │           │           ├── flags: newline, static_literal, decimal
         │       │           │           │           └── value: 2
         │       │           │           ├── opening_loc: (14,11)-(14,12) = "("
         │       │           │           └── closing_loc: (17,0)-(17,1) = ")"
@@ -243,7 +274,7 @@
         │       ├── opening_loc: (14,4)-(14,5) = "{"
         │       └── closing_loc: (17,2)-(17,3) = "}"
         ├── @ CallNode (location: (19,0)-(19,15))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -253,17 +284,21 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (19,4)-(19,15))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (19,6)-(19,13))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (19,6)-(19,13))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (19,11)-(19,13))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ ParenthesesNode (location: (19,11)-(19,13))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── body: ∅
         │       │           │           ├── opening_loc: (19,11)-(19,12) = "("
         │       │           │           └── closing_loc: (19,12)-(19,13) = ")"
@@ -271,7 +306,7 @@
         │       ├── opening_loc: (19,4)-(19,5) = "{"
         │       └── closing_loc: (19,14)-(19,15) = "}"
         ├── @ CallNode (location: (21,0)-(21,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -281,22 +316,27 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (21,4)-(21,16))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (21,6)-(21,14))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BreakNode (location: (21,6)-(21,14))
+        │       │           ├── flags: newline
         │       │           ├── arguments:
         │       │           │   @ ArgumentsNode (location: (21,11)-(21,14))
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ ParenthesesNode (location: (21,11)-(21,14))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── body:
         │       │           │           │   @ StatementsNode (location: (21,12)-(21,13))
+        │       │           │           │   ├── flags: ∅
         │       │           │           │   └── body: (length: 1)
         │       │           │           │       └── @ IntegerNode (location: (21,12)-(21,13))
-        │       │           │           │           ├── flags: decimal
+        │       │           │           │           ├── flags: newline, static_literal, decimal
         │       │           │           │           └── value: 1
         │       │           │           ├── opening_loc: (21,11)-(21,12) = "("
         │       │           │           └── closing_loc: (21,13)-(21,14) = ")"
@@ -304,7 +344,7 @@
         │       ├── opening_loc: (21,4)-(21,5) = "{"
         │       └── closing_loc: (21,15)-(21,16) = "}"
         ├── @ CallNode (location: (23,0)-(23,22))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (23,0)-(23,16))
         │   │   ├── flags: ignore_visibility
@@ -317,18 +357,21 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block:
         │   │       @ BlockNode (location: (23,4)-(23,16))
+        │   │       ├── flags: ∅
         │   │       ├── locals: []
         │   │       ├── parameters: ∅
         │   │       ├── body:
         │   │       │   @ StatementsNode (location: (23,6)-(23,14))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ BreakNode (location: (23,6)-(23,14))
+        │   │       │           ├── flags: newline
         │   │       │           ├── arguments:
         │   │       │           │   @ ArgumentsNode (location: (23,12)-(23,14))
         │   │       │           │   ├── flags: ∅
         │   │       │           │   └── arguments: (length: 1)
         │   │       │           │       └── @ IntegerNode (location: (23,12)-(23,14))
-        │   │       │           │           ├── flags: decimal
+        │   │       │           │           ├── flags: static_literal, decimal
         │   │       │           │           └── value: 42
         │   │       │           └── keyword_loc: (23,6)-(23,11) = "break"
         │   │       ├── opening_loc: (23,4)-(23,5) = "{"
@@ -342,12 +385,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (23,20)-(23,22))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 42
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,23))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (25,0)-(25,17))
         │   │   ├── flags: ignore_visibility
@@ -360,11 +403,14 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block:
         │   │       @ BlockNode (location: (25,4)-(25,17))
+        │   │       ├── flags: ∅
         │   │       ├── locals: [:a]
         │   │       ├── parameters:
         │   │       │   @ BlockParametersNode (location: (25,6)-(25,9))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── parameters:
         │   │       │   │   @ ParametersNode (location: (25,7)-(25,8))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── requireds: (length: 1)
         │   │       │   │   │   └── @ RequiredParameterNode (location: (25,7)-(25,8))
         │   │       │   │   │       ├── flags: ∅
@@ -380,8 +426,10 @@
         │   │       │   └── closing_loc: (25,8)-(25,9) = "|"
         │   │       ├── body:
         │   │       │   @ StatementsNode (location: (25,10)-(25,15))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ BreakNode (location: (25,10)-(25,15))
+        │   │       │           ├── flags: newline
         │   │       │           ├── arguments: ∅
         │   │       │           └── keyword_loc: (25,10)-(25,15) = "break"
         │   │       ├── opening_loc: (25,4)-(25,5) = "{"
@@ -395,16 +443,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (25,21)-(25,23))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 42
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ WhileNode (location: (27,0)-(27,21))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (27,0)-(27,5) = "while"
         │   ├── closing_loc: (27,18)-(27,21) = "end"
         │   ├── predicate:
         │   │   @ AndNode (location: (27,6)-(27,16))
+        │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ CallNode (location: (27,6)-(27,7))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -418,16 +467,18 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ BreakNode (location: (27,11)-(27,16))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   └── keyword_loc: (27,11)-(27,16) = "break"
         │   │   └── operator_loc: (27,8)-(27,10) = "&&"
         │   └── statements: ∅
         └── @ UntilNode (location: (29,0)-(29,21))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (29,0)-(29,5) = "until"
             ├── closing_loc: (29,18)-(29,21) = "end"
             ├── predicate:
             │   @ AndNode (location: (29,6)-(29,16))
+            │   ├── flags: ∅
             │   ├── left:
             │   │   @ CallNode (location: (29,6)-(29,7))
             │   │   ├── flags: variable_call, ignore_visibility
@@ -441,6 +492,7 @@
             │   │   └── block: ∅
             │   ├── right:
             │   │   @ BreakNode (location: (29,11)-(29,16))
+            │   │   ├── flags: ∅
             │   │   ├── arguments: ∅
             │   │   └── keyword_loc: (29,11)-(29,16) = "break"
             │   └── operator_loc: (29,8)-(29,10) = "&&"

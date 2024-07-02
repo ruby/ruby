@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(7,16))
+├── flags: ∅
 ├── locals: [:a, :b]
 └── statements:
     @ StatementsNode (location: (1,0)-(7,16))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── binary_operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
         │   │   @ LocalVariableOperatorWriteNode (location: (1,5)-(1,18))
+        │   │   ├── flags: ∅
         │   │   ├── name_loc: (1,5)-(1,6) = "b"
         │   │   ├── binary_operator_loc: (1,7)-(1,9) = "+="
         │   │   ├── value:
@@ -23,7 +27,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ SymbolNode (location: (1,16)-(1,18))
-        │   │   │   │           ├── flags: forced_us_ascii_encoding
+        │   │   │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │           ├── opening_loc: (1,16)-(1,17) = ":"
         │   │   │   │           ├── value_loc: (1,17)-(1,18) = "x"
         │   │   │   │           ├── closing_loc: ∅
@@ -37,10 +41,12 @@
         │   ├── binary_operator: :+
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,17))
+        │   ├── flags: newline
         │   ├── name_loc: (3,0)-(3,1) = "a"
         │   ├── binary_operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
         │   │   @ LocalVariableWriteNode (location: (3,5)-(3,17))
+        │   │   ├── flags: ∅
         │   │   ├── name: :b
         │   │   ├── depth: 0
         │   │   ├── name_loc: (3,5)-(3,6) = "b"
@@ -57,7 +63,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ SymbolNode (location: (3,15)-(3,17))
-        │   │   │   │           ├── flags: forced_us_ascii_encoding
+        │   │   │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │           ├── opening_loc: (3,15)-(3,16) = ":"
         │   │   │   │           ├── value_loc: (3,16)-(3,17) = "x"
         │   │   │   │           ├── closing_loc: ∅
@@ -69,11 +75,13 @@
         │   ├── binary_operator: :+
         │   └── depth: 0
         ├── @ LocalVariableWriteNode (location: (5,0)-(5,17))
+        │   ├── flags: newline
         │   ├── name: :a
         │   ├── depth: 0
         │   ├── name_loc: (5,0)-(5,1) = "a"
         │   ├── value:
         │   │   @ LocalVariableOperatorWriteNode (location: (5,4)-(5,17))
+        │   │   ├── flags: ∅
         │   │   ├── name_loc: (5,4)-(5,5) = "b"
         │   │   ├── binary_operator_loc: (5,6)-(5,8) = "+="
         │   │   ├── value:
@@ -89,7 +97,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ SymbolNode (location: (5,15)-(5,17))
-        │   │   │   │           ├── flags: forced_us_ascii_encoding
+        │   │   │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │           ├── opening_loc: (5,15)-(5,16) = ":"
         │   │   │   │           ├── value_loc: (5,16)-(5,17) = "x"
         │   │   │   │           ├── closing_loc: ∅
@@ -101,11 +109,13 @@
         │   │   └── depth: 0
         │   └── operator_loc: (5,2)-(5,3) = "="
         └── @ LocalVariableWriteNode (location: (7,0)-(7,16))
+            ├── flags: newline
             ├── name: :a
             ├── depth: 0
             ├── name_loc: (7,0)-(7,1) = "a"
             ├── value:
             │   @ LocalVariableWriteNode (location: (7,4)-(7,16))
+            │   ├── flags: ∅
             │   ├── name: :b
             │   ├── depth: 0
             │   ├── name_loc: (7,4)-(7,5) = "b"
@@ -122,7 +132,7 @@
             │   │   │   ├── flags: ∅
             │   │   │   └── arguments: (length: 1)
             │   │   │       └── @ SymbolNode (location: (7,14)-(7,16))
-            │   │   │           ├── flags: forced_us_ascii_encoding
+            │   │   │           ├── flags: static_literal, forced_us_ascii_encoding
             │   │   │           ├── opening_loc: (7,14)-(7,15) = ":"
             │   │   │           ├── value_loc: (7,15)-(7,16) = "x"
             │   │   │           ├── closing_loc: ∅

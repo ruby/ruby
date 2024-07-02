@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(3,8))
-            ├── flags: attribute_write
+            ├── flags: newline, attribute_write
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
             │   ├── flags: variable_call, ignore_visibility
@@ -35,12 +37,14 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ BeginNode (location: (1,5)-(3,8))
+            │           ├── flags: ∅
             │           ├── begin_keyword_loc: (1,5)-(1,10) = "begin"
             │           ├── statements:
             │           │   @ StatementsNode (location: (2,7)-(2,9))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,7)-(2,9))
-            │           │           ├── flags: decimal
+            │           │           ├── flags: newline, static_literal, decimal
             │           │           └── value: 42
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅

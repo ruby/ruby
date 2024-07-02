@@ -1,31 +1,34 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableWriteNode (location: (1,0)-(1,12))
+            ├── flags: newline
             ├── name: :a
             ├── depth: 0
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── value:
             │   @ InterpolatedStringNode (location: (1,4)-(1,12))
-            │   ├── flags: ∅
+            │   ├── flags: static_literal
             │   ├── opening_loc: (1,4)-(1,12) = "<<~\"EOF\""
             │   ├── parts: (length: 3)
             │   │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   │   ├── flags: frozen
+            │   │   │   ├── flags: static_literal, frozen
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── content_loc: (2,0)-(3,0) = "  x\n"
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── unescaped: "x\n"
             │   │   ├── @ StringNode (location: (3,0)-(4,0))
-            │   │   │   ├── flags: frozen
+            │   │   │   ├── flags: static_literal, frozen
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── content_loc: (3,0)-(4,0) = "  y\n"
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── unescaped: "y\n"
             │   │   └── @ StringNode (location: (4,0)-(5,0))
-            │   │       ├── flags: frozen
+            │   │       ├── flags: static_literal, frozen
             │   │       ├── opening_loc: ∅
             │   │       ├── content_loc: (4,0)-(5,0) = "  z\n"
             │   │       ├── closing_loc: ∅

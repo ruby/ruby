@@ -1,15 +1,20 @@
 @ ProgramNode (location: (1,0)-(1,10))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,10))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,10))
+            ├── flags: newline
             ├── lefts: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,0)-(1,1))
+            │       ├── flags: ∅
             │       ├── name: :a
             │       └── depth: 0
             ├── rest:
             │   @ ImplicitRestNode (location: (1,1)-(1,2))
+            │   └── flags: ∅
             ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
@@ -37,7 +42,7 @@
                 │   ├── flags: ∅
                 │   └── arguments: (length: 1)
                 │       └── @ IntegerNode (location: (1,9)-(1,10))
-                │           ├── flags: decimal
+                │           ├── flags: static_literal, decimal
                 │           └── value: 1
                 ├── closing_loc: ∅
                 └── block: ∅

@@ -1,41 +1,49 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,4))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,10))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── elements: (length: 1)
             │       │   │   └── @ AssocNode (location: (2,3)-(2,10))
+            │       │   │       ├── flags: static_literal
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,3)-(2,5))
-            │       │   │       │   ├── flags: forced_us_ascii_encoding
+            │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,3)-(2,4) = "b"
             │       │   │       │   ├── closing_loc: (2,4)-(2,5) = ":"
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ TrueNode (location: (2,6)-(2,10))
+            │       │   │       │   └── flags: static_literal
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest: ∅
             │       │   ├── opening_loc: ∅
             │       │   └── closing_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,4))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: forced_us_ascii_encoding
+            │       │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "c"
             │       │           ├── closing_loc: ∅

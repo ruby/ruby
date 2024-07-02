@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,21))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,21))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ReturnNode (location: (1,0)-(1,21))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (1,0)-(1,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (1,7)-(1,21))
@@ -34,6 +36,7 @@
                         ├── closing_loc: ∅
                         └── block:
                             @ BlockNode (location: (1,15)-(1,21))
+                            ├── flags: ∅
                             ├── locals: []
                             ├── parameters: ∅
                             ├── body: ∅

@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,20))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,20))
+            ├── flags: newline
             ├── name: :return
             ├── name_loc: (1,9)-(1,15) = "return"
             ├── receiver:
             │   @ SelfNode (location: (1,4)-(1,8))
+            │   └── flags: ∅
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []

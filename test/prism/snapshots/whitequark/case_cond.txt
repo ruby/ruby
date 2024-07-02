@@ -1,12 +1,16 @@
 @ ProgramNode (location: (1,0)-(1,26))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,26))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseNode (location: (1,0)-(1,26))
+            ├── flags: newline
             ├── predicate: ∅
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,6)-(1,21))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (1,6)-(1,10) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ CallNode (location: (1,11)-(1,14))
@@ -22,9 +26,10 @@
             │       ├── then_keyword_loc: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,16)-(1,21))
+            │           ├── flags: ∅
             │           └── body: (length: 1)
             │               └── @ StringNode (location: (1,16)-(1,21))
-            │                   ├── flags: ∅
+            │                   ├── flags: newline
             │                   ├── opening_loc: (1,16)-(1,17) = "'"
             │                   ├── content_loc: (1,17)-(1,20) = "foo"
             │                   ├── closing_loc: (1,20)-(1,21) = "'"

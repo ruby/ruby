@@ -1,18 +1,23 @@
 @ ProgramNode (location: (1,0)-(7,1))
+├── flags: ∅
 ├── locals: [:b, :c]
 └── statements:
     @ StatementsNode (location: (1,0)-(7,1))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ IfNode (location: (1,0)-(6,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,3)-(1,7))
+        │   │   └── flags: static_literal
         │   ├── then_keyword_loc: (1,8)-(1,12) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (2,2)-(5,6))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 4)
         │   │       ├── @ CallNode (location: (2,2)-(2,8))
-        │   │       │   ├── flags: ignore_visibility
+        │   │       │   ├── flags: newline, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -31,16 +36,17 @@
         │   │       │   ├── closing_loc: (2,7)-(2,8) = ")"
         │   │       │   └── block: ∅
         │   │       ├── @ LocalVariableWriteNode (location: (3,2)-(3,7))
+        │   │       │   ├── flags: newline
         │   │       │   ├── name: :b
         │   │       │   ├── depth: 0
         │   │       │   ├── name_loc: (3,2)-(3,3) = "b"
         │   │       │   ├── value:
         │   │       │   │   @ IntegerNode (location: (3,6)-(3,7))
-        │   │       │   │   ├── flags: decimal
+        │   │       │   │   ├── flags: static_literal, decimal
         │   │       │   │   └── value: 1
         │   │       │   └── operator_loc: (3,4)-(3,5) = "="
         │   │       ├── @ CallNode (location: (4,2)-(4,5))
-        │   │       │   ├── flags: ignore_visibility
+        │   │       │   ├── flags: newline, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -51,23 +57,25 @@
         │   │       │   │   ├── flags: ∅
         │   │       │   │   └── arguments: (length: 1)
         │   │       │   │       └── @ LocalVariableReadNode (location: (4,4)-(4,5))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── name: :b
         │   │       │   │           └── depth: 0
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ LocalVariableWriteNode (location: (5,2)-(5,6))
+        │   │           ├── flags: newline
         │   │           ├── name: :c
         │   │           ├── depth: 0
         │   │           ├── name_loc: (5,2)-(5,3) = "c"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (5,5)-(5,6))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           └── operator_loc: (5,4)-(5,5) = "="
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         └── @ CallNode (location: (7,0)-(7,1))
-            ├── flags: variable_call, ignore_visibility
+            ├── flags: newline, variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a

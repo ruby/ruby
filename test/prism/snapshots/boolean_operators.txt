@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,7))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(5,7))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ LocalVariableAndWriteNode (location: (1,0)-(1,7))
+        │   ├── flags: newline
         │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── operator_loc: (1,2)-(1,5) = "&&="
         │   ├── value:
@@ -20,6 +23,7 @@
         │   ├── name: :a
         │   └── depth: 0
         ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,6))
+        │   ├── flags: newline
         │   ├── name_loc: (3,0)-(3,1) = "a"
         │   ├── binary_operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
@@ -37,6 +41,7 @@
         │   ├── binary_operator: :+
         │   └── depth: 0
         └── @ LocalVariableOrWriteNode (location: (5,0)-(5,7))
+            ├── flags: newline
             ├── name_loc: (5,0)-(5,1) = "a"
             ├── operator_loc: (5,2)-(5,5) = "||="
             ├── value:

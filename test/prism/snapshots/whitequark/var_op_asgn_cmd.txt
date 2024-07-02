@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: [:foo]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,12))
+            ├── flags: newline
             ├── name_loc: (1,0)-(1,3) = "foo"
             ├── binary_operator_loc: (1,4)-(1,6) = "+="
             ├── value:
@@ -19,6 +22,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ LocalVariableReadNode (location: (1,9)-(1,12))
+            │   │           ├── flags: ∅
             │   │           ├── name: :foo
             │   │           └── depth: 0
             │   ├── closing_loc: ∅

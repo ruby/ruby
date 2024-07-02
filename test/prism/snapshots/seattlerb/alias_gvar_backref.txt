@@ -1,13 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ AliasGlobalVariableNode (location: (1,0)-(1,15))
+            ├── flags: newline
             ├── new_name:
             │   @ GlobalVariableReadNode (location: (1,6)-(1,12))
+            │   ├── flags: ∅
             │   └── name: :$MATCH
             ├── old_name:
             │   @ BackReferenceReadNode (location: (1,13)-(1,15))
+            │   ├── flags: ∅
             │   └── name: :$&
             └── keyword_loc: (1,0)-(1,5) = "alias"

@@ -1,24 +1,26 @@
 @ ProgramNode (location: (1,0)-(92,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(92,1))
+    ├── flags: ∅
     └── body: (length: 16)
         ├── @ ArrayNode (location: (1,0)-(4,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (1,0)-(1,3) = "%I["
         │   └── closing_loc: (4,0)-(4,1) = "]"
         ├── @ ArrayNode (location: (6,0)-(9,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (7,0)-(7,5))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (7,0)-(7,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (8,0)-(8,5))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (8,0)-(8,5) = "line3"
         │   │       ├── closing_loc: ∅
@@ -26,12 +28,12 @@
         │   ├── opening_loc: (6,0)-(6,3) = "%I["
         │   └── closing_loc: (9,0)-(9,1) = "]"
         ├── @ ArrayNode (location: (11,0)-(14,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (11,0)-(11,3) = "%W["
         │   └── closing_loc: (14,0)-(14,1) = "]"
         ├── @ ArrayNode (location: (16,0)-(19,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (17,0)-(17,5))
         │   │   │   ├── flags: ∅
@@ -48,21 +50,21 @@
         │   ├── opening_loc: (16,0)-(16,3) = "%W["
         │   └── closing_loc: (19,0)-(19,1) = "]"
         ├── @ ArrayNode (location: (21,0)-(24,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (21,0)-(21,3) = "%i["
         │   └── closing_loc: (24,0)-(24,1) = "]"
         ├── @ ArrayNode (location: (26,0)-(29,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (27,0)-(27,5))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (27,0)-(27,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (28,0)-(28,5))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (28,0)-(28,5) = "line3"
         │   │       ├── closing_loc: ∅
@@ -70,18 +72,18 @@
         │   ├── opening_loc: (26,0)-(26,3) = "%i["
         │   └── closing_loc: (29,0)-(29,1) = "]"
         ├── @ RegularExpressionNode (location: (31,0)-(34,1))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (31,0)-(31,3) = "%r["
         │   ├── content_loc: (31,3)-(34,0) = "\n\n\n"
         │   ├── closing_loc: (34,0)-(34,1) = "]"
         │   └── unescaped: "\n\n\n"
         ├── @ ArrayNode (location: (36,0)-(39,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (36,0)-(36,3) = "%w["
         │   └── closing_loc: (39,0)-(39,1) = "]"
         ├── @ ArrayNode (location: (41,0)-(44,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (42,0)-(42,5))
         │   │   │   ├── flags: ∅
@@ -98,16 +100,16 @@
         │   ├── opening_loc: (41,0)-(41,3) = "%w["
         │   └── closing_loc: (44,0)-(44,1) = "]"
         ├── @ ArrayNode (location: (46,0)-(49,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (47,0)-(47,6))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (47,0)-(47,1) = ":"
         │   │   │   ├── value_loc: (47,1)-(47,6) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (48,0)-(48,6))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: (48,0)-(48,1) = ":"
         │   │       ├── value_loc: (48,1)-(48,6) = "line3"
         │   │       ├── closing_loc: ∅
@@ -115,23 +117,29 @@
         │   ├── opening_loc: (46,0)-(46,1) = "["
         │   └── closing_loc: (49,0)-(49,1) = "]"
         ├── @ ClassNode (location: (51,0)-(56,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (51,0)-(51,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (51,6)-(51,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (52,2)-(55,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ DefNode (location: (52,2)-(55,5))
+        │   │           ├── flags: newline
         │   │           ├── name: :y
         │   │           ├── name_loc: (52,11)-(52,12) = "y"
         │   │           ├── receiver:
         │   │           │   @ SelfNode (location: (52,6)-(52,10))
+        │   │           │   └── flags: ∅
         │   │           ├── parameters:
         │   │           │   @ ParametersNode (location: (52,13)-(53,9))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── requireds: (length: 2)
         │   │           │   │   ├── @ RequiredParameterNode (location: (52,13)-(52,14))
         │   │           │   │   │   ├── flags: ∅
@@ -147,11 +155,13 @@
         │   │           │   └── block: ∅
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (54,4)-(54,9))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (54,4)-(54,9))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: newline
         │   │           │           ├── receiver:
         │   │           │           │   @ LocalVariableReadNode (location: (54,4)-(54,5))
+        │   │           │           │   ├── flags: ∅
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
@@ -163,6 +173,7 @@
         │   │           │           │   ├── flags: ∅
         │   │           │           │   └── arguments: (length: 1)
         │   │           │           │       └── @ LocalVariableReadNode (location: (54,8)-(54,9))
+        │   │           │           │           ├── flags: ∅
         │   │           │           │           ├── name: :b
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
@@ -177,33 +188,40 @@
         │   ├── end_keyword_loc: (56,0)-(56,3) = "end"
         │   └── name: :X
         ├── @ ClassNode (location: (59,0)-(63,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (59,0)-(59,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (59,6)-(59,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (60,2)-(62,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ClassNode (location: (60,2)-(62,5))
+        │   │           ├── flags: newline
         │   │           ├── locals: []
         │   │           ├── class_keyword_loc: (60,2)-(60,7) = "class"
         │   │           ├── constant_path:
         │   │           │   @ ConstantReadNode (location: (60,8)-(60,9))
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: :Y
         │   │           ├── inheritance_operator_loc: ∅
         │   │           ├── superclass: ∅
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (61,4)-(61,10))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ ConstantWriteNode (location: (61,4)-(61,10))
+        │   │           │           ├── flags: newline
         │   │           │           ├── name: :Z
         │   │           │           ├── name_loc: (61,4)-(61,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (61,8)-(61,10))
-        │   │           │           │   ├── flags: decimal
+        │   │           │           │   ├── flags: static_literal, decimal
         │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (61,6)-(61,7) = "="
         │   │           ├── end_keyword_loc: (62,2)-(62,5) = "end"
@@ -211,22 +229,27 @@
         │   ├── end_keyword_loc: (63,0)-(63,3) = "end"
         │   └── name: :X
         ├── @ ClassNode (location: (66,0)-(71,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (66,0)-(66,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (66,6)-(66,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (67,2)-(70,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ DefNode (location: (67,2)-(70,5))
+        │   │           ├── flags: newline
         │   │           ├── name: :y
         │   │           ├── name_loc: (67,6)-(67,7) = "y"
         │   │           ├── receiver: ∅
         │   │           ├── parameters:
         │   │           │   @ ParametersNode (location: (67,8)-(68,9))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── requireds: (length: 2)
         │   │           │   │   ├── @ RequiredParameterNode (location: (67,8)-(67,9))
         │   │           │   │   │   ├── flags: ∅
@@ -242,11 +265,13 @@
         │   │           │   └── block: ∅
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (69,4)-(69,9))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (69,4)-(69,9))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: newline
         │   │           │           ├── receiver:
         │   │           │           │   @ LocalVariableReadNode (location: (69,4)-(69,5))
+        │   │           │           │   ├── flags: ∅
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
@@ -258,6 +283,7 @@
         │   │           │           │   ├── flags: ∅
         │   │           │           │   └── arguments: (length: 1)
         │   │           │           │       └── @ LocalVariableReadNode (location: (69,8)-(69,9))
+        │   │           │           │           ├── flags: ∅
         │   │           │           │           ├── name: :b
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
@@ -272,29 +298,33 @@
         │   ├── end_keyword_loc: (71,0)-(71,3) = "end"
         │   └── name: :X
         ├── @ ModuleNode (location: (74,0)-(79,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (74,0)-(74,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (74,7)-(74,8))
+        │   │   ├── flags: ∅
         │   │   └── name: :X
         │   ├── body:
         │   │   @ StatementsNode (location: (75,2)-(78,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ConstantWriteNode (location: (75,2)-(78,3))
+        │   │           ├── flags: newline
         │   │           ├── name: :X
         │   │           ├── name_loc: (75,2)-(75,3) = "X"
         │   │           ├── value:
         │   │           │   @ ArrayNode (location: (75,6)-(78,3))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: static_literal
         │   │           │   ├── elements: (length: 2)
         │   │           │   │   ├── @ SymbolNode (location: (76,4)-(76,10))
-        │   │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │   │   │   ├── opening_loc: (76,4)-(76,5) = ":"
         │   │           │   │   │   ├── value_loc: (76,5)-(76,10) = "line3"
         │   │           │   │   │   ├── closing_loc: ∅
         │   │           │   │   │   └── unescaped: "line3"
         │   │           │   │   └── @ SymbolNode (location: (77,4)-(77,10))
-        │   │           │   │       ├── flags: forced_us_ascii_encoding
+        │   │           │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │   │       ├── opening_loc: (77,4)-(77,5) = ":"
         │   │           │   │       ├── value_loc: (77,5)-(77,10) = "line4"
         │   │           │   │       ├── closing_loc: ∅
@@ -305,29 +335,36 @@
         │   ├── end_keyword_loc: (79,0)-(79,3) = "end"
         │   └── name: :X
         ├── @ ModuleNode (location: (82,0)-(86,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (82,0)-(82,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (82,7)-(82,8))
+        │   │   ├── flags: ∅
         │   │   └── name: :X
         │   ├── body:
         │   │   @ StatementsNode (location: (83,2)-(85,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ModuleNode (location: (83,2)-(85,5))
+        │   │           ├── flags: newline
         │   │           ├── locals: []
         │   │           ├── module_keyword_loc: (83,2)-(83,8) = "module"
         │   │           ├── constant_path:
         │   │           │   @ ConstantReadNode (location: (83,9)-(83,10))
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: :Y
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (84,4)-(84,10))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ ConstantWriteNode (location: (84,4)-(84,10))
+        │   │           │           ├── flags: newline
         │   │           │           ├── name: :Z
         │   │           │           ├── name_loc: (84,4)-(84,5) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (84,8)-(84,10))
-        │   │           │           │   ├── flags: decimal
+        │   │           │           │   ├── flags: static_literal, decimal
         │   │           │           │   └── value: 42
         │   │           │           └── operator_loc: (84,6)-(84,7) = "="
         │   │           ├── end_keyword_loc: (85,2)-(85,5) = "end"
@@ -335,7 +372,7 @@
         │   ├── end_keyword_loc: (86,0)-(86,3) = "end"
         │   └── name: :X
         └── @ CallNode (location: (89,0)-(92,1))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :x
@@ -346,13 +383,13 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ SymbolNode (location: (90,0)-(90,6))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: (90,0)-(90,1) = ":"
             │       │   ├── value_loc: (90,1)-(90,6) = "line2"
             │       │   ├── closing_loc: ∅
             │       │   └── unescaped: "line2"
             │       └── @ SymbolNode (location: (91,0)-(91,6))
-            │           ├── flags: forced_us_ascii_encoding
+            │           ├── flags: static_literal, forced_us_ascii_encoding
             │           ├── opening_loc: (91,0)-(91,1) = ":"
             │           ├── value_loc: (91,1)-(91,6) = "line3"
             │           ├── closing_loc: ∅

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,15))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -15,15 +17,19 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ InstanceVariableReadNode (location: (1,2)-(1,4))
+            │           ├── flags: ∅
             │           └── name: :@b
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,5)-(1,15))
+                ├── flags: ∅
                 ├── locals: [:c]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,8)-(1,11))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,9)-(1,10))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
                 │   │   │       ├── flags: ∅

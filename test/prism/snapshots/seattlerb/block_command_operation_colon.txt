@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,17))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,17))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,17))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,11))
             │   ├── flags: ignore_visibility
@@ -18,7 +20,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ SymbolNode (location: (1,2)-(1,4))
-            │   │           ├── flags: forced_us_ascii_encoding
+            │   │           ├── flags: static_literal, forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,2)-(1,3) = ":"
             │   │           ├── value_loc: (1,3)-(1,4) = "b"
             │   │           ├── closing_loc: ∅
@@ -26,6 +28,7 @@
             │   ├── closing_loc: ∅
             │   └── block:
             │       @ BlockNode (location: (1,5)-(1,11))
+            │       ├── flags: ∅
             │       ├── locals: []
             │       ├── parameters: ∅
             │       ├── body: ∅
@@ -40,7 +43,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ SymbolNode (location: (1,15)-(1,17))
-            │           ├── flags: forced_us_ascii_encoding
+            │           ├── flags: static_literal, forced_us_ascii_encoding
             │           ├── opening_loc: (1,15)-(1,16) = ":"
             │           ├── value_loc: (1,16)-(1,17) = "d"
             │           ├── closing_loc: ∅

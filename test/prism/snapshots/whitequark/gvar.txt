@@ -1,7 +1,10 @@
 @ ProgramNode (location: (1,0)-(1,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,4))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ GlobalVariableReadNode (location: (1,0)-(1,4))
+            ├── flags: newline
             └── name: :$foo

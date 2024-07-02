@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(11,18))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(11,18))
+    ├── flags: ∅
     └── body: (length: 5)
         ├── @ LambdaNode (location: (1,0)-(3,4))
+        │   ├── flags: newline
         │   ├── locals: [:foo]
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (3,2)-(3,3) = "{"
         │   ├── closing_loc: (3,3)-(3,4) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (1,2)-(3,1))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (2,2)-(2,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (2,2)-(2,5))
         │   │   │   │       ├── flags: ∅
@@ -27,14 +32,17 @@
         │   │   └── closing_loc: (3,0)-(3,1) = ")"
         │   └── body: ∅
         ├── @ LambdaNode (location: (5,0)-(5,18))
+        │   ├── flags: newline
         │   ├── locals: [:x]
         │   ├── operator_loc: (5,0)-(5,2) = "->"
         │   ├── opening_loc: (5,15)-(5,16) = "{"
         │   ├── closing_loc: (5,17)-(5,18) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (5,2)-(5,14))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (5,3)-(5,13))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest: ∅
@@ -50,15 +58,17 @@
         │   │   │   │           ├── opening_loc: (5,6)-(5,7) = "\""
         │   │   │   │           ├── parts: (length: 2)
         │   │   │   │           │   ├── @ StringNode (location: (5,7)-(5,8))
-        │   │   │   │           │   │   ├── flags: frozen
+        │   │   │   │           │   │   ├── flags: static_literal, frozen
         │   │   │   │           │   │   ├── opening_loc: ∅
         │   │   │   │           │   │   ├── content_loc: (5,7)-(5,8) = "b"
         │   │   │   │           │   │   ├── closing_loc: ∅
         │   │   │   │           │   │   └── unescaped: "b"
         │   │   │   │           │   └── @ EmbeddedStatementsNode (location: (5,8)-(5,12))
+        │   │   │   │           │       ├── flags: ∅
         │   │   │   │           │       ├── opening_loc: (5,8)-(5,10) = "\#{"
         │   │   │   │           │       ├── statements:
         │   │   │   │           │       │   @ StatementsNode (location: (5,10)-(5,11))
+        │   │   │   │           │       │   ├── flags: ∅
         │   │   │   │           │       │   └── body: (length: 1)
         │   │   │   │           │       │       └── @ CallNode (location: (5,10)-(5,11))
         │   │   │   │           │       │           ├── flags: variable_call, ignore_visibility
@@ -79,14 +89,17 @@
         │   │   └── closing_loc: (5,13)-(5,14) = ")"
         │   └── body: ∅
         ├── @ LambdaNode (location: (7,0)-(7,15))
+        │   ├── flags: newline
         │   ├── locals: [:a]
         │   ├── operator_loc: (7,0)-(7,2) = "->"
         │   ├── opening_loc: (7,13)-(7,14) = "{"
         │   ├── closing_loc: (7,14)-(7,15) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (7,2)-(7,12))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (7,3)-(7,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest: ∅
@@ -119,7 +132,7 @@
         │   │   │   │           │   ├── flags: ∅
         │   │   │   │           │   └── arguments: (length: 1)
         │   │   │   │           │       └── @ IntegerNode (location: (7,10)-(7,11))
-        │   │   │   │           │           ├── flags: decimal
+        │   │   │   │           │           ├── flags: static_literal, decimal
         │   │   │   │           │           └── value: 3
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── block: ∅
@@ -130,14 +143,17 @@
         │   │   └── closing_loc: (7,11)-(7,12) = ")"
         │   └── body: ∅
         ├── @ LambdaNode (location: (9,0)-(9,19))
+        │   ├── flags: newline
         │   ├── locals: [:foo]
         │   ├── operator_loc: (9,0)-(9,2) = "->"
         │   ├── opening_loc: (9,13)-(9,15) = "do"
         │   ├── closing_loc: (9,16)-(9,19) = "end"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (9,3)-(9,12))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (9,3)-(9,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (9,3)-(9,12))
@@ -166,14 +182,17 @@
         │   │   └── closing_loc: ∅
         │   └── body: ∅
         └── @ LambdaNode (location: (11,0)-(11,18))
+            ├── flags: newline
             ├── locals: [:foo]
             ├── operator_loc: (11,0)-(11,2) = "->"
             ├── opening_loc: (11,12)-(11,14) = "do"
             ├── closing_loc: (11,15)-(11,18) = "end"
             ├── parameters:
             │   @ BlockParametersNode (location: (11,3)-(11,11))
+            │   ├── flags: ∅
             │   ├── parameters:
             │   │   @ ParametersNode (location: (11,3)-(11,11))
+            │   │   ├── flags: ∅
             │   │   ├── requireds: (length: 0)
             │   │   ├── optionals: (length: 0)
             │   │   ├── rest: ∅

@@ -1,29 +1,37 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: [:list]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,20))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,11))
+            │       │   ├── flags: ∅
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,4))
+            │       │   │   ├── flags: ∅
             │       │   │   └── name: :A
             │       │   ├── requireds: (length: 0)
             │       │   ├── rest:
             │       │   │   @ SplatNode (location: (2,5)-(2,10))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,5)-(2,6) = "*"
             │       │   │   └── expression:
             │       │   │       @ LocalVariableTargetNode (location: (2,6)-(2,10))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── name: :list
             │       │   │       └── depth: 0
             │       │   ├── posts: (length: 0)
@@ -31,8 +39,10 @@
             │       │   └── closing_loc: (2,10)-(2,11) = ")"
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,17)-(2,20))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ NilNode (location: (2,17)-(2,20))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: (2,12)-(2,16) = "then"
             ├── consequent: ∅

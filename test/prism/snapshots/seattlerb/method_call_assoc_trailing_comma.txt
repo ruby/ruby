@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,10))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,10))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
             │   ├── flags: variable_call, ignore_visibility
@@ -28,13 +30,14 @@
             │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,4)-(1,8))
+            │                   ├── flags: static_literal
             │                   ├── key:
             │                   │   @ IntegerNode (location: (1,4)-(1,5))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 1
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,7)-(1,8))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 2
             │                   └── operator_loc: (1,5)-(1,7) = "=>"
             ├── closing_loc: (1,9)-(1,10) = ")"

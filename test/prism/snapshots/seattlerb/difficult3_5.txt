@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,19))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,19))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,19))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -15,21 +17,24 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(1,19))
+            │           ├── flags: ∅
             │           ├── locals: []
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,7)-(1,8) = "{"
             │           ├── closing_loc: (1,18)-(1,19) = "}"
             │           ├── parameters:
             │           │   @ BlockParametersNode (location: (1,4)-(1,6))
+            │           │   ├── flags: ∅
             │           │   ├── parameters: ∅
             │           │   ├── locals: (length: 0)
             │           │   ├── opening_loc: (1,4)-(1,5) = "("
             │           │   └── closing_loc: (1,5)-(1,6) = ")"
             │           └── body:
             │               @ StatementsNode (location: (1,9)-(1,17))
+            │               ├── flags: ∅
             │               └── body: (length: 1)
             │                   └── @ CallNode (location: (1,9)-(1,17))
-            │                       ├── flags: ignore_visibility
+            │                       ├── flags: newline, ignore_visibility
             │                       ├── receiver: ∅
             │                       ├── call_operator_loc: ∅
             │                       ├── name: :g
@@ -39,6 +44,7 @@
             │                       ├── closing_loc: ∅
             │                       └── block:
             │                           @ BlockNode (location: (1,11)-(1,17))
+            │                           ├── flags: ∅
             │                           ├── locals: []
             │                           ├── parameters: ∅
             │                           ├── body: ∅
