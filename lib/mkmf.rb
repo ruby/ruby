@@ -711,7 +711,13 @@ MSG
   # [+flags+] a C preprocessor flag as a +String+ or an +Array+ of them
   #
   def append_cppflags(flags, **opts)
-    Array(flags).each do |flag|
+    flags = Array(flags)
+    flags.each_with_index do |flag, i|
+      next_arg = flags[i + 1]
+      if next_arg && !next_arg.start_with?('-')
+        flag = "#{flag} #{next_arg}"
+        flags[i + 1] = nil
+      end
       if checking_for("whether #{flag} is accepted as CPPFLAGS") {
            try_cppflags(flag, **opts)
          }
@@ -1104,7 +1110,13 @@ SRC
   # [+flags+] a C compiler flag as a +String+ or an +Array+ of them
   #
   def append_cflags(flags, **opts)
-    Array(flags).each do |flag|
+    flags = Array(flags)
+    flags.each_with_index do |flag, i|
+      next_arg = flags[i + 1]
+      if next_arg && !next_arg.start_with?('-')
+        flag = "#{flag} #{next_arg}"
+        flags[i + 1] = nil
+      end
       if checking_for("whether #{flag} is accepted as CFLAGS") {
            try_cflags(flag, **opts)
          }
