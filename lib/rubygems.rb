@@ -813,12 +813,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       rescue Errno::ENOSYS, Errno::ENOTSUP
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      open_file_without_flock(path, flags, &block)
+    rescue Errno::ENOLCK # NFS
+      if Thread.main != Thread.current
+        raise
+      else
+        open_file_without_flock(path, flags, &block)
+      end
     end
   end
 
