@@ -521,7 +521,7 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
     else {
         if (!NIL_P(realpath)) realpath = rb_fstring(realpath);
         pathobj = rb_ary_new_from_args(2, rb_fstring(path), realpath);
-        rb_obj_freeze(pathobj);
+        rb_ary_freeze(pathobj);
     }
     return pathobj;
 }
@@ -971,7 +971,7 @@ iseq_translate(rb_iseq_t *iseq)
 }
 
 rb_iseq_t *
-rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
+rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option,
                      VALUE script_lines)
@@ -1004,6 +1004,7 @@ rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpa
 
     rb_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
+    RB_GC_GUARD(ast_value);
 
     return iseq_translate(iseq);
 }

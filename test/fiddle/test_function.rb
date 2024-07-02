@@ -167,6 +167,8 @@ module Fiddle
     end
 
     def test_nogvl_poll
+      require "envutil" unless defined?(EnvUtil)
+
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
       # Making pipes (and sockets) non-blocking by default would allow

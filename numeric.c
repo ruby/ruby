@@ -5776,27 +5776,62 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns an integer that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros:
+ *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
- *    555.ceil(-1)  # => 560
- *    555.ceil(-2)  # => 600
- *    -555.ceil(-2) # => -500
- *    555.ceil(-3)  # => 1000
+ *      ```
+ *      0.ceil(2)  # => 0
+ *      0.ceil(-2) # => 0
+ *      ```
  *
- *  Returns +self+ when +ndigits+ is zero or positive.
+ *  - When `self` is non-zero and `ndigits` is non-negative, returns `self`:
  *
- *     555.ceil     # => 555
- *     555.ceil(50) # => 555
+ *      ```
+ *      555.ceil     # => 555
+ *      555.ceil(50) # => 555
+ *      ```
+ *
+ *  - When `self` is non-zero and `ndigits` is negative,
+ *    returns a value based on a computed granularity:
+ *
+ *      - The granularity is <tt>ndigits.abs * 10</tt>.
+ *      - The returned value is the smallest multiple of the granularity
+ *        that is greater than or equal to `self`.
+ *
+ *      Examples with positive `self`:
+ *
+ *      | ndigits | Granularity | 1234.ceil(ndigits) |
+ *      |--------:|------------:|-------------------:|
+ *      | -1      | 10          | 1240               |
+ *      | -2      | 100         | 1300               |
+ *      | -3      | 1000        | 2000               |
+ *      | -4      | 10000       | 10000              |
+ *      | -5      | 100000      | 100000             |
+ *
+ *      <br>
+ *
+ *      Examples with negative `self`:
+ *
+ *      | ndigits | Granularity | -1234.ceil(ndigits) |
+ *      |--------:|------------:|--------------------:|
+ *      | -1      | 10          | -1230               |
+ *      | -2      | 100         | -1200               |
+ *      | -3      | 1000        | -1000               |
+ *      | -4      | 10000       | 0                   |
+ *      | -5      | 100000      | 0                   |
+ *
+ *      <br>
  *
  *  Related: Integer#floor.
- *
  */
 
 static VALUE

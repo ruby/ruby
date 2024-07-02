@@ -608,7 +608,7 @@ or tabs for padding, which tends to look better with longer URLs:
 Link definitions are only used for creating links during Markdown
 processing, and are stripped from your document in the HTML output.
 
-Link definition names may constist of letters, numbers, spaces, and punctuation -- but they are *not* case sensitive. E.g. these two links:
+Link definition names may consist of letters, numbers, spaces, and punctuation -- but they are *not* case sensitive. E.g. these two links:
 
 	[link text][a]
 	[link text][A]
