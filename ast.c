@@ -769,7 +769,7 @@ ast_node_all_tokens(rb_execution_context_t *ec, VALUE self)
         token = rb_ary_new_from_args(4, INT2FIX(parser_token->id), ID2SYM(rb_intern(parser_token->type_name)), str, loc);
         rb_ary_push(all_tokens, token);
     }
-    rb_obj_freeze(all_tokens);
+    rb_ary_freeze(all_tokens);
 
     return all_tokens;
 }
