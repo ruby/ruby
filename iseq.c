@@ -4218,6 +4218,91 @@ iseqw_script_lines(VALUE self)
     return ISEQ_BODY(iseq)->variable.script_lines;
 }
 
+// We need a handle on the script passed to -e in order to parse it again when
+// calling Prism.of.
+extern VALUE rb_e_script;
+
+// We need a handle on the functions that are used to reify an AST in Ruby from
+// a C node for Prism.
+extern VALUE pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encoding, VALUE source);
+extern VALUE pm_source_new(const pm_parser_t *parser, rb_encoding *encoding);
+
+/**
+ * This is the data that will get passed back and forth between the prism_of
+ * function and the visitor callback.
+ */
+typedef struct {
+    uint32_t node_id;
+    const pm_node_t *node;
+} pm_of_data_t;
+
+/**
+ * This is the callback that gets called while visiting the Prism AST. It is
+ * used to search for a specific node in the tree based on node ID.
+ */
+static bool
+prism_of_visit(const pm_node_t *node, void *data) {
+    pm_of_data_t *of_data = (pm_of_data_t *) data;
+
+    if (node->id == of_data->node_id) {
+        of_data->node = node;
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * call-seq:
+ *   Prism::of(value) -> Node | nil
+ *
+ * Accept a Thread::Backtrace::Location object and return the subtree of the AST
+ * that corresponds to the location. If one cannot be found, return nil.
+ */
+static VALUE
+prism_of(VALUE self, VALUE body) {
+    if (!rb_frame_info_p(body)) return Qnil;
+
+    const rb_iseq_t *iseq = rb_get_iseq_from_frame_info(body);
+    if (iseq == NULL) return Qnil;
+
+    VALUE filepath = rb_iseq_path(iseq);
+    bool e_option = RSTRING_LEN(filepath) == 2 && memcmp(RSTRING_PTR(filepath), "-e", 2) == 0;
+
+    if (rb_iseq_from_eval_p(iseq) && !e_option) {
+        rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
+    }
+
+    pm_parse_result_t result = { 0 };
+    result.options.line = 1;
+
+    VALUE error = Qnil;
+    if (e_option) {
+        error = pm_parse_string(&result, rb_e_script, filepath);
+    } else {
+        error = pm_load_parse_file(&result, filepath);
+    }
+
+    if (error != Qnil) {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    pm_of_data_t of_data = { .node_id = rb_get_node_id_from_frame_info(body), .node = NULL };
+    pm_of_data_t *data = &of_data;
+    pm_visit_node(result.node.ast_node, prism_of_visit, data);
+
+    VALUE node = Qnil;
+    if (of_data.node != NULL) {
+        rb_encoding *encoding = rb_enc_find(result.parser.encoding->name);
+        VALUE source = pm_source_new(&result.parser, encoding);
+        node = pm_ast_new(&result.parser, of_data.node, encoding, source);
+    }
+
+    pm_parse_result_free(&result);
+    return node;
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -4288,6 +4373,9 @@ Init_ISeq(void)
 
     // script lines
     rb_define_method(rb_cISeq, "script_lines", iseqw_script_lines, 0);
+
+    // Prism.of
+    rb_define_singleton_method(rb_define_module("Prism"), "of", prism_of, 1);
 
     rb_undef_method(CLASS_OF(rb_cISeq), "translate");
     rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");

@@ -625,6 +625,13 @@ typedef uint32_t pm_state_stack_t;
  * it's considering.
  */
 struct pm_parser {
+    /**
+     * The current node identifier. This is used to assign unique identifiers to
+     * each node in the syntax tree. It is incremented each time a new node is
+     * created.
+     */
+    uint32_t node_id;
+
     /** The current state of the lexer. */
     pm_lex_state_t lex_state;
 
