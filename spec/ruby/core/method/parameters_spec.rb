@@ -22,6 +22,8 @@ describe "Method#parameters" do
       local_is_not_parameter = {}
     end
 
+    def one_noblock(&nil); end
+
     def forward_parameters(...) end
 
     def underscore_parameters(_, _, _ = 1, *_, _:, _: 2, **_, &_); end
@@ -185,6 +187,11 @@ describe "Method#parameters" do
   it "returns [[:nokey]] for a method with a single **nil parameter" do
     m = MethodSpecs::Methods.instance_method(:one_nokey)
     m.parameters.should == [[:nokey]]
+  end
+
+  it "returns [[:noblock]] for a method with a single &nil parameter" do
+    m = MethodSpecs::Methods.instance_method(:one_noblock)
+    m.parameters.should == [[:noblock]]
   end
 
   it "works with ->(){} as the value of an optional argument" do

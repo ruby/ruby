@@ -2023,7 +2023,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
+        const struct rb_args_info *const args = &RNODE_ARGS(node_args)->nd_ainfo;
         ID rest_id = 0;
         int last_comma = 0;
         ID block_id = 0;
@@ -2121,7 +2121,10 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.flags.accepts_no_kwarg = TRUE;
         }
 
-        if (block_id) {
+        if (args->no_blockarg) {
+            body->param.flags.accepts_no_block = TRUE;
+        }
+        else if (block_id) {
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
             iseq_set_use_block(iseq);
@@ -13118,7 +13121,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.anon_rest        << 10) |
         (body->param.flags.anon_kwrest      << 11) |
         (body->param.flags.use_block        << 12) |
-        (body->param.flags.forwardable      << 13) ;
+        (body->param.flags.forwardable      << 13) |
+        (body->param.flags.accepts_no_block << 14);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -13336,6 +13340,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.anon_kwrest = (param_flags >> 11) & 1;
     load_body->param.flags.use_block = (param_flags >> 12) & 1;
     load_body->param.flags.forwardable = (param_flags >> 13) & 1;
+    load_body->param.flags.accepts_no_block = (param_flags >> 14) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;

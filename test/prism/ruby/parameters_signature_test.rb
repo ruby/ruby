@@ -50,6 +50,10 @@ module Prism
       assert_parameters([[:nokey]], "**nil")
     end
 
+    def test_noblock
+      assert_parameters([[:noblock]], "&nil")
+    end
+
     def test_keyrest_anonymous
       assert_parameters([[:keyrest, :**]], "**")
     end

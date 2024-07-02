@@ -7774,6 +7774,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_NO_BLOCK_PARAMETER_NODE: {
+        // def foo(&nil); end
+        //         ^^^^
+        ISEQ_BODY(iseq)->param.flags.accepts_no_block = TRUE;
+        return;
+      }
       case PM_NO_KEYWORDS_PARAMETER_NODE: {
         // def foo(**nil); end
         //         ^^^^^
@@ -8779,25 +8785,30 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
             //                                                                  ^^
             if (parameters_node->block) {
-                body->param.block_start = local_index;
-                body->param.flags.has_block = true;
-
-                pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
-
-                if (name) {
-                    if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
-                        ID local = pm_constant_id_lookup(scope_node, name);
-                        local_table_for_iseq->ids[local_index] = local;
-                    }
-                    else {
-                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                    }
+                if (PM_NODE_TYPE(parameters_node->block) == PM_NO_BLOCK_PARAMETER_NODE) {
+                    body->param.flags.accepts_no_block = true;
                 }
                 else {
-                    pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
-                }
+                    body->param.flags.has_block = true;
+                    body->param.block_start = local_index;
 
-                local_index++;
+                    pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
+
+                    if (name) {
+                        if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                            ID local = pm_constant_id_lookup(scope_node, name);
+                            local_table_for_iseq->ids[local_index] = local;
+                        }
+                        else {
+                            pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                        }
+                    }
+                    else {
+                        pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
+                    }
+
+                    local_index++;
+                }
             }
         }
 
