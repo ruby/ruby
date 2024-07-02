@@ -10,7 +10,11 @@ module Prism
     # specialized and more performant `ASCIISource` if no multibyte characters
     # are present in the source code.
     def self.for(source, start_line = 1, offsets = [])
-      source.ascii_only? ? ASCIISource.new(source, start_line, offsets): new(source, start_line, offsets)
+      if source.ascii_only?
+        ASCIISource.new(source, start_line, offsets)
+      else
+        new(source, start_line, offsets)
+      end
     end
 
     # The source code that this source object represents.
@@ -87,7 +91,12 @@ module Prism
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
       byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding)
-      (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
+
+      if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+        byteslice.bytesize / 2
+      else
+        byteslice.length
+      end
     end
 
     # Returns the column number in code units for the given encoding for the

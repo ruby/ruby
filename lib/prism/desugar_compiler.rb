@@ -2,11 +2,13 @@
 
 module Prism
   class DesugarAndWriteNode # :nodoc:
-    attr_reader :node, :source, :read_class, :write_class, :arguments
+    include DSL
 
-    def initialize(node, source, read_class, write_class, *arguments)
+    attr_reader :node, :default_source, :read_class, :write_class, :arguments
+
+    def initialize(node, default_source, read_class, write_class, **arguments)
       @node = node
-      @source = source
+      @default_source = default_source
       @read_class = read_class
       @write_class = write_class
       @arguments = arguments
@@ -14,22 +16,30 @@ module Prism
 
     # Desugar `x &&= y` to `x && x = y`
     def compile
-      AndNode.new(
-        source,
-        read_class.new(source, *arguments, node.name_loc),
-        write_class.new(source, *arguments, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
+      and_node(
+        location: node.location,
+        left: public_send(read_class, location: node.name_loc, **arguments),
+        right: public_send(
+          write_class,
+          location: node.location,
+          **arguments,
+          name_loc: node.name_loc,
+          value: node.value,
+          operator_loc: node.operator_loc
+        ),
+        operator_loc: node.operator_loc
       )
     end
   end
 
   class DesugarOrWriteDefinedNode # :nodoc:
-    attr_reader :node, :source, :read_class, :write_class, :arguments
+    include DSL
 
-    def initialize(node, source, read_class, write_class, *arguments)
+    attr_reader :node, :default_source, :read_class, :write_class, :arguments
+
+    def initialize(node, default_source, read_class, write_class, **arguments)
       @node = node
-      @source = source
+      @default_source = default_source
       @read_class = read_class
       @write_class = write_class
       @arguments = arguments
@@ -37,35 +47,50 @@ module Prism
 
     # Desugar `x ||= y` to `defined?(x) ? x : x = y`
     def compile
-      IfNode.new(
-        source,
-        node.operator_loc,
-        DefinedNode.new(source, nil, read_class.new(source, *arguments, node.name_loc), nil, node.operator_loc, node.name_loc),
-        node.operator_loc,
-        StatementsNode.new(source, [read_class.new(source, *arguments, node.name_loc)], node.location),
-        ElseNode.new(
-          source,
-          node.operator_loc,
-          StatementsNode.new(
-            source,
-            [write_class.new(source, *arguments, node.name_loc, node.value, node.operator_loc, node.location)],
-            node.location
-          ),
-          node.operator_loc,
-          node.location
+      if_node(
+        location: node.location,
+        if_keyword_loc: node.operator_loc,
+        predicate: defined_node(
+          location: node.name_loc,
+          value: public_send(read_class, location: node.name_loc, **arguments),
+          keyword_loc: node.operator_loc
         ),
-        node.operator_loc,
-        node.location
+        then_keyword_loc: node.operator_loc,
+        statements: statements_node(
+          location: node.location,
+          body: [public_send(read_class, location: node.name_loc, **arguments)]
+        ),
+        consequent: else_node(
+          location: node.location,
+          else_keyword_loc: node.operator_loc,
+          statements: statements_node(
+            location: node.location,
+            body: [
+              public_send(
+                write_class,
+                location: node.location,
+                **arguments,
+                name_loc: node.name_loc,
+                value: node.value,
+                operator_loc: node.operator_loc
+              )
+            ]
+          ),
+          end_keyword_loc: node.operator_loc
+        ),
+        end_keyword_loc: node.operator_loc
       )
     end
   end
 
   class DesugarOperatorWriteNode # :nodoc:
-    attr_reader :node, :source, :read_class, :write_class, :arguments
+    include DSL
 
-    def initialize(node, source, read_class, write_class, *arguments)
+    attr_reader :node, :default_source, :read_class, :write_class, :arguments
+
+    def initialize(node, default_source, read_class, write_class, **arguments)
       @node = node
-      @source = source
+      @default_source = default_source
       @read_class = read_class
       @write_class = write_class
       @arguments = arguments
@@ -75,35 +100,41 @@ module Prism
     def compile
       binary_operator_loc = node.binary_operator_loc.chop
 
-      write_class.new(
-        source,
-        *arguments,
-        node.name_loc,
-        CallNode.new(
-          source,
-          0,
-          read_class.new(source, *arguments, node.name_loc),
-          nil,
-          binary_operator_loc.slice.to_sym,
-          binary_operator_loc,
-          nil,
-          ArgumentsNode.new(source, 0, [node.value], node.value.location),
-          nil,
-          nil,
-          node.location
+      public_send(
+        write_class,
+        location: node.location,
+        **arguments,
+        name_loc: node.name_loc,
+        value: call_node(
+          location: node.location,
+          receiver: public_send(
+            read_class,
+            location: node.name_loc,
+            **arguments
+          ),
+          name: binary_operator_loc.slice.to_sym,
+          message_loc: binary_operator_loc,
+          arguments: arguments_node(
+            location: node.value.location,
+            arguments: [node.value]
+          )
         ),
-        node.binary_operator_loc.copy(start_offset: node.binary_operator_loc.end_offset - 1, length: 1),
-        node.location
+        operator_loc: node.binary_operator_loc.copy(
+          start_offset: node.binary_operator_loc.end_offset - 1,
+          length: 1
+        )
       )
     end
   end
 
   class DesugarOrWriteNode # :nodoc:
-    attr_reader :node, :source, :read_class, :write_class, :arguments
+    include DSL
 
-    def initialize(node, source, read_class, write_class, *arguments)
+    attr_reader :node, :default_source, :read_class, :write_class, :arguments
+
+    def initialize(node, default_source, read_class, write_class, **arguments)
       @node = node
-      @source = source
+      @default_source = default_source
       @read_class = read_class
       @write_class = write_class
       @arguments = arguments
@@ -111,12 +142,18 @@ module Prism
 
     # Desugar `x ||= y` to `x || x = y`
     def compile
-      OrNode.new(
-        source,
-        read_class.new(source, *arguments, node.name_loc),
-        write_class.new(source, *arguments, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
+      or_node(
+        location: node.location,
+        left: public_send(read_class, location: node.name_loc, **arguments),
+        right: public_send(
+          write_class,
+          location: node.location,
+          **arguments,
+          name_loc: node.name_loc,
+          value: node.value,
+          operator_loc: node.operator_loc
+        ),
+        operator_loc: node.operator_loc
       )
     end
   end
@@ -125,91 +162,91 @@ module Prism
 
   class ClassVariableAndWriteNode
     def desugar # :nodoc:
-      DesugarAndWriteNode.new(self, source, ClassVariableReadNode, ClassVariableWriteNode, name).compile
+      DesugarAndWriteNode.new(self, source, :class_variable_read_node, :class_variable_write_node, name: name).compile
     end
   end
 
   class ClassVariableOrWriteNode
     def desugar # :nodoc:
-      DesugarOrWriteDefinedNode.new(self, source, ClassVariableReadNode, ClassVariableWriteNode, name).compile
+      DesugarOrWriteDefinedNode.new(self, source, :class_variable_read_node, :class_variable_write_node, name: name).compile
     end
   end
 
   class ClassVariableOperatorWriteNode
     def desugar # :nodoc:
-      DesugarOperatorWriteNode.new(self, source, ClassVariableReadNode, ClassVariableWriteNode, name).compile
+      DesugarOperatorWriteNode.new(self, source, :class_variable_read_node, :class_variable_write_node, name: name).compile
     end
   end
 
   class ConstantAndWriteNode
     def desugar # :nodoc:
-      DesugarAndWriteNode.new(self, source, ConstantReadNode, ConstantWriteNode, name).compile
+      DesugarAndWriteNode.new(self, source, :constant_read_node, :constant_write_node, name: name).compile
     end
   end
 
   class ConstantOrWriteNode
     def desugar # :nodoc:
-      DesugarOrWriteDefinedNode.new(self, source, ConstantReadNode, ConstantWriteNode, name).compile
+      DesugarOrWriteDefinedNode.new(self, source, :constant_read_node, :constant_write_node, name: name).compile
     end
   end
 
   class ConstantOperatorWriteNode
     def desugar # :nodoc:
-      DesugarOperatorWriteNode.new(self, source, ConstantReadNode, ConstantWriteNode, name).compile
+      DesugarOperatorWriteNode.new(self, source, :constant_read_node, :constant_write_node, name: name).compile
     end
   end
 
   class GlobalVariableAndWriteNode
     def desugar # :nodoc:
-      DesugarAndWriteNode.new(self, source, GlobalVariableReadNode, GlobalVariableWriteNode, name).compile
+      DesugarAndWriteNode.new(self, source, :global_variable_read_node, :global_variable_write_node, name: name).compile
     end
   end
 
   class GlobalVariableOrWriteNode
     def desugar # :nodoc:
-      DesugarOrWriteDefinedNode.new(self, source, GlobalVariableReadNode, GlobalVariableWriteNode, name).compile
+      DesugarOrWriteDefinedNode.new(self, source, :global_variable_read_node, :global_variable_write_node, name: name).compile
     end
   end
 
   class GlobalVariableOperatorWriteNode
     def desugar # :nodoc:
-      DesugarOperatorWriteNode.new(self, source, GlobalVariableReadNode, GlobalVariableWriteNode, name).compile
+      DesugarOperatorWriteNode.new(self, source, :global_variable_read_node, :global_variable_write_node, name: name).compile
     end
   end
 
   class InstanceVariableAndWriteNode
     def desugar # :nodoc:
-      DesugarAndWriteNode.new(self, source, InstanceVariableReadNode, InstanceVariableWriteNode, name).compile
+      DesugarAndWriteNode.new(self, source, :instance_variable_read_node, :instance_variable_write_node, name: name).compile
     end
   end
 
   class InstanceVariableOrWriteNode
     def desugar # :nodoc:
-      DesugarOrWriteNode.new(self, source, InstanceVariableReadNode, InstanceVariableWriteNode, name).compile
+      DesugarOrWriteNode.new(self, source, :instance_variable_read_node, :instance_variable_write_node, name: name).compile
     end
   end
 
   class InstanceVariableOperatorWriteNode
     def desugar # :nodoc:
-      DesugarOperatorWriteNode.new(self, source, InstanceVariableReadNode, InstanceVariableWriteNode, name).compile
+      DesugarOperatorWriteNode.new(self, source, :instance_variable_read_node, :instance_variable_write_node, name: name).compile
     end
   end
 
   class LocalVariableAndWriteNode
     def desugar # :nodoc:
-      DesugarAndWriteNode.new(self, source, LocalVariableReadNode, LocalVariableWriteNode, name, depth).compile
+      DesugarAndWriteNode.new(self, source, :local_variable_read_node, :local_variable_write_node, name: name, depth: depth).compile
     end
   end
 
   class LocalVariableOrWriteNode
     def desugar # :nodoc:
-      DesugarOrWriteNode.new(self, source, LocalVariableReadNode, LocalVariableWriteNode, name, depth).compile
+      DesugarOrWriteNode.new(self, source, :local_variable_read_node, :local_variable_write_node, name: name, depth: depth).compile
     end
   end
 
   class LocalVariableOperatorWriteNode
     def desugar # :nodoc:
-      DesugarOperatorWriteNode.new(self, source, LocalVariableReadNode, LocalVariableWriteNode, name, depth).compile
+      DesugarOperatorWriteNode.new(self, source, :local_variable_read_node, :local_variable_write_node, name: name, depth: depth).compile
     end
   end
 

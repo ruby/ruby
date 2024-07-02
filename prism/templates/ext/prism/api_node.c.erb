@@ -177,7 +177,10 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
 
                     // source
                     argv[0] = source;
-                    <%- node.fields.each.with_index(1) do |field, index| -%>
+
+                    // location
+                    argv[1] = pm_location_new(parser, node->location.start, node->location.end);
+                    <%- node.fields.each.with_index(2) do |field, index| -%>
 
                     // <%= field.name %>
                     <%- case field -%>
@@ -231,9 +234,6 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- raise -%>
                     <%- end -%>
                     <%- end -%>
-
-                    // location
-                    argv[<%= node.fields.length + 1 %>] = pm_location_new(parser, node->location.start, node->location.end);
 
                     rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 2 %>, argv, rb_cPrism<%= node.name %>));
                     break;
