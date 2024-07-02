@@ -3907,7 +3907,7 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
     const struct rb_callinfo *ci = calling->cd->ci;
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
-    if (IS_ARGS_SPLAT(ci)) {
+    if (IS_ARGS_SPLAT(ci) && !(vm_ci_flag(ci) & VM_CALL_FORWARDING)) {
         if (!IS_ARGS_KW_SPLAT(ci) && vm_ci_argc(ci) == 1) {
             // f(*a)
             CC_SET_FASTPATH(calling->cc, vm_call_cfunc_only_splat, TRUE);
