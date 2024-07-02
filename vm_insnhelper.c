@@ -4363,10 +4363,10 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     const struct rb_callinfo *ci = calling->cd->ci;
     int flags = vm_ci_flag(ci);
 
-    if (UNLIKELY(!(flags & VM_CALL_ARGS_SIMPLE) &&
+    if (UNLIKELY((flags & VM_CALL_FORWARDING) || (!(flags & VM_CALL_ARGS_SIMPLE) &&
         ((calling->argc == 1 && (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT))) ||
          (calling->argc == 2 && (flags & VM_CALL_ARGS_SPLAT) && (flags & VM_CALL_KW_SPLAT)) ||
-         ((flags & VM_CALL_KWARG) && (vm_ci_kwarg(ci)->keyword_len == calling->argc))))) {
+         ((flags & VM_CALL_KWARG) && (vm_ci_kwarg(ci)->keyword_len == calling->argc)))))) {
         CC_SET_FASTPATH(calling->cc, vm_call_opt_send_complex, TRUE);
         return vm_call_opt_send_complex(ec, reg_cfp, calling);
     }

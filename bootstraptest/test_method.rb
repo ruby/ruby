@@ -1359,3 +1359,18 @@ assert_equal 'ok', %q{
   foo(*["bar"])
   foo("baz")
 }
+
+assert_equal 'ok', %q{
+  class C
+    def foo(b:)
+      b
+    end
+  end
+
+  def foo(...)
+    C.new.send(...)
+  end
+
+  foo(:foo, b: :ok)
+  foo(*["foo"], b: :ok)
+}
