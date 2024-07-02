@@ -267,26 +267,6 @@ module GC
     Primitive.gc_latest_gc_info hash_or_key
   end
 
-  if respond_to?(:compact)
-    # call-seq:
-    #    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
-    #
-    # Verify compaction reference consistency.
-    #
-    # This method is implementation specific.  During compaction, objects that
-    # were moved are replaced with T_MOVED objects.  No object should have a
-    # reference to a T_MOVED object after compaction.
-    #
-    # This function expands the heap to ensure room to move all objects,
-    # compacts the heap to make sure everything moves, updates all references,
-    # then performs a full \GC.  If any object contains a reference to a T_MOVED
-    # object, that object should be pushed on the mark stack, and will
-    # make a SEGV.
-    def self.verify_compaction_references(toward: nil, double_heap: false, expand_heap: false)
-      Primitive.gc_verify_compaction_references(double_heap, expand_heap, toward == :empty)
-    end
-  end
-
   # call-seq:
   #    GC.measure_total_time = true/false
   #
@@ -295,8 +275,7 @@ module GC
   # Note that \GC time measurement can cause some performance overhead.
   def self.measure_total_time=(flag)
     Primitive.cstmt! %{
-      rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
-      return flag;
+      return rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
     }
   end
 
@@ -307,7 +286,7 @@ module GC
   # Note that measurement can affect the application performance.
   def self.measure_total_time
     Primitive.cexpr! %{
-      RBOOL(rb_objspace.flags.measure_gc)
+      rb_gc_impl_get_measure_total_time(rb_gc_get_objspace())
     }
   end
 
@@ -317,7 +296,7 @@ module GC
   # Return measured \GC total time in nano seconds.
   def self.total_time
     Primitive.cexpr! %{
-      ULL2NUM(rb_objspace.profile.marking_time_ns + rb_objspace.profile.sweeping_time_ns)
+      rb_gc_impl_get_profile_total_time(rb_gc_get_objspace())
     }
   end
 end

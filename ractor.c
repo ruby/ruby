@@ -248,6 +248,9 @@ ractor_free(void *ptr)
     ractor_queue_free(&r->sync.takers_queue);
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
+
+    RUBY_ASSERT(rb_free_at_exit || r->newobj_cache == NULL);
+
     ruby_xfree(r);
 }
 
@@ -1923,6 +1926,13 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 
     ccan_list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
+
+    if (r->newobj_cache) {
+        VM_ASSERT(r == ruby_single_main_ractor);
+    }
+    else {
+        r->newobj_cache = rb_gc_ractor_cache_alloc();
+    }
 }
 
 static void
@@ -1990,8 +2000,8 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         }
         vm->ractor.cnt--;
 
-        /* Clear the cached freelist to prevent a memory leak. */
-        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
+        rb_gc_ractor_cache_free(cr->newobj_cache);
+        cr->newobj_cache = NULL;
 
         ractor_status_set(cr, ractor_terminated);
     }
@@ -2021,6 +2031,7 @@ rb_ractor_main_alloc(void)
     r->loc = Qnil;
     r->name = Qnil;
     r->pub.self = Qnil;
+    r->newobj_cache = rb_gc_ractor_cache_alloc();
     ruby_single_main_ractor = r;
 
     return r;
@@ -3114,6 +3125,12 @@ rb_ractor_shareable_p_continue(VALUE obj)
 }
 
 #if RACTOR_CHECK_MODE > 0
+void
+rb_ractor_setup_belonging(VALUE obj)
+{
+    rb_ractor_setup_belonging_to(obj, rb_ractor_current_id());
+}
+
 static enum obj_traverse_iterator_result
 reset_belonging_enter(VALUE obj)
 {

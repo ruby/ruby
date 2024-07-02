@@ -163,12 +163,6 @@ struct rb_objspace; /* in vm_core.h */
     RB_OBJ_WRITE(old, _slot, young); \
 } while (0)
 
-// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
-// The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
-#ifndef SIZE_POOL_COUNT
-# define SIZE_POOL_COUNT 5
-#endif
-
 /* Used in places that could malloc during, which can cause the GC to run. We
  * need to temporarily disable the GC to allow the malloc to happen.
  * Allocating memory during GC is a bad idea, so use this only when absolutely
@@ -180,16 +174,6 @@ struct rb_objspace; /* in vm_core.h */
 #define DURING_GC_COULD_MALLOC_REGION_END() \
     if (_already_disabled == Qfalse) rb_gc_enable()
 
-typedef struct ractor_newobj_size_pool_cache {
-    struct RVALUE *freelist;
-    struct heap_page *using_page;
-} rb_ractor_newobj_size_pool_cache_t;
-
-typedef struct ractor_newobj_cache {
-    size_t incremental_mark_step_allocated_slots;
-    rb_ractor_newobj_size_pool_cache_t size_pool_caches[SIZE_POOL_COUNT];
-} rb_ractor_newobj_cache_t;
-
 /* gc.c */
 extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
@@ -197,8 +181,8 @@ RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
 void rb_gc_prepare_heap(void);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
-VALUE rb_objspace_gc_enable(struct rb_objspace *);
-VALUE rb_objspace_gc_disable(struct rb_objspace *);
+VALUE rb_objspace_gc_enable(void *objspace);
+VALUE rb_objspace_gc_disable(void *objspace);
 void ruby_gc_set_params(void);
 void rb_gc_copy_attributes(VALUE dest, VALUE obj);
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
@@ -212,12 +196,13 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
-void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
+
+void *rb_gc_ractor_cache_alloc(void);
+void rb_gc_ractor_cache_free(void *cache);
+
 bool rb_gc_size_allocatable_p(size_t size);
 size_t *rb_gc_size_pool_sizes(void);
 size_t rb_gc_size_pool_id_for_size(size_t size);
-int rb_objspace_garbage_object_p(VALUE obj);
-bool rb_gc_is_ptr_to_obj(const void *ptr);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
@@ -238,8 +223,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
-int rb_objspace_markable_object_p(VALUE obj);
 int rb_objspace_internal_object_p(VALUE obj);
+int rb_objspace_garbage_object_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
@@ -255,7 +240,6 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
-void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
@@ -263,6 +247,10 @@ void rb_gc_update_values(long n, VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
+
+#if USE_SHARED_GC
+void ruby_load_external_gc_from_argv(int argc, char **argv);
+#endif
 RUBY_SYMBOL_EXPORT_END
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);

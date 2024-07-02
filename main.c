@@ -24,6 +24,9 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
+#if USE_SHARED_GC
+#include "internal/gc.h"
+#endif
 
 #if defined RUBY_DEVEL && !defined RUBY_DEBUG_ENV
 # define RUBY_DEBUG_ENV 1
@@ -31,8 +34,6 @@
 #if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
 # undef RUBY_DEBUG_ENV
 #endif
-
-void ruby_load_external_gc_from_argv(int argc, char **argv);
 
 static int
 rb_main(int argc, char **argv)

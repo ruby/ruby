@@ -159,7 +159,7 @@ class TestGc < Test::Unit::TestCase
         GC.enable if reenable_gc
       end
 
-      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
@@ -681,7 +681,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_gc_internals
     assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
-    assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
   end
 
   def test_sweep_in_finalizer
