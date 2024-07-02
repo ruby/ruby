@@ -180,6 +180,17 @@ struct rb_objspace; /* in vm_core.h */
 #define DURING_GC_COULD_MALLOC_REGION_END() \
     if (_already_disabled == Qfalse) rb_gc_enable()
 
+/* Used in places where we need to ensure GC can't possibly be triggered */
+#if RUBY_DEBUG > 0
+void RUBY_ASSERT_GC_FREE_REGION_BEGIN(void);
+void RUBY_ASSERT_GC_FREE_REGION_END(void);
+#define ASSERT_GC_FREE_REGION_BEGIN() RUBY_ASSERT_GC_FREE_REGION_BEGIN()
+#define ASSERT_GC_FREE_REGION_END() RUBY_ASSERT_GC_FREE_REGION_END()
+#else
+#define RUBY_ASSERT_GC_FREE_REGION_BEGIN()
+#define RUBY_ASSERT_GC_FREE_REGION_END()
+#endif
+
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
     struct heap_page *using_page;
