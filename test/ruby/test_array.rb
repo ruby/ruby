@@ -3493,6 +3493,17 @@ class TestArray < Test::Unit::TestCase
     assert_typed_equal(e, v, Complex, msg)
   end
 
+  def test_shrink_shared_array
+    assert_normal_exit(<<~'RUBY', '[Feature #20589]')
+      array = []
+      # Make sure the array is allocated
+      10.times { |i| array << i }
+      # Simulate a C extension using OBJ_FREEZE
+      Object.instance_method(:freeze).bind_call(array)
+      array.dup
+    RUBY
+  end
+
   def test_sum
     assert_int_equal(0, [].sum)
     assert_int_equal(3, [3].sum)
