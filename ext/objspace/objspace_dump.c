@@ -11,6 +11,7 @@
   license (see the file COPYING).
 
 **********************************************************************/
+#include <stdio.h>
 
 #include "id_table.h"
 #include "internal.h"
@@ -30,6 +31,7 @@
 #include "ruby/io.h"
 #include "vm_callinfo.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 
 RUBY_EXTERN const char ruby_hexdigits[];
 
@@ -38,6 +40,7 @@ RUBY_EXTERN const char ruby_hexdigits[];
 struct dump_config {
     VALUE type;
     VALUE stream;
+    FILE *tempfile;
     VALUE string;
     const char *root_category;
     VALUE cur_obj;
@@ -48,7 +51,9 @@ struct dump_config {
     unsigned int full_heap: 1;
     unsigned int partial_dump;
     size_t since;
+    bool shapes;
     size_t shapes_since;
+    unsigned int vm_lock_lev;
     unsigned long buffer_len;
     char buffer[BUFFER_CAPACITY];
 };
@@ -57,8 +62,8 @@ static void
 dump_flush(struct dump_config *dc)
 {
     if (dc->buffer_len) {
-        if (dc->stream) {
-            size_t written = rb_io_bufwrite(dc->stream, dc->buffer, dc->buffer_len);
+        if (dc->tempfile) {
+            size_t written = fwrite(dc->buffer, 1, dc->buffer_len, dc->tempfile);
             if (written < dc->buffer_len) {
                 MEMMOVE(dc->buffer, dc->buffer + written, char, dc->buffer_len - written);
                 dc->buffer_len -= written;
@@ -695,19 +700,40 @@ root_obj_i(const char *category, VALUE obj, void *data)
 }
 
 static void
-dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
+dump_configure(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
-
     dc->full_heap = 0;
     dc->buffer_len = 0;
 
     if (TYPE(output) == T_STRING) {
         dc->stream = Qfalse;
+        dc->tempfile = NULL;
         dc->string = output;
     }
     else {
         dc->stream = output;
         dc->string = Qfalse;
+
+        /* In order to ensure we capture a consistent snapshot of the heap, it's important that
+         * we do not yield the GVL and thus allow other threads to run during the dump. To achieve this,
+         * we perform the dump to a tempfile (managed with C-level IO), and only copy the result from
+         * the tempfile into the desired IO object once we're done (since this can cause thread switches) */
+#if defined(HAVE_TMPFILE_S)
+        /* MSVCRT has tmpfile_s and marks tmpfile as deprecated */
+        if (tmpfile_s(&dc->tempfile)) {
+            dc->tempfile = NULL;
+            rb_sys_fail("failed to create tempfile for objspace dump output buffering");
+        }
+#elif defined(HAVE_TMPFILE)
+        dc->tempfile = tmpfile();
+        if (!dc->tempfile) {
+            rb_sys_fail("failed to create tempfile for objspace dump output buffering");
+        }
+#else
+        /* On platforms without tmpfile (notably WASI), just buffer the whole output of the heapdump
+         * in memory even in the stream case */
+        dc->string = rb_str_new2("");
+#endif
     }
 
     if (full == Qtrue) {
@@ -722,7 +748,23 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE
         dc->partial_dump = 0;
     }
 
+    dc->shapes = RTEST(shapes);
     dc->shapes_since = RTEST(shapes) ? NUM2SIZET(shapes) : 0;
+
+    /* Exclude other ractors during the VM dump, so we can be sure that nothing is changing
+     * in the heap while we dump it.
+     * Gets unlocked in dump_result
+     * n.b. it's important that this method does nothing which can raise after this point */
+    rb_vm_lock_enter_ext(&dc->vm_lock_lev, __FILE__, __LINE__);
+}
+
+static void
+dump_cleanup(struct dump_config *dc)
+{
+    if (dc->tempfile) {
+        fclose(dc->tempfile);
+    }
+    rb_vm_lock_leave_ext(&dc->vm_lock_lev, __FILE__, __LINE__);
 }
 
 static VALUE
@@ -730,13 +772,47 @@ dump_result(struct dump_config *dc)
 {
     dump_flush(dc);
 
-    if (dc->string) {
-        return dc->string;
-    }
-    else {
-        rb_io_flush(dc->stream);
+    if (dc->tempfile) {
+        /* This case: We were dumping to a tempfile, and now need to copy that to the actual
+         * stream which was requested */
+
+        if (ferror(dc->tempfile) || dc->buffer_len > 0) {
+            rb_raise(rb_eIOError, "failed writing tempfile for objspace dump");
+        }
+        if (fseek(dc->tempfile, 0, SEEK_SET) == -1) {
+            rb_sys_fail("failed seeking tempfile for objspace dump");
+        }
+        while (!feof(dc->tempfile)) {
+            size_t bytes_read = fread(dc->buffer, 1, BUFFER_CAPACITY, dc->tempfile);
+            size_t bytes_written = 0;
+            while (bytes_written < bytes_read) {
+                bytes_written += rb_io_bufwrite(dc->stream, dc->buffer + bytes_written, bytes_read - bytes_written);
+            }
+            if (ferror(dc->tempfile)) {
+                rb_raise(rb_eIOError, "failed reading for objspace dump");
+            }
+        }
         return dc->stream;
+    } else if (RB_TEST(dc->string) && RB_TEST(dc->stream)) {
+        /* This case: we didn't have the tempfile() function available, so we dumped into a string,
+         * and now need to copy that into the IO */
+        rb_io_write(dc->stream, dc->string);
+        return dc->stream;
+    } else if (RB_TEST(dc->string)) {
+        /* This case: we were asked to dump into a string */
+        return dc->string;
+    } else {
+        rb_bug("unreachable: no result to dump");
     }
+
+}
+
+static VALUE
+dump_protected(VALUE arg)
+{
+    struct dump_config *dc = (struct dump_config *)arg;
+    dump_object(dc->cur_obj, dc);
+    return dump_result(dc);
 }
 
 /* :nodoc: */
@@ -744,15 +820,22 @@ static VALUE
 objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
     struct dump_config dc = {0,};
+    int tag;
+    VALUE ret;
+
+    dc.cur_obj = obj;
     if (!RB_SPECIAL_CONST_P(obj)) {
         dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
     }
 
-    dump_output(&dc, output, Qnil, Qnil, Qnil);
+    dump_configure(&dc, output, Qnil, Qnil, Qnil);
+    ret = rb_protect(dump_protected, (VALUE)&dc, &tag);
+    dump_cleanup(&dc);
 
-    dump_object(obj, &dc);
-
-    return dump_result(&dc);
+    if (tag) {
+        rb_jump_tag(tag);
+    }
+    return ret;
 }
 
 static void
@@ -813,27 +896,54 @@ shape_i(rb_shape_t *shape, void *data)
     dump_append(dc, "}\n");
 }
 
+static VALUE
+dump_all_protected(VALUE arg)
+{
+    struct dump_config *dc = (struct dump_config *)arg;
+
+    if (!dc->partial_dump || dc->since == 0) {
+        /* dump roots */
+        rb_objspace_reachable_objects_from_root(root_obj_i, dc);
+        if (dc->roots) dump_append(dc, "]}\n");
+    }
+
+    if (dc->shapes) {
+        rb_shape_each_shape(shape_i, dc);
+    }
+
+    /* dump all objects */
+    rb_objspace_each_objects(heap_i, dc);
+
+    return dump_result(dc);
+}
+
 /* :nodoc: */
 static VALUE
 objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
     struct dump_config dc = {0,};
-    dump_output(&dc, output, full, since, shapes);
+    int tag;
+    VALUE ret;
 
-    if (!dc.partial_dump || dc.since == 0) {
-        /* dump roots */
-        rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-        if (dc.roots) dump_append(&dc, "]}\n");
+    dump_configure(&dc, output, full, since, shapes);
+    ret = rb_protect(dump_all_protected, (VALUE)&dc, &tag);
+    dump_cleanup(&dc);
+
+    if (tag) {
+        rb_jump_tag(tag);
     }
+    return ret;
+}
 
-    if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+static VALUE
+dump_shapes_protected(VALUE arg)
+{
+    struct dump_config *dc = (struct dump_config *)arg;
+    if (dc->shapes) {
+        rb_shape_each_shape(shape_i, dc);
     }
+    return dump_result(dc);
 
-    /* dump all objects */
-    rb_objspace_each_objects(heap_i, &dc);
-
-    return dump_result(&dc);
 }
 
 /* :nodoc: */
@@ -841,12 +951,17 @@ static VALUE
 objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
 {
     struct dump_config dc = {0,};
-    dump_output(&dc, output, Qfalse, Qnil, shapes);
+    int tag;
+    VALUE ret;
 
-    if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+    dump_configure(&dc, output, Qfalse, Qnil, shapes);
+    ret = rb_protect(dump_shapes_protected, (VALUE)&dc, &tag);
+    dump_cleanup(&dc);
+
+    if (tag) {
+        rb_jump_tag(tag);
     }
-    return dump_result(&dc);
+    return ret;
 }
 
 void
