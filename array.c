@@ -370,7 +370,6 @@ ary_heap_free(VALUE ary)
 static size_t
 ary_heap_realloc(VALUE ary, size_t new_capa)
 {
-    RUBY_ASSERT(!OBJ_FROZEN(ary));
     SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, ARY_HEAP_CAPA(ary));
     ary_verify(ary);
 
@@ -442,10 +441,7 @@ ary_shrink_capa(VALUE ary)
     long old_capa = ARY_HEAP_CAPA(ary);
     RUBY_ASSERT(!ARY_SHARED_P(ary));
     RUBY_ASSERT(old_capa >= capacity);
-    if (old_capa > capacity) {
-        size_t new_capa = ary_heap_realloc(ary, capacity);
-        ARY_SET_CAPA(ary, new_capa);
-    }
+    if (old_capa > capacity) ary_heap_realloc(ary, capacity);
 
     ary_verify(ary);
 }
@@ -643,14 +639,6 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 VALUE
 rb_ary_freeze(VALUE ary)
 {
-    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
-
-    if (OBJ_FROZEN(ary)) return ary;
-
-    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
-        ary_shrink_capa(ary);
-    }
-
     return rb_obj_freeze(ary);
 }
 
@@ -901,7 +889,7 @@ rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool fre
     ARY_SET_PTR(ary, list);
     ARY_SET_HEAP_LEN(ary, len);
     ARY_SET_CAPA(ary, len);
-    if (freeze) rb_ary_freeze(ary);
+    if (freeze) OBJ_FREEZE(ary);
     return ary;
 }
 
@@ -6470,7 +6458,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (result == ary) {
         return Qnil;
     }
-    if (!(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
+    if (!(mod = ARY_EMBED_P(result))) rb_obj_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 
@@ -8766,7 +8754,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
-    rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 }

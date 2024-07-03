@@ -57,7 +57,7 @@ static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
 #define f_sub3(x,y,z) f_sub(f_sub(x, y), z)
 
-#define f_frozen_ary(...) rb_ary_freeze(rb_ary_new3(__VA_ARGS__))
+#define f_frozen_ary(...) rb_obj_freeze(rb_ary_new3(__VA_ARGS__))
 
 static VALUE date_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
@@ -9466,7 +9466,7 @@ mk_ary_of_str(long len, const char *a[])
 	}
 	rb_ary_push(o, e);
     }
-    rb_ary_freeze(o);
+    rb_obj_freeze(o);
     return o;
 }
 
