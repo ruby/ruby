@@ -57,6 +57,41 @@ class Array
   end
 
   # call-seq:
+  #   array.select {|element| ... } -> new_array
+  #   array.select -> new_enumerator
+  #
+  # Calls the block, if given, with each element of +self+;
+  # returns a new +Array+ containing those elements of +self+
+  # for which the block returns a truthy value:
+  #
+  #   a = [:foo, 'bar', 2, :bam]
+  #   a1 = a.select {|element| element.to_s.start_with?('b') }
+  #   a1 # => ["bar", :bam]
+  #
+  # Returns a new Enumerator if no block given:
+  #
+  #   a = [:foo, 'bar', 2, :bam]
+  #   a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
+  def select
+    Primitive.attr! :inline_block
+    Primitive.attr! :use_block
+
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    end
+
+    _i = 0
+    value = nil
+    result = Primitive.ary_sized_alloc
+    while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
+      result << value if yield value
+    end
+    result
+  end
+
+  alias filter select
+
+  # call-seq:
   #    array.shuffle!(random: Random) -> array
   #
   # Shuffles the elements of +self+ in place.

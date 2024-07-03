@@ -3807,42 +3807,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 }
 
 
-/*
- *  call-seq:
- *    array.select {|element| ... } -> new_array
- *    array.select -> new_enumerator
- *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ containing those elements of +self+
- *  for which the block returns a truthy value:
- *
- *    a = [:foo, 'bar', 2, :bam]
- *    a1 = a.select {|element| element.to_s.start_with?('b') }
- *    a1 # => ["bar", :bam]
- *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [:foo, 'bar', 2, :bam]
- *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
- *
- */
-
-static VALUE
-rb_ary_select(VALUE ary)
-{
-    VALUE result;
-    long i;
-
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-    result = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-        if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
-            rb_ary_push(result, rb_ary_elt(ary, i));
-        }
-    }
-    return result;
-}
-
 struct select_bang_arg {
     VALUE ary;
     long len[2];
@@ -6697,6 +6661,12 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
 }
 
 static VALUE
+ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_ary_new2(RARRAY_LEN(self));
+}
+
+static VALUE
 ary_sample0(rb_execution_context_t *ec, VALUE ary)
 {
     return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
@@ -8702,9 +8672,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
-    rb_define_method(rb_cArray, "filter", rb_ary_select, 0);
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
