@@ -2,7 +2,8 @@
 
 require_relative "helper"
 
-require "webrick"
+require "socket"
+require "zlib"
 
 require "rubygems/remote_fetcher"
 require "rubygems/package"
@@ -79,20 +80,11 @@ gems:
     self.enable_yaml = true
     self.enable_zip = false
 
-    base_server_uri = "http://localhost:#{@normal_server[:server].config[:Port]}"
-    @proxy_uri = "http://localhost:#{@proxy_server[:server].config[:Port]}"
+    base_server_uri = "http://localhost:#{@normal_server[:server].addr[1]}"
+    @proxy_uri = "http://localhost:#{@proxy_server[:server].addr[1]}"
 
     @server_uri = base_server_uri + "/yaml"
     @server_z_uri = base_server_uri + "/yaml.Z"
-
-    @cache_dir = File.join @gemhome, "cache"
-
-    # TODO: why does the remote fetcher need it written to disk?
-    @a1, @a1_gem = util_gem "a", "1" do |s|
-      s.executables << "a_bin"
-    end
-
-    @a1.loaded_from = File.join(@gemhome, "specifications", @a1.full_name)
 
     Gem::RemoteFetcher.fetcher = nil
     @stub_ui = Gem::MockGemUi.new
@@ -100,7 +92,7 @@ gems:
   end
 
   def teardown
-    @fetcher.close_all
+    # @fetcher.close_all
 
     if @normal_server
       @normal_server.kill.join
@@ -110,7 +102,6 @@ gems:
       @proxy_server.kill.join
       @proxy_server = nil
     end
-    WEBrick::Utils::TimeoutHandler.terminate
 
     super
     Gem.configuration[:http_proxy] = nil
@@ -201,51 +192,47 @@ gems:
     assert_match(/0\.4\.2/, data, "Data is not from proxy")
   end
 
-  class NilLog < WEBrick::Log
-    def log(level, data) # Do nothing
+  def start_server(data)
+    server = TCPServer.new('localhost', 0)
+    thread = Thread.new do
+      loop do
+        client = server.accept
+        handle_request(client, data)
+      end
     end
+    thread[:server] = server
+    thread
   end
 
-  def start_server(data)
-    null_logger = NilLog.new
-    s = WEBrick::HTTPServer.new(
-      Port: 0,
-      DocumentRoot: nil,
-      Logger: null_logger,
-      AccessLog: null_logger
-    )
-    s.mount_proc("/kill") {|_req, _res| s.shutdown }
-    s.mount_proc("/yaml") do |req, res|
-      if req["X-Captain"]
-        res.body = req["X-Captain"]
-      elsif @enable_yaml
-        res.body = data
-        res["Content-Type"] = "text/plain"
-        res["content-length"] = data.size
-      else
-        res.status = "404"
-        res.body = "<h1>NOT FOUND</h1>"
-        res["Content-Type"] = "text/html"
-      end
+  def handle_request(client, data)
+    request_line = client.gets
+    headers = {}
+    while (line = client.gets) && line != "\r\n"
+      key, value = line.split(': ', 2)
+      headers[key] = value.strip
     end
-    s.mount_proc("/yaml.Z") do |_req, res|
+
+    if request_line.start_with?("GET /yaml")
+      response = if headers["X-Captain"]
+                   headers["X-Captain"]
+                 elsif @enable_yaml
+                   data
+                 else
+                   "<h1>NOT FOUND</h1>"
+                 end
+      client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{response.size}\r\n\r\n#{response}"
+    elsif request_line.start_with?("HEAD /yaml") || request_line.start_with?("GET http://") && request_line.include?("/yaml")
+      client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{data.size}\r\n\r\n#{data}"
+    elsif request_line.start_with?("GET /yaml.Z")
       if @enable_zip
-        res.body = Zlib::Deflate.deflate(data)
-        res["Content-Type"] = "text/plain"
+        zipped_data = Zlib::Deflate.deflate(data)
+        client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{zipped_data.size}\r\n\r\n#{zipped_data}"
       else
-        res.status = "404"
-        res.body = "<h1>NOT FOUND</h1>"
-        res["Content-Type"] = "text/html"
+        client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
       end
+    else
+      client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
     end
-    th = Thread.new do
-      s.start
-    rescue StandardError => ex
-      abort "ERROR during server thread: #{ex.message}"
-    ensure
-      s.shutdown
-    end
-    th[:server] = s
-    th
+    client.close
   end
 end
