@@ -538,12 +538,14 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    require "fileutils"
-    FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
+    Gem.open_file_with_flock("#{bin_script_path}.lock") do
+      require "fileutils"
+      FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    Gem.open_file_with_flock(bin_script_path) do |file|
-      file.write app_script_text(filename)
-      file.chmod(options[:prog_mode] || 0o755)
+      File.open(bin_script_path, "wb", 0o755) do |file|
+        file.write app_script_text(filename)
+        file.chmod(options[:prog_mode] || 0o755)
+      end
     end
 
     verbose bin_script_path
