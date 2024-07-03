@@ -104,6 +104,7 @@ Gem::Specification.new do |spec|
     "prism.gemspec",
     "rbi/prism.rbi",
     "rbi/prism/compiler.rbi",
+    "rbi/prism/dsl.rbi",
     "rbi/prism/inspect_visitor.rbi",
     "rbi/prism/node_ext.rbi",
     "rbi/prism/node.rbi",

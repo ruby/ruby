@@ -76,33 +76,38 @@ module Prism
     end
 
     def test_literal_in_conditionals
-      source = <<~RUBY
-        if (a = 2); a; end
-        if ($a = 2); end
-        if (@a = 2); end
-        if (@@a = 2); end
-        if a; elsif b = 2; b end
-        unless (a = 2); a; end
-        unless ($a = 2); end
-        unless (@a = 2); end
-        unless (@@a = 2); end
-        while (a = 2); a; end
-        while ($a = 2); end
-        while (@a = 2); end
-        while (@@a = 2); end
-        until (a = 2); a; end
-        until ($a = 2); end
-        until (@a = 2); end
-        until (@@a = 2); end
-        foo if (a, b = 2); [a, b]
-        foo if a = 2 and a
-        (@foo = 1) ? a : b
-        !(a = 2) and a
-        not a = 2 and a
-      RUBY
+      sources = [
+        "if (a = 2); a; end",
+        "if ($a = 2); end",
+        "if (@a = 2); end",
+        "if a; elsif b = 2; b end",
+        "unless (a = 2); a; end",
+        "unless ($a = 2); end",
+        "unless (@a = 2); end",
+        "while (a = 2); a; end",
+        "while ($a = 2); end",
+        "while (@a = 2); end",
+        "until (a = 2); a; end",
+        "until ($a = 2); end",
+        "until (@a = 2); end",
+        "foo if (a, b = 2); [a, b]",
+        "foo if a = 2 and a",
+        "(@foo = 1) ? a : b",
+        "!(a = 2) and a",
+        "not a = 2 and a"
+      ]
 
-      source.each_line(chomp: true) do |line|
-        assert_warning(line, "found '= literal' in conditional, should be ==")
+      if RUBY_VERSION >= "3.3"
+        sources.push(
+          "if (@@a = 2); end",
+          "unless (@@a = 2); end",
+          "while (@@a = 2); end",
+          "until (@@a = 2); end"
+        )
+      end
+
+      sources.each do |source|
+        assert_warning(source, "= literal' in conditional, should be ==")
       end
     end
 

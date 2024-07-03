@@ -69,8 +69,15 @@ module Prism
     # Create a new <%= node.name %> node.
     def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
-      when Prism::Template::NodeField, Prism::Template::ConstantField
-        "#{field.name}: default_node(source, location)"
+      when Prism::Template::NodeField
+        if !field.kind?
+          "#{field.name}: default_node(source, location)"
+        else
+          kind = field.specific_kind || field.union_kind.first
+          "#{field.name}: #{kind.gsub(/(?<=.)[A-Z]/, "_\\0").downcase}(source: source)"
+        end
+      when Prism::Template::ConstantField
+        "#{field.name}: :\"\""
       when Prism::Template::OptionalNodeField, Prism::Template::OptionalConstantField, Prism::Template::OptionalLocationField
         "#{field.name}: nil"
       when Prism::Template::NodeListField, Prism::Template::ConstantListField
@@ -79,8 +86,10 @@ module Prism
         "#{field.name}: \"\""
       when Prism::Template::LocationField
         "#{field.name}: location"
-      when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField, Prism::Template::DoubleField
+      when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField
         "#{field.name}: 0"
+      when Prism::Template::DoubleField
+        "#{field.name}: 0.0"
       else
         raise
       end
@@ -96,7 +105,7 @@ module Prism
       <%- flag.values.each do |value| -%>
       when :<%= value.name.downcase %> then <%= flag.name %>::<%= value.name %>
       <%- end -%>
-      else raise ArgumentError, "invalid <%= flag.name %> flag: #{name.inspect}"
+      else Kernel.raise ArgumentError, "invalid <%= flag.name %> flag: #{name.inspect}"
       end
     end
     <%- end -%>
@@ -118,7 +127,7 @@ module Prism
     # The default node that gets attached to nodes if no node is specified for a
     # required node field.
     def default_node(source, location)
-      MissingNode.new(source, location)
+      MissingNode.new(source, -1, location, 0)
     end
   end
 end
