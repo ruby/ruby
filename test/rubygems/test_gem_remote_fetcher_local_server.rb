@@ -3,7 +3,6 @@
 require_relative "helper"
 
 require "socket"
-require "zlib"
 
 require "rubygems/remote_fetcher"
 require "rubygems/package"
@@ -78,13 +77,11 @@ gems:
     @normal_server ||= start_server(SERVER_DATA)
     @proxy_server  ||= start_server(PROXY_DATA)
     self.enable_yaml = true
-    self.enable_zip = false
 
     base_server_uri = "http://localhost:#{@normal_server[:server].addr[1]}"
     @proxy_uri = "http://localhost:#{@proxy_server[:server].addr[1]}"
 
     @server_uri = base_server_uri + "/yaml"
-    @server_z_uri = base_server_uri + "/yaml.Z"
 
     Gem::RemoteFetcher.fetcher = nil
     @stub_ui = Gem::MockGemUi.new
@@ -182,7 +179,7 @@ gems:
   private
 
   attr_reader :normal_server, :proxy_server
-  attr_accessor :enable_zip, :enable_yaml
+  attr_accessor :enable_yaml
 
   def assert_data_from_server(data)
     assert_match(/0\.4\.11/, data, "Data is not from server")
@@ -223,13 +220,6 @@ gems:
       client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{response.size}\r\n\r\n#{response}"
     elsif request_line.start_with?("HEAD /yaml") || request_line.start_with?("GET http://") && request_line.include?("/yaml")
       client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{data.size}\r\n\r\n#{data}"
-    elsif request_line.start_with?("GET /yaml.Z")
-      if @enable_zip
-        zipped_data = Zlib::Deflate.deflate(data)
-        client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{zipped_data.size}\r\n\r\n#{zipped_data}"
-      else
-        client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
-      end
     else
       client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
     end
