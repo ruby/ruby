@@ -4181,17 +4181,6 @@ obj_info(VALUE obj)
     char *const buff = obj_info_buffers[index];
     return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
 }
-
-const char *
-gc_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
-{
-    asan_unpoisoning_object(obj) {
-        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
-        if (pos >= buff_size) {} // truncated
-    }
-
-    return buff;
-}
 #else
 static const char *
 obj_info(VALUE obj)
