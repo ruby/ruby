@@ -241,6 +241,35 @@ class Integer
     self
   end
 
+  # call-seq:
+  #   downto(limit) {|i| ... } -> self
+  #   downto(limit)            ->  enumerator
+  #
+  # Calls the given block with each integer value from +self+ down to +limit+;
+  # returns +self+:
+  #
+  #   a = []
+  #   10.downto(5) {|i| a << i }              # => 10
+  #   a                                       # => [10, 9, 8, 7, 6, 5]
+  #   a = []
+  #   0.downto(-5) {|i| a << i }              # => 0
+  #   a                                       # => [0, -1, -2, -3, -4, -5]
+  #   4.downto(5) {|i| fail 'Cannot happen' } # => 4
+  #
+  # With no block given, returns an Enumerator.
+  def downto to
+    Primitive.attr! :inline_block
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &to, int_downto_size)'
+    end
+
+    from = self
+    while from >= to
+      yield from
+      from = from.pred
+    end
+  end
+
   #  call-seq:
   #    to_i -> self
   #
