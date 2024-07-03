@@ -5,9 +5,9 @@
 # This module manipulates strings according to the word parsing rules
 # of the UNIX Bourne shell.
 #
-# The shellwords() function was originally a port of shellwords.pl,
-# but modified to conform to the Shell & Utilities volume of the IEEE
-# Std 1003.1-2008, 2016 Edition [1].
+# The <tt>shellwords()</tt> function was originally a port of shellwords.pl, but
+# modified to conform to {the Shell & Utilities volume of the IEEE Std 1003.1-2008, 2016
+# Edition}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 #
 # === Usage
 #
@@ -62,10 +62,6 @@
 #
 # === Contact
 # * Akinori MUSHA <knu@iDaemons.org> (current maintainer)
-#
-# === Resources
-#
-# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 
 module Shellwords
   # The version number string.
