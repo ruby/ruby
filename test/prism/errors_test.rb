@@ -18,6 +18,12 @@ module Prism
       ]
     end
 
+    if RUBY_VERSION < "3.4"
+      filepaths -= [
+        "it_with_ordinary_parameter.txt"
+      ]
+    end
+
     filepaths.each do |filepath|
       define_method(:"test_#{File.basename(filepath, ".txt")}") do
         assert_errors(File.join(base, filepath))
@@ -77,7 +83,7 @@ module Prism
     private
 
     def assert_errors(filepath)
-      expected = File.read(filepath)
+      expected = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
       source = expected.lines.grep_v(/^\s*\^/).join.gsub(/\n*\z/, "")
       refute_valid_syntax(source)

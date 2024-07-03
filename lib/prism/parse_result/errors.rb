@@ -32,19 +32,19 @@ module Prism
         io = StringIO.new
         source_lines.each.with_index(1) do |line, line_number|
           io.puts(line)
-  
+
           (error_lines.delete(line_number) || []).each do |error|
             location = error.location
-  
+
             case line_number
             when location.start_line
               io.print(" " * location.start_column + "^")
-  
+
               if location.start_line == location.end_line
                 if location.start_column != location.end_column
                   io.print("~" * (location.end_column - location.start_column - 1))
                 end
-  
+
                 io.puts(" " + error.message)
               else
                 io.puts("~" * (line.bytesize - location.start_column))
@@ -56,7 +56,7 @@ module Prism
             end
           end
         end
-  
+
         io.puts
         io.string
       end

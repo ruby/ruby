@@ -93,6 +93,10 @@ module Prism
     # Some node fields can be specialized if they point to a specific kind of
     # node and not just a generic node.
     class NodeKindField < Field
+      def kind?
+        options.key?(:kind)
+      end
+
       def c_type
         if specific_kind
           "pm_#{specific_kind.gsub(/(?<=.)[A-Z]/, "_\\0").downcase}"
@@ -624,6 +628,7 @@ module Prism
       "src/prettyprint.c",
       "src/serialize.c",
       "src/token_type.c",
+      "rbi/prism/dsl.rbi",
       "rbi/prism/node.rbi",
       "rbi/prism/visitor.rbi",
       "sig/prism.rbs",

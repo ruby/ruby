@@ -588,6 +588,7 @@ module Prism
     autoload :Newlines, "prism/parse_result/newlines"
 
     private_constant :Comments
+    private_constant :Errors
     private_constant :Newlines
 
     # The syntax tree that was parsed from the source code.
