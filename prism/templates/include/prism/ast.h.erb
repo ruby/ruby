@@ -137,6 +137,12 @@ typedef struct pm_node {
     pm_node_flags_t flags;
 
     /**
+     * The unique identifier for this node, which is deterministic based on the
+     * source. It is used to identify unique nodes across parses.
+     */
+    uint32_t node_id;
+
+    /**
      * This is the location of the node in the source. It's a range of bytes
      * containing a start and an end.
      */

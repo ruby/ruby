@@ -6,11 +6,13 @@ module Prism
   #
   #     Prism::ArrayNode.new(
   #       source,
+  #       0,
   #       Prism::Location.new(source, 0, 3),
   #       0,
   #       [
   #         Prism::IntegerNode.new(
   #           source,
+  #           0,
   #           Prism::Location.new(source, 1, 1),
   #           Prism::IntegerBaseFlags::DECIMAL,
   #           1
@@ -65,7 +67,7 @@ module Prism
     <%- nodes.each do |node| -%>
 
     # Create a new <%= node.name %> node.
-    def <%= node.human %>(<%= ["source: default_source", "location: default_location", "flags: 0", *node.fields.map { |field|
+    def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
       when Prism::Template::NodeField, Prism::Template::ConstantField
         "#{field.name}: default_node(source, location)"
@@ -83,7 +85,7 @@ module Prism
         raise
       end
     }].join(", ") %>)
-      <%= node.name %>.new(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
     <%- end -%>
     <%- flags.each do |flag| -%>

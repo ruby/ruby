@@ -72,6 +72,7 @@ module Prism
     def to_interpolated
       InterpolatedStringNode.new(
         source,
+        -1,
         location,
         frozen? ? InterpolatedStringNodeFlags::FROZEN : 0,
         opening_loc,
@@ -89,10 +90,11 @@ module Prism
     def to_interpolated
       InterpolatedXStringNode.new(
         source,
+        -1,
         location,
         flags,
         opening_loc,
-        [StringNode.new(source, content_loc, 0, nil, content_loc, nil, unescaped)],
+        [StringNode.new(source, node_id, content_loc, 0, nil, content_loc, nil, unescaped)],
         closing_loc
       )
     end
@@ -119,9 +121,9 @@ module Prism
       deprecated("value", "numerator", "denominator")
 
       if denominator == 1
-        IntegerNode.new(source, location.chop, flags, numerator)
+        IntegerNode.new(source, -1, location.chop, flags, numerator)
       else
-        FloatNode.new(source, location.chop, 0, numerator.to_f / denominator)
+        FloatNode.new(source, -1, location.chop, 0, numerator.to_f / denominator)
       end
     end
   end
@@ -199,7 +201,12 @@ module Prism
     # continue to supply that API.
     def child
       deprecated("name", "name_loc")
-      name ? ConstantReadNode.new(source, name_loc, 0, name) : MissingNode.new(source, location, 0)
+
+      if name
+        ConstantReadNode.new(source, -1, name_loc, 0, name)
+      else
+        MissingNode.new(source, -1, location, 0)
+      end
     end
   end
 
@@ -235,7 +242,12 @@ module Prism
     # continue to supply that API.
     def child
       deprecated("name", "name_loc")
-      name ? ConstantReadNode.new(source, name_loc, 0, name) : MissingNode.new(source, location, 0)
+
+      if name
+        ConstantReadNode.new(source, -1, name_loc, 0, name)
+      else
+        MissingNode.new(source, -1, location, 0)
+      end
     end
   end
 

@@ -6,6 +6,12 @@ module Prism
     attr_reader :source
     private :source
 
+    # A unique identifier for this node. This is used in a very specific
+    # use case where you want to keep around a reference to a node without
+    # having to keep around the syntax tree in memory. This unique identifier
+    # will be consistent across multiple parses of the same source code.
+    attr_reader :node_id
+
     # A Location instance that represents the location of this node in the
     # source.
     def location
@@ -212,8 +218,9 @@ module Prism
   <%- end -%>
   class <%= node.name -%> < Node
     # Initialize a new <%= node.name %> node.
-    def initialize(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
+    def initialize(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
       @source = source
+      @node_id = node_id
       @location = location
       @flags = flags
       <%- node.fields.each do |field| -%>
@@ -274,17 +281,17 @@ module Prism
       }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (<%= (["?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
-    def copy(<%= (["location", "flags"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
-      <%= node.name %>.new(<%= ["source", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
+    # def copy: (<%= (["?node_id: Integer", "?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (["node_id", "location", "flags"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %> }
+    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }
     def deconstruct_keys(keys)
-      { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
+      { <%= (["node_id: node_id", "location: location"] + node.fields.map { |field| "#{field.name}: #{field.name}" }).join(", ") %> }
     end
     <%- if (node_flags = node.flags) -%>
     <%- node_flags.values.each do |value| -%>

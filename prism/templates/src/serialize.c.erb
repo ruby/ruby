@@ -74,6 +74,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
 
     size_t offset = buffer->length;
 
+    pm_buffer_append_varuint(buffer, node->node_id);
     pm_serialize_location(parser, &node->location, buffer);
 
     switch (PM_NODE_TYPE(node)) {

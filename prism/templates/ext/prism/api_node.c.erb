@@ -173,17 +173,20 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- if node.fields.any? { |field| ![Prism::Template::NodeField, Prism::Template::OptionalNodeField].include?(field.class) } -%>
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
                     <%- end -%>
-                    VALUE argv[<%= node.fields.length + 3 %>];
+                    VALUE argv[<%= node.fields.length + 4 %>];
 
                     // source
                     argv[0] = source;
 
+                    // node_id
+                    argv[1] = ULONG2NUM(node->node_id);
+
                     // location
-                    argv[1] = pm_location_new(parser, node->location.start, node->location.end);
+                    argv[2] = pm_location_new(parser, node->location.start, node->location.end);
 
                     // flags
-                    argv[2] = ULONG2NUM(node->flags);
-                    <%- node.fields.each.with_index(3) do |field, index| -%>
+                    argv[3] = ULONG2NUM(node->flags);
+                    <%- node.fields.each.with_index(4) do |field, index| -%>
 
                     // <%= field.name %>
                     <%- case field -%>
@@ -235,7 +238,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- end -%>
                     <%- end -%>
 
-                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 3 %>, argv, rb_cPrism<%= node.name %>));
+                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 4 %>, argv, rb_cPrism<%= node.name %>));
                     break;
                 }
                 <%- end -%>
