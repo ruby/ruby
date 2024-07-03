@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-
-require "webrick/https" if Gem::HAVE_OPENSSL
+require "socket"
+require "openssl"
 
 unless Gem::HAVE_OPENSSL
   warn "Skipping Gem::RemoteFetcher tests.  openssl not found."
@@ -30,22 +30,20 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def setup
     super
-
     @ssl_server = nil
     @ssl_server_thread = nil
   end
 
   def teardown
     if @ssl_server
-      @ssl_server.stop
+      # TODO lookup ssl_server status and close it properly
+      # @ssl_server.shutdown
       @ssl_server = nil
     end
     if @ssl_server_thread
       @ssl_server_thread.kill.join
       @ssl_server_thread = nil
     end
-    WEBrick::Utils::TimeoutHandler.terminate
-
     super
   end
 
@@ -53,13 +51,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ssl_server = start_ssl_server
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
-      fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
   end
 
   def test_ssl_client_cert_auth_connection
     ssl_server = start_ssl_server(
-      { SSLVerifyClient: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+      { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
@@ -69,13 +67,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
       ":ssl_client_cert: #{temp_client_cert}\n"
     ) do |fetcher|
-      fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
     ssl_server = start_ssl_server(
-      { SSLVerifyClient: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+      { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
@@ -86,7 +84,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       ":ssl_client_cert: #{temp_client_cert}\n"
     ) do |fetcher|
       assert_raise Gem::RemoteFetcher::FetchError do
-        fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+        fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
       end
     end
   end
@@ -95,7 +93,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ssl_server = start_ssl_server
     with_configured_fetcher do |fetcher|
       assert_raise Gem::RemoteFetcher::FetchError do
-        fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+        fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
       end
     end
   end
@@ -103,7 +101,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_ssl_connection_allow_verify_none
     ssl_server = start_ssl_server
     with_configured_fetcher(":ssl_verify_mode: 0") do |fetcher|
-      fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
   end
 
@@ -112,11 +110,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ssl_server = start_ssl_server
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     expected_error_message =
-      "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri})"
+      "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.addr[1]}/insecure_redirect?to=#{@server_uri})"
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       err = assert_raise Gem::RemoteFetcher::FetchError do
-        fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri}")
+        fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/insecure_redirect?to=#{@server_uri}")
       end
 
       assert_equal(err.message, expected_error_message)
@@ -129,7 +127,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       assert_raise Gem::RemoteFetcher::FetchError do
-        fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}")
+        fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}")
       end
     end
   end
@@ -151,51 +149,43 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     Gem.configuration = nil
   end
 
-  class NilLog < WEBrick::Log
-    def log(level, data) # Do nothing
-    end
-  end
-
   def start_ssl_server(config = {})
-    pend "starting this test server fails randomly on jruby" if Gem.java_platform?
-
-    null_logger = NilLog.new
-    server = WEBrick::HTTPServer.new({
-      Port: 0,
-      Logger: null_logger,
-      AccessLog: [],
-      SSLEnable: true,
-      SSLCACertificateFile: File.join(__dir__, "ca_cert.pem"),
-      SSLCertificate: cert("ssl_cert.pem"),
-      SSLPrivateKey: key("ssl_key.pem"),
-      SSLVerifyClient: nil,
-      SSLCertName: nil,
-    }.merge(config))
-    server.mount_proc("/yaml") do |_req, res|
-      res.body = "--- true\n"
-    end
-    server.mount_proc("/insecure_redirect") do |req, res|
-      res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query["to"])
-    end
-    server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
-    t = Thread.new do
-      server.start
-    rescue StandardError => ex
-      puts "ERROR during server thread: #{ex.message}"
-      raise
-    ensure
-      server.shutdown
-    end
-    while server.status != :Running
-      sleep 0.1
-      unless t.alive?
-        t.join
-        raise
+    server = TCPServer.new(0)
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.cert = cert("ssl_cert.pem")
+    ctx.key = key("ssl_key.pem")
+    ctx.ca_file = File.join(__dir__, "ca_cert.pem")
+    ctx.tmp_dh_callback = proc { TEST_KEY_DH2048 }
+    ctx.verify_mode = config[:verify_mode] if config[:verify_mode]
+    ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
+    @ssl_server_thread = Thread.new do
+      loop do
+        ssl_client = ssl_server.accept
+        Thread.new(ssl_client) do |client|
+          begin
+            handle_request(client)
+          rescue OpenSSL::SSL::SSLError => e
+            warn "SSL error: #{e.message}"
+          ensure
+            client.close
+          end
+        end
       end
     end
-    @ssl_server = server
-    @ssl_server_thread = t
+    @ssl_server = ssl_server
     server
+  end
+
+  def handle_request(client)
+    request = client.gets
+    if request.start_with?("GET /yaml")
+      client.print "HTTP/1.1 200 OK\r\nContent-Type: text/yaml\r\n\r\n--- true\n"
+    elsif request.start_with?("GET /insecure_redirect")
+      location = request.match(/to=([^ ]+)/)[1]
+      client.print "HTTP/1.1 301 Moved Permanently\r\nLocation: #{location}\r\n\r\n"
+    else
+      client.print "HTTP/1.1 404 Not Found\r\n\r\n"
+    end
   end
 
   def cert(filename)
