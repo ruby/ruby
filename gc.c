@@ -4192,19 +4192,6 @@ gc_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
 
     return buff;
 }
-
-static const char *
-obj_info_basic(VALUE obj)
-{
-    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
-    char *const buff = obj_info_buffers[index];
-
-    asan_unpoisoning_object(obj) {
-        rb_raw_obj_info_common(buff, OBJ_INFO_BUFFERS_SIZE, obj);
-    }
-
-    return buff;
-}
 #else
 static const char *
 obj_info(VALUE obj)
