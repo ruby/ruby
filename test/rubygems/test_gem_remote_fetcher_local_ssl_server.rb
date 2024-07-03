@@ -163,11 +163,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         ssl_client = ssl_server.accept
         Thread.new(ssl_client) do |client|
           handle_request(client)
-        rescue OpenSSL::SSL::SSLError => e
-          warn "SSL error: #{e.message}"
         ensure
           client.close
         end
+      rescue OpenSSL::SSL::SSLError => e
+        warn "SSL error: #{e.message}"
       end
     end
     @ssl_server = ssl_server
