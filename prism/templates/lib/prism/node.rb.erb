@@ -116,6 +116,23 @@ module Prism
       result
     end
 
+    # Returns the first node that matches the given block when visited in a
+    # depth-first search. This is useful for finding a node that matches a
+    # particular condition.
+    #
+    #     node.breadth_first_search { |node| node.node_id == node_id }
+    #
+    def breadth_first_search(&block)
+      queue = [self] #: Array[Prism::node]
+
+      while (node = queue.shift)
+        return node if yield node
+        queue.concat(node.compact_child_nodes)
+      end
+
+      nil
+    end
+
     # Returns a list of the fields that exist for this node class. Fields
     # describe the structure of the node. This kind of reflection is useful for
     # things like recursively visiting each node _and_ field in the tree.
