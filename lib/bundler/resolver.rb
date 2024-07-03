@@ -273,11 +273,11 @@ module Bundler
         platform_specs.uniq!
 
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
-        groups << Resolver::Candidate.new(version, specs: ruby_specs) if ruby_specs.any?
+        groups << Resolver::Candidate.new(version, specs: ruby_specs, priority: -1) if ruby_specs.any?
 
         next groups if platform_specs == ruby_specs || package.force_ruby_platform?
 
-        groups << Resolver::Candidate.new(version, specs: platform_specs)
+        groups << Resolver::Candidate.new(version, specs: platform_specs, priority: 1)
 
         groups
       end
@@ -432,8 +432,8 @@ module Bundler
 
     def requirement_to_range(requirement)
       ranges = requirement.requirements.map do |(op, version)|
-        ver = Resolver::Candidate.new(version).generic!
-        platform_ver = Resolver::Candidate.new(version).platform_specific!
+        ver = Resolver::Candidate.new(version, priority: -1)
+        platform_ver = Resolver::Candidate.new(version, priority: 1)
 
         case op
         when "~>"

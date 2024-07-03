@@ -24,10 +24,10 @@ module Bundler
 
       attr_reader :version
 
-      def initialize(version, specs: [])
+      def initialize(version, specs: [], priority: -1)
         @spec_group = Resolver::SpecGroup.new(specs)
         @version = Gem::Version.new(version)
-        @ruby_only = specs.map(&:platform).uniq == [Gem::Platform::RUBY]
+        @priority = priority
       end
 
       def dependencies
@@ -40,18 +40,6 @@ module Bundler
         @spec_group.to_specs(package.force_ruby_platform?)
       end
 
-      def generic!
-        @ruby_only = true
-
-        self
-      end
-
-      def platform_specific!
-        @ruby_only = false
-
-        self
-      end
-
       def prerelease?
         @version.prerelease?
       end
@@ -61,7 +49,7 @@ module Bundler
       end
 
       def sort_obj
-        [@version, @ruby_only ? -1 : 1]
+        [@version, @priority]
       end
 
       def <=>(other)
