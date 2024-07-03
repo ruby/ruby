@@ -12398,7 +12398,7 @@ string_for_symbol(VALUE name)
     if (!RB_TYPE_P(name, T_STRING)) {
         VALUE tmp = rb_check_string_type(name);
         if (NIL_P(tmp)) {
-            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
+            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
                      name);
         }
         name = tmp;
