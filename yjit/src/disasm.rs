@@ -23,11 +23,6 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 
     #[cfg(feature = "disasm")]
     {
-        // TODO:
-        //if unsafe { CLASS_OF(iseqw) != rb_cISeq } {
-        //    return Qnil;
-        //}
-
         if !yjit_enabled_p() {
             return Qnil;
         }
@@ -264,43 +259,36 @@ pub fn unindent(string: &str, trim_lines: bool) -> String {
 /// Produce a list of instructions compiled for an isew
 #[no_mangle]
 pub extern "C" fn rb_yjit_insns_compiled(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALUE) -> VALUE {
-    {
-        // TODO:
-        //if unsafe { CLASS_OF(iseqw) != rb_cISeq } {
-        //    return Qnil;
-        //}
+    if !yjit_enabled_p() {
+        return Qnil;
+    }
 
-        if !yjit_enabled_p() {
-            return Qnil;
+    // Get the iseq pointer from the wrapper
+    let iseq = unsafe { rb_iseqw_to_iseq(iseqw) };
+
+    // Get the list of instructions compiled
+    let insn_vec = insns_compiled(iseq);
+
+    unsafe {
+        let insn_ary = rb_ary_new_capa((insn_vec.len() * 2) as i64);
+
+        // For each instruction compiled
+        for idx in 0..insn_vec.len() {
+            let op_name = &insn_vec[idx].0;
+            let insn_idx = insn_vec[idx].1;
+
+            let op_sym = rust_str_to_sym(&op_name);
+
+            // Store the instruction index and opcode symbol
+            rb_ary_store(
+                insn_ary,
+                (2 * idx + 0) as i64,
+                VALUE::fixnum_from_usize(insn_idx as usize),
+            );
+            rb_ary_store(insn_ary, (2 * idx + 1) as i64, op_sym);
         }
 
-        // Get the iseq pointer from the wrapper
-        let iseq = unsafe { rb_iseqw_to_iseq(iseqw) };
-
-        // Get the list of instructions compiled
-        let insn_vec = insns_compiled(iseq);
-
-        unsafe {
-            let insn_ary = rb_ary_new_capa((insn_vec.len() * 2) as i64);
-
-            // For each instruction compiled
-            for idx in 0..insn_vec.len() {
-                let op_name = &insn_vec[idx].0;
-                let insn_idx = insn_vec[idx].1;
-
-                let op_sym = rust_str_to_sym(&op_name);
-
-                // Store the instruction index and opcode symbol
-                rb_ary_store(
-                    insn_ary,
-                    (2 * idx + 0) as i64,
-                    VALUE::fixnum_from_usize(insn_idx as usize),
-                );
-                rb_ary_store(insn_ary, (2 * idx + 1) as i64, op_sym);
-            }
-
-            insn_ary
-        }
+        insn_ary
     }
 }
 
