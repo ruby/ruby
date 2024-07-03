@@ -2311,7 +2311,6 @@ static void
 each_stack_location(void *objspace, const rb_execution_context_t *ec,
                      const VALUE *stack_start, const VALUE *stack_end, void (*cb)(void *objspace, VALUE obj))
 {
-
     gc_mark_locations(objspace, stack_start, stack_end, cb);
 
 #if defined(__mc68000__)
@@ -2321,13 +2320,22 @@ each_stack_location(void *objspace, const rb_execution_context_t *ec,
 #endif
 }
 
+struct mark_machine_stack_location_maybe_data {
+    void *objspace;
+#ifdef RUBY_ASAN_ENABLED
+    const rb_execution_context_t *ec;
+#endif
+};
+
 static void
-gc_mark_machine_stack_location_maybe(void *objspace, VALUE obj)
+gc_mark_machine_stack_location_maybe(void *data, VALUE obj)
 {
+    void *objspace = ((struct mark_machine_stack_location_maybe_data *)data)->objspace;
+
     rb_gc_impl_mark_maybe(objspace, obj);
 
 #ifdef RUBY_ASAN_ENABLED
-    const rb_execution_context_t *ec = objspace->marking_machine_context_ec;
+    const rb_execution_context_t *ec = ((struct mark_machine_stack_location_maybe_data *)data)->ec;
     void *fake_frame_start;
     void *fake_frame_end;
     bool is_fake_frame = asan_get_fake_stack_extents(
@@ -2402,38 +2410,36 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
+    struct mark_machine_stack_location_maybe_data data = {
+        .objspace = objspace,
 #ifdef RUBY_ASAN_ENABLED
-    objspace->marking_machine_context_ec = ec;
+        .ec = ec
 #endif
+    };
 
-    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe);
-    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
-
-#ifdef RUBY_ASAN_ENABLED
-    objspace->marking_machine_context_ec = NULL;
-#endif
+    each_location((void *)&data, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe);
+    each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
 }
 #endif
 
 void
 rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 {
-#ifdef RUBY_ASAN_ENABLED
-    objspace->marking_machine_context_ec = ec;
-#endif
-
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
     RUBY_DEBUG_LOG("ec->th:%u stack_start:%p stack_end:%p", rb_ec_thread_ptr(ec)->serial, stack_start, stack_end);
 
-    each_stack_location(rb_gc_get_objspace(), ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
-    int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
-    each_location(rb_gc_get_objspace(), (VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe);
-
+    struct mark_machine_stack_location_maybe_data data = {
+        .objspace = rb_gc_get_objspace(),
 #ifdef RUBY_ASAN_ENABLED
-    objspace->marking_machine_context_ec = NULL;
+        .ec = ec
 #endif
+    };
+
+    each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
+    int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
+    each_location((void *)&data, (VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe);
 }
 
 static int

@@ -654,11 +654,6 @@ typedef struct rb_objspace {
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
     unsigned long live_ractor_cache_count;
-
-#ifdef RUBY_ASAN_ENABLED
-    rb_execution_context_t *marking_machine_context_ec;
-#endif
-
 } rb_objspace_t;
 
 #ifndef HEAP_PAGE_ALIGN_LOG
