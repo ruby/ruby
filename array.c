@@ -3630,41 +3630,6 @@ rb_ary_sort_by_bang(VALUE ary)
     return ary;
 }
 
-
-/*
- *  call-seq:
- *    array.map {|element| ... } -> new_array
- *    array.map -> new_enumerator
- *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ whose elements are the return values from the block:
- *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map {|element| element.class }
- *    a1 # => [Symbol, String, Integer]
- *
- *  Returns a new Enumerator if no block given:
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
- *
- */
-
-static VALUE
-rb_ary_collect(VALUE ary)
-{
-    long i;
-    VALUE collect;
-
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-    collect = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-        rb_ary_push(collect, rb_yield(RARRAY_AREF(ary, i)));
-    }
-    return collect;
-}
-
-
 /*
  *  call-seq:
  *    array.map! {|element| ... } -> self
@@ -8668,9 +8633,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "sort_by!", rb_ary_sort_by_bang, 0);
-    rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
