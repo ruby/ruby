@@ -5,6 +5,7 @@ require_relative "command/internal_helpers"
 require_relative "command/backtrace"
 require_relative "command/break"
 require_relative "command/catch"
+require_relative "command/cd"
 require_relative "command/chws"
 require_relative "command/context"
 require_relative "command/continue"
@@ -240,6 +241,8 @@ module IRB
     _register_with_aliases(:irb_disable_irb, Command::DisableIrb,
       [:disable_irb, NO_OVERRIDE]
     )
+
+    register(:cd, Command::CD)
   end
 
   ExtendCommand = Command
