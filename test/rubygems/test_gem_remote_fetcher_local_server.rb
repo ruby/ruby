@@ -76,7 +76,6 @@ gems:
 
     @normal_server ||= start_server(SERVER_DATA)
     @proxy_server  ||= start_server(PROXY_DATA)
-    self.enable_yaml = true
 
     base_server_uri = "http://localhost:#{@normal_server[:server].addr[1]}"
     @proxy_uri = "http://localhost:#{@proxy_server[:server].addr[1]}"
@@ -179,7 +178,6 @@ gems:
   private
 
   attr_reader :normal_server, :proxy_server
-  attr_accessor :enable_yaml
 
   def assert_data_from_server(data)
     assert_match(/0\.4\.11/, data, "Data is not from server")
@@ -212,10 +210,8 @@ gems:
     if request_line.start_with?("GET /yaml")
       response = if headers["X-Captain"]
                    headers["X-Captain"]
-                 elsif @enable_yaml
-                   data
                  else
-                   "<h1>NOT FOUND</h1>"
+                   data
                  end
       client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{response.size}\r\n\r\n#{response}"
     elsif request_line.start_with?("HEAD /yaml") || request_line.start_with?("GET http://") && request_line.include?("/yaml")
