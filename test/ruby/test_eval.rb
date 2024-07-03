@@ -535,6 +535,12 @@ class TestEval < Test::Unit::TestCase
     assert_equal(fname, eval("__FILE__", nil, fname, 1))
   end
 
+  def test_eval_invalid_block_exit_bug_20597
+    assert_raise(SyntaxError){eval("break if false")}
+    assert_raise(SyntaxError){eval("next if false")}
+    assert_raise(SyntaxError){eval("redo if false")}
+  end
+
   def test_eval_location_fstring
     o = Object.new
     o.instance_eval "def foo() end", "generated code"

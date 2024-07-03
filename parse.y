@@ -1836,7 +1836,7 @@ clear_block_exit(struct parser_params *p, bool error)
 {
     rb_node_exits_t *exits = p->exits;
     if (!exits) return;
-    if (error && !compile_for_eval) {
+    if (error) {
         for (NODE *e = RNODE(exits); (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
             switch (nd_type(e)) {
               case NODE_BREAK:
