@@ -322,6 +322,7 @@ module Prism
       if RUBY_ENGINE == "ruby"
         def load_node
           type = io.getbyte
+          node_id = load_varuint
           location = load_location
 
           case type
@@ -330,7 +331,7 @@ module Prism
             <%- if node.needs_serialized_length? -%>
             load_uint32
             <%- end -%>
-            <%= node.name %>.new(<%= ["source", "location", "load_varuint", *node.fields.map { |field|
+            <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
               case field
               when Prism::Template::NodeField then "load_node"
               when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -362,11 +363,12 @@ module Prism
             nil,
             <%- nodes.each do |node| -%>
             -> {
+              node_id = load_varuint
               location = load_location
               <%- if node.needs_serialized_length? -%>
               load_uint32
               <%- end -%>
-              <%= node.name %>.new(<%= ["source", "location", "load_varuint", *node.fields.map { |field|
+              <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
                 case field
                 when Prism::Template::NodeField then "load_node"
                 when Prism::Template::OptionalNodeField then "load_optional_node"
