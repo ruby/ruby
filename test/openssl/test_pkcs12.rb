@@ -337,6 +337,48 @@ BC8fv38mue8LZVcbHQQIUNrWKEnskCoCAggA
       )
       assert_equal p12.to_der, p12.dup.to_der
     end
+
+    def test_set_mac_pkcs12kdf
+      p12 = OpenSSL::PKCS12.create(
+        "pass",
+        "name",
+        @mykey,
+        @mycert,
+        nil,
+        nil,
+        nil,
+        nil,
+        1234, # mac_iter
+        nil,
+      )
+      macdata = macdata(p12)
+      # Depends on the OpenSSL version: SHA256 in OpenSSL >= 3.0
+      assert_include ["SHA1", "SHA256"], macdata[:mac_algo]
+      assert_equal 1234, macdata[:iter]
+
+      p12.set_mac("pass", "macsalt", 2345, "SHA384")
+      macdata = macdata(p12)
+      assert_equal "SHA384", macdata[:mac_algo]
+      assert_equal "macsalt", macdata[:salt]
+      assert_equal 2345, macdata[:iter]
+      assert_equal @mykey.to_der, OpenSSL::PKCS12.new(p12.to_der, "pass").key.to_der
+    end
+
+    private
+
+    def macdata(p12)
+      # See RFC 7292
+      asn1 = OpenSSL::ASN1.decode(p12.to_der)
+      macdata = asn1.value[2]
+      mac = macdata.value[0]
+      mac_algo = mac.value[0].value[0].value
+      _mac_params = mac.value[0].value[1]
+      {
+        mac_algo: mac_algo,
+        salt: macdata.value[1].value,
+        iter: macdata.value[2]&.value,
+      }
+    end
   end
 end
 
