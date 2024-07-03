@@ -1438,7 +1438,7 @@ gc_object_moved_p(rb_objspace_t *objspace, VALUE obj)
     else {
         void *poisoned = asan_unpoison_object_temporary(obj);
 
-        int ret =  BUILTIN_TYPE(obj) == T_MOVED;
+        int ret = BUILTIN_TYPE(obj) == T_MOVED;
         /* Re-poison slot if it's not the one we want */
         if (poisoned) {
             GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
@@ -1674,7 +1674,7 @@ static const struct st_hash_type object_id_hash_type = {
 bool
 rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 {
-    rb_objspace_t * objspace = objspace_ptr;
+    rb_objspace_t *objspace = objspace_ptr;
 
     switch (BUILTIN_TYPE(ptr)) {
       case T_NONE:
@@ -2332,6 +2332,16 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
 }
 
 static inline VALUE
+newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
+{
+    VALUE *p = (VALUE *)obj;
+    p[2] = v1;
+    p[3] = v2;
+    p[4] = v3;
+    return obj;
+}
+
+static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
 #if !__has_feature(memory_sanitizer)
@@ -2352,7 +2362,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #endif
 
 #if RGENGC_CHECK_MODE
-    p->as.values.v1 = p->as.values.v2 = p->as.values.v3 = 0;
+    newobj_fill(obj, 0, 0, 0);
 
     int lev = rb_gc_vm_lock_no_barrier();
     {
@@ -2451,7 +2461,7 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
         size_pool_cache->freelist = p->next;
         asan_unpoison_memory_region(p, stride, true);
 #if RGENGC_CHECK_MODE
-        GC_ASSERT(rb_gc_obj_slot_size(obj) == stride);
+        GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == stride);
         // zero clear
         MEMZERO((char *)obj, char, stride);
 #endif
@@ -2501,16 +2511,6 @@ ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, 
     asan_unpoison_object((VALUE)size_pool_cache->freelist, false);
     GC_ASSERT(RB_TYPE_P((VALUE)size_pool_cache->freelist, T_NONE));
     asan_poison_object((VALUE)size_pool_cache->freelist);
-}
-
-static inline VALUE
-newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
-{
-    VALUE *p = (VALUE *)obj;
-    p[2] = v1;
-    p[3] = v2;
-    p[4] = v3;
-    return obj;
 }
 
 static inline size_t
@@ -2604,7 +2604,7 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
         }
     }
 
-    size_pool->total_allocated_objects++;
+    RUBY_ATOMIC_SIZE_ADD(size_pool->total_allocated_objects, 1);
 
     return obj;
 }
@@ -3694,15 +3694,15 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 #if RGENGC_CHECK_MODE
                 if (!is_full_marking(objspace)) {
-                    if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                    if (RVALUE_REMEMBERED(vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
                 }
 #endif
 
                 if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
 
 #if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(obj) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(obj))
+#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
                 CHECK(RVALUE_WB_UNPROTECTED);
                 CHECK(RVALUE_MARKED);
                 CHECK(RVALUE_MARKING);
@@ -4603,8 +4603,8 @@ static void
 gc_grey(rb_objspace_t *objspace, VALUE obj)
 {
 #if RGENGC_CHECK_MODE
-    if (RVALUE_MARKED(obj) == FALSE) rb_bug("gc_grey: %s is not marked.", rb_obj_info(obj));
-    if (RVALUE_MARKING(obj) == TRUE) rb_bug("gc_grey: %s is marking/remembered.", rb_obj_info(obj));
+    if (RVALUE_MARKED(objspace, obj) == FALSE) rb_bug("gc_grey: %s is not marked.", rb_obj_info(obj));
+    if (RVALUE_MARKING(objspace, obj) == TRUE) rb_bug("gc_grey: %s is marking/remembered.", rb_obj_info(obj));
 #endif
 
     if (is_incremental_marking(objspace)) {
@@ -9303,8 +9303,8 @@ gc_set_auto_compact(VALUE _, VALUE v)
 #if RGENGC_CHECK_MODE
     ruby_autocompact_compare_func = NULL;
 
-    if (SYMBOL_P(val)) {
-        ID id = RB_SYM2ID(val);
+    if (SYMBOL_P(v)) {
+        ID id = RB_SYM2ID(v);
         if (id == rb_intern("empty")) {
             ruby_autocompact_compare_func = compare_free_slots;
         }

@@ -4180,7 +4180,7 @@ const char *
 gc_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
 {
     asan_unpoisoning_object(obj) {
-        size_t pos = rb_raw_obj_info(buff, buff_size, obj);
+        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
         if (pos >= buff_size) {} // truncated
     }
 
