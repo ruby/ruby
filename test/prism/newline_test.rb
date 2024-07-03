@@ -14,6 +14,7 @@ module Prism
       unescape_test.rb
       encoding/regular_expression_encoding_test.rb
       encoding/string_encoding_test.rb
+      result/breadth_first_search_test.rb
       result/static_literals_test.rb
       result/warnings_test.rb
       ruby/parser_test.rb
