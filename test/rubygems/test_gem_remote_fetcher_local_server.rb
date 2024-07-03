@@ -86,7 +86,7 @@ gems:
   end
 
   def teardown
-    # @fetcher.close_all
+    @fetcher.close_all if @fetcher
 
     if @normal_server
       @normal_server.kill.join
