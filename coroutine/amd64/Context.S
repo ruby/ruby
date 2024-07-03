@@ -5,7 +5,7 @@
 ##  Copyright, 2018, by Samuel Williams.
 ##
 
-#if defined(__OpenBSD__)
+#if defined(__CET__)
 #include <cet.h>
 #endif
 
@@ -17,7 +17,7 @@
 .globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
-#if defined(__OpenBSD__)
+#if defined(__CET__)
 	_CET_ENDBR
 #endif
 
