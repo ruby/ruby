@@ -86,7 +86,7 @@ gems:
   end
 
   def teardown
-    @fetcher.close_all if @fetcher
+    @fetcher&.close_all
 
     if @normal_server
       @normal_server.kill.join
@@ -186,7 +186,7 @@ gems:
   end
 
   def start_server(data)
-    server = TCPServer.new('localhost', 0)
+    server = TCPServer.new("localhost", 0)
     thread = Thread.new do
       loop do
         client = server.accept
@@ -201,16 +201,12 @@ gems:
     request_line = client.gets
     headers = {}
     while (line = client.gets) && line != "\r\n"
-      key, value = line.split(': ', 2)
+      key, value = line.split(": ", 2)
       headers[key] = value.strip
     end
 
     if request_line.start_with?("GET /yaml")
-      response = if headers["X-Captain"]
-                   headers["X-Captain"]
-                 else
-                   data
-                 end
+      response = headers["X-Captain"] ? headers["X-Captain"] : data
       client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{response.size}\r\n\r\n#{response}"
     elsif request_line.start_with?("HEAD /yaml") || request_line.start_with?("GET http://") && request_line.include?("/yaml")
       client.print "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{data.size}\r\n\r\n#{data}"

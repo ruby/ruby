@@ -36,7 +36,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def teardown
     if @ssl_server
-      # TODO lookup ssl_server status and close it properly
+      # TODO: lookup ssl_server status and close it properly
       # @ssl_server.shutdown
       @ssl_server = nil
     end
@@ -162,13 +162,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       loop do
         ssl_client = ssl_server.accept
         Thread.new(ssl_client) do |client|
-          begin
-            handle_request(client)
-          rescue OpenSSL::SSL::SSLError => e
-            warn "SSL error: #{e.message}"
-          ensure
-            client.close
-          end
+          handle_request(client)
+        rescue OpenSSL::SSL::SSLError => e
+          warn "SSL error: #{e.message}"
+        ensure
+          client.close
         end
       end
     end
