@@ -258,7 +258,7 @@ module Gem
 
         # cpu
         ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
-        (@cpu == "arm" && other.cpu.start_with?("arm"))) &&
+        (@cpu == "arm" && other.cpu.start_with?("armv"))) &&
 
           # os
           @os == other.os &&
