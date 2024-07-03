@@ -77,10 +77,8 @@ gems:
     @normal_server ||= start_server(SERVER_DATA)
     @proxy_server  ||= start_server(PROXY_DATA)
 
-    base_server_uri = "http://localhost:#{@normal_server[:server].addr[1]}"
+    @server_uri = "http://localhost:#{@normal_server[:server].addr[1]}" + "/yaml"
     @proxy_uri = "http://localhost:#{@proxy_server[:server].addr[1]}"
-
-    @server_uri = base_server_uri + "/yaml"
 
     Gem::RemoteFetcher.fetcher = nil
     @stub_ui = Gem::MockGemUi.new
