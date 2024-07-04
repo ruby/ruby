@@ -148,8 +148,83 @@ class SimpleHTTPServer
   end
 end
 
+class SimpleHTTPProxyServer
+  def initialize(host, port, auth_proc = nil, log)
+    @server = TCPServer.new(host, port)
+    @auth_proc = auth_proc
+    @log = log
+  end
+
+  def start
+    @thread = Thread.new do
+      loop do
+        client = @server.accept
+        request_line = client.gets
+        headers = {}
+        while (line = client.gets) && (line != "\r\n")
+          key, value = line.chomp.split(/:\s*/, 2)
+          headers[key] = value
+        end
+        next unless request_line
+
+        method, path, _ = request_line.split(' ')
+        handle_request(client, method, path, request_line, headers)
+      end
+    end
+  end
+
+  def shutdown
+    @thread.kill
+    @server.close
+  end
+
+  private
+
+  def handle_request(client, method, path, request_line, headers)
+    if @auth_proc
+      req = Request.new(method, path, request_line, headers)
+      res = Struct.new(:body, :status).new("", 200)
+      @auth_proc.call(req, res)
+      if res.status != 200
+        client.print "HTTP/1.1 #{res.status}\r\nContent-Type: text/plain\r\n\r\n#{res.body}"
+        return
+      end
+    end
+
+    uri = URI(path)
+    proxy_request(uri, client)
+  rescue TestOpenURIProxy::ProxyAuthenticationRequired
+    @log << "ERROR ProxyAuthenticationRequired"
+    client.print "HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n"
+  ensure
+    client.close
+  end
+
+  def proxy_request(uri, client)
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      response = http.get(uri.path)
+      client.print "HTTP/1.1 #{response.code}\r\nContent-Type: #{response.content_type}\r\n\r\n#{response.body}"
+    end
+  end
+
+  class Request
+    attr_reader :method, :path, :request_line, :headers
+    def initialize(method, path, request_line, headers)
+      @method = method
+      @path = path
+      @request_line = request_line
+      @headers = headers
+    end
+
+    def [](key)
+      @headers[key]
+    end
+  end
+end
+
 module TestOpenURIUtils
   class Unauthorized < StandardError; end
+  class ProxyAuthenticationRequired < StandardError; end
 
   def with_http(log_tester=lambda {|log| assert_equal([], log) })
     log = []
