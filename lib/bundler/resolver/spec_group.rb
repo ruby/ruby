@@ -44,7 +44,7 @@ module Bundler
       protected
 
       def sorted_spec_names
-        @sorted_spec_names ||= @specs.map(&:full_name).sort
+        @specs.map(&:full_name).sort
       end
 
       private
