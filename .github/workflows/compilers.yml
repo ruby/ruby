@@ -211,7 +211,9 @@ jobs:
           - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
           - name: SHARED_GC
             shared_gc: true
-            env: { append_configure: '--with-shared-gc' }
+            shared_gc_dir: '../gc'
+            env:
+              append_configure: '--with-shared-gc=../gc'
 
     name: ${{ matrix.entry.name }}
 
@@ -262,11 +264,12 @@ jobs:
       - name: Build shared GC
         run: >
           make probes.h &&
-          export RUBY_GC_LIBRARY_PATH=$HOME/librubygc.so &&
-          echo "RUBY_GC_LIBRARY_PATH=$RUBY_GC_LIBRARY_PATH" >> $GITHUB_ENV &&
+          export RUBY_GC_LIBRARY=librubygc.so &&
+          echo "RUBY_GC_LIBRARY=$RUBY_GC_LIBRARY" >> $GITHUB_ENV &&
+          mkdir ${{ matrix.entry.shared_gc_dir }} &&
           gcc -I../src -I../src/include -I. -I.ext/include/x86_64-linux
           -Wl,-undefined,dynamic_lookup -fPIC -g -O3 -shared
-          -o $RUBY_GC_LIBRARY_PATH ../src/gc_impl.c
+          -o ${{ matrix.entry.shared_gc_dir }}/$RUBY_GC_LIBRARY ../src/gc_impl.c
         if: ${{ matrix.entry.shared_gc }}
 
       - name: Add to ext/Setup
