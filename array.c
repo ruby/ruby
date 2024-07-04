@@ -652,7 +652,8 @@ rb_ary_freeze(VALUE ary)
         ary_shrink_capa(ary);
     }
 
-    return rb_obj_freeze(ary);
+    OBJ_FREEZE(ary);
+    return ary;
 }
 
 /* This can be used to take a snapshot of an array (with
