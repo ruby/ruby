@@ -748,14 +748,39 @@ typedef struct gc_function_map {
 
 static rb_gc_function_map_t rb_gc_functions;
 
-# define RUBY_GC_LIBRARY_PATH "RUBY_GC_LIBRARY_PATH"
+# define RUBY_GC_LIBRARY "RUBY_GC_LIBRARY"
 
 static void
 ruby_external_gc_init(void)
 {
-    char *gc_so_path = getenv(RUBY_GC_LIBRARY_PATH);
+    // Assert that the directory path ends with a /
+    GC_ASSERT(SHARED_GC_DIR[strlen(SHARED_GC_DIR) - 2] == '/');
+
+    char *gc_so_file = getenv(RUBY_GC_LIBRARY);
+
+    char *gc_so_path = NULL;
     void *handle = NULL;
-    if (gc_so_path && dln_supported_p()) {
+    if (gc_so_file && dln_supported_p()) {
+        /* Check to make sure that gc_so_file matches /[\w-_.]+/ so that it does
+         * not load a shared object outside of the directory. */
+        for (size_t i = 0; i < strlen(gc_so_file); i++) {
+            char c = gc_so_file[i];
+            if (isalnum(c)) continue;
+            switch (c) {
+              case '-':
+              case '_':
+              case '.':
+                break;
+              default:
+                rb_bug("Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"");
+            }
+        }
+
+        gc_so_path = alloca(strlen(SHARED_GC_DIR) + strlen(gc_so_file) + 1);
+        strcpy(gc_so_path, SHARED_GC_DIR);
+        strcpy(gc_so_path + strlen(SHARED_GC_DIR), gc_so_file);
+        gc_so_path[strlen(SHARED_GC_DIR) + strlen(gc_so_file)] = '\0';
+
         char error[1024];
         handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
@@ -4625,8 +4650,8 @@ void
 Init_GC(void)
 {
 #if USE_SHARED_GC
-    if (getenv(RUBY_GC_LIBRARY_PATH) != NULL && !dln_supported_p()) {
-        rb_warn(RUBY_GC_LIBRARY_PATH " is ignored because this executable file can't load extension libraries");
+    if (getenv(RUBY_GC_LIBRARY) != NULL && !dln_supported_p()) {
+        rb_warn(RUBY_GC_LIBRARY " is ignored because this executable file can't load extension libraries");
     }
 #endif
 
