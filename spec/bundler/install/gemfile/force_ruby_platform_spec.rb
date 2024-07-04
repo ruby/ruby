@@ -54,7 +54,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
   context "when also a transitive dependency" do
     before do
       build_repo4 do
-        build_gem("depends_on_platform_specific") {|s| s.add_runtime_dependency "platform_specific" }
+        build_gem("depends_on_platform_specific") {|s| s.add_dependency "platform_specific" }
 
         build_gem("platform_specific") do |s|
           s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 RUBY'"
@@ -83,12 +83,12 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     before do
       build_repo4 do
         build_gem("depends_on_platform_specific") do |s|
-          s.add_runtime_dependency "platform_specific"
+          s.add_dependency "platform_specific"
           s.write "lib/depends_on_platform_specific.rb", "DEPENDS_ON_PLATFORM_SPECIFIC = '1.0.0 RUBY'"
         end
 
         build_gem("depends_on_platform_specific") do |s|
-          s.add_runtime_dependency "platform_specific"
+          s.add_dependency "platform_specific"
           s.platform = Bundler.local_platform
           s.write "lib/depends_on_platform_specific.rb", "DEPENDS_ON_PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
         end

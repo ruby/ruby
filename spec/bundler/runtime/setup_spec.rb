@@ -1305,7 +1305,7 @@ end
             s.files       = Dir["lib/**/*.rb"]
             s.author      = 'no one'
 
-            s.add_runtime_dependency 'digest'
+            s.add_dependency 'digest'
           end
         G
       end

@@ -1188,19 +1188,19 @@ RSpec.describe "bundle install with gem sources" do
 
         build_gem "nokogiri", "1.12.4" do |s|
           s.platform = "x86_64-darwin"
-          s.add_runtime_dependency "racca", "~> 1.4"
+          s.add_dependency "racca", "~> 1.4"
         end
 
         build_gem "nokogiri", "1.12.4" do |s|
           s.platform = "x86_64-linux"
-          s.add_runtime_dependency "racca", "~> 1.4"
+          s.add_dependency "racca", "~> 1.4"
         end
 
         build_gem "crass", "1.0.6"
 
         build_gem "loofah", "2.12.0" do |s|
-          s.add_runtime_dependency "crass", "~> 1.0.2"
-          s.add_runtime_dependency "nokogiri", ">= 1.5.9"
+          s.add_dependency "crass", "~> 1.0.2"
+          s.add_dependency "nokogiri", ">= 1.5.9"
         end
       end
 
