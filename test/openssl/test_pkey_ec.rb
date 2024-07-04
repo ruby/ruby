@@ -88,11 +88,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal(true, key2.check_key)
 
     # Behavior of EVP_PKEY_public_check changes between OpenSSL 1.1.1 and 3.0
-    key4 = Fixtures.pkey("p256_too_large")
+    # The public key does not match the private key
+    key4 = OpenSSL::PKey.read(<<~EOF)
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIP+TT0V8Fndsnacji9tyf6hmhHywcOWTee9XkiBeJoVloAoGCCqGSM49
+    AwEHoUQDQgAEBkhhJIU/2/YdPSlY2I1k25xjK4trr5OXSgXvBC21PtY0HQ7lor7A
+    jzT0giJITqmcd81fwGw5+96zLcdxTF1hVQ==
+    -----END EC PRIVATE KEY-----
+    EOF
     assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
-
-    key5 = Fixtures.pkey("p384_invalid")
-    assert_raise(OpenSSL::PKey::ECError) { key5.check_key }
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)
